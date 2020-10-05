@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
+import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -74,7 +75,8 @@ public class OidcBuildStep {
                 .addBeanClass(OidcJsonWebTokenProducer.class)
                 .addBeanClass(OidcTokenCredentialProducer.class)
                 .addBeanClass(OidcIdentityProvider.class)
-                .addBeanClass(DefaultTenantConfigResolver.class);
+                .addBeanClass(DefaultTenantConfigResolver.class)
+                .addBeanClass(DefaultTokenStateManager.class);
         additionalBeans.produce(builder.build());
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, JwtProviderImpl.class));

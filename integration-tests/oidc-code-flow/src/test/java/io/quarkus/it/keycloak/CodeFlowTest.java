@@ -25,6 +25,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -140,6 +141,8 @@ public class CodeFlowTest {
 
             assertEquals("Welcome to Test App", page.getTitleText());
             assertNull(getStateCookie(webClient, null));
+            assertNull(getSessionAtCookie(webClient, null));
+            assertNull(getSessionRtCookie(webClient, null));
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
             assertEquals("/", sessionCookie.getPath());
@@ -551,6 +554,77 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testDefaultSessionManagerIdTokenOnly() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-idtoken-only");
+            assertNotNull(getStateCookie(webClient, "tenant-idtoken-only"));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-idtoken-only:alice", page.getBody().asText());
+
+            page = webClient.getPage("http://localhost:8081/web-app/access/tenant-idtoken-only");
+            assertEquals("tenant-idtoken-only:no access", page.getBody().asText());
+            page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-idtoken-only");
+            assertEquals("tenant-idtoken-only:no refresh", page.getBody().asText());
+
+            Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-idtoken-only");
+            checkSingleTokenCookie(idTokenCookie, "ID");
+
+            assertNull(getSessionAtCookie(webClient, "tenant-idtoken-only"));
+            assertNull(getSessionRtCookie(webClient, "tenant-idtoken-only"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testDefaultSessionManagerSplitTokens() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-split-tokens");
+            assertNotNull(getStateCookie(webClient, "tenant-split-tokens"));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-split-tokens:alice", page.getBody().asText());
+
+            page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-tokens");
+            assertEquals("tenant-split-tokens:AT injected", page.getBody().asText());
+            page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-split-tokens");
+            assertEquals("tenant-split-tokens:RT injected", page.getBody().asText());
+
+            Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-tokens");
+            checkSingleTokenCookie(idTokenCookie, "ID");
+
+            Cookie atTokenCookie = getSessionAtCookie(page.getWebClient(), "tenant-split-tokens");
+            checkSingleTokenCookie(atTokenCookie, "Bearer");
+
+            Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-tokens");
+            checkSingleTokenCookie(rtTokenCookie, "Refresh");
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void checkSingleTokenCookie(Cookie idTokenCookie, String type) {
+        String[] parts = idTokenCookie.getValue().split("\\|");
+        assertEquals(1, parts.length);
+        assertEquals(type, OidcUtils.decodeJwtContent(parts[0]).getString("typ"));
+    }
+
+    @Test
     public void testAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-listener");
@@ -650,6 +724,14 @@ public class CodeFlowTest {
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
+    }
+
+    private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_session_at" + (tenantId == null ? "" : "_" + tenantId));
+    }
+
+    private Cookie getSessionRtCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_session_rt" + (tenantId == null ? "" : "_" + tenantId));
     }
 
     private String getIdToken(Cookie sessionCookie) {

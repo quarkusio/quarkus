@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
@@ -51,13 +52,15 @@ import io.vertx.ext.web.impl.CookieImpl;
 
 public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
+    static final String COOKIE_DELIM = "|";
+    static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
+    static final String SESSION_COOKIE_NAME = "q_session";
+    static final String SESSION_MAX_AGE_PARAM = "session-max-age";
+
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
 
     private static final String STATE_COOKIE_NAME = "q_auth";
-    private static final String SESSION_COOKIE_NAME = "q_session";
     private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
-    private static final String COOKIE_DELIM = "|";
-    private static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
 
     private static QuarkusSecurityIdentity augmentIdentity(SecurityIdentity securityIdentity,
             String accessToken,
@@ -83,28 +86,26 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
 
-        Cookie sessionCookie = context.request().getCookie(
-                getSessionCookieName(resolver.resolve(context, false)));
+        Cookie sessionCookie = context.request().getCookie(getSessionCookieName(resolver.resolve(context, false)));
 
         // if session already established, try to re-authenticate
         if (sessionCookie != null) {
-            String[] tokens = COOKIE_PATTERN.split(sessionCookie.getValue());
-            String idToken = tokens[0];
-            String accessToken = tokens[1];
-            String refreshToken = tokens[2];
-
             TenantConfigContext configContext = resolver.resolve(context, true);
-            context.put("access_token", accessToken);
-            return authenticate(identityProviderManager, new IdTokenCredential(idToken, context))
+
+            AuthorizationCodeTokens session = resolver.getTokenStateManager().getTokens(context, configContext.oidcConfig,
+                    sessionCookie.getValue());
+
+            context.put("access_token", session.getAccessToken());
+            return authenticate(identityProviderManager, new IdTokenCredential(session.getIdToken(), context))
                     .map(new Function<SecurityIdentity, SecurityIdentity>() {
                         @Override
                         public SecurityIdentity apply(SecurityIdentity identity) {
                             if (isLogout(context, configContext)) {
                                 fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
-                                throw redirectToLogoutEndpoint(context, configContext, idToken);
+                                throw redirectToLogoutEndpoint(context, configContext, session.getIdToken());
                             }
 
-                            return augmentIdentity(identity, accessToken, refreshToken, context);
+                            return augmentIdentity(identity, session.getAccessToken(), session.getRefreshToken(), context);
                         }
                     }).on().failure().recoverWithItem(new Function<Throwable, SecurityIdentity>() {
                         @Override
@@ -127,7 +128,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     throw new AuthenticationCompletionException(cause);
                                 }
                                 LOG.debug("Token has expired, trying to refresh it");
-                                identity = trySilentRefresh(configContext, refreshToken, context, identityProviderManager);
+                                identity = trySilentRefresh(configContext, session.getRefreshToken(), context,
+                                        identityProviderManager);
                                 if (identity == null) {
                                     LOG.debug("SecurityIdentity is null after a token refresh");
                                     throw new AuthenticationCompletionException();
@@ -135,7 +137,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     fireEvent(SecurityEvent.Type.OIDC_SESSION_EXPIRED_AND_REFRESHED, identity);
                                 }
                             } else {
-                                identity = trySilentRefresh(configContext, refreshToken, context, identityProviderManager);
+                                identity = trySilentRefresh(configContext, session.getRefreshToken(), context,
+                                        identityProviderManager);
                                 if (identity == null) {
                                     LOG.debug("ID token can no longer be refreshed, using the current SecurityIdentity");
                                     identity = ((TokenAutoRefreshException) throwable).getSecurityIdentity();
@@ -375,10 +378,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             SecurityIdentity securityIdentity) {
         removeCookie(context, configContext, getSessionCookieName(configContext));
 
-        String cookieValue = opaqueIdToken + COOKIE_DELIM
-                + opaqueAccessToken + COOKIE_DELIM
-                + opaqueRefreshToken;
-
         if (idToken == null) {
             // it can be null if Vert.x did the remote introspection of the ID token
             idToken = OidcUtils.decodeJwtContent(opaqueIdToken);
@@ -394,7 +393,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (configContext.oidcConfig.token.refreshExpired) {
             maxAge += configContext.oidcConfig.authentication.sessionAgeExtension.getSeconds();
         }
-        createCookie(context, configContext, getSessionCookieName(configContext), cookieValue, maxAge);
+        context.put(SESSION_MAX_AGE_PARAM, maxAge);
+        String cookieValue = resolver.getTokenStateManager()
+                .createTokenState(context, configContext.oidcConfig,
+                        new AuthorizationCodeTokens(opaqueIdToken, opaqueAccessToken, opaqueRefreshToken));
+        createCookie(context, configContext.oidcConfig, getSessionCookieName(configContext), cookieValue, maxAge);
+
         fireEvent(SecurityEvent.Type.OIDC_LOGIN, securityIdentity);
     }
 
@@ -424,24 +428,25 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 cookieValue += (COOKIE_DELIM + requestPath);
             }
         }
-        createCookie(context, configContext, getStateCookieName(configContext), cookieValue, 60 * 30);
+        createCookie(context, configContext.oidcConfig, getStateCookieName(configContext), cookieValue, 60 * 30);
         return uuid;
     }
 
     private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
         removeCookie(context, configContext, getPostLogoutCookieName(configContext));
-        return createCookie(context, configContext, getPostLogoutCookieName(configContext), UUID.randomUUID().toString(),
+        return createCookie(context, configContext.oidcConfig, getPostLogoutCookieName(configContext),
+                UUID.randomUUID().toString(),
                 60 * 30).getValue();
     }
 
-    private CookieImpl createCookie(RoutingContext context, TenantConfigContext configContext,
+    static CookieImpl createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
             String name, String value, long maxAge) {
         CookieImpl cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
         cookie.setSecure(context.request().isSSL());
         cookie.setMaxAge(maxAge);
         LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
-        Authentication auth = configContext.oidcConfig.getAuthentication();
+        Authentication auth = oidcConfig.getAuthentication();
         if (auth.cookiePath.isPresent()) {
             cookie.setPath(auth.getCookiePath().get());
         }
@@ -472,6 +477,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private void removeCookie(RoutingContext context, TenantConfigContext configContext, String cookieName) {
         ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
         if (cookie != null) {
+            if (SESSION_COOKIE_NAME.equals(cookieName)) {
+                resolver.getTokenStateManager().deleteTokens(context, configContext.oidcConfig, cookie.getValue());
+            }
+
             cookie.setValue("");
             cookie.setMaxAge(0);
             Authentication auth = configContext.oidcConfig.getAuthentication();
@@ -572,22 +581,23 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return new AuthenticationRedirectException(buildLogoutRedirectUri(configContext, idToken, context));
     }
 
-    private static String getSessionCookieName(TenantConfigContext configContext) {
-        String cookieSuffix = getCookieSuffix(configContext);
-        return SESSION_COOKIE_NAME + cookieSuffix;
-    }
-
     private static String getStateCookieName(TenantConfigContext configContext) {
-        String cookieSuffix = getCookieSuffix(configContext);
+        String cookieSuffix = getCookieSuffix(configContext.oidcConfig.tenantId.get());
         return STATE_COOKIE_NAME + cookieSuffix;
     }
 
     private static String getPostLogoutCookieName(TenantConfigContext configContext) {
-        String cookieSuffix = getCookieSuffix(configContext);
+        String cookieSuffix = getCookieSuffix(configContext.oidcConfig.tenantId.get());
         return POST_LOGOUT_COOKIE_NAME + cookieSuffix;
     }
 
-    private static String getCookieSuffix(TenantConfigContext configContext) {
-        return !"Default".equals(configContext.oidcConfig.tenantId.get()) ? "_" + configContext.oidcConfig.tenantId.get() : "";
+    private static String getSessionCookieName(TenantConfigContext configContext) {
+        String cookieSuffix = getCookieSuffix(configContext.oidcConfig.tenantId.get());
+        return SESSION_COOKIE_NAME + cookieSuffix;
     }
+
+    static String getCookieSuffix(String tenantId) {
+        return !"Default".equals(tenantId) ? "_" + tenantId : "";
+    }
+
 }

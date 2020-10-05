@@ -52,6 +52,18 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("tenant-idtoken-only")
+    public String getNameIdTokenOnly() {
+        return "tenant-idtoken-only:" + getName();
+    }
+
+    @GET
+    @Path("tenant-split-tokens")
+    public String getNameSplitTokens() {
+        return "tenant-split-tokens:" + getName();
+    }
+
+    @GET
     @Path("callback-before-redirect")
     public String getNameCallbackBeforeRedirect() {
         throw new InternalServerErrorException("This method must not be invoked");
@@ -96,16 +108,29 @@ public class ProtectedResource {
     @GET
     @Path("access")
     public String getAccessToken() {
-        if (!accessTokenCredential.getToken().equals(accessToken.getRawToken())) {
+        if (accessToken.getRawToken() != null && !accessTokenCredential.getToken().equals(accessToken.getRawToken())) {
             throw new OIDCException("Access token values are not equal");
         }
-        return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty() ? "AT injected" : "";
+        return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty() ? "AT injected" : "no access";
+    }
+
+    @GET
+    @Path("access/tenant-idtoken-only")
+    public String getAccessTokenIdTokenOnly() {
+        return "tenant-idtoken-only:" + getAccessToken();
+    }
+
+    @GET
+    @Path("access/tenant-split-tokens")
+    public String getAccessTokenSplitTokens() {
+        return "tenant-split-tokens:" + getAccessToken();
     }
 
     @GET
     @Path("refresh")
-    public String refresh() {
-        if (!accessTokenCredential.getRefreshToken().getToken().equals(refreshToken.getToken())) {
+    public String getRefreshToken() {
+        if (refreshToken.getToken() != null
+                && !accessTokenCredential.getRefreshToken().getToken().equals(refreshToken.getToken())) {
             throw new OIDCException("Refresh token values are not equal");
         }
         if (refreshToken.getToken() != null && !refreshToken.getToken().isEmpty()) {
@@ -121,14 +146,26 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("refresh/tenant-idtoken-only")
+    public String getRefreshTokenIdTokenOnly() {
+        return "tenant-idtoken-only:" + getRefreshToken();
+    }
+
+    @GET
+    @Path("refresh/tenant-split-tokens")
+    public String getRefreshTokenSplitTokens() {
+        return "tenant-split-tokens:" + getRefreshToken();
+    }
+
+    @GET
     @Path("refresh/tenant-listener")
-    public String refreshTenantListener() {
-        return refresh();
+    public String getRefreshTokenTenantListener() {
+        return getRefreshToken();
     }
 
     @GET
     @Path("refresh-query")
-    public String refresh(@QueryParam("a") String aValue) {
-        return refresh() + ":" + aValue;
+    public String getRefreshTokenQuery(@QueryParam("a") String aValue) {
+        return getRefreshToken() + ":" + aValue;
     }
 }

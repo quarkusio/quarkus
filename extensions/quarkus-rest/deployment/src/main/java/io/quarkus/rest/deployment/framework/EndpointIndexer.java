@@ -58,6 +58,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -269,7 +270,9 @@ public class EndpointIndexer {
         currentInjectableBean = new BeanParamInfo();
         injectableBeans.put(currentTypeName, currentInjectableBean);
 
-        Map<FieldInfo, ParameterExtractor> fieldExtractors = new HashMap<>();
+        // LinkedHashMap the TCK expects that fields annotated with @BeanParam are handled last
+        Map<FieldInfo, ParameterExtractor> fieldExtractors = new LinkedHashMap<>();
+        Map<FieldInfo, ParameterExtractor> beanParamFields = new LinkedHashMap<>();
         for (FieldInfo field : currentClassInfo.fields()) {
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
             for (AnnotationInstance i : field.annotations()) {
@@ -279,11 +282,12 @@ public class EndpointIndexer {
                     generatedClassBuildItemBuildProducer, existingConverters, additionalReaders, false, false,
                     annotations, field.type(), field.toString(), true);
             ParameterExtractor result = extractor.invoke();
-            if (result.getType() != null) {
+            if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, extractor);
             }
             if (result.getType() == ParameterType.BEAN) {
+                beanParamFields.put(field, extractor);
                 // transform the bean param
                 // FIXME: pretty sure this doesn't work with generics
                 ClassInfo beanParamClassInfo = index.getClassByName(field.type().name());
@@ -299,6 +303,8 @@ public class EndpointIndexer {
                 currentInjectableBean.setFormParamRequired(true);
             }
         }
+        // the TCK expects that fields annotated with @BeanParam are handled last
+        fieldExtractors.putAll(beanParamFields);
 
         DotName superClassName = currentClassInfo.superName();
         boolean superTypeIsInjectable = false;

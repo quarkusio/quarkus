@@ -1,5 +1,6 @@
 package io.quarkus.rest.runtime.jaxrs;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -21,6 +22,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.BufferImpl;
 
 public class QuarkusRestContainerResponseContext implements ContainerResponseContext {
 
@@ -185,14 +188,30 @@ public class QuarkusRestContainerResponseContext implements ContainerResponseCon
 
     @Override
     public OutputStream getEntityStream() {
-        // TODO Auto-generated method stub
-        return null;
+        return new OutputStream() {
+            private final Buffer buffer = new BufferImpl();
+
+            @Override
+            public void write(byte[] b) {
+                buffer.appendBytes(b);
+            }
+
+            @Override
+            public void write(int b) {
+                buffer.appendInt(b);
+            }
+
+            @Override
+            public void close() throws IOException {
+                // the way we handle things, it doesn't make sense for this to be anything but a String
+                setEntity(new String(buffer.getBytes()));
+            }
+        };
     }
 
     @Override
     public void setEntityStream(OutputStream outputStream) {
-        // TODO Auto-generated method stub
-
+        throw new UnsupportedOperationException();
     }
 
 }

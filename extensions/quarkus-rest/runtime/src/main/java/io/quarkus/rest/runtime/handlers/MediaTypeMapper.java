@@ -57,19 +57,21 @@ public class MediaTypeMapper implements RestHandler {
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
         String contentType = requestContext.getContext().request().headers().get(HttpHeaders.CONTENT_TYPE);
-        Holder selectedHolder = null;
-        if (contentType == null) {
+        // if there's no Content-Type it's */*
+        MediaType contentMediaType = contentType != null ? MediaType.valueOf(contentType) : MediaType.WILDCARD_TYPE;
+        // find the best matching consumes type. Note that the arguments are reversed from their definition
+        // of desired/provided, but we do want the result to be a media type we consume, since that's how we key
+        // our methods, rather than the single media type we get from the client. This way we ensure we get the
+        // best match.
+        MediaType consumes = MediaTypeHelper.getBestMatch(Collections.singletonList(contentMediaType),
+                consumesTypes);
+        Holder selectedHolder = resourcesByConsumes.get(consumes);
+        // if we haven't found anything, try selecting the wildcard type, if any
+        if (selectedHolder == null) {
             selectedHolder = resourcesByConsumes.get(MediaType.WILDCARD_TYPE);
-        } else {
-            MediaType consumes = MediaTypeHelper.getBestMatch(consumesTypes,
-                    Collections.singletonList(MediaType.valueOf(contentType)));
-            selectedHolder = resourcesByConsumes.get(consumes);
-            if (selectedHolder == null) {
-                selectedHolder = resourcesByConsumes.get(MediaType.WILDCARD_TYPE);
-            }
         }
         if (selectedHolder == null) {
-            throw new WebApplicationException(Response.status(416).build());
+            throw new WebApplicationException(Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build());
         }
         RuntimeResource selectedResource;
         if (selectedHolder.mtWithoutParamsToResource.size() == 1) {

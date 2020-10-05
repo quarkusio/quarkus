@@ -34,6 +34,7 @@ import org.jboss.logging.Logger;
  *
  * <ol>
  * <li>{@link #registerCustomContexts()}</li>
+ * <li>{@link #registerScopes()}</li>
  * <li>{@link #registerBeans()}</li>
  * <li>{@link #initialize(Consumer)}</li>
  * <li>{@link #validate(Consumer)}</li>
@@ -98,6 +99,10 @@ public class BeanProcessor {
 
     public ContextRegistrar.RegistrationContext registerCustomContexts() {
         return beanDeployment.registerCustomContexts(contextRegistrars);
+    }
+
+    public void registerScopes() {
+        beanDeployment.registerScopes();
     }
 
     /**
@@ -234,6 +239,7 @@ public class BeanProcessor {
             }
         };
         registerCustomContexts();
+        registerScopes();
         registerBeans();
         registerSyntheticObservers();
         initialize(unsupportedBytecodeTransformer);

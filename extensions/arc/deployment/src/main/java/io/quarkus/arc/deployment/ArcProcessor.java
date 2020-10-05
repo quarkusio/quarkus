@@ -373,7 +373,7 @@ public class ArcProcessor {
                 value.done();
             }
         }
-
+        contextRegistrationPhase.getBeanProcessor().registerScopes();
         BeanDeployment beanDeployment = contextRegistrationPhase.getBeanProcessor().getBeanDeployment();
         interceptorResolver.produce(new InterceptorResolverBuildItem(beanDeployment));
         transformedAnnotations.produce(new TransformedAnnotationsBuildItem(beanDeployment));

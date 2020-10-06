@@ -13,9 +13,12 @@ import javax.inject.Qualifier;
 /**
  * Annotation used to indicate that the annotated element should not be executed on the IO thread but on
  * a worker thread.
+ *
  * This annotation is used to allow <em>blocking</em> processing in a reactive application.
  * For example, use this annotation if your reactive route or gRPC service need to use blocking APIs such
  * as <em>blocking</em> database access.
+ *
+ * This annotation is also a CDI Qualifier, must can also be used as a marker annotation.
  */
 @Qualifier
 @Retention(RetentionPolicy.RUNTIME)

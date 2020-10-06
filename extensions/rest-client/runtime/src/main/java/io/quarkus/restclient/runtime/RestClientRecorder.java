@@ -7,6 +7,7 @@ import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.RuntimeType;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.jboss.resteasy.core.providerfactory.ResteasyProviderFactoryImpl;
 import org.jboss.resteasy.microprofile.client.RestClientBuilderImpl;
 import org.jboss.resteasy.microprofile.client.RestClientExtension;
@@ -60,15 +61,8 @@ public class RestClientRecorder {
         };
 
         registerProviders(clientProviderFactory, useBuiltIn, providersToRegister, contributedProviders);
-
-        if (ResteasyProviderFactory.peekInstance() != null) {
-            ResteasyProviderFactory serverProviderFactory = ResteasyProviderFactory.getInstance();
-            registerProviders(serverProviderFactory, useBuiltIn, providersToRegister, contributedProviders);
-        } else {
-            ResteasyProviderFactory.setInstance(clientProviderFactory);
-        }
-
         RestClientBuilderImpl.setProviderFactory(clientProviderFactory);
+        ResteasyClientBuilderImpl.setProviderFactory(clientProviderFactory);
         providerFactory = clientProviderFactory;
     }
 

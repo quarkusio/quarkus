@@ -33,6 +33,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -601,12 +602,45 @@ public class QuarkusRestProcessor {
                     beanContainerBuildItem.getValue(), entry.getMediaType());
         }
 
+        String applicationPath = determineApplicationPath(index);
+
         return new FilterBuildItem(
                 recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, dynamicFeats,
                         serialisers, resourceClasses, subResourceClasses,
-                        beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, clientImplementations,
+                        beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
+                        clientImplementations,
                         genericTypeMapping, converterProviders),
                 10);
+    }
+
+    private String determineApplicationPath(IndexView index) {
+        Collection<AnnotationInstance> applicationPaths = index.getAnnotations(QuarkusRestDotNames.APPLICATION_PATH);
+        if (applicationPaths.isEmpty()) {
+            return null;
+        }
+        // currently we only examine the first class that is annotated with @ApplicationPath so best
+        // fail if the user code has multiple such annotations instead of surprising the user
+        // at runtime
+        if (applicationPaths.size() > 1) {
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for (AnnotationInstance annotationInstance : applicationPaths) {
+                if (first) {
+                    first = false;
+                } else {
+                    sb.append(",");
+                }
+                sb.append(annotationInstance.target().asClass().name().toString());
+            }
+            throw new RuntimeException("Multiple classes ( " + sb.toString()
+                    + ") have been annotated with @ApplicationPath which is currently not supported");
+        }
+        String applicationPath = null;
+        AnnotationValue applicationPathValue = applicationPaths.iterator().next().value();
+        if ((applicationPathValue != null)) {
+            applicationPath = applicationPathValue.asString();
+        }
+        return applicationPath;
     }
 
     private void registerWriter(QuarkusRestRecorder recorder, Serialisers serialisers, Class<?> entityClass,

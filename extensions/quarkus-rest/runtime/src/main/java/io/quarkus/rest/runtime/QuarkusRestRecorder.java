@@ -184,7 +184,8 @@ public class QuarkusRestRecorder {
             ContextResolvers ctxResolvers, Features features, DynamicFeatures dynamicFeatures, Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
-            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations, GenericTypeMapping genericTypeMapping,
+            String applicationPath, Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations,
+            GenericTypeMapping genericTypeMapping,
             ParamConverterProviders paramConverterProviders) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
@@ -377,17 +378,12 @@ public class QuarkusRestRecorder {
         // end with one
         String prefix = vertxConfig.rootPath;
         if (prefix != null) {
-            prefix = prefix.trim();
-            if (prefix.equals("/"))
-                prefix = "";
-            // add leading slash
-            if (!prefix.startsWith("/"))
-                prefix = "/" + prefix;
-            // remove trailing slash
-            if (prefix.endsWith("/"))
-                prefix = prefix.substring(0, prefix.length() - 1);
+            prefix = sanitizePathPrefix(prefix);
         } else {
             prefix = "";
+        }
+        if ((applicationPath != null) && !applicationPath.isEmpty()) {
+            prefix = prefix + sanitizePathPrefix(applicationPath);
         }
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
@@ -405,6 +401,19 @@ public class QuarkusRestRecorder {
         }
 
         return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
+    }
+
+    private String sanitizePathPrefix(String prefix) {
+        prefix = prefix.trim();
+        if (prefix.equals("/"))
+            prefix = "";
+        // add leading slash
+        if (!prefix.startsWith("/"))
+            prefix = "/" + prefix;
+        // remove trailing slash
+        if (prefix.endsWith("/"))
+            prefix = prefix.substring(0, prefix.length() - 1);
+        return prefix;
     }
 
     private ClientProxies createClientImpls(Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {

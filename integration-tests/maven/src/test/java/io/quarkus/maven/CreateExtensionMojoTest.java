@@ -168,8 +168,8 @@ public class CreateExtensionMojoTest {
             IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
         final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "myproject-(with-grand-parent)";
-        mojo.grandParentArtifactId = "grand-parent";
-        mojo.grandParentRelativePath = "../pom.xml";
+        mojo.parentArtifactId = "grand-parent";
+        mojo.parentRelativePath = "../pom.xml";
         mojo.templatesUriBase = "file:templates";
 
         mojo.bomPath = Paths.get("bom/pom.xml");
@@ -189,6 +189,22 @@ public class CreateExtensionMojoTest {
         mojo.execute();
         assertTreesMatch(
                 Paths.get("target/test-classes/expected/new-extension-project"),
+                mojo.basedir.toPath());
+    }
+
+    @Test
+    void createNewExtensionProjectWithJBossParent() throws Exception {
+        final CreateExtensionMojo mojo = initMojo(newProjectDir("new-ext-project-with-jboss-parent"));
+        mojo.parentGroupId = "org.jboss";
+        mojo.parentArtifactId = "jboss-parent";
+        mojo.parentVersion = "37";
+        mojo.groupId = "org.acme";
+        mojo.artifactId = "my-ext";
+        mojo.version = "1.0-SNAPSHOT";
+        mojo.assumeManaged = null;
+        mojo.execute();
+        assertTreesMatch(
+                Paths.get("target/test-classes/expected/new-extension-project-with-jboss-parent"),
                 mojo.basedir.toPath());
     }
 

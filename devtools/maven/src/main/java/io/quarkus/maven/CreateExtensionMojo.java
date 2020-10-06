@@ -280,7 +280,18 @@ public class CreateExtensionMojo extends AbstractMojo {
      * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentArtifactId")
+    @Deprecated
     String grandParentArtifactId;
+
+    /**
+     * This mojo creates a Maven project consisting of the root POM and two modules: the runtime and the deployment one.
+     * This parameter configures the {@code artifactId} of the root POM's parent POM.
+     * If {@code parentArtifactId} is left unset, then if the current directory already includes a {@code pom.xml}
+     * its {@code artifactId} will be used as the parent's {@code artifactId} and if the current directory does not contain
+     * any {@code pom.xml} then the generated root {@code pom.xml} won't have any parent.
+     */
+    @Parameter(property = "parentArtifactId")
+    String parentArtifactId;
 
     /**
      * This mojo creates a triple of Maven modules (Parent, Runtime and Deployment). "Grand parent" is the parent of the
@@ -290,7 +301,18 @@ public class CreateExtensionMojo extends AbstractMojo {
      * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentGroupId")
+    @Deprecated
     String grandParentGroupId;
+
+    /**
+     * This mojo creates a Maven project consisting of the root POM and two modules: the runtime and the deployment one.
+     * This parameter configures the {@code groupId} of the root POM's parent POM.
+     * If {@code parentGroupId} is left unset, then if the current directory already includes a {@code pom.xml}
+     * its {@code groupId} will be used as the parent's {@code groupId} and if the current directory does not contain
+     * any {@code pom.xml} then the generated root {@code pom.xml} won't have any parent.
+     */
+    @Parameter(property = "parentGroupId")
+    String parentGroupId;
 
     /**
      * This mojo creates a triple of Maven modules (Parent, Runtime and Deployment). "Grand parent" is the parent of the
@@ -300,7 +322,16 @@ public class CreateExtensionMojo extends AbstractMojo {
      * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentRelativePath")
+    @Deprecated
     String grandParentRelativePath;
+
+    /**
+     * This mojo creates a Maven project consisting of the root POM and two modules: the runtime and the deployment one.
+     * This parameter configures the {@code relativePath} of the root POM's parent POM.
+     * If {@code grandParentRelativePath} is left unset, the default {@code relativePath} is used.
+     */
+    @Parameter(property = "parentRelativePath")
+    String parentRelativePath;
 
     /**
      * This mojo creates a triple of Maven modules (Parent, Runtime and Deployment). "Grand parent" is the parent of the
@@ -310,7 +341,18 @@ public class CreateExtensionMojo extends AbstractMojo {
      * @since 0.20.0
      */
     @Parameter(property = "quarkus.grandParentVersion")
+    @Deprecated
     String grandParentVersion;
+
+    /**
+     * This mojo creates a Maven project consisting of the root POM and two modules: the runtime and the deployment one.
+     * This parameter configures the {@code version} of the root POM's parent POM.
+     * If {@code parentVersion} is left unset, then if the current directory already includes a {@code pom.xml}
+     * its {@code version} will be used as the parent's {@code version} and if the current directory does not contain
+     * any {@code pom.xml} then the generated root {@code pom.xml} won't have any parent.
+     */
+    @Parameter(property = "parentVersion")
+    String parentVersion;
 
     /**
      * Quarkus version the newly created extension should depend on. If you want to pass a property placeholder, use
@@ -599,9 +641,9 @@ public class CreateExtensionMojo extends AbstractMojo {
                         throw new MojoExecutionException("Failed to resolve " + rootArtifact + " descriptor", e);
                     }
                 }
-            } else if (this.grandParentRelativePath != null) {
+            } else if (parentRelativePath() != null) {
                 // aloubyansky: not sure we should support this case, same as above
-                final File gpPom = getExtensionProjectBaseDir().resolve(this.grandParentRelativePath).normalize()
+                final File gpPom = getExtensionProjectBaseDir().resolve(parentRelativePath()).normalize()
                         .toAbsolutePath().toFile();
                 if (gpPom.exists()) {
                     rootPom = gpPom;
@@ -824,19 +866,33 @@ public class CreateExtensionMojo extends AbstractMojo {
         templateParams.quarkusVersion = QUARKUS_VERSION_POM_EXPR;
         templateParams.bomEntryVersion = bomEntryVersion.replace('@', '$');
 
-        if (basePom != null) {
-            templateParams.grandParentGroupId = grandParentGroupId != null ? grandParentGroupId : getGroupId(basePom);
-            templateParams.grandParentArtifactId = grandParentArtifactId != null ? grandParentArtifactId
-                    : basePom.getArtifactId();
-            templateParams.grandParentVersion = grandParentVersion != null ? grandParentVersion : getVersion(basePom);
-            templateParams.grandParentRelativePath = grandParentRelativePath != null ? grandParentRelativePath : "../pom.xml";
-        }
+        templateParams.grandParentGroupId = parentGroupId() != null ? parentGroupId() : getGroupId(basePom);
+        templateParams.grandParentArtifactId = parentArtifactId() != null ? parentArtifactId()
+                : basePom == null ? null : basePom.getArtifactId();
+        templateParams.grandParentVersion = parentVersion() != null ? parentVersion() : getVersion(basePom);
+        templateParams.grandParentRelativePath = parentRelativePath();
 
         templateParams.javaPackageBase = javaPackageBase != null ? javaPackageBase
                 : getJavaPackage(templateParams.groupId, javaPackageInfix, artifactId);
         templateParams.additionalRuntimeDependencies = getAdditionalRuntimeDependencies();
         templateParams.bomPathSet = bomPath != null;
         return templateParams;
+    }
+
+    private String parentArtifactId() {
+        return parentArtifactId == null ? grandParentArtifactId : parentArtifactId;
+    }
+
+    private String parentGroupId() {
+        return parentGroupId == null ? grandParentGroupId : parentGroupId;
+    }
+
+    private String parentVersion() {
+        return parentVersion == null ? grandParentVersion : parentVersion;
+    }
+
+    private String parentRelativePath() {
+        return parentRelativePath == null ? grandParentRelativePath : parentRelativePath;
     }
 
     private Configuration getTemplateConfig() throws IOException {
@@ -935,6 +991,9 @@ public class CreateExtensionMojo extends AbstractMojo {
     }
 
     static String getGroupId(Model basePom) {
+        if (basePom == null) {
+            return null;
+        }
         return basePom.getGroupId() != null ? basePom.getGroupId()
                 : basePom.getParent() != null && basePom.getParent().getGroupId() != null
                         ? basePom.getParent().getGroupId()
@@ -942,6 +1001,9 @@ public class CreateExtensionMojo extends AbstractMojo {
     }
 
     static String getVersion(Model basePom) {
+        if (basePom == null) {
+            return null;
+        }
         return basePom.getVersion() != null ? basePom.getVersion()
                 : basePom.getParent() != null && basePom.getParent().getVersion() != null
                         ? basePom.getParent().getVersion()

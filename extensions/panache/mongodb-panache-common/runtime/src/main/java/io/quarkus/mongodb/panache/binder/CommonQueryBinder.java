@@ -1,6 +1,5 @@
 package io.quarkus.mongodb.panache.binder;
 
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,7 +8,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -29,6 +27,8 @@ final class CommonQueryBinder {
     }
 
     static String escape(Object value) {
+        value = replaceWithInstant(value);
+
         if (value == null) {
             return "null";
         }
@@ -38,23 +38,9 @@ final class CommonQueryBinder {
         if (Number.class.isAssignableFrom(value.getClass()) || value instanceof Boolean) {
             return value.toString();
         }
-        if (value instanceof Date) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat(ISO_DATE_PATTERN);
-            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            Date dateValue = (Date) value;
-            return "ISODate('" + dateFormat.format(dateValue) + "')";
-        }
-        if (value instanceof LocalDate) {
-            LocalDate dateValue = (LocalDate) value;
-            return "ISODate('" + DateTimeFormatter.ISO_LOCAL_DATE.format(dateValue) + "')";
-        }
-        if (value instanceof LocalDateTime) {
-            LocalDateTime dateValue = (LocalDateTime) value;
-            return "ISODate('" + ISO_DATE_FORMATTER.format(dateValue.atZone(ZoneOffset.UTC)) + "')";
-        }
         if (value instanceof Instant) {
             Instant dateValue = (Instant) value;
-            return "ISODate('" + ISO_DATE_FORMATTER.format(dateValue.atZone(ZoneOffset.UTC)) + "')";
+            return "{\"$date\": \"" + ISO_DATE_FORMATTER.format(dateValue.atZone(ZoneOffset.UTC)) + "\"} ";
         }
         if (value instanceof UUID) {
             UUID uuidValue = (UUID) value;
@@ -65,6 +51,22 @@ final class CommonQueryBinder {
             return "ObjectId('" + objectId.toHexString() + "')";
         }
         return "'" + value.toString().replace("\\", "\\\\").replace("'", "\\'") + "'";
+    }
+
+    private static Object replaceWithInstant(Object value) {
+        if (value instanceof Date) {
+            Date dateValue = (Date) value;
+            value = dateValue.toInstant();
+        }
+        if (value instanceof LocalDate) {
+            LocalDate dateValue = (LocalDate) value;
+            value = dateValue.atStartOfDay(ZoneOffset.UTC).toInstant();
+        }
+        if (value instanceof LocalDateTime) {
+            LocalDateTime dateValue = (LocalDateTime) value;
+            value = dateValue.toInstant(ZoneOffset.UTC);
+        }
+        return value;
     }
 
     /**

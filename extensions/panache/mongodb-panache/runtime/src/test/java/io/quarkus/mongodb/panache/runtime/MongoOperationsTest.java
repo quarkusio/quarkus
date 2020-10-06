@@ -50,18 +50,18 @@ class MongoOperationsTest {
         assertEquals("{'field':true}", query);
 
         query = operations.bindFilter(Object.class, "field", new Object[] { LocalDate.of(2019, 3, 4) });
-        assertEquals("{'field':ISODate('2019-03-04')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field",
                 new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
@@ -90,19 +90,19 @@ class MongoOperationsTest {
 
         query = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { LocalDate.of(2019, 3, 4) });
-        assertEquals("{'field': ISODate('2019-03-04')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
@@ -148,19 +148,19 @@ class MongoOperationsTest {
 
         query = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDate.of(2019, 3, 4)).map());
-        assertEquals("{'field': ISODate('2019-03-04')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)).map());
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field': {\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")).map());
@@ -209,18 +209,18 @@ class MongoOperationsTest {
         assertEquals("{'value':'a value'}", query);
 
         query = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDate.of(2019, 3, 4) });
-        assertEquals("{'field':ISODate('2019-03-04')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = ?1",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = ?1",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = ?1",
                 new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
@@ -287,19 +287,19 @@ class MongoOperationsTest {
 
         query = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", LocalDate.of(2019, 3, 4)).map());
-        assertEquals("{'field':ISODate('2019-03-04')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)).map());
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+        assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")).map());

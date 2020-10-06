@@ -14,6 +14,7 @@
     - Async Reader/Writer and interceptors: do we need this?
     - Servlet replacement for remote host/IP (HttpRequest.getRemoteHost/Address)
     - resteasy-links (used by quarkus-data-rest)
+    - param-less `@*Param` annotations?
 - Default readers/writers
     - Vertx JSON types
     - Async variants of spec
@@ -23,6 +24,7 @@
           form application/*+xml).
         - javax.xml.bind.JAXBElement and application-supplied JAXB classes XML types (text/xml and
           application/xml and media types of the form application/*+xml).
+- Callbacks on async responses
 
 ** TODO later list
 

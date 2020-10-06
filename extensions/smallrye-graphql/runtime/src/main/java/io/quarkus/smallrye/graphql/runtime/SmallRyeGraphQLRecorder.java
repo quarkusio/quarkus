@@ -9,6 +9,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.smallrye.graphql.runtime.spi.QuarkusClassloadingService;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.schema.model.Schema;
 import io.vertx.core.Handler;
@@ -21,7 +22,8 @@ public class SmallRyeGraphQLRecorder {
 
     public void createExecutionService(BeanContainer beanContainer, Schema schema) {
         GraphQLProducer graphQLProducer = beanContainer.instance(GraphQLProducer.class);
-        graphQLProducer.initialize(schema);
+        GraphQLConfig graphQLConfig = beanContainer.instance(GraphQLConfig.class);
+        graphQLProducer.initialize(schema, graphQLConfig);
     }
 
     public Handler<RoutingContext> executionHandler(boolean allowGet) {

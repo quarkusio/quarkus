@@ -10,6 +10,8 @@ public class TestPojo {
     private String message;
     private List<String> list = Arrays.asList("a", "b", "c");
 
+    private Number number;
+
     public TestPojo() {
         super();
     }
@@ -35,9 +37,22 @@ public class TestPojo {
         this.list = list;
     }
 
-    @Override
-    public String toString() {
-        return "TestPojo{" + "message=" + message + ", list=" + list + '}';
+    public Number getNumber() {
+        return number;
     }
 
+    public void setNumber(Number number) {
+        this.number = number;
+    }
+
+    @Override
+    public String toString() {
+        return "TestPojo{" + "message=" + message + ", list=" + list + ", number=" + number + '}';
+    }
+
+    enum Number {
+        ONE,
+        TWO,
+        THREE
+    }
 }

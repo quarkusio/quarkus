@@ -93,17 +93,17 @@ Create the `src/main/java/org/acme/amqp/PriceGenerator.java` file, with the foll
 ----
 package org.acme.amqp;
 
-import io.reactivex.Flowable;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import java.time.Duration;
+import java.util.Random;
 
 import javax.enterprise.context.ApplicationScoped;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
+
+import io.smallrye.mutiny.Multi;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
 /**
  * A bean producing random prices every 5 seconds.
- * The prices are written to an AMQP queue (prices). The AMQP configuration is specified in the
- * application configuration.
+ * The prices are written to a AMQP queue (prices). The AMQP configuration is specified in the application configuration.
  */
 @ApplicationScoped
 public class PriceGenerator {
@@ -111,15 +111,17 @@ public class PriceGenerator {
     private Random random = new Random();
 
     @Outgoing("generated-price")                        // <1>
-    public Flowable<Integer> generate() {               // <2>
-        return Flowable.interval(5, TimeUnit.SECONDS)
+    public Multi<Integer> generate() {                  // <2>
+        return Multi.createFrom().ticks().every(Duration.ofSeconds(5))
+                .onOverflow().drop()
                 .map(tick -> random.nextInt(100));
     }
 
 }
+
 ----
 <1> Instruct Reactive Messaging to dispatch the items from returned stream to `generated-price`.
-<2> The method returns a RX Java 2 _stream_ (`Flowable`) emitting a random _price_ every 5 seconds.
+<2> The method returns a Mutiny _stream_ (`Multi`) emitting a random _price_ every 5 seconds.
 
 The method returns a _Reactive Stream_. The generated items are sent to the stream named `generated-price`.
 This stream is mapped to an AMQP queue using the `application.properties` file that we will create soon.
@@ -197,7 +199,6 @@ public class PriceResource {
     public String hello() {
         return "hello";
     }
-
 
     @GET
     @Path("/stream")

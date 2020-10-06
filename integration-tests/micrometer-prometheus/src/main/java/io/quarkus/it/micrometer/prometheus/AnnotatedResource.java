@@ -1,17 +1,21 @@
 package io.quarkus.it.micrometer.prometheus;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import org.jboss.logging.Logger;
+
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.annotation.Timed;
 
 @Path("/all-the-things")
 public class AnnotatedResource {
+    private static final Logger log = Logger.getLogger(AnnotatedResource.class);
 
     @GET
     public String allTheThings() {
@@ -19,34 +23,46 @@ public class AnnotatedResource {
         onlyCountFailures();
         countAllInvocations(false);
         emptyMetricName(false);
-        onlyCountAsyncFailures();
-        countAllAsyncInvocations(false);
-        emptyAsyncMetricName(false);
-
         wrap(x -> countAllInvocations(true));
         wrap(x -> emptyMetricName(true));
-        wrap(x -> countAllAsyncInvocations(true));
-        wrap(x -> emptyAsyncMetricName(true));
+
+        join(x -> onlyCountAsyncFailures());
+        join(x -> countAllAsyncInvocations(false));
+        join(x -> emptyAsyncMetricName(false));
+        join(x -> countAllAsyncInvocations(true));
+        join(x -> emptyAsyncMetricName(true));
 
         //Timed
         call(false);
-        asyncCall(false);
         longCall(false);
-        longAsyncCall(false);
-
         wrap(x -> call(true));
-        wrap(x -> asyncCall(true));
         wrap(x -> longCall(true));
-        wrap(x -> longAsyncCall(true));
+
+        join(x -> asyncCall(false));
+        join(x -> longAsyncCall(false));
+        join(x -> asyncCall(true));
+        join(x -> longAsyncCall(true));
 
         return "OK";
     }
 
-    void wrap(Function function) {
+    void wrap(Function<Boolean, Object> function) {
         try {
             function.apply(true);
-        } catch (RuntimeException e) {
+        } catch (NullPointerException e) {
             if (!e.getMessage().equals("Failed on purpose")) {
+                log.error("Unexpected exception in test", e);
+                throw e;
+            }
+        }
+    }
+
+    void join(Function<Boolean, CompletableFuture<?>> function) {
+        try {
+            function.apply(true).join();
+        } catch (CompletionException e) {
+            if (!e.getCause().getMessage().equals("Failed on purpose")) {
+                log.error("unexpected exception in test", e);
                 throw e;
             }
         }
@@ -117,7 +133,7 @@ public class AnnotatedResource {
                 // intentionally empty
             }
             if (fail) {
-                throw new RuntimeException("Failed on purpose");
+                throw new NullPointerException("Failed on purpose");
             }
             return new Object();
         }

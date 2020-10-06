@@ -13,7 +13,7 @@ public class TimedResource {
     @Timed(value = "call", extraTags = { "extra", "tag" })
     public void call(boolean fail) {
         if (fail) {
-            throw new RuntimeException("Failed on purpose");
+            throw new NullPointerException("Failed on purpose");
         }
 
     }
@@ -25,7 +25,7 @@ public class TimedResource {
         } catch (InterruptedException e) {
         }
         if (fail) {
-            throw new RuntimeException("Failed on purpose");
+            throw new NullPointerException("Failed on purpose");
         }
     }
 

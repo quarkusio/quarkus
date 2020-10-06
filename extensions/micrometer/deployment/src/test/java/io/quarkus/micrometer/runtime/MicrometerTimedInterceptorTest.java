@@ -58,12 +58,12 @@ public class MicrometerTimedInterceptorTest {
 
     @Test
     void testTimeMethod_Failed() {
-        Assertions.assertThrows(RuntimeException.class, () -> timed.call(true));
+        Assertions.assertThrows(NullPointerException.class, () -> timed.call(true));
 
         Timer timer = registry.get("call")
                 .tag("method", "call")
                 .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "RuntimeException")
+                .tag("exception", "NullPointerException")
                 .tag("extra", "tag").timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
@@ -89,13 +89,13 @@ public class MicrometerTimedInterceptorTest {
     void testTimeMethod_AsyncFailed() {
         GuardedResult guardedResult = new GuardedResult();
         CompletableFuture<?> completableFuture = timed.asyncCall(guardedResult);
-        guardedResult.complete(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> completableFuture.join());
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
         Timer timer = registry.get("async.call")
                 .tag("method", "asyncCall")
                 .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "RuntimeException")
+                .tag("exception", "NullPointerException")
                 .tag("extra", "tag").timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
@@ -114,7 +114,7 @@ public class MicrometerTimedInterceptorTest {
 
     @Test
     void testTimeMethod_LongTaskTimer_Failed() {
-        Assertions.assertThrows(RuntimeException.class, () -> timed.longCall(true));
+        Assertions.assertThrows(NullPointerException.class, () -> timed.longCall(true));
 
         LongTaskTimer timer = registry.get("longCall")
                 .tag("method", "longCall")
@@ -143,8 +143,8 @@ public class MicrometerTimedInterceptorTest {
     void testTimeMethod_LongTaskTimer_AsyncFailed() {
         GuardedResult guardedResult = new GuardedResult();
         CompletableFuture<?> completableFuture = timed.longAsyncCall(guardedResult);
-        guardedResult.complete(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> completableFuture.join());
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
         LongTaskTimer timer = registry.get("async.longCall")
                 .tag("method", "longAsyncCall")

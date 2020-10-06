@@ -3,7 +3,7 @@ package io.quarkus.micrometer.test;
 public class GuardedResult {
 
     private boolean complete;
-    private RuntimeException withException;
+    private NullPointerException withException;
 
     public synchronized Object get() {
         while (!complete) {
@@ -25,7 +25,7 @@ public class GuardedResult {
         complete(null);
     }
 
-    public synchronized void complete(RuntimeException withException) {
+    public synchronized void complete(NullPointerException withException) {
         this.complete = true;
         this.withException = withException;
         notifyAll();

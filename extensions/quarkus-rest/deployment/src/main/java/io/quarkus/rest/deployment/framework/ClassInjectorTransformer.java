@@ -61,7 +61,6 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         private Map<FieldInfo, ParameterExtractor> fieldExtractors;
         private String thisName;
-        private boolean implementInterface = true;
         private boolean superTypeIsInjectable;
         private String superTypeName;
 

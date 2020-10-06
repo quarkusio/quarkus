@@ -75,6 +75,7 @@ public class NativeImageBuildStep {
     private static final String CONTAINER_BUILD_VOLUME_PATH = "/project";
     private static final String TRUST_STORE_SYSTEM_PROPERTY_MARKER = "-Djavax.net.ssl.trustStore=";
     private static final String MOVED_TRUST_STORE_NAME = "trustStore";
+    public static final String APP_SOURCES = "app-sources";
 
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
@@ -191,6 +192,7 @@ public class NativeImageBuildStep {
             if (nativeConfig.debug.enabled) {
                 if (graalVMVersion.isMandrel() || graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_1)) {
                     command.add("-g");
+                    command.add("-H:DebugInfoSourceSearchPath=" + APP_SOURCES);
                 }
             }
             if (nativeConfig.debugBuildProcess) {
@@ -306,6 +308,7 @@ public class NativeImageBuildStep {
         } finally {
             if (nativeConfig.debug.enabled) {
                 removeJarSourcesFromLib(outputTargetBuildItem);
+                IoUtils.recursiveDelete(outputDir.resolve(Paths.get(APP_SOURCES)));
             }
         }
     }
@@ -445,7 +448,7 @@ public class NativeImageBuildStep {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
 
-        final Path targetSrc = targetDirectory.resolve(Paths.get("sources", "src"));
+        final Path targetSrc = targetDirectory.resolve(Paths.get(APP_SOURCES));
         final File targetSrcFile = targetSrc.toFile();
         if (!targetSrcFile.exists())
             targetSrcFile.mkdirs();

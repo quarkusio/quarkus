@@ -97,7 +97,7 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 
 public class SmallRyeMetricsProcessor {
-    private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor");
+    static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsProcessor");
 
     @ConfigRoot(name = "smallrye-metrics")
     static final class SmallRyeMetricsConfig {

@@ -43,8 +43,7 @@ public class JsonHandler implements Handler<RoutingContext> {
             registry = null;
         } else if (registries.isAmbiguous()) {
             registry = registries.iterator().next();
-            log.warnf("Multiple JSON registries present: %s. Using %s with the built in scrape endpoint", registries,
-                    registry);
+            log.warnf("Multiple JSON registries present. Using %s with the built in scrape endpoint", registry);
         } else {
             registry = registries.get();
         }

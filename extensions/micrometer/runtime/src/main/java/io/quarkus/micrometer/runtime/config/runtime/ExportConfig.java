@@ -8,15 +8,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * Runtime configuration for Micrometer meter registries.
- * <p>
- *
- * [NOTE]
- * ====
- * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for PostgreSQL,
- * MariaDB, Microsoft SQL Server and H2.
- * ====
- *
- * @asciidoclet
  */
 @ConfigRoot(name = "micrometer.export", phase = ConfigPhase.RUN_TIME)
 public class ExportConfig {

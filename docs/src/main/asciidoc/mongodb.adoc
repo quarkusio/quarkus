@@ -579,7 +579,7 @@ The link:mongodb-panache[MongoDB with Panache] extension facilitates the usage o
 
 == Connection Health Check
 
-If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb` will automatically add a readiness health check
+If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb-client` will automatically add a readiness health check
 to validate the connection to the cluster.
 
 So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
@@ -588,10 +588,11 @@ This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` pr
 
 == Metrics
 
-If you are using the `quarkus-smallrye-metrics` extension, `quarkus-mongodb` can provide metrics about the connection pools.
+If you are using the `quarkus-micrometer` or `quarkus-smallrye-metrics` extension, `quarkus-mongodb-client` can provide metrics about the connection pools.
 This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enabled` property to `true` in your `application.properties`.
 
-So when you access the `/metrics` endpoint of your application you will have information about the connection pool status in the `vendor` scope.
+So when you access the `/metrics` endpoint of your application you will have information about the connection pool status.
+When using link:microprofile-metrics[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
 
 
 == The legacy client

@@ -21,6 +21,9 @@ Apart from application-specific metrics, which are described in this guide, you 
 exposed by various Quarkus extensions. These are described in the guide for each particular extension that supports
 built-in metrics.
 
+IMPORTANT: link:micrometer[Micrometer] is the recommended approach to metrics for Quarkus.
+Use the MicroProfile Metrics extension when it's required to retain MicroProfile specification compatibility.
+
 == Prerequisites
 
 To complete this guide, you need:

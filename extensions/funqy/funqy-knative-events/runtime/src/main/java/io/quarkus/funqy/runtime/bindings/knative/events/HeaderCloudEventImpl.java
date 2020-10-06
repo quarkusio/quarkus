@@ -57,7 +57,10 @@ class HeaderCloudEventImpl implements CloudEvent {
     @Override
     public OffsetDateTime time() {
         if (time == null) {
-            time = OffsetDateTime.parse(this.request.getHeader("ce-time"));
+            String t = this.request.getHeader("ce-time");
+            if (t != null) {
+                time = OffsetDateTime.parse(t);
+            }
         }
 
         return time;

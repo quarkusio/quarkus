@@ -550,6 +550,7 @@ jobs:
           - category: Misc4
             timeout: 65
             test-modules: >
+              smallrye-config
               smallrye-graphql
               picocli-native
               gradle

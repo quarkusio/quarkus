@@ -1,5 +1,6 @@
 package io.quarkus.it.kubernetes.client;
 
+import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
@@ -70,6 +71,11 @@ public class KubernetesClientTest {
 
         mockServer.expect().delete().withPath("/api/v1/namespaces/test/pods/pod1")
                 .andReturn(200, "{}")
+                .once();
+
+        // PUT on /pod/test will createOrReplace, which attempts a POST first, then a PUT if receiving a 409
+        mockServer.expect().post().withPath("/api/v1/namespaces/test/pods")
+                .andReturn(HTTP_CONFLICT, "{}")
                 .once();
 
         // it doesn't really matter what we return here, we just need to return a Pod to make sure

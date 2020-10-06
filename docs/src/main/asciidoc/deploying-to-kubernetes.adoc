@@ -1000,7 +1000,7 @@ spec:
       - env:
         - name: "FOO" <3>
           value: "BAR"
-        image: "<<yourDockerUsernmae>>/kubernetes-quickstart:1.0-SNAPSHOT" <4>
+        image: "<<yourDockerUsername>>/kubernetes-quickstart:1.0-SNAPSHOT" <4>
         imagePullPolicy: "Always"
         name: "kubernetes-quickstart"
         ports:

@@ -353,7 +353,7 @@ hello quarkus
 == Debugging
 
 To debug the application you use `jbang --debug quarkusapp.java` and you can use your IDE to connect on port 4004; if you want to use the
-more traditonal Quarkus debug port you can use `jbang --debug=5005 quarkusapp.java`.
+more traditional Quarkus debug port you can use `jbang --debug=5005 quarkusapp.java`.
 
 Note: `jbang` debugging always suspends thus you need to connect the debugger to have the application run.
 

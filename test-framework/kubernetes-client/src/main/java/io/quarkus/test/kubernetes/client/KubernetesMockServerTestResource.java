@@ -20,6 +20,7 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
         systemProps.put(Config.KUBERNETES_AUTH_TRYKUBECONFIG_SYSTEM_PROPERTY, "false");
         systemProps.put(Config.KUBERNETES_AUTH_TRYSERVICEACCOUNT_SYSTEM_PROPERTY, "false");
         systemProps.put(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY, "test");
+        systemProps.put(Config.KUBERNETES_HTTP2_DISABLE, "true");
 
         mockServer = createMockServer();
         mockServer.init();

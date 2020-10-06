@@ -56,7 +56,9 @@ import io.quarkus.rest.runtime.core.parameters.NullParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.PathParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.QueryParamExtractor;
+import io.quarkus.rest.runtime.core.parameters.converters.NoopParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.RuntimeResolvedConverter;
 import io.quarkus.rest.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
@@ -697,16 +699,29 @@ public class QuarkusRestRecorder {
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
                     single, beanContainer, param.encoded);
             ParameterConverter converter = null;
+            boolean userProviderConvertersExist = !paramConverterProviders.getParamConverterProviders().isEmpty();
             if (param.converter != null) {
                 converter = param.converter.get();
-                // Workaround our lack of support for generic params by not doing this init if there are not runtime
-                // param converter providers
-                if (!paramConverterProviders.getParamConverterProviders().isEmpty()) {
+                if (userProviderConvertersExist) {
                     Method javaMethod = lazyMethod.getMethod();
+                    // Workaround our lack of support for generic params by not doing this init if there are not runtime
+                    // param converter providers
+                    converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
+                            javaMethod.getGenericParameterTypes()[i],
+                            javaMethod.getParameterAnnotations()[i]);
+                    // make sure we give the user provided resolvers the chance to convert
+                    converter = new RuntimeResolvedConverter(converter);
                     converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
                             javaMethod.getGenericParameterTypes()[i],
                             javaMethod.getParameterAnnotations()[i]);
                 }
+            } else if (userProviderConvertersExist) {
+                // make sure we give the user provided resolvers the chance to convert
+                converter = new RuntimeResolvedConverter(new NoopParameterConverter());
+                Method javaMethod = lazyMethod.getMethod();
+                converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
+                        javaMethod.getGenericParameterTypes()[i],
+                        javaMethod.getParameterAnnotations()[i]);
             }
 
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,

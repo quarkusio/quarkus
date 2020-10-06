@@ -11,18 +11,18 @@ import io.quarkus.rest.runtime.model.ResourceParamConverterProvider;
 
 public class RuntimeResolvedConverter implements ParameterConverter {
 
-    private volatile ParamConverter<?> converter;
-    private ParameterConverter delegate;
+    private volatile ParamConverter<?> runtimeConverter;
+    private final ParameterConverter quarkusConverter;
 
-    public RuntimeResolvedConverter(ParameterConverter delegate) {
-        this.delegate = delegate;
+    public RuntimeResolvedConverter(ParameterConverter quarkusConverter) {
+        this.quarkusConverter = quarkusConverter;
     }
 
     @Override
     public Object convert(Object parameter) {
-        if (converter != null)
-            return converter.fromString(parameter.toString());
-        return delegate.convert(parameter);
+        if (runtimeConverter != null)
+            return runtimeConverter.fromString(parameter.toString());
+        return quarkusConverter.convert(parameter);
     }
 
     @Override
@@ -31,11 +31,11 @@ public class RuntimeResolvedConverter implements ParameterConverter {
             ParamConverterProvider instance = i.getFactory().createInstance().getInstance();
             ParamConverter<?> converter = instance.getConverter(rawType, genericType, annotations);
             if (converter != null) {
-                this.converter = converter;
+                this.runtimeConverter = converter;
                 break;
             }
         }
-        if (converter == null && delegate == null) {
+        if (runtimeConverter == null && quarkusConverter == null) {
             throw new RuntimeException("Unable to create param converter for parameter " + genericType);
         }
     }

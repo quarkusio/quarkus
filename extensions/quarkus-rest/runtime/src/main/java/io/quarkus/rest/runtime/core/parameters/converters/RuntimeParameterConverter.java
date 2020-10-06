@@ -7,11 +7,11 @@ import javax.ws.rs.ext.ParamConverter;
 
 import io.quarkus.rest.runtime.core.ParamConverterProviders;
 
-public class RuntimePameterConverter implements ParameterConverter {
+public class RuntimeParameterConverter implements ParameterConverter {
 
-    private ParamConverter<?> converter;
+    private final ParamConverter<?> converter;
 
-    public RuntimePameterConverter(ParamConverter<?> converter) {
+    public RuntimeParameterConverter(ParamConverter<?> converter) {
         this.converter = converter;
     }
 

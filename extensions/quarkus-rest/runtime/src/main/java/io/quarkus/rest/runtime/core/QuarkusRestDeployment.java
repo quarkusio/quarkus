@@ -12,7 +12,7 @@ import javax.ws.rs.ext.ParamConverterProvider;
 
 import io.quarkus.rest.runtime.client.ClientProxies;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
-import io.quarkus.rest.runtime.core.parameters.converters.RuntimePameterConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.RuntimeParameterConverter;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
@@ -128,7 +128,7 @@ public class QuarkusRestDeployment {
                 BeanInstance<ParamConverterProvider> instance = converterProvider.getFactory().createInstance();
                 ParamConverter<?> converter = instance.getInstance().getConverter(klass, genericType, annotations);
                 if (converter != null)
-                    return new RuntimePameterConverter(converter);
+                    return new RuntimeParameterConverter(converter);
             }
         }
         return null;

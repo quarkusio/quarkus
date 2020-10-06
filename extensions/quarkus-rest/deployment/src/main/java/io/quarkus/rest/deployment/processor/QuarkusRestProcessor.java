@@ -630,7 +630,7 @@ public class QuarkusRestProcessor {
                             clientImplementations,
                             genericTypeMapping, converterProviders, initClassFactory),
                     10);
-}
+        }
     }
 
     private String determineApplicationPath(IndexView index) {

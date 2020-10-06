@@ -1,8 +1,12 @@
 package io.quarkus.rest.runtime.core.parameters.converters;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import io.quarkus.rest.runtime.core.ParamConverterProviders;
 
 public class ListConverter implements ParameterConverter {
 
@@ -14,10 +18,6 @@ public class ListConverter implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
-        return convert(parameter, delegate);
-    }
-
-    public static Object convert(Object parameter, ParameterConverter delegate) {
         if (parameter instanceof List) {
             if (delegate == null) {
                 return parameter;
@@ -35,6 +35,12 @@ public class ListConverter implements ParameterConverter {
         } else {
             return Collections.singletonList(parameter);
         }
+    }
+
+    @Override
+    public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
+        if (delegate != null)
+            delegate.init(deployment, rawType, genericType, annotations);
     }
 
     public ParameterConverter getDelegate() {

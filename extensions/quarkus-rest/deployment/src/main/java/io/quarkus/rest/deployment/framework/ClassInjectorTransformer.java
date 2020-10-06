@@ -11,15 +11,19 @@ import javax.ws.rs.WebApplicationException;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type.Kind;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.rest.deployment.framework.EndpointIndexer.ParameterExtractor;
+import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.parameters.converters.DelegatingParameterConverterSupplier;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverterSupplier;
+import io.quarkus.rest.runtime.core.parameters.converters.RuntimeResolvedConverter;
 import io.quarkus.rest.runtime.injection.QuarkusRestInjectionContext;
 import io.quarkus.rest.runtime.injection.QuarkusRestInjectionTarget;
 
@@ -43,6 +47,13 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             + ";";
     private static final String INJECT_METHOD_NAME = "__quarkus_rest_inject";
     private static final String INJECT_METHOD_DESCRIPTOR = "(" + QUARKUS_REST_INJECTION_CONTEXT_DESCRIPTOR + ")V";
+
+    private static final String QUARKUS_REST_DEPLOYMENT_BINARY_NAME = QuarkusRestDeployment.class.getName().replace('.', '/');
+    private static final String QUARKUS_REST_DEPLOYMENT_DESCRIPTOR = "L" + QUARKUS_REST_DEPLOYMENT_BINARY_NAME + ";";
+
+    static final String INIT_CONVERTER_METHOD_NAME = "__quarkus_init_converter__";
+    private static final String INIT_CONVERTER_FIELD_NAME = "__quarkus_converter__";
+    private static final String INIT_CONVERTER_METHOD_DESCRIPTOR = "(" + QUARKUS_REST_DEPLOYMENT_DESCRIPTOR + ")V";
 
     private final Map<FieldInfo, ParameterExtractor> fieldExtractors;
     private final boolean superTypeIsInjectable;
@@ -73,6 +84,9 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         @Override
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+            // make the class public otherwise we can't call its static init converters
+            access &= ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED);
+            access |= Opcodes.ACC_PUBLIC;
             // if our supertype is already injectable we don't have to implement it again
             if (!superTypeIsInjectable) {
                 String[] newInterfaces = new String[interfaces.length + 1];
@@ -160,7 +174,128 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             injectMethod.visitEnd();
             injectMethod.visitMaxs(0, 0);
 
+            // now generate initialisers for every field converter
+            for (Entry<FieldInfo, ParameterExtractor> entry : fieldExtractors.entrySet()) {
+                FieldInfo fieldInfo = entry.getKey();
+                ParameterExtractor extractor = entry.getValue();
+                switch (extractor.getType()) {
+                    case FORM:
+                    case HEADER:
+                    case MATRIX:
+                    case COOKIE:
+                    case PATH:
+                    case QUERY:
+                        ParameterConverterSupplier converter = extractor.getConverter();
+                        // do we need converters?
+                        if (converter != null) {
+                            generateConverterInitMethod(fieldInfo, converter, extractor.isSingle());
+                        }
+
+                        break;
+                }
+            }
+
             super.visitEnd();
+        }
+
+        private void generateConverterInitMethod(FieldInfo fieldInfo, ParameterConverterSupplier converter, boolean single) {
+            String converterFieldName = INIT_CONVERTER_FIELD_NAME + fieldInfo.name();
+            FieldVisitor field = visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, converterFieldName,
+                    PARAMETER_CONVERTER_DESCRIPTOR, null, null);
+            field.visitEnd();
+
+            // get rid of runtime delegates since we always delegate to deployment to find one
+            // can be a List/Set/Sorted set delegator -> RuntimeDelegating -> generated converter|null
+            // can be a RuntimeDelegating -> generated converter
+            converter = removeRuntimeResolvedConverterDelegate(converter);
+
+            String delegateBinaryName = null;
+            if (converter instanceof DelegatingParameterConverterSupplier) {
+                ParameterConverterSupplier delegate = removeRuntimeResolvedConverterDelegate(
+                        ((DelegatingParameterConverterSupplier) converter).getDelegate());
+                if (delegate != null)
+                    delegateBinaryName = delegate.getClassName().replace('.', '/');
+            } else {
+                delegateBinaryName = converter.getClassName().replace('.', '/');
+            }
+
+            MethodVisitor initConverterMethod = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                    INIT_CONVERTER_METHOD_NAME + fieldInfo.name(),
+                    INIT_CONVERTER_METHOD_DESCRIPTOR, null,
+                    null);
+            initConverterMethod.visitParameter("deployment", 0 /* modifiers */);
+            initConverterMethod.visitCode();
+            // deployment param
+            initConverterMethod.visitIntInsn(Opcodes.ALOAD, 0);
+            // this class
+            initConverterMethod.visitLdcInsn(Type.getType("L" + thisName + ";"));
+            // param name
+            initConverterMethod.visitLdcInsn(fieldInfo.name());
+            // single
+            initConverterMethod.visitLdcInsn(single);
+            initConverterMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, QUARKUS_REST_DEPLOYMENT_BINARY_NAME,
+                    "getRuntimeParamConverter",
+                    "(Ljava/lang/Class;Ljava/lang/String;Z)" + PARAMETER_CONVERTER_DESCRIPTOR, false);
+
+            // now if we have a backup delegate, let's call it
+
+            // stack: [converter]
+            if (delegateBinaryName != null) {
+                // check if we have a delegate
+                Label notNull = new Label();
+                initConverterMethod.visitInsn(Opcodes.DUP);
+                // stack: [converter, converter]
+                // if we got a converter, skip this
+                initConverterMethod.visitJumpInsn(Opcodes.IFNONNULL, notNull);
+                // stack: [converter]
+                initConverterMethod.visitInsn(Opcodes.POP);
+                // stack: []
+                // let's instantiate our delegate
+                initConverterMethod.visitTypeInsn(Opcodes.NEW, delegateBinaryName);
+                // stack: [converter]
+                initConverterMethod.visitInsn(Opcodes.DUP);
+                // stack: [converter, converter]
+                initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegateBinaryName, "<init>",
+                        "()V", false);
+                // stack: [converter]
+                // If we don't cast this to ParameterConverter, ASM in computeFrames will call getCommonSuperType
+                // and try to load our generated class before we can load it, so we insert this cast to avoid that
+                initConverterMethod.visitTypeInsn(Opcodes.CHECKCAST, PARAMETER_CONVERTER_BINARY_NAME);
+                // end default delegate
+                initConverterMethod.visitLabel(notNull);
+            }
+
+            // FIXME: throw if we don't have a converter
+
+            // we have our element converter, see if we need to use list/set/sortedset converter around it
+
+            if (converter instanceof DelegatingParameterConverterSupplier) {
+                // stack: [converter]
+                // let's instantiate our composite delegator
+                String delegatorBinaryName = converter.getClassName().replace('.', '/');
+                initConverterMethod.visitTypeInsn(Opcodes.NEW, delegatorBinaryName);
+                // stack: [converter, instance]
+                initConverterMethod.visitInsn(Opcodes.DUP_X1);
+                // [instance, converter, instance]
+                initConverterMethod.visitInsn(Opcodes.SWAP);
+                // [instance, instance, converter]
+                initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegatorBinaryName, "<init>",
+                        "(" + PARAMETER_CONVERTER_DESCRIPTOR + ")V", false);
+            }
+
+            // store the converter in the static field
+            initConverterMethod.visitFieldInsn(Opcodes.PUTSTATIC, thisName, converterFieldName, PARAMETER_CONVERTER_DESCRIPTOR);
+
+            initConverterMethod.visitInsn(Opcodes.RETURN);
+            initConverterMethod.visitEnd();
+            initConverterMethod.visitMaxs(0, 0);
+        }
+
+        private ParameterConverterSupplier removeRuntimeResolvedConverterDelegate(ParameterConverterSupplier converter) {
+            if (converter instanceof RuntimeResolvedConverter.Supplier) {
+                return ((RuntimeResolvedConverter.Supplier) converter).getDelegate();
+            }
+            return converter;
         }
 
         private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
@@ -267,34 +402,10 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         private void convertParameter(MethodVisitor injectMethod, ParameterExtractor extractor, FieldInfo fieldInfo) {
             ParameterConverterSupplier converter = extractor.getConverter();
-            // do we need converters?
-            if (converter instanceof DelegatingParameterConverterSupplier) {
-                // must first instantiate the delegate if there is one
-                ParameterConverterSupplier delegate = ((DelegatingParameterConverterSupplier) converter).getDelegate();
-                if (delegate != null) {
-                    String delegateBinaryName = delegate.getClassName().replace('.', '/');
-                    injectMethod.visitTypeInsn(Opcodes.NEW, delegateBinaryName);
-                    injectMethod.visitInsn(Opcodes.DUP);
-                    injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegateBinaryName, "<init>",
-                            "()V", false);
-                    handlePotentialInit(injectMethod, fieldInfo);
-                } else {
-                    // no delegate
-                    injectMethod.visitInsn(Opcodes.ACONST_NULL);
-                }
-                // now call the static method on the delegator
-                String delegatorBinaryName = converter.getClassName().replace('.', '/');
-                injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, delegatorBinaryName, "convert",
-                        "(Ljava/lang/Object;" + PARAMETER_CONVERTER_DESCRIPTOR + ")Ljava/lang/Object;", false);
-                // now we got ourselves a converted value
-            } else if (converter != null) {
-                // instantiate our converter
-                String converterBinaryName = converter.getClassName().replace('.', '/');
-                injectMethod.visitTypeInsn(Opcodes.NEW, converterBinaryName);
-                injectMethod.visitInsn(Opcodes.DUP);
-                injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, converterBinaryName, "<init>",
-                        "()V", false);
-                handlePotentialInit(injectMethod, fieldInfo);
+            if (converter != null) {
+                // load our converter
+                String converterFieldName = INIT_CONVERTER_FIELD_NAME + fieldInfo.name();
+                injectMethod.visitFieldInsn(Opcodes.GETSTATIC, thisName, converterFieldName, PARAMETER_CONVERTER_DESCRIPTOR);
                 // at this point we have [val, converter] and we need to reverse that order
                 injectMethod.visitInsn(Opcodes.SWAP);
                 // now call the convert method on the converter
@@ -302,22 +413,6 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         "(Ljava/lang/Object;)Ljava/lang/Object;", true);
                 // now we got ourselves a converted value
             }
-        }
-
-        private void handlePotentialInit(MethodVisitor injectMethod, FieldInfo fieldInfo) {
-            //check if init is required
-            injectMethod.visitInsn(Opcodes.DUP);
-            injectMethod.visitTypeInsn(Opcodes.INSTANCEOF,
-                    "io/quarkus/rest/runtime/core/parameters/converters/InitRequiredParameterConverter");
-            Label skipInit = new Label();
-            injectMethod.visitJumpInsn(Opcodes.IFEQ, skipInit);
-            injectMethod.visitInsn(Opcodes.DUP);
-            injectMethod.visitLdcInsn(fieldInfo.name());
-            injectMethod.visitLdcInsn(fieldInfo.declaringClass().name().toString());
-            injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC,
-                    "io/quarkus/rest/runtime/core/parameters/converters/InitRequiredParameterConverter", "handleFieldInit",
-                    "(Lio/quarkus/rest/runtime/core/parameters/converters/InitRequiredParameterConverter;Ljava/lang/String;Ljava/lang/String;)V");
-            injectMethod.visitLabel(skipInit);
         }
 
         private void loadParameter(MethodVisitor injectMethod, String methodName, ParameterExtractor extractor,

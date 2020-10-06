@@ -1,9 +1,24 @@
 package io.quarkus.rest.runtime.core;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.List;
+
+import javax.ws.rs.ext.ParamConverter;
+import javax.ws.rs.ext.ParamConverterProvider;
+
 import io.quarkus.rest.runtime.client.ClientProxies;
+import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.RuntimePameterConverter;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
+import io.quarkus.rest.runtime.model.ResourceParamConverterProvider;
+import io.quarkus.rest.runtime.spi.BeanFactory.BeanInstance;
+import io.quarkus.rest.runtime.util.Types;
 
 public class QuarkusRestDeployment {
     private final ExceptionMapping exceptionMapping;
@@ -77,5 +92,45 @@ public class QuarkusRestDeployment {
 
     public ParamConverterProviders getParamConverterProviders() {
         return paramConverterProviders;
+    }
+
+    public ParameterConverter getRuntimeParamConverter(Class<?> fieldOwnerClass, String fieldName, boolean single) {
+        List<ResourceParamConverterProvider> providers = getParamConverterProviders().getParamConverterProviders();
+        if (providers.size() > 0) {
+            Field field;
+            try {
+                field = fieldOwnerClass.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException | SecurityException e) {
+                throw new RuntimeException(e);
+            }
+            Class<?> klass;
+            Type genericType;
+            if (single) {
+                klass = field.getType();
+                genericType = field.getGenericType();
+            } else {
+                genericType = field.getGenericType();
+                if (genericType instanceof ParameterizedType) {
+                    Type[] args = Types.findInterfaceParameterizedTypes(field.getType(), (ParameterizedType) genericType,
+                            Collection.class);
+                    if (args != null && args.length == 1) {
+                        genericType = args[0];
+                        klass = Types.getRawType(genericType);
+                    } else {
+                        throw new RuntimeException("Failed to find Collection supertype of " + field);
+                    }
+                } else {
+                    throw new RuntimeException("Failed to find Collection supertype of " + field);
+                }
+            }
+            Annotation[] annotations = field.getAnnotations();
+            for (ResourceParamConverterProvider converterProvider : providers) {
+                BeanInstance<ParamConverterProvider> instance = converterProvider.getFactory().createInstance();
+                ParamConverter<?> converter = instance.getInstance().getConverter(klass, genericType, annotations);
+                if (converter != null)
+                    return new RuntimePameterConverter(converter);
+            }
+        }
+        return null;
     }
 }

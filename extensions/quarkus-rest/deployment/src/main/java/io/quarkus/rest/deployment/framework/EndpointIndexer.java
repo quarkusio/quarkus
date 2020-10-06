@@ -98,6 +98,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.runtime.QuarkusRestConfig;
 import io.quarkus.rest.runtime.QuarkusRestRecorder;
+import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.parameters.converters.GeneratedParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ListConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
@@ -186,6 +187,8 @@ public class EndpointIndexer {
     private final Map<DotName, String> httpAnnotationToMethod;
     private final Map<String, InjectableBean> injectableBeans;
     private final AdditionalWriters additionalWriters;
+    private final MethodCreator initConverters;
+    private final boolean hasRuntimeConverters;
 
     EndpointIndexer(Builder builder) {
         this.index = builder.index;
@@ -200,6 +203,8 @@ public class EndpointIndexer {
         this.httpAnnotationToMethod = builder.httpAnnotationToMethod;
         this.injectableBeans = builder.injectableBeans;
         this.additionalWriters = builder.additionalWriters;
+        this.initConverters = builder.initConverters;
+        this.hasRuntimeConverters = builder.hasRuntimeConverters;
     }
 
     public ResourceClass createEndpoints(ClassInfo classInfo) {
@@ -208,7 +213,7 @@ public class EndpointIndexer {
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
                     generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer,
                     recorder, existingConverters, config, additionalReaders,
-                    additionalWriters, injectableBeans, httpAnnotationToMethod);
+                    additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -227,7 +232,7 @@ public class EndpointIndexer {
             InjectableBean injectableBean = scanInjectableBean(classInfo, classInfo,
                     generatedClassBuildItemBuildProducer,
                     bytecodeTransformerBuildItemBuildProducer, existingConverters,
-                    additionalReaders, injectableBeans);
+                    additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
 
             // at this point we've scanned the class and its bean infos, which can have form params
             if (injectableBean.isFormParamRequired()) {
@@ -259,7 +264,9 @@ public class EndpointIndexer {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             Map<String, String> existingConverters,
             AdditionalReaders additionalReaders,
-            Map<String, InjectableBean> injectableBeans) {
+            Map<String, InjectableBean> injectableBeans,
+            MethodCreator initConverters,
+            boolean hasRuntimeConverters) {
 
         // do not scan a bean twice
         String currentTypeName = currentClassInfo.name().toString();
@@ -280,11 +287,17 @@ public class EndpointIndexer {
             }
             ParameterExtractor extractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
                     generatedClassBuildItemBuildProducer, existingConverters, additionalReaders, false, false,
-                    annotations, field.type(), field.toString(), true);
+                    annotations, field.type(), field.toString(), true, hasRuntimeConverters);
             ParameterExtractor result = extractor.invoke();
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, extractor);
+            }
+            if (result.getConverter() != null) {
+                initConverters.invokeStaticMethod(MethodDescriptor.ofMethod(currentTypeName,
+                        ClassInjectorTransformer.INIT_CONVERTER_METHOD_NAME + field.name(),
+                        void.class, QuarkusRestDeployment.class),
+                        initConverters.getMethodParam(0));
             }
             if (result.getType() == ParameterType.BEAN) {
                 beanParamFields.put(field, extractor);
@@ -293,7 +306,7 @@ public class EndpointIndexer {
                 ClassInfo beanParamClassInfo = index.getClassByName(field.type().name());
                 InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo, actualEndpointInfo,
                         generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
-                        existingConverters, additionalReaders, injectableBeans);
+                        existingConverters, additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
                 // inherit form param requirement from field
                 if (injectableBean.isFormParamRequired()) {
                     currentInjectableBean.setFormParamRequired(true);
@@ -314,7 +327,7 @@ public class EndpointIndexer {
                 InjectableBean superInjectableBean = scanInjectableBean(superClass, actualEndpointInfo,
                         generatedClassBuildItemBuildProducer,
                         bytecodeTransformerBuildProducer,
-                        existingConverters, additionalReaders, injectableBeans);
+                        existingConverters, additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
                 superTypeIsInjectable = superInjectableBean.isInjectionRequired();
                 // inherit form param requirement from supertype
                 if (superInjectableBean.isFormParamRequired()) {
@@ -338,7 +351,7 @@ public class EndpointIndexer {
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
                     generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                     recorder, existingConverters, config, additionalReaders,
-                    additionalWriters, injectableBeans, httpAnnotationToMethod);
+                    additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters);
             RestClientInterface clazz = new RestClientInterface();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -367,7 +380,7 @@ public class EndpointIndexer {
             QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
             AdditionalWriters additionalWriters, Map<String, InjectableBean> injectableBeans,
-            Map<DotName, String> httpAnnotationToMethod) {
+            Map<DotName, String> httpAnnotationToMethod, MethodCreator initConverters, boolean hasRuntimeConverters) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
@@ -395,7 +408,8 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath,
                             existingConverters,
-                            config, additionalReaders, additionalWriters, httpAnnotationToMethod, injectableBeans);
+                            config, additionalReaders, additionalWriters, httpAnnotationToMethod, injectableBeans,
+                            initConverters, hasRuntimeConverters);
 
                     ret.add(method);
                 }
@@ -422,7 +436,7 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath,
                             existingConverters, config, additionalReaders, additionalWriters, httpAnnotationToMethod,
-                            injectableBeans);
+                            injectableBeans, initConverters, hasRuntimeConverters);
                     ret.add(method);
                 }
             }
@@ -435,7 +449,7 @@ public class EndpointIndexer {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
                         generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                         recorder, existingConverters, config, additionalReaders,
-                        additionalWriters, injectableBeans, httpAnnotationToMethod));
+                        additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -445,7 +459,7 @@ public class EndpointIndexer {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
                         generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                         recorder, existingConverters, config, additionalReaders,
-                        additionalWriters, injectableBeans, httpAnnotationToMethod));
+                        additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters));
             }
         }
         return ret;
@@ -459,7 +473,7 @@ public class EndpointIndexer {
             String methodPath, Map<String, String> existingConverters, QuarkusRestConfig config,
             AdditionalReaders additionalReaders, AdditionalWriters additionalWriters,
             Map<DotName, String> httpAnnotationToMethod,
-            Map<String, InjectableBean> injectableBeans) {
+            Map<String, InjectableBean> injectableBeans, MethodCreator initConverters, boolean hasRuntimeConverters) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -484,7 +498,7 @@ public class EndpointIndexer {
 
                 ParameterExtractor parameterExtractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
                         generatedClassBuildItemBuildProducer, existingConverters, additionalReaders, suspended, sse,
-                        anns, paramType, errorLocation, false).invoke();
+                        anns, paramType, errorLocation, false, hasRuntimeConverters).invoke();
                 suspended |= parameterExtractor.isSuspended();
                 sse |= parameterExtractor.isSse();
                 String name = parameterExtractor.getName();
@@ -506,7 +520,7 @@ public class EndpointIndexer {
                     InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                             actualEndpointInfo,
                             generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
-                            existingConverters, additionalReaders, injectableBeans);
+                            existingConverters, additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
                     if (injectableBean.isFormParamRequired()) {
                         formParamRequired = true;
                     }
@@ -839,11 +853,13 @@ public class EndpointIndexer {
         private boolean single;
         private ParameterConverterSupplier converter;
         private final boolean field;
+        private boolean hasRuntimeConverters;
 
         public ParameterExtractor(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
                 Map<String, String> existingConverters, AdditionalReaders additionalReaders, boolean suspended, boolean sse,
-                Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field) {
+                Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
+                boolean hasRuntimeConverters) {
             this.currentClassInfo = currentClassInfo;
             this.actualEndpointInfo = actualEndpointInfo;
             this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
@@ -855,6 +871,7 @@ public class EndpointIndexer {
             this.paramType = paramType;
             this.errorLocation = errorLocation;
             this.field = field;
+            this.hasRuntimeConverters = hasRuntimeConverters;
         }
 
         public boolean isObtainedAsCollection() {
@@ -975,19 +992,19 @@ public class EndpointIndexer {
                     single = false;
                     elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                     converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation);
+                            existingEndpoints, errorLocation, hasRuntimeConverters);
                     converter = new ListConverter.ListSupplier(converter);
                 } else if (pt.name().equals(SET)) {
                     single = false;
                     elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                     converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation);
+                            existingEndpoints, errorLocation, hasRuntimeConverters);
                     converter = new SetConverter.SetSupplier(converter);
                 } else if (pt.name().equals(SORTED_SET)) {
                     single = false;
                     elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                     converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation);
+                            existingEndpoints, errorLocation, hasRuntimeConverters);
                     converter = new SortedSetConverter.SortedSetSupplier(converter);
                 } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
                     elementType = pt.name().toString();
@@ -1012,7 +1029,7 @@ public class EndpointIndexer {
                 if (type != ParameterType.CONTEXT && type != ParameterType.BEAN && type != ParameterType.BODY
                         && type != ParameterType.ASYNC_RESPONSE) {
                     converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation);
+                            existingEndpoints, errorLocation, hasRuntimeConverters);
                 }
                 if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
                     sse = true;
@@ -1026,20 +1043,30 @@ public class EndpointIndexer {
 
         private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-                Map<String, String> existingConverters, String errorLocation) {
+                Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
             if (elementType.equals(String.class.getName())) {
                 return null;
             } else if (existingConverters.containsKey(elementType)) {
-                return new GeneratedParameterConverter().setClassName(existingConverters.get(elementType));
+                String className = existingConverters.get(elementType);
+                ParameterConverterSupplier delegate;
+                if (className == null)
+                    delegate = null;
+                else
+                    delegate = new GeneratedParameterConverter().setClassName(className);
+                if (hasRuntimeConverters)
+                    return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
+                if (delegate == null)
+                    throw new RuntimeException("Failed to find converter for " + elementType);
+                return delegate;
             }
+
             MethodDescriptor fromString = null;
             MethodDescriptor valueOf = null;
             MethodInfo stringCtor = null;
-            String prim = primitiveTypes.get(elementType);
+            String primitiveWrapperType = primitiveTypes.get(elementType);
             String prefix = "";
-            if (prim != null) {
-                elementType = prim;
-                valueOf = MethodDescriptor.ofMethod(elementType, "valueOf", elementType, String.class);
+            if (primitiveWrapperType != null) {
+                valueOf = MethodDescriptor.ofMethod(primitiveWrapperType, "valueOf", primitiveWrapperType, String.class);
                 prefix = "io.quarkus.generated.";
             } else {
                 ClassInfo type = indexView.getClassByName(DotName.createSimple(elementType));
@@ -1066,30 +1093,37 @@ public class EndpointIndexer {
                 }
             }
 
-            String baseName = prefix + elementType + "$quarkusrestparamConverter$";
-            try (ClassCreator classCreator = new ClassCreator(
-                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
-                    Object.class.getName(), ParameterConverter.class.getName())) {
-                MethodCreator mc = classCreator.getMethodCreator("convert", Object.class, Object.class);
-                if (stringCtor != null) {
-                    ResultHandle ret = mc.newInstance(stringCtor, mc.getMethodParam(0));
-                    mc.returnValue(ret);
-                } else if (valueOf != null) {
-                    ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
-                    mc.returnValue(ret);
-                } else if (fromString != null) {
-                    ResultHandle ret = mc.invokeStaticMethod(fromString, mc.getMethodParam(0));
-                    mc.returnValue(ret);
-                } else {
-                    if (paramType.kind() == Type.Kind.TYPE_VARIABLE) {
-                        throw new RuntimeException("Cannot create converter for " + paramType + " at " + errorLocation);
+            String baseName;
+            ParameterConverterSupplier delegate;
+            if (stringCtor != null || valueOf != null || fromString != null) {
+                baseName = prefix + elementType + "$quarkusrestparamConverter$";
+                try (ClassCreator classCreator = new ClassCreator(
+                        new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
+                        Object.class.getName(), ParameterConverter.class.getName())) {
+                    MethodCreator mc = classCreator.getMethodCreator("convert", Object.class, Object.class);
+                    if (stringCtor != null) {
+                        ResultHandle ret = mc.newInstance(stringCtor, mc.getMethodParam(0));
+                        mc.returnValue(ret);
+                    } else if (valueOf != null) {
+                        ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
+                        mc.returnValue(ret);
+                    } else if (fromString != null) {
+                        ResultHandle ret = mc.invokeStaticMethod(fromString, mc.getMethodParam(0));
+                        mc.returnValue(ret);
                     }
-                    //now look for param converter
-                    return new RuntimeResolvedConverter.Supplier();
                 }
+                delegate = new GeneratedParameterConverter().setClassName(baseName);
+            } else {
+                // let's not try this again
+                baseName = null;
+                delegate = null;
             }
             existingConverters.put(elementType, baseName);
-            return new GeneratedParameterConverter().setClassName(baseName);
+            if (hasRuntimeConverters)
+                return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
+            if (delegate == null)
+                throw new RuntimeException("Failed to find converter for " + elementType);
+            return delegate;
         }
 
     }
@@ -1107,6 +1141,13 @@ public class EndpointIndexer {
         private Map<DotName, String> httpAnnotationToMethod;
         private Map<String, InjectableBean> injectableBeans;
         private AdditionalWriters additionalWriters;
+        private MethodCreator initConverters;
+        private boolean hasRuntimeConverters;
+
+        public Builder setHasRuntimeConverters(boolean hasRuntimeConverters) {
+            this.hasRuntimeConverters = hasRuntimeConverters;
+            return this;
+        }
 
         public Builder setIndex(IndexView index) {
             this.index = index;
@@ -1167,6 +1208,11 @@ public class EndpointIndexer {
 
         public Builder setAdditionalWriters(AdditionalWriters additionalWriters) {
             this.additionalWriters = additionalWriters;
+            return this;
+        }
+
+        public Builder setInitConverters(MethodCreator initConverters) {
+            this.initConverters = initConverters;
             return this;
         }
 

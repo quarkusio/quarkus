@@ -56,7 +56,6 @@ import io.quarkus.rest.runtime.core.parameters.NullParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.PathParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.QueryParamExtractor;
-import io.quarkus.rest.runtime.core.parameters.converters.InitRequiredParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriter;
@@ -186,7 +185,7 @@ public class QuarkusRestRecorder {
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
             String applicationPath, Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations,
             GenericTypeMapping genericTypeMapping,
-            ParamConverterProviders paramConverterProviders) {
+            ParamConverterProviders paramConverterProviders, BeanFactory<QuarkusRestInitialiser> initClassFactory) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
         QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping,
@@ -389,6 +388,8 @@ public class QuarkusRestRecorder {
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 createClientImpls(clientImplementations),
                 prefix, genericTypeMapping, paramConverterProviders, quarkusRestConfiguration);
+
+        initClassFactory.createInstance().getInstance().init(deployment);
 
         currentDeployment = deployment;
 
@@ -687,7 +688,9 @@ public class QuarkusRestRecorder {
             }
         }
 
-        Map<Integer, InitRequiredParameterConverter> converters = new HashMap<>();
+        Class<Object> resourceClass = loadClass(clazz.getClassName());
+        LazyMethod lazyMethod = new LazyMethod(method.getName(), resourceClass, parameterTypes);
+
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
             boolean single = param.isSingle();
@@ -696,8 +699,13 @@ public class QuarkusRestRecorder {
             ParameterConverter converter = null;
             if (param.converter != null) {
                 converter = param.converter.get();
-                if (converter instanceof InitRequiredParameterConverter) {
-                    converters.put(i, (InitRequiredParameterConverter) converter);
+                // Workaround our lack of support for generic params by not doing this init if there are not runtime
+                // param converter providers
+                if (!paramConverterProviders.getParamConverterProviders().isEmpty()) {
+                    Method javaMethod = lazyMethod.getMethod();
+                    converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
+                            javaMethod.getGenericParameterTypes()[i],
+                            javaMethod.getParameterAnnotations()[i]);
                 }
             }
 
@@ -793,21 +801,14 @@ public class QuarkusRestRecorder {
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
-        Class<Object> resourceClass = loadClass(clazz.getClassName());
         RuntimeResource runtimeResource = new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
-                new LazyMethod(method.getName(), resourceClass, parameterTypes),
+                lazyMethod,
                 pathParameterIndexes);
-        for (Map.Entry<Integer, InitRequiredParameterConverter> i : converters.entrySet()) {
-            Method javaMethod = runtimeResource.getLazyMethod().getMethod();
-            i.getValue().init(paramConverterProviders, javaMethod.getParameterTypes()[i.getKey()],
-                    javaMethod.getGenericParameterTypes()[i.getKey()],
-                    javaMethod.getParameterAnnotations()[i.getKey()]);
-        }
         return runtimeResource;
     }
 

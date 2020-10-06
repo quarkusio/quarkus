@@ -40,7 +40,8 @@ public class SimpleQuarkusRestTestCase {
                                     TestWriter.class, TestClass.class,
                                     SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class,
                                     ParameterWithFromString.class, BeanParamSubClass.class, FieldInjectedSubClassResource.class,
-                                    BeanParamSuperClass.class, IllegalClassExceptionMapper.class);
+                                    BeanParamSuperClass.class, IllegalClassExceptionMapper.class,
+                                    MyParameterProvider.class, MyParameterConverter.class, MyParameter.class);
                 }
             });
 

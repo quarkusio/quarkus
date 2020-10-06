@@ -74,6 +74,7 @@ import io.quarkus.rest.deployment.framework.AdditionalWriters;
 import io.quarkus.rest.deployment.framework.EndpointIndexer;
 import io.quarkus.rest.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.runtime.QuarkusRestConfig;
+import io.quarkus.rest.runtime.QuarkusRestInitialiser;
 import io.quarkus.rest.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.runtime.core.ContextResolvers;
 import io.quarkus.rest.runtime.core.DynamicFeatures;
@@ -81,6 +82,7 @@ import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.Features;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.ParamConverterProviders;
+import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.Serialisers.BuiltinReader;
 import io.quarkus.rest.runtime.core.Serialisers.BuiltinWriter;
@@ -103,12 +105,14 @@ import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
+import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 
 public class QuarkusRestProcessor {
 
+    private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
     private static Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = new HashMap<>();
 
     static {
@@ -325,292 +329,308 @@ public class QuarkusRestProcessor {
         AdditionalReaders additionalReaders = new AdditionalReaders();
         AdditionalWriters additionalWriters = new AdditionalWriters();
         Map<String, InjectableBean> injectableBeans = new HashMap<>();
-        EndpointIndexer endpointIndexer = new EndpointIndexer.Builder()
-                .setIndex(index)
-                .setBeanContainer(beanContainerBuildItem.getValue())
-                .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                .setBytecodeTransformerBuildItemBuildProducer(bytecodeTransformerBuildItemBuildProducer).setRecorder(recorder)
-                .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths).setConfig(config)
-                .setAdditionalReaders(additionalReaders).setHttpAnnotationToMethod(httpAnnotationToMethod)
-                .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters).build();
+        EndpointIndexer endpointIndexer;
 
-        for (ClassInfo i : scannedResources.values()) {
-            ResourceClass endpoints = endpointIndexer.createEndpoints(i);
-            if (endpoints != null) {
-                resourceClasses.add(endpoints);
-            }
-        }
+        try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
+                QUARKUS_INIT_CLASS, null, Object.class.getName(), QuarkusRestInitialiser.class.getName());
+                MethodCreator initConverters = c.getMethodCreator("init", void.class, QuarkusRestDeployment.class)) {
 
-        List<RestClientInterface> clientDefinitions = new ArrayList<>();
-        for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
-            ClassInfo clazz = index.getClassByName(i.getKey());
-            //these interfaces can also be clients
-            //so we generate client proxies for them
-            RestClientInterface clientProxy = endpointIndexer.createClientProxy(clazz,
-                    bytecodeTransformerBuildItemBuildProducer,
-                    i.getValue());
-            if (clientProxy != null) {
-                clientDefinitions.add(clientProxy);
-            }
-        }
-        Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = generateClientInvokers(recorderContext,
-                clientDefinitions, generatedClassBuildItemBuildProducer);
+            endpointIndexer = new EndpointIndexer.Builder()
+                    .setIndex(index)
+                    .setBeanContainer(beanContainerBuildItem.getValue())
+                    .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
+                    .setBytecodeTransformerBuildItemBuildProducer(bytecodeTransformerBuildItemBuildProducer)
+                    .setRecorder(recorder)
+                    .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths).setConfig(config)
+                    .setAdditionalReaders(additionalReaders).setHttpAnnotationToMethod(httpAnnotationToMethod)
+                    .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters)
+                    .setHasRuntimeConverters(!converterProviders.getParamConverterProviders().isEmpty())
+                    .setInitConverters(initConverters).build();
 
-        //now index possible sub resources. These are all classes that have method annotations
-        //that are not annotated @Path
-        Deque<ClassInfo> toScan = new ArrayDeque<>();
-        for (DotName methodAnnotation : httpAnnotationToMethod.keySet()) {
-            for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
-                MethodInfo method = instance.target().asMethod();
-                ClassInfo classInfo = method.declaringClass();
-                toScan.add(classInfo);
+            for (ClassInfo i : scannedResources.values()) {
+                ResourceClass endpoints = endpointIndexer.createEndpoints(i);
+                if (endpoints != null) {
+                    resourceClasses.add(endpoints);
+                }
             }
-        }
-        while (!toScan.isEmpty()) {
-            ClassInfo classInfo = toScan.poll();
-            if (scannedResources.containsKey(classInfo.name()) ||
-                    pathInterfaces.containsKey(classInfo.name()) ||
-                    possibleSubResources.containsKey(classInfo.name())) {
-                continue;
-            }
-            possibleSubResources.put(classInfo.name(), classInfo);
-            ResourceClass endpoints = endpointIndexer.createEndpoints(classInfo);
-            if (endpoints != null) {
-                subResourceClasses.add(endpoints);
-            }
-            //we need to also look for all sub classes and interfaces
-            //they may have type variables that need to be handled
-            toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
-            toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
-        }
 
-        ResourceInterceptors interceptors = new ResourceInterceptors();
-        for (ClassInfo filterClass : containerRequestFilters) {
-            if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
-                interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                interceptor.setPreMatching(filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null);
-                if (interceptor.isPreMatching()) {
-                    interceptors.addResourcePreMatchInterceptor(interceptor);
-                } else {
+            List<RestClientInterface> clientDefinitions = new ArrayList<>();
+            for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
+                ClassInfo clazz = index.getClassByName(i.getKey());
+                //these interfaces can also be clients
+                //so we generate client proxies for them
+                RestClientInterface clientProxy = endpointIndexer.createClientProxy(clazz,
+                        bytecodeTransformerBuildItemBuildProducer,
+                        i.getValue());
+                if (clientProxy != null) {
+                    clientDefinitions.add(clientProxy);
+                }
+            }
+            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = generateClientInvokers(recorderContext,
+                    clientDefinitions, generatedClassBuildItemBuildProducer);
+
+            //now index possible sub resources. These are all classes that have method annotations
+            //that are not annotated @Path
+            Deque<ClassInfo> toScan = new ArrayDeque<>();
+            for (DotName methodAnnotation : httpAnnotationToMethod.keySet()) {
+                for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
+                    MethodInfo method = instance.target().asMethod();
+                    ClassInfo classInfo = method.declaringClass();
+                    toScan.add(classInfo);
+                }
+            }
+            while (!toScan.isEmpty()) {
+                ClassInfo classInfo = toScan.poll();
+                if (scannedResources.containsKey(classInfo.name()) ||
+                        pathInterfaces.containsKey(classInfo.name()) ||
+                        possibleSubResources.containsKey(classInfo.name())) {
+                    continue;
+                }
+                possibleSubResources.put(classInfo.name(), classInfo);
+                ResourceClass endpoints = endpointIndexer.createEndpoints(classInfo);
+                if (endpoints != null) {
+                    subResourceClasses.add(endpoints);
+                }
+                //we need to also look for all sub classes and interfaces
+                //they may have type variables that need to be handled
+                toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
+                toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
+            }
+
+            ResourceInterceptors interceptors = new ResourceInterceptors();
+            for (ClassInfo filterClass : containerRequestFilters) {
+                if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
+                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    interceptor.setPreMatching(filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null);
+                    if (interceptor.isPreMatching()) {
+                        interceptors.addResourcePreMatchInterceptor(interceptor);
+                    } else {
+                        Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
+                        if (nameBindingNames.isEmpty()) {
+                            interceptors.addGlobalRequestInterceptor(interceptor);
+                        } else {
+                            interceptor.setNameBindingNames(nameBindingNames);
+                            interceptors.addNameRequestInterceptor(interceptor);
+                        }
+                    }
+                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                    if (priorityInstance != null) {
+                        interceptor.setPriority(priorityInstance.value().asInt());
+                    }
+                }
+            }
+            for (ClassInfo filterClass : containerResponseFilters) {
+                if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
+                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
                     Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty()) {
-                        interceptors.addGlobalRequestInterceptor(interceptor);
+                        interceptors.addGlobalResponseInterceptor(interceptor);
                     } else {
                         interceptor.setNameBindingNames(nameBindingNames);
-                        interceptors.addNameRequestInterceptor(interceptor);
+                        interceptors.addNameResponseInterceptor(interceptor);
+                    }
+                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                    if (priorityInstance != null) {
+                        interceptor.setPriority(priorityInstance.value().asInt());
                     }
                 }
-                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    interceptor.setPriority(priorityInstance.value().asInt());
+            }
+            for (ClassInfo filterClass : writerInterceptors) {
+                if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
+                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
+                    if (nameBindingNames.isEmpty()) {
+                        interceptors.addGlobalWriterInterceptor(interceptor);
+                    } else {
+                        interceptor.setNameBindingNames(nameBindingNames);
+                        interceptors.addNameWriterInterceptor(interceptor);
+                    }
+                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                    if (priorityInstance != null) {
+                        interceptor.setPriority(priorityInstance.value().asInt());
+                    }
                 }
             }
-        }
-        for (ClassInfo filterClass : containerResponseFilters) {
-            if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
-                interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
-                if (nameBindingNames.isEmpty()) {
-                    interceptors.addGlobalResponseInterceptor(interceptor);
-                } else {
-                    interceptor.setNameBindingNames(nameBindingNames);
-                    interceptors.addNameResponseInterceptor(interceptor);
-                }
-                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    interceptor.setPriority(priorityInstance.value().asInt());
-                }
-            }
-        }
-        for (ClassInfo filterClass : writerInterceptors) {
-            if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
-                interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
-                if (nameBindingNames.isEmpty()) {
-                    interceptors.addGlobalWriterInterceptor(interceptor);
-                } else {
-                    interceptor.setNameBindingNames(nameBindingNames);
-                    interceptors.addNameWriterInterceptor(interceptor);
-                }
-                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    interceptor.setPriority(priorityInstance.value().asInt());
+            for (ClassInfo filterClass : readerInterceptors) {
+                if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
+                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
+                    if (nameBindingNames.isEmpty()) {
+                        interceptors.addGlobalReaderInterceptor(interceptor);
+                    } else {
+                        interceptor.setNameBindingNames(nameBindingNames);
+                        interceptors.addNameReaderInterceptor(interceptor);
+                    }
+                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                    if (priorityInstance != null) {
+                        interceptor.setPriority(priorityInstance.value().asInt());
+                    }
                 }
             }
-        }
-        for (ClassInfo filterClass : readerInterceptors) {
-            if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
-                interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
-                if (nameBindingNames.isEmpty()) {
-                    interceptors.addGlobalReaderInterceptor(interceptor);
-                } else {
-                    interceptor.setNameBindingNames(nameBindingNames);
-                    interceptors.addNameReaderInterceptor(interceptor);
-                }
-                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    interceptor.setPriority(priorityInstance.value().asInt());
-                }
-            }
-        }
 
-        ExceptionMapping exceptionMapping = new ExceptionMapping();
-        Map<DotName, ResourceExceptionMapper<Throwable>> handledExceptionToHigherPriorityMapper = new HashMap();
-        for (ClassInfo mapperClass : exceptionMappers) {
-            if (mapperClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
-                        QuarkusRestDotNames.EXCEPTION_MAPPER,
-                        index);
-                ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
-                mapper.setFactory(recorder.factory(mapperClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                AnnotationInstance priorityInstance = mapperClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    mapper.setPriority(priorityInstance.value().asInt());
-                }
-                DotName handledExceptionDotName = typeParameters.get(0).name();
-                if (handledExceptionToHigherPriorityMapper.containsKey(handledExceptionDotName)) {
-                    if (mapper.getPriority() < handledExceptionToHigherPriorityMapper.get(handledExceptionDotName)
-                            .getPriority()) {
+            ExceptionMapping exceptionMapping = new ExceptionMapping();
+            Map<DotName, ResourceExceptionMapper<Throwable>> handledExceptionToHigherPriorityMapper = new HashMap();
+            for (ClassInfo mapperClass : exceptionMappers) {
+                if (mapperClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
+                            QuarkusRestDotNames.EXCEPTION_MAPPER,
+                            index);
+                    ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
+                    mapper.setFactory(recorder.factory(mapperClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    AnnotationInstance priorityInstance = mapperClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                    if (priorityInstance != null) {
+                        mapper.setPriority(priorityInstance.value().asInt());
+                    }
+                    DotName handledExceptionDotName = typeParameters.get(0).name();
+                    if (handledExceptionToHigherPriorityMapper.containsKey(handledExceptionDotName)) {
+                        if (mapper.getPriority() < handledExceptionToHigherPriorityMapper.get(handledExceptionDotName)
+                                .getPriority()) {
+                            handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
+                        }
+                    } else {
                         handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
                     }
-                } else {
-                    handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
                 }
             }
-        }
-        for (Map.Entry<DotName, ResourceExceptionMapper<Throwable>> entry : handledExceptionToHigherPriorityMapper.entrySet()) {
-            recorder.registerExceptionMapper(exceptionMapping, entry.getKey().toString(), entry.getValue());
-        }
-
-        ContextResolvers ctxResolvers = new ContextResolvers();
-        for (ClassInfo resolverClass : contextResolvers) {
-            if (resolverClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
-                        QuarkusRestDotNames.CONTEXT_RESOLVER,
-                        index);
-                ResourceContextResolver resolver = new ResourceContextResolver();
-                resolver.setFactory(recorder.factory(resolverClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                resolver.setMediaTypeStrings(getProducesMediaTypes(resolverClass));
-                recorder.registerContextResolver(ctxResolvers, typeParameters.get(0).name().toString(), resolver);
+            for (Map.Entry<DotName, ResourceExceptionMapper<Throwable>> entry : handledExceptionToHigherPriorityMapper
+                    .entrySet()) {
+                recorder.registerExceptionMapper(exceptionMapping, entry.getKey().toString(), entry.getValue());
             }
-        }
 
-        Features feats = new Features();
-        for (ClassInfo featureClass : features) {
-            if (featureClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                ResourceFeature resourceFeature = new ResourceFeature();
-                resourceFeature.setFactory(recorder.factory(featureClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                feats.addFeature(resourceFeature);
-            }
-        }
-
-        DynamicFeatures dynamicFeats = new DynamicFeatures();
-        for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
-            if (dynamicFeatureClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
-                resourceFeature.setFactory(recorder.factory(dynamicFeatureClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                dynamicFeats.addFeature(resourceFeature);
-            }
-        }
-
-        Serialisers serialisers = new Serialisers();
-        for (ClassInfo writerClass : writers) {
-            if (writerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                ResourceWriter writer = new ResourceWriter();
-                writer.setBuiltin(false);
-                AnnotationInstance producesAnnotation = writerClass.classAnnotation(QuarkusRestDotNames.PRODUCES);
-                if (producesAnnotation != null) {
-                    writer.setMediaTypeStrings(Arrays.asList(producesAnnotation.value().asStringArray()));
+            ContextResolvers ctxResolvers = new ContextResolvers();
+            for (ClassInfo resolverClass : contextResolvers) {
+                if (resolverClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
+                            QuarkusRestDotNames.CONTEXT_RESOLVER,
+                            index);
+                    ResourceContextResolver resolver = new ResourceContextResolver();
+                    resolver.setFactory(recorder.factory(resolverClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    resolver.setMediaTypeStrings(getProducesMediaTypes(resolverClass));
+                    recorder.registerContextResolver(ctxResolvers, typeParameters.get(0).name().toString(), resolver);
                 }
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
-                        QuarkusRestDotNames.MESSAGE_BODY_WRITER,
-                        index);
-                writer.setFactory(recorder.factory(writerClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                AnnotationInstance constrainedToInstance = writerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
-                if (constrainedToInstance != null) {
-                    writer.setConstraint(RuntimeType.valueOf(constrainedToInstance.value().asEnum()));
-                }
-                recorder.registerWriter(serialisers, typeParameters.get(0).name().toString(), writer);
             }
-        }
-        for (ClassInfo readerClass : readers) {
-            if (readerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
-                        QuarkusRestDotNames.MESSAGE_BODY_READER,
-                        index);
-                ResourceReader reader = new ResourceReader();
-                reader.setBuiltin(false);
-                reader.setFactory(recorder.factory(readerClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
-                AnnotationInstance consumesAnnotation = readerClass.classAnnotation(QuarkusRestDotNames.CONSUMES);
-                if (consumesAnnotation != null) {
-                    reader.setMediaTypeStrings(Arrays.asList(consumesAnnotation.value().asStringArray()));
+
+            Features feats = new Features();
+            for (ClassInfo featureClass : features) {
+                if (featureClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    ResourceFeature resourceFeature = new ResourceFeature();
+                    resourceFeature.setFactory(recorder.factory(featureClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    feats.addFeature(resourceFeature);
                 }
-                AnnotationInstance constrainedToInstance = readerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
-                if (constrainedToInstance != null) {
-                    reader.setConstraint(RuntimeType.valueOf(constrainedToInstance.value().asEnum()));
+            }
+
+            DynamicFeatures dynamicFeats = new DynamicFeatures();
+            for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
+                if (dynamicFeatureClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
+                    resourceFeature.setFactory(recorder.factory(dynamicFeatureClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    dynamicFeats.addFeature(resourceFeature);
                 }
-                recorder.registerReader(serialisers, typeParameters.get(0).name().toString(), reader);
             }
-        }
 
-        GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
-        for (ClassInfo invocationCallback : invocationCallbacks) {
-            try {
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
-                        QuarkusRestDotNames.INVOCATION_CALLBACK, index);
-                recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
-                        typeParameters.get(0).name().toString());
-            } catch (Exception ignored) {
-
+            Serialisers serialisers = new Serialisers();
+            for (ClassInfo writerClass : writers) {
+                if (writerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    ResourceWriter writer = new ResourceWriter();
+                    writer.setBuiltin(false);
+                    AnnotationInstance producesAnnotation = writerClass.classAnnotation(QuarkusRestDotNames.PRODUCES);
+                    if (producesAnnotation != null) {
+                        writer.setMediaTypeStrings(Arrays.asList(producesAnnotation.value().asStringArray()));
+                    }
+                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
+                            QuarkusRestDotNames.MESSAGE_BODY_WRITER,
+                            index);
+                    writer.setFactory(recorder.factory(writerClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    AnnotationInstance constrainedToInstance = writerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
+                    if (constrainedToInstance != null) {
+                        writer.setConstraint(RuntimeType.valueOf(constrainedToInstance.value().asEnum()));
+                    }
+                    recorder.registerWriter(serialisers, typeParameters.get(0).name().toString(), writer);
+                }
             }
-        }
+            for (ClassInfo readerClass : readers) {
+                if (readerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
+                            QuarkusRestDotNames.MESSAGE_BODY_READER,
+                            index);
+                    ResourceReader reader = new ResourceReader();
+                    reader.setBuiltin(false);
+                    reader.setFactory(recorder.factory(readerClass.name().toString(),
+                            beanContainerBuildItem.getValue()));
+                    AnnotationInstance consumesAnnotation = readerClass.classAnnotation(QuarkusRestDotNames.CONSUMES);
+                    if (consumesAnnotation != null) {
+                        reader.setMediaTypeStrings(Arrays.asList(consumesAnnotation.value().asStringArray()));
+                    }
+                    AnnotationInstance constrainedToInstance = readerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
+                    if (constrainedToInstance != null) {
+                        reader.setConstraint(RuntimeType.valueOf(constrainedToInstance.value().asEnum()));
+                    }
+                    recorder.registerReader(serialisers, typeParameters.get(0).name().toString(), reader);
+                }
+            }
 
-        // built-ins
+            GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
+            for (ClassInfo invocationCallback : invocationCallbacks) {
+                try {
+                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
+                            QuarkusRestDotNames.INVOCATION_CALLBACK, index);
+                    recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
+                            typeParameters.get(0).name().toString());
+                } catch (Exception ignored) {
 
-        for (BuiltinWriter builtinWriter : Serialisers.BUILTIN_WRITERS) {
-            registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
-                    beanContainerBuildItem.getValue(),
-                    builtinWriter.mediaType);
-        }
-        for (BuiltinReader builtinReader : Serialisers.BUILTIN_READERS) {
-            registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
-                    beanContainerBuildItem.getValue(),
-                    builtinReader.mediaType, builtinReader.constraint);
-        }
+                }
+            }
 
-        for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
-            registerReader(recorder, serialisers, additionalReader.getEntityClass(), additionalReader.getReaderClass(),
-                    beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
-        }
-        for (AdditionalWriters.Entry<?> entry : additionalWriters.get()) {
-            registerWriter(recorder, serialisers, entry.getEntityClass(), entry.getWriterClass(),
-                    beanContainerBuildItem.getValue(), entry.getMediaType());
-        }
+            // built-ins
 
-        String applicationPath = determineApplicationPath(index);
+            for (BuiltinWriter builtinWriter : Serialisers.BUILTIN_WRITERS) {
+                registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
+                        beanContainerBuildItem.getValue(),
+                        builtinWriter.mediaType);
+            }
+            for (BuiltinReader builtinReader : Serialisers.BUILTIN_READERS) {
+                registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
+                        beanContainerBuildItem.getValue(),
+                        builtinReader.mediaType, builtinReader.constraint);
+            }
 
-        return new FilterBuildItem(
-                recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, dynamicFeats,
-                        serialisers, resourceClasses, subResourceClasses,
-                        beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
-                        clientImplementations,
-                        genericTypeMapping, converterProviders),
-                10);
+            for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
+                registerReader(recorder, serialisers, additionalReader.getEntityClass(), additionalReader.getReaderClass(),
+                        beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
+            }
+
+            for (AdditionalWriters.Entry<?> entry : additionalWriters.get()) {
+                registerWriter(recorder, serialisers, entry.getEntityClass(), entry.getWriterClass(),
+                        beanContainerBuildItem.getValue(), entry.getMediaType());
+            }
+
+            initConverters.returnValue(null);
+            BeanFactory<QuarkusRestInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
+                    beanContainerBuildItem.getValue());
+
+            String applicationPath = determineApplicationPath(index);
+
+            return new FilterBuildItem(
+                    recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, dynamicFeats,
+                            serialisers, resourceClasses, subResourceClasses,
+                            beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
+                            clientImplementations,
+                            genericTypeMapping, converterProviders, initClassFactory),
+                    10);
+}
     }
 
     private String determineApplicationPath(IndexView index) {

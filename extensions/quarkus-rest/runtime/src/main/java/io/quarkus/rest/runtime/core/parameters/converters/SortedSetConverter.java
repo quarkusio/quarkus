@@ -1,9 +1,13 @@
 package io.quarkus.rest.runtime.core.parameters.converters;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import io.quarkus.rest.runtime.core.ParamConverterProviders;
 
 public class SortedSetConverter implements ParameterConverter {
 
@@ -15,10 +19,6 @@ public class SortedSetConverter implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
-        return convert(parameter, delegate);
-    }
-
-    public static Object convert(Object parameter, ParameterConverter delegate) {
         if (parameter instanceof List) {
             SortedSet<Object> ret = new TreeSet<>();
             List<String> values = (List<String>) parameter;
@@ -41,6 +41,11 @@ public class SortedSetConverter implements ParameterConverter {
             ret.add(parameter);
             return ret;
         }
+    }
+
+    @Override
+    public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
+        delegate.init(deployment, rawType, genericType, annotations);
     }
 
     public static class SortedSetSupplier implements DelegatingParameterConverterSupplier {

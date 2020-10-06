@@ -1,9 +1,13 @@
 package io.quarkus.rest.runtime.core.parameters.converters;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import io.quarkus.rest.runtime.core.ParamConverterProviders;
 
 public class SetConverter implements ParameterConverter {
 
@@ -15,10 +19,6 @@ public class SetConverter implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
-        return convert(parameter, delegate);
-    }
-
-    public static Object convert(Object parameter, ParameterConverter delegate) {
         if (parameter instanceof List) {
             Set<Object> ret = new HashSet<>();
             List<String> values = (List<String>) parameter;
@@ -37,6 +37,11 @@ public class SetConverter implements ParameterConverter {
         } else {
             return Collections.singleton(parameter);
         }
+    }
+
+    @Override
+    public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
+        delegate.init(deployment, rawType, genericType, annotations);
     }
 
     public static class SetSupplier implements DelegatingParameterConverterSupplier {

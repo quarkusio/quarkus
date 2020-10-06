@@ -5,16 +5,11 @@ import java.util.List;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
 import org.junit.jupiter.api.Assertions;
-
-import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
-import io.quarkus.rest.runtime.injection.QuarkusRestInjectionContext;
 
 public class BeanParamSuperClass {
     @QueryParam("query")
@@ -67,29 +62,6 @@ public class BeanParamSuperClass {
     @DefaultValue("42")
     @QueryParam("missing")
     int missingPrimitiveParamWithDefaultValue;
-
-    static class MyConverter implements ParameterConverter {
-
-        @Override
-        public Object convert(Object parameter) {
-            return ParameterWithFromString.fromString((String) parameter);
-        }
-
-    }
-
-    void inject(QuarkusRestInjectionContext ctx) {
-        try {
-            Object param = ctx.getQueryParameter("query", true, false);
-            if (param == null)
-                param = "default-value";
-            if (param != null)
-                parameterWithFromString = (ParameterWithFromString) new MyConverter().convert(param);
-        } catch (WebApplicationException x) {
-            throw x;
-        } catch (Throwable x) {
-            throw new NotFoundException(x);
-        }
-    }
 
     public void check(String path) {
         Assertions.assertEquals("one-query", query);

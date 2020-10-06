@@ -9,13 +9,20 @@ import javax.ws.rs.ext.ParamConverterProvider;
 import io.quarkus.rest.runtime.core.ParamConverterProviders;
 import io.quarkus.rest.runtime.model.ResourceParamConverterProvider;
 
-public class RuntimeResolvedConverter implements InitRequiredParameterConverter {
+public class RuntimeResolvedConverter implements ParameterConverter {
 
     private volatile ParamConverter<?> converter;
+    private ParameterConverter delegate;
+
+    public RuntimeResolvedConverter(ParameterConverter delegate) {
+        this.delegate = delegate;
+    }
 
     @Override
     public Object convert(Object parameter) {
-        return converter.fromString(parameter.toString());
+        if (converter != null)
+            return converter.fromString(parameter.toString());
+        return delegate.convert(parameter);
     }
 
     @Override
@@ -28,12 +35,14 @@ public class RuntimeResolvedConverter implements InitRequiredParameterConverter 
                 break;
             }
         }
-        if (converter == null) {
-            throw new RuntimeException("Unable to create param converter for parameter " + rawType);
+        if (converter == null && delegate == null) {
+            throw new RuntimeException("Unable to create param converter for parameter " + genericType);
         }
     }
 
-    public static class Supplier implements ParameterConverterSupplier {
+    public static class Supplier implements DelegatingParameterConverterSupplier {
+
+        private ParameterConverterSupplier delegate;
 
         @Override
         public String getClassName() {
@@ -42,7 +51,17 @@ public class RuntimeResolvedConverter implements InitRequiredParameterConverter 
 
         @Override
         public ParameterConverter get() {
-            return new RuntimeResolvedConverter();
+            return new RuntimeResolvedConverter(delegate == null ? null : delegate.get());
+        }
+
+        public ParameterConverterSupplier setDelegate(ParameterConverterSupplier delegate) {
+            this.delegate = delegate;
+            return this;
+        }
+
+        @Override
+        public ParameterConverterSupplier getDelegate() {
+            return delegate;
         }
     }
 }

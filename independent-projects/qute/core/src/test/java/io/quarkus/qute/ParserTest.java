@@ -186,6 +186,11 @@ public class ParserTest {
                 + jsSnippet
                 + "]}").data("name", "world").render());
         assertEquals("Hello world <strong>", engine.parse("Hello {name} {[<strong>]}").data("name", "world").render());
+        assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {|"
+                + jsSnippet
+                + "|}").data("name", "world").render());
+        assertEquals("Hello world <strong>", engine.parse("Hello {name} {|<strong>|}").data("name", "world").render());
+        assertEquals("Hello {name} world", engine.parse("Hello{| {name} |}{name}").data("name", "world").render());
     }
 
     @Test

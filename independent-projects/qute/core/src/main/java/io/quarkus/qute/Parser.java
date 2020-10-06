@@ -36,8 +36,10 @@ class Parser implements Function<String, Expression>, ParserHelper {
     private static final char START_DELIMITER = '{';
     private static final char END_DELIMITER = '}';
     private static final char COMMENT_DELIMITER = '!';
-    private static final char CDATA_START_DELIMITER = '[';
-    private static final char CDATA_END_DELIMITER = ']';
+    private static final char CDATA_START_DELIMITER = '|';
+    private static final char CDATA_START_DELIMITER_OLD = '[';
+    private static final char CDATA_END_DELIMITER = '|';
+    private static final char CDATA_END_DELIMITER_OLD = ']';
     private static final char UNDERSCORE = '_';
     private static final char ESCAPE_CHAR = '\\';
 
@@ -241,7 +243,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
     }
 
     private void cdata(char character) {
-        if (character == END_DELIMITER && buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == CDATA_END_DELIMITER) {
+        if (character == END_DELIMITER && buffer.length() > 0
+                && isCdataEnd(buffer.charAt(buffer.length() - 1))) {
             // End of cdata
             state = State.TEXT;
             buffer.deleteCharAt(buffer.length() - 1);
@@ -249,6 +252,10 @@ class Parser implements Function<String, Expression>, ParserHelper {
         } else {
             buffer.append(character);
         }
+    }
+
+    private boolean isCdataEnd(char character) {
+        return character == CDATA_END_DELIMITER || character == CDATA_END_DELIMITER_OLD;
     }
 
     private void tag(char character) {
@@ -266,7 +273,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             if (character == COMMENT_DELIMITER) {
                 buffer.append(character);
                 state = State.COMMENT;
-            } else if (character == CDATA_START_DELIMITER) {
+            } else if (character == CDATA_START_DELIMITER || character == CDATA_START_DELIMITER_OLD) {
                 state = State.CDATA;
             } else {
                 buffer.append(character);
@@ -287,6 +294,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     private boolean isValidIdentifierStart(char character) {
         // A valid identifier must start with a digit, alphabet, underscore, comment delimiter, cdata start delimiter or a tag command (e.g. # for sections)
         return Tag.isCommand(character) || character == COMMENT_DELIMITER || character == CDATA_START_DELIMITER
+                || character == CDATA_START_DELIMITER_OLD
                 || character == UNDERSCORE
                 || Character.isDigit(character)
                 || Character.isAlphabetic(character);

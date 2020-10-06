@@ -359,6 +359,24 @@ $ curl http://localhost:8080/hello/greeting/3/neo
 ["hello neo - 0","hello neo - 1","hello neo - 2"]
 ----
 
+NOTE: In order to get json responses working properly, make sure the JSONB support for RESTEasy extension (`io.quarkus:quarkus-resteasy-jsonb`) is present, otherwise add the extension by executing the following command:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:add-extensions \
+    -Dextensions="io.quarkus:quarkus-resteasy-jsonb"
+----
+
+Or add `quarkus-resteasy-jsonb` into your dependencies manually.
+
+[source, xml]
+----
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-jsonb</artifactId>
+    </dependency>
+----
+
 We can also generate Server-Sent Event responses by returning a `Multi`:
 
 [source, java]

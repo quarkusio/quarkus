@@ -7,14 +7,11 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.panache.common.Sort;
 
 @Path("/persons/repository")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class PersonRepositoryResource {
 
     // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests

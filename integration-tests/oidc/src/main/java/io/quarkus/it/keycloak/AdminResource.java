@@ -3,8 +3,6 @@ package io.quarkus.it.keycloak;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
@@ -20,7 +18,6 @@ public class AdminResource {
 
     @GET
     @RolesAllowed("admin")
-    @Produces(MediaType.APPLICATION_JSON)
     public String admin() {
         return "granted:" + claim.getValue();
     }

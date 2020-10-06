@@ -23,8 +23,6 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/books/repository")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 class BookRepositoryResource {
     @Inject
     lateinit var bookRepository: BookRepository

@@ -122,8 +122,6 @@ Add the following method:
 ----
 @Path("/manual-validation")
 @POST
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public Result tryMeManualValidation(Book book) {
     Set<ConstraintViolation<Book>> violations = validator.validate(book);
     if (violations.isEmpty()) {
@@ -233,8 +231,6 @@ Calling the service in your rest end point triggers the `Book` validation automa
 
 @Path("/service-method-validation")
 @POST
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public Result tryMeServiceMethodValidation(Book book) {
     try {
         bookService.validateBook(book);

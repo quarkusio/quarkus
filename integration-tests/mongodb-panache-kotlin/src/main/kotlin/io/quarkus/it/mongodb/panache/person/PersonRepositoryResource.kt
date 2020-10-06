@@ -17,8 +17,6 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/persons/repository")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 class PersonRepositoryResource {
     // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
     @Inject

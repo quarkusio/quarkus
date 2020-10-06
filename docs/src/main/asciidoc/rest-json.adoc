@@ -126,17 +126,12 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     private Set<Fruit> fruits = Collections.newSetFromMap(Collections.synchronizedMap(new LinkedHashMap<>()));
@@ -172,9 +167,13 @@ depending on the extension you chose when initializing the project.
 
 [NOTE]
 ====
-While RESTEasy supports auto-negotiation, when using Quarkus, it is very important to define the `@Produces` and `@Consumes` annotations.
-They are analyzed at build time and Quarkus restricts the number of JAX-RS providers included in the native executable to the minimum required by the application.
-It allows to reduce the size of the native executable.
+When JSON extension is installed such as `quarkus-resteasy-jsonb` Quarkus will use this by default for most return values, unless the media type is explicitly set via
+and `@Produces` or `@Consumes` annotation (there are some exceptions for well known types, such as `String` and `File`, which default to `text/plain` and `application/octet-stream`
+respectively).
+
+If you don't want JSON by default you can set `quarkus.resteasy-json.default-json=false` and the default will change back to `application/octet-stream`. If you set this
+you will need to add `@Produces(MediaType.APPLICATION_JSON)` and `@Consumes(MediaType.APPLICATION_JSON)` to your endpoints in order to use JSON.
+
 ====
 
 === Configuring JSON support
@@ -266,7 +265,6 @@ When you have the following REST method, Quarkus determines that `Fruit` will be
 [source,JAVA]
 ----
 @GET
-@Produces("application/json")
 public List<Fruit> list() {
     // ...
 }
@@ -286,7 +284,6 @@ Your REST method then looks like this:
 [source,JAVA]
 ----
 @GET
-@Produces("application/json")
 public Response list() {
     // ...
 }

@@ -331,7 +331,6 @@ public class S3SyncClientResource extends CommonResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public List<FileObject> listFiles() {
         ListObjectsRequest listRequest = ListObjectsRequest.builder().bucket(bucketName).build();
 
@@ -511,7 +510,6 @@ public class S3AsyncClientResource extends CommonResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<FileObject>> listFiles() {
         ListObjectsRequest listRequest = ListObjectsRequest.builder()
                 .bucket(bucketName)

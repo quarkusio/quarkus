@@ -42,21 +42,18 @@ public class MutinyResource {
 
     @GET
     @Path("/hello/stream")
-    @Produces(MediaType.APPLICATION_JSON)
     public Multi<String> helloAsMulti() {
         return service.greetingAsMulti();
     }
 
     @GET
     @Path("/pet")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<Pet> pet() {
         return service.getPet();
     }
 
     @GET
     @Path("/pet/stream")
-    @Produces(MediaType.APPLICATION_JSON)
     public Multi<Pet> pets() {
         return service.getPets();
     }
@@ -81,7 +78,6 @@ public class MutinyResource {
 
     @GET
     @Path("/client/pet")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<Pet> callPet() {
         return client.pet();
     }

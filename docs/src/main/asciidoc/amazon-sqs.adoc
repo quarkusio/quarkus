@@ -242,8 +242,6 @@ public class QuarksShieldSyncResource {
     static ObjectReader QUARK_READER = new ObjectMapper().readerFor(Quark.class);
 
     @GET
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public List<Quark> receive() {
         List<Message> messages = sqs.receiveMessage(m -> m.maxNumberOfMessages(10).queueUrl(queueUrl)).messages();
 
@@ -423,8 +421,6 @@ public class QuarksShieldAsyncResource {
     static ObjectReader QUARK_READER = new ObjectMapper().readerFor(Quark.class);
 
     @GET
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<Quark>> receive() {
         return Uni.createFrom()
             .completionStage(sqs.receiveMessage(m -> m.maxNumberOfMessages(10).queueUrl(queueUrl)))

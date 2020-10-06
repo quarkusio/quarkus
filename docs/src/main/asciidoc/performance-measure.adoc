@@ -129,7 +129,7 @@ public class GreetingEndpoint {
 
     @GET
     @Path("/greeting")
-    @Produces("application/json")
+    @Produces(MediaType.APPLICATION_JSON)
     public Greeting greeting(@QueryParam("name") String name) {
         System.out.println(new SimpleDateFormat("HH:mm:ss.SSS").format(new java.util.Date(System.currentTimeMillis())));
         String suffix = name != null ? name : "World";

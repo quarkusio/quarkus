@@ -163,7 +163,6 @@ public class ClientResource {
 
     @GET
     @Path("/jaxrs-client")
-    @Produces(MediaType.APPLICATION_JSON)
     public Greeting testJaxrsClient() throws ClassNotFoundException {
         Greeting greeting = client.target(loopbackEndpoint.get())
                 .request()

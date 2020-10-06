@@ -4,8 +4,6 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
@@ -15,7 +13,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 @Path("/streaming")
-@Produces(MediaType.APPLICATION_JSON)
 public class StreamingEndpoint {
 
     @Inject

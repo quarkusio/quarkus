@@ -5,8 +5,6 @@ import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
@@ -33,7 +31,6 @@ public class HibernateReactiveDB2TestEndpoint {
 
     @GET
     @Path("/reactiveFind")
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<GuineaPig> reactiveFind() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB().convert().toCompletionStage()
@@ -42,7 +39,6 @@ public class HibernateReactiveDB2TestEndpoint {
 
     @GET
     @Path("/reactiveFindMutiny")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB()
@@ -51,7 +47,6 @@ public class HibernateReactiveDB2TestEndpoint {
 
     @GET
     @Path("/reactivePersist")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactivePersist() {
         return mutinySession.persist(new GuineaPig(10, "Tulip"))
                 .chain(() -> mutinySession.flush())
@@ -60,7 +55,6 @@ public class HibernateReactiveDB2TestEndpoint {
 
     @GET
     @Path("/reactiveRemoveTransientEntity")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveTransientEntity() {
         return populateDB()
                 .chain(() -> selectNameFromId(5))
@@ -80,7 +74,6 @@ public class HibernateReactiveDB2TestEndpoint {
 
     @GET
     @Path("/reactiveRemoveManagedEntity")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
                 .chain(() -> mutinySession.find(GuineaPig.class, 5))
@@ -93,7 +86,6 @@ public class HibernateReactiveDB2TestEndpoint {
 
     @GET
     @Path("/reactiveUpdate")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
         return populateDB()

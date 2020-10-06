@@ -796,8 +796,7 @@ class KubernetesProcessor {
                 .forEach(p -> session.configurators().add(new AddPort(p)));
 
         //Handle RBAC
-        // TODO why this condition?
-        if (!kubernetesPorts.isEmpty()) {
+        if (!kubernetesRoleBindings.isEmpty()) {
             session.resources().decorate(new ApplyServiceAccountNamedDecorator());
             session.resources().decorate(new AddServiceAccountResourceDecorator());
             kubernetesRoles.forEach(r -> session.resources().decorate(new AddRoleResourceDecorator(r)));

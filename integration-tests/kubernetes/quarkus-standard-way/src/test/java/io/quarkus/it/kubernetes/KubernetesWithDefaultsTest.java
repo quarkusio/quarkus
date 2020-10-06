@@ -46,6 +46,7 @@ public class KubernetesWithDefaultsTest {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(1);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
+                            assertThat(podSpec.getServiceAccount()).isNull();
                             assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImagePullPolicy()).isEqualTo("Always");
                             });

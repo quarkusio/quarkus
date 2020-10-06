@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
@@ -61,7 +60,7 @@ public class BasicKubernetesTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
-        assertThat(kubernetesList).hasSize(3);
+        assertThat(kubernetesList).hasSize(2);
 
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
@@ -99,12 +98,6 @@ public class BasicKubernetesTest {
                 assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                     assertThat(p.getPort()).isEqualTo(8080);
                 });
-            });
-        });
-
-        assertThat(kubernetesList.get(2)).isInstanceOfSatisfying(ServiceAccount.class, sa -> {
-            assertThat(sa.getMetadata()).satisfies(m -> {
-                assertThat(m.getNamespace()).isNull();
             });
         });
     }

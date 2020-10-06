@@ -60,11 +60,6 @@
 
 - XML?
 - Optim: do not register handlers for return types Uni/Multi/CompletionStage if the static return type doesn't allow it (unless it's Response)
-- Optim: we currently instantiate every param converter every time we need to convert a param if it's a 
-  field (including beanparam), we could store these in extra static fields on the resource/beanparam that
-  we initialise at static init. 
-- Optim: related to the previous one, the classes we generate for fromString/valueOf/constructor we could call directly in the inject()
-  implementations, rather than instantiate those generated classes for every request
 - Optim: CookieParser splits things without checking if a separator exists, but it's too weird to touch ATM (see spec discussion)
 
 ** JAXRS SPEC observations
@@ -95,3 +90,8 @@
 - Request Cookies are based on https://tools.ietf.org/html/rfc2109 which have the clients send cookie params to the server, using `$`-prefixed parameter names,
   but it was obsoleted in https://tools.ietf.org/html/rfc2965 and then in https://tools.ietf.org/html/rfc6265, which does not send cookie params to the server
   and those params are not `$`-prefixed anymore.
+
+*** Spec extensions proposed
+
+- We should disfavour ParamConverterProvider and allow `@Context` on `ParamConverter` since it has a type param, we could scan those at build time
+  rather than do runtime-resolving.

@@ -56,7 +56,6 @@ import io.quarkus.rest.runtime.core.parameters.NullParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.PathParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.QueryParamExtractor;
-import io.quarkus.rest.runtime.core.parameters.converters.NoopParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.RuntimeResolvedConverter;
 import io.quarkus.rest.runtime.core.serialization.DynamicEntityWriter;
@@ -715,13 +714,6 @@ public class QuarkusRestRecorder {
                             javaMethod.getGenericParameterTypes()[i],
                             javaMethod.getParameterAnnotations()[i]);
                 }
-            } else if (userProviderConvertersExist) {
-                // make sure we give the user provided resolvers the chance to convert
-                converter = new RuntimeResolvedConverter(new NoopParameterConverter());
-                Method javaMethod = lazyMethod.getMethod();
-                converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
-                        javaMethod.getGenericParameterTypes()[i],
-                        javaMethod.getParameterAnnotations()[i]);
             }
 
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,

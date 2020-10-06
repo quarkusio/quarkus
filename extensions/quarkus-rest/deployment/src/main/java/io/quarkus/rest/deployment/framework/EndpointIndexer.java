@@ -101,6 +101,7 @@ import io.quarkus.rest.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.parameters.converters.GeneratedParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ListConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.NoopParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverterSupplier;
 import io.quarkus.rest.runtime.core.parameters.converters.PathSegmentParamConverter;
@@ -1045,6 +1046,9 @@ public class EndpointIndexer {
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
                 Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
             if (elementType.equals(String.class.getName())) {
+                if (hasRuntimeConverters)
+                    return new RuntimeResolvedConverter.Supplier().setDelegate(new NoopParameterConverter.Supplier());
+                // String needs no conversion
                 return null;
             } else if (existingConverters.containsKey(elementType)) {
                 String className = existingConverters.get(elementType);

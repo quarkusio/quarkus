@@ -16,4 +16,18 @@ public class NoopParameterConverter implements ParameterConverter {
     public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
 
     }
+
+    public static class Supplier implements ParameterConverterSupplier {
+
+        @Override
+        public ParameterConverter get() {
+            return new NoopParameterConverter();
+        }
+
+        @Override
+        public String getClassName() {
+            return NoopParameterConverter.class.getName();
+        }
+
+    }
 }

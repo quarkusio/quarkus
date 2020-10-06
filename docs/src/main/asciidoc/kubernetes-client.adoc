@@ -58,7 +58,7 @@ An example of this can be seen in the following snippet:
 
 [source,java]
 ----
-@ApplicationScoped
+@Singleton
 public class KubernetesClientProducer {
 
     @Produces
@@ -263,6 +263,71 @@ subjects:
 
 Replace `<applicationName>` and `<namespace>` with your values.
 Have a look at https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[Configure Service Accounts for Pods] to get further information.
+
+== OpenShift Client
+
+If the targetted Kubernetes cluster is an OpenShift cluster, it is possible to access it through
+the `openshift-client` extension, in a similar way. This leverages the dedicated fabric8
+openshift client, and provides access to `OpenShift` proprietary objects (e.g. `Route`, `ProjectRequest`, `BuildConfig` ...)
+
+Note that the configuration properties are shared with the `kubernetes-client` extension. In
+particular they have the same `quarkus.kubernetes-client` prefix.
+
+Add the extension with:
+
+[source]
+----
+./mvnw quarkus:add-extension -Dextensions="openshift-client"
+----
+
+Note that `openshift-client` extension has a dependency on the `kubernetes-client` extension.
+
+To use the client, inject an `OpenShiftClient` instead of the `KubernetesClient`:
+
+[source, java]
+----
+@Inject
+private OpenShiftClient openshiftClient;
+----
+
+If you need to override the default `OpenShiftClient`, provide a producer such as:
+
+[source, java]
+----
+@Singleton
+public class OpenShiftClientProducer {
+
+    @Produces
+    public OpenShiftClient openshiftClient() {
+        // here you would create a custom client
+        return new DefaultOpenShiftClient();
+    }
+}
+----
+
+Mock support is also provided in a similar fashion:
+
+[source, java]
+----
+@QuarkusTestResource(OpenShiftMockServerTestResource.class)
+@QuarkusTest
+public class OpenShiftClientTest {
+
+    @MockServer
+    private OpenShiftMockServer mockServer;
+...
+----
+
+To use this feature, you have to add a dependency on `quarkus-test-openshift-client`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-openshift-client</artifactId>
+    <scope>test</scope>
+</dependency>
+----
 
 == Configuration Reference
 

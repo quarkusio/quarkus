@@ -26,6 +26,7 @@ public class KubernetesClientUtils {
                 .withNamespace(buildConfig.namespace.orElse(base.getNamespace()))
                 .withUsername(buildConfig.username.orElse(base.getUsername()))
                 .withPassword(buildConfig.password.orElse(base.getPassword()))
+                .withOauthToken(buildConfig.token.orElse(base.getOauthToken()))
                 .withCaCertFile(buildConfig.caCertFile.orElse(base.getCaCertFile()))
                 .withCaCertData(buildConfig.caCertData.orElse(base.getCaCertData()))
                 .withClientCertFile(buildConfig.clientCertFile.orElse(base.getClientCertFile()))

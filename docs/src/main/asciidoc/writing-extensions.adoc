@@ -91,7 +91,7 @@ An extension can produce an <<cdi-reference.adoc#additional_beans,`AdditionalBea
 .Bean Class Registered by `AdditionalBeanBuildItem`
 [source%nowrap,java]
 ----
-@ApplicationScoped <1>
+@Singleton <1>
 public class Echo {
 
    public String echo(String val) {
@@ -125,7 +125,7 @@ And vice versa - the extension bean can inject application beans and beans provi
 .Extension Bean Injection Example
 [source%nowrap,java]
 ----
-@ApplicationScoped
+@Singleton
 public class Echo {
 
     @Inject

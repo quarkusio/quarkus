@@ -544,9 +544,10 @@ jobs:
               mailer
           # kubernetes-client alone takes 30mn+
           - category: Misc3
-            timeout: 60
+            timeout: 65
             test-modules: >
               kubernetes-client
+              openshift-client
           - category: Misc4
             timeout: 65
             test-modules: >

@@ -19,6 +19,7 @@
         <module>h2</module>
         <module>derby</module>
         <module>kubernetes-client</module>
+        <module>openshift-client</module>
         <module>junit5-internal</module>
         <module>junit5</module>
         <module>junit5-mockito</module>

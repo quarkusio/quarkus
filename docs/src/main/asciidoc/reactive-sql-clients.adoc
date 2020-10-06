@@ -330,7 +330,7 @@ The same logic applies when saving a `Fruit`:
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public Uni<Long> save(PgPool client) {
-    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)").execute(Tuple.of(name))
+    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id").execute(Tuple.of(name))
             .onItem().transform(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
 }
 ----
@@ -502,9 +502,9 @@ The following snippet shows how to run 2 insertions in the same transaction:
 ----
 public static Uni<Void> insertTwoFruits(PgPool client, Fruit fruit1, Fruit fruit2) {
     return SqlClientHelper.inTransactionUni(client, tx -> {
-        Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
+        Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit1.name));
-        Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
+        Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit2.name));
 
         return insertOne.and(insertTwo)
@@ -522,7 +522,7 @@ You can also create dependent actions as follows:
 ----
 return SqlClientHelper.inTransactionUni(client, tx -> tx
 
-        .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING (id)")
+        .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING id")
                 .execute(Tuple.of(person.getFirstName(), person.getLastName()))
 
         .onItem().transformToUni(id -> tx.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)")

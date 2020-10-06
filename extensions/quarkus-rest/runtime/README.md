@@ -61,6 +61,8 @@
 - XML?
 - Optim: do not register handlers for return types Uni/Multi/CompletionStage if the static return type doesn't allow it (unless it's Response)
 - Optim: CookieParser splits things without checking if a separator exists, but it's too weird to touch ATM (see spec discussion)
+- I don't think we handle generic endpoints well: we don't appear to apply type arguments for methods defined in generic supertypes,
+  so we see all method parameters as `Object`. Same for bean params.
 
 ** JAXRS SPEC observations
 
@@ -95,3 +97,11 @@
 
 - We should disfavour ParamConverterProvider and allow `@Context` on `ParamConverter` since it has a type param, we could scan those at build time
   rather than do runtime-resolving.
+
+*** Not tested by the TCK (and not implemented)
+
+- Parameter converters that throw exceptions should produce NOT_FOUND or BAD_REQUEST, and we implemented it for method params, but
+  not for beanparams/resource fields.
+- SSE client should reconnect with Last-Event-Id.
+- SSE client should handle certain HTTP status codes from the server.
+- Callbacks on AsyncResponse

@@ -182,7 +182,7 @@ class MyService {
 
 == Programmatic Scheduling
 
-If you need to schedule a job programmatically you'll need to add the link:quartz[Quartz extension] and use the Quartz API direcly.
+If you need to schedule a job programmatically you'll need to add the link:quartz[Quartz extension] and use the Quartz API directly.
 
 .Programmatic Scheduling with Quartz API
 [source,java]

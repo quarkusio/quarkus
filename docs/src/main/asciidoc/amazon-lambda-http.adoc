@@ -217,7 +217,7 @@ as a dependencies.  The extension automatically generates everything you might n
 NOTE: In previous versions of this extension you had to set up your pom or gradle
 to zip up your executable for native deployments, but this is not the case anymore.
 
-Also, at least in the generated maven archetype `pom.xml`, the `quarkus-resteasy`, `quarkus-vertx-web`, and `quarkus-underdow`
+Also, at least in the generated maven archetype `pom.xml`, the `quarkus-resteasy`, `quarkus-vertx-web`, and `quarkus-undertow`
 dependencies are all optional.  Pick which http framework(s) you want to use (JAX-RS, Vertx Web, and/or Servlet) and
 remove the other dependencies to shrink your deployment.
 

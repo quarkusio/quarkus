@@ -74,7 +74,7 @@ public final class LiquibaseDataSourceRuntimeConfig {
      * map of parameters, that can be used inside liquibase scripts
      */
     @ConfigItem
-    public Map<String, String> params = new HashMap<>();
+    public Map<String, String> changeLogParameters = new HashMap<>();
 
     /**
      * The liquibase change log lock table name. Name of table to use for tracking concurrent Liquibase usage.

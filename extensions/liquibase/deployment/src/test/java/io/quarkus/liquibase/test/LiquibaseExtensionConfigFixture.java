@@ -64,14 +64,14 @@ public class LiquibaseExtensionConfigFixture {
     }
 
     public Map<String, String> params(LiquibaseConfig configuration) {
-        if (configuration.params == null) {
+        if (configuration.changeLogParameters == null) {
             return Collections.emptyMap();
         }
-        return configuration.params;
+        return configuration.changeLogParameters;
     }
 
     public Map<String, String> params(String datasourceName) {
-        String propertyName = fillin("quarkus.liquibase.%s.params", datasourceName);
+        String propertyName = fillin("quarkus.liquibase.%s.change-log-parameters", datasourceName);
         Map<String, String> map = new HashMap<>();
         StreamSupport.stream(config.getPropertyNames().spliterator(), false).filter(p -> p.startsWith(propertyName))
                 .forEach(p -> map.put(unquote(p.substring(propertyName.length() + 1)), config.getValue(p, String.class)));

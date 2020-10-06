@@ -43,7 +43,7 @@ public class LiquibaseConfig {
      */
     public List<String> labels = null;
 
-    public Map<String, String> params = null;
+    public Map<String, String> changeLogParameters = null;
 
     /**
      * The database change log lock table name

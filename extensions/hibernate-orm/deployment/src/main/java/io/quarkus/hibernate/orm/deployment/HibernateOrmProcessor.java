@@ -92,6 +92,7 @@ import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassesIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
@@ -306,6 +307,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public JpaModelIndexBuildItem jpaEntitiesIndexer(
             CombinedIndexBuildItem index,
+            List<GeneratedClassesIndexBuildItem> generatedClassesIndexBuildItem,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems) {
         // build a composite index with additional jpa model classes
         Indexer indexer = new Indexer();
@@ -314,7 +316,11 @@ public final class HibernateOrmProcessor {
             IndexingUtil.indexClass(jpaModel.getClassName(), indexer, index.getIndex(), additionalIndex,
                     HibernateOrmProcessor.class.getClassLoader());
         }
-        CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
+        Collection<IndexView> indexes = generatedClassesIndexBuildItem.stream().map(i -> i.getIndex())
+                .collect(Collectors.toList());
+        indexes.add(index.getIndex());
+        indexes.add(indexer.complete());
+        CompositeIndex compositeIndex = CompositeIndex.create(indexes);
         return new JpaModelIndexBuildItem(compositeIndex);
     }
 

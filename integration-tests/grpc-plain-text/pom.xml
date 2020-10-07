@@ -51,6 +51,15 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!--
+        mixing the grpc and ispn dependencies has been known to cause problems with jsr305 and epoll,
+        the following dependency is here to check if they work together:
+        -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-infinispan-client</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

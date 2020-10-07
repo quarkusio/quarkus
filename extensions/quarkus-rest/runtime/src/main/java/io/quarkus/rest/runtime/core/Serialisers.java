@@ -62,7 +62,6 @@ import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ShortMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
-import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.spi.QuarkusRestClientMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
@@ -154,8 +153,6 @@ public class Serialisers {
     };
 
     public static BuiltinWriter[] BUILTIN_WRITERS = new BuiltinWriter[] {
-            new BuiltinWriter(Object.class, VertxJsonMessageBodyWriter.class,
-                    MediaType.APPLICATION_JSON),
             new BuiltinWriter(String.class, StringMessageBodyHandler.class,
                     MediaType.TEXT_PLAIN),
             new BuiltinWriter(Number.class, StringMessageBodyHandler.class,

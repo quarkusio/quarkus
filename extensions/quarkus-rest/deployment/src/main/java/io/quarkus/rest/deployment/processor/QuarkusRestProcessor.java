@@ -28,6 +28,7 @@ import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -49,6 +50,7 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -105,6 +107,9 @@ import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
+import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
+import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
+import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
@@ -261,7 +266,8 @@ public class QuarkusRestProcessor {
             QuarkusRestRecorder recorder,
             RecorderContext recorderContext,
             ShutdownContextBuildItem shutdownContext,
-            HttpBuildTimeConfig vertxConfig) {
+            HttpBuildTimeConfig vertxConfig,
+            Capabilities capabilities) {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -540,6 +546,18 @@ public class QuarkusRestProcessor {
                 }
             }
 
+            GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
+            for (ClassInfo invocationCallback : invocationCallbacks) {
+                try {
+                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
+                            QuarkusRestDotNames.INVOCATION_CALLBACK, index);
+                    recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
+                            typeParameters.get(0).name().toString());
+                } catch (Exception ignored) {
+
+                }
+            }
+
             Serialisers serialisers = new Serialisers();
             for (ClassInfo writerClass : writers) {
                 if (writerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
@@ -582,16 +600,17 @@ public class QuarkusRestProcessor {
                 }
             }
 
-            GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
-            for (ClassInfo invocationCallback : invocationCallbacks) {
-                try {
-                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
-                            QuarkusRestDotNames.INVOCATION_CALLBACK, index);
-                    recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
-                            typeParameters.get(0).name().toString());
-                } catch (Exception ignored) {
+            // additional readers / writers based on capabilities
 
-                }
+            if (capabilities.isPresent(Capability.JACKSON)) {
+                registerWriter(recorder, serialisers, Object.class, VertxJsonMessageBodyWriter.class,
+                        beanContainerBuildItem.getValue(), MediaType.APPLICATION_JSON);
+            }
+            if (capabilities.isPresent(Capability.JSONB)) {
+                registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class,
+                        beanContainerBuildItem.getValue(), MediaType.APPLICATION_JSON, null);
+                registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class,
+                        beanContainerBuildItem.getValue(), MediaType.APPLICATION_JSON);
             }
 
             // built-ins

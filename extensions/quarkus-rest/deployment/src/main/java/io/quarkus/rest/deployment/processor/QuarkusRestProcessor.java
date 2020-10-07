@@ -32,6 +32,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
+import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -285,6 +288,9 @@ public class QuarkusRestProcessor {
             ShutdownContextBuildItem shutdownContext,
             HttpBuildTimeConfig vertxConfig,
             Capabilities capabilities,
+            List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
+            List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
+            List<DynamicFeatureBuildItem> additionalDynamicFeatures,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -445,6 +451,24 @@ public class QuarkusRestProcessor {
                     }
                 }
             }
+            for (ContainerRequestFilterBuildItem additionalFilter : additionalContainerRequestFilters) {
+                ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
+                interceptor.setFactory(recorder.factory(additionalFilter.getClassName(), beanContainerBuildItem.getValue()));
+                if (additionalFilter.getPriority() != null) {
+                    interceptor.setPriority(additionalFilter.getPriority());
+                }
+                if (additionalFilter.getPreMatching() != null) {
+                    interceptor.setPreMatching(additionalFilter.getPreMatching());
+                    if (additionalFilter.getPreMatching()) {
+                        interceptors.addResourcePreMatchInterceptor(interceptor);
+                    } else {
+                        interceptors.addGlobalRequestInterceptor(interceptor);
+                    }
+                } else {
+                    interceptors.addGlobalRequestInterceptor(interceptor);
+                }
+            }
+
             for (ClassInfo filterClass : containerResponseFilters) {
                 if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
                     ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
@@ -463,6 +487,15 @@ public class QuarkusRestProcessor {
                     }
                 }
             }
+            for (ContainerResponseFilterBuildItem additionalFilter : additionalContainerResponseFilters) {
+                ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
+                interceptor.setFactory(recorder.factory(additionalFilter.getClassName(), beanContainerBuildItem.getValue()));
+                if (additionalFilter.getPriority() != null) {
+                    interceptor.setPriority(additionalFilter.getPriority());
+                }
+                interceptors.addGlobalResponseInterceptor(interceptor);
+            }
+
             for (ClassInfo filterClass : writerInterceptors) {
                 if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
                     ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
@@ -562,6 +595,11 @@ public class QuarkusRestProcessor {
                             beanContainerBuildItem.getValue()));
                     dynamicFeats.addFeature(resourceFeature);
                 }
+            }
+            for (DynamicFeatureBuildItem additionalDynamicFeature : additionalDynamicFeatures) {
+                ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
+                resourceFeature.setFactory(recorder.factory(additionalDynamicFeature.getClassName(), beanContainerBuildItem.getValue()));
+                dynamicFeats.addFeature(resourceFeature);
             }
 
             GenericTypeMapping genericTypeMapping = new GenericTypeMapping();

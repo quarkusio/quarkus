@@ -95,7 +95,7 @@
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-rest-client.version>7.9.0</elasticsearch-rest-client.version>
         <rxjava1.version>1.3.8</rxjava1.version>
-        <rxjava.version>2.2.19</rxjava.version>
+        <rxjava.version>2.2.20</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.30</slf4j.version>

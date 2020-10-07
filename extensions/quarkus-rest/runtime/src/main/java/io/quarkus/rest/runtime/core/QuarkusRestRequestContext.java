@@ -94,7 +94,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
      */
     private Object result;
     private boolean suspended = false;
-    private volatile boolean resetRequestContext = false;
+    private volatile boolean requestScopeActivated = false;
     private volatile boolean running = false;
     private volatile Executor executor;
     private int position;
@@ -189,7 +189,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
             }
         } else {
             suspended = false;
-            resetRequestContext = true;
             if (executor == null) {
                 ((ConnectionBase) context.request().connection()).getContext().nettyEventLoop().execute(this);
             } else {
@@ -203,16 +202,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         running = true;
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
-        boolean activationRequired = target == null || (target.isBlocking() && executor == null) || resetRequestContext;
-        if (activationRequired) {
-            if (currentRequestScope == null) {
-                requestContext.activate();
-                currentVertxRequest.setCurrent(context, this);
-            } else {
-                requestContext.activate(currentRequestScope);
-            }
-            resetRequestContext = false;
-        }
+        boolean terminateRequestScope = false;
+        boolean disasociateRequestScope = false;
         try {
             while (position < handlers.length) {
                 int pos = position;
@@ -222,6 +213,15 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
                     if (suspended) {
                         Executor exec = null;
                         synchronized (this) {
+                            if (requestScopeActivated) {
+                                if (position == handlers.length) {
+                                    terminateRequestScope = true;
+                                } else {
+                                    currentRequestScope = requestContext.getState();
+                                    disasociateRequestScope = true;
+                                }
+                                requestScopeActivated = false;
+                            }
                             if (this.executor != null) {
                                 //resume happened in the meantime
                                 suspended = false;
@@ -252,15 +252,28 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
             close();
         } finally {
             running = false;
-            if (activationRequired) {
-                if (position == handlers.length) {
-                    requestContext.terminate();
-                    close();
-                } else {
-                    currentRequestScope = requestContext.getState();
-                    requestContext.deactivate();
-                }
+            if (terminateRequestScope) {
+                requestContext.terminate();
+                close();
+            } else if (disasociateRequestScope) {
+                requestContext.deactivate();
             }
+        }
+    }
+
+    public void requireCDIRequestScope() {
+        if (!running) {
+            throw new RuntimeException("Cannot be called when outside a handler chain");
+        }
+        if (requestScopeActivated) {
+            return;
+        }
+        requestScopeActivated = true;
+        if (currentRequestScope == null) {
+            requestContext.activate();
+            currentVertxRequest.setCurrent(context, this);
+        } else {
+            requestContext.activate(currentRequestScope);
         }
     }
 

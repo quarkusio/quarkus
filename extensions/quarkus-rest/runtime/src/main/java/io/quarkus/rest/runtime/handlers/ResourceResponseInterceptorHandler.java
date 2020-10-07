@@ -19,6 +19,7 @@ public class ResourceResponseInterceptorHandler implements RestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
+        requestContext.requireCDIRequestScope();
         QuarkusRestContainerRequestContext filterRequestContext = requestContext.getContainerRequestContext();
         filterRequestContext.setResponse(true);
         filterRequestContext.setPreMatch(false);

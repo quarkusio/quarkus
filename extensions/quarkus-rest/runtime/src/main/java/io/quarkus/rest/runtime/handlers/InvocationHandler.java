@@ -23,6 +23,7 @@ public class InvocationHandler implements RestHandler {
         if (async) {
             requestContext.suspend();
         }
+        requestContext.requireCDIRequestScope();
         try {
             Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
             if (!async) {

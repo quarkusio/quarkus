@@ -178,6 +178,7 @@ public class SimpleQuarkusRestResource {
     @Path("/blocking")
     @Blocking
     public String blocking() {
+        service.sayHello();
         return String.valueOf(BlockingOperationControl.isBlockingAllowed());
     }
 

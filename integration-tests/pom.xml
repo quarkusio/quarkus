@@ -144,8 +144,9 @@
         <module>mailer</module>
 
         <!-- gRPC tests -->
-        <module>grpc-plain-text</module>
         <module>grpc-tls</module>
+        <module>grpc-plain-text</module>
+        <module>grpc-plain-text-mutiny</module>
         <module>grpc-mutual-auth</module>
         <module>grpc-streaming</module>
         <module>grpc-interceptors</module>

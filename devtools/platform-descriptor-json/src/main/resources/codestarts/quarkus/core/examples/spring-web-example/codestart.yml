@@ -1,0 +1,16 @@
+name: spring-web-example
+ref: spring-web
+type: code
+tags: example
+language:
+  base:
+    data:
+      resource:
+        class-name: ExampleController
+        path: "/springweb/hello"
+        response: "hello"
+      package-name: org.acme.spring.web
+    dependencies:
+      - io.quarkus:quarkus-spring-web
+    test-dependencies:
+      - io.rest-assured:rest-assured

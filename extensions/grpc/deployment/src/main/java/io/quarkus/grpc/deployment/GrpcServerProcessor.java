@@ -160,7 +160,13 @@ public class GrpcServerProcessor {
     NativeImageConfigBuildItem nativeImageConfiguration() {
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.grpc.netty.Utils$ByteBufAllocatorPreferDirectHolder")
-                .addRuntimeInitializedClass("io.grpc.netty.Utils$ByteBufAllocatorPreferHeapHolder");
+                .addRuntimeInitializedClass("io.grpc.netty.Utils$ByteBufAllocatorPreferHeapHolder")
+                // substitutions are runtime-only, Utils have to be substituted until we cannot use EPoll
+                // in native. NettyServerBuilder and NettyChannelBuilder would "bring in" Utils in build time
+                // if they were not marked as runtime initialized:
+                .addRuntimeInitializedClass("io.grpc.netty.Utils")
+                .addRuntimeInitializedClass("io.grpc.netty.NettyServerBuilder")
+                .addRuntimeInitializedClass("io.grpc.netty.NettyChannelBuilder");
         return builder.build();
     }
 

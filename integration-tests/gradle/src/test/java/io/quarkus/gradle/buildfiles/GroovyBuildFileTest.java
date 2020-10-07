@@ -5,10 +5,12 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.gradle.GroovyBuildFileFromConnector;
 
+@Disabled
 class GroovyBuildFileTest extends AbstractBuildFileTest {
 
     private static GroovyBuildFileFromConnector buildFile;

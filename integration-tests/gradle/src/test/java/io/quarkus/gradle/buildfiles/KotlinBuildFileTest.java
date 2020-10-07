@@ -5,10 +5,12 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.gradle.KotlinBuildFileFromConnector;
 
+@Disabled
 class KotlinBuildFileTest extends AbstractBuildFileTest {
 
     private static KotlinBuildFileFromConnector buildFile;

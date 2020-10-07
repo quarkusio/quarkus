@@ -21,6 +21,7 @@ public class AggregateOptions {
     private boolean bypassDocumentValidation;
     private Collation collation;
     private String comment;
+    private int batchSize;
 
     /**
      * Enables writing to temporary files. A null value indicates that it's unspecified.
@@ -114,6 +115,23 @@ public class AggregateOptions {
         return this;
     }
 
+    /**
+     * Sets the number of documents to return per batch.
+     *
+     * <p>
+     * Overrides the {@link org.reactivestreams.Subscription#request(long)} value for setting the batch size, allowing for fine
+     * grained
+     * control over the underlying cursor.
+     * </p>
+     *
+     * @param size the batch size
+     * @return this
+     */
+    public AggregateOptions batchSize(int size) {
+        this.batchSize = size;
+        return this;
+    }
+
     public <T> AggregatePublisher<T> apply(AggregatePublisher<T> stream) {
         AggregatePublisher<T> publisher = stream;
 
@@ -133,6 +151,9 @@ public class AggregateOptions {
         }
         if (maxTime > 0) {
             publisher.maxAwaitTime(maxTime, maxTimeUnit);
+        }
+        if (batchSize > 0) {
+            publisher.batchSize(batchSize);
         }
         return publisher;
     }

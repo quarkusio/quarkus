@@ -38,6 +38,8 @@ class LiquibaseCreator {
     public LiquibaseFactory createLiquibase(DataSource dataSource) {
         LiquibaseConfig config = new LiquibaseConfig();
         config.changeLog = liquibaseBuildTimeConfig.changeLog;
+        config.changeLogParameters = liquibaseRuntimeConfig.changeLogParameters;
+
         if (liquibaseRuntimeConfig.labels.isPresent()) {
             config.labels = liquibaseRuntimeConfig.labels.get();
         }

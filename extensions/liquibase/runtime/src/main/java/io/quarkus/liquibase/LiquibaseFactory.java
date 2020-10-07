@@ -1,5 +1,7 @@
 package io.quarkus.liquibase;
 
+import java.util.Map;
+
 import javax.sql.DataSource;
 
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
@@ -64,7 +66,13 @@ public class LiquibaseFactory {
                     database.setDefaultSchemaName(config.defaultSchemaName.get());
                 }
             }
-            return new Liquibase(config.changeLog, resourceAccessor, database);
+            Liquibase liquibase = new Liquibase(config.changeLog, resourceAccessor, database);
+
+            for (Map.Entry<String, String> entry : config.changeLogParameters.entrySet()) {
+                liquibase.getChangeLogParameters().set(entry.getKey(), entry.getValue());
+            }
+
+            return liquibase;
 
         } catch (Exception ex) {
             throw new IllegalStateException(ex);

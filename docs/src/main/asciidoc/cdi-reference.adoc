@@ -644,7 +644,7 @@ It's possible to annotate a non-private static method with an interceptor bindin
 class Services {
 
   @Logged <1>
-  static BigDecimal computePrice(long amout) { <2>
+  static BigDecimal computePrice(long amount) { <2>
     BigDecimal price;
     // Perform computations...
     return price;
@@ -690,7 +690,7 @@ import io.quarkus.arc.Lock;
 @ApplicationScoped
 class SharedService {
 
-  void addAmount(BigDecimal amout) {
+  void addAmount(BigDecimal amount) {
     // ...changes some internal state of the bean
   }
   

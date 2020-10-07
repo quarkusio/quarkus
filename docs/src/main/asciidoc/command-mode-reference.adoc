@@ -113,7 +113,7 @@ As command mode applications will often require arguments to be passed on the co
 mvn compile quarkus:dev -Dquarkus.args='--help'
 ----
 
-The same can be achived with Gradle:
+The same can be achieved with Gradle:
 
 ----
 ./gradlew quarkusDev --quarkus-args='--help'

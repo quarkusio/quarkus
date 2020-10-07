@@ -101,7 +101,7 @@ public class Translator {
 
 A: Yes, you can.
 In fact, in CDI the "setter injection" is superseded by more powerful https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#initializer_methods[initializer methods, window="_blank"].
-Intializers may accept multiple parameters and don't have to follow the JavaBean naming conventions.
+Initializers may accept multiple parameters and don't have to follow the JavaBean naming conventions.
 
 .Initialized and Constructor Injection Example
 [source,java]
@@ -183,13 +183,13 @@ A: You can use all the built-in scopes mentioned by the specification except for
 |`@javax.inject.Singleton`   | Just like `@ApplicationScoped` except that no client proxy is used. The instance is created when an injection point that resolves to a @Singleton bean is being injected.
 |`@javax.enterprise.context.RequestScoped`   | The bean instance is associated with the current _request_ (usually an HTTP request). 
 |`@javax.enterprise.context.Dependent`   | This is a pseudo-scope. The instances are not shared and every injection point spawns a new instance of the dependent bean. The lifecycle of dependent bean is bound to the bean injecting it - it will be created and destroyed along with the bean injecting it.
-|`@javax.enterprise.context.SessionScoped`   | This scope is backed by an `javax.servlet.http.HttpSession` object. It's only available if the `quarkus-undertow` extension is used.
+|`@javax.enterprise.context.SessionScoped`   | This scope is backed by a `javax.servlet.http.HttpSession` object. It's only available if the `quarkus-undertow` extension is used.
 |===
 
 NOTE: There can be other custom scopes provided by Quarkus extensions. For example, `quarkus-narayana-jta` provides `javax.transaction.TransactionScoped`.
 
 [[client_proxies]]
-== _Q: I don't undestand the concept of client proxies._
+== _Q: I don't understand the concept of client proxies._
 
 Indeed, the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#client_proxies[client proxies, window="_blank"] could be hard to grasp but they provide some useful functionality.
 A client proxy is basically an object that delegates all method invocations to a target bean instance.

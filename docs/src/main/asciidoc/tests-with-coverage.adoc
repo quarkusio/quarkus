@@ -705,4 +705,4 @@ You should end up with something like this (note the addition of the `merge-resu
 == Conclusion
 
 You now have all the information you need to study the coverage of your tests!
-But remember, some code that is not covered is certinaly not well tested. But some code that is covered is not necessarily *well* tested. Make sure to write good tests!
+But remember, some code that is not covered is certainly not well tested. But some code that is covered is not necessarily *well* tested. Make sure to write good tests!

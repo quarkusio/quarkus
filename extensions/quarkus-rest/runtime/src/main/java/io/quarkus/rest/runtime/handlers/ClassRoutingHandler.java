@@ -115,7 +115,7 @@ public class ClassRoutingHandler implements RestHandler {
             String accepts = requestContext.getContext().request().headers().get(HttpHeaders.ACCEPT);
             if (accepts != null) {
                 if (MediaTypeHelper.getBestMatch(Arrays.asList(target.value.getProduces().getSortedMediaTypes()),
-                        Collections.singletonList(MediaType.valueOf(accepts))) == null) {
+                        requestContext.getHttpHeaders().getModifiableAcceptableMediaTypes()) == null) {
                     throw new NotAcceptableException();
                 }
             }

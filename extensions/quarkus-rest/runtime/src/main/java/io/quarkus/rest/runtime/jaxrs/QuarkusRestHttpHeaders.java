@@ -43,15 +43,6 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
         return requestHeaders;
     }
 
-    public void testParsing() {
-        // test parsing should throw an exception on error
-        getAcceptableMediaTypes();
-        getMediaType();
-        getLanguage();
-        getAcceptableLanguages();
-
-    }
-
     @Override
     public List<String> getRequestHeader(String name) {
         List<String> vals = unmodifiableRequestHeaders.get(name);

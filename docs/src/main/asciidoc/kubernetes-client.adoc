@@ -140,7 +140,7 @@ Note that to take advantage of these features, the `quarkus-test-kubernetes-clie
 </dependency>
 ----
 
-You can create a `CustomKubernetesMockServerTestResource.java` to ensure all you `@QuarkusTest` enabled test classes share the same mock server setup:
+You can create a `CustomKubernetesMockServerTestResource.java` to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup:
 
 [source%nowrap,java]
 ----
@@ -155,7 +155,7 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
 }
 ----
 
-and use this in your other test classes like this:
+and use this in your other test classes as follows:
 [source%nowrap,java]
 ----
 @QuarkusTestResource(KubernetesMockServerTestResource.class)
@@ -166,7 +166,7 @@ public class KubernetesClientTest {
 }
 ----
 
-Furthermore, to get a mock server that replies with empty lists per default (instead of getting 404 from the kubernetes api),
+Furthermore, to get a mock server that replies with empty lists by default (instead of getting 404 responses from the Kubernetes API),
 you can use the `EmptyDefaultKubernetesMockServerTestResource.class` instead of
 `KubernetesMockServerTestResource.class`.
 

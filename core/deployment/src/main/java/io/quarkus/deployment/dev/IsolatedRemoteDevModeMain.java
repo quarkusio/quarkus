@@ -56,7 +56,6 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
     static volatile Throwable deploymentProblem;
-    static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
     static volatile RemoteDevClient remoteDevClient;
     static volatile Closeable remoteDevClientSession;
     private static volatile CuratedApplication curatedApplication;
@@ -150,7 +149,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     public void close() {
         try {
             try {
-                runtimeUpdatesProcessor.close();
+                RuntimeUpdatesProcessor.INSTANCE.close();
             } catch (IOException e) {
                 log.error("Failed to close compiler", e);
             }
@@ -190,11 +189,11 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             }
 
             augmentAction = new AugmentActionImpl(curatedApplication);
-            runtimeUpdatesProcessor = setupRuntimeCompilation(context, appRoot);
+            RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, appRoot);
 
-            if (runtimeUpdatesProcessor != null) {
-                runtimeUpdatesProcessor.checkForFileChange();
-                runtimeUpdatesProcessor.checkForChangedClasses();
+            if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                RuntimeUpdatesProcessor.INSTANCE.checkForFileChange();
+                RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
             }
 
             JarResult result = generateApplication();
@@ -254,7 +253,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
         Set<String> removed = new HashSet<>();
         Map<String, byte[]> changed = new HashMap<>();
         try {
-            boolean scanResult = runtimeUpdatesProcessor.doScan(true);
+            boolean scanResult = RuntimeUpdatesProcessor.INSTANCE.doScan(true);
             if (!scanResult && !copiedStaticResources.isEmpty()) {
                 scanResult = true;
                 regenerateApplication(Collections.emptySet());
@@ -291,7 +290,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
             @Override
             public Throwable getProblem() {
-                return runtimeUpdatesProcessor.getDeploymentProblem();
+                return RuntimeUpdatesProcessor.INSTANCE.getDeploymentProblem();
             }
 
         };

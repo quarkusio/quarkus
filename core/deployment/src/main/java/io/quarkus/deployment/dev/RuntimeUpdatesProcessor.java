@@ -43,6 +43,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class);
 
     private static final String CLASS_EXTENSION = ".class";
+    static volatile RuntimeUpdatesProcessor INSTANCE;
 
     private final Path applicationRoot;
     private final DevModeContext context;

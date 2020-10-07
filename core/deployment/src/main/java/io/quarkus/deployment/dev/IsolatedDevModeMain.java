@@ -58,7 +58,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
     private static volatile RunningQuarkusApplication runner;
     static volatile Throwable deploymentProblem;
-    static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
     private static volatile CuratedApplication curatedApplication;
     private static volatile AugmentAction augmentAction;
     private static volatile boolean restarting;
@@ -95,8 +94,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                         System.in.read();
                                     }
                                     System.out.println("Restarting...");
-                                    runtimeUpdatesProcessor.checkForChangedClasses();
-                                    restartApp(runtimeUpdatesProcessor.checkForFileChange());
+                                    RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
+                                    restartApp(RuntimeUpdatesProcessor.INSTANCE.checkForFileChange());
                                 } catch (Exception e) {
                                     log.error("Failed to restart", e);
                                 }
@@ -117,7 +116,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     //we need to set this here, while we still have the correct TCCL
                     //this is so the config is still valid, and we can read HTTP config from application.properties
                     log.info("Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");
-                    if (runtimeUpdatesProcessor != null) {
+                    if (RuntimeUpdatesProcessor.INSTANCE != null) {
                         Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
 
                         try {
@@ -126,7 +125,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                         .loadClass(LoggingSetupRecorder.class.getName());
                                 cl.getMethod("handleFailedStart").invoke(null);
                             }
-                            runtimeUpdatesProcessor.startupFailed();
+                            RuntimeUpdatesProcessor.INSTANCE.startupFailed();
                         } catch (Exception e) {
                             close();
                             log.error("Failed to recover after failed start", e);
@@ -253,7 +252,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         } finally {
             try {
                 try {
-                    runtimeUpdatesProcessor.close();
+                    RuntimeUpdatesProcessor.INSTANCE.close();
                 } catch (IOException e) {
                     log.error("Failed to close compiler", e);
                 }
@@ -340,19 +339,20 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     sourcePath -> module.addSourcePaths(singleton(sourcePath.toAbsolutePath().toString()))));
                 }
             }
-            runtimeUpdatesProcessor = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),
+            RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),
                     (DevModeType) params.get(DevModeType.class.getName()));
-            if (runtimeUpdatesProcessor != null) {
-                runtimeUpdatesProcessor.checkForFileChange();
-                runtimeUpdatesProcessor.checkForChangedClasses();
+            if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                RuntimeUpdatesProcessor.INSTANCE.checkForFileChange();
+                RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
             }
             firstStart(deploymentClassLoader, codeGens);
 
             //        doStart(false, Collections.emptySet());
-            if (deploymentProblem != null || runtimeUpdatesProcessor.getCompileProblem() != null) {
+            if (deploymentProblem != null || RuntimeUpdatesProcessor.INSTANCE.getCompileProblem() != null) {
                 if (context.isAbortOnFailedStart()) {
                     throw new RuntimeException(
-                            deploymentProblem == null ? runtimeUpdatesProcessor.getCompileProblem() : deploymentProblem);
+                            deploymentProblem == null ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
+                                    : deploymentProblem);
                 }
             }
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

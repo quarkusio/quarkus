@@ -13,7 +13,7 @@ public class HotDeploymentConfigFileBuildStep {
     @BuildStep
     ServiceStartBuildItem setupConfigFileHotDeployment(List<HotDeploymentWatchedFileBuildItem> files) {
         // TODO: this should really be an output of the RuntimeRunner
-        RuntimeUpdatesProcessor processor = IsolatedDevModeMain.runtimeUpdatesProcessor;
+        RuntimeUpdatesProcessor processor = RuntimeUpdatesProcessor.INSTANCE;
         if (processor != null) {
             Map<String, Boolean> watchedFilePaths = files.stream()
                     .collect(Collectors.toMap(HotDeploymentWatchedFileBuildItem::getLocation,

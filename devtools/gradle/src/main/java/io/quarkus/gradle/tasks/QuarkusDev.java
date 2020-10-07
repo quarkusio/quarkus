@@ -481,6 +481,23 @@ public class QuarkusDev extends QuarkusTask {
                 .ofNullable((JavaCompile) getProject().getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME));
     }
 
+    private ResolvedDependency findQuarkusPluginDependency(Set<ResolvedDependency> dependencies) {
+        for (ResolvedDependency rd : dependencies) {
+            if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
+                return rd;
+            } else {
+                Set<ResolvedDependency> children = rd.getChildren();
+                if (children != null) {
+                    ResolvedDependency quarkusPluginDependency = findQuarkusPluginDependency(children);
+                    if (quarkusPluginDependency != null) {
+                        return quarkusPluginDependency;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     private void addGradlePluginDeps(StringBuilder classPathManifest, DevModeContext context) {
         boolean foundQuarkusPlugin = false;
         Project prj = getProject();
@@ -491,14 +508,15 @@ public class QuarkusDev extends QuarkusTask {
             if (firstLevelDeps.isEmpty()) {
                 // TODO this looks weird
             } else {
-                for (ResolvedDependency rd : firstLevelDeps) {
-                    if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
-                        rd.getAllModuleArtifacts().stream()
-                                .map(ResolvedArtifact::getFile)
-                                .forEach(f -> addToClassPaths(classPathManifest, f));
-                        foundQuarkusPlugin = true;
-                        break;
-                    }
+                ResolvedDependency quarkusPluginDependency = findQuarkusPluginDependency(firstLevelDeps);
+                if (quarkusPluginDependency != null) {
+                    quarkusPluginDependency.getAllModuleArtifacts().stream()
+                            .map(ResolvedArtifact::getFile)
+                            .forEach(f -> addToClassPaths(classPathManifest, f));
+
+                    foundQuarkusPlugin = true;
+
+                    break;
                 }
             }
             prj = prj.getParent();

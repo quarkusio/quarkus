@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,12 +77,14 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     }
 
     @ParameterizedTest
+    @Disabled
     @MethodSource("provideGenerateCombinations")
     public void generateGradleProjectRun(String language, List<String> codestarts) throws Exception {
         generateProjectRunTests("gradle", language, codestarts, Collections.emptyMap());
     }
 
     @ParameterizedTest
+    @Disabled
     @MethodSource("provideGenerateCombinations")
     public void generateGradleKotlinProjectRun(String language, List<String> codestarts) throws Exception {
         generateProjectRunTests("gradle-kotlin-dsl", language, codestarts, Collections.emptyMap());

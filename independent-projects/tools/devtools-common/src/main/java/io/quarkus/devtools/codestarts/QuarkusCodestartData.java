@@ -32,6 +32,10 @@ public final class QuarkusCodestartData {
         RESTEASY_EXAMPLE_PACKAGE_NAME("resteasy-example.package-name"),
         RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-example.resource.class-name"),
 
+        SPRING_WEB_EXAMPLE_RESOURCE_PATH("spring-web-example.resource.path"),
+        SPRING_WEB_EXAMPLE_PACKAGE_NAME("spring-web-example.package-name"),
+        SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME("spring-web-example.resource.class-name"),
+
         COMMANDMODE_EXAMPLE_PACKAGE_NAME("commandmode-example.package-name"),
         COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME("commandmode-example.main.class-name"),
 

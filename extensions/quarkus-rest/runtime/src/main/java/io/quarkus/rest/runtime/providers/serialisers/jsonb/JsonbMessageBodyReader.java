@@ -5,22 +5,20 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import javax.inject.Inject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.Provider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 
-@Provider
-@Consumes({ "application/json", "application/*+json", "text/json" })
+// this gets conditionally registered
 public class JsonbMessageBodyReader implements MessageBodyReader<Object> {
 
     private final Jsonb json;
@@ -37,6 +35,11 @@ public class JsonbMessageBodyReader implements MessageBodyReader<Object> {
         } else {
             this.json = JsonbBuilder.create();
         }
+    }
+
+    @Inject
+    public JsonbMessageBodyReader(Jsonb json) {
+        this.json = json;
     }
 
     @Override

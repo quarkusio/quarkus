@@ -62,7 +62,6 @@ import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ShortMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
-import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.spi.QuarkusRestClientMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
@@ -146,10 +145,6 @@ public class Serialisers {
             new BuiltinReader(byte[].class, ByteArrayMessageBodyHandler.class, MediaType.WILDCARD, RuntimeType.CLIENT),
             new BuiltinReader(MultivaluedMap.class, FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED,
                     RuntimeType.CLIENT),
-
-            //TODO: Do the Jsonb readers always make sense?
-            new BuiltinReader(Object.class, JsonbMessageBodyReader.class,
-                    MediaType.APPLICATION_JSON),
     };
 
     public static BuiltinWriter[] BUILTIN_WRITERS = new BuiltinWriter[] {

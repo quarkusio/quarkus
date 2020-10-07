@@ -3,7 +3,7 @@ package io.quarkus.amazon.common.runtime;
 import software.amazon.awssdk.http.TlsTrustManagersProvider;
 
 public enum TlsTrustManagersProviderType {
-    INSECURE {
+    TRUST_ALL {
         @Override
         public TlsTrustManagersProvider create(TlsTrustManagersProviderConfig config) {
             return new NoneTlsTrustManagersProvider();

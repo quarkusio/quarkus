@@ -29,6 +29,8 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <modules>
+                <module>bouncycastle</module>
+                <module>bouncycastle-jsse</module>
                 <module>funqy-amazon-lambda</module>
                 <module>funqy-google-cloud-functions</module>
                 <module>class-transformer</module>
@@ -56,7 +58,6 @@
                 <module>mongodb-panache-kotlin</module>
                 <module>mongodb-rest-data-panache</module>
                 <module>micrometer-jmx</module>
-
                 <!-- gRPC tests -->
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>

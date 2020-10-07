@@ -1,6 +1,7 @@
 package io.quarkus.it.elytron;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import java.security.KeyPair;
@@ -24,6 +25,16 @@ public class JCATestCase {
                 .then()
                 .statusCode(200)
                 .body(containsString("SunRsaSign"));
+    }
+
+    @Test
+    public void testSHA256withRSAandMGF1() {
+        RestAssured.given()
+                .when()
+                .get("/jca/SHA256withRSAandMGF1")
+                .then()
+                .statusCode(200)
+                .body(equalTo("failure"));
     }
 
     @Test

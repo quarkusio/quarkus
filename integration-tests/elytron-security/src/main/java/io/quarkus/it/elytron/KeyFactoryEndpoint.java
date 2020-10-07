@@ -61,4 +61,16 @@ public class KeyFactoryEndpoint {
 
         return true;
     }
+
+    @GET
+    @Path("SHA256withRSAandMGF1")
+    public String checkSHA256withRSAandMGF1() {
+        // This algorithm name is only supported with BC, Java (11+) equivalent is `RSASSA-PSS`
+        try {
+            Signature.getInstance("SHA256withRSAandMGF1");
+            return "success";
+        } catch (Throwable t) {
+            return "failure";
+        }
+    }
 }

@@ -67,11 +67,13 @@ public abstract class AbstractGraphQLTest {
 
     protected static String getPropertyAsString(Map<String, String> otherProperties) {
         try {
+            Properties p = new Properties();
+            p.putAll(PROPERTIES);
             StringWriter writer = new StringWriter();
             if (otherProperties != null) {
-                PROPERTIES.putAll(otherProperties);
+                p.putAll(otherProperties);
             }
-            PROPERTIES.store(writer, "Test Properties");
+            p.store(writer, "Test Properties");
             return writer.toString();
         } catch (IOException ex) {
             throw new RuntimeException(ex);

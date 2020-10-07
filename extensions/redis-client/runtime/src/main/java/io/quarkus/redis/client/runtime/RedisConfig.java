@@ -4,7 +4,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 
 import io.quarkus.redis.client.RedisClient;
@@ -55,39 +54,6 @@ public class RedisConfig {
 
     @ConfigGroup
     public static class RedisConfiguration {
-        /**
-         * The redis password
-         * <p>
-         * 
-         * @deprecated It should be removed in the 1.10 release.
-         *             Follows up https://github.com/quarkusio/quarkus/pull/11908#issuecomment-694794724
-         */
-        @ConfigItem
-        @Deprecated
-        public Optional<String> password;
-
-        /**
-         * Enables or disables ssl connection.
-         * <p>
-         * 
-         * @deprecated It should be removed in the 1.10 release.
-         *             Follows up https://github.com/quarkusio/quarkus/pull/11908#issuecomment-694794724
-         */
-        @ConfigItem
-        @Deprecated
-        public Optional<Boolean> ssl;
-
-        /**
-         * The redis database
-         * <p>
-         * 
-         * @deprecated It should be removed in the 1.10 release.
-         *             Follows up https://github.com/quarkusio/quarkus/pull/11908#issuecomment-694794724
-         */
-        @ConfigItem
-        @Deprecated
-        public OptionalInt database;
-
         /**
          * The redis hosts to use while connecting to the redis server. Only the cluster mode will consider more than
          * 1 element.

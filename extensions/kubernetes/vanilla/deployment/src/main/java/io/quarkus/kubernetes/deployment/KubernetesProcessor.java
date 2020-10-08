@@ -612,12 +612,12 @@ class KubernetesProcessor {
     }
 
     // apply Openshift specific configuration
-    private void applyOpenshiftSpecificConfig(Session session, OpenshiftConfig openshiftConfig) {
-        session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
+    private void applyOpenshiftSpecificConfig(Session session, String name, OpenshiftConfig openshiftConfig) {
+        session.resources().decorate(OPENSHIFT, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS));
 
         if (!openshiftConfig.addVersionToLabelSelectors) {
-            session.resources().decorate(OPENSHIFT, new RemoveLabelDecorator(Labels.VERSION));
-            session.resources().decorate(OPENSHIFT, new RemoveFromSelectorDecorator(Labels.VERSION));
+            session.resources().decorate(OPENSHIFT, new RemoveLabelDecorator(name, Labels.VERSION));
+            session.resources().decorate(OPENSHIFT, new RemoveFromSelectorDecorator(name, Labels.VERSION));
         }
     }
 
@@ -752,11 +752,13 @@ class KubernetesProcessor {
         }
 
         kubernetesAnnotations.forEach(a -> {
-            session.resources().decorate(a.getTarget(), new AddAnnotationDecorator(new Annotation(a.getKey(), a.getValue())));
+            session.resources().decorate(a.getTarget(),
+                    new AddAnnotationDecorator(ApplicationContainerDecorator.ANY, a.getKey(), a.getValue()));
         });
 
         kubernetesLabels.forEach(l -> {
-            session.resources().decorate(l.getTarget(), new AddLabelDecorator(new Label(l.getKey(), l.getValue())));
+            session.resources().decorate(l.getTarget(),
+                    new AddLabelDecorator(ApplicationContainerDecorator.ANY, l.getKey(), l.getValue()));
         });
 
         containerImage.ifPresent(c -> {
@@ -978,8 +980,9 @@ class KubernetesProcessor {
         Project project = FileProjectFactory.create(artifactPath.toFile());
         BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
                 "jar", project.getBuildInfo().getBuildTool(),
-                artifactPath.toAbsolutePath().toString(),
-                artifactPath,
+                project.getBuildInfo().getBuildToolVersion(),
+                artifactPath.toAbsolutePath(),
+                project.getBuildInfo().getClassOutputDir(),
                 project.getBuildInfo().getResourceDir());
 
         return new Project(project.getRoot(), buildInfo, project.getScmInfo());

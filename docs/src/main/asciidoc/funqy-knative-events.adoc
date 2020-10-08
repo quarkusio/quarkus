@@ -28,7 +28,7 @@ To complete this guide, you need:
 
 Setting up Knative locally in a Minikube environment is beyond the scope of this guide.  It is advised
 to follow  https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[this] Knative Tutorial
-put together by Red Hat.  It walks through how to set up Knative on Minikube or Openshift in a local environment.
+put together by Red Hat.  It walks through how to set up Knative on Minikube or OpenShift in a local environment.
 
 NOTE: Specifically you should run the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
 tutorial as this guide requires that you can invoke on a Broker to trigger the quickstart code.
@@ -231,9 +231,9 @@ docker push yourAccountName/funqy-knative-events-quickstart
 
 Again, make sure to replace `yourAccountName` with your docker or quay account name when you run `docker push`.
 
-== Deploy to Kubernetes/Openshift
+== Deploy to Kubernetes/OpenShift
 
-The first step is to define a Kubernetes/Openshift service to points to your the docker image you created and pushed
+The first step is to define a Kubernetes/OpenShift service to points to your the docker image you created and pushed
 during build.  Take a look at {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
 
 [source, yaml]

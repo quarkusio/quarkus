@@ -794,28 +794,10 @@ public class BootstrapMavenContext {
     }
 
     public Path getRootProjectBaseDir() {
-        return rootProjectDir == null ? rootProjectDir = resolveRootProjectDir() : rootProjectDir;
-    }
-
-    private Path resolveRootProjectDir() {
-        final String rootBaseDir = System.getenv(MAVEN_PROJECTBASEDIR);
-        if (rootBaseDir == null) {
-            return null;
-        }
-        // if the alternate POM was set (not on the CLI) and its base dir does not match the base dir
-        // set by the Maven process then the root project set by the Maven process is probably not relevant too
-        if (alternatePomName != null) {
-            final Path currentPom = getCurrentProjectPomOrNull();
-            if (currentPom == null || !getCurrentProjectBaseDir().equals(currentPom.getParent())) {
-                return null;
-            }
-        }
-        final Path rootProjectBaseDirPath = Paths.get(rootBaseDir);
-        // if the root project dir set by the Maven process (through the env variable) doesn't have a pom.xml
-        // then it probably isn't relevant
-        if (!Files.exists(rootProjectBaseDirPath.resolve("pom.xml"))) {
-            return null;
-        }
-        return rootProjectBaseDirPath;
+        // originally we checked for MAVEN_PROJECTBASEDIR which is set by the mvn script
+        // and points to the first parent containing '.mvn' dir but it's not consistent
+        // with how Maven discovers the workspace and also created issues testing the Quarkus platform
+        // due to its specific FS layout
+        return rootProjectDir;
     }
 }

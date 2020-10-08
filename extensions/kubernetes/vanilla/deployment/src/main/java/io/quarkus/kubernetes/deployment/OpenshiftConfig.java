@@ -221,7 +221,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Map<String, HostAliasConfig> hostAliases;
 
     /**
-     * If true, an Openshift Route will be created
+     * If true, an OpenShift Route will be created
      */
     @ConfigItem
     boolean expose;

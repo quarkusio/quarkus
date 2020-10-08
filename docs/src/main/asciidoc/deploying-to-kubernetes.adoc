@@ -242,7 +242,7 @@ Custom annotations can be added in a way similar to labels.For example to add th
 [source]
 ----
 quarkus.kubernetes.annotations.foo=bar
-quarkus."app.quarkus/id"=42
+quarkus.kubernetes.annotations."app.quarkus/id"=42
 ----
 
 [#env-vars]
@@ -755,7 +755,7 @@ These manifests can be deployed as is to a running cluster, using `kubectl`:
 kubectl apply -f target/kubernetes/openshift.json
 ----
 
-Openshift users might want to use `oc` instead of `kubectl`:
+OpenShift users might want to use `oc` instead of `kubectl`:
 
 [source]
 ----

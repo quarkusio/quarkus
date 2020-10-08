@@ -285,9 +285,6 @@ public class MainClassBuildStep {
                 activeProfile,
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
         cb = tryBlock.addCatch(Throwable.class);
-        cb.invokeVirtualMethod(ofMethod(Logger.class, "errorv", void.class, Throwable.class, String.class, Object.class),
-                cb.readStaticField(logField.getFieldDescriptor()), cb.getCaughtException(),
-                cb.load("Failed to start application (with profile {0})"), activeProfile);
 
         // an exception was thrown before logging was actually setup, we simply dump everything to the console
         ResultHandle delayedHandler = cb

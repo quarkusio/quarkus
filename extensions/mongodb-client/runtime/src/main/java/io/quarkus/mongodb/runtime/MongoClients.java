@@ -26,6 +26,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.ClassModel;
 import org.bson.codecs.pojo.Conventions;
 import org.bson.codecs.pojo.PojoCodecProvider;
+import org.bson.codecs.pojo.PropertyCodecProvider;
 import org.jboss.logging.Logger;
 
 import com.mongodb.AuthenticationMechanism;
@@ -244,6 +245,11 @@ public class MongoClients {
                 // Ignore
             }
         }
+        // register property codec provider
+        if (!mongoClientSupport.getPropertyCodecProviders().isEmpty()) {
+            pojoCodecProviderBuilder.register(getPropertyCodecProviders(mongoClientSupport.getPropertyCodecProviders())
+                    .toArray(new PropertyCodecProvider[0]));
+        }
         providers.add(pojoCodecProviderBuilder.build());
         CodecRegistry registry = CodecRegistries.fromRegistries(defaultCodecRegistry,
                 CodecRegistries.fromProviders(providers));
@@ -378,6 +384,21 @@ public class MongoClients {
                 providers.add((CodecProvider) clazzConstructor.newInstance());
             } catch (Exception e) {
                 LOGGER.warnf(e, "Unable to load the codec provider class %s", name);
+            }
+        }
+
+        return providers;
+    }
+
+    private List<PropertyCodecProvider> getPropertyCodecProviders(List<String> classNames) {
+        List<PropertyCodecProvider> providers = new ArrayList<>();
+        for (String name : classNames) {
+            try {
+                Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass(name);
+                Constructor clazzConstructor = clazz.getConstructor();
+                providers.add((PropertyCodecProvider) clazzConstructor.newInstance());
+            } catch (Exception e) {
+                LOGGER.warnf(e, "Unable to load the property codec provider class %s", name);
             }
         }
 

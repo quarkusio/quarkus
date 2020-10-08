@@ -87,6 +87,15 @@ quarkus.index-dependency.<name>.classifier=(this one is optional)
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
 
+.Example application.properties
+[source,properties]
+----
+quarkus.index-dependency.acme.group-id=org.acme <1>
+quarkus.index-dependency.acme.artifact-id=acme-api <2>
+----
+<1> Value is a group id for a dependency identified by name `acme`.
+<2> Value is an artifact id for a dependency identified by name `acme`.
+
 === How To Exclude Types and Dependencies from Discovery
 
 It may happen that some beans from third-party libraries do not work correctly in Quarkus.

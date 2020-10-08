@@ -34,6 +34,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.container.Suspended;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.MultivaluedMap;
@@ -84,6 +85,7 @@ public final class QuarkusRestDotNames {
     public static final DotName CDI_INSTANCE = DotName
             .createSimple(javax.enterprise.inject.Instance.class.getName());
     public static final DotName PRIORITY = DotName.createSimple(Priority.class.getName());
+    public static final DotName APPLICATION = DotName.createSimple(Application.class.getName());
     public static final DotName CONTAINER_REQUEST_FILTER = DotName.createSimple(ContainerRequestFilter.class.getName());
     public static final DotName CONTAINER_RESPONSE_FILTER = DotName.createSimple(ContainerResponseFilter.class.getName());
     public static final DotName EXCEPTION_MAPPER = DotName.createSimple(ExceptionMapper.class.getName());

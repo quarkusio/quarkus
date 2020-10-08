@@ -139,9 +139,8 @@ public final class QuarkusRestDotNames {
     public static final DotName JSONP_JSON_VALUE = DotName.createSimple(javax.json.JsonValue.class.getName());
     public static final DotName JSONP_JSON_STRING = DotName.createSimple(javax.json.JsonString.class.getName());
 
-    // TODO: add Path, Cookie and Matrix param handling
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(
-            Arrays.asList(QUERY_PARAM, HEADER_PARAM));
+            Arrays.asList(QUERY_PARAM, HEADER_PARAM, PATH_PARAM, MATRIX_PARAM, COOKIE_PARAM));
 
     public static final IgnoreForReflectionPredicate IGNORE_FOR_REFLECTION_PREDICATE = new IgnoreForReflectionPredicate();
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());

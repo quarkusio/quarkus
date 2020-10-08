@@ -799,8 +799,11 @@ public class QuarkusRestProcessor {
     }
 
     private boolean keepProvider(ClassInfo providerClass, boolean filterClasses, Set<String> allowedClasses) {
-        return providerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null
-                && (!filterClasses || allowedClasses.contains(providerClass.name().toString()));
+        if (filterClasses) {
+            // we don't care about provider annotations, they're manually registered
+            return allowedClasses.contains(providerClass.name().toString());
+        }
+        return providerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null;
     }
 
     private String determineApplicationPath(IndexView index) {

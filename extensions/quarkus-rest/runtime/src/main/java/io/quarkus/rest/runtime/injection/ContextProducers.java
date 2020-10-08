@@ -8,6 +8,7 @@ import javax.inject.Singleton;
 import javax.json.bind.Jsonb;
 import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
@@ -95,6 +96,12 @@ public class ContextProducers {
     @Produces
     Configuration config() {
         return getContext().getDeployment().getConfiguration();
+    }
+
+    @ApplicationScoped
+    @Produces
+    Application application() {
+        return getContext().getDeployment().getApplication();
     }
 
     @ApplicationScoped

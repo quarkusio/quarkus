@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 
+import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
@@ -31,12 +32,13 @@ public class QuarkusRestDeployment {
     private final GenericTypeMapping genericTypeMapping;
     private final ParamConverterProviders paramConverterProviders;
     private final QuarkusRestConfiguration configuration;
+    private final Application application;
 
     public QuarkusRestDeployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers, Serialisers serialisers,
             RestHandler[] abortHandlerChain,
             EntityWriter dynamicEntityWriter, ClientProxies clientProxies, String prefix,
             GenericTypeMapping genericTypeMapping, ParamConverterProviders paramConverterProviders,
-            QuarkusRestConfiguration configuration) {
+            QuarkusRestConfiguration configuration, Application application) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -47,6 +49,11 @@ public class QuarkusRestDeployment {
         this.genericTypeMapping = genericTypeMapping;
         this.paramConverterProviders = paramConverterProviders;
         this.configuration = configuration;
+        this.application = application;
+    }
+
+    public Application getApplication() {
+        return application;
     }
 
     public QuarkusRestConfiguration getConfiguration() {

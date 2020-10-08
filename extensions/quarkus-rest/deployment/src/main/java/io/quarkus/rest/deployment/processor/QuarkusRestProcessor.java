@@ -348,12 +348,14 @@ public class QuarkusRestProcessor {
 
         Set<String> allowedClasses = new HashSet<>();
         boolean filterClasses = false;
-        for (ClassInfo application : applications) {
-            String applicationClass = application.name().toString();
+        Application application = null;
+        for (ClassInfo applicationClassInfo : applications) {
+            // FIXME: yell if there's more than one
+            String applicationClass = applicationClassInfo.name().toString();
             try {
                 Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);
-                Application app = (Application) appClass.newInstance();
-                for (Class<?> klass : app.getClasses()) {
+                application = (Application) appClass.newInstance();
+                for (Class<?> klass : application.getClasses()) {
                     allowedClasses.add(klass.getName());
                 }
                 filterClasses = true;
@@ -362,7 +364,6 @@ public class QuarkusRestProcessor {
                 e.printStackTrace();
             }
         }
-        System.err.println("We got those classes registered: " + allowedClasses);
 
         ParamConverterProviders converterProviders = new ParamConverterProviders();
         for (ClassInfo converterClass : paramConverterProviders) {
@@ -742,7 +743,7 @@ public class QuarkusRestProcessor {
                     serialisers, resourceClasses, subResourceClasses,
                     beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
                     clientImplementations,
-                    genericTypeMapping, converterProviders, initClassFactory);
+                    genericTypeMapping, converterProviders, initClassFactory, application);
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);
             // Exact match for resources matched to the root path

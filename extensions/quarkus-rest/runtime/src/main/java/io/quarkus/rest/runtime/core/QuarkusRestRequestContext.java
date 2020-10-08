@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
+import javax.enterprise.event.Event;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.PathSegment;
@@ -29,8 +30,10 @@ import javax.ws.rs.ext.WriterInterceptor;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.injection.QuarkusRestInjectionContext;
@@ -47,11 +50,17 @@ import io.quarkus.rest.runtime.mapping.URITemplate;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.runtime.util.PathSegmentImpl;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRestInjectionContext {
+
+    private static final LazyValue<Event<SecurityIdentity>> SECURITY_IDENTITY_EVENT = new LazyValue<>(
+            QuarkusRestRequestContext::createEvent);
+
     private static final Logger log = Logger.getLogger(QuarkusRestRequestContext.class);
     public static final Object[] EMPTY_ARRAY = new Object[0];
     private final QuarkusRestDeployment deployment;
@@ -271,6 +280,10 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         requestScopeActivated = true;
         if (currentRequestScope == null) {
             requestContext.activate();
+            QuarkusHttpUser user = (QuarkusHttpUser) context.user();
+            if (user != null) {
+                fireSecurityIdentity(user.getSecurityIdentity());
+            }
             currentVertxRequest.setCurrent(context, this);
         } else {
             requestContext.activate(currentRequestScope);
@@ -949,5 +962,17 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     public QuarkusRestRequestContext setSecurityContext(SecurityContext securityContext) {
         this.securityContext = securityContext;
         return this;
+    }
+
+    static void fireSecurityIdentity(SecurityIdentity identity) {
+        SECURITY_IDENTITY_EVENT.get().fire(identity);
+    }
+
+    static void clear() {
+        SECURITY_IDENTITY_EVENT.clear();
+    }
+
+    private static Event<SecurityIdentity> createEvent() {
+        return Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
     }
 }

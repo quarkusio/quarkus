@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
@@ -110,6 +111,8 @@ import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
+import io.quarkus.rest.runtime.providers.exceptionmappers.AuthenticationFailedExceptionMapper;
+import io.quarkus.rest.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyWriter;
@@ -118,6 +121,8 @@ import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -574,24 +579,30 @@ public class QuarkusRestProcessor {
                     List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
                             QuarkusRestDotNames.EXCEPTION_MAPPER,
                             index);
-                    ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
-                    mapper.setFactory(recorder.factory(mapperClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
-                    AnnotationInstance priorityInstance = mapperClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                    if (priorityInstance != null) {
-                        mapper.setPriority(priorityInstance.value().asInt());
-                    }
                     DotName handledExceptionDotName = typeParameters.get(0).name();
-                    if (handledExceptionToHigherPriorityMapper.containsKey(handledExceptionDotName)) {
-                        if (mapper.getPriority() < handledExceptionToHigherPriorityMapper.get(handledExceptionDotName)
-                                .getPriority()) {
-                            handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
-                        }
-                    } else {
-                        handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
+                    AnnotationInstance priorityInstance = mapperClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                    int priority = Priorities.USER;
+                    if (priorityInstance != null) {
+                        priority = priorityInstance.value().asInt();
                     }
+                    registerExceptionMapper(recorder, exceptionMapping, handledExceptionToHigherPriorityMapper,
+                            beanContainerBuildItem,
+                            mapperClass.name().toString(),
+                            handledExceptionDotName,
+                            priority);
                 }
             }
+            // built-ins
+            registerExceptionMapper(recorder, exceptionMapping, handledExceptionToHigherPriorityMapper,
+                    beanContainerBuildItem,
+                    UnauthorizedExceptionMapper.class.getName(),
+                    DotName.createSimple(UnauthorizedException.class.getName()),
+                    Priorities.USER);
+            registerExceptionMapper(recorder, exceptionMapping, handledExceptionToHigherPriorityMapper,
+                    beanContainerBuildItem,
+                    AuthenticationFailedExceptionMapper.class.getName(),
+                    DotName.createSimple(AuthenticationFailedException.class.getName()),
+                    Priorities.USER);
             for (Map.Entry<DotName, ResourceExceptionMapper<Throwable>> entry : handledExceptionToHigherPriorityMapper
                     .entrySet()) {
                 recorder.registerExceptionMapper(exceptionMapping, entry.getKey().toString(), entry.getValue());
@@ -764,6 +775,26 @@ public class QuarkusRestProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+        }
+    }
+
+    private void registerExceptionMapper(QuarkusRestRecorder recorder,
+            ExceptionMapping exceptionMapping,
+            Map<DotName, ResourceExceptionMapper<Throwable>> handledExceptionToHigherPriorityMapper,
+            BeanContainerBuildItem beanContainerBuildItem,
+            String mapperClassName,
+            DotName handledExceptionDotName, int priority) {
+        ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
+        mapper.setPriority(priority);
+        mapper.setFactory(recorder.factory(mapperClassName,
+                beanContainerBuildItem.getValue()));
+        if (handledExceptionToHigherPriorityMapper.containsKey(handledExceptionDotName)) {
+            if (mapper.getPriority() < handledExceptionToHigherPriorityMapper.get(handledExceptionDotName)
+                    .getPriority()) {
+                handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
+            }
+        } else {
+            handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
         }
     }
 

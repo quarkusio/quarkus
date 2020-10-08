@@ -188,6 +188,19 @@ quarkus.kubernetes.name=todo-rest
 quarkus.kubernetes.version=1.0-rc.1
 ----
 
+[NOTE]
+====
+As is described in detail in the <<#openshift, OpenShift>> section, customizing OpenShift (or Knative) properties is done in the same way, but replacing
+`kubernetes` with `openshift` (or `knative`). The previous example for OpenShift would look like this:
+
+[source]
+----
+quarkus.openshift.part-of=todo-app
+quarkus.openshift.name=todo-rest
+quarkus.openshift.version=1.0-rc.1
+----
+====
+
 The labels in generated resources will look like:
 
 [source, json]
@@ -351,6 +364,17 @@ It's also possible to use the value from another field to add a new environment 
 ----
 quarkus.kubernetes.env.fields.foo=metadata.name
 ----
+
+[NOTE]
+====
+As is described in detail in the <<#openshift, OpenShift>> section, customizing OpenShift properties is done in the same way, but replacing
+`kubernetes` with `openshift`. The previous example for OpenShift would look like this:
+
+[source]
+----
+quarkus.openshift.env.fields.foo=metadata.name
+----
+====
 
 ===== Validation
 

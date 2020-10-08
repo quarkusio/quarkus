@@ -55,6 +55,20 @@ final class Target_io_grpc_netty_GrpcSslContexts {
 
 }
 
+@TargetClass(className = "io.grpc.netty.Utils")
+final class Target_io_grpc_netty_Utils {
+
+    @Substitute
+    static boolean isEpollAvailable() {
+        return false;
+    }
+
+    @Substitute
+    private static Throwable getEpollUnavailabilityCause() {
+        return null;
+    }
+}
+
 @SuppressWarnings("unused")
 class GrpcNettySubstitutions {
 }

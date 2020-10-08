@@ -3,7 +3,18 @@ package io.quarkus.test.kubernetes.client;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
+import io.fabric8.kubernetes.api.model.ConfigMapList;
+import io.fabric8.kubernetes.api.model.EventList;
+import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.api.model.SecretList;
+import io.fabric8.kubernetes.api.model.ServiceAccountList;
+import io.fabric8.kubernetes.api.model.ServiceList;
+import io.fabric8.kubernetes.api.model.apps.DeploymentList;
+import io.fabric8.kubernetes.api.model.networking.v1beta1.IngressList;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
@@ -29,6 +40,12 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
         }
 
         configureMockServer(mockServer);
+
+        Optional<Boolean> defaultTypes = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.kubernetes-client.test.default-types", Boolean.class);
+        if (defaultTypes.orElse(false)) {
+            registerDefaultTypes(mockServer);
+        }
 
         return systemProps;
     }
@@ -77,5 +94,66 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
 
     protected boolean useHttps() {
         return Boolean.getBoolean("quarkus.kubernetes-client.test.https");
+    }
+
+    private void registerDefaultTypes(KubernetesMockServer mockServer) {
+        final String ns = System.getProperty("quarkus.kubernetes-client.namespace", "test");
+        final String basePath = "/api/v1/namespaces/" + ns;
+
+        mockServer.expect().get().withPath(basePath + "/configmaps")
+                .andReturn(200, new ConfigMapList())
+                .always();
+        mockServer.expect().get().withPath(basePath + "/configmaps?watch=true")
+                .andReturn(200, new ConfigMapList())
+                .always();
+
+        mockServer.expect().get().withPath("/apis/apps/v1/namespaces/" + ns + "/deployments")
+                .andReturn(200, new DeploymentList())
+                .always();
+        mockServer.expect().get().withPath("/apis/apps/v1/namespaces/" + ns + "/deployments?watch=true")
+                .andReturn(200, new DeploymentList())
+                .always();
+
+        mockServer.expect().get().withPath(basePath + "/events")
+                .andReturn(200, new EventList())
+                .always();
+        mockServer.expect().get().withPath(basePath + "/events?watch=true")
+                .andReturn(200, new EventList())
+                .always();
+
+        mockServer.expect().get().withPath("/apis/extensions/v1beta1/namespaces/" + ns + "/ingresses")
+                .andReturn(200, new IngressList())
+                .always();
+        mockServer.expect().get().withPath("/apis/extensions/v1beta1/namespaces/" + ns + "/ingresses?watch=true")
+                .andReturn(200, new IngressList())
+                .always();
+
+        mockServer.expect().get().withPath(basePath + "/pods")
+                .andReturn(200, new PodList())
+                .always();
+        mockServer.expect().get().withPath(basePath + "/pods?watch=true")
+                .andReturn(200, new PodList())
+                .always();
+
+        mockServer.expect().get().withPath(basePath + "/secrets")
+                .andReturn(200, new SecretList())
+                .always();
+        mockServer.expect().get().withPath(basePath + "/secrets?watch=true")
+                .andReturn(200, new SecretList())
+                .always();
+
+        mockServer.expect().get().withPath(basePath + "/serviceaccounts")
+                .andReturn(200, new ServiceAccountList())
+                .always();
+        mockServer.expect().get().withPath(basePath + "/serviceaccounts?watch=true")
+                .andReturn(200, new ServiceAccountList())
+                .always();
+
+        mockServer.expect().get().withPath(basePath + "/services")
+                .andReturn(200, new ServiceList())
+                .always();
+        mockServer.expect().get().withPath(basePath + "/services?watch=true")
+                .andReturn(200, new ServiceList())
+                .always();
     }
 }

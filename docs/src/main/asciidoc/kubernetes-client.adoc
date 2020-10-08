@@ -166,9 +166,7 @@ public class KubernetesClientTest {
 ----
 
 Furthermore, to get a mock server that replies with empty lists by default (instead of getting 404 responses from the Kubernetes API),
-you can use the `EmptyDefaultKubernetesMockServerTestResource.class` instead of
-`KubernetesMockServerTestResource.class`.
-
+you can use `quarkus.kubernetes-client.test.default-types=true`.
 
 == Note on implementing the Watcher interface
 

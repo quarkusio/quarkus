@@ -8,6 +8,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -354,14 +355,17 @@ public class QuarkusRestProcessor {
             String applicationClass = applicationClassInfo.name().toString();
             try {
                 Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);
-                application = (Application) appClass.newInstance();
-                for (Class<?> klass : application.getClasses()) {
-                    allowedClasses.add(klass.getName());
+                application = (Application) appClass.getConstructor().newInstance();
+                Set<Class<?>> classes = application.getClasses();
+                if (!classes.isEmpty()) {
+                    for (Class<?> klass : classes) {
+                        allowedClasses.add(klass.getName());
+                    }
+                    filterClasses = true;
                 }
-                filterClasses = true;
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
+                throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
         }
 
@@ -405,6 +409,9 @@ public class QuarkusRestProcessor {
                     .setInitConverters(initConverters).build();
 
             for (ClassInfo i : scannedResources.values()) {
+                if (filterClasses && !allowedClasses.contains(i.name().toString())) {
+                    continue;
+                }
                 ResourceClass endpoints = endpointIndexer.createEndpoints(i);
                 if (endpoints != null) {
                     resourceClasses.add(endpoints);

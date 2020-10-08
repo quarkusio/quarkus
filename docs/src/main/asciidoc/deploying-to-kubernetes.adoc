@@ -488,6 +488,32 @@ spec:
         ip: 10.0.0.0
 ----
 
+=== Container Resources Management
+
+CPU & Memory limits and requests can be applied to a `Container` (more info in https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/[Kubernetes documentation]) using the following configuration:
+
+[source]
+----
+quarkus.kubernetes.resources.requests.memory=64Mi
+quarkus.kubernetes.resources.requests.cpu=250m
+quarkus.kubernetes.resources.limits.memory=512Mi
+quarkus.kubernetes.resources.limits.cpu=1000m
+----
+
+This would generate the following entry in the `container` section:
+
+[source, yaml]
+----
+containers:
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 64Mi
+----
+
 === Using the Kubernetes client
 
 Applications that are deployed to Kubernetes and need to access the API server will usually make use of the `kubernetes-client` extension:
@@ -588,6 +614,10 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.expose                          | boolean                                   |             | false
 | quarkus.kubernetes.headless                        | boolean                                   |             | false
 | quarkus.kubernetes.hostaliases                     | Map<String, HostAlias>                    |             |
+| quarkus.kubernetes.resources.requests.cpu          | String                                    |             |
+| quarkus.kubernetes.resources.requests.memory       | String                                    |             |
+| quarkus.kubernetes.resources.limits.cpu            | String                                    |             |
+| quarkus.kubernetes.resources.limits.memory         | String                                    |             |
 |====
 
 Properties that use non-standard types, can be referenced by expanding the property.

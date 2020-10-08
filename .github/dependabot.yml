@@ -118,6 +118,9 @@ updates:
       - dependency-name: com.amazonaws:aws-lambda-java-events
       # Apache Commons
       - dependency-name: commons-io:commons-io
+      # Micrometer
+      - dependency-name: io.micrometer:micrometer-bom
+      - dependency-name: io.micrometer:micrometer-registry-stackdriver
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

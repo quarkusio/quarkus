@@ -16,6 +16,7 @@ import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.pojo.PropertyCodecProvider;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -72,6 +73,14 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
+    PropertyCodecProviderBuildItem collectPropertyCodecProviders(CombinedIndexBuildItem indexBuildItem) {
+        Collection<ClassInfo> propertyCodecProviderClasses = indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(PropertyCodecProvider.class.getName()));
+        List<String> names = propertyCodecProviderClasses.stream().map(ci -> ci.name().toString()).collect(Collectors.toList());
+        return new PropertyCodecProviderBuildItem(names);
+    }
+
+    @BuildStep
     BsonDiscriminatorBuildItem collectBsonDiscriminators(CombinedIndexBuildItem indexBuildItem) {
         List<String> names = new ArrayList<>();
         DotName bsonDiscriminatorName = DotName.createSimple(BsonDiscriminator.class.getName());
@@ -83,9 +92,10 @@ public class MongoClientProcessor {
 
     @BuildStep
     List<ReflectiveClassBuildItem> addCodecsAndDiscriminatorsToNative(CodecProviderBuildItem codecProviders,
-            BsonDiscriminatorBuildItem bsonDiscriminators) {
+            PropertyCodecProviderBuildItem propertyCodecProviders, BsonDiscriminatorBuildItem bsonDiscriminators) {
         List<String> reflectiveClassNames = new ArrayList<>();
         reflectiveClassNames.addAll(codecProviders.getCodecProviderClassNames());
+        reflectiveClassNames.addAll(propertyCodecProviders.getPropertyCodecProviderClassNames());
         reflectiveClassNames.addAll(bsonDiscriminators.getBsonDiscriminatorClassNames());
 
         return reflectiveClassNames.stream()
@@ -148,6 +158,7 @@ public class MongoClientProcessor {
             MongoClientRecorder recorder,
             SslNativeConfigBuildItem sslNativeConfig,
             CodecProviderBuildItem codecProvider,
+            PropertyCodecProviderBuildItem propertyCodecProvider,
             BsonDiscriminatorBuildItem bsonDiscriminator,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
             BuildProducer<MongoConnectionNameBuildItem> mongoConnections,
@@ -171,6 +182,7 @@ public class MongoClientProcessor {
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(MongoClientSupport.class)
                 .scope(Singleton.class)
                 .supplier(recorder.mongoClientSupportSupplier(codecProvider.getCodecProviderClassNames(),
+                        propertyCodecProvider.getPropertyCodecProviderClassNames(),
                         bsonDiscriminator.getBsonDiscriminatorClassNames(),
                         poolListenerList, sslNativeConfig.isExplicitlyDisabled()))
                 .done());

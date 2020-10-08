@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.is;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.mongodb.discriminator.Car;
 import io.quarkus.it.mongodb.discriminator.Moto;
+import io.quarkus.it.mongodb.pojo.Pojo;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -143,6 +145,18 @@ public class BookResourceTest {
                 .then().statusCode(201);
 
         get("/vehicles").then().statusCode(200).body("size()", is(2));
+    }
+
+    @Test
+    public void testPojoEndpoint() {
+        Pojo pojo = new Pojo();
+        pojo.description = "description";
+        pojo.optionalString = Optional.of("optional");
+        RestAssured.given().header("Content-Type", "application/json").body(pojo)
+                .when().post("/pojos")
+                .then().statusCode(201);
+
+        get("/pojos").then().statusCode(200).body("size()", is(1));
     }
 
 }

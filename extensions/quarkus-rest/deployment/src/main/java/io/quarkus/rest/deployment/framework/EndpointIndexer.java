@@ -392,6 +392,9 @@ public class EndpointIndexer {
             if (foundMethods != null) {
                 for (AnnotationInstance annotation : foundMethods) {
                     MethodInfo info = annotation.target().asMethod();
+                    if (!hasProperModifiers(info)) {
+                        continue;
+                    }
                     String descriptor = methodDescriptor(info);
                     if (seenMethods.contains(descriptor)) {
                         continue;
@@ -422,6 +425,9 @@ public class EndpointIndexer {
             for (AnnotationInstance annotation : foundMethods) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo info = annotation.target().asMethod();
+                    if (!hasProperModifiers(info)) {
+                        continue;
+                    }
                     String descriptor = methodDescriptor(info);
                     if (seenMethods.contains(descriptor)) {
                         continue;
@@ -464,6 +470,20 @@ public class EndpointIndexer {
             }
         }
         return ret;
+    }
+
+    private boolean hasProperModifiers(MethodInfo info) {
+        if ((info.flags() & Modifier.PUBLIC) == 0) {
+            log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
+                    + "' it not public and will therefore be ignored");
+            return false;
+        }
+        if ((info.flags() & Modifier.STATIC) != 0) {
+            log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
+                    + "' it static and will therefore be ignored");
+            return false;
+        }
+        return true;
     }
 
     private ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,

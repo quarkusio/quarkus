@@ -3,8 +3,6 @@ package io.quarkus.redis.client.runtime;
 import java.net.URI;
 import java.util.Set;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.redis.client.runtime.RedisConfig.RedisConfiguration;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.redis.client.RedisClientType;
@@ -12,9 +10,8 @@ import io.vertx.redis.client.RedisOptions;
 
 public class RedisClientUtil {
     public static final String DEFAULT_CLIENT = "<default>";
-    private static final Logger LOGGER = Logger.getLogger(RedisClientUtil.class);
 
-    public static RedisOptions buildOptions(RedisConfiguration redisConfig, String clientName) {
+    public static RedisOptions buildOptions(RedisConfiguration redisConfig) {
         RedisOptions options = new RedisOptions();
         options.setType(redisConfig.clientType);
 
@@ -27,8 +24,9 @@ public class RedisClientUtil {
         if (redisConfig.hosts.isPresent()) {
             Set<URI> hosts = redisConfig.hosts.get();
             for (URI host : hosts) {
-                options.addConnectionString(buildConnectionString(redisConfig, host, clientName));
+                options.addConnectionString(host.toString());
             }
+
         }
         options.setMaxNestedArrays(redisConfig.maxNestedArrays);
         options.setMaxWaitingHandlers(redisConfig.maxWaitingHandlers);
@@ -61,60 +59,5 @@ public class RedisClientUtil {
 
     public static RedisConfiguration getConfiguration(RedisConfig config, String name) {
         return isDefault(name) ? config.defaultClient : config.additionalRedisClients.get(name);
-    }
-
-    /**
-     * @deprecated It should be removed in the 1.10 release.
-     *             This method was only added to support minimal backward compatibility.
-     *             <p>
-     *             Follows up https://github.com/quarkusio/quarkus/pull/11908#issuecomment-694794724
-     */
-    private static String buildConnectionString(RedisConfiguration config, URI host, String clientName) {
-        final String address = host.toString();
-        if (address.contains("://")) {
-            return address;
-        }
-
-        LOGGER.warnf(
-                "The configuration property quarkus.redis%s.hosts is using the deprecated way of setting up the Redis connection. "
-                        + "Visit https://quarkus.io/guides/redis#quarkus-redis-client_quarkus.redis.hosts configuration reference section for more info.",
-                isDefault(clientName) ? "" : "." + clientName);
-
-        boolean ssl = false;
-        if (config.ssl.isPresent()) {
-            ssl = config.ssl.get();
-            logDeprecationWarning(clientName, "ssl");
-        }
-
-        final StringBuilder builder = ssl ? new StringBuilder("rediss://") : new StringBuilder("redis://");
-        if (config.password.isPresent()) {
-            builder.append(config.password.get());
-            builder.append('@');
-            logDeprecationWarning(clientName, "password");
-        }
-
-        builder.append(host.getHost());
-        builder.append(':');
-        builder.append(host.getPort());
-        builder.append('/');
-
-        if (config.database.isPresent()) {
-            builder.append(config.database.getAsInt());
-            logDeprecationWarning(clientName, "database");
-        }
-
-        return builder.toString();
-    }
-
-    /**
-     * @deprecated It should be removed in the 1.10 release.
-     *             This method was only added to support minimal backward compatibility.
-     *             <p>
-     *             Follows up https://github.com/quarkusio/quarkus/pull/11908#issuecomment-694794724
-     */
-    private static void logDeprecationWarning(String clientName, String propertyName) {
-        LOGGER.warnf("The configuration property quarkus.redis%s.%s is deprecated. It will be removed in the future release. "
-                + "Visit https://quarkus.io/guides/redis#quarkus-redis-client_quarkus.redis.hosts configuration reference section for more info.",
-                isDefault(clientName) ? "" : "." + clientName, propertyName);
     }
 }

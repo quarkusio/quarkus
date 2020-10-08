@@ -20,12 +20,13 @@ language:
     shared-data:
       buildtool:
         build-dir: target
+        cli: mvn
         guide: https://quarkus.io/guides/maven-tooling.html
         guide-native: https://quarkus.io/guides/building-native-image
         cmd:
-          dev: mvn compile quarkus:dev
-          package: mvn package
-          package-uberjar: mvn package -Dquarkus.package.type=uber-jar
-          package-native: mvn package -Pnative
-          package-native-container: mvn package -Pnative -Dquarkus.native.container-build=true
-          build-ci: mvn verify -B
+          dev: compile quarkus:dev
+          package: package
+          package-uberjar: package -Dquarkus.package.type=uber-jar
+          package-native: package -Pnative
+          package-native-container: package -Pnative -Dquarkus.native.container-build=true
+          build-ci: verify -B

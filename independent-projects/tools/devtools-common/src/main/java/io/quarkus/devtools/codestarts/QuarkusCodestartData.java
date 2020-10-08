@@ -43,8 +43,6 @@ public final class QuarkusCodestartData {
         NO_BUILD_TOOL_WRAPPER("quarkus-project.no-build-tool-wrapper"),
         NO_DOCKERFILES("quarkus-project.no-dockerfiles");
 
-        ;
-
         private final String key;
 
         DataKey(String key) {

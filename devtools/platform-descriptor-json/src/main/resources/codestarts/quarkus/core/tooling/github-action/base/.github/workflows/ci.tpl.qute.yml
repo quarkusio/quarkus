@@ -18,4 +18,10 @@ jobs:
         with:
           java-version: {java.version}
       - name: Build
-        run: {buildtool.cmd.build-ci}
+        {#if buildtool.cli == 'gradle'}
+          uses: eskatos/gradle-command-action@v1
+          with:
+            arguments: {buildtool.cmd.build-ci}
+        {#else}
+          run: {buildtool.cli} {buildtool.cmd.build-ci}
+        {/if}

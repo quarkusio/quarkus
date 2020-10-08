@@ -8,10 +8,4 @@ language:
         wrapper-version: 0.5.6
     shared-data:
       buildtool:
-        cmd:
-          dev: ./mvnw compile quarkus:dev
-          package: ./mvnw package
-          package-uberjar: ./mvnw package -Dquarkus.package.type=uber-jar
-          package-native: ./mvnw package -Pnative
-          package-native-container: ./mvnw package -Pnative -Dquarkus.native.container-build=true
-          build-ci: ./mvnw verify -B
+        cli: ./mvnw

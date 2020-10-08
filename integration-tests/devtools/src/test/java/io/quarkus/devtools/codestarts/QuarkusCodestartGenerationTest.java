@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -471,6 +472,44 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/qute/Item.java")).exists();
+    }
+
+    @Test
+    public void generateGradleWrapperGithubAction() throws Exception {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .buildTool(BuildTool.GRADLE)
+                .addData(getTestInputData())
+                .addCodestarts(Collections.singletonList("github-action"))
+                .putData(QuarkusCodestartData.DataKey.JAVA_VERSION.getKey(), System.getProperty("java.specification.version"))
+                .build();
+        Path projectDir = testDirPath.resolve("gradle-github");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkGradle(projectDir);
+
+        assertThat(projectDir.resolve(".github/workflows/ci.yml"))
+                .exists()
+                .satisfies(checkContains("run: ./gradlew build"));
+    }
+
+    @Test
+    public void generateGradleNoWrapperGithubAction() throws Exception {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .buildTool(BuildTool.GRADLE)
+                .noBuildToolWrapper()
+                .addData(getTestInputData())
+                .addCodestarts(Collections.singletonList("github-action"))
+                .putData(QuarkusCodestartData.DataKey.JAVA_VERSION.getKey(), System.getProperty("java.specification.version"))
+                .build();
+        Path projectDir = testDirPath.resolve("gradle-nowrapper-github");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkGradle(projectDir);
+
+        assertThat(projectDir.resolve(".github/workflows/ci.yml"))
+                .exists()
+                .satisfies(checkContains("uses: eskatos/gradle-command-action@v1"))
+                .satisfies(checkContains("arguments: build"));
     }
 
     private void checkNoExample(Path projectDir) {

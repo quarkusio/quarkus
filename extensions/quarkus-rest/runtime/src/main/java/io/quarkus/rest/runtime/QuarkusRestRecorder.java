@@ -659,10 +659,12 @@ public class QuarkusRestRecorder {
         MethodParameter[] parameters = method.getParameters();
         // body can only be in a parameter
         MethodParameter bodyParameter = null;
+        int bodyParameterIndex = -1;
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
             if (param.parameterType == ParameterType.BODY) {
                 bodyParameter = param;
+                bodyParameterIndex = i;
                 break;
             }
         }
@@ -677,7 +679,7 @@ public class QuarkusRestRecorder {
         // if we need the body, let's deserialise it
         if (bodyParameter != null) {
             handlers.add(new RequestDeserializeHandler(loadClass(bodyParameter.type),
-                    consumesMediaTypes.isEmpty() ? null : consumesMediaTypes.get(0), serialisers));
+                    consumesMediaTypes.isEmpty() ? null : consumesMediaTypes.get(0), serialisers, bodyParameterIndex));
         }
 
         // given that we may inject form params in the endpoint we need to make sure we read the body before

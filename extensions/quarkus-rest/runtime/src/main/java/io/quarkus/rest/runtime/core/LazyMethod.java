@@ -76,4 +76,9 @@ public class LazyMethod implements ResourceInfo {
     public Class<?> getResourceClass() {
         return declaringClass;
     }
+
+    public Annotation[] getParameterAnnotations(int index) {
+        // Should we cache this?
+        return getMethod().getParameterAnnotations()[index];
+    }
 }

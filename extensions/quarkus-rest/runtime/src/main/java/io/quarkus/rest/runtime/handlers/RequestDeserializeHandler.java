@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.handlers;
 
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.util.List;
 
 import javax.ws.rs.BadRequestException;
@@ -23,11 +24,13 @@ public class RequestDeserializeHandler implements RestHandler {
     private final Class<?> type;
     private final MediaType mediaType;
     private final Serialisers serialisers;
+    private final int parameterIndex;
 
-    public RequestDeserializeHandler(Class<?> type, MediaType mediaType, Serialisers serialisers) {
+    public RequestDeserializeHandler(Class<?> type, MediaType mediaType, Serialisers serialisers, int parameterIndex) {
         this.type = type;
         this.mediaType = mediaType;
         this.serialisers = serialisers;
+        this.parameterIndex = parameterIndex;
     }
 
     @Override
@@ -48,9 +51,10 @@ public class RequestDeserializeHandler implements RestHandler {
             throw new NotSupportedException();
         }
         InputStream in = requestContext.getInputStream();
+        Annotation[] annotations = requestContext.getTarget().getLazyMethod().getParameterAnnotations(parameterIndex);
         for (MessageBodyReader<?> reader : readers) {
             //TODO: proper params
-            if (reader.isReadable(type, type, requestContext.getMethodAnnotations(), requestType)) {
+            if (reader.isReadable(type, type, annotations, requestType)) {
                 Object result;
                 ReaderInterceptor[] interceptors = requestContext.getReaderInterceptors();
                 try {
@@ -60,7 +64,7 @@ public class RequestDeserializeHandler implements RestHandler {
                                     requestContext.getHttpHeaders().getRequestHeaders(), in);
                         } else {
                             result = new QuarkusRestReaderInterceptorContext(requestContext,
-                                    requestContext.getMethodAnnotations(),
+                                    annotations,
                                     type, type, requestType, reader, in, interceptors).proceed();
                         }
                     } catch (NoContentException e) {

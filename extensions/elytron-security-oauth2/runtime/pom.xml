@@ -18,6 +18,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security</artifactId>
         </dependency>
+        <!-- JSON-P is needed for cases where JSON-B is not in scope-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron-realm-token</artifactId>

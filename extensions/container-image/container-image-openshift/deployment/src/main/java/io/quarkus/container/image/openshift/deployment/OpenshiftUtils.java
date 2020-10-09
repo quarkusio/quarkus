@@ -94,13 +94,14 @@ public class OpenshiftUtils {
 
         Config config = ConfigProvider.getConfig();
         Set<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .filter(s -> s.startsWith("quarkus.s2i."))
+                .filter(s -> s.startsWith("quarkus.s2i.") || s.startsWith("quarkus.openshift."))
                 .collect(Collectors.toSet());
 
         boolean hasS2iBaseJvmImage = properties.contains("quarkus.s2i.base-jvm-image");
         boolean hasS2iBaseNativeImage = properties.contains("quarkus.s2i.base-native-image");
         boolean hasS2iJvmArguments = properties.contains("quarkus.s2i.jvm-arguments");
         boolean hasS2iNativeArguments = properties.contains("quarkus.s2i.native-arguments");
+        boolean hasS2iJarDirectory = properties.contains("quarkus.s2i.jar-directory");
         boolean hasS2iJarFileName = properties.contains("quarkus.s2i.jar-file-name");
         boolean hasS2iNativeBinaryDirectory = properties.contains("quarkus.s2i.native-binary-directory");
         boolean hasS2iNativeBinaryFileName = properties.contains("quarkus.s2i.native-binary-file-name");
@@ -110,6 +111,7 @@ public class OpenshiftUtils {
         boolean hasOpenshiftBaseNativeImage = properties.contains("quarkus.openshift.base-native-image");
         boolean hasOpenshiftJvmArguments = properties.contains("quarkus.openshift.jvm-arguments");
         boolean hasOpenshiftNativeArguments = properties.contains("quarkus.openshift.native-arguments");
+        boolean hasOpenshiftJarDirectory = properties.contains("quarkus.openshift.jar-directory");
         boolean hasOpenshiftJarFileName = properties.contains("quarkus.openshift.jar-file-name");
         boolean hasOpenshiftNativeBinaryDirectory = properties.contains("quarkus.openshift.native-binary-directory");
         boolean hasOpenshiftNativeBinaryFileName = properties.contains("quarkus.openshift.native-binary-file-name");
@@ -123,6 +125,8 @@ public class OpenshiftUtils {
                 : openshiftConfig.jvmArguments;
         result.nativeArguments = hasS2iNativeArguments && !hasOpenshiftNativeArguments ? s2iConfig.nativeArguments
                 : openshiftConfig.nativeArguments;
+        result.jarDirectory = hasS2iJarDirectory && !hasOpenshiftJarDirectory ? s2iConfig.jarDirectory
+                : openshiftConfig.jarDirectory;
         result.jarFileName = hasS2iJarFileName && !hasOpenshiftJarFileName ? s2iConfig.jarFileName
                 : openshiftConfig.jarFileName;
         result.nativeBinaryDirectory = hasS2iNativeBinaryDirectory && !hasOpenshiftNativeBinaryDirectory

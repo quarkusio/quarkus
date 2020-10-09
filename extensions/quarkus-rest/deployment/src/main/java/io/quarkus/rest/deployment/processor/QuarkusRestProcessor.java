@@ -387,7 +387,8 @@ public class QuarkusRestProcessor {
 
         ParamConverterProviders converterProviders = new ParamConverterProviders();
         for (ClassInfo converterClass : paramConverterProviders) {
-            if (keepProvider(converterClass, filterClasses, allowedClasses)) {
+            KeepProviderResult keepProviderResult = keepProvider(converterClass, filterClasses, allowedClasses);
+            if (keepProviderResult != KeepProviderResult.DISCARD) {
                 ResourceParamConverterProvider converter = new ResourceParamConverterProvider();
                 converter.setFactory(factory(converterClass, singletonClasses, recorder, beanContainerBuildItem));
                 AnnotationInstance priorityInstance = converterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
@@ -481,7 +482,8 @@ public class QuarkusRestProcessor {
 
             ResourceInterceptors interceptors = new ResourceInterceptors();
             for (ClassInfo filterClass : containerRequestFilters) {
-                if (keepProvider(filterClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(filterClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
                     interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     interceptor.setPreMatching(filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null);
@@ -521,7 +523,8 @@ public class QuarkusRestProcessor {
             }
 
             for (ClassInfo filterClass : containerResponseFilters) {
-                if (keepProvider(filterClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(filterClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
                     interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
@@ -547,7 +550,8 @@ public class QuarkusRestProcessor {
             }
 
             for (ClassInfo filterClass : writerInterceptors) {
-                if (keepProvider(filterClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(filterClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
                     interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
@@ -564,7 +568,8 @@ public class QuarkusRestProcessor {
                 }
             }
             for (ClassInfo filterClass : readerInterceptors) {
-                if (keepProvider(filterClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(filterClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
                     interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
@@ -584,7 +589,8 @@ public class QuarkusRestProcessor {
             ExceptionMapping exceptionMapping = new ExceptionMapping();
             Map<DotName, ResourceExceptionMapper<Throwable>> handledExceptionToHigherPriorityMapper = new HashMap();
             for (ClassInfo mapperClass : exceptionMappers) {
-                if (keepProvider(mapperClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(mapperClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
                             QuarkusRestDotNames.EXCEPTION_MAPPER,
                             index);
@@ -619,7 +625,8 @@ public class QuarkusRestProcessor {
 
             ContextResolvers ctxResolvers = new ContextResolvers();
             for (ClassInfo resolverClass : contextResolvers) {
-                if (keepProvider(resolverClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(resolverClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
                             QuarkusRestDotNames.CONTEXT_RESOLVER,
                             index);
@@ -632,7 +639,8 @@ public class QuarkusRestProcessor {
 
             Features feats = new Features();
             for (ClassInfo featureClass : features) {
-                if (keepProvider(featureClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(featureClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     ResourceFeature resourceFeature = new ResourceFeature();
                     resourceFeature.setFactory(factory(featureClass, singletonClasses, recorder, beanContainerBuildItem));
                     feats.addFeature(resourceFeature);
@@ -641,7 +649,8 @@ public class QuarkusRestProcessor {
 
             DynamicFeatures dynamicFeats = new DynamicFeatures();
             for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
-                if (keepProvider(dynamicFeatureClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(dynamicFeatureClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
                     resourceFeature
                             .setFactory(factory(dynamicFeatureClass, singletonClasses, recorder, beanContainerBuildItem));
@@ -669,9 +678,13 @@ public class QuarkusRestProcessor {
 
             Serialisers serialisers = new Serialisers();
             for (ClassInfo writerClass : writers) {
-                if (keepProvider(writerClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(writerClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     ResourceWriter writer = new ResourceWriter();
                     writer.setBuiltin(false);
+                    if (keepProviderResult == KeepProviderResult.SERVER_ONLY) {
+                        writer.setConstraint(RuntimeType.SERVER);
+                    }
                     AnnotationInstance producesAnnotation = writerClass.classAnnotation(QuarkusRestDotNames.PRODUCES);
                     if (producesAnnotation != null) {
                         writer.setMediaTypeStrings(Arrays.asList(producesAnnotation.value().asStringArray()));
@@ -690,12 +703,16 @@ public class QuarkusRestProcessor {
                 }
             }
             for (ClassInfo readerClass : readers) {
-                if (keepProvider(readerClass, filterClasses, allowedClasses)) {
+                KeepProviderResult keepProviderResult = keepProvider(readerClass, filterClasses, allowedClasses);
+                if (keepProviderResult != KeepProviderResult.DISCARD) {
                     List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
                             QuarkusRestDotNames.MESSAGE_BODY_READER,
                             index);
                     ResourceReader reader = new ResourceReader();
                     reader.setBuiltin(false);
+                    if (keepProviderResult == KeepProviderResult.SERVER_ONLY) {
+                        reader.setConstraint(RuntimeType.SERVER);
+                    }
                     String readerClassName = readerClass.name().toString();
                     reader.setFactory(factory(readerClass, singletonClasses, recorder, beanContainerBuildItem));
                     AnnotationInstance consumesAnnotation = readerClass.classAnnotation(QuarkusRestDotNames.CONSUMES);
@@ -804,12 +821,14 @@ public class QuarkusRestProcessor {
         }
     }
 
-    private boolean keepProvider(ClassInfo providerClass, boolean filterClasses, Set<String> allowedClasses) {
+    private KeepProviderResult keepProvider(ClassInfo providerClass, boolean filterClasses, Set<String> allowedClasses) {
         if (filterClasses) {
-            // we don't care about provider annotations, they're manually registered
-            return allowedClasses.contains(providerClass.name().toString());
+            // we don't care about provider annotations, they're manually registered (but for the server only)
+            return allowedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.SERVER_ONLY
+                    : KeepProviderResult.DISCARD;
         }
-        return providerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null;
+        return providerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
+                : KeepProviderResult.DISCARD;
     }
 
     private <T> BeanFactory<T> factory(ClassInfo providerClass, Set<String> singletons, QuarkusRestRecorder recorder,
@@ -1032,6 +1051,12 @@ public class QuarkusRestProcessor {
             }
         }
         return needsHandling ? ctor : null;
+    }
+
+    enum KeepProviderResult {
+        NORMAL,
+        SERVER_ONLY,
+        DISCARD
     }
 
 }

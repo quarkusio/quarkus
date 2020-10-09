@@ -45,6 +45,7 @@ import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.ParamConverterProviders;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.core.SingletonBeanFactory;
 import io.quarkus.rest.runtime.core.parameters.AsyncResponseExtractor;
 import io.quarkus.rest.runtime.core.parameters.BeanParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.BodyParamExtractor;
@@ -188,7 +189,17 @@ public class QuarkusRestRecorder {
             String applicationPath, Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations,
             GenericTypeMapping genericTypeMapping,
             ParamConverterProviders paramConverterProviders, BeanFactory<QuarkusRestInitialiser> initClassFactory,
-            Application application) {
+            Class<? extends Application> applicationClass) {
+
+        Application application = null;
+        try {
+            application = applicationClass.newInstance();
+            for (Object i : application.getSingletons()) {
+                SingletonBeanFactory.setInstance(i.getClass().getName(), i);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
         QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping,

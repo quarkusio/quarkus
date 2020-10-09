@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Priorities;
@@ -92,6 +93,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.Serialisers.BuiltinReader;
 import io.quarkus.rest.runtime.core.Serialisers.BuiltinWriter;
+import io.quarkus.rest.runtime.core.SingletonBeanFactory;
 import io.quarkus.rest.runtime.injection.ContextProducers;
 import io.quarkus.rest.runtime.model.InjectableBean;
 import io.quarkus.rest.runtime.model.MethodParameter;
@@ -353,6 +355,7 @@ public class QuarkusRestProcessor {
         }
 
         Set<String> allowedClasses = new HashSet<>();
+        Set<String> singletonClasses = new HashSet<>();
         boolean filterClasses = false;
         Application application = null;
         for (ClassInfo applicationClassInfo : applications) {
@@ -368,6 +371,14 @@ public class QuarkusRestProcessor {
                     }
                     filterClasses = true;
                 }
+                classes = application.getSingletons().stream().map(Object::getClass).collect(Collectors.toSet());
+                if (!classes.isEmpty()) {
+                    for (Class<?> klass : classes) {
+                        allowedClasses.add(klass.getName());
+                        singletonClasses.add(klass.getName());
+                    }
+                    filterClasses = true;
+                }
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
@@ -378,8 +389,7 @@ public class QuarkusRestProcessor {
         for (ClassInfo converterClass : paramConverterProviders) {
             if (keepProvider(converterClass, filterClasses, allowedClasses)) {
                 ResourceParamConverterProvider converter = new ResourceParamConverterProvider();
-                converter.setFactory(recorder.factory(converterClass.name().toString(),
-                        beanContainerBuildItem.getValue()));
+                converter.setFactory(factory(converterClass, singletonClasses, recorder, beanContainerBuildItem));
                 AnnotationInstance priorityInstance = converterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
                 if (priorityInstance != null) {
                     converter.setPriority(priorityInstance.value().asInt());
@@ -418,6 +428,9 @@ public class QuarkusRestProcessor {
                     continue;
                 }
                 ResourceClass endpoints = endpointIndexer.createEndpoints(i);
+                if (singletonClasses.contains(i.name().toString())) {
+                    endpoints.setFactory(new SingletonBeanFactory<>(i.name().toString()));
+                }
                 if (endpoints != null) {
                     resourceClasses.add(endpoints);
                 }
@@ -470,8 +483,7 @@ public class QuarkusRestProcessor {
             for (ClassInfo filterClass : containerRequestFilters) {
                 if (keepProvider(filterClass, filterClasses, allowedClasses)) {
                     ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
-                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
+                    interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     interceptor.setPreMatching(filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null);
                     if (interceptor.isPreMatching()) {
                         interceptors.addResourcePreMatchInterceptor(interceptor);
@@ -511,8 +523,7 @@ public class QuarkusRestProcessor {
             for (ClassInfo filterClass : containerResponseFilters) {
                 if (keepProvider(filterClass, filterClasses, allowedClasses)) {
                     ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
-                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
+                    interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty()) {
                         interceptors.addGlobalResponseInterceptor(interceptor);
@@ -538,8 +549,7 @@ public class QuarkusRestProcessor {
             for (ClassInfo filterClass : writerInterceptors) {
                 if (keepProvider(filterClass, filterClasses, allowedClasses)) {
                     ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
-                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
+                    interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty()) {
                         interceptors.addGlobalWriterInterceptor(interceptor);
@@ -556,8 +566,7 @@ public class QuarkusRestProcessor {
             for (ClassInfo filterClass : readerInterceptors) {
                 if (keepProvider(filterClass, filterClasses, allowedClasses)) {
                     ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
-                    interceptor.setFactory(recorder.factory(filterClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
+                    interceptor.setFactory(factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
                     Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty()) {
                         interceptors.addGlobalReaderInterceptor(interceptor);
@@ -589,7 +598,7 @@ public class QuarkusRestProcessor {
                             beanContainerBuildItem,
                             mapperClass.name().toString(),
                             handledExceptionDotName,
-                            priority);
+                            priority, singletonClasses);
                 }
             }
             // built-ins
@@ -597,12 +606,12 @@ public class QuarkusRestProcessor {
                     beanContainerBuildItem,
                     UnauthorizedExceptionMapper.class.getName(),
                     DotName.createSimple(UnauthorizedException.class.getName()),
-                    Priorities.USER);
+                    Priorities.USER, singletonClasses);
             registerExceptionMapper(recorder, exceptionMapping, handledExceptionToHigherPriorityMapper,
                     beanContainerBuildItem,
                     AuthenticationFailedExceptionMapper.class.getName(),
                     DotName.createSimple(AuthenticationFailedException.class.getName()),
-                    Priorities.USER);
+                    Priorities.USER, singletonClasses);
             for (Map.Entry<DotName, ResourceExceptionMapper<Throwable>> entry : handledExceptionToHigherPriorityMapper
                     .entrySet()) {
                 recorder.registerExceptionMapper(exceptionMapping, entry.getKey().toString(), entry.getValue());
@@ -615,8 +624,7 @@ public class QuarkusRestProcessor {
                             QuarkusRestDotNames.CONTEXT_RESOLVER,
                             index);
                     ResourceContextResolver resolver = new ResourceContextResolver();
-                    resolver.setFactory(recorder.factory(resolverClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
+                    resolver.setFactory(factory(resolverClass, singletonClasses, recorder, beanContainerBuildItem));
                     resolver.setMediaTypeStrings(getProducesMediaTypes(resolverClass));
                     recorder.registerContextResolver(ctxResolvers, typeParameters.get(0).name().toString(), resolver);
                 }
@@ -626,8 +634,7 @@ public class QuarkusRestProcessor {
             for (ClassInfo featureClass : features) {
                 if (keepProvider(featureClass, filterClasses, allowedClasses)) {
                     ResourceFeature resourceFeature = new ResourceFeature();
-                    resourceFeature.setFactory(recorder.factory(featureClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
+                    resourceFeature.setFactory(factory(featureClass, singletonClasses, recorder, beanContainerBuildItem));
                     feats.addFeature(resourceFeature);
                 }
             }
@@ -636,8 +643,8 @@ public class QuarkusRestProcessor {
             for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
                 if (keepProvider(dynamicFeatureClass, filterClasses, allowedClasses)) {
                     ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
-                    resourceFeature.setFactory(recorder.factory(dynamicFeatureClass.name().toString(),
-                            beanContainerBuildItem.getValue()));
+                    resourceFeature
+                            .setFactory(factory(dynamicFeatureClass, singletonClasses, recorder, beanContainerBuildItem));
                     dynamicFeats.addFeature(resourceFeature);
                 }
             }
@@ -673,7 +680,7 @@ public class QuarkusRestProcessor {
                             QuarkusRestDotNames.MESSAGE_BODY_WRITER,
                             index);
                     String writerClassName = writerClass.name().toString();
-                    writer.setFactory(recorder.factory(writerClassName, beanContainerBuildItem.getValue()));
+                    writer.setFactory(factory(writerClass, singletonClasses, recorder, beanContainerBuildItem));
                     AnnotationInstance constrainedToInstance = writerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
                     if (constrainedToInstance != null) {
                         writer.setConstraint(RuntimeType.valueOf(constrainedToInstance.value().asEnum()));
@@ -690,8 +697,7 @@ public class QuarkusRestProcessor {
                     ResourceReader reader = new ResourceReader();
                     reader.setBuiltin(false);
                     String readerClassName = readerClass.name().toString();
-                    reader.setFactory(recorder.factory(readerClassName,
-                            beanContainerBuildItem.getValue()));
+                    reader.setFactory(factory(readerClass, singletonClasses, recorder, beanContainerBuildItem));
                     AnnotationInstance consumesAnnotation = readerClass.classAnnotation(QuarkusRestDotNames.CONSUMES);
                     if (consumesAnnotation != null) {
                         reader.setMediaTypeStrings(Arrays.asList(consumesAnnotation.value().asStringArray()));
@@ -761,7 +767,8 @@ public class QuarkusRestProcessor {
                     serialisers, resourceClasses, subResourceClasses,
                     beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
                     clientImplementations,
-                    genericTypeMapping, converterProviders, initClassFactory, application);
+                    genericTypeMapping, converterProviders, initClassFactory,
+                    application == null ? Application.class : application.getClass());
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);
             // Exact match for resources matched to the root path
@@ -783,11 +790,10 @@ public class QuarkusRestProcessor {
             Map<DotName, ResourceExceptionMapper<Throwable>> handledExceptionToHigherPriorityMapper,
             BeanContainerBuildItem beanContainerBuildItem,
             String mapperClassName,
-            DotName handledExceptionDotName, int priority) {
+            DotName handledExceptionDotName, int priority, Set<String> singletonClasses) {
         ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
         mapper.setPriority(priority);
-        mapper.setFactory(recorder.factory(mapperClassName,
-                beanContainerBuildItem.getValue()));
+        mapper.setFactory(factory(mapperClassName, singletonClasses, recorder, beanContainerBuildItem));
         if (handledExceptionToHigherPriorityMapper.containsKey(handledExceptionDotName)) {
             if (mapper.getPriority() < handledExceptionToHigherPriorityMapper.get(handledExceptionDotName)
                     .getPriority()) {
@@ -804,6 +810,21 @@ public class QuarkusRestProcessor {
             return allowedClasses.contains(providerClass.name().toString());
         }
         return providerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null;
+    }
+
+    private <T> BeanFactory<T> factory(ClassInfo providerClass, Set<String> singletons, QuarkusRestRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return factory(providerClass.name().toString(), singletons, recorder, beanContainerBuildItem);
+    }
+
+    private <T> BeanFactory<T> factory(String providerClass, Set<String> singletons, QuarkusRestRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        if (singletons.contains(providerClass)) {
+            return new SingletonBeanFactory<>(providerClass);
+        } else {
+            return recorder.factory(providerClass,
+                    beanContainerBuildItem.getValue());
+        }
     }
 
     private String determineApplicationPath(IndexView index) {

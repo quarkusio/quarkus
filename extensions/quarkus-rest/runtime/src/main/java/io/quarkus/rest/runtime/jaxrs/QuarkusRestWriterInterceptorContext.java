@@ -84,6 +84,7 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
         outputStream = os;
     }
 
+    @Override
     public MultivaluedMap<String, Object> getHeaders() {
         return headers;
     }

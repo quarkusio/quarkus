@@ -78,11 +78,12 @@ public class QuarkusRestConfiguration implements Configuration {
             this.allInstances = new HashMap<>(quarkusRestConfiguration.allInstances);
             this.requestFilters = new MultivaluedTreeMap<>();
             this.requestFilters.putAll(quarkusRestConfiguration.requestFilters);
+            // Spec 6.6 makes client/server response filters reversed
             this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
             this.responseFilters.putAll(quarkusRestConfiguration.responseFilters);
             this.readerInterceptors = new MultivaluedTreeMap<>();
             this.readerInterceptors.putAll(quarkusRestConfiguration.readerInterceptors);
-            this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.writerInterceptors = new MultivaluedTreeMap<>();
             this.writerInterceptors.putAll(quarkusRestConfiguration.writerInterceptors);
             this.resourceReaders = new QuarkusMultivaluedHashMap<>();
             this.resourceReaders.putAll(quarkusRestConfiguration.resourceReaders);
@@ -95,10 +96,11 @@ public class QuarkusRestConfiguration implements Configuration {
             this.enabledFeatures = new ArrayList<>();
             this.contracts = new HashMap<>();
             this.requestFilters = new MultivaluedTreeMap<>();
+            // Spec 6.6 makes client/server response filters reversed
             this.responseFilters = new MultivaluedTreeMap<>(
                     Collections.reverseOrder());
             this.readerInterceptors = new MultivaluedTreeMap<>();
-            this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.writerInterceptors = new MultivaluedTreeMap<>();
             this.resourceReaders = new QuarkusMultivaluedHashMap<>();
             this.resourceWriters = new QuarkusMultivaluedHashMap<>();
             this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();

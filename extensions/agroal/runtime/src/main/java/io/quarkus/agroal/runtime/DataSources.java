@@ -5,6 +5,7 @@ import java.sql.Driver;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -248,6 +249,11 @@ public class DataSources {
             String name = dataSourceRuntimeConfig.credentialsProvider.get();
             connectionFactoryConfiguration
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
+        }
+
+        // Extra JDBC properties
+        for (Map.Entry<String, String> entry : dataSourceJdbcRuntimeConfig.additionalJdbcProperties.entrySet()) {
+            connectionFactoryConfiguration.jdbcProperty(entry.getKey(), entry.getValue());
         }
 
         // Pool size configuration:

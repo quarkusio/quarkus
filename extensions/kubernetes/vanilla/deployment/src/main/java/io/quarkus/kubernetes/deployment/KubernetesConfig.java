@@ -331,6 +331,10 @@ public class KubernetesConfig implements PlatformConfiguration {
         return serviceType;
     }
 
+    public OptionalInt getNodePort() {
+        return this.nodePort;
+    }
+
     public ImagePullPolicy getImagePullPolicy() {
         return imagePullPolicy;
     }

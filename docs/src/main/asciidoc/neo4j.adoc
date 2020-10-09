@@ -127,6 +127,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=neo4j-quickstart \
+    -DclassName="org.acme.datasource.GreetingResource" \
     -Dextensions="neo4j,resteasy-jsonb"
 cd neo4j-quickstart
 ----

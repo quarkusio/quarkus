@@ -2,14 +2,13 @@ package io.quarkus.devtools.codestarts;
 
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.util.Collection;
 import java.util.Map;
 
 public class CodestartProjectInput {
-    private final Collection<AppArtifactKey> dependencies;
+    private final Collection<String> dependencies;
     private final Map<String, Object> data;
     private final CodestartsSelection selection;
     private final MessageWriter messageWriter;
@@ -33,7 +32,7 @@ public class CodestartProjectInput {
         return selection;
     }
 
-    public Collection<AppArtifactKey> getDependencies() {
+    public Collection<String> getDependencies() {
         return dependencies;
     }
 

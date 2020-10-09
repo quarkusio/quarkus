@@ -37,6 +37,25 @@ public final class Extensions {
         return overrideVersion(toCoords(d), overrideVersion);
     }
 
+    public static String toGAV(AppArtifactCoords c) {
+        if (c.getVersion() == null) {
+            return toGA(c);
+        }
+        return c.getGroupId() + ":" + c.getArtifactId() + ":" + c.getVersion();
+    }
+
+    public static String toGA(AppArtifactCoords c) {
+        return c.getGroupId() + ":" + c.getArtifactId();
+    }
+
+    public static String toGA(AppArtifactKey c) {
+        return c.getGroupId() + ":" + c.getArtifactId();
+    }
+
+    public static String toGA(Extension e) {
+        return e.getGroupId() + ":" + e.getArtifactId();
+    }
+
     public static AppArtifactCoords stripVersion(final AppArtifactCoords coords) {
         return overrideVersion(coords, null);
     }

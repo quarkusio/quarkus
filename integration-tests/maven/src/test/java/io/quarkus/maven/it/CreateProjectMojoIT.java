@@ -75,7 +75,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         String config = Files
                 .asCharSource(new File(testDir, "src/main/resources/application.properties"), Charsets.UTF_8)
                 .read();
-        assertThat(config).contains("key = value");
+        assertThat(config).isEmpty();
 
         assertThat(new File(testDir, "src/main/docker/Dockerfile.native")).isFile();
         assertThat(new File(testDir, "src/main/docker/Dockerfile.jvm")).isFile();
@@ -130,6 +130,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource.java");
+        properties.put("extensions", "resteasy");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -173,7 +174,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("extensions", "resteasy,smallrye-metrics,missing");
         InvocationResult result = setup(properties);
 
-        assertThat(result.getExitCode()).isZero();
+        assertThat(result.getExitCode()).isOne();
     }
 
     @Test
@@ -228,7 +229,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "kotlin,jackson");
+        properties.put("extensions", "kotlin,resteasy,jackson");
         properties.put("buildTool", "gradle");
         InvocationResult result = setup(properties);
 
@@ -263,7 +264,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "commons-io:commons-io:2.5");
+        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -302,6 +303,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("className", "MyGreatResource");
+        properties.put("extensions", "resteasy");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -334,6 +336,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         Properties properties = new Properties();
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
+        properties.put("extensions", "resteasy");
         properties.put("className", "org.acme.HelloResource");
         InvocationResult result = setup(properties);
 
@@ -368,7 +371,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         request.setGoals(Collections.singletonList(
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
-        request.setShowErrors(false);
+        request.setShowErrors(true);
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");

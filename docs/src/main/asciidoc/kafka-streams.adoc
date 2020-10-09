@@ -88,6 +88,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-producer \
     -Dextensions="kafka" \
+    -DnoExamples \
     && mv kafka-streams-quickstart-producer producer
 ----
 
@@ -241,6 +242,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-aggregator \
     -Dextensions="kafka-streams,resteasy-jsonb" \
+    -DnoExamples \
     && mv kafka-streams-quickstart-aggregator aggregator
 ----
 

@@ -3,7 +3,7 @@ ref: funqy-knative-events
 type: code
 tags:
   - example
-  - compatibility-issues
+  - singleton-example
 language:
   base:
     data:

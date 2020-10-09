@@ -125,7 +125,7 @@ public final class CodestartSpec {
         @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
         public CodestartDep(final String expression) {
             final String[] split = expression.split(":");
-            if (split.length < 2 || split.length > 3) {
+            if (split.length < 2) {
                 throw new IllegalArgumentException("Invalid CodestartDep expression: " + expression);
             }
             this.put(GROUP_ID, split[0]);

@@ -98,7 +98,7 @@ public class ArcConfig {
     public Optional<List<String>> selectedAlternatives;
 
     /**
-     * If set to true then {@code javax.enterprise.inject.Produces} is automatically added to all methods that are
+     * If set to true then {@code javax.enterprise.inject.Produces} is automatically added to all non-void methods that are
      * annotated with a scope annotation, a stereotype or a qualifier, and are not annotated with {@code Inject} or
      * {@code Produces}, and no parameter is annotated with {@code Disposes}, {@code Observes} or {@code ObservesAsync}.
      */

@@ -79,6 +79,11 @@ public class AutoProducerMethodTest {
             return Collections.emptyList();
         }
 
+        // void methods should be ignored
+        @MyQualifier
+        void ignored() {
+        }
+
     }
 
     @Qualifier

@@ -21,6 +21,7 @@
         <sqs.url>http://localhost:8010</sqs.url>
         <kms.url>http://localhost:8011</kms.url>
         <ses.url>http://localhost:8012</ses.url>
+        <iam.url>http://localhost:8013</iam.url>
     </properties>
 
     <dependencies>
@@ -43,6 +44,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-dynamodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-iam</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -117,6 +122,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-s3-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-iam-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -350,6 +368,7 @@
                                             <port>8010:4576</port> <!-- SQS -->
                                             <port>8011:4599</port> <!-- KMS -->
                                             <port>8012:4566</port> <!-- SES -->
+                                            <port>8013:4593</port> <!-- IAM -->
                                         </ports>
                                         <log/>
                                         <wait>

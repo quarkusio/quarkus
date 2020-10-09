@@ -17,6 +17,7 @@
     <modules>
         <module>common</module>
         <module>dynamodb</module>
+        <module>iam</module>
         <module>s3</module>
         <module>sns</module>
         <module>sqs</module>

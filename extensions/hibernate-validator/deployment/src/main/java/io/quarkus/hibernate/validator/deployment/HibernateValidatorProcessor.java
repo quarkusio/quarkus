@@ -45,6 +45,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -290,6 +291,11 @@ class HibernateValidatorProcessor {
 
     private static void contributeClass(Set<DotName> classNamesCollector, IndexView indexView, DotName className) {
         classNamesCollector.add(className);
+
+        if (DotNames.OBJECT.equals(className)) {
+            return;
+        }
+
         for (ClassInfo subclass : indexView.getAllKnownSubclasses(className)) {
             if (Modifier.isAbstract(subclass.flags())) {
                 // we can avoid adding the abstract classes here: either they are parent classes

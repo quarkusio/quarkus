@@ -5,7 +5,6 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BIG_DECIM
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BIG_INTEGER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BLOCKING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BOOLEAN;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BYTE_ARRAY_DOT_NAME;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CHARACTER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONSUMES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONTEXT;
@@ -15,7 +14,6 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DOUBLE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.FLOAT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.FORM_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.HEADER_PARAM;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INPUT_STREAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INTEGER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_NUMBER;
@@ -45,10 +43,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
-import static javax.ws.rs.core.MediaType.WILDCARD;
 
-import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -66,7 +61,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.ws.rs.RuntimeType;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.sse.SseEventSink;
@@ -115,11 +109,7 @@ import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
 import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.RestClientInterface;
-import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
-import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.ServerDefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonArrayHandler;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonObjectHandler;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonStructureHandler;
@@ -668,11 +658,7 @@ public class EndpointIndexer {
 
     private static void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
         DotName dotName = paramType.name();
-        if (dotName.equals(BYTE_ARRAY_DOT_NAME)) {
-            additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
-        } else if (dotName.equals(INPUT_STREAM)) {
-            additionalReaders.add(InputStreamMessageBodyHandler.class, WILDCARD, InputStream.class);
-        } else if (dotName.equals(JSONP_JSON_NUMBER)
+        if (dotName.equals(JSONP_JSON_NUMBER)
                 || dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_STRING)) {
             additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
@@ -682,11 +668,6 @@ public class EndpointIndexer {
             additionalReaders.add(JsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
         } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
             additionalReaders.add(JsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
-        } else if (SUPPORTED_TEXT_PLAIN_READER_TYPES.contains(dotName)) {
-            additionalReaders.add(ServerDefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType),
-                    RuntimeType.SERVER);
-            additionalReaders.add(ClientDefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType),
-                    RuntimeType.CLIENT);
         }
     }
 

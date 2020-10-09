@@ -1,5 +1,6 @@
 package io.quarkus.vertx.deployment;
 
+import static io.quarkus.vertx.ConsumeEvent.FAILURE_CODE;
 import static io.quarkus.vertx.deployment.VertxConstants.*;
 
 import java.lang.annotation.Annotation;
@@ -85,6 +86,8 @@ class EventBusConsumer {
             .ofMethod(Uni.class, "subscribeAsCompletionStage", CompletableFuture.class);
     protected static final MethodDescriptor THROWABLE_GET_MESSAGE = MethodDescriptor
             .ofMethod(Throwable.class, "getMessage", String.class);
+    protected static final MethodDescriptor THROWABLE_TO_STRING = MethodDescriptor
+            .ofMethod(Throwable.class, "toString", String.class);
 
     static String generateInvoker(BeanInfo bean, MethodInfo method,
             AnnotationInstance consumeEvent,
@@ -130,8 +133,20 @@ class EventBusConsumer {
             TryBlock tryBlock = funcBytecode.tryBlock();
             invoke(bean, method, messageHandle, tryBlock);
             tryBlock.invokeInterfaceMethod(FUTURE_COMPLETE, funcBytecode.getMethodParam(0), tryBlock.loadNull());
+
             CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-            catchBlock.invokeInterfaceMethod(FUTURE_FAIL, funcBytecode.getMethodParam(0), catchBlock.getCaughtException());
+            // Need to reply with the caught exception - using Throwable.toString on purpose to get the class name.
+            ResultHandle failureMessage = catchBlock
+                    .invokeVirtualMethod(THROWABLE_TO_STRING, catchBlock.getCaughtException());
+            ResultHandle failureStatus = catchBlock.load(FAILURE_CODE);
+            catchBlock.invokeInterfaceMethod(
+                    MESSAGE_FAIL,
+                    messageHandle,
+                    failureStatus,
+                    failureMessage);
+            // Completing successfully, the failure has been sent to the sender.
+            catchBlock.invokeInterfaceMethod(FUTURE_COMPLETE, funcBytecode.getMethodParam(0), catchBlock.loadNull());
+
             funcBytecode.returnValue(null);
 
             invoke.invokeInterfaceMethod(VERTX_EXECUTE_BLOCKING, vertxHandle, func.getInstance(), invoke.load(false),

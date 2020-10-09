@@ -178,3 +178,7 @@
   title: "(?i).*mandrel.*"
   description: "(?i).*mandrel.*"
   notify: [galderz,zakkak]
+- labels: [area/quarkiverse]
+  title: "(?i).*quarkiverse.*"
+  description: "(?i).*quarkiverse.*"
+  notify: [gastaldi,quarkusio/devtools]

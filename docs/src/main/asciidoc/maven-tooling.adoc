@@ -151,7 +151,7 @@ Hit `CTRL+C` to stop the application.
 
 === Remote Development Mode
 
-It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as Openshift)
+It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as OpenShift)
 and have changes made to your local files become immediately visible.
 
 This allows you to develop in the same environment you will actually run your app in, and with access to the same services.

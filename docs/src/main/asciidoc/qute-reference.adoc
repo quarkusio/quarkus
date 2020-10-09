@@ -963,7 +963,7 @@ class BigDecimalExtensions {
 <1> `item.discountedPrice` is resolved to an instance of `BigDecimal`.
 
 [[namespace_extension_methods]]
-==== Namespace Extention Methods
+==== Namespace Extension Methods
 
 If `TemplateExtension#namespace()` is specified then the extension method is used to resolve expressions with the given <<expressions,namespace>>.
 Template extension methods that share the same namespace are grouped in one resolver ordered by `TemplateExtension#priority()`.
@@ -1239,7 +1239,7 @@ NOTE: A warning message is logged for each _unused_ parameter.
 
 The default locale of the Java Virtual Machine used to *build the application* is used for the `@MessageBundle` interface by default.
 However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specify a custom locale.
-Additionaly, there are two ways to define a localized bundle:
+Additionally, there are two ways to define a localized bundle:
 
 1. Create an interface that extends the default interface that is annotated with `@Localized`
 2. Create an UTF-8 encoded file located in `src/main/resources/messages`; e.g. `msg_de.properties`.

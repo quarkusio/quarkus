@@ -310,7 +310,7 @@ You'll need two different terminal windows.  One to do a curl request to the Bro
 files so you can see the messages flowing through the Funqy function event chain.
 
 Make sure you have the `stern` tool installed.  See the Knative Tutorial setup for information on that.  Run stern
-to look for logs outputed by our Funqy deployment
+to look for logs outputted by our Funqy deployment
 
 [source, shell]
 ----

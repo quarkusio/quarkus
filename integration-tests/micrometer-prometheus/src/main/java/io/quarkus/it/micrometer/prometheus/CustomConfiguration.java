@@ -7,6 +7,8 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.config.MeterFilter;
@@ -18,6 +20,9 @@ import io.quarkus.micrometer.runtime.MeterFilterConstraint;
 @Singleton
 @Priority(Interceptor.Priority.APPLICATION - 100)
 public class CustomConfiguration {
+
+    @ConfigProperty(name = "deployment.env")
+    String deploymentEnv;
 
     @Produces
     @Singleton
@@ -39,7 +44,7 @@ public class CustomConfiguration {
     @Singleton
     public MeterFilter configureAllRegistries() {
         return MeterFilter.commonTags(Arrays.asList(
-                Tag.of("env", "test")));
+                Tag.of("env", deploymentEnv)));
     }
 
     /**

@@ -280,6 +280,42 @@ jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",
 Note that metrics appear lazily, you often won't see any data for your endpoint until
 something tries to access it, etc.
 
+== Adding custom configuration or common tags
+
+Micrometer uses `MeterFilter` instances to customize the metrics emitted by `MeterRegistry` instances.
+The Micrometer extension will detect `MeterFilter` CDI beans and use them when initializing `MeterRegistry` instances.
+
+[source,java]
+----
+@Singleton
+public class CustomConfiguration {
+
+    @ConfigProperty(name = "deployment.env")
+    String deploymentEnv;
+
+    /** Define common tags that apply only to a Prometheus Registry */
+    @Produces
+    @Singleton
+    @MeterFilterConstraint(applyTo = PrometheusMeterRegistry.class)
+    public MeterFilter configurePrometheusRegistries() {
+        return MeterFilter.commonTags(Arrays.asList(
+                Tag.of("registry", "prometheus")));
+    }
+
+    /** Define common tags that apply globally */
+    @Produces
+    @Singleton
+    public MeterFilter configureAllRegistries() {
+        return MeterFilter.commonTags(Arrays.asList(
+                Tag.of("env", deploymentEnv)));
+    }
+}
+----
+
+In this example, a singleton CDI bean will produce two different `MeterFilter` beans. One will be applied only to
+Prometheus `MeterRegistry` instances (using the `@MeterFilterConstraint` qualifier), and another will be applied
+to all `MeterRegistry` instances. An application configuration property is also injected and used as a tag value.
+
 == Support for the MicroProfile Metrics API
 
 If you use the MicroProfile Metrics API in your application, the Micrometer extension will create an adaptive

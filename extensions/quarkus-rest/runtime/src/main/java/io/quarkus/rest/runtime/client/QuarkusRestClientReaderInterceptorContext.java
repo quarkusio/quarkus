@@ -30,19 +30,17 @@ public class QuarkusRestClientReaderInterceptorContext extends QuarkusRestAbstra
     private int index = 0;
     private final ReaderInterceptor[] interceptors;
     private final MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();
-    private final RuntimeType runtimeType;
 
     public QuarkusRestClientReaderInterceptorContext(Annotation[] annotations, Class<?> entityClass, Type entityType,
             MediaType mediaType,
             Map<String, Object> properties, MultivaluedMap<String, String> headers,
             QuarkusRestConfiguration configuration, Serialisers serialisers, InputStream inputStream,
-            ReaderInterceptor[] interceptors, RuntimeType runtimeType) {
+            ReaderInterceptor[] interceptors) {
         super(annotations, entityClass, entityType, mediaType, properties);
         this.configuration = configuration;
         this.serialisers = serialisers;
         this.inputStream = inputStream;
         this.interceptors = interceptors;
-        this.runtimeType = runtimeType;
         this.headers.putAll(headers);
     }
 
@@ -51,7 +49,7 @@ public class QuarkusRestClientReaderInterceptorContext extends QuarkusRestAbstra
     public Object proceed() throws IOException, WebApplicationException {
         if (index == interceptors.length) {
             List<MessageBodyReader<?>> readers = serialisers.findReaders(configuration, entityClass, mediaType,
-                    runtimeType);
+                    RuntimeType.CLIENT);
             for (MessageBodyReader<?> reader : readers) {
                 if (reader.isReadable(entityClass, entityType, annotations, mediaType)) {
                     try {

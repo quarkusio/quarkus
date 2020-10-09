@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.List;
 
+import javax.ws.rs.NotSupportedException;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -13,22 +16,22 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.ReaderInterceptorContext;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 
 public class QuarkusRestReaderInterceptorContext extends QuarkusRestAbstractInterceptorContext
         implements ReaderInterceptorContext {
 
-    final MessageBodyReader reader;
-    InputStream inputStream;
-    boolean done = false;
+    private final MessageBodyReader reader;
+    private InputStream inputStream;
     private int index = 0;
     private final ReaderInterceptor[] interceptors;
     private final MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();
 
     public QuarkusRestReaderInterceptorContext(QuarkusRestRequestContext context, Annotation[] annotations, Class<?> type,
             Type genericType, MediaType mediaType, MessageBodyReader reader, InputStream inputStream,
-            ReaderInterceptor[] interceptors) {
-        super(context, annotations, type, genericType, mediaType);
+            ReaderInterceptor[] interceptors, Serialisers serialisers) {
+        super(context, annotations, type, genericType, mediaType, serialisers);
         this.reader = reader;
         this.inputStream = inputStream;
         this.interceptors = interceptors;
@@ -38,7 +41,15 @@ public class QuarkusRestReaderInterceptorContext extends QuarkusRestAbstractInte
     @Override
     public Object proceed() throws IOException, WebApplicationException {
         if (index == interceptors.length) {
-            return reader.readFrom(type, genericType, annotations, mediaType, headers, inputStream);
+            MessageBodyReader effectiveReader = reader;
+            if (rediscoveryNeeded) {
+                List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, mediaType, RuntimeType.SERVER);
+                if (readers.isEmpty()) {
+                    throw new NotSupportedException();
+                }
+                effectiveReader = readers.get(0);
+            }
+            return effectiveReader.readFrom(type, genericType, annotations, mediaType, headers, inputStream);
         } else {
             return interceptors[index++].aroundReadFrom(this);
         }

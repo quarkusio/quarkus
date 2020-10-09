@@ -16,16 +16,18 @@ import io.quarkus.rest.runtime.core.Serialisers;
 public class FixedEntityWriterArray implements EntityWriter {
 
     private final MessageBodyWriter[] writers;
+    private final Serialisers serialisers;
 
-    public FixedEntityWriterArray(MessageBodyWriter[] writers) {
+    public FixedEntityWriterArray(MessageBodyWriter[] writers, Serialisers serialisers) {
         this.writers = writers;
+        this.serialisers = serialisers;
     }
 
     @Override
     public void write(QuarkusRestRequestContext context, Object entity) throws IOException {
         for (int i = 0; i < writers.length; ++i) {
             MessageBodyWriter writer = writers[i];
-            if (Serialisers.invokeWriter(context, entity, writer)) {
+            if (Serialisers.invokeWriter(context, entity, writer, serialisers)) {
                 return;
             }
         }

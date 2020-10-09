@@ -783,7 +783,7 @@ public class QuarkusRestRecorder {
                             //only a single handler that can handle the response
                             //this is a very common case
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
-                                    buildTimeWriters.get(0).getInstance(), mediaType)));
+                                    buildTimeWriters.get(0).getInstance(), serialisers)));
                         } else {
                             //multiple writers, we try them in the proper order which had already been created
                             List<MessageBodyWriter<?>> list = new ArrayList<>();
@@ -791,7 +791,7 @@ public class QuarkusRestRecorder {
                                 list.add(i.getInstance());
                             }
                             handlers.add(new FixedProducesHandler(mediaType,
-                                    new FixedEntityWriterArray(list.toArray(new MessageBodyWriter[0]))));
+                                    new FixedEntityWriterArray(list.toArray(new MessageBodyWriter[0]), serialisers)));
                         }
                     }
                 } else {

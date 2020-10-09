@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -14,6 +16,8 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
+import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.vertx.core.buffer.Buffer;
 
 public class QuarkusRestClientWriterInterceptorContext extends QuarkusRestAbstractClientInterceptorContext
@@ -23,6 +27,10 @@ public class QuarkusRestClientWriterInterceptorContext extends QuarkusRestAbstra
     boolean done = false;
     private int index = 0;
     private OutputStream outputStream = baos;
+    private final Serialisers serialisers;
+    private final QuarkusRestConfiguration configuration;
+    // as the interceptors can change the type or mediaType, when that happens we need to find a new reader/writer
+    protected boolean rediscoveryNeeded = false;
 
     private MultivaluedMap<String, String> headers;
     private Object entity;
@@ -33,18 +41,31 @@ public class QuarkusRestClientWriterInterceptorContext extends QuarkusRestAbstra
 
     public QuarkusRestClientWriterInterceptorContext(WriterInterceptor[] writerInterceptors, MessageBodyWriter writer,
             Annotation[] annotations, Class<?> entityClass, Type entityType, Object entity,
-            MediaType mediaType, MultivaluedMap<String, String> headers, Map<String, Object> properties) {
+            MediaType mediaType, MultivaluedMap<String, String> headers, Map<String, Object> properties,
+            Serialisers serialisers, QuarkusRestConfiguration configuration) {
         super(annotations, entityClass, entityType, mediaType, properties);
         this.interceptors = writerInterceptors;
         this.writer = writer;
         this.entity = entity;
         this.headers = headers;
+        this.serialisers = serialisers;
+        this.configuration = configuration;
     }
 
     @Override
     public void proceed() throws IOException, WebApplicationException {
         if (index == interceptors.length) {
-            writer.writeTo(entity, entityClass, entityType,
+            MessageBodyWriter effectiveWriter = writer;
+            if (rediscoveryNeeded) {
+                List<MessageBodyWriter<?>> newWriters = serialisers.findWriters(configuration, entityClass, mediaType,
+                        RuntimeType.CLIENT);
+                if (newWriters.isEmpty()) {
+                    // FIXME: exception?
+                    return;
+                }
+                effectiveWriter = newWriters.get(0);
+            }
+            effectiveWriter.writeTo(entity, entityClass, entityType,
                     annotations, mediaType, headers, outputStream);
             outputStream.close();
             result = Buffer.buffer(baos.toByteArray());
@@ -82,6 +103,23 @@ public class QuarkusRestClientWriterInterceptorContext extends QuarkusRestAbstra
 
     public Buffer getResult() {
         return result;
+    }
+
+    @Override
+    public void setType(Class<?> type) {
+        if ((this.entityClass != type) && (type != null)) {
+            rediscoveryNeeded = true;
+        }
+        this.entityClass = type;
+        // FIXME: invalidate generic type?
+    }
+
+    @Override
+    public void setMediaType(MediaType mediaType) {
+        if (this.mediaType != mediaType) {
+            rediscoveryNeeded = true;
+        }
+        this.mediaType = mediaType;
     }
 
 }

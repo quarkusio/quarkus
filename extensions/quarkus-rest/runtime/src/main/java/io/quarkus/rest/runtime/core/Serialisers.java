@@ -227,14 +227,14 @@ public class Serialisers {
         }
     };
 
-    public static boolean invokeWriter(QuarkusRestRequestContext context, Object entity, MessageBodyWriter writer)
+    public static boolean invokeWriter(QuarkusRestRequestContext context, Object entity, MessageBodyWriter writer,
+            Serialisers serialisers)
             throws IOException {
-        return invokeWriter(context, entity, writer, null);
+        return invokeWriter(context, entity, writer, serialisers, null);
     }
 
     public static boolean invokeWriter(QuarkusRestRequestContext context, Object entity, MessageBodyWriter writer,
-            MediaType mediaType)
-            throws IOException {
+            Serialisers serialisers, MediaType mediaType) throws IOException {
         //note that GenericEntity is not a factor here. It should have already been unwrapped
 
         Response response = context.getResponse();
@@ -266,7 +266,7 @@ public class Serialisers {
                     Serialisers.encodeResponseHeaders(context);
                     context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
                 } else {
-                    runWriterInterceptors(context, entity, writer, response, writerInterceptors);
+                    runWriterInterceptors(context, entity, writer, response, writerInterceptors, serialisers);
                 }
                 return true;
             } else {
@@ -276,12 +276,11 @@ public class Serialisers {
     }
 
     public static void runWriterInterceptors(QuarkusRestRequestContext context, Object entity, MessageBodyWriter writer,
-            Response response, WriterInterceptor[] writerInterceptor) throws IOException {
+            Response response, WriterInterceptor[] writerInterceptor, Serialisers serialisers) throws IOException {
         QuarkusRestWriterInterceptorContext wc = new QuarkusRestWriterInterceptorContext(context, writerInterceptor, writer,
                 context.getAllAnnotations(), entity.getClass(), context.getGenericReturnType(), entity, response.getMediaType(),
-                response.getHeaders());
+                response.getHeaders(), serialisers);
         wc.proceed();
-
     }
 
     public void registerBuiltins(RuntimeType constraint) {
@@ -592,7 +591,7 @@ public class Serialisers {
     }
 
     public NoMediaTypeResult findWriterNoMediaType(QuarkusRestRequestContext requestContext, Object entity,
-            RuntimeType runtimeType) {
+            Serialisers serialisers, RuntimeType runtimeType) {
         List<ResourceWriter> resultForClass = noMediaTypeClassCache.computeIfAbsent(entity.getClass(), mappingFunction);
         List<ResourceWriter> constrainedResultsForClass = new ArrayList<>(resultForClass.size());
         for (ResourceWriter writer : resultForClass) {
@@ -638,7 +637,7 @@ public class Serialisers {
                 }
             }
         }
-        return new NoMediaTypeResult(finalResult.toArray(NO_WRITER), selected);
+        return new NoMediaTypeResult(finalResult.toArray(NO_WRITER), selected, serialisers);
     }
 
     public static class NoMediaTypeResult {
@@ -646,10 +645,10 @@ public class Serialisers {
         final MediaType mediaType;
         final EntityWriter entityWriter;
 
-        public NoMediaTypeResult(MessageBodyWriter<?>[] writers, MediaType mediaType) {
+        public NoMediaTypeResult(MessageBodyWriter<?>[] writers, MediaType mediaType, Serialisers serialisers) {
             this.writers = writers;
             this.mediaType = mediaType;
-            this.entityWriter = new FixedEntityWriterArray(writers);
+            this.entityWriter = new FixedEntityWriterArray(writers, serialisers);
         }
 
         public MessageBodyWriter<?>[] getWriters() {
@@ -726,7 +725,8 @@ public class Serialisers {
     // FIXME: pass InvocationState to wrap args?
     public static Buffer invokeClientWriter(Entity<?> entity, Object entityObject, Class<?> entityClass, Type entityType,
             MultivaluedMap<String, String> headerMap, MessageBodyWriter writer, WriterInterceptor[] writerInterceptors,
-            Map<String, Object> properties) throws IOException {
+            Map<String, Object> properties, Serialisers serialisers, QuarkusRestConfiguration configuration)
+            throws IOException {
         if (writer instanceof QuarkusRestClientMessageBodyWriter && writerInterceptors == null) {
             QuarkusRestClientMessageBodyWriter<Object> quarkusRestWriter = (QuarkusRestClientMessageBodyWriter<Object>) writer;
             if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
@@ -741,7 +741,8 @@ public class Serialisers {
                     return Buffer.buffer(baos.toByteArray());
                 } else {
                     return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),
-                            entity.getMediaType(), headerMap, writer, writerInterceptors, properties);
+                            entity.getMediaType(), headerMap, writer, writerInterceptors, properties, serialisers,
+                            configuration);
                 }
             }
         }
@@ -752,11 +753,10 @@ public class Serialisers {
     public static Buffer runClientWriterInterceptors(Object entity, Class<?> entityClass, Type entityType,
             Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> headers, MessageBodyWriter writer,
-            WriterInterceptor[] writerInterceptors, Map<String, Object> properties) throws IOException {
+            WriterInterceptor[] writerInterceptors, Map<String, Object> properties, Serialisers serialisers,
+            QuarkusRestConfiguration configuration) throws IOException {
         QuarkusRestClientWriterInterceptorContext wc = new QuarkusRestClientWriterInterceptorContext(writerInterceptors, writer,
-                annotations, entityClass, entityType, entity,
-                mediaType,
-                headers, properties);
+                annotations, entityClass, entityType, entity, mediaType, headers, properties, serialisers, configuration);
         wc.proceed();
         return wc.getResult();
     }
@@ -769,7 +769,7 @@ public class Serialisers {
         // FIXME: perhaps optimise for when we have no interceptor?
         QuarkusRestClientReaderInterceptorContext context = new QuarkusRestClientReaderInterceptorContext(annotations,
                 entityClass, entityType, mediaType,
-                properties, (MultivaluedMap) metadata, configuration, serialisers, in, interceptors, RuntimeType.CLIENT);
+                properties, metadata, configuration, serialisers, in, interceptors);
         return context.proceed();
     }
 }

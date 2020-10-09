@@ -65,7 +65,7 @@ public class RequestDeserializeHandler implements RestHandler {
                         } else {
                             result = new QuarkusRestReaderInterceptorContext(requestContext,
                                     annotations,
-                                    type, type, requestType, reader, in, interceptors).proceed();
+                                    type, type, requestType, reader, in, interceptors, serialisers).proceed();
                         }
                     } catch (NoContentException e) {
                         throw new BadRequestException(e);

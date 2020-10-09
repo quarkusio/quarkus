@@ -222,8 +222,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 RuntimeType.CLIENT);
         for (MessageBodyWriter<?> w : writers) {
             Buffer ret = Serialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap, w,
-                    interceptors,
-                    properties);
+                    interceptors, properties, serialisers, configuration);
             if (ret != null) {
                 return ret;
             }

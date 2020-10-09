@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.List;
 
+import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -34,8 +37,8 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
 
     public QuarkusRestWriterInterceptorContext(QuarkusRestRequestContext context, WriterInterceptor[] interceptors,
             MessageBodyWriter<?> writer, Annotation[] annotations, Class<?> type, Type genericType, Object entity,
-            MediaType mediaType, MultivaluedMap<String, Object> headers) {
-        super(context, annotations, type, genericType, mediaType);
+            MediaType mediaType, MultivaluedMap<String, Object> headers, Serialisers serialisers) {
+        super(context, annotations, type, genericType, mediaType, serialisers);
         this.interceptors = interceptors;
         this.writer = writer;
         this.entity = entity;
@@ -45,7 +48,17 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
     @Override
     public void proceed() throws IOException, WebApplicationException {
         if (index == interceptors.length) {
-            writer.writeTo(entity, type, genericType,
+            MessageBodyWriter effectiveWriter = writer;
+            if (rediscoveryNeeded) {
+                List<MessageBodyWriter<?>> newWriters = serialisers.findWriters(null, entity.getClass(), mediaType,
+                        RuntimeType.SERVER);
+                if (newWriters.isEmpty()) {
+                    throw new InternalServerErrorException("Could not find MessageBodyWriter for " + entity.getClass(),
+                            Response.serverError().build());
+                }
+                effectiveWriter = newWriters.get(0);
+            }
+            effectiveWriter.writeTo(entity, type, genericType,
                     annotations, mediaType, context.getResponse().getHeaders(), outputStream);
             context.setResult(Response.fromResponse(context.getResponse()).replaceAll(headers).build());
             Serialisers.encodeResponseHeaders(context);

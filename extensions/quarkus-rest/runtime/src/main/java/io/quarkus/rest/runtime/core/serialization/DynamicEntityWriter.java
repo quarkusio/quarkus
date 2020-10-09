@@ -58,7 +58,7 @@ public class DynamicEntityWriter implements EntityWriter {
             // try to find a Writer based on the entity type
             if (writers == null) {
                 Serialisers.NoMediaTypeResult writerNoMediaType = serialisers.findWriterNoMediaType(context, entity,
-                        RuntimeType.SERVER);
+                        serialisers, RuntimeType.SERVER);
                 writers = writerNoMediaType.getWriters();
                 selectedMediaType = writerNoMediaType.getMediaType();
             }
@@ -81,7 +81,7 @@ public class DynamicEntityWriter implements EntityWriter {
                     .toArray(Serialisers.NO_WRITER);
         }
         for (MessageBodyWriter<?> w : writers) {
-            if (Serialisers.invokeWriter(context, entity, w)) {
+            if (Serialisers.invokeWriter(context, entity, w, serialisers)) {
                 return;
             }
         }

@@ -58,6 +58,6 @@ public class VariableProducesHandler implements RestHandler {
                     .build());
         }
         requestContext.setProducesMediaType(res);
-        requestContext.setEntityWriter(new FixedEntityWriterArray(writers.toArray(EMPTY)));
+        requestContext.setEntityWriter(new FixedEntityWriterArray(writers.toArray(EMPTY), serialisers));
     }
 }

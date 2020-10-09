@@ -43,7 +43,7 @@ public class ResourceWriterInterceptor
         this.nameBindingNames = nameBindingNames;
     }
 
-    // spec says that request interceptors are sorted in ascending order
+    // spec says that writer interceptors are sorted in ascending order
     @Override
     public int compareTo(ResourceWriterInterceptor o) {
         return this.priority.compareTo(o.priority);

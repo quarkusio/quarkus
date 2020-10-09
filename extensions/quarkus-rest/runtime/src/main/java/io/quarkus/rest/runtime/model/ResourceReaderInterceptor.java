@@ -52,7 +52,7 @@ public class ResourceReaderInterceptor
         this.nameBindingNames = nameBindingNames;
     }
 
-    // spec says that request interceptors are sorted in ascending order
+    // spec says that reader interceptors are sorted in ascending order
     @Override
     public int compareTo(ResourceReaderInterceptor o) {
         return this.priority.compareTo(o.priority);

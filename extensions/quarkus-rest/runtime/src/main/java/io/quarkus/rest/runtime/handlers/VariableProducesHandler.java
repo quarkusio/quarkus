@@ -42,7 +42,7 @@ public class VariableProducesHandler implements RestHandler {
             //TODO?
             return;
         }
-        MediaType res = mediaTypeList.negotiateProduces(requestContext.getContext().request());
+        MediaType res = mediaTypeList.negotiateProduces(requestContext.getContext().request()).getKey();
         if (res == null) {
             throw new WebApplicationException(Response
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())

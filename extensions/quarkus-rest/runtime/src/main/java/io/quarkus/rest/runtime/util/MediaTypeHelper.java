@@ -66,7 +66,7 @@ public class MediaTypeHelper {
         return (isCompositeWildcardSubtype(subtype) || isWildcardCompositeSubtype(subtype));
     }
 
-    private static class MediaTypeComparator implements Comparator<MediaType>, Serializable {
+    public static class MediaTypeComparator implements Comparator<MediaType>, Serializable {
 
         private static final long serialVersionUID = -5828700121582498092L;
 

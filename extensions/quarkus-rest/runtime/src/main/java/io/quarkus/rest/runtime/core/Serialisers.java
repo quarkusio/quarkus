@@ -61,7 +61,6 @@ import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedMap;
-import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -560,15 +559,29 @@ public class Serialisers {
         if (candidates == null) {
             return;
         }
+
+        Map.Entry<MediaType, MediaType> selectedMediaTypes = null;
+        ResourceWriter selectedResourceWriter = null;
         for (ResourceWriter resourceWriter : candidates) {
             if (!resourceWriter.matchesRuntimeType(RuntimeType.SERVER)) {
                 continue;
             }
-            MediaType bestMediaType = resourceWriter.serverMediaType().negotiateProduces(request, null,
-                    ServerMediaType.NegotiateFallbackStrategy.CLIENT);
-            if (bestMediaType != null) {
-                result.add(resourceWriter.getInstance(), bestMediaType);
+            Map.Entry<MediaType, MediaType> current = resourceWriter.serverMediaType().negotiateProduces(request, null);
+            if (current.getValue() == null) {
+                continue;
             }
+            if (selectedMediaTypes == null) {
+                selectedMediaTypes = current;
+                selectedResourceWriter = resourceWriter;
+            } else {
+                if (MediaTypeHelper.COMPARATOR.compare(current.getValue(), selectedMediaTypes.getValue()) <= -1) {
+                    selectedMediaTypes = current;
+                    selectedResourceWriter = resourceWriter;
+                }
+            }
+        }
+        if (selectedMediaTypes != null) {
+            result.add(selectedResourceWriter.getInstance(), selectedMediaTypes.getKey());
         }
     }
 
@@ -599,7 +612,7 @@ public class Serialisers {
         }
         MediaType selected = null;
         for (ResourceWriter writer : constrainedResultsForClass) {
-            selected = writer.serverMediaType().negotiateProduces(requestContext.getContext().request());
+            selected = writer.serverMediaType().negotiateProduces(requestContext.getContext().request()).getKey();
             if (selected != null) {
                 break;
             }

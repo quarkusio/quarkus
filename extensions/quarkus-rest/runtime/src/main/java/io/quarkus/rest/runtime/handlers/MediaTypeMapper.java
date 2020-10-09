@@ -1,12 +1,11 @@
 package io.quarkus.rest.runtime.handlers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -17,6 +16,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
+import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -51,7 +51,9 @@ public class MediaTypeMapper implements RestHandler {
                 resourcesByConsumes.get(consumesMT).setResource(runtimeResource, producesMT);
             }
         }
-
+        for (Holder holder : resourcesByConsumes.values()) {
+            holder.setupServerMediaType();
+        }
     }
 
     @Override
@@ -99,14 +101,10 @@ public class MediaTypeMapper implements RestHandler {
         MediaType selected = null;
         HttpServerRequest httpServerRequest = requestContext.getContext().request();
         if (httpServerRequest.headers().contains(HttpHeaderNames.ACCEPT)) {
-            List<MediaType> acceptedMediaTypes = requestContext.getHttpHeaders().getModifiableAcceptableMediaTypes();
-            if (!acceptedMediaTypes.isEmpty()) {
-                MediaTypeHelper.sortByWeight(acceptedMediaTypes);
-
-                List<MediaType> methodMediaTypes = holder.mtsWithParams;
-                methodMediaTypes.sort(MethodMediaTypeComparator.INSTANCE);
-
-                selected = doSelectMediaType(methodMediaTypes, acceptedMediaTypes);
+            Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
+                    .negotiateProduces(requestContext.getContext().request(), null);
+            if (entry.getValue() != null) {
+                selected = entry.getValue();
             }
         }
         if (selected == null) {
@@ -118,45 +116,11 @@ public class MediaTypeMapper implements RestHandler {
         return selected;
     }
 
-    // similar to what ServerMediaType#negotiate does but adapted for this use case
-    private MediaType doSelectMediaType(List<MediaType> methodMediaTypes, List<MediaType> acceptedMediaTypes) {
-        MediaType selected = null;
-        String currentClientQ = null;
-        int currentServerIndex = Integer.MAX_VALUE;
-        for (MediaType desired : acceptedMediaTypes) {
-            if (selected != null) {
-                //this is to enable server side q values to take effect
-                //the client side is sorted by q, if we have already picked one and the q is
-                //different then we can return the current one
-                if (!Objects.equals(desired.getParameters().get("q"), currentClientQ)) {
-                    if (selected.equals(MediaType.WILDCARD_TYPE)) {
-                        return MediaType.APPLICATION_OCTET_STREAM_TYPE;
-                    }
-                    return selected;
-                }
-            }
-            for (int j = 0; j < methodMediaTypes.size(); j++) {
-                MediaType provided = methodMediaTypes.get(j);
-                if (provided.isCompatible(desired)) {
-                    if (selected == null || j < currentServerIndex) {
-                        if (provided.isWildcardType()) {
-                            selected = MediaType.APPLICATION_OCTET_STREAM_TYPE;
-                        } else {
-                            selected = provided;
-                        }
-                        currentServerIndex = j;
-                        currentClientQ = desired.getParameters().get("q");
-                    }
-                }
-            }
-        }
-        return selected;
-    }
-
     private static final class Holder {
 
         private final Map<MediaType, RuntimeResource> mtWithoutParamsToResource = new HashMap<>();
         private final List<MediaType> mtsWithParams = new ArrayList<>();
+        private ServerMediaType serverMediaType;
 
         public void setResource(RuntimeResource runtimeResource, MediaType mediaType) {
             MediaType withoutParams = mediaType;
@@ -167,49 +131,9 @@ public class MediaTypeMapper implements RestHandler {
             mtWithoutParamsToResource.put(withoutParams, runtimeResource);
             mtsWithParams.add(withParas);
         }
-    }
 
-    private static class MethodMediaTypeComparator implements Comparator<MediaType> {
-
-        private final static MethodMediaTypeComparator INSTANCE = new MethodMediaTypeComparator();
-
-        /**
-         * The idea here is to de-prioritize wildcards as the spec mentions that they should be picked with lower priority
-         * Then we utilize the qs property just like ServerMediaType does
-         */
-        @Override
-        public int compare(MediaType m1, MediaType m2) {
-            if (m1.isWildcardType() && !m2.isWildcardType()) {
-                return 1;
-            }
-            if (!m1.isWildcardType() && m2.isWildcardType()) {
-                return -1;
-            }
-            if (!m1.isWildcardType() && !m2.isWildcardType()) {
-                if (m1.isWildcardSubtype() && !m2.isWildcardSubtype()) {
-                    return 1;
-                }
-                if (!m1.isWildcardSubtype() && m2.isWildcardSubtype()) {
-                    return -1;
-                }
-            }
-
-            String qs1s = m1.getParameters().get("qs");
-            String qs2s = m2.getParameters().get("qs");
-            if (qs1s == null && qs2s == null) {
-                return 0;
-            }
-            if (qs1s != null) {
-                if (qs2s == null) {
-                    return 1;
-                } else {
-                    float q1 = Float.parseFloat(qs1s);
-                    float q2 = Float.parseFloat(qs2s);
-                    return Float.compare(q2, q1);
-                }
-            } else {
-                return -1;
-            }
+        public void setupServerMediaType() {
+            serverMediaType = new ServerMediaType(mtsWithParams, StandardCharsets.UTF_8.name(), true);
         }
     }
 }

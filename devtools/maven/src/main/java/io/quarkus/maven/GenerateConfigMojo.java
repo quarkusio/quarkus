@@ -30,7 +30,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.runner.bootstrap.GenerateConfigTask;
 
 /**
- * Generates an example application-config.properties, with all properties commented out
+ * Generates an example application.properties, with all properties commented out.
  *
  * If this is already present then it will be appended too, although only properties that were not already present
  *

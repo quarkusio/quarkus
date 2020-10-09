@@ -26,7 +26,7 @@
         <quarkus-http.version>3.0.15.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>
-        <micrometer.version>1.5.3</micrometer.version>
+        <micrometer.version>1.5.5</micrometer.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
@@ -292,6 +292,15 @@
                 <version>${smallrye-common.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+
+            <!-- Micrometer Core and Registries, imported as BOM -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-bom</artifactId>
+                <version>${micrometer.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- Quarkus core -->
@@ -4562,26 +4571,6 @@
             </dependency>
             <dependency>
                 <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-core</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-datadog</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-jmx</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-prometheus</artifactId>
-                <version>${micrometer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-registry-stackdriver</artifactId>
                 <version>${micrometer.version}</version>
                 <exclusions>
@@ -4610,11 +4599,6 @@
                         <artifactId>animal-sniffer-annotations</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-azure-monitor</artifactId>
-                <version>${micrometer.version}</version>
             </dependency>
 
             <!-- Picocli -->

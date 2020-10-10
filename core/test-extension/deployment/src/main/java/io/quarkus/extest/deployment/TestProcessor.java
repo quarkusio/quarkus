@@ -275,14 +275,14 @@ public final class TestProcessor {
                     + buildTimeConfig.btStringOptWithDefault);
         }
         if (!buildTimeConfig.allValues.oov.equals(new ObjectOfValue("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; " + buildTimeConfig.allValues.oov);
+            throw new IllegalStateException("buildTimeConfig.oov != configPart1+configPart2; " + buildTimeConfig.allValues.oov);
         }
         if (!buildTimeConfig.allValues.oovWithDefault.equals(new ObjectOfValue("defaultPart1", "defaultPart2"))) {
             throw new IllegalStateException(
                     "buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; " + buildTimeConfig.allValues.oovWithDefault);
         }
         if (!buildTimeConfig.allValues.ovo.equals(new ObjectValueOf("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; " + buildTimeConfig.allValues.oov);
+            throw new IllegalStateException("buildTimeConfig.oov != configPart1+configPart2; " + buildTimeConfig.allValues.oov);
         }
         if (!buildTimeConfig.allValues.ovoWithDefault.equals(new ObjectValueOf("defaultPart1", "defaultPart2"))) {
             throw new IllegalStateException(

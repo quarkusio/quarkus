@@ -26,6 +26,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security-deployment</artifactId>
         </dependency>
+        <!-- JSON-P is needed for cases where JSON-B is not in scope-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp-deployment</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

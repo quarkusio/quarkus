@@ -26,7 +26,7 @@ public class AutoProducerMethodsProcessor {
     private static final Logger LOGGER = Logger.getLogger(AutoProducerMethodsProcessor.class);
 
     /**
-     * Register an annotation transformer that automatically adds {@link Produces} to all non-static methods that are annotated
+     * Register an annotation transformer that automatically adds {@link Produces} to all non-void methods that are annotated
      * with a qualifier or a scope annotation.
      */
     @BuildStep
@@ -62,6 +62,10 @@ public class AutoProducerMethodsProcessor {
 
             @Override
             public void transform(TransformationContext ctx) {
+                if (ctx.getTarget().asMethod().returnType().kind() == org.jboss.jandex.Type.Kind.VOID) {
+                    // Skip void methods
+                    return;
+                }
                 Set<AnnotationInstance> methodAnnotations = Annotations.getAnnotations(Kind.METHOD, ctx.getAnnotations());
                 if (methodAnnotations.isEmpty() || contains(methodAnnotations, DotNames.PRODUCES)
                         || contains(methodAnnotations, DotNames.INJECT)) {

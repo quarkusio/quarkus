@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 
@@ -23,7 +22,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
  */
 public class QuarkusLauncher {
 
-    public static void launch(String callingClass, String quarkusApplication, Consumer<Integer> exitHandler, String... args) {
+    public static void launch(String callingClass, String quarkusApplication, String... args) {
         try {
             String classResource = callingClass.replace(".", "/") + ".class";
             URL resource = Thread.currentThread().getContextClassLoader().getResource(classResource);

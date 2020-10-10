@@ -110,6 +110,19 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     }
 
     @Test
+    public void generateCustomizedSpringWebProjectRun() throws Exception {
+        final HashMap<String, Object> data = new HashMap<>();
+        data.put(DataKey.SPRING_WEB_EXAMPLE_PACKAGE_NAME.getKey(), "com.test.spring.web");
+        data.put(DataKey.SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "SpringWebEndpoint");
+        data.put(DataKey.SPRING_WEB_EXAMPLE_RESOURCE_PATH.getKey(), "/springweb");
+        final String buildTool = "maven";
+        final String language = "java";
+        final List<String> codestarts = Collections.singletonList("spring-web-example");
+        generateProjectRunTests(buildTool, language, codestarts, data,
+                genName(buildTool, language, codestarts) + "-customized");
+    }
+
+    @Test
     public void generateCustomizedCommandModeProjectRun() throws Exception {
         final HashMap<String, Object> data = new HashMap<>();
         data.put(DataKey.COMMANDMODE_EXAMPLE_PACKAGE_NAME.getKey(), "com.test.andy");

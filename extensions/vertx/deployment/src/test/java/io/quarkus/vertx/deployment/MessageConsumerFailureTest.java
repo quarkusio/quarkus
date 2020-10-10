@@ -44,6 +44,13 @@ public class MessageConsumerFailureTest {
         verifyFailure("foo-completion-stage-failure", "boom", true);
         verifyFailure("foo-uni", "java.lang.NullPointerException: Something is null", false);
         verifyFailure("foo-uni-failure", "boom", true);
+
+        verifyFailure("foo-blocking", "java.lang.IllegalStateException: Red is dead", false);
+        verifyFailure("foo-message-blocking", "java.lang.NullPointerException", false);
+        verifyFailure("foo-completion-stage-blocking", "java.lang.NullPointerException: Something is null", false);
+        verifyFailure("foo-completion-stage-failure-blocking", "boom", true);
+        verifyFailure("foo-uni-blocking", "java.lang.NullPointerException: Something is null", false);
+        verifyFailure("foo-uni-failure-blocking", "boom", true);
     }
 
     void verifyFailure(String address, String expectedMessage, boolean explicit) throws InterruptedException {
@@ -104,6 +111,37 @@ public class MessageConsumerFailureTest {
             return Uni.createFrom().failure(new IOException("boom"));
         }
 
+        @ConsumeEvent(value = "foo-blocking", blocking = true)
+        String failBlocking(String message) {
+            throw new IllegalStateException("Red is dead");
+        }
+
+        @ConsumeEvent(value = "foo-message-blocking", blocking = true)
+        void failMessageBlocking(Message<String> message) {
+            throw new NullPointerException();
+        }
+
+        @ConsumeEvent(value = "foo-completion-stage-blocking", blocking = true)
+        CompletionStage<String> failCompletionStageBlocking(String message) {
+            throw new NullPointerException("Something is null");
+        }
+
+        @ConsumeEvent(value = "foo-completion-stage-failure-blocking", blocking = true)
+        CompletionStage<String> failedCompletionStageBlocking(String message) {
+            CompletableFuture<String> future = new CompletableFuture<>();
+            future.completeExceptionally(new IOException("boom"));
+            return future;
+        }
+
+        @ConsumeEvent(value = "foo-uni-blocking", blocking = true)
+        Uni<String> failUniBlocking(String message) {
+            throw new NullPointerException("Something is null");
+        }
+
+        @ConsumeEvent(value = "foo-uni-failure-blocking", blocking = true)
+        Uni<String> failedUniBlocking(String message) {
+            return Uni.createFrom().failure(new IOException("boom"));
+        }
     }
 
 }

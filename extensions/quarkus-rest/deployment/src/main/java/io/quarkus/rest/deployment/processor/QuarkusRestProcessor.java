@@ -119,6 +119,7 @@ import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.BeanFactory;
+import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.rest.spi.DynamicFeatureBuildItem;
@@ -776,6 +777,10 @@ public class QuarkusRestProcessor {
                     beanContainerBuildItem.getValue());
 
             String applicationPath = determineApplicationPath(index);
+            // spec allows the path contain encoded characters
+            if ((applicationPath != null) && applicationPath.contains("%")) {
+                applicationPath = Encode.decodePath(applicationPath);
+            }
 
             // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
             // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one

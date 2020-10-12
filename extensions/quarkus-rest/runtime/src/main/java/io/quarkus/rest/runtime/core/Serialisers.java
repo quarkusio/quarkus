@@ -132,7 +132,7 @@ public class Serialisers {
             new BuiltinReader(Reader.class, ReaderBodyHandler.class, MediaType.WILDCARD),
             new BuiltinReader(File.class, FileBodyHandler.class, MediaType.WILDCARD),
 
-            new BuiltinReader(byte[].class, ByteArrayMessageBodyHandler.class, MediaType.WILDCARD, RuntimeType.CLIENT),
+            new BuiltinReader(byte[].class, ByteArrayMessageBodyHandler.class, MediaType.WILDCARD),
             new BuiltinReader(MultivaluedMap.class, FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED,
                     RuntimeType.CLIENT),
             new BuiltinReader(Object.class, ServerDefaultTextPlainBodyHandler.class, MediaType.TEXT_PLAIN, RuntimeType.SERVER),

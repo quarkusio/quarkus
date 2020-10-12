@@ -31,9 +31,41 @@ public class ContextResolvers {
         if ((goodResolvers != null) && !goodResolvers.isEmpty()) {
             List<MediaType> mt = Collections.singletonList(mediaType);
             final List<ContextResolver<T>> delegates = new ArrayList<>();
+            MediaType bestMatch = null;
             for (ResourceContextResolver goodResolver : goodResolvers) {
-                MediaType match = MediaTypeHelper.getBestMatch(mt, goodResolver.mediaTypes());
-                if (match != null || mediaType == null) {
+                boolean add = false;
+                // we don't care
+                if (mediaType == null) {
+                    add = true;
+                } else {
+                    MediaType match;
+                    // wildcard handling
+                    if (goodResolver.mediaTypes().isEmpty()) {
+                        match = MediaType.WILDCARD_TYPE;
+                    } else {
+                        match = MediaTypeHelper.getBestMatch(mt, goodResolver.mediaTypes());
+                        // if there's no match, we must skip it
+                        if (match == null)
+                            continue;
+                    }
+                    if (bestMatch == null) {
+                        bestMatch = match;
+                        add = true;
+                    } else {
+                        int cmp = MediaTypeHelper.COMPARATOR.compare(bestMatch, match);
+                        if (cmp == 0) {
+                            // same fitness
+                            add = true;
+                        } else if (cmp > 0) {
+                            // wrong order means that our best match is not as good as the new match
+                            delegates.clear();
+                            add = true;
+                            bestMatch = match;
+                        }
+                        // otherwise this is not as good as our delegate list, so let's not add it
+                    }
+                }
+                if (add) {
                     delegates.add((ContextResolver<T>) goodResolver.getFactory().createInstance().getInstance());
                 }
             }

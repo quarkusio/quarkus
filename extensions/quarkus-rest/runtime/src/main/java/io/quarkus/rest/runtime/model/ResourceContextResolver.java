@@ -28,6 +28,10 @@ public class ResourceContextResolver {
         return this;
     }
 
+    public List<String> getMediaTypeStrings() {
+        return mediaTypeStrings;
+    }
+
     public List<MediaType> mediaTypes() {
         if (mediaTypes == null) {
             //todo: does this actually need to be threadsafe?

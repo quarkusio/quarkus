@@ -56,16 +56,16 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
                 .filter(c -> !EXCLUDED.contains(c.getName()))
                 .collect(Collectors.toList());
         final List<List<String>> runAlone = examples.stream()
-                .filter(c -> c.containsTag(Tag.COMPATIBILITY_ISSUES.getKey()))
+                .filter(c -> c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()))
                 .map(Codestart::getName)
                 .map(Collections::singletonList)
                 .collect(Collectors.toList());
         final List<String> runTogether = examples.stream()
-                .filter(c -> !c.containsTag(Tag.COMPATIBILITY_ISSUES.getKey()))
+                .filter(c -> !c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()))
                 .map(Codestart::getName)
                 .collect(Collectors.toList());
         return Stream.of("java", "kotlin", "scala")
-                .flatMap(l -> Stream.concat(Stream.of(runTogether, Collections.emptyList()), Stream.of(runAlone.toArray()))
+                .flatMap(l -> Stream.concat(Stream.of(runTogether), Stream.of(runAlone.toArray()))
                         .map(c -> Arguments.of(l, c)));
     }
 

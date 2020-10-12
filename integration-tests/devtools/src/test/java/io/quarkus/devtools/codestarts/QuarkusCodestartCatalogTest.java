@@ -146,6 +146,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestCommandMode() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addCodestart("commandmode")
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         assertThat(projectDefinition.getBaseCodestarts()).extracting(Codestart::getName)

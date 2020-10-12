@@ -15,6 +15,7 @@ import org.assertj.core.util.Files;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
@@ -80,8 +81,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateCodestartProjectDefaultWithExamples() throws IOException {
+    void generateCodestartProjectCommandMode() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addCodestart("commandmode")
                 .addData(getTestInputData())
                 .build();
 
@@ -99,6 +101,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectCommandModeCustom() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addCodestart("commandmode")
                 .addData(getTestInputData())
                 .putData(COMMANDMODE_EXAMPLE_PACKAGE_NAME.getKey(), "com.test.andy")
                 .putData(COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "AndyCommando")
@@ -146,6 +149,30 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve("src/test/java/com/andy/NativeBonjourResourceIT.java")).exists()
                 .satisfies(checkContains("package com.andy;"))
                 .satisfies(checkContains("class NativeBonjourResourceIT extends BonjourResourceTest"));
+    }
+
+    @Test
+    void generateMavenProjectWithCustomDep() throws IOException {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addData(getTestInputData())
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(AppArtifactCoords.fromString("commons-io:commons-io:2.5"))
+
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-custom-dep");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        assertThat(projectDir.resolve("pom.xml")).exists()
+                .satisfies(checkContains("<dependency>\n" +
+                        "      <groupId>commons-io</groupId>\n" +
+                        "      <artifactId>commons-io</artifactId>\n" +
+                        "      <version>2.5</version>\n" +
+                        "    </dependency>\n"))
+                .satisfies(checkContains("<dependency>\n" +
+                        "      <groupId>io.quarkus</groupId>\n" +
+                        "      <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "    </dependency>\n"));
     }
 
     @Test
@@ -212,6 +239,24 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve("src/test/scala/com/andy/NativeBonjourResourceIT.scala")).exists()
                 .satisfies(checkContains("package com.andy"))
                 .satisfies(checkContains("class NativeBonjourResourceIT extends BonjourResourceTest"));
+    }
+
+    @Test
+    void generateCodestartProjectMavenDefaultJava() throws IOException {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addData(getTestInputData())
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-default-java");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/ExampleResourceTest.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/NativeExampleResourceIT.java")).exists();
     }
 
     @Test

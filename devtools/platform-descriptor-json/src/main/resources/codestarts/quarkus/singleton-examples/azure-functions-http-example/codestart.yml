@@ -3,7 +3,7 @@ ref: azure-functions-http
 type: code
 tags:
   - example
-  - compatibility-issues
+  - singleton-example
   - maven-only
 language:
   base:

@@ -50,7 +50,8 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-jpa-quickstart \
-    -Dextensions="security-jpa, jdbc-postgresql, resteasy, hibernate-orm-panache"
+    -Dextensions="security-jpa,jdbc-postgresql,resteasy,hibernate-orm-panache" \
+    -DnoExamples
 cd security-jpa-quickstart
 ----
 

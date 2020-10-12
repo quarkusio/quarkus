@@ -1,15 +1,15 @@
-name: amazon-lambda-example
-ref: amazon-lambda
+name: funqy-amazon-lambda-example
+ref: funqy-amazon-lambda
 type: code
 tags:
   - example
-  - compatibility-issues
+  - singleton-example
 language:
   base:
     shared-data:
       supports:
         dev-mode: false
     dependencies:
-      - io.quarkus:quarkus-amazon-lambda
+      - io.quarkus:quarkus-funqy-amazon-lambda
     test-dependencies:
       - io.quarkus:quarkus-test-amazon-lambda

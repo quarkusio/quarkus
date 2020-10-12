@@ -65,7 +65,7 @@ public class CliTest {
         Assertions.assertEquals(CommandLine.ExitCode.USAGE, exitCode);
 
         // test not project dir
-        execute("add", "resteasy");
+        execute("add", "qute");
         Assertions.assertEquals(CommandLine.ExitCode.SOFTWARE, exitCode);
 
         execute("list");
@@ -77,17 +77,18 @@ public class CliTest {
         // test empty list
         execute("list");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
-        Assertions.assertEquals("", screen.trim());
+        Assertions.assertEquals("quarkus-resteasy", screen.trim());
 
         // test add
-        execute("add", "resteasy");
+        execute("add", "qute");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
 
         // test list
 
         execute("list");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
-        Assertions.assertEquals("quarkus-resteasy", screen.trim());
+        Assertions.assertTrue(screen.contains("quarkus-resteasy"));
+        Assertions.assertTrue(screen.contains("quarkus-qute"));
 
         // test add multiple
         execute("add", "amazon-lambda-http", "jackson");
@@ -98,6 +99,7 @@ public class CliTest {
         execute("list");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
         Assertions.assertTrue(screen.contains("quarkus-resteasy"));
+        Assertions.assertTrue(screen.contains("quarkus-qute"));
         Assertions.assertTrue(screen.contains("quarkus-amazon-lambda-http"));
         Assertions.assertTrue(screen.contains("quarkus-jackson"));
 
@@ -122,16 +124,16 @@ public class CliTest {
         Assertions.assertEquals(CommandLine.ExitCode.SOFTWARE, exitCode);
 
         // test remove
-        execute("remove", "resteasy");
+        execute("remove", "qute");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
         execute("list");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
-        Assertions.assertFalse(screen.contains("quarkus-resteasy"));
+        Assertions.assertFalse(screen.contains("quarkus-qute"));
         Assertions.assertTrue(screen.contains("quarkus-amazon-lambda-http"));
         Assertions.assertTrue(screen.contains("quarkus-jackson"));
 
         // test remove many
-        execute("rm", "amazon-lambda-http", "jackson");
+        execute("rm", "amazon-lambda-http", "jackson", "resteasy");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
         execute("list");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);

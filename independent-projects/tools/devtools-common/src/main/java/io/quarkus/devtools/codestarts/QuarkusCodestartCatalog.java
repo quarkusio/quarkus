@@ -2,9 +2,9 @@ package io.quarkus.devtools.codestarts;
 
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -19,11 +19,11 @@ import java.util.stream.Collectors;
 public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<QuarkusCodestartProjectInput> {
 
     public static final String QUARKUS_CODESTARTS_DIR = "codestarts/quarkus";
-    private final Map<AppArtifactKey, String> extensionCodestartMapping;
+    private final Map<String, String> extensionCodestartMapping;
 
     public enum Tag implements KeySupplier {
         EXAMPLE,
-        COMPATIBILITY_ISSUES,
+        SINGLETON_EXAMPLE,
         MAVEN_ONLY;
     }
 
@@ -45,7 +45,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     }
 
     private QuarkusCodestartCatalog(Collection<Codestart> codestarts,
-            Map<AppArtifactKey, String> extensionCodestartMapping) {
+            Map<String, String> extensionCodestartMapping) {
         super(codestarts);
         this.extensionCodestartMapping = extensionCodestartMapping;
     }
@@ -54,7 +54,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             throws IOException {
         final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
         final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR);
-        final Map<AppArtifactKey, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
+        final Map<String, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
         return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
     }
 
@@ -67,7 +67,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         for (Path directory : directories) {
             codestarts.addAll(CodestartCatalogLoader.loadUserDirectoryCodestarts(directory));
         }
-        final Map<AppArtifactKey, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
+        final Map<String, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
         return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
     }
 
@@ -87,29 +87,45 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .filter(c -> !isExample(c) || !projectInput.noExamples())
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        // include commandmode example codestarts if none selected
+        // include default example codestarts if none selected
         if (!projectInput.noExamples()
                 && projectCodestarts.stream()
                         .noneMatch(c -> isExample(c) && !c.getSpec().isPreselected())) {
-            final Codestart commandModeCodestart = codestarts.stream()
-                    .filter(c -> c.isSelected(Collections.singleton(Example.COMMANDMODE_EXAMPLE.getKey())))
+            final Codestart defaultCodestart = codestarts.stream()
+                    .filter(c -> c.isSelected(Collections.singleton(Example.RESTEASY_EXAMPLE.getKey())))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
-                            Example.COMMANDMODE_EXAMPLE.getKey() + " codestart not found"));
+                            Example.RESTEASY_EXAMPLE.getKey() + " codestart not found"));
             final String languageName = findLanguageName(projectCodestarts);
-            if (commandModeCodestart.implementsLanguage(languageName)) {
-                projectCodestarts.add(commandModeCodestart);
+            if (defaultCodestart.implementsLanguage(languageName)) {
+                projectCodestarts.add(defaultCodestart);
             } else {
                 projectInput.log().warn(
-                        commandModeCodestart.getName() + " codestart will not be applied (doesn't implement language '"
+                        defaultCodestart.getName() + " codestart will not be applied (doesn't implement language '"
                                 + languageName
                                 + "' yet)");
             }
         }
+
+        // check compatibility issues
+        final long examplesWithCompatIssues = projectCodestarts.stream()
+                .filter(QuarkusCodestartCatalog::isExample)
+                .filter(c -> c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()))
+                .count();
+
+        if (examplesWithCompatIssues == 1) {
+            // remove other examples
+            projectCodestarts.removeIf(c -> isExample(c) && !c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()));
+        } else if (examplesWithCompatIssues > 1) {
+            throw new CodestartException(
+                    "Only one extension with singleton example can be selected at a time (you can always use 'noExamples' if needed)");
+        }
+
         return projectCodestarts;
     }
 
     private Set<String> getExtensionCodestarts(QuarkusCodestartProjectInput projectInput) {
-        return projectInput.getDependencies().stream()
+        return projectInput.getExtensions().stream()
+                .map(Extensions::toGA)
                 .filter(extensionCodestartMapping::containsKey)
                 .map(extensionCodestartMapping::get)
                 .collect(Collectors.toSet());
@@ -164,11 +180,10 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         }
     }
 
-    private static Map<AppArtifactKey, String> buildCodestartMapping(Collection<Extension> extensions) {
+    private static Map<String, String> buildCodestartMapping(Collection<Extension> extensions) {
         return extensions.stream()
                 .filter(e -> e.getCodestart() != null)
-                .collect(Collectors.toMap(e -> new AppArtifactKey(e.getGroupId(), e.getArtifactId(), e.getClassifier(),
-                        e.getType() == null ? "jar" : e.getType()), Extension::getCodestart));
+                .collect(Collectors.toMap(Extensions::toGA, Extension::getCodestart));
     }
 
 }

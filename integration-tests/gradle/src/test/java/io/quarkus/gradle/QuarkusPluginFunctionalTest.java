@@ -85,7 +85,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
         assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
 
         final File applicationProperties = projectRoot.toPath().resolve("src/main/resources/application.properties").toFile();
-        DevModeTestUtils.filter(applicationProperties, ImmutableMap.of("# Configuration file", "quarkus.http.port=8888"));
+        Files.write(applicationProperties.toPath(), "quarkus.http.port=8888".getBytes());
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);

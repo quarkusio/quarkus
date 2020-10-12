@@ -2,26 +2,40 @@ package io.quarkus.devtools.codestarts;
 
 import static java.util.Objects.requireNonNull;
 
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.extensions.Extensions;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
+    public Collection<AppArtifactCoords> extensions = new ArrayList<>();
     boolean noExamples;
     boolean noDockerfiles;
     boolean noBuildToolWrapper;
     BuildTool buildTool = BuildTool.MAVEN;
 
-    public QuarkusCodestartProjectInputBuilder addExtensions(Collection<AppArtifactKey> extensions) {
-        super.addDependencies(extensions);
+    QuarkusCodestartProjectInputBuilder() {
+        super();
+    }
+
+    public QuarkusCodestartProjectInputBuilder addExtensions(Collection<AppArtifactCoords> extensions) {
+        this.extensions.addAll(extensions);
+        super.addDependencies(extensions.stream().map(Extensions::toGAV).collect(Collectors.toList()));
         return this;
     }
 
-    public QuarkusCodestartProjectInputBuilder addExtension(AppArtifactKey extension) {
+    public QuarkusCodestartProjectInputBuilder addExtension(AppArtifactCoords extension) {
         return this.addExtensions(Collections.singletonList(extension));
+    }
+
+    public QuarkusCodestartProjectInputBuilder addExtension(AppArtifactKey extension) {
+        return this.addExtension(Extensions.toCoords(extension, null));
     }
 
     @Override

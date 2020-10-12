@@ -1,6 +1,5 @@
 package io.quarkus.devtools.codestarts.core;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.core.CodestartSpec.CodestartDep;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
@@ -43,12 +42,11 @@ public final class CodestartData {
     }
 
     public static Map<String, Object> buildDependenciesData(Stream<Codestart> codestartsStream, String languageName,
-            Collection<AppArtifactKey> extensions) {
+            Collection<String> extensions) {
         final Map<String, Set<CodestartDep>> depsData = new HashMap<>();
-        final Set<CodestartDep> extensionsAsDeps = extensions.stream()
-                .map(k -> k.getGroupId() + ":" + k.getArtifactId()).map(CodestartDep::new)
+        final Set<CodestartDep> dependencies = extensions.stream()
+                .map(CodestartDep::new)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        final Set<CodestartDep> dependencies = new LinkedHashSet<>(extensionsAsDeps);
         final Set<CodestartDep> testDependencies = new LinkedHashSet<>();
         codestartsStream
                 .flatMap(s -> Stream.of(s.getBaseLanguageSpec(), s.getLanguageSpec(languageName)))

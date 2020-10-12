@@ -47,7 +47,7 @@ public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase
         String config = Files
                 .asCharSource(new File(testDir, "src/main/resources/application.properties"), Charsets.UTF_8)
                 .read();
-        assertThat(config).contains("key = value");
+        assertThat(config).isEmpty();
 
         assertThat(new File(testDir, "src/main/docker/Dockerfile.native")).isFile();
         assertThat(new File(testDir, "src/main/docker/Dockerfile.jvm")).isFile();

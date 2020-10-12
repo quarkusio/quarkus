@@ -74,8 +74,8 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "projectVersion")
     private String projectVersion;
 
-    @Parameter(property = "codestartsEnabled", defaultValue = "false")
-    private boolean codestartsEnabled;
+    @Parameter(property = "legacyCodegen", defaultValue = "false")
+    private boolean legacyCodegen;
 
     @Parameter(property = "noExamples", defaultValue = "false")
     private boolean noExamples;
@@ -195,7 +195,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .sourceType(sourceType)
                     .className(className)
                     .extensions(extensions)
-                    .codestartsEnabled(codestartsEnabled)
+                    .legacyCodegen(legacyCodegen)
                     .noExamples(noExamples);
             if (path != null) {
                 createProject.setValue("path", path);
@@ -203,7 +203,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
             success = createProject.execute().isSuccess();
 
-            if (!codestartsEnabled) {
+            if (legacyCodegen) {
                 File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
                 if (BuildTool.MAVEN.equals(buildToolEnum)) {
                     createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));

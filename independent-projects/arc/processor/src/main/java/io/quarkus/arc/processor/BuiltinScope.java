@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.Managed;
 import java.lang.annotation.Annotation;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -14,7 +15,8 @@ public enum BuiltinScope {
     DEPENDENT(Dependent.class, false),
     SINGLETON(Singleton.class, false),
     APPLICATION(ApplicationScoped.class, true),
-    REQUEST(RequestScoped.class, true);
+    REQUEST(RequestScoped.class, true),
+    MANAGED(Managed.class, true);
 
     private ScopeInfo info;
 

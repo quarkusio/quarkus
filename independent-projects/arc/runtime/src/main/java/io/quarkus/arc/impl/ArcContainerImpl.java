@@ -10,7 +10,6 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableObserverMethod;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.RemovedBean;
 import io.quarkus.arc.ResourceReferenceProvider;
 import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
@@ -80,7 +79,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     // List of "ambiguous" contexts that could share a scope
     private final List<InjectableContext> contexts;
-    private final ManagedContext requestContext;
+    private final io.quarkus.arc.ManagedContext requestContext;
     private final InjectableContext applicationContext;
     private final InjectableContext singletonContext;
 
@@ -107,6 +106,7 @@ public class ArcContainerImpl implements ArcContainer {
         singletonContext = new SingletonContext();
         requestContext = new RequestContext();
         contexts = new ArrayList<>();
+        contexts.add(new ManagedContext());
         contexts.add(requestContext);
 
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
@@ -298,7 +298,7 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     @Override
-    public ManagedContext requestContext() {
+    public io.quarkus.arc.ManagedContext requestContext() {
         requireRunning();
         return requestContext;
     }

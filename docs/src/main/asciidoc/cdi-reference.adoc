@@ -218,6 +218,14 @@ public class CounterBean {
 [[nonstandard_features]]
 == Non-standard Features
 
+=== The `@Managed` context
+
+ArC provides the `io.quarkus.arc.Managed` scope. This scope can only be used with producer methods and fields, and
+allows you to have another object manage the bean lifecycle. Every time the bean is invoked upon the relevant producer
+method will be invoked, and whatever object is returned will have the invocation performed on it.
+
+This allows you to create injectable objects that have a lifecycle that does not match the existing build in scopes.
+
 === Eager Instantiation of Beans
 
 [[lazy_by_default]]

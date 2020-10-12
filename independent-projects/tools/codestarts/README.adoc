@@ -213,6 +213,19 @@ This will be appended to all different selected examples.
 The Foo Example shows...
 ----
 
+4. Run the generator you've created
+
+Use the QuarkusCodestartRunSingleIT
+(`integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/QuarkusCodestartRunSingleIT.java`)
+integration test to generate a fresh project from your codestart.
+
+Customize the `Set<String> INCLUDED` to add your codestart, and any other you might want to bundle.
+
+This will give you the experience similar to the code.quarkus.io - and you will be able to build and run the examples
+you added. After running the test, see `integration-tests/devtools/target/codestarts-run-test/your-codestart-name` to
+inspect the results.
+
+
 === Tips for writing extension example code
 
 - Your example must/should be independent from buildtool and dockerfiles

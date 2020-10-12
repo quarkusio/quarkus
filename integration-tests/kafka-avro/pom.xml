@@ -93,6 +93,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- required by io.confluent.kafka.schemaregistry.client.rest.entities.ServerClusterId -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>29.0-jre</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
 
         <!-- test dependencies -->
         <dependency>

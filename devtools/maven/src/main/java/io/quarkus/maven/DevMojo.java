@@ -520,7 +520,7 @@ public class DevMojo extends AbstractMojo {
         return null;
     }
 
-    private void addProject(DevModeContext devModeContext, LocalProject localProject, boolean root) {
+    private void addProject(DevModeContext devModeContext, LocalProject localProject, boolean root) throws Exception {
 
         String projectDirectory = null;
         Set<String> sourcePaths = null;
@@ -555,6 +555,11 @@ public class DevMojo extends AbstractMojo {
         Path resourcesSourcesDir = localProject.getResourcesSourcesDir();
         if (Files.isDirectory(resourcesSourcesDir)) {
             resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
+        }
+
+        if (classesPath == null && (!sourcePaths.isEmpty() || resourcePath != null)) {
+            throw new MojoExecutionException("Hot reloadable dependency " + localProject.getAppArtifact()
+                    + " has not been compiled yet (the classes directory " + classesDir + " does not exist)");
         }
 
         Path targetDir = Paths.get(project.getBuild().getDirectory());

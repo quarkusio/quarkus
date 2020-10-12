@@ -157,7 +157,7 @@
         <jgit.version>5.8.0.202006091008-r</jgit.version>
         <flyway.version>6.5.7</flyway.version>
         <yasson.version>1.0.8</yasson.version>
-        <liquibase.version>4.0.0</liquibase.version>
+        <liquibase.version>4.1.1</liquibase.version>
         <snakeyaml.version>1.27</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <neo4j-java-driver.version>4.1.1</neo4j-java-driver.version>

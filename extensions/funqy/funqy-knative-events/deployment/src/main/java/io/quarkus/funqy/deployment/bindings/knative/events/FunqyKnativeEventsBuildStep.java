@@ -5,7 +5,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
@@ -26,8 +25,10 @@ import io.quarkus.funqy.runtime.bindings.knative.events.FunqyKnativeEventsConfig
 import io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder;
 import io.quarkus.jackson.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
-import io.vertx.ext.web.Route;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 public class FunqyKnativeEventsBuildStep {
     private static final Logger log = Logger.getLogger(FunqyKnativeEventsBuildStep.class);
@@ -60,20 +61,35 @@ public class FunqyKnativeEventsBuildStep {
             FunqyKnativeEventsConfig eventsConfig,
             KnativeEventsBindingRecorder binding,
             Optional<FunctionInitializedBuildItem> hasFunctions,
+            List<FunctionBuildItem> functions,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<DefaultRouteBuildItem> defaultRoutes,
+            BuildProducer<RouteBuildItem> routes,
             CoreVertxBuildItem vertx,
             BeanContainerBuildItem beanContainer,
+            HttpBuildTimeConfig httpConfig,
             ExecutorBuildItem executorBuildItem) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
 
         feature.produce(new FeatureBuildItem(FUNQY_KNATIVE_FEATURE));
-        Consumer<Route> ut = binding.start(funqyConfig, eventsConfig, vertx.getVertx(),
+        Handler<RoutingContext> handler = binding.start(funqyConfig, eventsConfig, vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),
                 executorBuildItem.getExecutorProxy());
 
-        defaultRoutes.produce(new DefaultRouteBuildItem(ut));
+        String rootPath = httpConfig.rootPath;
+        if (rootPath == null) {
+            rootPath = "/";
+        } else if (!rootPath.endsWith("/")) {
+            rootPath += "/";
+        }
+
+        routes.produce(new RouteBuildItem(rootPath, handler, false));
+
+        for (FunctionBuildItem function : functions) {
+            String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
+            String path = rootPath + name;
+            routes.produce(new RouteBuildItem(path, handler, false));
+        }
     }
 }

@@ -50,6 +50,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-spi</artifactId>
+        </dependency>
+
 
         <!-- test dependencies -->
         <dependency>

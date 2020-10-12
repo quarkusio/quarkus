@@ -53,6 +53,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -274,7 +275,11 @@ public class QuarkusRestProcessor {
     }
 
     @BuildStep
-    void additionalBeans(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+    void additionalBeans(Capabilities capabilities,
+            List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
+            List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
+            List<DynamicFeatureBuildItem> additionalDynamicFeatures,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
         if (capabilities.isPresent(Capability.JACKSON)) {
             additionalBean.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClass(VertxJsonMessageBodyWriter.class.getName())
@@ -287,6 +292,19 @@ public class QuarkusRestProcessor {
                     .addBeanClass(JsonbMessageBodyWriter.class.getName())
                     .setUnremovable().build());
         }
+
+        // TODO: we currently make all additional providers beans, even if they don't inject anything, perhaps we want to change that?
+        AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
+        for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
+            additionalProviders.addBeanClass(requestFilter.getClassName());
+        }
+        for (ContainerResponseFilterBuildItem responseFilter : additionalContainerResponseFilters) {
+            additionalProviders.addBeanClass(responseFilter.getClassName());
+        }
+        for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
+            additionalProviders.addBeanClass(dynamicFeature.getClassName());
+        }
+        additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 
     @BuildStep

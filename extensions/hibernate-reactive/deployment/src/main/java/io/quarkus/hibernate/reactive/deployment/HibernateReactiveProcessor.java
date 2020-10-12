@@ -233,12 +233,11 @@ public final class HibernateReactiveProcessor {
         persistenceUnitConfig.maxFetchDepth.ifPresent(
                 depth -> desc.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(depth)));
 
-        persistenceUnitConfig.query.queryPlanCacheMaxSize.ifPresent(
-                maxSize -> desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
+        desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, Integer.toString(
+                persistenceUnitConfig.query.queryPlanCacheMaxSize));
 
-        persistenceUnitConfig.query.defaultNullOrdering.ifPresent(
-                defaultNullOrdering -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
-                        defaultNullOrdering));
+        desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
+                persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase());
 
         // Logging
         if (persistenceUnitConfig.log.sql) {

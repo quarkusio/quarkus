@@ -487,6 +487,7 @@
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
+                        <encoding>UTF-8</encoding>
                         <parameters>true</parameters>
                     </configuration>
                 </plugin>

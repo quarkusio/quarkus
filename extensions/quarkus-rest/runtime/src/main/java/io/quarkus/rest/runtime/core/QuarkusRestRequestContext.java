@@ -1,7 +1,9 @@
 package io.quarkus.rest.runtime.core;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -149,6 +151,9 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     private WriterInterceptor[] writerInterceptors;
 
     private SecurityContext securityContext;
+    private OutputStream outputStream;
+    //TODO: use a real stream in some circumstances
+    private ByteArrayOutputStream underlyingOutputStream;
 
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
             ManagedContext requestContext,
@@ -974,5 +979,22 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     private static Event<SecurityIdentity> createEvent() {
         return Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
+    }
+
+    public void setOutputStream(OutputStream outputStream) {
+        this.outputStream = outputStream;
+    }
+
+    public OutputStream getOutputStream() {
+        return outputStream;
+    }
+
+    public ByteArrayOutputStream getOrCreateOutputStream() {
+        if (underlyingOutputStream != null) {
+            return underlyingOutputStream;
+        }
+        underlyingOutputStream = new ByteArrayOutputStream();
+        outputStream = underlyingOutputStream;
+        return underlyingOutputStream;
     }
 }

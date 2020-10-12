@@ -25,11 +25,9 @@ import io.vertx.core.buffer.Buffer;
 public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInterceptorContext
         implements WriterInterceptorContext {
 
-    private final ByteArrayOutputStream baos = new ByteArrayOutputStream(); //TODO: real bloocking IO
     private final WriterInterceptor[] interceptors;
     private final MessageBodyWriter writer;
     private final MultivaluedMap<String, Object> headers = new CaseInsensitiveMap<>();
-    private OutputStream outputStream = baos;
     private Object entity;
 
     boolean done = false;
@@ -58,11 +56,12 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
                 }
                 effectiveWriter = newWriters.get(0);
             }
+            ByteArrayOutputStream baos = context.getOrCreateOutputStream();
             effectiveWriter.writeTo(entity, type, genericType,
-                    annotations, mediaType, context.getResponse().getHeaders(), outputStream);
+                    annotations, mediaType, context.getResponse().getHeaders(), context.getOutputStream());
             context.setResult(Response.fromResponse(context.getResponse()).replaceAll(headers).build());
             Serialisers.encodeResponseHeaders(context);
-            outputStream.close();
+            context.getOutputStream().close();
             context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
             done = true;
         } else {
@@ -89,12 +88,16 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
 
     @Override
     public OutputStream getOutputStream() {
-        return outputStream;
+        OutputStream existing = context.getOutputStream();
+        if (existing != null) {
+            return existing;
+        }
+        return context.getOrCreateOutputStream();
     }
 
     @Override
     public void setOutputStream(OutputStream os) {
-        outputStream = os;
+        context.setOutputStream(os);
     }
 
     @Override

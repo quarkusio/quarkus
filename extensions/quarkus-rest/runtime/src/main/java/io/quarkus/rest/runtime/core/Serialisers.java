@@ -68,6 +68,7 @@ import io.vertx.core.http.HttpServerResponse;
 public class Serialisers {
 
     private static Map<Class<?>, Class<?>> primitivesToWrappers = new HashMap<>();
+
     static {
         primitivesToWrappers.put(boolean.class, Boolean.class);
         primitivesToWrappers.put(char.class, Character.class);
@@ -231,7 +232,8 @@ public class Serialisers {
 
         Response response = context.getResponse();
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
-        if (writer instanceof QuarkusRestMessageBodyWriter && writerInterceptors == null) {
+        boolean outputStreamSet = context.getOutputStream() != null;
+        if (writer instanceof QuarkusRestMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
             QuarkusRestMessageBodyWriter<Object> quarkusRestWriter = (QuarkusRestMessageBodyWriter<Object>) writer;
             RuntimeResource target = context.getTarget();
             Serialisers.encodeResponseHeaders(context);
@@ -252,9 +254,10 @@ public class Serialisers {
                     context.setProducesMediaType(mediaType);
                 }
                 if (writerInterceptors == null) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ByteArrayOutputStream baos = context.getOrCreateOutputStream();
                     writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
-                            context.getAllAnnotations(), response.getMediaType(), response.getHeaders(), baos);
+                            context.getAllAnnotations(), response.getMediaType(), response.getHeaders(),
+                            context.getOutputStream());
                     Serialisers.encodeResponseHeaders(context);
                     context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
                 } else {

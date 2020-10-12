@@ -30,7 +30,7 @@ import io.vertx.core.http.HttpServerResponse;
  */
 @Singleton
 public class ContextProducers {
-    
+
     @Inject
     CurrentVertxRequest currentVertxRequest;
 

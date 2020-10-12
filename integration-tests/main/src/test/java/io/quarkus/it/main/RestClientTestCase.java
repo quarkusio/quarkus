@@ -46,6 +46,13 @@ public class RestClientTestCase {
     }
 
     @Test
+    public void testEmojis() {
+        RestAssured.when().get("/client/encoding")
+                .then().body(is(
+                        "\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00"));
+    }
+
+    @Test
     void testMicroprofileClientData() {
         JsonPath jsonPath = RestAssured.when().get("/client/manual/jackson").thenReturn().jsonPath();
         Assertions.assertEquals(jsonPath.getString("name"), "Stuart");

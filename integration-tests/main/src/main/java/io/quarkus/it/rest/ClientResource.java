@@ -99,6 +99,13 @@ public class ClientResource {
     }
 
     @GET
+    @Path("encoding")
+    public String testEmojis() {
+        return restClientInterface.echo(
+                "\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00");
+    }
+
+    @GET
     @Path("async/cdi/jackson")
     @Produces("application/json")
     public CompletionStage<TestResource.MyData> getDataAsync() {

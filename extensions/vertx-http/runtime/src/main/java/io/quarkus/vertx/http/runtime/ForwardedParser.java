@@ -202,12 +202,14 @@ class ForwardedParser {
     }
 
     private int parsePort(String portToParse, int defaultPort) {
-        try {
-            return Integer.parseInt(portToParse);
-        } catch (NumberFormatException ignored) {
-            log.error("Failed to parse a port from \"forwarded\"-type headers.");
-            return defaultPort;
+        if (portToParse != null && portToParse.length() > 0) {
+            try {
+                return Integer.parseInt(portToParse);
+            } catch (NumberFormatException ignored) {
+                log.error("Failed to parse a port from \"forwarded\"-type headers.");
+            }
         }
+        return defaultPort;
     }
 
     private String appendPrefixToUri(String prefix, String uri) {

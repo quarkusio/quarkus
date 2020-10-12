@@ -181,21 +181,15 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     }
 
     public void resume() {
-        resume(null, null);
-    }
-
-    public synchronized void resume(Executor executor) {
-        resume(executor, null);
+        resume((Executor) null);
     }
 
     public synchronized void resume(Throwable throwable) {
-        resume(null, throwable);
+        handleException(throwable);
+        resume((Executor) null);
     }
 
-    public synchronized void resume(Executor executor, Throwable throwable) {
-        if (throwable != null) {
-            this.throwable = throwable;
-        }
+    public synchronized void resume(Executor executor) {
         if (running) {
             this.executor = executor;
             if (executor == null) {
@@ -216,7 +210,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         running = true;
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
-        boolean terminateRequestScope = false;
         boolean disasociateRequestScope = false;
         try {
             while (position < handlers.length) {
@@ -228,9 +221,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
                         Executor exec = null;
                         synchronized (this) {
                             if (requestScopeActivated) {
-                                if (position == handlers.length) {
-                                    terminateRequestScope = true;
-                                } else {
+                                if (position != handlers.length) {
                                     currentRequestScope = requestContext.getState();
                                     disasociateRequestScope = true;
                                 }
@@ -252,22 +243,18 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
                         }
                     }
                 } catch (Throwable t) {
-                    if (handlers == abortHandlerChain) {
-                        handleException(t);
+                    boolean over = handlers == abortHandlerChain;
+                    handleException(t);
+                    if (over) {
                         return;
-                    } else {
-                        invokeExceptionMapper(t);
-                        restart(abortHandlerChain);
                     }
                 }
             }
         } catch (Throwable t) {
-            handleException(t);
-            close();
+            sendInternalError(t);
         } finally {
             running = false;
-            if (terminateRequestScope) {
-                requestContext.terminate();
+            if (position == handlers.length && !suspended) {
                 close();
             } else if (disasociateRequestScope) {
                 requestContext.deactivate();
@@ -465,32 +452,45 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return handlers;
     }
 
-    public Throwable getThrowable() {
-        return throwable;
+    public void mapExceptionIfPresent() {
+        // this is called from the abort chain, but we can abort because we have a Response, or because
+        // we got an exception
+        if (throwable != null) {
+            this.producesMediaType = null;
+            this.result = deployment.getExceptionMapping().mapException(throwable);
+            // NOTE: keep the throwable around for close() AsyncResponse notification
+        }
     }
 
     /**
-     * ATM this can only be called by the InvocationHandler
+     * If we are on the abort chain already, send a 500. If not, turn the throwable into
+     * a response result and switch to the abort chain
      */
-    public QuarkusRestRequestContext setThrowable(Throwable throwable) {
-        this.throwable = throwable;
-        return this;
+    public void handleException(Throwable t) {
+        if (handlers == abortHandlerChain) {
+            sendInternalError(t);
+        } else {
+            this.throwable = t;
+            restart(abortHandlerChain);
+        }
     }
 
-    private void invokeExceptionMapper(Throwable throwable) {
-        this.producesMediaType = null;
-        this.result = deployment.getExceptionMapping().mapException(throwable);
-    }
-
-    private void handleException(Throwable throwable) {
+    private void sendInternalError(Throwable throwable) {
         log.error("Request failed", throwable);
         context.response().setStatusCode(500).end();
+        close();
     }
 
     @Override
     public void close() {
-        //TODO: do we even have any resources to close?
-        // FIXME: probably move request context termination here, otherwise we can only terminate it from run()
+        //TODO: do we even have any other resources to close?
+        if (this.currentRequestScope != null) {
+            this.requestContext.destroy();
+        }
+        // FIXME: this could be moved to a handler I guess
+        if (this.asyncResponse != null) {
+            this.asyncResponse.onComplete(throwable);
+        }
     }
 
     public Response getResponse() {

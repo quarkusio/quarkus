@@ -156,7 +156,6 @@ public class MultiResponseHandler implements RestHandler {
             log.error("Exception in SSE server handling, impossible to send it to client", t);
         } else {
             // we can go through the abort chain
-            requestContext.restart(requestContext.getAbortHandlerChain());
             requestContext.resume(t);
         }
     }

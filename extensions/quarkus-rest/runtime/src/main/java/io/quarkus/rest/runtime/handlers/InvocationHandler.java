@@ -12,7 +12,7 @@ public class InvocationHandler implements RestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
-        if (requestContext.getResult() != null || requestContext.getThrowable() != null) {
+        if (requestContext.getResult() != null) {
             //processing was aborted
             //but we still follow through with the handler chain
             return;
@@ -30,7 +30,7 @@ public class InvocationHandler implements RestHandler {
                 requestContext.setResult(result);
             }
         } catch (Throwable t) {
-            requestContext.setThrowable(t);
+            requestContext.handleException(t);
             if (async) {
                 requestContext.resume();
             }

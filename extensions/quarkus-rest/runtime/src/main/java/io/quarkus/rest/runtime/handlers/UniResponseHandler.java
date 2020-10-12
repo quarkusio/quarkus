@@ -16,7 +16,7 @@ public class UniResponseHandler implements RestHandler {
                 requestContext.setResult(v);
                 requestContext.resume();
             }, t -> {
-                requestContext.setThrowable(t);
+                requestContext.handleException(t);
                 requestContext.resume();
             });
         }

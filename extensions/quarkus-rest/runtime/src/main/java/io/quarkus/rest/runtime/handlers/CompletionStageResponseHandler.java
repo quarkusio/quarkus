@@ -15,7 +15,7 @@ public class CompletionStageResponseHandler implements RestHandler {
 
             result.handle((v, t) -> {
                 if (t != null) {
-                    requestContext.setThrowable(t);
+                    requestContext.handleException(t);
                 } else {
                     requestContext.setResult(v);
                 }

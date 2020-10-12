@@ -15,11 +15,6 @@ public class ResponseHandler implements RestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
-        Throwable error = requestContext.getThrowable();
-        if (error != null) {
-            requestContext.setThrowable(null);
-            requestContext.setResult(requestContext.getDeployment().getExceptionMapping().mapException(error));
-        }
         Object result = requestContext.getResult();
         Response.ResponseBuilder responseBuilder;
         boolean mediaTypeAlreadyExists = false;

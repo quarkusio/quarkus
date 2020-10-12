@@ -67,6 +67,7 @@ import io.quarkus.rest.runtime.handlers.AbortChainHandler;
 import io.quarkus.rest.runtime.handlers.BlockingHandler;
 import io.quarkus.rest.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.rest.runtime.handlers.CompletionStageResponseHandler;
+import io.quarkus.rest.runtime.handlers.ExceptionHandler;
 import io.quarkus.rest.runtime.handlers.InputHandler;
 import io.quarkus.rest.runtime.handlers.InstanceHandler;
 import io.quarkus.rest.runtime.handlers.InterceptorHandler;
@@ -382,6 +383,7 @@ public class QuarkusRestRecorder {
         if (globalInterceptorHandler != null) {
             abortHandlingChain.add(globalInterceptorHandler);
         }
+        abortHandlingChain.add(new ExceptionHandler());
         if (!interceptors.getGlobalResponseInterceptors().isEmpty()) {
             abortHandlingChain.add(globalResourceResponseInterceptorHandler);
         }
@@ -808,7 +810,6 @@ public class QuarkusRestRecorder {
         List<RestHandler> responseFilterHandlers = new ArrayList<>();
         if (method.isSse()) {
             handlers.add(new SseResponseWriterHandler());
-            abortHandlingChain.add(new ResponseHandler());
         } else {
             handlers.add(new ResponseHandler());
 
@@ -817,6 +818,7 @@ public class QuarkusRestRecorder {
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
         }
+        abortHandlingChain.add(new ExceptionHandler());
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.addAll(responseFilterHandlers);
 

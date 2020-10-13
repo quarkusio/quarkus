@@ -73,7 +73,11 @@ public final class QuarkusCodestartData {
 
         RESTEASY_EXAMPLE_RESOURCE_PATH("path"),
         RESTEASY_EXAMPLE_PACKAGE_NAME(QuarkusCodestartData::convertPackageName),
-        RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName);
+        RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
+
+        SPRING_WEB_EXAMPLE_RESOURCE_PATH("path"),
+        SPRING_WEB_EXAMPLE_PACKAGE_NAME(QuarkusCodestartData::convertPackageName),
+        SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName);
 
         private final String key;
         private final Function<Map<String, Object>, Object> converter;

@@ -166,8 +166,6 @@
         <proton-j.version>0.33.6</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
         <sentry.version>1.7.30</sentry.version>
-        <!-- Used for integration tests, to make sure webjars work-->
-        <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>4.10.3</kubernetes-client.version>
@@ -4126,12 +4124,6 @@
                 <groupId>org.osgi</groupId>
                 <artifactId>org.osgi.core</artifactId>
                 <version>${osgi.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>bootstrap</artifactId>
-                <version>${bootstrap.version}</version>
             </dependency>
 
             <dependency>

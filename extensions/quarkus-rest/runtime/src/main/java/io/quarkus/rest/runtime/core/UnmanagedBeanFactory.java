@@ -11,6 +11,11 @@ public class UnmanagedBeanFactory<T> implements BeanFactory<T> {
     }
 
     @Override
+    public String toString() {
+        return "UnmanagedBeanFactory[" + instance + "]";
+    }
+
+    @Override
     public BeanInstance<T> createInstance() {
         return new BeanInstance<T>() {
             @Override

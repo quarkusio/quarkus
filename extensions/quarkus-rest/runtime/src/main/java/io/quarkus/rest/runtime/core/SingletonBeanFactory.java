@@ -19,6 +19,11 @@ public class SingletonBeanFactory<T> implements BeanFactory<T> {
     }
 
     @Override
+    public String toString() {
+        return "SingletonBeanFactory[" + className + "]";
+    }
+
+    @Override
     public BeanInstance<T> createInstance() {
         Object instance = INSTANCES.get(className);
         if (instance == null) {

@@ -107,6 +107,11 @@ public class ResourceWriter {
         return runtimeType == constraint;
     }
 
+    @Override
+    public String toString() {
+        return "ResourceWriter[constraint: " + constraint + ", mediaTypes: " + mediaTypes + ", factory: " + factory + "]";
+    }
+
     /**
      * The comparison for now is simple:
      * 1) Application provided writers come first

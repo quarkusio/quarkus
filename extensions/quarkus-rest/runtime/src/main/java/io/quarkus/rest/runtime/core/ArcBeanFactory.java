@@ -6,9 +6,17 @@ import io.quarkus.rest.runtime.spi.BeanFactory;
 public class ArcBeanFactory<T> implements BeanFactory<T> {
 
     private final BeanContainer.Factory<T> factory;
+    // for toString
+    private final String targetClassName;
 
     public ArcBeanFactory(Class<T> target, BeanContainer beanContainer) {
+        targetClassName = target.getName();
         factory = beanContainer.instanceFactory(target);
+    }
+
+    @Override
+    public String toString() {
+        return "ArcBeanFactory[" + targetClassName + "]";
     }
 
     @Override

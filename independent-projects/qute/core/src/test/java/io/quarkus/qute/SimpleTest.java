@@ -208,4 +208,14 @@ public class SimpleTest {
             assertEquals("Not found: foo", expected.getMessage());
         }
     }
+
+    @Test
+    public void testConvenientDataMethods() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1:2", engine.parse("{d1}:{d2}").data("d1", 1, "d2", 2).render());
+        assertEquals("1:2:3", engine.parse("{d1}:{d2}:{d3}").data("d1", 1, "d2", 2, "d3", 3).render());
+        assertEquals("1:2:3:4", engine.parse("{d1}:{d2}:{d3}:{d4}").data("d1", 1, "d2", 2, "d3", 3, "d4", 4).render());
+        assertEquals("1:2:3:4:5",
+                engine.parse("{d1}:{d2}:{d3}:{d4}:{d5}").data("d1", 1, "d2", 2, "d3", 3, "d4", 4, "d5", 5).render());
+    }
 }

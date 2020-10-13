@@ -40,6 +40,19 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-graphql-cdi</artifactId>
         </dependency>
+        <!-- The following dependencies are needed for service providers from smallrye-graphql-cdi -->
+        <dependency>
+            <groupId>org.eclipse.microprofile.metrics</groupId>
+            <artifactId>microprofile-metrics-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentracing</groupId>
+            <artifactId>opentracing-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

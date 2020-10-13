@@ -256,6 +256,8 @@ public class CuratedApplication implements Serializable, Closeable {
             builder.addElement(ClassPathElement.fromPath(root));
         }
 
+        builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap()));
+
         //additional user class path elements first
         for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
             for (Path root : i.getArchivePath()) {

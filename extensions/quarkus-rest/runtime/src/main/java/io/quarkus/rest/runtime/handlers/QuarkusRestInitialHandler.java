@@ -54,6 +54,8 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
         RequestMapper.RequestMatch<InitialMatch> target = mappers.map(requestContext.getPathWithoutPrefix());
         if (target == null) {
             if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                // the NotFoundExceptionMapper needs access to the headers so we need to activate the scope
+                requestContext.requireCDIRequestScope();
                 // we want to engage the NotFoundExceptionMapper when nothing is found
                 requestContext.handleException(new NotFoundException());
                 return;

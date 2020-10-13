@@ -52,7 +52,6 @@ import io.quarkus.rest.runtime.mapping.URITemplate;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.runtime.util.PathSegmentImpl;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -472,10 +471,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
             sendInternalError(t);
         } else {
             this.throwable = t;
-            if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
-                // the NotFoundExceptionMapper needs access to the headers so we need to activate the scope
-                requireCDIRequestScope();
-            }
             restart(abortHandlerChain);
         }
     }

@@ -402,12 +402,15 @@ public class Serialisers {
         if (Response.class.isAssignableFrom(entityType)) {
             return Collections.emptyList();
         }
+        Class<?> klass = entityType;
+        if (primitivesToWrappers.containsKey(klass))
+            klass = primitivesToWrappers.get(klass);
         //first we check to make sure that the return type is build time selectable
         //this fails when there are eligible writers for a sub type of the entity type
         //e.g. if the entity type is Object and there are mappers for String then we
         //can't determine the type at build time
         for (Map.Entry<Class<?>, List<ResourceWriter>> entry : writers.entrySet()) {
-            if (entityType.isAssignableFrom(entry.getKey()) && !entry.getKey().equals(entityType)) {
+            if (klass.isAssignableFrom(entry.getKey()) && !entry.getKey().equals(klass)) {
                 //this is a writer registered under a sub type
                 //check to see if the media type is relevant
                 if (produces == null || produces.isEmpty()) {

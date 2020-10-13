@@ -316,6 +316,10 @@ public class NativeImageMojo extends AbstractMojo {
             configs.put("quarkus.native.add-all-charsets", addAllCharsets.toString());
         }
         if (additionalBuildArgs != null && !additionalBuildArgs.isEmpty()) {
+            getLog().warn("Your application is setting the deprecated 'additionalBuildArgs' Maven option."
+                    + " This option overrides any value passed to the 'quarkus.native.additional-build-args'"
+                    + " property and will be removed in the future."
+                    + " Please consider using 'quarkus.native.additional-build-args' instead of 'additionalBuildArgs'.");
             configs.put("quarkus.native.additional-build-args",
                     additionalBuildArgs.stream()
                             .map(val -> val.replace("\\", "\\\\"))

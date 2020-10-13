@@ -271,7 +271,6 @@
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <additionalBuildArgs>-H:+TraceClassInitialization</additionalBuildArgs>
                                 </configuration>
                             </execution>
                         </executions>

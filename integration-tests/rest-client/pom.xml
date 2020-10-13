@@ -120,6 +120,10 @@
                     <name>native</name>
                 </property>
             </activation>
+            <properties>
+                <quarkus.native.additional-build-args>-J-Djavax.net.ssl.trustStore=${self-signed.trust-store},
+                    -J-Djavax.net.ssl.trustStorePassword=${self-signed.trust-store-password}</quarkus.native.additional-build-args>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -168,8 +172,6 @@
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <additionalBuildArgs>-J-Djavax.net.ssl.trustStore=${self-signed.trust-store},
-                                        -J-Djavax.net.ssl.trustStorePassword=${self-signed.trust-store-password}</additionalBuildArgs>
                                 </configuration>
                             </execution>
                         </executions>

@@ -24,6 +24,9 @@ public class ResourceLocatorHandler implements RestHandler {
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
         Object locator = requestContext.getResult();
+        if (locator == null) {
+            return;
+        }
         Class<?> locatorClass;
         if (locator instanceof Class) {
             locatorClass = (Class<?>) locator;

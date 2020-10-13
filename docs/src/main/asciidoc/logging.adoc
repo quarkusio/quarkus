@@ -409,7 +409,7 @@ And Slf4j:
 ----
 <dependency>
     <groupId>org.jboss.slf4j</groupId>
-    <artifactId>slf4j-jboss-logging</artifactId>
+    <artifactId>slf4j-jboss-logmanager</artifactId>
 </dependency>
 ----
 

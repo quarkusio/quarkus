@@ -1070,6 +1070,7 @@ public class QuarkusRestRecorder {
         if (returnType instanceof Class)
             return returnType;
         if (returnType instanceof ParameterizedType) {
+            // NOTE: same code in EndpointIndexer.getNonAsyncReturnType
             ParameterizedType type = (ParameterizedType) returnType;
             if (type.getRawType() == CompletionStage.class) {
                 return type.getActualTypeArguments()[0];

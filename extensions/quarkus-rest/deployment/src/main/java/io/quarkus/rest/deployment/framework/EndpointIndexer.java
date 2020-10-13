@@ -6,6 +6,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BIG_INTEG
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BLOCKING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BOOLEAN;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CHARACTER;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.COMPLETION_STAGE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONSUMES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONTEXT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.COOKIE_PARAM;
@@ -24,6 +25,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSO
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LIST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LONG;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MATRIX_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MULTI;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MULTI_VALUED_MAP;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.NAME_BINDING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH;
@@ -41,6 +43,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.UNI;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -539,7 +542,8 @@ public class EndpointIndexer {
                     formParamRequired = true;
                 }
             }
-            addWriterForType(additionalWriters, info.returnType());
+            Type nonAsyncReturnType = getNonAsyncReturnType(info.returnType());
+            addWriterForType(additionalWriters, nonAsyncReturnType);
 
             String[] produces = extractProducesConsumesValues(info.annotation(PRODUCES), classProduces);
             Set<String> nameBindingNames = nameBindingNames(info, classNameBindings);
@@ -639,6 +643,30 @@ public class EndpointIndexer {
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    private Type getNonAsyncReturnType(Type returnType) {
+        switch (returnType.kind()) {
+            case ARRAY:
+            case CLASS:
+            case PRIMITIVE:
+            case VOID:
+                return returnType;
+            case PARAMETERIZED_TYPE:
+                // NOTE: same code in QuarkusRestRecorder.getNonAsyncReturnType
+                ParameterizedType parameterizedType = returnType.asParameterizedType();
+                if (COMPLETION_STAGE.equals(parameterizedType.name())
+                        || UNI.equals(parameterizedType.name())
+                        || MULTI.equals(parameterizedType.name())) {
+                    return parameterizedType.arguments().get(0);
+                }
+                return returnType;
+            default:
+        }
+        return returnType;
+        // FIXME: should be an exception, but we have incomplete support for generics ATM, so we still
+        // have some unresolved type vars and they do pass _some_ tests 
+        //        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }
 
     private static void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {

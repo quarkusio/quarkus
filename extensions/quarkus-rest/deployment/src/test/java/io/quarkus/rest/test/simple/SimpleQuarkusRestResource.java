@@ -1,5 +1,7 @@
 package io.quarkus.rest.test.simple;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -296,6 +298,16 @@ public class SimpleQuarkusRestResource {
     @Path("async/uni/ok")
     public Uni<String> asyncUniOK() {
         return Uni.createFrom().item("UNI-OK");
+    }
+
+    @Produces(MediaType.APPLICATION_JSON)
+    @GET
+    @Path("async/uni/list")
+    public Uni<List<Person>> asyncUniListJson() {
+        Person person = new Person();
+        person.setFirst("Bob");
+        person.setLast("Builder");
+        return Uni.createFrom().item(Arrays.asList(person));
     }
 
     @GET

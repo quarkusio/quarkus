@@ -65,6 +65,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.sse.SseEventSink;
 
@@ -130,6 +131,7 @@ public class EndpointIndexer {
                     BIG_INTEGER)));
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
+    private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
 
     static {
         Map<String, String> prims = new HashMap<>();
@@ -546,6 +548,7 @@ public class EndpointIndexer {
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
             String[] produces = extractProducesConsumesValues(info.annotation(PRODUCES), classProduces);
+            produces = applyDefaultProduces(produces, nonAsyncReturnType);
             Set<String> nameBindingNames = nameBindingNames(info, classNameBindings);
             boolean blocking = config.blocking;
             AnnotationInstance blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
@@ -643,6 +646,16 @@ public class EndpointIndexer {
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
+        if (produces != null && produces.length != 0)
+            return produces;
+        // FIXME: primitives
+        if (STRING.equals(nonAsyncReturnType.name()))
+            return PRODUCES_PLAIN_TEXT;
+        // FIXME: JSON
+        return produces;
     }
 
     private Type getNonAsyncReturnType(Type returnType) {

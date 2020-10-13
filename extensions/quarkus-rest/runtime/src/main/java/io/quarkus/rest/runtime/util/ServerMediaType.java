@@ -137,7 +137,23 @@ public class ServerMediaType {
                         if (provide.isCompatible(desired)) {
                             if (selectedDesired == null || j < currentServerIndex) {
                                 if (desired.isWildcardType()) {
+                                    // this is only preferable if we don't already have a better
+                                    // one
+                                    if (selectedDesired != null) {
+                                        continue;
+                                    }
                                     selectedDesired = MediaType.APPLICATION_OCTET_STREAM_TYPE;
+                                } else if (desired.isWildcardSubtype()) {
+                                    // this is only preferable if we don't already have a better
+                                    // one
+                                    if (selectedDesired != null) {
+                                        continue;
+                                    }
+                                    // is this even allowed?
+                                    if (desired.isCompatible(MediaType.APPLICATION_OCTET_STREAM_TYPE))
+                                        selectedDesired = MediaType.APPLICATION_OCTET_STREAM_TYPE;
+                                    else
+                                        selectedDesired = desired; // keep the subwildcard
                                 } else {
                                     selectedDesired = desired;
                                 }

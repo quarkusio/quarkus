@@ -44,13 +44,23 @@ public class ResponseWriterHandler implements RestHandler {
 
     // set the content type header to what the resource method uses as a final fallback
     private void setContentTypeIfNecessary(QuarkusRestRequestContext requestContext) {
-        if ((requestContext.getTarget() != null) && (requestContext.getTarget().getProduces() != null)
-                && (requestContext.getProducesMediaType() == null)) {
+        if (hasBody(requestContext)
+                && requestContext.getTarget() != null
+                && requestContext.getTarget().getProduces() != null
+                && requestContext.getProducesMediaType() == null) {
             ServerMediaType serverMediaType = requestContext.getTarget().getProduces();
             if (serverMediaType.getSortedOriginalMediaTypes().length > 0) {
                 requestContext.getContext().response().headers().add(HttpHeaders.CONTENT_TYPE,
                         serverMediaType.getSortedOriginalMediaTypes()[0].toString());
             }
         }
+    }
+
+    private boolean hasBody(QuarkusRestRequestContext requestContext) {
+        // pretend it has, because we want content-type/length headers
+        if (requestContext.getMethod().equals(HEAD))
+            return true;
+        int status = requestContext.getResponse().getStatus();
+        return status != Response.Status.NO_CONTENT.getStatusCode();
     }
 }

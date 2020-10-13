@@ -94,7 +94,7 @@ public class ContextProducers {
     @ApplicationScoped
     @Produces
     Application application() {
-        return getContext().getDeployment().getApplication();
+        return getContext().getDeployment().getApplicationSupplier().get();
     }
 
     @ApplicationScoped

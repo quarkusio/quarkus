@@ -392,6 +392,7 @@ public class QuarkusRestProcessor {
             selectedAppClass = applicationClassInfo;
             // FIXME: yell if there's more than one
             String applicationClass = applicationClassInfo.name().toString();
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, applicationClass));
             try {
                 Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);
                 application = (Application) appClass.getConstructor().newInstance();
@@ -835,7 +836,7 @@ public class QuarkusRestProcessor {
                     beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
                     clientImplementations,
                     genericTypeMapping, converterProviders, initClassFactory,
-                    application == null ? Application.class : application.getClass());
+                    application == null ? Application.class : application.getClass(), singletonClasses.isEmpty());
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);
             // Exact match for resources matched to the root path

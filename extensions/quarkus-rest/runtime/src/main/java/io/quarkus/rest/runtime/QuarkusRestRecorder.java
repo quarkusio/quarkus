@@ -191,17 +191,10 @@ public class QuarkusRestRecorder {
             String applicationPath, Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations,
             GenericTypeMapping genericTypeMapping,
             ParamConverterProviders paramConverterProviders, BeanFactory<QuarkusRestInitialiser> initClassFactory,
-            Class<? extends Application> applicationClass) {
+            Class<? extends Application> applicationClass, boolean applicationSingletonClassesEmpty) {
 
-        Application application = null;
-        try {
-            application = applicationClass.newInstance();
-            for (Object i : application.getSingletons()) {
-                SingletonBeanFactory.setInstance(i.getClass().getName(), i);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Supplier<Application> applicationSupplier = handleApplication(applicationClass, applicationSingletonClassesEmpty);
+
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
         QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping,
@@ -404,7 +397,7 @@ public class QuarkusRestRecorder {
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 createClientImpls(clientImplementations),
-                prefix, genericTypeMapping, paramConverterProviders, quarkusRestConfiguration, application);
+                prefix, genericTypeMapping, paramConverterProviders, quarkusRestConfiguration, applicationSupplier);
 
         initClassFactory.createInstance().getInstance().init(deployment);
 
@@ -423,6 +416,40 @@ public class QuarkusRestRecorder {
         }
 
         return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
+    }
+
+    // TODO: don't use reflection to instantiate Application
+    private Supplier<Application> handleApplication(final Class<? extends Application> applicationClass,
+            final boolean singletonClassesEmpty) {
+        Supplier<Application> applicationSupplier;
+        if (singletonClassesEmpty) {
+            applicationSupplier = new Supplier<Application>() {
+                @Override
+                public Application get() {
+                    try {
+                        return applicationClass.getConstructor().newInstance();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+        } else {
+            try {
+                final Application application = applicationClass.getConstructor().newInstance();
+                for (Object i : application.getSingletons()) {
+                    SingletonBeanFactory.setInstance(i.getClass().getName(), i);
+                }
+                applicationSupplier = new Supplier<Application>() {
+                    @Override
+                    public Application get() {
+                        return application;
+                    }
+                };
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return applicationSupplier;
     }
 
     private String sanitizePathPrefix(String prefix) {

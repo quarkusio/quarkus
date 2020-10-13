@@ -131,7 +131,8 @@ public class EndpointIndexer {
                     BIG_INTEGER)));
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
-    private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
+    private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
+    private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
 
     static {
         Map<String, String> prims = new HashMap<>();
@@ -653,7 +654,7 @@ public class EndpointIndexer {
             return produces;
         // FIXME: primitives
         if (STRING.equals(nonAsyncReturnType.name()))
-            return PRODUCES_PLAIN_TEXT;
+            return config.singleDefaultProduces ? PRODUCES_PLAIN_TEXT : PRODUCES_PLAIN_TEXT_NEGOTIATED;
         // FIXME: JSON
         return produces;
     }

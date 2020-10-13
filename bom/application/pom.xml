@@ -105,7 +105,7 @@
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.1.1.Final</jboss-threads.version>
         <vertx.version>3.9.2</vertx.version>
-        <httpclient.version>4.5.12</httpclient.version>
+        <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.13</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
         <cronutils.version>9.1.1</cronutils.version>

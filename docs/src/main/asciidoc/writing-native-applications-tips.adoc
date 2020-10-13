@@ -258,7 +258,7 @@ Call path from entry point to com.amazonaws.services.s3.model.CryptoConfiguratio
 
 If you need to delay the initialization of a class, you can use the `--initialize-at-run-time=<package or class>` configuration knob.
 
-It should be added to the `native-image` configuration using an `<additionalBuildArg>` as shown in the examples above.
+It should be added to the `native-image` configuration using the `quarkus.native.additional-build-args` configuration property as shown in the examples above.
 
 [NOTE]
 ====

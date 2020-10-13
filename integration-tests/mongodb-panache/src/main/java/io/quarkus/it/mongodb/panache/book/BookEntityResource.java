@@ -6,7 +6,6 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.bson.types.ObjectId;
@@ -16,8 +15,6 @@ import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
 @Path("/books/entity")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class BookEntityResource {
     private static final Logger LOGGER = Logger.getLogger(BookEntityResource.class);
 

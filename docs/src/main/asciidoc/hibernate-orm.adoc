@@ -765,14 +765,10 @@ Let's start by implementing the `/{tenant}` endpoint. As you can see from the so
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 
 @ApplicationScoped
-@Produces("application/json")
-@Consumes("application/json")
 @Path("/{tenant}")
 public class FruitResource {
 

@@ -200,8 +200,6 @@ Now, edit the `org.acme.mongodb.FruitResource` class as follows:
 [source,java]
 ----
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject FruitService fruitService;

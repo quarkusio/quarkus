@@ -201,7 +201,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
@@ -218,7 +217,6 @@ public class FruitResource {
     }
 
     @GET
-    @Produces("application/json")
     public Iterable<Fruit> findAll() {
         return fruitRepository.findAll();
     }
@@ -232,14 +230,12 @@ public class FruitResource {
 
     @POST
     @Path("/name/{name}/color/{color}")
-    @Produces("application/json")
     public Fruit create(@PathParam String name, @PathParam String color) {
         return fruitRepository.save(new Fruit(name, color));
     }
 
     @PUT
     @Path("/id/{id}/color/{color}")
-    @Produces("application/json")
     public Fruit changeColor(@PathParam Long id, @PathParam String color) {
         Optional<Fruit> optional = fruitRepository.findById(id);
         if (optional.isPresent()) {
@@ -253,7 +249,6 @@ public class FruitResource {
 
     @GET
     @Path("/color/{color}")
-    @Produces("application/json")
     public List<Fruit> findByColor(@PathParam String color) {
         return fruitRepository.findByColor(color);
     }

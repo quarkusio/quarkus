@@ -4,12 +4,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.junit.jupiter.api.Assertions;
@@ -18,7 +15,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @Path("/test")
-@Produces(MediaType.APPLICATION_JSON)
 public class ResourceSendingJsonObjects {
 
     @GET
@@ -38,7 +34,6 @@ public class ResourceSendingJsonObjects {
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
     @Path("/objects")
     public Response receiveJsonObjects(List<JsonObject> objects) {
         Assertions.assertEquals(2, objects.size());
@@ -50,7 +45,6 @@ public class ResourceSendingJsonObjects {
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
     @Path("/arrays")
     public Response receiveJsonArrays(List<JsonArray> array) {
         Assertions.assertEquals(1, array.size());

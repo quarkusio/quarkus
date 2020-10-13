@@ -16,8 +16,6 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/persons/entity")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 class PersonEntityResource {
     @GET
     fun getPersons(@QueryParam("sort") sort: String?): List<PersonEntity> =

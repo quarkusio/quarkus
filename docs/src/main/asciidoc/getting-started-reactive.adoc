@@ -540,8 +540,6 @@ import javax.ws.rs.core.Response.Status;
 import java.net.URI;
 
 @Path("fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject

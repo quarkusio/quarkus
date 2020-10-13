@@ -21,8 +21,6 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/reactive/persons/repository")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 class ReactivePersonRepositoryResource {
     @Inject
     lateinit var reactivePersonRepository: ReactivePersonRepository

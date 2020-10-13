@@ -6,14 +6,11 @@ import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.panache.common.Sort;
 
 @Path("/persons/entity")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class PersonEntityResource {
     @GET
     public List<PersonEntity> getPersons(@QueryParam("sort") String sort) {

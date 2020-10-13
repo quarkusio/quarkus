@@ -5,8 +5,6 @@ import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
@@ -33,7 +31,6 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveFind")
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<GuineaPig> reactiveFind() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB().convert().toCompletionStage()
@@ -42,7 +39,6 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveFindMutiny")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB().chain(() -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
@@ -50,7 +46,6 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactivePersist")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactivePersist() {
         final GuineaPig pig = new GuineaPig(10, "Tulip");
         return mutinySession
@@ -61,7 +56,6 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveCowPersist")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<FriesianCow> reactiveCowPersist() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina";
@@ -74,7 +68,6 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveRemoveTransientEntity")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveTransientEntity() {
         return populateDB()
                 .chain(() -> selectNameFromId(5))
@@ -96,7 +89,6 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveRemoveManagedEntity")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
                 .chain(() -> mutinySession.find(GuineaPig.class, 5))
@@ -113,7 +105,6 @@ public class HibernateReactiveTestEndpoint {
 
     @GET
     @Path("/reactiveUpdate")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
         return populateDB()

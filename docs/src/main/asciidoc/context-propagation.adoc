@@ -112,7 +112,6 @@ them to the client as JSON using link:rest-json[JSON-B or Jackson]:
     @Transactional
     @GET
     @Path("/people")
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<List<Person>> people() throws SystemException {
         // Create a REST client to the Star Wars API
         WebClient client = WebClient.create(vertx,

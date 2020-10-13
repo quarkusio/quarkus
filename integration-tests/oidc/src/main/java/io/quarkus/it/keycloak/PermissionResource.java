@@ -8,8 +8,6 @@ import javax.inject.Inject;
 import javax.json.JsonString;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -22,7 +20,6 @@ public class PermissionResource {
     @GET
     @Path("/{name}")
     @RolesAllowed("user")
-    @Produces(MediaType.APPLICATION_JSON)
     public Map<String, Object> permissions() {
         Map<String, Object> claims = new HashMap<>();
         for (String i : jwt.getClaimNames()) {

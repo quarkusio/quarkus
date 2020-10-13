@@ -426,34 +426,7 @@ public class Serialisers {
             }
 
         }
-        List<ResourceWriter> ret = new ArrayList<>();
-        Class<?> klass = entityType;
-        do {
-            List<ResourceWriter> goodTypeWriters = writers.get(klass);
-            if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
-                List<ResourceWriter> mediaTypeMatchingWriters = new ArrayList<>(goodTypeWriters.size());
-                for (ResourceWriter goodTypeWriter : goodTypeWriters) {
-                    if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
-                        continue;
-                    }
-                    if (produces == null || produces.isEmpty()) {
-                        mediaTypeMatchingWriters.add(goodTypeWriter);
-                    } else {
-                        MediaType match = MediaTypeHelper.getBestMatch(produces, goodTypeWriter.modifiableMediaTypes());
-                        if (match != null) {
-                            mediaTypeMatchingWriters.add(goodTypeWriter);
-                        }
-                    }
-                }
-                // we sort here because the spec mentions that the writers closer to the requested java type are tried first
-                mediaTypeMatchingWriters.sort(ResourceWriter.ResourceWriterComparator.INSTANCE);
-                ret.addAll(mediaTypeMatchingWriters);
-            }
-            // FIXME: spec mentions superclasses, but surely interfaces are involved too?
-            klass = klass.getSuperclass();
-        } while (klass != null);
-
-        return ret;
+        return findResourceWriters(writers, klass, produces, runtimeType);
     }
 
     public MultivaluedMap<Class<?>, ResourceWriter> getWriters() {
@@ -474,11 +447,9 @@ public class Serialisers {
         // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity specially
         // it's probably missing from there, while the client handles it upstack
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
-        List<MessageBodyWriter<?>> ret = new ArrayList<>();
         Class<?> klass = entityType;
         if (primitivesToWrappers.containsKey(klass))
             klass = primitivesToWrappers.get(klass);
-        Deque<Class<?>> toProcess = new LinkedList<>();
         QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers;
         if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
             writers = new QuarkusMultivaluedHashMap<>();
@@ -488,6 +459,18 @@ public class Serialisers {
             writers = this.writers;
         }
 
+        List<ResourceWriter> resourceWriters = findResourceWriters(writers, klass, mt, runtimeType);
+        List<MessageBodyWriter<?>> ret = new ArrayList<>(resourceWriters.size());
+        for (ResourceWriter resourceWriter : resourceWriters) {
+            ret.add(resourceWriter.getInstance());
+        }
+        return ret;
+    }
+
+    private List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers, Class<?> klass,
+            List<MediaType> produces, RuntimeType runtimeType) {
+        List<ResourceWriter> ret = new ArrayList<>();
+        Deque<Class<?>> toProcess = new LinkedList<>();
         do {
             if (klass == Object.class) {
                 //spec extension, look for interfaces as well
@@ -496,7 +479,7 @@ public class Serialisers {
                 while (!toProcess.isEmpty()) {
                     Class<?> iface = toProcess.poll();
                     List<ResourceWriter> goodTypeWriters = writers.get(iface);
-                    writerLookup(runtimeType, mt, ret, goodTypeWriters);
+                    writerLookup(runtimeType, produces, ret, goodTypeWriters);
                     for (Class<?> i : iface.getInterfaces()) {
                         if (!seen.contains(i)) {
                             seen.add(i);
@@ -506,9 +489,13 @@ public class Serialisers {
                 }
             }
             List<ResourceWriter> goodTypeWriters = writers.get(klass);
-            writerLookup(runtimeType, mt, ret, goodTypeWriters);
+            writerLookup(runtimeType, produces, ret, goodTypeWriters);
             toProcess.addAll(Arrays.asList(klass.getInterfaces()));
-            klass = klass.getSuperclass();
+            // if we're an interface, pretend our superclass is Object to get us through the same logic as a class
+            if (klass.isInterface())
+                klass = Object.class;
+            else
+                klass = klass.getSuperclass();
         } while (klass != null);
 
         return ret;
@@ -591,7 +578,7 @@ public class Serialisers {
         }
     }
 
-    private void writerLookup(RuntimeType runtimeType, List<MediaType> mt, List<MessageBodyWriter<?>> ret,
+    private void writerLookup(RuntimeType runtimeType, List<MediaType> mt, List<ResourceWriter> ret,
             List<ResourceWriter> goodTypeWriters) {
         if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
             for (ResourceWriter goodTypeWriter : goodTypeWriters) {
@@ -600,7 +587,7 @@ public class Serialisers {
                 }
                 MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.modifiableMediaTypes());
                 if (match != null) {
-                    ret.add(goodTypeWriter.getInstance());
+                    ret.add(goodTypeWriter);
                 }
             }
         }

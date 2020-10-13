@@ -164,6 +164,12 @@ public class OidcTenantConfig {
     @ConfigItem
     public Logout logout = new Logout();
 
+    /**
+     * Default token state manager configuration
+     */
+    @ConfigItem
+    public TokenStateManager tokenStateManager = new TokenStateManager();
+
     @ConfigGroup
     public static class Tls {
         public enum Verification {
@@ -226,6 +232,56 @@ public class OidcTenantConfig {
 
         public Optional<String> getPostLogoutPath() {
             return postLogoutPath;
+        }
+    }
+
+    /**
+     * Default Authorization Code token state manager configuration
+     */
+    @ConfigGroup
+    public static class TokenStateManager {
+
+        public enum Strategy {
+            /**
+             * Keep ID, access and refresh tokens.
+             */
+            KEEP_ALL_TOKENS,
+
+            /**
+             * Keep ID token only
+             */
+            ID_TOKEN
+        }
+
+        /**
+         * Default TokenStateManager strategy.
+         */
+        @ConfigItem(defaultValue = "keep_all_tokens")
+        public Strategy strategy;
+
+        /**
+         * Default TokenStateManager keeps all tokens (ID, access and refresh)
+         * returned in the authorization code grant response in a single session cookie by default.
+         * 
+         * Enable this property to minimize a session cookie size
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean splitTokens;
+
+        public boolean isSplitTokens() {
+            return splitTokens;
+        }
+
+        public void setSplitTokens(boolean spliTokens) {
+            this.splitTokens = spliTokens;
+        }
+
+        public Strategy getStrategy() {
+            return strategy;
+        }
+
+        public void setStrategy(Strategy strategy) {
+            this.strategy = strategy;
         }
     }
 

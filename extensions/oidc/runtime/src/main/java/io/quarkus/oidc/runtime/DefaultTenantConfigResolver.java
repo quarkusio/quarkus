@@ -16,6 +16,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.TokenStateManager;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -36,19 +37,23 @@ public class DefaultTenantConfigResolver {
     TenantConfigBean tenantConfigBean;
 
     @Inject
+    Instance<TokenStateManager> tokenStateManager;
+
+    @Inject
     Event<SecurityEvent> securityEvent;
 
     private volatile boolean securityEventObserved;
 
     @PostConstruct
     public void verifyResolvers() {
-        if (tenantConfigResolver.isResolvable()) {
-            if (tenantConfigResolver.isAmbiguous()) {
-                throw new IllegalStateException("Multiple " + TenantConfigResolver.class + " beans registered");
-            }
+        if (tenantConfigResolver.isResolvable() && tenantConfigResolver.isAmbiguous()) {
+            throw new IllegalStateException("Multiple " + TenantConfigResolver.class + " beans registered");
         }
-        if (tenantResolver.isAmbiguous()) {
+        if (tenantResolver.isResolvable() && tenantResolver.isAmbiguous()) {
             throw new IllegalStateException("Multiple " + TenantResolver.class + " beans registered");
+        }
+        if (tokenStateManager.isAmbiguous()) {
+            throw new IllegalStateException("Multiple " + TokenStateManager.class + " beans registered");
         }
     }
 
@@ -108,6 +113,10 @@ public class DefaultTenantConfigResolver {
 
     Event<SecurityEvent> getSecurityEvent() {
         return securityEvent;
+    }
+
+    TokenStateManager getTokenStateManager() {
+        return tokenStateManager.get();
     }
 
     private TenantConfigContext getTenantConfigFromConfigResolver(RoutingContext context, boolean create) {

@@ -18,7 +18,7 @@ import io.quarkus.rest.runtime.util.EmptyInputStream;
  */
 public class QuarkusRestClientResponse extends QuarkusRestResponse {
 
-    InvocationState invocationState;
+    RestClientRequestContext restClientRequestContext;
 
     @SuppressWarnings({ "unchecked" })
     protected <T> T readEntity(Class<T> entityType, Type genericType, Annotation[] annotations) {
@@ -58,8 +58,8 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         MediaType mediaType = getMediaType();
         try {
             entity = Serialisers.invokeClientReader(annotations, entityType, genericType, mediaType,
-                    invocationState.properties, getStringHeaders(), invocationState.serialisers,
-                    entityStream, invocationState.getReaderInterceptors(), invocationState.configuration);
+                    restClientRequestContext.properties, getStringHeaders(), restClientRequestContext.serialisers,
+                    entityStream, restClientRequestContext.getReaderInterceptors(), restClientRequestContext.configuration);
             consumed = true;
             close();
             return (T) entity;

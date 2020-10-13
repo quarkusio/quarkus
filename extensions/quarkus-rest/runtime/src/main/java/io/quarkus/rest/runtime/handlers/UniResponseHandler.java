@@ -3,7 +3,7 @@ package io.quarkus.rest.runtime.handlers;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.smallrye.mutiny.Uni;
 
-public class UniResponseHandler implements RestHandler {
+public class UniResponseHandler implements ServerRestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {

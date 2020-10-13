@@ -8,10 +8,10 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 public class QuarkusRestClientResponseBuilder extends QuarkusRestResponseBuilder {
 
     InputStream entityStream;
-    InvocationState invocationState;
+    RestClientRequestContext restClientRequestContext;
 
-    public QuarkusRestClientResponseBuilder invocationState(InvocationState invocationState) {
-        this.invocationState = invocationState;
+    public QuarkusRestClientResponseBuilder invocationState(RestClientRequestContext restClientRequestContext) {
+        this.restClientRequestContext = restClientRequestContext;
         return this;
     }
 
@@ -24,7 +24,7 @@ public class QuarkusRestClientResponseBuilder extends QuarkusRestResponseBuilder
     public QuarkusRestResponse build() {
         QuarkusRestClientResponse response = new QuarkusRestClientResponse();
         populateResponse(response);
-        response.invocationState = invocationState;
+        response.restClientRequestContext = restClientRequestContext;
         response.setEntityStream(entityStream);
         return response;
     }

@@ -19,7 +19,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestReaderInterceptorContext;
 
-public class RequestDeserializeHandler implements RestHandler {
+public class RequestDeserializeHandler implements ServerRestHandler {
 
     private final Class<?> type;
     private final MediaType mediaType;

@@ -3,7 +3,7 @@ package io.quarkus.rest.runtime.handlers;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 
-public class InvocationHandler implements RestHandler {
+public class InvocationHandler implements ServerRestHandler {
     private final EndpointInvoker invoker;
     private final boolean requireCDIRequestScope;
 

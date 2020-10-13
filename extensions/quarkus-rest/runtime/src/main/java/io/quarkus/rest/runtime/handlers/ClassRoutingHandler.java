@@ -26,7 +26,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
 
-public class ClassRoutingHandler implements RestHandler {
+public class ClassRoutingHandler implements ServerRestHandler {
     private final Map<String, RequestMapper<RuntimeResource>> mappers;
     private final int parameterOffset;
 
@@ -59,7 +59,6 @@ public class ClassRoutingHandler implements RestHandler {
                 mapper = mappers.get(null);
             }
             if (mapper == null) {
-
                 // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
                 String remaining = getRemaining(requestContext);
                 for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {

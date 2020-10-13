@@ -3,7 +3,7 @@ package io.quarkus.rest.runtime.handlers;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
-public class InstanceHandler implements RestHandler {
+public class InstanceHandler implements ServerRestHandler {
 
     /**
      * CDI Manages the lifecycle

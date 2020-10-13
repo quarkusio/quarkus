@@ -6,7 +6,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 import io.vertx.core.http.HttpServerRequest;
 
-public class ReadBodyHandler implements RestHandler {
+public class ReadBodyHandler implements ServerRestHandler {
 
     private static final byte[] NO_BYTES = new byte[0];
 

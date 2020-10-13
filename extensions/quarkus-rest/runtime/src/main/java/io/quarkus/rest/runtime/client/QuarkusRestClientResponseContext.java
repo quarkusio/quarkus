@@ -23,109 +23,104 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestStatusType;
 
 public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
-    private int status;
-    private String reasonPhrase;
-    private MultivaluedMap<String, String> headers;
-    private InputStream input;
+    private final RestClientRequestContext state;
 
-    public QuarkusRestClientResponseContext(int status, String reasonPhrase, MultivaluedMap<String, String> headers) {
-        this.status = status;
-        this.reasonPhrase = reasonPhrase;
-        this.headers = headers;
+    public QuarkusRestClientResponseContext(RestClientRequestContext state) {
+        this.state = state;
     }
 
     public String getReasonPhrase() {
-        return reasonPhrase;
+        return state.getResponseReasonPhrase();
     }
 
     public QuarkusRestClientResponseContext setReasonPhrase(String reasonPhrase) {
-        this.reasonPhrase = reasonPhrase;
+        state.setResponseReasonPhrase(reasonPhrase);
         return this;
     }
 
     public QuarkusRestClientResponseContext setHeaders(MultivaluedMap<String, String> headers) {
-        this.headers = headers;
+        state.setResponseHeaders(headers);
         return this;
     }
 
     @Override
     public int getStatus() {
-        return status;
+        return state.getResponseStatus();
     }
 
     @Override
     public void setStatus(int code) {
-        this.status = code;
+        state.setResponseStatus(code);
     }
 
     @Override
     public StatusType getStatusInfo() {
-        return new QuarkusRestStatusType(status, reasonPhrase);
+        return new QuarkusRestStatusType(state.getResponseStatus(), state.getResponseReasonPhrase());
     }
 
     @Override
     public void setStatusInfo(StatusType statusInfo) {
-        status = statusInfo.getStatusCode();
-        reasonPhrase = statusInfo.getReasonPhrase();
+        state.setResponseStatus(statusInfo.getStatusCode())
+                .setResponseReasonPhrase(statusInfo.getReasonPhrase());
     }
 
     @Override
     public MultivaluedMap<String, String> getHeaders() {
-        return headers;
+        return state.getResponseHeaders();
     }
 
     @Override
     public String getHeaderString(String name) {
-        return HeaderUtil.getHeaderString(headers, name);
+        return HeaderUtil.getHeaderString(state.getResponseHeaders(), name);
     }
 
     @Override
     public Set<String> getAllowedMethods() {
-        return HeaderUtil.getAllowedMethods(headers);
+        return HeaderUtil.getAllowedMethods(state.getResponseHeaders());
     }
 
     @Override
     public Date getDate() {
-        return HeaderUtil.getDate(headers);
+        return HeaderUtil.getDate(state.getResponseHeaders());
     }
 
     @Override
     public Locale getLanguage() {
-        return HeaderUtil.getLanguage(headers);
+        return HeaderUtil.getLanguage(state.getResponseHeaders());
     }
 
     @Override
     public int getLength() {
-        return HeaderUtil.getLength(headers);
+        return HeaderUtil.getLength(state.getResponseHeaders());
     }
 
     @Override
     public MediaType getMediaType() {
-        return HeaderUtil.getMediaType(headers);
+        return HeaderUtil.getMediaType(state.getResponseHeaders());
     }
 
     @Override
     public Map<String, NewCookie> getCookies() {
-        return HeaderUtil.getNewCookies(headers);
+        return HeaderUtil.getNewCookies(state.getResponseHeaders());
     }
 
     @Override
     public EntityTag getEntityTag() {
-        return HeaderUtil.getEntityTag(headers);
+        return HeaderUtil.getEntityTag(state.getResponseHeaders());
     }
 
     @Override
     public Date getLastModified() {
-        return HeaderUtil.getLastModified(headers);
+        return HeaderUtil.getLastModified(state.getResponseHeaders());
     }
 
     @Override
     public URI getLocation() {
-        return HeaderUtil.getLocation(headers);
+        return HeaderUtil.getLocation(state.getResponseHeaders());
     }
 
     private LinkHeaders getLinkHeaders() {
-        return new LinkHeaders((MultivaluedMap) headers);
+        return new LinkHeaders((MultivaluedMap) state.getResponseHeaders());
     }
 
     @Override
@@ -154,16 +149,16 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     @Override
     public boolean hasEntity() {
-        return input != null;
+        return state.getResponseEntityStream() != null;
     }
 
     @Override
     public InputStream getEntityStream() {
-        return input;
+        return state.getResponseEntityStream();
     }
 
     @Override
     public void setEntityStream(InputStream input) {
-        this.input = input;
+        state.setResponseEntityStream(input);
     }
 }

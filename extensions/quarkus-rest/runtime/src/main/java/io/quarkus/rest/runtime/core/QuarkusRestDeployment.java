@@ -16,7 +16,7 @@ import io.quarkus.rest.runtime.client.ClientProxies;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.RuntimeParameterConverter;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
-import io.quarkus.rest.runtime.handlers.RestHandler;
+import io.quarkus.rest.runtime.handlers.ServerRestHandler;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.model.ResourceParamConverterProvider;
 import io.quarkus.rest.runtime.spi.BeanFactory.BeanInstance;
@@ -26,7 +26,7 @@ public class QuarkusRestDeployment {
     private final ExceptionMapping exceptionMapping;
     private final ContextResolvers contextResolvers;
     private final Serialisers serialisers;
-    private final RestHandler[] abortHandlerChain;
+    private final ServerRestHandler[] abortHandlerChain;
     private final EntityWriter dynamicEntityWriter;
     private final ClientProxies clientProxies;
     private final String prefix;
@@ -36,7 +36,7 @@ public class QuarkusRestDeployment {
     private final Supplier<Application> applicationSupplier;
 
     public QuarkusRestDeployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers, Serialisers serialisers,
-            RestHandler[] abortHandlerChain,
+            ServerRestHandler[] abortHandlerChain,
             EntityWriter dynamicEntityWriter, ClientProxies clientProxies, String prefix,
             GenericTypeMapping genericTypeMapping, ParamConverterProviders paramConverterProviders,
             QuarkusRestConfiguration configuration, Supplier<Application> applicationSupplier) {
@@ -73,7 +73,7 @@ public class QuarkusRestDeployment {
         return serialisers;
     }
 
-    public RestHandler[] getAbortHandlerChain() {
+    public ServerRestHandler[] getAbortHandlerChain() {
         return abortHandlerChain;
     }
 

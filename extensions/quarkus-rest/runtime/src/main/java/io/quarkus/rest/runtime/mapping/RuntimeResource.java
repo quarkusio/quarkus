@@ -8,7 +8,7 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestSimplifiedResourceInfo;
-import io.quarkus.rest.runtime.handlers.RestHandler;
+import io.quarkus.rest.runtime.handlers.ServerRestHandler;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
@@ -24,7 +24,7 @@ public class RuntimeResource {
     private final List<MediaType> consumes;
     private final EndpointInvoker invoker;
     private final BeanFactory<Object> endpointFactory;
-    private final RestHandler[] handlerChain;
+    private final ServerRestHandler[] handlerChain;
     private final String javaMethodName;
     private final Class<?>[] parameterTypes;
     private final Type returnType;
@@ -37,7 +37,8 @@ public class RuntimeResource {
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
             List<MediaType> consumes,
             EndpointInvoker invoker,
-            BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
+            BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
+            Class<?>[] parameterTypes,
             Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
             Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score) {
         this.httpMethod = httpMethod;
@@ -58,7 +59,7 @@ public class RuntimeResource {
         this.score = score;
     }
 
-    public RestHandler[] getHandlerChain() {
+    public ServerRestHandler[] getHandlerChain() {
         return handlerChain;
     }
 

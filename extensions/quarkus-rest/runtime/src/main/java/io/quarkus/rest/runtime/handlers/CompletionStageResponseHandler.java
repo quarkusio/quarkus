@@ -4,7 +4,7 @@ import java.util.concurrent.CompletionStage;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
-public class CompletionStageResponseHandler implements RestHandler {
+public class CompletionStageResponseHandler implements ServerRestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {

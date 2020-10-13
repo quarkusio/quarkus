@@ -11,6 +11,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
@@ -27,10 +28,14 @@ public class QuarkusRestWebTarget implements WebTarget {
     private final GenericTypeMapping genericTypeMapping;
     private boolean chunked = false;
     private final QuarkusRestClient restClient;
+    final ClientRestHandler[] handlerChain;
+    final ClientRestHandler[] abortHandlerChain;
+    final ManagedContext requestContext;
 
     public QuarkusRestWebTarget(QuarkusRestClient restClient, HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration,
-            Serialisers serialisers, ClientProxies clientProxies, GenericTypeMapping genericTypeMapping) {
+            Serialisers serialisers, ClientProxies clientProxies, GenericTypeMapping genericTypeMapping,
+            ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain, ManagedContext requestContext) {
         this.restClient = restClient;
         this.client = client;
         this.uriBuilder = uriBuilder;
@@ -38,6 +43,9 @@ public class QuarkusRestWebTarget implements WebTarget {
         this.serialisers = serialisers;
         this.clientProxies = clientProxies;
         this.genericTypeMapping = genericTypeMapping;
+        this.handlerChain = handlerChain;
+        this.abortHandlerChain = abortHandlerChain;
+        this.requestContext = requestContext;
     }
 
     /**
@@ -264,7 +272,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     protected QuarkusRestWebTarget newInstance(HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration) {
         return new QuarkusRestWebTarget(restClient, client, uriBuilder, configuration, serialisers, clientProxies,
-                genericTypeMapping);
+                genericTypeMapping, handlerChain, abortHandlerChain, requestContext);
     }
 
     @Override
@@ -300,7 +308,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     protected QuarkusRestInvocationBuilder createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             QuarkusRestConfiguration configuration) {
         return new QuarkusRestInvocationBuilder(uri.build(), restClient, client, this, configuration, serialisers,
-                genericTypeMapping);
+                genericTypeMapping, handlerChain, abortHandlerChain, requestContext);
     }
 
     @Override

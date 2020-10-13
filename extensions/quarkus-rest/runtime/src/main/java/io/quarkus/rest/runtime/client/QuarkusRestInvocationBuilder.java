@@ -21,6 +21,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
@@ -36,11 +37,15 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     final Map<String, Object> properties = new HashMap<>();
     final QuarkusRestClient restClient;
     final GenericTypeMapping genericTypeMapping;
+    final ClientRestHandler[] handlerChain;
+    final ClientRestHandler[] abortHandlerChain;
+    final ManagedContext requestContext;
 
     public QuarkusRestInvocationBuilder(URI uri, QuarkusRestClient restClient, HttpClient httpClient,
             QuarkusRestWebTarget target,
             QuarkusRestConfiguration configuration,
-            Serialisers serialisers, GenericTypeMapping genericTypeMapping) {
+            Serialisers serialisers, GenericTypeMapping genericTypeMapping, ClientRestHandler[] handlerChain,
+            ClientRestHandler[] abortHandlerChain, ManagedContext requestContext) {
         this.uri = uri;
         this.restClient = restClient;
         this.httpClient = httpClient;
@@ -48,6 +53,9 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
         this.requestSpec = new RequestSpec(configuration);
         this.serialisers = serialisers;
         this.genericTypeMapping = genericTypeMapping;
+        this.handlerChain = handlerChain;
+        this.abortHandlerChain = abortHandlerChain;
+        this.requestContext = requestContext;
     }
 
     @Override
@@ -83,7 +91,7 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     @Override
     public QuarkusRestAsyncInvoker async() {
         return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, genericTypeMapping, requestSpec,
-                properties);
+                properties, handlerChain, abortHandlerChain, requestContext);
     }
 
     @Override
@@ -155,7 +163,7 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     @Override
     public CompletionStageRxInvoker rx() {
         return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, genericTypeMapping, requestSpec,
-                properties);
+                properties, handlerChain, abortHandlerChain, requestContext);
     }
 
     @Override

@@ -21,7 +21,7 @@ import io.quarkus.rest.runtime.util.ServerMediaType;
  * have multiple produces types, or for whatever reason can't have
  * their writer list and media type determined at build time.
  */
-public class VariableProducesHandler implements RestHandler {
+public class VariableProducesHandler implements ServerRestHandler {
 
     public static final MessageBodyWriter[] EMPTY = new MessageBodyWriter[0];
     final ServerMediaType mediaTypeList;

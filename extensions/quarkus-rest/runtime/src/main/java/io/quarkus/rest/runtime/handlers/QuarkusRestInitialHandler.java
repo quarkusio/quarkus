@@ -16,13 +16,13 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
-public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestHandler {
+public class QuarkusRestInitialHandler implements Handler<RoutingContext>, ServerRestHandler {
 
     final RequestMapper<InitialMatch> mappers;
     final QuarkusRestDeployment deployment;
     final QuarkusRestProviders providers;
     final List<ResourceRequestFilterHandler> preMappingHandlers;
-    final RestHandler[] initialChain;
+    final ServerRestHandler[] initialChain;
 
     final CurrentVertxRequest currentVertxRequest;
     final ManagedContext requestContext;
@@ -34,9 +34,9 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
         this.providers = new QuarkusRestProviders(QuarkusRestRecorder.getCurrentDeployment());
         this.preMappingHandlers = preMappingHandlers;
         if (preMappingHandlers == null) {
-            initialChain = new RestHandler[] { new MatrixParamHandler(), this };
+            initialChain = new ServerRestHandler[] { new MatrixParamHandler(), this };
         } else {
-            initialChain = new RestHandler[preMappingHandlers.size() + 2];
+            initialChain = new ServerRestHandler[preMappingHandlers.size() + 2];
             initialChain[0] = new MatrixParamHandler();
             for (int i = 0; i < preMappingHandlers.size(); i++) {
                 initialChain[i + 1] = preMappingHandlers.get(i);
@@ -84,10 +84,10 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
     }
 
     public static class InitialMatch {
-        public final RestHandler[] handlers;
+        public final ServerRestHandler[] handlers;
         public final int maxPathParams;
 
-        public InitialMatch(RestHandler[] handlers, int maxPathParams) {
+        public InitialMatch(ServerRestHandler[] handlers, int maxPathParams) {
             this.handlers = handlers;
             this.maxPathParams = maxPathParams;
         }

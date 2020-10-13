@@ -5,7 +5,7 @@ import javax.ws.rs.ext.WriterInterceptor;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
-public class InterceptorHandler implements RestHandler {
+public class InterceptorHandler implements ServerRestHandler {
 
     private final WriterInterceptor[] writerInterceptors;
     private final ReaderInterceptor[] readerInterceptors;

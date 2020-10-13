@@ -9,13 +9,13 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.rest.runtime.core.EncodedMediaType;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
-import io.quarkus.rest.runtime.handlers.RestHandler;
+import io.quarkus.rest.runtime.handlers.ServerRestHandler;
 
 /**
  * Handler that negotiates the content type for endpoints that
  * only produce a single type.
  */
-public class FixedProducesHandler implements RestHandler {
+public class FixedProducesHandler implements ServerRestHandler {
 
     final EncodedMediaType mediaType;
     final String mediaTypeString;

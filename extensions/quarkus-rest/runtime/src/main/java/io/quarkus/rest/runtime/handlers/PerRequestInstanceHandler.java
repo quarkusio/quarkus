@@ -7,7 +7,7 @@ import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
-public class PerRequestInstanceHandler implements RestHandler {
+public class PerRequestInstanceHandler implements ServerRestHandler {
 
     private static final ClientProxyUnwrapper CLIENT_PROXY_UNWRAPPER = new ClientProxyUnwrapper();
 

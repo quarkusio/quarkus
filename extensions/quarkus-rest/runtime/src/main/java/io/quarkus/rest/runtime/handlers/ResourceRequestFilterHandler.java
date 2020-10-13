@@ -5,7 +5,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestContainerRequestContextImpl;
 
-public class ResourceRequestFilterHandler implements RestHandler {
+public class ResourceRequestFilterHandler implements ServerRestHandler {
 
     private final ContainerRequestFilter filter;
     private final boolean preMatch;

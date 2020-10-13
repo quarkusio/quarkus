@@ -15,6 +15,10 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 
+import io.quarkus.rest.runtime.client.handlers.ClientErrorHandler;
+import io.quarkus.rest.runtime.client.handlers.ClientRequestFiltersRestHandler;
+import io.quarkus.rest.runtime.client.handlers.ClientResponseRestHandler;
+import io.quarkus.rest.runtime.client.handlers.ClientSendRequestHandler;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
@@ -33,6 +37,8 @@ public class QuarkusRestClient implements Client {
     final HostnameVerifier hostnameVerifier;
     final SSLContext sslContext;
     private boolean isClosed;
+    final ClientRestHandler[] handlerChain;
+    final ClientRestHandler[] abortHandlerChain;
 
     public QuarkusRestClient(QuarkusRestConfiguration configuration, Serialisers serialisers, ClientProxies clientProxies,
             GenericTypeMapping genericTypeMapping, HostnameVerifier hostnameVerifier,
@@ -51,6 +57,9 @@ public class QuarkusRestClient implements Client {
             closeVertx = true;
         }
         this.httpClient = this.vertx.createHttpClient();
+        abortHandlerChain = new ClientRestHandler[] { new ClientErrorHandler() };
+        handlerChain = new ClientRestHandler[] { new ClientRequestFiltersRestHandler(), new ClientSendRequestHandler(),
+                new ClientResponseRestHandler() };
     }
 
     @Override
@@ -88,7 +97,7 @@ public class QuarkusRestClient implements Client {
         abortIfClosed();
         Objects.requireNonNull(uriBuilder);
         return new QuarkusRestWebTarget(this, httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), serialisers,
-                clientProxies, genericTypeMapping);
+                clientProxies, genericTypeMapping, handlerChain, abortHandlerChain, null);
     }
 
     @Override

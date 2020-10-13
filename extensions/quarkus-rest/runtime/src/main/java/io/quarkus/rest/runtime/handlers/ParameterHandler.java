@@ -13,7 +13,7 @@ import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.util.QuarkusRestUtil;
 
-public class ParameterHandler implements RestHandler {
+public class ParameterHandler implements ServerRestHandler {
 
     private final int index;
     private final String defaultValue;

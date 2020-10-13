@@ -41,20 +41,22 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
         QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) target.request().rx();
         // FIXME: backpressure setting?
         return Multi.createFrom().emitter(emitter -> {
-            InvocationState invocationState = invoker.performRequestInternal(name, entity, responseType, false);
-            invocationState.getResult().handle((response, connectionError) -> {
+            RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity, responseType,
+                    false);
+            restClientRequestContext.getResult().handle((response, connectionError) -> {
                 if (connectionError != null) {
                     emitter.fail(connectionError);
                 } else {
-                    HttpClientResponse vertxResponse = invocationState.getVertxClientResponse();
+                    HttpClientResponse vertxResponse = restClientRequestContext.getVertxClientResponse();
                     // FIXME: this is probably not good enough
                     if (response.getStatus() == 200
                             && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
                         registerForSse(emitter, vertxResponse);
                     } else {
                         // read stuff in chunks
-                        registerForChunks(emitter, invocationState, responseType, response, vertxResponse);
+                        registerForChunks(emitter, restClientRequestContext, responseType, response, vertxResponse);
                     }
+                    vertxResponse.resume();
                 }
                 return null;
             });
@@ -79,7 +81,7 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
     }
 
     private <R> void registerForChunks(MultiEmitter<? super R> emitter,
-            InvocationState invocationState,
+            RestClientRequestContext restClientRequestContext,
             GenericType<R> responseType,
             Response response,
             HttpClientResponse vertxClientResponse) {
@@ -102,7 +104,8 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
             public void handle(Buffer buffer) {
                 try {
                     ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
-                    R item = invocationState.readEntity(in, responseType, response.getMediaType(), response.getMetadata());
+                    R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
+                            response.getMetadata());
                     emitter.emit(item);
                 } catch (Throwable t) {
                     // FIXME: probably close the client too? watch out that it doesn't call our close handler

@@ -13,7 +13,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 /**
  * Our job is to turn endpoint return types into Response instances
  */
-public class ResponseHandler implements RestHandler {
+public class ResponseHandler implements ServerRestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {

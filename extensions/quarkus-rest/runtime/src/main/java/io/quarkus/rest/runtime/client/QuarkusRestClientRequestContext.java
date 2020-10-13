@@ -30,93 +30,92 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
     private final Client client;
     private final QuarkusRestConfiguration configuration;
     private OutputStream entityStream;
-    private InvocationState invocationState;
-    Response abortedWith;
+    private RestClientRequestContext restClientRequestContext;
 
-    public QuarkusRestClientRequestContext(InvocationState invocationState, QuarkusRestClient client,
+    public QuarkusRestClientRequestContext(RestClientRequestContext restClientRequestContext, QuarkusRestClient client,
             QuarkusRestConfiguration configuration) {
-        this.invocationState = invocationState;
+        this.restClientRequestContext = restClientRequestContext;
         this.client = client;
         this.configuration = configuration;
     }
 
     @Override
     public Object getProperty(String name) {
-        return invocationState.properties.get(name);
+        return restClientRequestContext.properties.get(name);
     }
 
     @Override
     public Collection<String> getPropertyNames() {
         // TCK says the property names need to be immutable
-        return Collections.unmodifiableSet(invocationState.properties.keySet());
+        return Collections.unmodifiableSet(restClientRequestContext.properties.keySet());
     }
 
     @Override
     public void setProperty(String name, Object object) {
-        invocationState.properties.put(name, object);
+        restClientRequestContext.properties.put(name, object);
     }
 
     @Override
     public void removeProperty(String name) {
-        invocationState.properties.remove(name);
+        restClientRequestContext.properties.remove(name);
     }
 
     @Override
     public URI getUri() {
-        return invocationState.uri;
+        return restClientRequestContext.uri;
     }
 
     @Override
     public void setUri(URI uri) {
-        invocationState.uri = uri;
+        restClientRequestContext.uri = uri;
     }
 
     @Override
     public String getMethod() {
-        return invocationState.httpMethod;
+        return restClientRequestContext.httpMethod;
     }
 
     @Override
     public void setMethod(String method) {
-        invocationState.httpMethod = method;
+        restClientRequestContext.httpMethod = method;
     }
 
     @Override
     public MultivaluedMap<String, Object> getHeaders() {
-        return invocationState.requestHeaders.getHeaders();
+        return restClientRequestContext.requestHeaders.getHeaders();
     }
 
     @Override
     public MultivaluedMap<String, String> getStringHeaders() {
         // FIXME: this should be mutable, but it's a copy ATM
-        return invocationState.requestHeaders.asMap();
+        return restClientRequestContext.requestHeaders.asMap();
     }
 
     @Override
     public String getHeaderString(String name) {
-        return invocationState.requestHeaders.getHeader(name);
+        return restClientRequestContext.requestHeaders.getHeader(name);
     }
 
     @Override
     public Date getDate() {
-        return invocationState.requestHeaders.getDate();
+        return restClientRequestContext.requestHeaders.getDate();
     }
 
     @Override
     public Locale getLanguage() {
         // those come from the entity
-        return invocationState.entity != null ? invocationState.entity.getLanguage() : null;
+        return restClientRequestContext.entity != null ? restClientRequestContext.entity.getLanguage() : null;
     }
 
     @Override
     public MediaType getMediaType() {
         // those come from the entity
-        return invocationState.entity != null ? invocationState.entity.getMediaType() : null;
+        return restClientRequestContext.entity != null ? restClientRequestContext.entity.getMediaType() : null;
     }
 
     @Override
     public List<MediaType> getAcceptableMediaTypes() {
-        List<MediaType> acceptableMediaTypes = invocationState.requestHeaders.getAcceptableMediaTypes();
+        List<MediaType> acceptableMediaTypes = restClientRequestContext.requestHeaders.getAcceptableMediaTypes();
         if (acceptableMediaTypes.isEmpty()) {
             return Collections.singletonList(MediaType.WILDCARD_TYPE);
         }
@@ -125,22 +124,22 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public List<Locale> getAcceptableLanguages() {
-        return invocationState.requestHeaders.getAcceptableLanguages();
+        return restClientRequestContext.requestHeaders.getAcceptableLanguages();
     }
 
     @Override
     public Map<String, Cookie> getCookies() {
-        return invocationState.requestHeaders.getCookies();
+        return restClientRequestContext.requestHeaders.getCookies();
     }
 
     @Override
     public boolean hasEntity() {
-        return invocationState.entity != null;
+        return restClientRequestContext.entity != null;
     }
 
     @Override
     public Object getEntity() {
-        Entity<?> entity = invocationState.entity;
+        Entity<?> entity = restClientRequestContext.entity;
         if (entity != null) {
             Object ret = entity.getEntity();
             if (ret instanceof GenericEntity) {
@@ -153,7 +152,7 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Class<?> getEntityClass() {
-        Entity<?> entity = invocationState.entity;
+        Entity<?> entity = restClientRequestContext.entity;
         if (entity != null) {
             Object ret = entity.getEntity();
             if (ret instanceof GenericEntity) {
@@ -166,7 +165,7 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Type getEntityType() {
-        Entity<?> entity = invocationState.entity;
+        Entity<?> entity = restClientRequestContext.entity;
         if (entity != null) {
             Object ret = entity.getEntity();
             if (ret instanceof GenericEntity) {
@@ -184,12 +183,13 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public void setEntity(Object entity, Annotation[] annotations, MediaType mediaType) {
-        invocationState.setEntity(entity, annotations, mediaType);
+        restClientRequestContext.setEntity(entity, annotations, mediaType);
     }
 
     @Override
     public Annotation[] getEntityAnnotations() {
-        return invocationState.entity != null ? invocationState.entity.getAnnotations() : Serialisers.NO_ANNOTATION;
+        return restClientRequestContext.entity != null ? restClientRequestContext.entity.getAnnotations()
+                : Serialisers.NO_ANNOTATION;
     }
 
     @Override
@@ -214,6 +214,10 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public void abortWith(Response response) {
-        this.abortedWith = response;
+        restClientRequestContext.setAbortedWith(response);
+    }
+
+    public Response getAbortedWith() {
+        return restClientRequestContext.getAbortedWith();
     }
 }

@@ -6,7 +6,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestContainerRequestContextImpl;
 
-public class ResourceResponseFilterHandler implements RestHandler {
+public class ResourceResponseFilterHandler implements ServerRestHandler {
 
     private final ContainerResponseFilter filter;
 

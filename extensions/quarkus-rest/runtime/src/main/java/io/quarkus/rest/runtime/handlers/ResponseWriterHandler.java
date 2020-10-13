@@ -12,7 +12,7 @@ import io.quarkus.rest.runtime.util.ServerMediaType;
 /**
  * Our job is to write a Response
  */
-public class ResponseWriterHandler implements RestHandler {
+public class ResponseWriterHandler implements ServerRestHandler {
 
     public static final String HEAD = "HEAD";
     private final DynamicEntityWriter dynamicEntityWriter;

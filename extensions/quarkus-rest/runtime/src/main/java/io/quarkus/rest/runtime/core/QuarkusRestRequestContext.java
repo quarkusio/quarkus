@@ -10,18 +10,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
 import javax.enterprise.event.Event;
-import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.container.ConnectionCallback;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
@@ -33,14 +26,12 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
-import org.jboss.logging.Logger;
-
+import io.netty.channel.EventLoop;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
-import io.quarkus.rest.runtime.handlers.RestHandler;
+import io.quarkus.rest.runtime.handlers.ServerRestHandler;
 import io.quarkus.rest.runtime.injection.QuarkusRestInjectionContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestAsyncResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestContainerRequestContextImpl;
@@ -53,7 +44,6 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestUriInfo;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.mapping.URITemplate;
-import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.runtime.util.PathSegmentImpl;
@@ -64,26 +54,22 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
-public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRestInjectionContext, QuarkusRestContext {
+public class QuarkusRestRequestContext extends AbstractQuarkusRestContext<QuarkusRestRequestContext, ServerRestHandler>
+        implements Closeable, QuarkusRestInjectionContext {
 
     private static final LazyValue<Event<SecurityIdentity>> SECURITY_IDENTITY_EVENT = new LazyValue<>(
             QuarkusRestRequestContext::createEvent);
 
-    private static final Logger log = Logger.getLogger(QuarkusRestRequestContext.class);
     public static final Object[] EMPTY_ARRAY = new Object[0];
     private final QuarkusRestDeployment deployment;
     private final QuarkusRestProviders providers;
     private final RoutingContext context;
-    private final ManagedContext requestContext;
     private final CurrentVertxRequest currentVertxRequest;
-    private InjectableContext.ContextState currentRequestScope;
     /**
      * The parameters array, populated by handlers
      */
     private Object[] parameters;
     private RuntimeResource target;
-    private RestHandler[] handlers;
-    private RestHandler[] abortHandlerChain;
 
     /**
      * The parameter values extracted from the path.
@@ -115,15 +101,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
      */
     private LazyResponse response;
 
-    private boolean suspended = false;
-    private volatile boolean requestScopeActivated = false;
-    private volatile boolean running = false;
-    private volatile Executor executor;
-    private int position;
-    private Throwable throwable;
     private QuarkusRestHttpHeaders httpHeaders;
     private Object requestEntity;
-    private Map<String, Object> properties;
     private Request request;
     private EntityWriter entityWriter;
     private QuarkusRestContainerRequestContextImpl containerRequestContext;
@@ -168,19 +147,14 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     private OutputStream outputStream;
     private OutputStream underlyingOutputStream;
 
-    private List<CompletionCallback> completionCallbacks;
-    private List<ConnectionCallback> connectionCallbacks;
-
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
             ManagedContext requestContext,
-            CurrentVertxRequest currentVertxRequest, RestHandler[] handlerChain, RestHandler[] abortHandlerChain) {
+            CurrentVertxRequest currentVertxRequest, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+        super(handlerChain, abortHandlerChain, requestContext);
         this.deployment = deployment;
         this.providers = providers;
         this.context = context;
-        this.requestContext = requestContext;
         this.currentVertxRequest = currentVertxRequest;
-        this.handlers = handlerChain;
-        this.abortHandlerChain = abortHandlerChain;
         this.parameters = EMPTY_ARRAY;
     }
 
@@ -190,134 +164,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     public QuarkusRestProviders getProviders() {
         return providers;
-    }
-
-    public void suspend() {
-        suspended = true;
-    }
-
-    public void resume() {
-        resume((Executor) null);
-    }
-
-    public synchronized void resume(Throwable throwable) {
-        handleException(throwable);
-        resume((Executor) null);
-    }
-
-    public synchronized void resume(Executor executor) {
-        if (running) {
-            this.executor = executor;
-            if (executor == null) {
-                suspended = false;
-            }
-        } else {
-            suspended = false;
-            if (executor == null) {
-                ((ConnectionBase) context.request().connection()).getContext().nettyEventLoop().execute(this);
-            } else {
-                executor.execute(this);
-            }
-        }
-    }
-
-    @Override
-    public void run() {
-        running = true;
-        //if this is a blocking target we don't activate for the initial non-blocking part
-        //unless there are pre-mapping filters as these may require CDI
-        boolean disasociateRequestScope = false;
-        try {
-            while (position < handlers.length) {
-                int pos = position;
-                position++; //increment before, as reset may reset it to zero
-                try {
-                    handlers[pos].handle(this);
-                    if (suspended) {
-                        Executor exec = null;
-                        synchronized (this) {
-                            if (requestScopeActivated) {
-                                if (position != handlers.length) {
-                                    currentRequestScope = requestContext.getState();
-                                    disasociateRequestScope = true;
-                                }
-                                requestScopeActivated = false;
-                            }
-                            if (this.executor != null) {
-                                //resume happened in the meantime
-                                suspended = false;
-                                exec = this.executor;
-                            } else if (suspended) {
-                                running = false;
-                                return;
-                            }
-                        }
-                        if (exec != null) {
-                            //outside sync block
-                            exec.execute(this);
-                            return;
-                        }
-                    }
-                } catch (Throwable t) {
-                    boolean over = handlers == abortHandlerChain;
-                    handleException(t);
-                    if (over) {
-                        return;
-                    }
-                }
-            }
-        } catch (Throwable t) {
-            sendInternalError(t);
-        } finally {
-            running = false;
-            if (position == handlers.length && !suspended) {
-                close();
-            } else if (disasociateRequestScope) {
-                requestContext.deactivate();
-            }
-        }
-    }
-
-    public void requireCDIRequestScope() {
-        if (!running) {
-            throw new RuntimeException("Cannot be called when outside a handler chain");
-        }
-        if (requestScopeActivated) {
-            return;
-        }
-        requestScopeActivated = true;
-        if (currentRequestScope == null) {
-            requestContext.activate();
-            // if we don't do this we can't close it in close()
-            currentRequestScope = requestContext.getState();
-            QuarkusHttpUser user = (QuarkusHttpUser) context.user();
-            if (user != null) {
-                fireSecurityIdentity(user.getSecurityIdentity());
-            }
-            currentVertxRequest.setCurrent(context, this);
-        } else {
-            requestContext.activate(currentRequestScope);
-        }
-    }
-
-    /**
-     * Restarts handler chain processing on a chain that does not target a specific resource
-     * <p>
-     * Generally used to abort processing.
-     *
-     * @param newHandlerChain The new handler chain
-     */
-    public void restart(RestHandler[] newHandlerChain) {
-        restart(newHandlerChain, false);
-    }
-
-    public void restart(RestHandler[] newHandlerChain, boolean keepTarget) {
-        this.handlers = newHandlerChain;
-        position = 0;
-        parameters = new Object[0];
-        if (!keepTarget) {
-            target = null;
-        }
     }
 
     /**
@@ -467,46 +313,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return target;
     }
 
-    public boolean isSuspended() {
-        return suspended;
-    }
-
-    public QuarkusRestRequestContext setSuspended(boolean suspended) {
-        this.suspended = suspended;
-        return this;
-    }
-
-    public boolean isRunning() {
-        return running;
-    }
-
-    public QuarkusRestRequestContext setRunning(boolean running) {
-        this.running = running;
-        return this;
-    }
-
-    public Executor getExecutor() {
-        return executor;
-    }
-
-    public QuarkusRestRequestContext setExecutor(Executor executor) {
-        this.executor = executor;
-        return this;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
-    public QuarkusRestRequestContext setPosition(int position) {
-        this.position = position;
-        return this;
-    }
-
-    public RestHandler[] getHandlers() {
-        return handlers;
-    }
-
     public void mapExceptionIfPresent() {
         // this is called from the abort chain, but we can abort because we have a Response, or because
         // we got an exception
@@ -514,23 +320,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
             this.responseContentType = null;
             setResult(deployment.getExceptionMapping().mapException(throwable));
             // NOTE: keep the throwable around for close() AsyncResponse notification
-        }
-    }
-
-    /**
-     * If we are on the abort chain already, send a 500. If not, turn the throwable into
-     * a response result and switch to the abort chain
-     */
-    public void handleException(Throwable t) {
-        handleException(t, false);
-    }
-
-    public void handleException(Throwable t, boolean keepSameTarget) {
-        if (handlers == abortHandlerChain) {
-            sendInternalError(t);
-        } else {
-            this.throwable = t;
-            restart(abortHandlerChain, keepSameTarget);
         }
     }
 
@@ -556,12 +345,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         } catch (IOException e) {
             log.debug("Failed to close stream", e);
         }
-        //TODO: do we even have any other resources to close?
-        if (this.currentRequestScope != null) {
-            this.requestContext.destroy(this.currentRequestScope);
-        }
-        // FIXME: this could be moved to a handler I guess
-        onComplete(throwable);
+        super.close();
     }
 
     public LazyResponse getResponse() {
@@ -571,38 +355,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     public QuarkusRestRequestContext setResponse(LazyResponse response) {
         this.response = response;
         return this;
-    }
-
-    public Object getProperty(String name) {
-        if (properties == null) {
-            return null;
-        }
-        return properties.get(name);
-    }
-
-    public Collection<String> getPropertyNames() {
-        if (properties == null) {
-            return Collections.emptyList();
-        }
-        return Collections.unmodifiableSet(properties.keySet());
-    }
-
-    public void setProperty(String name, Object object) {
-        if (object == null) {
-            removeProperty(name);
-            return;
-        }
-        if (properties == null) {
-            properties = new HashMap<>();
-        }
-        properties.put(name, object);
-    }
-
-    public void removeProperty(String name) {
-        if (properties == null) {
-            return;
-        }
-        properties.remove(name);
     }
 
     public Request getRequest() {
@@ -848,6 +600,30 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return this;
     }
 
+    protected void handleUnrecoverableError(Throwable throwable) {
+        QuarkusRestRequestContext.log.error("Request failed", throwable);
+        context.response().setStatusCode(500).end();
+        close();
+    }
+
+    protected void handleRequestScopeActivation() {
+        QuarkusHttpUser user = (QuarkusHttpUser) context.user();
+        if (user != null) {
+            QuarkusRestRequestContext.fireSecurityIdentity(user.getSecurityIdentity());
+        }
+        currentVertxRequest.setCurrent(context, this);
+    }
+
+    @Override
+    protected void restarted(boolean keepTarget) {
+        parameters = new Object[0];
+        target = null;
+        parameters = new Object[0];
+        if (!keepTarget) {
+            target = null;
+        }
+    }
+
     public void saveUriMatchState() {
         if (matchedURIs == null) {
             matchedURIs = new LinkedList<>();
@@ -909,15 +685,6 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     public void setSseEventSink(QuarkusRestSseEventSink sseEventSink) {
         this.sseEventSink = sseEventSink;
-    }
-
-    public RestHandler[] getAbortHandlerChain() {
-        return abortHandlerChain;
-    }
-
-    public QuarkusRestRequestContext setAbortHandlerChain(RestHandler[] abortHandlerChain) {
-        this.abortHandlerChain = abortHandlerChain;
-        return this;
     }
 
     /**
@@ -1112,25 +879,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return outputStream;
     }
 
-    synchronized void onComplete(Throwable throwable) {
-        if (completionCallbacks != null) {
-            for (CompletionCallback callback : completionCallbacks) {
-                callback.onComplete(throwable);
-            }
-        }
-    }
-
     @Override
-    public synchronized void registerCompletionCallback(CompletionCallback callback) {
-        if (completionCallbacks == null)
-            completionCallbacks = new ArrayList<>();
-        completionCallbacks.add(callback);
-    }
-
-    @Override
-    public synchronized void registerConnectionCallback(ConnectionCallback callback) {
-        if (connectionCallbacks == null)
-            connectionCallbacks = new ArrayList<>();
-        connectionCallbacks.add(callback);
+    protected EventLoop getEventLoop() {
+        return ((ConnectionBase) context.request().connection()).channel().eventLoop();
     }
 }

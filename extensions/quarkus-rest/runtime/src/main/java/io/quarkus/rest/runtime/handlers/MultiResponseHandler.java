@@ -13,7 +13,7 @@ import io.quarkus.rest.runtime.core.StreamingUtil;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestOutboundSseEvent;
 import io.smallrye.mutiny.Multi;
 
-public class MultiResponseHandler implements RestHandler {
+public class MultiResponseHandler implements ServerRestHandler {
 
     class SseMultiSubscriber extends AbstractMultiSubscriber {
 
@@ -102,8 +102,8 @@ public class MultiResponseHandler implements RestHandler {
 
     private static final Logger log = Logger.getLogger(MultiResponseHandler.class);
 
-    private static final RestHandler[] AWOL = new RestHandler[] {
-            new RestHandler() {
+    private static final ServerRestHandler[] AWOL = new ServerRestHandler[] {
+            new ServerRestHandler() {
 
                 @Override
                 public void handle(QuarkusRestRequestContext requestContext)

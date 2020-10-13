@@ -5,7 +5,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 /**
  * Our job is to send initial headers for the SSE request
  */
-public class SseResponseWriterHandler implements RestHandler {
+public class SseResponseWriterHandler implements ServerRestHandler {
 
     public SseResponseWriterHandler() {
     }

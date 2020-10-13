@@ -2,10 +2,10 @@ package io.quarkus.rest.runtime.handlers;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
-public class AbortChainHandler implements RestHandler {
-    final RestHandler[] abortChain;
+public class AbortChainHandler implements ServerRestHandler {
+    final ServerRestHandler[] abortChain;
 
-    public AbortChainHandler(RestHandler[] abortChain) {
+    public AbortChainHandler(ServerRestHandler[] abortChain) {
         this.abortChain = abortChain;
     }
 

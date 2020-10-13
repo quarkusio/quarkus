@@ -16,6 +16,7 @@ import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.util.Types;
@@ -33,10 +34,14 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     final RequestSpec requestSpec;
     final Map<String, Object> properties;
     final QuarkusRestClient restClient;
+    final ClientRestHandler[] handlerChain;
+    final ClientRestHandler[] abortHandlerChain;
+    final ManagedContext requestContext;
 
     public QuarkusRestAsyncInvoker(QuarkusRestClient restClient, HttpClient httpClient, URI uri, Serialisers serialisers,
             GenericTypeMapping genericTypeMapping, RequestSpec requestSpec,
-            Map<String, Object> properties) {
+            Map<String, Object> properties, ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain,
+            ManagedContext requestContext) {
         this.restClient = restClient;
         this.httpClient = httpClient;
         this.uri = uri;
@@ -44,6 +49,9 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
         this.genericTypeMapping = genericTypeMapping;
         this.requestSpec = new RequestSpec(requestSpec);
         this.properties = new HashMap<>(properties);
+        this.handlerChain = handlerChain;
+        this.abortHandlerChain = abortHandlerChain;
+        this.requestContext = requestContext;
     }
 
     public Map<String, Object> getProperties() {
@@ -248,11 +256,14 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
         return (CompletableFuture) performRequestInternal(httpMethodName, entity, responseType, true).getResult();
     }
 
-    InvocationState performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<?> responseType,
+    RestClientRequestContext performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<?> responseType,
             boolean registerBodyHandler) {
-        return new InvocationState(restClient, httpClient, httpMethodName, uri,
+        RestClientRequestContext restClientRequestContext = new RestClientRequestContext(restClient, httpClient, httpMethodName,
+                uri,
                 requestSpec.configuration, requestSpec.headers, serialisers,
-                entity, responseType, registerBodyHandler, properties);
+                entity, responseType, registerBodyHandler, properties, handlerChain, abortHandlerChain, requestContext);
+        restClientRequestContext.run();
+        return restClientRequestContext;
     }
 
     private <T> Type getInvocationCallbackType(InvocationCallback<T> callback) {

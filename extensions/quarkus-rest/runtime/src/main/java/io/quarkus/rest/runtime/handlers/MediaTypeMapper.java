@@ -26,7 +26,7 @@ import io.vertx.core.http.HttpServerRequest;
  * This is not super optimised, as it is not a common case. Most apps
  * won't every use this handler.
  */
-public class MediaTypeMapper implements RestHandler {
+public class MediaTypeMapper implements ServerRestHandler {
 
     final Map<MediaType, Holder> resourcesByConsumes;
     final List<MediaType> consumesTypes;

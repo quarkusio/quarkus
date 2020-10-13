@@ -80,13 +80,13 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
             return;
         isInProgress = true;
         QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) webTarget.request().rx();
-        InvocationState invocationState = invoker.performRequestInternal("GET", null, null, false);
-        invocationState.getResult().handle((response, throwable) -> {
+        RestClientRequestContext restClientRequestContext = invoker.performRequestInternal("GET", null, null, false);
+        restClientRequestContext.getResult().handle((response, throwable) -> {
             if (throwable != null)
                 receiveThrowable(throwable);
             else {
                 // FIXME: check response
-                registerOnClient(invocationState.getVertxClientResponse());
+                registerOnClient(restClientRequestContext.getVertxClientResponse());
             }
             return null;
         });
@@ -118,6 +118,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
             close(true);
         });
         vertxClientResponse.handler(sseParser);
+        vertxClientResponse.resume();
         // FIXME: handle end of response rather than wait for end of connection
     }
 

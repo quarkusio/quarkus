@@ -26,7 +26,7 @@ import io.vertx.core.http.HttpServerRequest;
  * TODO: the stream implementation here could be a lot more efficent.
  * 
  */
-public class InputHandler implements RestHandler {
+public class InputHandler implements ServerRestHandler {
 
     final long maxBufferSize;
     private volatile Executor executor;

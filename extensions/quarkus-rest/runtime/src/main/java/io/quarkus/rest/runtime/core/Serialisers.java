@@ -581,15 +581,19 @@ public class Serialisers {
     private void writerLookup(RuntimeType runtimeType, List<MediaType> mt, List<ResourceWriter> ret,
             List<ResourceWriter> goodTypeWriters) {
         if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
+            List<ResourceWriter> mediaTypeMatchingWriters = new ArrayList<>(goodTypeWriters.size());
             for (ResourceWriter goodTypeWriter : goodTypeWriters) {
                 if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
                     continue;
                 }
                 MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.modifiableMediaTypes());
                 if (match != null) {
-                    ret.add(goodTypeWriter);
+                    mediaTypeMatchingWriters.add(goodTypeWriter);
                 }
             }
+            // we sort here because the spec mentions that the writers closer to the requested java type are tried first
+            mediaTypeMatchingWriters.sort(ResourceWriter.ResourceWriterComparator.INSTANCE);
+            ret.addAll(mediaTypeMatchingWriters);
         }
     }
 

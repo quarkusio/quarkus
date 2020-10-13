@@ -25,6 +25,8 @@
         - javax.xml.bind.JAXBElement and application-supplied JAXB classes XML types (text/xml and
           application/xml and media types of the form application/*+xml).
 - Callbacks on async responses
+    - CompletionCallback supported
+    - ConnectionCallback not supported yet
 - We use the request context to store and inject provider types, which means they are also injected
   on client resources if the client runs on the server, and just not injected if the client is not
   on the server. This is wrong.
@@ -44,6 +46,7 @@
 - `ManagedBean`
 - `DataSource`
 - `Source`
+- `StreamingOutput`
 - `JAXB`
 
 *** Spec inconsistencies
@@ -77,4 +80,4 @@
   not for beanparams/resource fields.
 - SSE client should reconnect with Last-Event-Id.
 - SSE client should handle certain HTTP status codes from the server.
-- Callbacks on AsyncResponse
+- Connection Callbacks on AsyncResponse

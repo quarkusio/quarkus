@@ -42,6 +42,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-common-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-spi</artifactId>
+        </dependency>
 
         <!-- test -->
 

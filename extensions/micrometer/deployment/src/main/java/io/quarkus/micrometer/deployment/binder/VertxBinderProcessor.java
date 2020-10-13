@@ -18,6 +18,7 @@ import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterFilter;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
+import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
@@ -45,17 +46,24 @@ public class VertxBinderProcessor {
     static final String VERTX_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderContainerFilter";
 
     @BuildStep(onlyIf = { VertxBinderEnabled.class })
-    ResteasyJaxrsProviderBuildItem enableResteasySupport(Capabilities capabilities,
+    void enableJaxRsSupport(Capabilities capabilities,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviders,
+            BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilter,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (!capabilities.isPresent(Capability.RESTEASY)) {
-            return null;
-        }
 
+        if (capabilities.isPresent(Capability.RESTEASY)) {
+            resteasyJaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(VERTX_CONTAINER_FILTER_CLASS_NAME));
+            turnVertxBinderFilterIntoBean(additionalBeans);
+        } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
+            containerRequestFilter.produce(new ContainerRequestFilterBuildItem(VERTX_CONTAINER_FILTER_CLASS_NAME));
+            turnVertxBinderFilterIntoBean(additionalBeans);
+        }
+    }
+
+    private void turnVertxBinderFilterIntoBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(VertxMeterBinderContainerFilter.class)
                 .setUnremovable().build());
-
-        return new ResteasyJaxrsProviderBuildItem(VERTX_CONTAINER_FILTER_CLASS_NAME);
     }
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)

@@ -1,5 +1,7 @@
 package io.quarkus.rest.runtime.handlers;
 
+import javax.ws.rs.NotFoundException;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.rest.runtime.QuarkusRestRecorder;
@@ -7,6 +9,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestProviders;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -50,8 +53,14 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
         RoutingContext event = requestContext.getContext();
         RequestMapper.RequestMatch<InitialMatch> target = mappers.map(requestContext.getPathWithoutPrefix());
         if (target == null) {
-            event.next();
-            return;
+            if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                // we want to engage the NotFoundExceptionMapper when nothing is found
+                requestContext.handleException(new NotFoundException());
+                return;
+            } else {
+                event.next();
+                return;
+            }
         }
         requestContext.restart(target.value.handlers);
         requestContext.setMaxPathParams(target.value.maxPathParams);

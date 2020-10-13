@@ -116,6 +116,7 @@ import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -415,6 +416,10 @@ public class QuarkusRestRecorder {
             Map<ResourceRequestInterceptor, ContainerRequestFilter> preMatchContainerRequestFilters = createContainerRequestFilterInstances(
                     interceptors.getResourcePreMatchRequestInterceptors(), shutdownContext);
             preMatchHandler = new ResourceRequestInterceptorHandler(preMatchContainerRequestFilters.values(), true);
+        }
+
+        if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+            NotFoundExceptionMapper.classMappers = classMappers;
         }
 
         return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);

@@ -24,7 +24,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class ClassRoutingHandler implements RestHandler {
-    final Map<String, RequestMapper<RuntimeResource>> mappers;
+    private final Map<String, RequestMapper<RuntimeResource>> mappers;
     private final int parameterOffset;
 
     public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset) {
@@ -134,5 +134,9 @@ public class ClassRoutingHandler implements RestHandler {
 
     private String getRemaining(QuarkusRestRequestContext requestContext) {
         return requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining();
+    }
+
+    public Map<String, RequestMapper<RuntimeResource>> getMappers() {
+        return mappers;
     }
 }

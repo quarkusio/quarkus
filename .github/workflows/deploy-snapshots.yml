@@ -28,7 +28,7 @@ jobs:
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: n1hility/cache@v2
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth

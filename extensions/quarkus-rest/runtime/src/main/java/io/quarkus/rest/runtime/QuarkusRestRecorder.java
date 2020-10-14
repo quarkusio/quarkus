@@ -935,10 +935,14 @@ public class QuarkusRestRecorder {
         // according to the spec, global request filters apply everywhere
         // and named request filters only apply to methods with exactly matching "qualifiers"
         if (method.getNameBindingNames().isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
-            handlers.add(globalRequestInterceptorsHandler);
+            if (!globalRequestInterceptorsHandler.isEmpty()) {
+                handlers.add(globalRequestInterceptorsHandler);
+            }
         } else if (nameRequestInterceptorsMap.isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
             // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            handlers.add(globalRequestInterceptorsHandler);
+            if (!globalRequestInterceptorsHandler.isEmpty()) {
+                handlers.add(globalRequestInterceptorsHandler);
+            }
         } else {
             // TODO: refactor to use the TreeMap procedure used above for interceptors
             List<ResourceRequestInterceptor> interceptorsToUse = new ArrayList<>(
@@ -981,10 +985,14 @@ public class QuarkusRestRecorder {
         // according to the spec, global request filters apply everywhere
         // and named request filters only apply to methods with exactly matching "qualifiers"
         if (method.getNameBindingNames().isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
-            responseFilterHandlers.add(globalResponseInterceptorHandler);
+            if (!globalResponseInterceptorHandler.isEmpty()) {
+                responseFilterHandlers.add(globalResponseInterceptorHandler);
+            }
         } else if (nameResponseInterceptorsMap.isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
             // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            responseFilterHandlers.add(globalResponseInterceptorHandler);
+            if (!globalResponseInterceptorHandler.isEmpty()) {
+                responseFilterHandlers.add(globalResponseInterceptorHandler);
+            }
         } else {
             List<ResourceResponseInterceptor> interceptorsToUse = new ArrayList<>(
                     globalResponseInterceptorsMap.size() + nameResponseInterceptorsMap.size()

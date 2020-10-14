@@ -28,4 +28,8 @@ public class ResourceResponseInterceptorHandler implements RestHandler {
             interceptor.filter(filterRequestContext, filterResponseContext);
         }
     }
+
+    public boolean isEmpty() {
+        return filters.isEmpty();
+    }
 }

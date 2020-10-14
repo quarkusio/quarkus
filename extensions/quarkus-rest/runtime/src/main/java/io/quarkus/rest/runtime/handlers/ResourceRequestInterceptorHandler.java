@@ -29,4 +29,8 @@ public class ResourceRequestInterceptorHandler implements RestHandler {
             }
         }
     }
+
+    public boolean isEmpty() {
+        return filters.isEmpty();
+    }
 }

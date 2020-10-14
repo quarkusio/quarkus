@@ -785,13 +785,17 @@ public class QuarkusRestRecorder {
         handlers.add(new InvocationHandler(invoker, method.isCDIRequestScopeRequired()));
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
+        Class<?> rawReturnType = getRawType(returnType);
         Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
         Class<?> rawNonAsyncReturnType = getRawType(nonAsyncReturnType);
 
-        // FIXME: those two should not be in sequence unless we intend to support CompletionStage<Uni<String>>
-        handlers.add(new CompletionStageResponseHandler());
-        handlers.add(new UniResponseHandler());
-        handlers.add(new MultiResponseHandler());
+        if (CompletionStage.class.isAssignableFrom(rawReturnType)) {
+            handlers.add(new CompletionStageResponseHandler());
+        } else if (Uni.class.isAssignableFrom(rawReturnType)) {
+            handlers.add(new UniResponseHandler());
+        } else if (Multi.class.isAssignableFrom(rawReturnType)) {
+            handlers.add(new MultiResponseHandler());
+        }
         ServerMediaType serverMediaType = null;
         if (method.getProduces() != null && method.getProduces().length > 0) {
             serverMediaType = new ServerMediaType(method.getProduces(), StandardCharsets.UTF_8.name());

@@ -7,6 +7,7 @@ import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 
 /**
  * Our job is to turn endpoint return types into Response instances
@@ -59,6 +60,11 @@ public class ResponseHandler implements RestHandler {
         if (!mediaTypeAlreadyExists && produces != null) {
             responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
         }
-        requestContext.setResult(responseBuilder.build());
+        if ((responseBuilder instanceof QuarkusRestResponseBuilder)) {
+            // avoid unnecessary copying of HTTP headers from the Builder to the Response
+            requestContext.setResult(((QuarkusRestResponseBuilder) responseBuilder).build(false));
+        } else {
+            requestContext.setResult(responseBuilder.build());
+        }
     }
 }

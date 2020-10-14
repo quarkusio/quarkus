@@ -79,7 +79,7 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     int status = -1;
     String reasonPhrase;
     Object entity;
-    MultivaluedMap<String, Object> metadata = new QuarkusMultivaluedHashMap<>();
+    MultivaluedMap<String, Object> metadata = new CaseInsensitiveMap<>();
     Annotation[] entityAnnotations;
 
     public int getStatus() {
@@ -107,12 +107,20 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         return populateResponse(new QuarkusRestResponse());
     }
 
+    public QuarkusRestResponse build(boolean copyHeaders) {
+        return populateResponse(new QuarkusRestResponse(), copyHeaders);
+    }
+
     /**
      * Populates a response with the standard data
      * 
      * @return The given response
      */
     public <T extends QuarkusRestResponse> T populateResponse(T response) {
+        return populateResponse(response, true);
+    }
+
+    public <T extends QuarkusRestResponse> T populateResponse(T response, boolean copyHeaders) {
         response.entity = entity;
         if ((entity == null) && (status == -1)) {
             response.status = 204; // spec says that when no status is set and the entity is null, we need to return 204
@@ -122,8 +130,12 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
             response.status = status;
         }
         response.reasonPhrase = reasonPhrase;
-        response.headers = new CaseInsensitiveMap<>();
-        response.headers.putAll(metadata);
+        if (copyHeaders) {
+            response.headers = new CaseInsensitiveMap<>();
+            response.headers.putAll(metadata);
+        } else {
+            response.headers = metadata;
+        }
         response.entityAnnotations = entityAnnotations;
         return response;
     }

@@ -11,7 +11,6 @@ import java.util.Comparator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.core.ExecuteUtil;
@@ -141,7 +140,6 @@ public class CliTest {
     }
 
     @Test
-    @Disabled
     public void testGradleAddListRemove() throws Exception {
         // Gradle list command cannot be screen captured with the current implementation
         // so I will just test good return values
@@ -269,7 +267,6 @@ public class CliTest {
     }
 
     @Test
-    @Disabled
     public void testGradleBuild() throws Exception {
 
         execute("create", "--gradle", "resteasy");

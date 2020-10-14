@@ -3,7 +3,13 @@ package io.quarkus.liquibase;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,12 +33,18 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.*;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseContainerProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
+import liquibase.change.Change;
+import liquibase.change.core.LoadDataChange;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.ChangeSet;
 import liquibase.changelog.DatabaseChangeLog;
@@ -82,6 +94,7 @@ class LiquibaseProcessor {
                 liquibase.logging.LogFactory.class.getName(),
                 liquibase.change.ColumnConfig.class.getName(),
                 liquibase.change.AddColumnConfig.class.getName(),
+                liquibase.change.core.LoadDataColumnConfig.class.getName(),
                 liquibase.sql.visitor.PrependSqlVisitor.class.getName(),
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
@@ -237,7 +250,7 @@ class LiquibaseProcessor {
 
         // default datasource
         if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            resources.addAll(findAllChangeLogs(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
+            resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
                     classLoaderResourceAccessor, changeLogParameters));
         }
 
@@ -250,7 +263,7 @@ class LiquibaseProcessor {
 
         for (String namedDataSourceChangeLog : namedDataSourceChangeLogs) {
             resources.addAll(
-                    findAllChangeLogs(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
+                    findAllChangeLogFiles(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
                             changeLogParameters));
         }
 
@@ -262,7 +275,7 @@ class LiquibaseProcessor {
     /**
      * Finds all resource files for the given change log file
      */
-    private Set<String> findAllChangeLogs(String file, ChangeLogParserFactory changeLogParserFactory,
+    private Set<String> findAllChangeLogFiles(String file, ChangeLogParserFactory changeLogParserFactory,
             ClassLoaderResourceAccessor classLoaderResourceAccessor,
             ChangeLogParameters changeLogParameters) {
         try {
@@ -274,6 +287,11 @@ class LiquibaseProcessor {
                 // get all changeSet files
                 for (ChangeSet changeSet : changelog.getChangeSets()) {
                     result.add(changeSet.getFilePath());
+
+                    changeSet.getChanges().stream()
+                            .filter(c -> c instanceof LoadDataChange)
+                            .map(c -> ((LoadDataChange) c).getFile())
+                            .forEach(result::add);
 
                     // get all parents of the changeSet
                     DatabaseChangeLog parent = changeSet.getChangeLog();

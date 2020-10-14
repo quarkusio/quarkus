@@ -611,6 +611,11 @@ public class QuarkusTestExtension
         if (isNativeTest(extensionContext)) {
             return invocation.proceed();
         }
+        ExtensionState state = ensureStarted(extensionContext);
+        if (failedBoot) {
+            throwBootFailureException();
+            return null;
+        }
         T result;
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
@@ -628,10 +633,6 @@ public class QuarkusTestExtension
                     e);
         } finally {
             Thread.currentThread().setContextClassLoader(old);
-        }
-        ExtensionState state = ensureStarted(extensionContext);
-        if (failedBoot) {
-            return result;
         }
 
         // We do this here as well, because when @TestInstance(Lifecycle.PER_CLASS) is used on a class,

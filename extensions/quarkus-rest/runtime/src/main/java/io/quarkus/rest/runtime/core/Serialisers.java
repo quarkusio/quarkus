@@ -38,6 +38,7 @@ import io.quarkus.rest.runtime.client.QuarkusRestClientReaderInterceptorContext;
 import io.quarkus.rest.runtime.client.QuarkusRestClientWriterInterceptorContext;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
+import io.quarkus.rest.runtime.headers.HeaderUtil;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestWriterInterceptorContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
@@ -68,7 +69,7 @@ import io.vertx.core.http.HttpServerResponse;
 
 public class Serialisers {
 
-    private static Map<Class<?>, Class<?>> primitivesToWrappers = new HashMap<>();
+    private static final Map<Class<?>, Class<?>> primitivesToWrappers = new HashMap<>();
 
     static {
         primitivesToWrappers.put(boolean.class, Boolean.class);
@@ -730,12 +731,23 @@ public class Serialisers {
         Response response = requestContext.getResponse();
         vertxResponse.setStatusCode(response.getStatus());
         MultiMap vertxHeaders = vertxResponse.headers();
-        MultivaluedMap<String, String> headers = response.getStringHeaders();
-        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+
+        // avoid using getStringHeaders() which does similar things but copies into yet another map
+        MultivaluedMap<String, Object> headers = response.getHeaders();
+        for (Map.Entry<String, List<Object>> entry : headers.entrySet()) {
             if (entry.getValue().size() == 1) {
-                vertxHeaders.set((CharSequence) entry.getKey(), entry.getValue().get(0));
+                Object o = entry.getValue().get(0);
+                if (o instanceof CharSequence) {
+                    vertxHeaders.set(entry.getKey(), (CharSequence) o);
+                } else {
+                    vertxHeaders.set(entry.getKey(), (CharSequence) HeaderUtil.headerToString(o));
+                }
             } else {
-                vertxHeaders.set(entry.getKey(), entry.getValue());
+                List<CharSequence> strValues = new ArrayList<>(entry.getValue().size());
+                for (Object o : entry.getValue()) {
+                    strValues.add(HeaderUtil.headerToString(o));
+                }
+                vertxHeaders.set(entry.getKey(), strValues);
             }
         }
     }

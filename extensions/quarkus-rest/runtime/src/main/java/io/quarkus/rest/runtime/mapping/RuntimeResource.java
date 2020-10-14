@@ -10,6 +10,7 @@ import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
+import io.quarkus.rest.runtime.util.ScoreSystem;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 
 public class RuntimeResource {
@@ -29,13 +30,14 @@ public class RuntimeResource {
     private final Class<?> resourceClass;
     private final LazyMethod lazyMethod;
     private final Map<String, Integer> pathParameterIndexes;
+    private final Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
             List<MediaType> consumes,
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
             Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
-            Map<String, Integer> pathParameterIndexes) {
+            Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.classPath = classPath;
@@ -51,6 +53,7 @@ public class RuntimeResource {
         this.resourceClass = resourceClass;
         this.lazyMethod = lazyMethod;
         this.pathParameterIndexes = pathParameterIndexes;
+        this.score = score;
     }
 
     public RestHandler[] getHandlerChain() {
@@ -116,6 +119,10 @@ public class RuntimeResource {
 
     public Map<String, Integer> getPathParameterIndexes() {
         return pathParameterIndexes;
+    }
+
+    public Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> getScore() {
+        return score;
     }
 
     @Override

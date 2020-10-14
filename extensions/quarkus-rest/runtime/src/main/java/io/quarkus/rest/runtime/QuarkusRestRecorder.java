@@ -26,6 +26,7 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
@@ -114,6 +115,8 @@ import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
+import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
+import io.quarkus.rest.runtime.util.ScoreSystem;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -413,6 +416,7 @@ public class QuarkusRestRecorder {
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             NotFoundExceptionMapper.classMappers = classMappers;
+            ScoreSystem.dumpScores(classMappers);
         }
 
         return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
@@ -636,7 +640,7 @@ public class QuarkusRestRecorder {
                     //so we don't want to add any extra latency into the common case
                     RuntimeResource fake = new RuntimeResource(i.getKey(), entry.getKey(), null, null, Collections.emptyList(),
                             null, null,
-                            new RestHandler[] { mapper }, null, new Class[0], null, false, null, null, null);
+                            new RestHandler[] { mapper }, null, new Class[0], null, false, null, null, null, null);
                     result.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
                 }
             }
@@ -672,6 +676,7 @@ public class QuarkusRestRecorder {
             ParamConverterProviders paramConverterProviders) {
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
         List<RestHandler> abortHandlingChain = new ArrayList<>();
+        MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         List<RestHandler> handlers = new ArrayList<>();
@@ -733,8 +738,10 @@ public class QuarkusRestRecorder {
         if (!locatableResource) {
             if (clazz.isPerRequestResource()) {
                 handlers.add(new PerRequestInstanceHandler(clazz.getFactory()));
+                score.add(ScoreSystem.Category.Resource, ScoreSystem.Diagnostic.ResourcePerRequest);
             } else {
                 handlers.add(new InstanceHandler(clazz.getFactory()));
+                score.add(ScoreSystem.Category.Resource, ScoreSystem.Diagnostic.ResourceSingleton);
             }
         }
 
@@ -771,6 +778,9 @@ public class QuarkusRestRecorder {
         }
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(EXECUTOR_SUPPLIER));
+            score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
+        } else {
+            score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
         }
         handlers.add(new InvocationHandler(invoker, method.isCDIRequestScopeRequired()));
 
@@ -800,6 +810,7 @@ public class QuarkusRestRecorder {
                     //its a wildcard type, makes it hard to determine statically
                     if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
+                        score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                     } else if (rawNonAsyncReturnType != Void.class
                             && rawNonAsyncReturnType != void.class) {
                         List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(rawNonAsyncReturnType,
@@ -809,27 +820,34 @@ public class QuarkusRestRecorder {
                             //this happens when the method returns a generic type (e.g. Object), so there
                             //are more specific mappers that could be invoked depending on the actual return value
                             handlers.add(new FixedProducesHandler(mediaType, dynamicEntityWriter));
+                            score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                         } else if (buildTimeWriters.isEmpty()) {
                             //we could not find any writers that can write a response to this endpoint
                             log.warn("Cannot find any combination of response writers for the method " + clazz.getClassName()
                                     + "#" + method.getName() + "(" + Arrays.toString(method.getParameters()) + ")");
                             handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
+                            score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                         } else if (buildTimeWriters.size() == 1) {
                             //only a single handler that can handle the response
                             //this is a very common case
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
                                     buildTimeWriters.get(0), serialisers)));
+                            score.add(ScoreSystem.Category.Writer,
+                                    ScoreSystem.Diagnostic.WriterBuildTime(buildTimeWriters.get(0)));
                         } else {
                             //multiple writers, we try them in the proper order which had already been created
                             handlers.add(new FixedProducesHandler(mediaType,
                                     new FixedEntityWriterArray(buildTimeWriters.toArray(new MessageBodyWriter[0]),
                                             serialisers)));
+                            score.add(ScoreSystem.Category.Writer,
+                                    ScoreSystem.Diagnostic.WriterBuildTimeMultiple(buildTimeWriters));
                         }
                     }
                 } else {
                     //there are multiple possibilities
                     //we could optimise this more in future
                     handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
+                    score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                 }
             }
         }
@@ -862,7 +880,7 @@ public class QuarkusRestRecorder {
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
-                pathParameterIndexes);
+                pathParameterIndexes, score);
         return runtimeResource;
     }
 

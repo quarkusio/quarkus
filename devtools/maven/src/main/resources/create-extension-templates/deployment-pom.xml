@@ -25,6 +25,11 @@
 [#if !assumeManaged ]            <version>[=r"$"]{project.version}</version>
 [/#if]
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

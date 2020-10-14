@@ -5,6 +5,7 @@ import io.quarkus.panache.common.Parameters
 import org.hibernate.Session
 import org.hibernate.annotations.Filter
 import org.hibernate.annotations.FilterDef
+import java.util.function.Function
 import java.util.stream.Stream
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
@@ -26,6 +27,13 @@ interface PanacheQuery<Entity: Any> {
      * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...).
      */
     fun <NewEntity: Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
+
+    /**
+     * Generates a SELECT clause with the specified properties. The row mapper function is used to build a DTO object for each row of the result.
+     *
+     * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...).
+     */
+    fun <NewEntity: Any> project(properties: List<String>, rowMapper: Function<Array<Any>, NewEntity>): PanacheQuery<NewEntity>
 
     /**
      * Sets the current page.

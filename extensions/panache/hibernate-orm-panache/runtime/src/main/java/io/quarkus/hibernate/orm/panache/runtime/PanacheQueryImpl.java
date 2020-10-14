@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -31,6 +32,11 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <T> PanacheQuery<T> project(Class<T> type) {
         return new PanacheQueryImpl<>(delegate.project(type));
+    }
+
+    @Override
+    public <T> PanacheQuery<T> project(List<String> properties, Function<Object[], T> rowMapper) {
+        return new PanacheQueryImpl<>(delegate.project(properties, rowMapper));
     }
 
     @Override

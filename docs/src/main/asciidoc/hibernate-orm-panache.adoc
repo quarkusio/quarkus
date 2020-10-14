@@ -579,9 +579,11 @@ Every query operation accepts passing parameters by index (`Object...`), or by n
 
 === Query projection
 
-Query projection can be done with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods.
+Query projection can be done with the `project()` methods on the `PanacheQuery` object that is returned by the `find()` methods.
 
-You can use it to restrict which fields will be returned by the database.
+==== Projection class
+
+You can use `project(Class<T>)` to restrict which fields will be returned by the database.
 
 Hibernate will use **DTO projection** and generate a SELECT clause with the attributes from the projection class.
 This is also called **dynamic instantiation** or **constructor expression**, more info can be found on the Hibernate guide:
@@ -617,6 +619,24 @@ The implementation of the `project(Class)` method uses the constructor's paramet
 so the compiler must be configured to store parameter names inside the compiled class.
 This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your pom.xml.
 ====
+
+==== Row mapper
+
+You can also use `project(Function<Object[], T>, String...)` to create a DTO object from each result row by means of a mapper function. A result row is represented by an `Object[]`. 
+
+.Row Mapper Example
+[source,java]
+----
+PanacheQuery<Person> query = Person.find("order by height desc") 
+                .project(result -> {
+                    User user = new User();
+                    user.name = result[0].toString();
+                    user.surname = result[1].toString();
+                    return user;
+                }, "name", "surname");
+List<User> users = query.list(); <1>
+----
+<1> When a query is perfomed the mapper function is applied to every result row to build the final result list.
 
 == Multiple Persistence Units
 

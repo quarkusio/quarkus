@@ -2,11 +2,14 @@ package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -36,6 +39,8 @@ public class CommonPanacheQueryImpl<Entity> {
         }
     };
 
+    private static final String SELECT = "select";
+
     private Object paramsArrayOrMap;
     private String query;
     protected String countQuery;
@@ -52,6 +57,8 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private Map<String, Map<String, Object>> filters;
 
+    private Function<Object[], Entity> rowMapper;
+
     public CommonPanacheQueryImpl(EntityManager em, String query, String orderBy, Object paramsArrayOrMap) {
         this.em = em;
         this.query = query;
@@ -59,7 +66,8 @@ public class CommonPanacheQueryImpl<Entity> {
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
-    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery) {
+    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery,
+            Function<Object[], Entity> rowMapper) {
         this.em = previousQuery.em;
         this.query = newQueryString;
         this.countQuery = countQuery;
@@ -71,6 +79,7 @@ public class CommonPanacheQueryImpl<Entity> {
         this.lockModeType = previousQuery.lockModeType;
         this.hints = previousQuery.hints;
         this.filters = previousQuery.filters;
+        this.rowMapper = rowMapper;
     }
 
     // Builder
@@ -79,7 +88,9 @@ public class CommonPanacheQueryImpl<Entity> {
         if (PanacheJpaUtil.isNamedQuery(query)) {
             throw new PanacheQueryException("Unable to perform a projection on a named query");
         }
-
+        if (query != null && query.toLowerCase().startsWith(SELECT)) {
+            throw new PanacheQueryException("Cannot perform projection on a query with an existing select clause: " + query);
+        }
         // We use the first constructor that we found and use the parameter names,
         // so the projection class must have only one constructor,
         // and the application must be built with parameter names.
@@ -87,7 +98,7 @@ public class CommonPanacheQueryImpl<Entity> {
         Constructor<?> constructor = type.getDeclaredConstructors()[0];
 
         // build select clause with a constructor expression
-        StringBuilder select = new StringBuilder("SELECT new ").append(type.getName()).append(" (");
+        StringBuilder select = new StringBuilder(SELECT).append(" new ").append(type.getName()).append(" (");
         int selectInitialLength = select.length();
         for (Parameter parameter : constructor.getParameters()) {
             if (!parameter.isNamePresent()) {
@@ -103,7 +114,32 @@ public class CommonPanacheQueryImpl<Entity> {
         }
         select.append(") ");
 
-        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
+        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query, null);
+    }
+
+    public <T> CommonPanacheQueryImpl<T> project(List<String> properties, Function<Object[], T> rowMapper) {
+        if (PanacheJpaUtil.isNamedQuery(query)) {
+            throw new PanacheQueryException("Unable to perform a select on a named query");
+        }
+        if (query != null && query.toLowerCase().startsWith(SELECT)) {
+            throw new PanacheQueryException("Cannot perform projection on a query with an existing select clause: " + query);
+        }
+        if (properties.isEmpty()) {
+            throw new PanacheQueryException("At least one property reference must be set");
+        }
+        if (rowMapper == null) {
+            throw new PanacheQueryException("A row mapper must be set");
+        }
+        StringBuilder select = new StringBuilder(SELECT).append(" ");
+        for (Iterator<String> it = properties.iterator(); it.hasNext();) {
+            select.append(it.next());
+            if (it.hasNext()) {
+                select.append(",");
+            } else {
+                select.append(" ");
+            }
+        }
+        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query, rowMapper);
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {
@@ -223,11 +259,12 @@ public class CommonPanacheQueryImpl<Entity> {
         return PanacheJpaUtil.getCountQuery(selectQuery);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked" })
     public <T extends Entity> List<T> list() {
         Query jpaQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            return jpaQuery.getResultList();
+            List<T> results = jpaQuery.getResultList();
+            return mapRows(results);
         }
     }
 
@@ -235,16 +272,22 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T extends Entity> Stream<T> stream() {
         Query jpaQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
+            if (rowMapper != null) {
+                return jpaQuery.getResultStream().map(r -> mapRow((T) r));
+            }
             return jpaQuery.getResultStream();
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Entity> T firstResult() {
         Query jpaQuery = createQuery(1);
         try (NonThrowingCloseable c = applyFilters()) {
-            @SuppressWarnings("unchecked")
-            List<T> list = jpaQuery.getResultList();
-            return list.isEmpty() ? null : list.get(0);
+            List<T> results = jpaQuery.getResultList();
+            if (results.isEmpty()) {
+                return null;
+            }
+            return mapRow(results.get(0));
         }
     }
 
@@ -256,7 +299,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T extends Entity> T singleResult() {
         Query jpaQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            return (T) jpaQuery.getSingleResult();
+            return mapRow((T) jpaQuery.getSingleResult());
         }
     }
 
@@ -268,8 +311,7 @@ public class CommonPanacheQueryImpl<Entity> {
             if (list.size() > 1) {
                 throw new NonUniqueResultException();
             }
-
-            return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+            return list.isEmpty() ? Optional.empty() : Optional.of(mapRow(list.get(0)));
         }
     }
 
@@ -359,5 +401,25 @@ public class CommonPanacheQueryImpl<Entity> {
                 }
             }
         };
+    }
+
+    private <T extends Entity> List<T> mapRows(List<T> results) {
+        if (rowMapper != null) {
+            List<T> mappedResults = new ArrayList<>(results.size());
+            for (T result : results) {
+                mappedResults.add((mapRow(result)));
+            }
+            results = mappedResults;
+        }
+        return results;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Entity> T mapRow(T result) {
+        if (rowMapper != null) {
+            Object[] row = result.getClass().isArray() ? (Object[]) result : new Object[] { result };
+            result = (T) rowMapper.apply(row);
+        }
+        return result;
     }
 }

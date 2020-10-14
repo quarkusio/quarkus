@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.panache;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.persistence.LockModeType;
@@ -37,8 +38,22 @@ public interface PanacheQuery<Entity> {
      * retrieved from the database.
      *
      * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...).
+     * @see #project(Function, String...)
      */
     public <T> PanacheQuery<T> project(Class<T> type);
+
+    /**
+     * Generates a SELECT clause with the specified properties.
+     * <p>
+     * The row mapper function is used to build a DTO object for each row of the result. A result row
+     * is represented by {@code Object[]}.
+     * 
+     * @param properties
+     * @param rowMapper Maps a result row to a DTO object.
+     * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...).
+     * @see #project(Class)
+     */
+    public <T> PanacheQuery<T> project(List<String> properties, Function<Object[], T> rowMapper);
 
     /**
      * Sets the current page.

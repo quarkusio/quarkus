@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.panache.kotlin.runtime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -33,6 +34,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <NewEntity> PanacheQuery<NewEntity> project(Class<NewEntity> type) {
         return new PanacheQueryImpl<>(delegate.project(type));
+    }
+
+    @NotNull
+    @Override
+    public <NewEntity> PanacheQuery<NewEntity> project(List<String> properties, Function<Object[], NewEntity> rowMapper) {
+        return new PanacheQueryImpl<>(delegate.project(properties, rowMapper));
     }
 
     @NotNull

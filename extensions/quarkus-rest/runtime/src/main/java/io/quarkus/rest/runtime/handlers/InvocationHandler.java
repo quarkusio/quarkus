@@ -5,9 +5,11 @@ import io.quarkus.rest.runtime.spi.EndpointInvoker;
 
 public class InvocationHandler implements RestHandler {
     private final EndpointInvoker invoker;
+    private final boolean requireCDIRequestScope;
 
-    public InvocationHandler(EndpointInvoker invoker) {
+    public InvocationHandler(EndpointInvoker invoker, boolean requireCDIRequestScope) {
         this.invoker = invoker;
+        this.requireCDIRequestScope = requireCDIRequestScope;
     }
 
     @Override
@@ -23,7 +25,9 @@ public class InvocationHandler implements RestHandler {
         if (async) {
             requestContext.suspend();
         }
-        requestContext.requireCDIRequestScope();
+        if (requireCDIRequestScope) {
+            requestContext.requireCDIRequestScope();
+        }
         try {
             Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
             if (!async) {

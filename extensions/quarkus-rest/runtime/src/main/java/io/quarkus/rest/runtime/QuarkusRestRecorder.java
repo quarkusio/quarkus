@@ -772,7 +772,7 @@ public class QuarkusRestRecorder {
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(EXECUTOR_SUPPLIER));
         }
-        handlers.add(new InvocationHandler(invoker));
+        handlers.add(new InvocationHandler(invoker, method.isCDIRequestScopeRequired()));
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
         Type nonAsyncReturnType = getNonAsyncReturnType(returnType);

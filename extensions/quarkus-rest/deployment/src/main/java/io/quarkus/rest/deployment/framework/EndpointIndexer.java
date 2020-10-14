@@ -39,6 +39,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_LONG;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRODUCES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REQUIRE_CDI_REQUEST_SCOPE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
@@ -561,6 +562,16 @@ public class EndpointIndexer {
                     blocking = true;
                 }
             }
+            boolean cdiRequestScopeRequired = true;
+            AnnotationInstance cdiRequestScopeRequiredAnnotation = getInheritableAnnotation(info, REQUIRE_CDI_REQUEST_SCOPE);
+            if (cdiRequestScopeRequiredAnnotation != null) {
+                AnnotationValue value = cdiRequestScopeRequiredAnnotation.value();
+                if (value != null) {
+                    cdiRequestScopeRequired = value.asBoolean();
+                } else {
+                    cdiRequestScopeRequired = true;
+                }
+            }
 
             ResourceMethod method = new ResourceMethod()
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
@@ -573,6 +584,7 @@ public class EndpointIndexer {
                     .setSuspended(suspended)
                     .setSse(sse)
                     .setFormParamRequired(formParamRequired)
+                    .setCDIRequestScopeRequired(cdiRequestScopeRequired)
                     .setParameters(methodParameters)
                     .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?

@@ -54,6 +54,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.rest.Blocking;
+import io.quarkus.rest.RequireCDIRequestScope;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -105,6 +106,7 @@ public final class QuarkusRestDotNames {
     public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
+    public static final DotName REQUIRE_CDI_REQUEST_SCOPE = DotName.createSimple(RequireCDIRequestScope.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 

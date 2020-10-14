@@ -17,6 +17,7 @@ import io.quarkus.platform.tools.ToolsUtils;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -44,6 +45,7 @@ public class CreateProject {
     private final Path projectDirPath;
     private final QuarkusPlatformDescriptor platformDescr;
     private String javaTarget;
+    private Set<String> extensions = new HashSet<>();
     private BuildTool buildTool = BuildTool.MAVEN;
 
     private Map<String, Object> values = new HashMap<>();
@@ -88,6 +90,11 @@ public class CreateProject {
         return this;
     }
 
+    public CreateProject resourcePath(String resourcePath) {
+        setValue(RESOURCE_PATH, resourcePath);
+        return this;
+    }
+
     public CreateProject className(String className) {
         if (className == null) {
             return this;
@@ -100,10 +107,10 @@ public class CreateProject {
     }
 
     public CreateProject extensions(Set<String> extensions) {
-        if (isSpringStyle(extensions)) {
-            setValue(IS_SPRING, true);
+        if (extensions == null) {
+            return this;
         }
-        setValue(EXTENSIONS, extensions);
+        this.extensions.addAll(extensions);
         return this;
     }
 
@@ -176,7 +183,15 @@ public class CreateProject {
         } else {
             setValue(JAVA_TARGET, "11");
         }
-
+        if (containsSpringWeb(extensions)) {
+            setValue(IS_SPRING, true);
+            if (containsRESTEasy(extensions)) {
+                values.remove(CLASS_NAME);
+                values.remove(PACKAGE_NAME);
+                values.remove(RESOURCE_PATH);
+            }
+        }
+        setValue(EXTENSIONS, extensions);
         final QuarkusProject quarkusProject = QuarkusProject.of(projectDirPath, platformDescr, buildTool);
         final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, values);
         if (legacyCodegen) {
@@ -194,7 +209,11 @@ public class CreateProject {
         return sourceType.orElse(SourceType.JAVA);
     }
 
-    private static boolean isSpringStyle(Collection<String> extensions) {
-        return extensions != null && extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"));
+    private static boolean containsSpringWeb(Collection<String> extensions) {
+        return extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"));
+    }
+
+    private static boolean containsRESTEasy(Collection<String> extensions) {
+        return extensions.isEmpty() || extensions.stream().anyMatch(e -> e.toLowerCase().contains("resteasy"));
     }
 }

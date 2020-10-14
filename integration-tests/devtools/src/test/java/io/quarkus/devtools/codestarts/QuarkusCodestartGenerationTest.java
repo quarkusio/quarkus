@@ -1,17 +1,15 @@
 package io.quarkus.devtools.codestarts;
 
+import static io.quarkus.devtools.ProjectTestUtil.checkContains;
 import static io.quarkus.devtools.codestarts.QuarkusCodestartData.DataKey.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
-import org.assertj.core.util.Files;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -538,10 +536,6 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve("settings.gradle.kts"))
                 .exists()
                 .satisfies(checkContains("rootProject.name=\"test-codestart\""));
-    }
-
-    private Consumer<Path> checkContains(String s) {
-        return (p) -> assertThat(Files.contentOf(p.toFile(), StandardCharsets.UTF_8)).contains(s);
     }
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {

@@ -173,6 +173,9 @@ public class ExecuteUtil {
             return SOFTWARE;
         }
         String[] newArgs = args;
+        if (System.getProperties().containsKey("maven.repo.local")) {
+            newArgs = prependArray("-Dmaven.repo.local=" + System.getProperty("maven.repo.local"), newArgs);
+        }
         if (cli.isShowErrors()) {
             newArgs = prependArray("--full-stacktrace", newArgs);
         }

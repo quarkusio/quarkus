@@ -4,7 +4,6 @@ import io.quarkus.devtools.codestarts.CodestartStructureException;
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,7 @@ final class ExecutableFileStrategyHandler implements CodestartFileStrategyHandle
                     "Multiple files found for path with executable FileStrategy: " + relativePath);
         }
         createDirectories(targetPath);
-        Files.write(targetPath, codestartFiles.get(0).getContent().getBytes());
+        writeFile(targetPath, codestartFiles.get(0).getContent());
         final File file = targetPath.toFile();
         file.setExecutable(true, false);
         file.setReadable(true, false);

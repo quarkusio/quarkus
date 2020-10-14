@@ -390,7 +390,7 @@ public class Serialisers {
         readers.add(entityClass, reader);
     }
 
-    public List<ResourceWriter> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType, String... produces) {
+    public List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType, String... produces) {
         List<MediaType> type = new ArrayList<>();
         for (String i : produces) {
             type.add(MediaType.valueOf(i));
@@ -398,7 +398,8 @@ public class Serialisers {
         return findBuildTimeWriters(entityType, runtimeType, type);
     }
 
-    private List<ResourceWriter> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType, List<MediaType> produces) {
+    private List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType,
+            List<MediaType> produces) {
         if (Response.class.isAssignableFrom(entityType)) {
             return Collections.emptyList();
         }
@@ -426,7 +427,7 @@ public class Serialisers {
             }
 
         }
-        return findResourceWriters(writers, klass, produces, runtimeType);
+        return toMessageBodyWriters(findResourceWriters(writers, klass, produces, runtimeType));
     }
 
     public MultivaluedMap<Class<?>, ResourceWriter> getWriters() {
@@ -459,12 +460,7 @@ public class Serialisers {
             writers = this.writers;
         }
 
-        List<ResourceWriter> resourceWriters = findResourceWriters(writers, klass, mt, runtimeType);
-        List<MessageBodyWriter<?>> ret = new ArrayList<>(resourceWriters.size());
-        for (ResourceWriter resourceWriter : resourceWriters) {
-            ret.add(resourceWriter.getInstance());
-        }
-        return ret;
+        return toMessageBodyWriters(findResourceWriters(writers, klass, mt, runtimeType));
     }
 
     private List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers, Class<?> klass,
@@ -498,6 +494,22 @@ public class Serialisers {
                 klass = klass.getSuperclass();
         } while (klass != null);
 
+        return ret;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private List<MessageBodyWriter<?>> toMessageBodyWriters(List<ResourceWriter> resourceWriters) {
+        List<MessageBodyWriter<?>> ret = new ArrayList<>(resourceWriters.size());
+        Set<Class<? extends MessageBodyWriter>> alreadySeenClasses = new HashSet<>(resourceWriters.size());
+        for (ResourceWriter resourceWriter : resourceWriters) {
+            MessageBodyWriter<?> instance = resourceWriter.getInstance();
+            Class<? extends MessageBodyWriter> instanceClass = instance.getClass();
+            if (alreadySeenClasses.contains(instanceClass)) {
+                continue;
+            }
+            ret.add(instance);
+            alreadySeenClasses.add(instanceClass);
+        }
         return ret;
     }
 

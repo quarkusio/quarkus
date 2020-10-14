@@ -802,7 +802,7 @@ public class QuarkusRestRecorder {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                     } else if (rawNonAsyncReturnType != Void.class
                             && rawNonAsyncReturnType != void.class) {
-                        List<ResourceWriter> buildTimeWriters = serialisers.findBuildTimeWriters(rawNonAsyncReturnType,
+                        List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(rawNonAsyncReturnType,
                                 RuntimeType.SERVER, method.getProduces());
                         if (buildTimeWriters == null) {
                             //if this is null this means that the type cannot be resolved at build time
@@ -818,15 +818,12 @@ public class QuarkusRestRecorder {
                             //only a single handler that can handle the response
                             //this is a very common case
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
-                                    buildTimeWriters.get(0).getInstance(), serialisers)));
+                                    buildTimeWriters.get(0), serialisers)));
                         } else {
                             //multiple writers, we try them in the proper order which had already been created
-                            List<MessageBodyWriter<?>> list = new ArrayList<>();
-                            for (ResourceWriter i : buildTimeWriters) {
-                                list.add(i.getInstance());
-                            }
                             handlers.add(new FixedProducesHandler(mediaType,
-                                    new FixedEntityWriterArray(list.toArray(new MessageBodyWriter[0]), serialisers)));
+                                    new FixedEntityWriterArray(buildTimeWriters.toArray(new MessageBodyWriter[0]),
+                                            serialisers)));
                         }
                     }
                 } else {

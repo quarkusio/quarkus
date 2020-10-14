@@ -16,7 +16,6 @@ import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RequestMapper.RequestPath;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
-import io.quarkus.rest.runtime.model.ResourceWriter;
 
 public class ScoreSystem {
 
@@ -50,6 +49,7 @@ public class ScoreSystem {
         }
 
         public static Diagnostic WriterRunTime = new Diagnostic("Run time writers required", 0);
+        public static Diagnostic WriterNotRequired = new Diagnostic("No writers required", 100);
 
     }
 
@@ -60,6 +60,8 @@ public class ScoreSystem {
     }
 
     public static void dumpScores(List<RequestPath<InitialMatch>> classMappers) {
+        int overallScore = 0;
+        int overallTotal = 0;
         for (RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch> classMapper : classMappers) {
             String template = classMapper.template.template;
             QuarkusRestInitialHandler.InitialMatch initialMatch = classMapper.value;
@@ -119,21 +121,26 @@ public class ScoreSystem {
                         System.err.println(" Consumes: " + consumes);
                     }
                     System.err.println(" Diagnostics:");
-                    int overall = 0;
+                    int score = 0;
                     int total = 0;
-                    for (Entry<Category, List<Diagnostic>> score : runtimeResource.getScore().entrySet()) {
-                        System.err.println("  " + score.getKey() + ": " + score.getValue());
-                        for (Diagnostic diagnostic : score.getValue()) {
-                            overall += diagnostic.percentageScore;
+                    for (Entry<Category, List<Diagnostic>> scoreEntry : runtimeResource.getScore().entrySet()) {
+                        System.err.println("  " + scoreEntry.getKey() + ": " + scoreEntry.getValue());
+                        for (Diagnostic diagnostic : scoreEntry.getValue()) {
+                            score += diagnostic.percentageScore;
                         }
                         total += 100;
                     }
                     // let's bring it to 100
-                    overall = (int) Math.floor(((float) overall / (float) total) * 100f);
-                    System.err.println(" Score: " + overall + "/100");
+                    score = (int) Math.floor(((float) score / (float) total) * 100f);
+                    overallScore += score;
+                    overallTotal += 100;
+                    System.err.println(" Score: " + score + "/100");
                 }
             }
         }
+        // let's bring it to 100
+        overallScore = (int) Math.floor(((float) overallScore / (float) overallTotal) * 100f);
+        System.err.println("Overall Score: " + overallScore + "/100");
     }
 
 }

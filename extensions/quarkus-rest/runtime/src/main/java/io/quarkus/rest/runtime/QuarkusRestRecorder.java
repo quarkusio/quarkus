@@ -846,6 +846,8 @@ public class QuarkusRestRecorder {
                             score.add(ScoreSystem.Category.Writer,
                                     ScoreSystem.Diagnostic.WriterBuildTimeMultiple(buildTimeWriters));
                         }
+                    } else {
+                        score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterNotRequired);
                     }
                 } else {
                     //there are multiple possibilities
@@ -853,7 +855,11 @@ public class QuarkusRestRecorder {
                     handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                     score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                 }
+            } else {
+                score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
             }
+        } else {
+            score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
         }
 
         //the response filter handlers, they need to be added to both the abort and

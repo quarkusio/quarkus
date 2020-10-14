@@ -85,7 +85,7 @@ public final class CreateUtils {
                 DefaultArtifactVersion pluginVersion = new DefaultArtifactVersion(baseVersion);
                 int majorVer = pluginVersion.getMajorVersion();
                 int minorVer = pluginVersion.getMinorVersion();
-                version = "[" + majorVer + "." + minorVer + "-snapshot, " + majorVer + "." + (minorVer + 1) + ")";
+                version = "[" + majorVer + "." + minorVer + "-alpha, " + majorVer + "." + (minorVer + 1) + "-alpha)";
             }
 
         }

@@ -22,11 +22,11 @@ import javax.ws.rs.core.Response.StatusType;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
-public class QuarkusRestContainerResponseContext implements ContainerResponseContext {
+public class QuarkusRestContainerResponseContextImpl implements ContainerResponseContext {
 
     private final QuarkusRestRequestContext context;
 
-    public QuarkusRestContainerResponseContext(QuarkusRestRequestContext requestContext) {
+    public QuarkusRestContainerResponseContextImpl(QuarkusRestRequestContext requestContext) {
         this.context = requestContext;
     }
 

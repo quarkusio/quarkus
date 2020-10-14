@@ -6,6 +6,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -81,8 +82,8 @@ import io.quarkus.rest.runtime.handlers.QuarkusRestInitialHandler;
 import io.quarkus.rest.runtime.handlers.ReadBodyHandler;
 import io.quarkus.rest.runtime.handlers.RequestDeserializeHandler;
 import io.quarkus.rest.runtime.handlers.ResourceLocatorHandler;
-import io.quarkus.rest.runtime.handlers.ResourceRequestInterceptorHandler;
-import io.quarkus.rest.runtime.handlers.ResourceResponseInterceptorHandler;
+import io.quarkus.rest.runtime.handlers.ResourceRequestFilterHandler;
+import io.quarkus.rest.runtime.handlers.ResourceResponseFilterHandler;
 import io.quarkus.rest.runtime.handlers.ResponseHandler;
 import io.quarkus.rest.runtime.handlers.ResponseWriterHandler;
 import io.quarkus.rest.runtime.handlers.RestHandler;
@@ -230,10 +231,16 @@ public class QuarkusRestRecorder {
         Map<ResourceWriterInterceptor, WriterInterceptor> nameWriterInterceptorsMap = createWriterInterceptorInstances(
                 interceptors.getNameResourceWriterInterceptors(), shutdownContext);
 
-        ResourceResponseInterceptorHandler globalResourceResponseInterceptorHandler = new ResourceResponseInterceptorHandler(
-                globalResponseInterceptorsMap.values());
-        ResourceRequestInterceptorHandler globalRequestInterceptorsHandler = new ResourceRequestInterceptorHandler(
-                globalRequestInterceptorsMap.values(), false);
+        Collection<ContainerResponseFilter> responseFilters = globalResponseInterceptorsMap.values();
+        List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers = new ArrayList<>(responseFilters.size());
+        for (ContainerResponseFilter responseFilter : responseFilters) {
+            globalResponseInterceptorHandlers.add(new ResourceResponseFilterHandler(responseFilter));
+        }
+        Collection<ContainerRequestFilter> requestFilters = globalRequestInterceptorsMap.values();
+        List<ResourceRequestFilterHandler> globalRequestInterceptorHandlers = new ArrayList<>(requestFilters.size());
+        for (ContainerRequestFilter requestFilter : requestFilters) {
+            globalRequestInterceptorHandlers.add(new ResourceRequestFilterHandler(requestFilter, false));
+        }
 
         InterceptorHandler globalInterceptorHandler = null;
         if (!globalReaderInterceptorsMap.isEmpty() ||
@@ -269,7 +276,7 @@ public class QuarkusRestRecorder {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, quarkusRestConfig,
                         globalRequestInterceptorsMap,
                         globalResponseInterceptorsMap,
-                        globalRequestInterceptorsHandler, globalResourceResponseInterceptorHandler,
+                        globalRequestInterceptorHandlers, globalResponseInterceptorHandlers,
                         nameRequestInterceptorsMap, nameResponseInterceptorsMap,
                         Collections.emptyMap(), Collections.emptyMap(),
                         globalReaderInterceptorsMap,
@@ -341,7 +348,7 @@ public class QuarkusRestRecorder {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, quarkusRestConfig,
                         globalRequestInterceptorsMap,
                         globalResponseInterceptorsMap,
-                        globalRequestInterceptorsHandler, globalResourceResponseInterceptorHandler, nameRequestInterceptorsMap,
+                        globalRequestInterceptorHandlers, globalResponseInterceptorHandlers, nameRequestInterceptorsMap,
                         nameResponseInterceptorsMap, methodSpecificRequestInterceptorsMap,
                         methodSpecificResponseInterceptorsMap,
                         globalReaderInterceptorsMap,
@@ -384,7 +391,7 @@ public class QuarkusRestRecorder {
         }
         abortHandlingChain.add(new ExceptionHandler());
         if (!interceptors.getGlobalResponseInterceptors().isEmpty()) {
-            abortHandlingChain.add(globalResourceResponseInterceptorHandler);
+            abortHandlingChain.addAll(globalResponseInterceptorHandlers);
         }
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
@@ -409,11 +416,14 @@ public class QuarkusRestRecorder {
         currentDeployment = deployment;
 
         //pre matching interceptors are run first
-        ResourceRequestInterceptorHandler preMatchHandler = null;
+        List<ResourceRequestFilterHandler> preMatchHandlers = null;
         if (!interceptors.getResourcePreMatchRequestInterceptors().isEmpty()) {
             Map<ResourceRequestInterceptor, ContainerRequestFilter> preMatchContainerRequestFilters = createContainerRequestFilterInstances(
                     interceptors.getResourcePreMatchRequestInterceptors(), shutdownContext);
-            preMatchHandler = new ResourceRequestInterceptorHandler(preMatchContainerRequestFilters.values(), true);
+            preMatchHandlers = new ArrayList<>(preMatchContainerRequestFilters.size());
+            for (ContainerRequestFilter containerRequestFilter : preMatchContainerRequestFilters.values()) {
+                preMatchHandlers.add(new ResourceRequestFilterHandler(containerRequestFilter, true));
+            }
         }
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
@@ -421,7 +431,7 @@ public class QuarkusRestRecorder {
             RuntimeResourceVisitor.visitRuntimeResources(classMappers, ScoreSystem.ScoreVisitor);
         }
 
-        return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
+        return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandlers);
     }
 
     // TODO: don't use reflection to instantiate Application
@@ -659,8 +669,8 @@ public class QuarkusRestRecorder {
             QuarkusRestConfig quarkusRestConfig,
             Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap,
             Map<ResourceResponseInterceptor, ContainerResponseFilter> globalResponseInterceptorsMap,
-            ResourceRequestInterceptorHandler globalRequestInterceptorsHandler,
-            ResourceResponseInterceptorHandler globalResponseInterceptorHandler,
+            List<ResourceRequestFilterHandler> globalRequestInterceptorHandlers,
+            List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers,
             Map<ResourceRequestInterceptor, ContainerRequestFilter> nameRequestInterceptorsMap,
             Map<ResourceResponseInterceptor, ContainerResponseFilter> nameResponseInterceptorsMap,
             Map<ResourceRequestInterceptor, ContainerRequestFilter> methodSpecificRequestInterceptorsMap,
@@ -700,7 +710,7 @@ public class QuarkusRestRecorder {
         //which we also want in the abort handler chain
         abortHandlingChain.addAll(handlers);
 
-        setupRequestFilterHandler(globalRequestInterceptorsMap, globalRequestInterceptorsHandler, nameRequestInterceptorsMap,
+        setupRequestFilterHandler(globalRequestInterceptorsMap, globalRequestInterceptorHandlers, nameRequestInterceptorsMap,
                 methodSpecificRequestInterceptorsMap, method, handlers);
 
         Class<?>[] parameterTypes = new Class[method.getParameters().length];
@@ -878,7 +888,7 @@ public class QuarkusRestRecorder {
         } else {
             handlers.add(new ResponseHandler());
 
-            setupResponseFilterHandler(globalResponseInterceptorsMap, globalResponseInterceptorHandler,
+            setupResponseFilterHandler(globalResponseInterceptorsMap, globalResponseInterceptorHandlers,
                     nameResponseInterceptorsMap, methodSpecificResponseInterceptorsMap, method, responseFilterHandlers);
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
@@ -963,20 +973,20 @@ public class QuarkusRestRecorder {
     }
 
     private void setupRequestFilterHandler(Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap,
-            ResourceRequestInterceptorHandler globalRequestInterceptorsHandler,
+            List<ResourceRequestFilterHandler> globalRequestInterceptorsHandlers,
             Map<ResourceRequestInterceptor, ContainerRequestFilter> nameRequestInterceptorsMap,
             Map<ResourceRequestInterceptor, ContainerRequestFilter> methodSpecificRequestInterceptorsMap, ResourceMethod method,
             List<RestHandler> handlers) {
         // according to the spec, global request filters apply everywhere
         // and named request filters only apply to methods with exactly matching "qualifiers"
         if (method.getNameBindingNames().isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
-            if (!globalRequestInterceptorsHandler.isEmpty()) {
-                handlers.add(globalRequestInterceptorsHandler);
+            if (!globalRequestInterceptorsHandlers.isEmpty()) {
+                handlers.addAll(globalRequestInterceptorsHandlers);
             }
         } else if (nameRequestInterceptorsMap.isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
             // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            if (!globalRequestInterceptorsHandler.isEmpty()) {
-                handlers.add(globalRequestInterceptorsHandler);
+            if (!globalRequestInterceptorsHandlers.isEmpty()) {
+                handlers.addAll(globalRequestInterceptorsHandlers);
             }
         } else {
             // TODO: refactor to use the TreeMap procedure used above for interceptors
@@ -993,7 +1003,6 @@ public class QuarkusRestRecorder {
             }
             // since we have now mixed global, name and method specific interceptors, we need to sort
             Collections.sort(interceptorsToUse);
-            List<ContainerRequestFilter> filtersToUse = new ArrayList<>(interceptorsToUse.size());
             for (ResourceRequestInterceptor interceptor : interceptorsToUse) {
                 Map<ResourceRequestInterceptor, ContainerRequestFilter> properMap;
                 if (interceptor.getNameBindingNames().isEmpty()) {
@@ -1005,28 +1014,27 @@ public class QuarkusRestRecorder {
                 } else {
                     properMap = nameRequestInterceptorsMap;
                 }
-                filtersToUse.add(properMap.get(interceptor));
+                handlers.add(new ResourceRequestFilterHandler(properMap.get(interceptor), false));
             }
-            handlers.add(new ResourceRequestInterceptorHandler(filtersToUse, false));
         }
     }
 
     private void setupResponseFilterHandler(
             Map<ResourceResponseInterceptor, ContainerResponseFilter> globalResponseInterceptorsMap,
-            ResourceResponseInterceptorHandler globalResponseInterceptorHandler,
+            List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers,
             Map<ResourceResponseInterceptor, ContainerResponseFilter> nameResponseInterceptorsMap,
             Map<ResourceResponseInterceptor, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
             ResourceMethod method, List<RestHandler> responseFilterHandlers) {
         // according to the spec, global request filters apply everywhere
         // and named request filters only apply to methods with exactly matching "qualifiers"
         if (method.getNameBindingNames().isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
-            if (!globalResponseInterceptorHandler.isEmpty()) {
-                responseFilterHandlers.add(globalResponseInterceptorHandler);
+            if (!globalResponseInterceptorHandlers.isEmpty()) {
+                responseFilterHandlers.addAll(globalResponseInterceptorHandlers);
             }
         } else if (nameResponseInterceptorsMap.isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
             // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            if (!globalResponseInterceptorHandler.isEmpty()) {
-                responseFilterHandlers.add(globalResponseInterceptorHandler);
+            if (!globalResponseInterceptorHandlers.isEmpty()) {
+                responseFilterHandlers.addAll(globalResponseInterceptorHandlers);
             }
         } else {
             List<ResourceResponseInterceptor> interceptorsToUse = new ArrayList<>(
@@ -1042,7 +1050,6 @@ public class QuarkusRestRecorder {
             }
             // since we have now mixed global, name and method specific interceptors, we need to sort
             Collections.sort(interceptorsToUse);
-            List<ContainerResponseFilter> filtersToUse = new ArrayList<>(interceptorsToUse.size());
             for (ResourceResponseInterceptor interceptor : interceptorsToUse) {
                 Map<ResourceResponseInterceptor, ContainerResponseFilter> properMap;
                 if (interceptor.getNameBindingNames().isEmpty()) {
@@ -1054,9 +1061,8 @@ public class QuarkusRestRecorder {
                 } else {
                     properMap = nameResponseInterceptorsMap;
                 }
-                filtersToUse.add(properMap.get(interceptor));
+                responseFilterHandlers.add(new ResourceResponseFilterHandler(properMap.get(interceptor)));
             }
-            responseFilterHandlers.add(new ResourceResponseInterceptorHandler(filtersToUse));
         }
     }
 

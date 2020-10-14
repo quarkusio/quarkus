@@ -19,14 +19,14 @@ import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
-public class QuarkusRestContainerRequestContext implements ContainerRequestContext {
+public class QuarkusRestContainerRequestContextImpl implements ContainerRequestContext {
 
     private QuarkusRestRequestContext context;
     private boolean aborted;
     private boolean preMatch;
     private boolean response;
 
-    public QuarkusRestContainerRequestContext(QuarkusRestRequestContext requestContext) {
+    public QuarkusRestContainerRequestContextImpl(QuarkusRestRequestContext requestContext) {
         this.context = requestContext;
     }
 
@@ -173,7 +173,7 @@ public class QuarkusRestContainerRequestContext implements ContainerRequestConte
         return preMatch;
     }
 
-    public QuarkusRestContainerRequestContext setPreMatch(boolean preMatch) {
+    public QuarkusRestContainerRequestContextImpl setPreMatch(boolean preMatch) {
         this.preMatch = preMatch;
         return this;
     }
@@ -190,7 +190,7 @@ public class QuarkusRestContainerRequestContext implements ContainerRequestConte
         return response;
     }
 
-    public QuarkusRestContainerRequestContext setResponse(boolean response) {
+    public QuarkusRestContainerRequestContextImpl setResponse(boolean response) {
         this.response = response;
         return this;
     }

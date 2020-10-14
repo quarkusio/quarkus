@@ -9,8 +9,8 @@ language:
       buildtool:
         cmd:
           dev: ./gradlew quarkusDev
-          package: ./gradlew quarkusBuild
-          package-uberjar: ./gradlew quarkusBuild --uber-jar
+          package: ./gradlew build
+          package-uberjar: ./gradlew build -Dquarkus.package.type=uber-jar
           package-native: ./gradlew build -Dquarkus.package.type=native
           package-native-container: ./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
           build-ci: ./gradlew build

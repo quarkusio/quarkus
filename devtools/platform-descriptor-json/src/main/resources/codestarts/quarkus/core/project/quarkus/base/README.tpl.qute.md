@@ -19,7 +19,8 @@ The application can be packaged using:
 ```
 It produces the `{project.artifact-id}-{project.version}-runner.jar` file in the `/{buildtool.build-dir}` directory.
 Be aware that it’s not an _über-jar_ as the dependencies are copied into the `{buildtool.build-dir}/lib` directory.
-If you want to build an _über-jar_, just add the `--uber-jar` option to the command line:
+
+If you want to build an _über-jar_, execute the following command:
 ```shell script
 {buildtool.cmd.package-uberjar}
 ```

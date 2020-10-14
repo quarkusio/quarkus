@@ -195,7 +195,7 @@
         <protobuf-java.version>3.13.0</protobuf-java.version>
         <protoc.version>3.13.0</protoc.version>
 
-        <picocli.version>4.5.1</picocli.version>
+        <picocli.version>4.5.2</picocli.version>
         <org.eclipse.sisu.inject.version>0.3.4</org.eclipse.sisu.inject.version>
         <google-cloud-functions.version>1.0.1</google-cloud-functions.version>
         <commons-compress.version>1.20</commons-compress.version>

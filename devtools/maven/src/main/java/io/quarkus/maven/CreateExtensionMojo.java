@@ -516,7 +516,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * Indicates whether to generate a unit test class for the extension
      *
-     * @since 1.3.0
+     * @since 1.10.0
      */
     @Parameter(property = "quarkus.generateUnitTest", defaultValue = "true")
     boolean generateUnitTest;
@@ -524,7 +524,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     /**
      * Indicates whether to generate a dev mode unit test class for the extension
      *
-     * @since 1.3.0
+     * @since 1.10.0
      */
     @Parameter(property = "quarkus.generateDevModeTest", defaultValue = "true")
     boolean generateDevModeTest;

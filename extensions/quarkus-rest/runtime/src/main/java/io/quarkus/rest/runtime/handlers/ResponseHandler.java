@@ -7,6 +7,7 @@ import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 
 /**
  * Our job is to turn endpoint return types into Response instances
@@ -46,13 +47,13 @@ public class ResponseHandler implements RestHandler {
             if (result instanceof GenericEntity) {
                 GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                 requestContext.setGenericReturnType(genericEntity.getType());
-                responseBuilder = Response.ok().entity(genericEntity.getEntity());
+                responseBuilder = new QuarkusRestResponseBuilder().status(Response.Status.OK).entity(genericEntity.getEntity());
             } else if (result == null) {
                 // FIXME: custom status codes depending on method?
-                responseBuilder = Response.noContent().entity(result);
+                responseBuilder = new QuarkusRestResponseBuilder().status(Response.Status.NO_CONTENT).entity(result);
             } else {
                 // FIXME: custom status codes depending on method?
-                responseBuilder = Response.ok().entity(result);
+                responseBuilder = new QuarkusRestResponseBuilder().status(Response.Status.OK).entity(result);
             }
         }
         MediaType produces = requestContext.getProducesMediaType();

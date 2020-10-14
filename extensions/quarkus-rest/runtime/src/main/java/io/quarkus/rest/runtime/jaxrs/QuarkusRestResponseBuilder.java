@@ -79,7 +79,7 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     int status = -1;
     String reasonPhrase;
     Object entity;
-    MultivaluedMap<String, Object> metadata = new CaseInsensitiveMap<>();
+    MultivaluedMap<String, Object> metadata = new QuarkusMultivaluedHashMap<>();
     Annotation[] entityAnnotations;
 
     public int getStatus() {

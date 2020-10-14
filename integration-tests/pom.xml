@@ -121,6 +121,7 @@
         <module>bootstrap-config</module>
         <module>injectmock</module>
         <module>reactive-messaging-amqp</module>
+        <module>reactive-messaging-kafka</module>
         <module>rest-client</module>
         <module>packaging</module>
         <module>simple with space</module>

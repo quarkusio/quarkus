@@ -474,13 +474,14 @@ jobs:
               amazon-lambda
               amazon-lambda-http
           - category: Messaging
-            timeout: 75
+            timeout: 85
             test-modules: >
               artemis-core
               artemis-jms
               kafka
               kafka-streams
               reactive-messaging-amqp
+              reactive-messaging-kafka
           - category: Security1
             timeout: 50
             keycloak: "true"

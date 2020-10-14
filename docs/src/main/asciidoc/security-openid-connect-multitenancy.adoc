@@ -361,6 +361,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
 The `OidcTenantConfig` returned from this method is the same used to parse the `oidc` namespace configuration from the `application.properties`. You can populate it using any of the settings supported by the `quarkus-oidc` extension.
 
+[[disable-tenant]]
 == Disabling Tenant Configurations
 
 Custom `TenantResolver` and `TenantConfigResolver` implementations may return `null` if no tenant can be inferred from the current request and a fallback to the default tenant configuration is required.

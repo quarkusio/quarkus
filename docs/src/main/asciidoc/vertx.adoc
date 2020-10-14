@@ -746,6 +746,18 @@ Supported forwarding address headers are:
 * `X-Forwarded-Ssl`
 * `X-Forwarded-Prefix`
 
+[[same-site-cookie]]
+== SameSite cookies
+
+One can easily add a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint by listing a cookie name and a `SameSite` attribute, for example:
+
+[source]
+----
+quarkus.http.same-site-cookie.jwt.value=Lax
+quarkus.http.same-site-cookie.session.value=Strict
+----
+
+Given this configuration, the `jwt` cookie will have a `SameSite=Lax` attribute and the `session` cookie will have a `SameSite=Strict` attribute.
 
 == Going further
 

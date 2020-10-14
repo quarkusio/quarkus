@@ -18,7 +18,9 @@ public final class ScannerSubstitutions {
 
     @Substitute
     public ScannerSubstitutions(Class<?> implementedInterface, Collection<Location> locations, ClassLoader classLoader,
-            Charset encoding, ResourceNameCache resourceNameCache, LocationScannerCache locationScannerCache) {
+            Charset encoding,
+            boolean stream,
+            ResourceNameCache resourceNameCache, LocationScannerCache locationScannerCache) {
         throw new IllegalStateException("'org.flywaydb.core.internal.scanner.Scanner' is never used in Quarkus");
     }
 }

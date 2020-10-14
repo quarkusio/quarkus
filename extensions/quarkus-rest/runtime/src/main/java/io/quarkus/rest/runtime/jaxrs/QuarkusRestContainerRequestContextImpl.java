@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -18,8 +17,10 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestContainerRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 
-public class QuarkusRestContainerRequestContextImpl implements ContainerRequestContext {
+public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContainerRequestContext {
 
     private QuarkusRestRequestContext context;
     private boolean aborted;
@@ -184,6 +185,9 @@ public class QuarkusRestContainerRequestContextImpl implements ContainerRequestC
         context.setResult(response);
         context.restart(context.getAbortHandlerChain());
         aborted = true;
+        // this is a valid action after suspend, in which case we must resume
+        if (context.isSuspended())
+            context.resume();
     }
 
     public boolean isResponse() {
@@ -197,5 +201,25 @@ public class QuarkusRestContainerRequestContextImpl implements ContainerRequestC
 
     public boolean isAborted() {
         return aborted;
+    }
+
+    @Override
+    public QuarkusRestContext getQuarkusRestContext() {
+        return context;
+    }
+
+    @Override
+    public void suspend() {
+        context.suspend();
+    }
+
+    @Override
+    public void resume() {
+        context.resume();
+    }
+
+    @Override
+    public void resume(Throwable t) {
+        context.resume(t);
     }
 }

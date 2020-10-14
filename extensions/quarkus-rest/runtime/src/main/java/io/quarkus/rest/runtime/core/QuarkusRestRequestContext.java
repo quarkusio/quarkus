@@ -20,6 +20,8 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
 import javax.enterprise.event.Event;
+import javax.ws.rs.container.CompletionCallback;
+import javax.ws.rs.container.ConnectionCallback;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.PathSegment;
@@ -50,6 +52,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestUriInfo;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.mapping.URITemplate;
+import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.runtime.util.PathSegmentImpl;
@@ -59,7 +62,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
-public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRestInjectionContext {
+public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRestInjectionContext, QuarkusRestContext {
 
     private static final LazyValue<Event<SecurityIdentity>> SECURITY_IDENTITY_EVENT = new LazyValue<>(
             QuarkusRestRequestContext::createEvent);
@@ -156,6 +159,9 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     private OutputStream outputStream;
     //TODO: use a real stream in some circumstances
     private ByteArrayOutputStream underlyingOutputStream;
+
+    private List<CompletionCallback> completionCallbacks;
+    private List<ConnectionCallback> connectionCallbacks;
 
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
             ManagedContext requestContext,
@@ -490,9 +496,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
             this.requestContext.destroy();
         }
         // FIXME: this could be moved to a handler I guess
-        if (this.asyncResponse != null) {
-            this.asyncResponse.onComplete(throwable);
-        }
+        onComplete(throwable);
     }
 
     public Response getResponse() {
@@ -1005,5 +1009,27 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         underlyingOutputStream = new ByteArrayOutputStream();
         outputStream = underlyingOutputStream;
         return underlyingOutputStream;
+    }
+
+    synchronized void onComplete(Throwable throwable) {
+        if (completionCallbacks != null) {
+            for (CompletionCallback callback : completionCallbacks) {
+                callback.onComplete(throwable);
+            }
+        }
+    }
+
+    @Override
+    public synchronized void registerCompletionCallback(CompletionCallback callback) {
+        if (completionCallbacks == null)
+            completionCallbacks = new ArrayList<>();
+        completionCallbacks.add(callback);
+    }
+
+    @Override
+    public synchronized void registerConnectionCallback(ConnectionCallback callback) {
+        if (connectionCallbacks == null)
+            connectionCallbacks = new ArrayList<>();
+        connectionCallbacks.add(callback);
     }
 }

@@ -9,7 +9,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Link;
@@ -21,8 +20,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestContainerResponseContext;
 
-public class QuarkusRestContainerResponseContextImpl implements ContainerResponseContext {
+public class QuarkusRestContainerResponseContextImpl implements QuarkusRestContainerResponseContext {
 
     private final QuarkusRestRequestContext context;
 

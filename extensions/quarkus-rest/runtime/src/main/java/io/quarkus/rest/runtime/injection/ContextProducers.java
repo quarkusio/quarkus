@@ -19,6 +19,7 @@ import javax.ws.rs.sse.Sse;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSse;
+import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -31,8 +32,16 @@ import io.vertx.core.http.HttpServerResponse;
 @Singleton
 public class ContextProducers {
 
+    // NOTE: Same list for parameters in ContextParamExtractor
+
     @Inject
     CurrentVertxRequest currentVertxRequest;
+
+    @RequestScoped
+    @Produces
+    QuarkusRestContext quarkusRestContext() {
+        return getContext();
+    }
 
     @RequestScoped
     @Produces

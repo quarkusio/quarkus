@@ -18,6 +18,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestAsyncResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
+import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -31,6 +32,10 @@ public class ContextParamExtractor implements ParameterExtractor {
 
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
+        // NOTE: Same list for CDI at ContextProducers
+        if (type.equals(QuarkusRestContext.class.getName())) {
+            return context;
+        }
         if (type.equals(HttpHeaders.class.getName())) {
             return context.getHttpHeaders();
         }

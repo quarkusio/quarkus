@@ -30,8 +30,6 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
     private volatile TimeoutHandler timeoutHandler;
     // only used with lock, no need for volatile
     private long timerId = -1;
-    private List<ConnectionCallback> connectionCallbacks = new ArrayList<>();
-    private List<CompletionCallback> completionCallbacks = new ArrayList<>();
 
     public QuarkusRestAsyncResponse(QuarkusRestRequestContext context) {
         this.context = context;
@@ -100,13 +98,6 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
     }
 
     // CALL WITH LOCK
-    public synchronized void onComplete(Throwable throwable) {
-        for (CompletionCallback callback : completionCallbacks) {
-            callback.onComplete(throwable);
-        }
-    }
-
-    // CALL WITH LOCK
     private void cancelTimer() {
         if (timerId != -1) {
             context.getContext().vertx().cancelTimer(timerId);
@@ -171,15 +162,15 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
     }
 
     @Override
-    public synchronized Collection<Class<?>> register(Object callback) {
+    public Collection<Class<?>> register(Object callback) {
         Objects.requireNonNull(callback);
         List<Class<?>> ret = new ArrayList<>(2);
         if (callback instanceof ConnectionCallback) {
-            connectionCallbacks.add((ConnectionCallback) callback);
+            context.registerConnectionCallback((ConnectionCallback) callback);
             ret.add(ConnectionCallback.class);
         }
         if (callback instanceof CompletionCallback) {
-            completionCallbacks.add((CompletionCallback) callback);
+            context.registerCompletionCallback((CompletionCallback) callback);
             ret.add(CompletionCallback.class);
         }
         return ret;

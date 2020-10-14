@@ -12,9 +12,9 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "generate-code-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class GenerateCodeTestsMojo extends GenerateCodeMojo {
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        String projectDir = project.getBasedir().getAbsolutePath();
+    protected void doExecute() throws MojoExecutionException, MojoFailureException {
+        String projectDir = mavenProject().getBasedir().getAbsolutePath();
         Path testSources = Paths.get(projectDir, "src", "test");
-        doExecute(testSources, path -> project.addTestCompileSourceRoot(path.toString()), true);
+        generateCode(testSources, path -> mavenProject().addTestCompileSourceRoot(path.toString()), true);
     }
 }

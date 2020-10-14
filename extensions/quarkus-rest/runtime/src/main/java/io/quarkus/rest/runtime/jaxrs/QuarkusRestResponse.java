@@ -309,4 +309,22 @@ public class QuarkusRestResponse extends Response {
     public Annotation[] getEntityAnnotations() {
         return entityAnnotations;
     }
+
+    //TODO: add the rest of static methods of Response if we need them
+
+    public static ResponseBuilder status(Status status) {
+        return new QuarkusRestResponseBuilder().status(status);
+    }
+
+    public static ResponseBuilder ok() {
+        return status(Status.OK);
+    }
+
+    public static ResponseBuilder ok(Object entity) {
+        return ok().entity(entity);
+    }
+
+    public static ResponseBuilder noContent() {
+        return status(Status.NO_CONTENT);
+    }
 }

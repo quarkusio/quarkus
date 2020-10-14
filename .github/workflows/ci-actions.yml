@@ -69,19 +69,18 @@ jobs:
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Compute cache restore key
-        # Always recompute on a push so that the maven repo doesnt grow indefinitely with old versions
+      - name: Get Date
+        id: get-date
         run: |
-          if ${{ github.event_name == 'pull_request' }}; then echo "::set-env name=COMPUTED_RESTORE_KEY::q2maven-"; fi
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+        shell: bash
       - name: Cache Maven Repository
         id: cache-maven
         uses: n1hility/cache@v2
         with:
           path: ~/.m2/repository
-          # Improves the reusability of the cache to limit key changes
-          key: q2maven-${{ hashFiles('bom/application/pom.xml') }}
-          restore-keys: ${{ env.COMPUTED_RESTORE_KEY }}
-          restore-only: ${{ github.event_name == 'pull_request' }}
+          # refresh cache every month to avoid unlimited growth
+          key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
           mvn -e -B -DskipTests -DskipITs -Dno-format -DskipDocs clean install

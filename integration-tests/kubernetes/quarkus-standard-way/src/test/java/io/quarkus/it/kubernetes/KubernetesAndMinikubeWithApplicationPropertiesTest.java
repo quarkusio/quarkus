@@ -31,8 +31,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("kubernetes-and-minikube-with-application.properties")
             .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-minikube", Version.getVersion())));
+                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-minikube", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

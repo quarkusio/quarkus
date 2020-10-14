@@ -44,8 +44,7 @@ public class ContainerAdapter {
             builder.accept(new AddMountDecorator(mount));
         }
 
-        builder.accept(new ApplyImagePullPolicyDecorator(container.getImagePullPolicy()));
-
+        builder.accept(new ApplyImagePullPolicyDecorator(name, container.getImagePullPolicy()));
         builder.accept(new AddLivenessProbeDecorator(name, container.getLivenessProbe()));
         builder.accept(new AddReadinessProbeDecorator(name, container.getReadinessProbe()));
         return builder.build();

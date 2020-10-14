@@ -21,6 +21,18 @@ jobs:
         uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
         with:
           java-version: 8
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: n1hility/cache@v2
+        with:
+          path: ~/.m2/repository
+          # refresh cache every month to avoid unlimited growth
+          key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build and Deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
@@ -31,6 +43,9 @@ jobs:
             -DskipITs -Dno-format -Dinvoker.skip=true \
             -DretryFailedDeploymentCount=10 \
             clean deploy
+      - name: Delete Local Artifacts From Cache
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus
 
       - name: Report
         if: always()

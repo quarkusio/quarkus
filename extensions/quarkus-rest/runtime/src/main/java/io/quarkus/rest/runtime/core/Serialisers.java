@@ -61,6 +61,7 @@ import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedMap;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -731,12 +732,13 @@ public class Serialisers {
         if (response.getStatusInfo().getReasonPhrase() != null) {
             vertxResponse.setStatusMessage(response.getStatusInfo().getReasonPhrase());
         }
+        MultiMap vertxHeaders = vertxResponse.headers();
         MultivaluedMap<String, String> headers = response.getStringHeaders();
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
             if (entry.getValue().size() == 1) {
-                vertxResponse.putHeader(entry.getKey(), entry.getValue().get(0));
+                vertxHeaders.set((CharSequence) entry.getKey(), entry.getValue().get(0));
             } else {
-                vertxResponse.putHeader(entry.getKey(), entry.getValue());
+                vertxHeaders.set(entry.getKey(), entry.getValue());
             }
         }
     }

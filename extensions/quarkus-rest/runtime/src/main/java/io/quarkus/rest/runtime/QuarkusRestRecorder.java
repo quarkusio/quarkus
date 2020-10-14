@@ -115,7 +115,9 @@ import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
+import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
+import io.quarkus.rest.runtime.util.RuntimeResourceVisitor;
 import io.quarkus.rest.runtime.util.ScoreSystem;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.quarkus.runtime.ExecutorRecorder;
@@ -416,7 +418,7 @@ public class QuarkusRestRecorder {
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             NotFoundExceptionMapper.classMappers = classMappers;
-            ScoreSystem.dumpScores(classMappers);
+            RuntimeResourceVisitor.visitRuntimeResources(classMappers, ScoreSystem.ScoreVisitor);
         }
 
         return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
@@ -834,10 +836,15 @@ public class QuarkusRestRecorder {
                         } else if (buildTimeWriters.size() == 1) {
                             //only a single handler that can handle the response
                             //this is a very common case
+                            MessageBodyWriter<?> writer = buildTimeWriters.get(0);
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
-                                    buildTimeWriters.get(0), serialisers)));
-                            score.add(ScoreSystem.Category.Writer,
-                                    ScoreSystem.Diagnostic.WriterBuildTime(buildTimeWriters.get(0)));
+                                    writer, serialisers)));
+                            if (writer instanceof QuarkusRestMessageBodyWriter)
+                                score.add(ScoreSystem.Category.Writer,
+                                        ScoreSystem.Diagnostic.WriterBuildTimeDirect(writer));
+                            else
+                                score.add(ScoreSystem.Category.Writer,
+                                        ScoreSystem.Diagnostic.WriterBuildTime(writer));
                         } else {
                             //multiple writers, we try them in the proper order which had already been created
                             handlers.add(new FixedProducesHandler(mediaType,

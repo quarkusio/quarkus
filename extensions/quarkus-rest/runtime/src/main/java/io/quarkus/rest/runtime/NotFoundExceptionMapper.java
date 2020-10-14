@@ -35,11 +35,10 @@ import javax.ws.rs.ext.ExceptionMapper;
 import org.jboss.logging.Logger;
 
 import io.quarkus.rest.runtime.core.request.ServerDrivenNegotiation;
-import io.quarkus.rest.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.rest.runtime.handlers.QuarkusRestInitialHandler;
-import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
+import io.quarkus.rest.runtime.util.RuntimeResourceVisitor;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -295,64 +294,33 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         public static List<ResourceDescription> fromClassMappers(
                 List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers) {
             Map<String, ResourceDescription> descriptions = new HashMap<>();
+            RuntimeResourceVisitor.visitRuntimeResources(classMappers, new RuntimeResourceVisitor() {
 
-            for (RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch> classMapper : classMappers) {
-                String template = classMapper.template.template;
-                QuarkusRestInitialHandler.InitialMatch initialMatch = classMapper.value;
-                if ((initialMatch.handlers == null) || initialMatch.handlers.length == 0) {
-                    continue;
-                }
-                RestHandler firstHandler = initialMatch.handlers[0];
-                if (!(firstHandler instanceof ClassRoutingHandler)) {
-                    continue;
-                }
-                ClassRoutingHandler classRoutingHandler = (ClassRoutingHandler) firstHandler;
+                private ResourceDescription description;
 
-                Map<String, RequestMapper<RuntimeResource>> classRoutingHandlerMappers = classRoutingHandler.getMappers();
-                for (Map.Entry<String, RequestMapper<RuntimeResource>> entry : classRoutingHandlerMappers.entrySet()) {
-                    String basePath = template;
-                    String httpMethod = entry.getKey();
-                    if (httpMethod == null) {
-                        continue; // TODO: fix as to use all methods
+                @Override
+                public void visitRuntimeResource(String httpMethod, String fullPath, RuntimeResource runtimeResource) {
+                    ServerMediaType serverMediaType = runtimeResource.getProduces();
+                    List<MediaType> produces = Collections.emptyList();
+                    if (serverMediaType != null) {
+                        if ((serverMediaType.getSortedOriginalMediaTypes() != null)
+                                && serverMediaType.getSortedOriginalMediaTypes().length >= 1) {
+                            produces = Arrays.asList(serverMediaType.getSortedOriginalMediaTypes());
+                        }
                     }
+                    description.calls.add(new MethodDescription(httpMethod, fullPath, mostPreferredOrNull(produces),
+                            mostPreferredOrNull(runtimeResource.getConsumes())));
+                }
 
-                    RequestMapper<RuntimeResource> requestMapper = entry.getValue();
-                    List<RequestMapper.RequestPath<RuntimeResource>> methodTemplates = requestMapper.getTemplates();
-                    if (methodTemplates.isEmpty()) {
-                        continue;
-                    }
-                    ResourceDescription description = descriptions.get(basePath);
+                @Override
+                public void visitBasePath(String basePath) {
+                    description = descriptions.get(basePath);
                     if (description == null) {
                         description = new ResourceDescription(basePath);
                         descriptions.put(basePath, description);
                     }
-                    for (RequestMapper.RequestPath<RuntimeResource> methodTemplate : methodTemplates) {
-                        String subPath = methodTemplate.template.template;
-                        if (subPath.startsWith("/")) {
-                            subPath = subPath.substring(1);
-                        }
-                        String fullPath = basePath;
-                        if (!subPath.isEmpty()) {
-                            if (basePath.endsWith("/")) {
-                                fullPath += subPath;
-                            } else {
-                                fullPath = basePath + "/" + subPath;
-                            }
-                        }
-                        RuntimeResource runtimeResource = methodTemplate.value;
-                        ServerMediaType serverMediaType = runtimeResource.getProduces();
-                        List<MediaType> produces = Collections.emptyList();
-                        if (serverMediaType != null) {
-                            if ((serverMediaType.getSortedOriginalMediaTypes() != null)
-                                    && serverMediaType.getSortedOriginalMediaTypes().length >= 1) {
-                                produces = Arrays.asList(serverMediaType.getSortedOriginalMediaTypes());
-                            }
-                        }
-                        description.calls.add(new MethodDescription(httpMethod, fullPath, mostPreferredOrNull(produces),
-                                mostPreferredOrNull(runtimeResource.getConsumes())));
-                    }
                 }
-            }
+            });
             return new LinkedList<>(descriptions.values());
         }
     }

@@ -729,9 +729,6 @@ public class Serialisers {
         HttpServerResponse vertxResponse = requestContext.getContext().response();
         Response response = requestContext.getResponse();
         vertxResponse.setStatusCode(response.getStatus());
-        if (response.getStatusInfo().getReasonPhrase() != null) {
-            vertxResponse.setStatusMessage(response.getStatusInfo().getReasonPhrase());
-        }
         MultiMap vertxHeaders = vertxResponse.headers();
         MultivaluedMap<String, String> headers = response.getStringHeaders();
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {

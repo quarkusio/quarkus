@@ -106,7 +106,7 @@ public class ClassRoutingHandler implements RestHandler {
         if (!target.value.getConsumes().isEmpty()) {
             String contentType = requestContext.getContext().request().headers().get(HttpHeaders.CONTENT_TYPE);
             if (contentType != null) {
-                if (MediaTypeHelper.getBestMatch(
+                if (MediaTypeHelper.getFirstMatch(
                         target.value.getConsumes(),
                         Collections.singletonList(MediaType.valueOf(contentType))) == null) {
                     throw new NotSupportedException();
@@ -116,8 +116,14 @@ public class ClassRoutingHandler implements RestHandler {
         // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in @Produces
         if (target.value.getProduces() != null) {
             String accepts = requestContext.getContext().request().headers().get(HttpHeaders.ACCEPT);
-            if (accepts != null) {
-                if (MediaTypeHelper.getBestMatch(Arrays.asList(target.value.getProduces().getSortedMediaTypes()),
+            if ((accepts != null) && !accepts.equals(MediaType.WILDCARD)) {
+                if (!accepts.contains(",") && target.value.getProduces().getSortedMediaTypes().length == 1) { // the point of this branch is to eliminate the list creation and sorting
+                    MediaType acceptsMediaType = MediaType.valueOf(accepts.trim());
+                    MediaType providedMediaType = target.value.getProduces().getSortedMediaTypes()[0];
+                    if (!providedMediaType.isCompatible(acceptsMediaType)) {
+                        throw new NotAcceptableException();
+                    }
+                } else if (MediaTypeHelper.getFirstMatch(Arrays.asList(target.value.getProduces().getSortedMediaTypes()),
                         requestContext.getHttpHeaders().getModifiableAcceptableMediaTypes()) == null) {
                     throw new NotAcceptableException();
                 }

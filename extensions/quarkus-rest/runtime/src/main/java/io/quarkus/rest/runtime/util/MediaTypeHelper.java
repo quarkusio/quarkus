@@ -147,10 +147,10 @@ public class MediaTypeHelper {
     public static MediaType getBestMatch(List<MediaType> desired, List<MediaType> provided) {
         sortByWeight(desired);
         sortByWeight(provided);
-        return getBestMatchNoSort(desired, provided);
+        return getFirstMatch(desired, provided);
     }
 
-    public static MediaType getBestMatchNoSort(List<MediaType> desired, List<MediaType> provided) {
+    public static MediaType getFirstMatch(List<MediaType> desired, List<MediaType> provided) {
         boolean emptyDesired = desired == null || desired.size() == 0;
         boolean emptyProvided = provided == null || provided.size() == 0;
 

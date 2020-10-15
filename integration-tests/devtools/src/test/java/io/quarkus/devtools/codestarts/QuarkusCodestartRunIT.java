@@ -154,6 +154,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         Path projectDir = testDirPath.resolve(name);
         projectDefinition.generate(projectDir);
+
         final int result = WrapperRunner.run(projectDir,
                 WrapperRunner.Wrapper.fromBuildtool(buildToolName));
         assertThat(result).isZero();

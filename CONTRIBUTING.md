@@ -360,5 +360,5 @@ DevMojoIT require a few minutes to run but anything more than that is not expect
 
 * The native integration test for my extension didn't run in the CI
 
-In the interest of speeding up CI, the native build stage `run_native_tests_stage` have been split into multiple steps. 
-This means that each new extension needs to be configured explicitly in `azure-pipelines.yml` to have it's integration tests run in native mode
+In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which are run in parallel. 
+This means that each new extension needs to be configured explicitly in [`ci-actions.yml`](.github/workflows/ci-actions.yml) to have its integration tests run in native mode.

@@ -59,6 +59,6 @@ public class StackdriverMeterRegistryProvider {
     @Produces
     @Singleton
     public StackdriverMeterRegistry registry(StackdriverConfig config, Clock clock) {
-        return new StackdriverMeterRegistry(config, clock);
+        return StackdriverMeterRegistry.builder(config).clock(clock).build();
     }
 }

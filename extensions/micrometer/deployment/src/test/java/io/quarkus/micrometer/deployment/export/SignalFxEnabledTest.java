@@ -22,10 +22,10 @@ public class SignalFxEnabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.export.signalfx.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.signalfx.access-token", "required")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(StackdriverRegistryProcessor.REGISTRY_CLASS));
 

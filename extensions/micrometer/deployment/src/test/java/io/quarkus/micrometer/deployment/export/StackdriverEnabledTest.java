@@ -22,11 +22,11 @@ public class StackdriverEnabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.export.stackdriver.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.stackdriver.publish", "false")
-            .overrideConfigKey("quarkus.micrometer.export.stackdriver.project-id", "myproject")
+            .overrideConfigKey("quarkus.micrometer.export.stackdriver.project-id", "required")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(StackdriverRegistryProcessor.REGISTRY_CLASS));
 

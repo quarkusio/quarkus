@@ -338,25 +338,37 @@ public class QuarkusRestProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             BuildProducer<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
+            BuildProducer<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
             BuildProducer<AdditionalBeanBuildItem> additionalBean) {
         IndexView index = combinedIndexBuildItem.getIndex();
-        AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
+        AdditionalBeanBuildItem.Builder additionalBeans = AdditionalBeanBuildItem.builder();
 
-        Collection<AnnotationInstance> containerRequestFilterInstances = index
-                .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_REQUEST_FILTER);
-        for (AnnotationInstance instance : containerRequestFilterInstances) {
+        for (AnnotationInstance instance : index
+                .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_REQUEST_FILTER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
             MethodInfo methodInfo = instance.target().asMethod();
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
-            additionalProviders.addBeanClass(methodInfo.declaringClass().name().toString());
+            additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             String generatedClassName = CustomProviderGenerator.generateContainerRequestFilter(methodInfo,
                     new GeneratedBeanGizmoAdaptor(generatedBean));
             additionalContainerRequestFilters.produce(new ContainerRequestFilterBuildItem(generatedClassName, false)); // it has already been made a bean
         }
+        for (AnnotationInstance instance : index
+                .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_RESPONSE_FILTER)) {
+            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            MethodInfo methodInfo = instance.target().asMethod();
+            // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+            additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
+            String generatedClassName = CustomProviderGenerator.generateContainerResponseFilter(methodInfo,
+                    new GeneratedBeanGizmoAdaptor(generatedBean));
+            additionalContainerResponseFilters.produce(new ContainerResponseFilterBuildItem(generatedClassName, false)); // it has already been made a bean
+        }
 
-        additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
+        additionalBean.produce(additionalBeans.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 
     @BuildStep

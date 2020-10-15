@@ -32,6 +32,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.PreMatching;
@@ -168,10 +169,13 @@ public final class QuarkusRestDotNames {
 
     public static final DotName CUSTOM_CONTAINER_REQUEST_FILTER = DotName
             .createSimple(io.quarkus.rest.ContainerRequestFilter.class.getName());
+    public static final DotName CUSTOM_CONTAINER_RESPONSE_FILTER = DotName
+            .createSimple(io.quarkus.rest.ContainerResponseFilter.class.getName());
 
     public static final DotName URI_INFO = DotName.createSimple(UriInfo.class.getName());
     public static final DotName HTTP_HEADERS = DotName.createSimple(HttpHeaders.class.getName());
     public static final DotName CONTAINER_REQUEST_CONTEXT = DotName.createSimple(ContainerRequestContext.class.getName());
+    public static final DotName CONTAINER_RESPONSE_CONTEXT = DotName.createSimple(ContainerResponseContext.class.getName());
     public static final DotName JAXRS_REQUEST = DotName.createSimple(javax.ws.rs.core.Request.class.getName());
     public static final DotName VERTX_HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
     public static final DotName RESOURCE_INFO = DotName.createSimple(ResourceInfo.class.getName());

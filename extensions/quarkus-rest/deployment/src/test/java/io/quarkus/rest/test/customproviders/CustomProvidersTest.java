@@ -1,5 +1,7 @@
 package io.quarkus.rest.test.customproviders;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
@@ -11,8 +13,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.http.Headers;
 
-public class CustomerProvidersTest {
+public class CustomProvidersTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -20,15 +23,16 @@ public class CustomerProvidersTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(CustomContainerRequestFilter.class, CustomerProvidersResource.class,
-                                    AssertContainerRequestFilter.class, SomeBean.class);
+                            .addClasses(CustomContainerRequestFilter.class, CustomProvidersResource.class,
+                                    CustomContainerResponseFilter.class, AssertContainerRequestFilter.class, SomeBean.class);
                 }
             });
 
     @Test
     public void testFilters() {
-        RestAssured.given().header("some-input", "bar").get("/custom/req")
-                .then().statusCode(200).body(Matchers.containsString("/custom/req-bar"));
+        Headers headers = RestAssured.given().header("some-input", "bar").get("/custom/req")
+                .then().statusCode(200).body(Matchers.containsString("/custom/req-bar")).extract().headers();
+        assertThat(headers.getValues("java-method")).containsOnly("filters");
         Assertions.assertEquals(2, AssertContainerRequestFilter.COUNT.get());
     }
 }

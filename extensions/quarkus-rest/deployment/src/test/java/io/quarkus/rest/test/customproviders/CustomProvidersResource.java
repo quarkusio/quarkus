@@ -8,7 +8,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 @Path("/custom")
-public class CustomerProvidersResource {
+public class CustomProvidersResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

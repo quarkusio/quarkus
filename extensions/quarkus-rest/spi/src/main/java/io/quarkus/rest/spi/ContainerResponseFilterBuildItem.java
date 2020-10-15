@@ -9,6 +9,10 @@ public final class ContainerResponseFilterBuildItem extends MultiBuildItem imple
 
     private final boolean registerAsBean;
 
+    public ContainerResponseFilterBuildItem(String className, boolean registerAsBean) {
+        this(className, null, registerAsBean);
+    }
+
     public ContainerResponseFilterBuildItem(String className, Integer priority, boolean registerAsBean) {
         this.className = className;
         this.priority = priority;

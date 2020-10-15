@@ -18,12 +18,6 @@ public class AzureMonitorConfig implements MicrometerConfig.CapabilityEnabled {
     @ConfigItem
     public Optional<Boolean> enabled;
 
-    /**
-     * The path for the azure monitor instrumentationKey
-     */
-    @ConfigItem
-    public Optional<String> instrumentationKey;
-
     @Override
     public Optional<Boolean> getEnabled() {
         return enabled;
@@ -32,8 +26,7 @@ public class AzureMonitorConfig implements MicrometerConfig.CapabilityEnabled {
     @Override
     public String toString() {
         return this.getClass().getSimpleName()
-                + "{instrumentationKey='" + instrumentationKey
-                + ",enabled=" + enabled
+                + "{enabled=" + enabled
                 + '}';
     }
 }

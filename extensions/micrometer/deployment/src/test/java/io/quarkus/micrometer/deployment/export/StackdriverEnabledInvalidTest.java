@@ -39,7 +39,7 @@ public class StackdriverEnabledInvalidTest {
     public void testMeterRegistryPresent() {
         // Stackdriver is enabled (alone, all others disabled)
         Assertions.assertNotNull(registry, "A registry should be configured");
-        Assertions.assertTrue(REGISTRY_CLASS.equals(registry.getClass()), "Should be StackdriverMeterRegistry");
+        Assertions.assertEquals(REGISTRY_CLASS, registry.getClass(), "Should be StackdriverMeterRegistry");
     }
 
     static String stackToString(Throwable t) {

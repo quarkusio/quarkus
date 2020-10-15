@@ -55,6 +55,12 @@ import org.jboss.jandex.DotName;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.rest.Blocking;
 import io.quarkus.rest.RequireCDIRequestScope;
+import io.quarkus.rest.RestCookie;
+import io.quarkus.rest.RestForm;
+import io.quarkus.rest.RestHeader;
+import io.quarkus.rest.RestMatrix;
+import io.quarkus.rest.RestPath;
+import io.quarkus.rest.RestQuery;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -70,6 +76,12 @@ public final class QuarkusRestDotNames {
     public static final DotName FORM_PARAM = DotName.createSimple(FormParam.class.getName());
     public static final DotName MATRIX_PARAM = DotName.createSimple(MatrixParam.class.getName());
     public static final DotName COOKIE_PARAM = DotName.createSimple(CookieParam.class.getName());
+    public static final DotName REST_PATH_PARAM = DotName.createSimple(RestPath.class.getName());
+    public static final DotName REST_QUERY_PARAM = DotName.createSimple(RestQuery.class.getName());
+    public static final DotName REST_HEADER_PARAM = DotName.createSimple(RestHeader.class.getName());
+    public static final DotName REST_FORM_PARAM = DotName.createSimple(RestForm.class.getName());
+    public static final DotName REST_MATRIX_PARAM = DotName.createSimple(RestMatrix.class.getName());
+    public static final DotName REST_COOKIE_PARAM = DotName.createSimple(RestCookie.class.getName());
     public static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
     public static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
     public static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());

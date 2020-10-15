@@ -40,6 +40,12 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRODUCES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REQUIRE_CDI_REQUEST_SCOPE;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REST_COOKIE_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REST_FORM_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REST_HEADER_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REST_MATRIX_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REST_PATH_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.REST_QUERY_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
@@ -993,9 +999,15 @@ public class EndpointIndexer {
             AnnotationInstance queryParam = anns.get(QUERY_PARAM);
             AnnotationInstance headerParam = anns.get(HEADER_PARAM);
             AnnotationInstance formParam = anns.get(FORM_PARAM);
-            AnnotationInstance contextParam = anns.get(CONTEXT);
             AnnotationInstance matrixParam = anns.get(MATRIX_PARAM);
             AnnotationInstance cookieParam = anns.get(COOKIE_PARAM);
+            AnnotationInstance restPathParam = anns.get(REST_PATH_PARAM);
+            AnnotationInstance restQueryParam = anns.get(REST_QUERY_PARAM);
+            AnnotationInstance restHeaderParam = anns.get(REST_HEADER_PARAM);
+            AnnotationInstance restFormParam = anns.get(REST_FORM_PARAM);
+            AnnotationInstance restMatrixParam = anns.get(REST_MATRIX_PARAM);
+            AnnotationInstance restCookieParam = anns.get(REST_COOKIE_PARAM);
+            AnnotationInstance contextParam = anns.get(CONTEXT);
             AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
             AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
             defaultValue = null;
@@ -1003,7 +1015,8 @@ public class EndpointIndexer {
             if (defaultValueAnnotation != null) {
                 defaultValue = defaultValueAnnotation.value().asString();
             }
-            if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam, cookieParam)) {
+            if (moreThanOne(pathParam, queryParam, headerParam, formParam, cookieParam, contextParam, beanParam,
+                    restPathParam, restQueryParam, restHeaderParam, restFormParam, restCookieParam)) {
                 throw new RuntimeException(
                         "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @CookieParam, @BeanParam, @Context on "
                                 + errorLocation);
@@ -1011,21 +1024,49 @@ public class EndpointIndexer {
                 name = pathParam.value().asString();
                 type = ParameterType.PATH;
                 convertable = true;
+            } else if (restPathParam != null) {
+                name = valueOrDefault(restPathParam.value(), sourceName);
+                type = ParameterType.PATH;
+                convertable = true;
             } else if (queryParam != null) {
                 name = queryParam.value().asString();
+                type = ParameterType.QUERY;
+                convertable = true;
+            } else if (restQueryParam != null) {
+                name = valueOrDefault(restQueryParam.value(), sourceName);
                 type = ParameterType.QUERY;
                 convertable = true;
             } else if (cookieParam != null) {
                 name = cookieParam.value().asString();
                 type = ParameterType.COOKIE;
                 convertable = true;
+            } else if (restCookieParam != null) {
+                name = valueOrDefault(restCookieParam.value(), sourceName);
+                type = ParameterType.COOKIE;
+                convertable = true;
             } else if (headerParam != null) {
                 name = headerParam.value().asString();
+                type = ParameterType.HEADER;
+                convertable = true;
+            } else if (restHeaderParam != null) {
+                name = valueOrDefault(restHeaderParam.value(), sourceName);
                 type = ParameterType.HEADER;
                 convertable = true;
             } else if (formParam != null) {
                 name = formParam.value().asString();
                 type = ParameterType.FORM;
+                convertable = true;
+            } else if (restFormParam != null) {
+                name = valueOrDefault(restFormParam.value(), sourceName);
+                type = ParameterType.FORM;
+                convertable = true;
+            } else if (matrixParam != null) {
+                name = matrixParam.value().asString();
+                type = ParameterType.MATRIX;
+                convertable = true;
+            } else if (restMatrixParam != null) {
+                name = valueOrDefault(restMatrixParam.value(), sourceName);
+                type = ParameterType.MATRIX;
                 convertable = true;
             } else if (contextParam != null) {
                 //this is handled by CDI
@@ -1041,11 +1082,6 @@ public class EndpointIndexer {
                 // no name required
                 type = ParameterType.ASYNC_RESPONSE;
                 suspended = true;
-            } else if (matrixParam != null) {
-                // no name required
-                name = matrixParam.value().asString();
-                type = ParameterType.MATRIX;
-                convertable = true;
             } else {
                 if (pathParameters.contains(sourceName)) {
                     name = sourceName;
@@ -1117,6 +1153,13 @@ public class EndpointIndexer {
                 throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
             }
             return this;
+        }
+
+        private String valueOrDefault(AnnotationValue annotation, String defaultValue) {
+            if (annotation == null)
+                return defaultValue;
+            String val = annotation.asString();
+            return val != null && !val.isEmpty() ? val : defaultValue;
         }
 
         private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,

@@ -422,5 +422,15 @@ public class SimpleQuarkusRestTestCase {
                 .then()
                 .log().ifError()
                 .body(Matchers.equalTo("GET:myklass:myregex:mymethod"));
+        RestAssured.with()
+                .urlEncodingEnabled(false)
+                .cookie("c", "cv")
+                .queryParam("q", "qv")
+                .header("h", "123")
+                .formParam("f", "fv")
+                .post("/new-params/myklass;m=mv/myregex/params/pv")
+                .then()
+                .log().ifError()
+                .body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv, m: mv, c: cv"));
     }
 }

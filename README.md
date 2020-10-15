@@ -11,17 +11,17 @@
 Quarkus is a Cloud Native, (Linux) Container First framework for writing Java applications.
 
 * **Container First**: 
-Minimal footprint Java applications optimal for running in containers
+Minimal footprint Java applications optimal for running in containers.
 * **Cloud Native**:
 Embraces [12 factor architecture](https://12factor.net) in environments like Kubernetes.
 * **Unify imperative and reactive**:
-Brings under one programming model non blocking and imperative styles of development.
+Brings under one programming model non-blocking and imperative styles of development.
 * **Standards-based**:
-Based on the standards and frameworks you love and use (RESTEasy and JAX-RS, Hibernate ORM and JPA, Netty, Eclipse Vert.x, Eclipse MicroProfile, Apache Camel...)
+Based on the standards and frameworks you love and use (RESTEasy and JAX-RS, Hibernate ORM and JPA, Netty, Eclipse Vert.x, Eclipse MicroProfile, Apache Camel...).
 * **Microservice First**:
-Brings lightning fast startup time and code turn around to Java apps
+Brings lightning fast startup time and code turn around to Java apps.
 * **Developer Joy**:
-Development centric experience without compromise to bring your amazing apps to life in no time
+Development centric experience without compromise to bring your amazing apps to life in no time.
 
 _All under ONE framework._
 
@@ -32,7 +32,7 @@ _All under ONE framework._
 
 ## Release Planning
 
-Interested on when the next release is coming? Check our [release planning](https://github.com/quarkusio/quarkus/wiki/Release-Planning) document for details
+Interested on when the next release is coming? Check our [release planning](https://github.com/quarkusio/quarkus/wiki/Release-Planning) document for details.
 
 ## How to build Quarkus
 

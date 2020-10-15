@@ -25,6 +25,7 @@ import io.quarkus.rest.RestMatrix;
 import io.quarkus.rest.RestPath;
 import io.quarkus.rest.RestQuery;
 import io.quarkus.rest.runtime.spi.QuarkusRestContext;
+import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -60,6 +61,7 @@ public class NewParamsRestResource {
             Configuration configuration,
             // Extras
             ResourceInfo resourceInfo,
+            SimplifiedResourceInfo simplifiedResourceInfo,
             QuarkusRestContext restContext,
             HttpServerRequest httpServerRequest,
             HttpServerResponse httpServerResponse) {
@@ -71,6 +73,7 @@ public class NewParamsRestResource {
         Assertions.assertNotNull(resourceContext);
         Assertions.assertNotNull(configuration);
         Assertions.assertNotNull(resourceInfo);
+        Assertions.assertNotNull(simplifiedResourceInfo);
         Assertions.assertNotNull(restContext);
         Assertions.assertNotNull(httpServerRequest);
         Assertions.assertNotNull(httpServerResponse);

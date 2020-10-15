@@ -153,6 +153,7 @@ public class EndpointIndexer {
             QuarkusRestDotNames.SSE_EVENT_SINK,
             // extras
             QuarkusRestDotNames.QUARKUS_REST_CONTEXT,
+            QuarkusRestDotNames.SIMPLIFIED_RESOURCE_INFO,
             QuarkusRestDotNames.RESOURCE_INFO,
             QuarkusRestDotNames.HTTP_SERVER_REQUEST,
             QuarkusRestDotNames.HTTP_SERVER_RESPONSE)));

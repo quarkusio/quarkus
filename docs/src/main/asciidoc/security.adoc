@@ -62,6 +62,12 @@ Both `quarkus-oidc` `Bearer` and `Authorization Code Flow` Authentication mechan
 
 See link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] for more information about multiple tenants which can support `Bearer` or `Authorization Code Flow` authentication mechanism and configured statically or dynamically.
 
+[NOTE]
+====
+If you would like to have Quarkus OIDC extension enabled at runtime then set `quarkus.oidc.tenant-enabled=false` at build time and re-enable it at runtime using a system property.
+See also link:security-openid-connect-multitenancy#disable-tenant[Disabling Tenant Configurations] for more information about managing the individual tenant configurations in the multi-tenant OIDC deployments.
+====
+
 If you use Keycloak and Bearer tokens then also see the link:security-keycloak-authorization[Using Keycloak to Centralize Authorization] guide.  
 
 [[smallrye-jwt]]
@@ -128,10 +134,14 @@ See the link:http-reference#ssl[Supporting secure connections with SSL] guide fo
 
 If you plan to make your Quarkus application accessible to another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more information.
 
+== SameSite cookies
+
+Please see link:vertx#same-site-cookie for information about adding a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
+
 == Testing
 
 See link:security-testing[Security Testing] for more information about testing Quarkus Security.
 
 == Secret Engines
-
+=== Vault
 Quarkus provides a very comprehensive HashiCorp Vault support, please see the link:vault[Quarkus and HashiCorp Vault] documentation for more information.

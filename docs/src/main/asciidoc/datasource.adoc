@@ -135,7 +135,7 @@ First, you will need to add the `quarkus-agroal` dependency to your project.
 
 You can add it using a simple Maven command:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="agroal"
 ----
@@ -172,7 +172,7 @@ As usual, you can install the extension using `add-extension`.
 
 To install the PostgreSQL driver dependency for instance, run the following command:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="jdbc-postgresql"
 ----
@@ -472,7 +472,7 @@ while the database will run in the JVM as usual.
 
 Connect to it using:
 
-[source]
+[source,properties]
 ----
 quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:test

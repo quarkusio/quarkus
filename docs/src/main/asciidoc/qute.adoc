@@ -75,7 +75,7 @@ public class HelloResource {
 
 If your application is running, you can request the endpoint:
 
-[source, shell]
+[source,shell]
 ----
 $ curl -w "\n" http://localhost:8080/hello?name=Martin
 Hello Martin!

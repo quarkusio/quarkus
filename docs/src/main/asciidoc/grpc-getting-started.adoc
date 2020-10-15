@@ -88,7 +88,7 @@ This `proto` file defines a simple service interface with a single method (`SayH
 Before coding, we need to generate the classes used to implement and consume gRPC services.
 In a terminal, run:
 
-[source, bash]
+[source,shell]
 ----
 $ mvn compile
 ----

@@ -55,7 +55,7 @@ The provided solution contains a few additional elements such as tests and testi
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -616,12 +616,12 @@ We need a PostgreSQL instance and an Elasticsearch cluster.
 
 Let's use Docker to start one of each:
 
-[source, shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:{elasticsearch-version}
 ----
 
-[source, shell]
+[source,bash]
 ----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgresql_quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:11.3
 ----

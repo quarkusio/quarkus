@@ -21,7 +21,7 @@ Being able to write such operators in Java with the very low footprint that nati
 Once you have your Quarkus project configured you can add the `kubernetes-client` extension
 to your project by running the following command in your project base directory.
 
-[source]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="kubernetes-client"
 ----
@@ -41,7 +41,7 @@ This will add the following to your `pom.xml`:
 Quarkus configures a Bean of type `KubernetesClient` which can be injected into application code using the well known CDI methods.
 This client can be configured using various properties as can be seen in the following example:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes-client.trust-certs=false
 quarkus.kubernetes-client.namespace=default

@@ -53,7 +53,7 @@ The solution is located in the `tests-with-coverage-quickstart` {quickstarts-tre
 
 Let's start from an empty application created with the Quarkus Maven plugin: 
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:create \
     -DprojectGroupId=org.acme \
@@ -356,7 +356,7 @@ Given the content of `GreetingResourceTest`, `GreetingResource` should have been
 
 During the report generation, you may have noticed a warning:
 
-[source,shell,subs=attributes+]
+[source,text,subs=attributes+]
 ----
 [WARNING] Classes in bundle '***' do no match with execution data. For report generation the same class files must be used as at runtime.
 [WARNING] Execution data for class org/acme/testcoverage/GreetingResource does not match.
@@ -411,7 +411,7 @@ public class GreetingResource {
 Some might say that this approach is preferable since the field can be *final* like this. Anyway, in some cases you might need an explicit constructor. And, in that case, the coverage is not reported properly by JaCoCo.
 This is because Quarkus generates a constructor without any parameter and does some bycode manipulations in order to add it to the class. That is what happened here, just before the execution of the integration tests:
 
-[source,shell,subs=attributes+]
+[source,text,subs=attributes+]
 ----
 [INFO] --- quarkus-maven-plugin:0.16.0:build (default) @ getting-started-testing ---
 [INFO] [io.quarkus.deployment.QuarkusAugmentor] Beginning quarkus augmentation

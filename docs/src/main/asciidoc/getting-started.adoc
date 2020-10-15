@@ -62,7 +62,7 @@ However, you can go right to the completed example.
 
 Download an {quickstarts-archive-url}[archive] or clone the git repository:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 git clone {quickstarts-clone-url}
 ----
@@ -75,7 +75,7 @@ The easiest way to create a new Quarkus project is to open a terminal and run th
 
 For Linux & MacOS users
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -89,14 +89,14 @@ For Windows users
 
 - If using cmd , (don't use forward slash `\`)
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started -DclassName="org.acme.getting.started.GreetingResource" -Dpath="/hello"
 ----
 
 - If using Powershell , wrap `-D` parameters in double quotes
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started" "-DclassName=org.acme.getting.started.GreetingResource" "-Dpath=/hello"
 ----
@@ -219,10 +219,11 @@ Listening for transport dt_socket at address: 5005
 
 Once started, you can request the provided endpoint:
 
-```
+[source,shell]
+----
 $ curl -w "\n" http://localhost:8080/hello
 hello
-```
+----
 
 Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.
 
@@ -406,7 +407,7 @@ These tests use http://rest-assured.io/[RestAssured], but feel free to use your 
 
 You can run these using Maven:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw test
 ----

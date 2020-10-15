@@ -100,7 +100,7 @@ Now that everything is explained, we can start coding!
 
 Quarkus provides `create-extension` Maven Mojo to initialize your extension project.
 
-[source, shell, subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 $ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DgroupId=org.acme \ #<1>
@@ -590,7 +590,7 @@ Let's add the testing dependencies into the  `./quarkus-greeting/deployment/pom.
 
 Currently, the `create-extension` Maven Mojo does not create the test structure. We'll create it ourselves:
 
-[source, shell]
+[source,bash]
 ----
 mkdir -p ./quarkus-greeting/deployment/src/test/java/org/acme/quarkus/greeting/deployment
 ----
@@ -629,7 +629,7 @@ public class GreetingTest {
 
 Time to test!
 
-[source, shell, subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 $ mvn clean test
 [INFO] Scanning for projects...
@@ -690,7 +690,7 @@ That means if your want to debug this phase you need to launch your build tool w
 You can activate Maven remote debugging by using `mvnDebug`.
 You can launch your application with the following command line:
 
-[source, shell]
+[source,bash]
 ----
 mvnDebug clean compile quarkus:dev
 ----
@@ -703,7 +703,7 @@ Now, you can run your IDE `Remote` configuration to attach it to `localhost:8000
 You can activate Gradle remote debugging by using the flags `org.gradle.debug=true` or `org.gradle.daemon.debug=true` in daemon mode.
 You can launch your application with the following command line:
 
-[source, shell]
+[source,bash]
 ----
 ./gradlew quarkusDev -Dorg.gradle.daemon.debug=true
 ----
@@ -717,7 +717,7 @@ Now, you can run your IDE `Remote` configuration to attach it to `localhost:5005
 We have seen together how to test your extension and sometimes things don't go so well and you want to debug your tests.
 Same principle here, the trick is to enable the Maven Surefire remote debugging in order to attach an IDE `Remote` configuration.
 
-[source, shell]
+[source,shell]
 ----
 $ cd ./greeting
 $ mvn clean test -Dmaven.surefire.debug
@@ -734,7 +734,7 @@ Now that you just finish to build your first extension you should be eager to us
 Because your extension produces traditional JARs, the easiest way to share your extension is to publish it to a Maven repository.
 Once published you can simply declare it with your project dependencies. Let's demonstrate that by creating a simple Quarkus application
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 $mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
      -DprojectGroupId=org.acme \
@@ -764,7 +764,7 @@ NOTE: `quarkus-greeting` extension has to be installed in the local Maven reposi
 
 Run the application and notice the `Install Features` list contains the `quarkus-greeting` extension.
 
-[source, shell, subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 $ mvn clean compile quarkus:dev
 [INFO] Scanning for projects...

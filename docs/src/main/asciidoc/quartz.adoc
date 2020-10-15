@@ -42,7 +42,7 @@ The solution is located in the `quartz-quickstart` {quickstarts-tree-url}/quartz
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -205,7 +205,7 @@ NOTE: By default, the scheduler is not started unless a `@Scheduled` business me
 == Updating the application configuration file
 
 Edit the `application.properties` file and add the below configuration:
-[source,shell]
+[source,properties]
 ----
 # Quartz configuration
 quarkus.quartz.clustered=true <1>
@@ -377,7 +377,7 @@ networks:
 
 In a separate terminal, run the below command:
 
-[source,shell]
+[source,bash]
 ----
 docker-compose up postgres <1>
 ----
@@ -396,7 +396,7 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 
 The application can be packaged using `./mvnw clean package`. Once the build is successful, run the below command:
 
-[source,shell]
+[source,bash]
 ----
 docker-compose up --scale tasks=2 --scale nginx=1 <1>
 ----

@@ -475,7 +475,7 @@ WARNING: This mojo can be currently used only for adding extensions to an establ
 
 As and example, let's add a new extension called `my-ext` to the Quarkus source tree:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
@@ -2057,7 +2057,7 @@ These properties are especially useful in the development mode or when running t
 
 For example, you can specify the `quarkus.debug.generated-classes-dir` system property to have these classes written out to disk for inspection in the development mode:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:dev -Dquarkus.debug.generated-classes-dir=dump-classes
 ----
@@ -2066,14 +2066,14 @@ NOTE: The property value could be either an absolute path, such as `/home/foo/du
 
 You should see a line in the log for each class written to the directory:
 
-[source,shell]
+[source,text]
 ----
 INFO  [io.qua.run.boo.StartupActionImpl] (main) Wrote /path/to/my/app/target/dump-classes/io/quarkus/arc/impl/ActivateRequestContextInterceptor_Bean.class
 ----
 
 The property is also honored when running tests:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw clean test -Dquarkus.debug.generated-classes-dir=target/dump-generated-classes
 ----
@@ -2087,7 +2087,7 @@ It's not uncommon to develop an extension in a multi-module Maven project that a
 However, if you want to run the example in the development mode then the `-DnoDeps` system property must be used in order to exclude the local project dependencies.
 Otherwise, Quarkus attempts to monitor the extension classes and this may result in weird class loading issues.
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev -DnoDeps
 ----
@@ -2108,7 +2108,7 @@ A _feature_ represents a functionality provided by an extension.
 The name of the feature gets displayed in the log during application bootstrap.
 
 .Example Startup Lines
-[source, bash]
+[source,text]
 ----
 2019-03-22 14:02:37,884 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.061s.
 2019-03-22 14:02:37,884 INFO  [io.quarkus] (main) Installed features: [cdi, test-extension] <1>
@@ -2134,7 +2134,7 @@ The feature name should also map to a label in the extension's `devtools/common/
 the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
 using the Quarkus maven plugin as shown in this example taken from the link:rest-json[Writing JSON REST Services] guide where the `resteasy-jsonb` feature is referenced:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -2627,7 +2627,7 @@ public class SomeServiceRecorder {
 Objects created during the build phase that are passed into the runtime need to have a default constructor in order for them to be created and configured at startup of the runtime from the build time state. If an object does not have a default constructor you will see an error similar to the following during generation of the augmented artifacts:
 
 .DSAPublicKey Serialization Error
-[source,bash]
+[source,text]
 ----
 	[error]: Build step io.quarkus.deployment.steps.MainClassBuildStep#build threw an exception: java.lang.RuntimeException: Unable to serialize objects of type class sun.security.provider.DSAPublicKeyImpl to bytecode as it has no default constructor
 	at io.quarkus.builder.Execution.run(Execution.java:123)

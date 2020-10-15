@@ -27,7 +27,7 @@ The solution is located in the `security-jwt-quickstart` {quickstarts-tree-url}/
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -156,7 +156,7 @@ will produce undesirable behavior since JWT claims are naturally request scoped.
 
 Now we are ready to run our application. Use:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -429,7 +429,7 @@ First part - JWT headers, second part - JWT claims, third part - JWT signature.
 == Finally, Secured Access to /secured/roles-allowed
 Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the Quarkus server running using the `./mvnw compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
-[source,shell]
+[source,bash]
 ----
 curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA" http://127.0.0.1:8080/secured/roles-allowed; echo
 ----
@@ -542,7 +542,7 @@ public class TokenSecuredResource {
 
 Now generate the token again and run:
 
-[source,shell]
+[source,bash]
 ----
 curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA" http://127.0.0.1:8080/secured/roles-allowed-admin; echo
 ----
@@ -558,12 +558,12 @@ As usual, the application can be packaged using `./mvnw clean package` and execu
 .Runner jar Example
 [source,shell]
 ----
-Scotts-iMacPro:security-jwt-quickstart starksm$ ./mvnw clean package
+$ ./mvnw clean package
 [INFO] Scanning for projects...
 ...
 [INFO] [io.quarkus.creator.phase.runnerjar.RunnerJarPhase] Building jar: /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/security-jwt-quickstart/target/security-jwt-quickstart-runner.jar
 
-Scotts-iMacPro:security-jwt-quickstart starksm$ java -jar target/security-jwt-quickstart-runner.jar
+$ java -jar target/security-jwt-quickstart-runner.jar
 2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.796s. Listening on: http://[::]:8080
 2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
 ----
@@ -572,7 +572,7 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 .Native Executable Example
 [source,shell]
 ----
-Scotts-iMacPro:security-jwt-quickstart starksm$ ./mvnw clean package -Pnative
+$ ./mvnw clean package -Pnative
 [INFO] Scanning for projects...
 ...
 [security-jwt-quickstart-runner:25602]     universe:     493.17 ms
@@ -590,7 +590,7 @@ Scotts-iMacPro:security-jwt-quickstart starksm$ ./mvnw clean package -Pnative
 [INFO] Finished at: 2019-03-28T14:30:56-07:00
 [INFO] ------------------------------------------------------------------------
 
-Scotts-iMacPro:security-jwt-quickstart starksm$ ./target/security-jwt-quickstart-runner
+$ ./target/security-jwt-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
 2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
 ----
@@ -667,7 +667,9 @@ SmallRye JWT provides more properties which can be used to customize the token p
 == Create JsonWebToken with JWTParser
 
 If the JWT token can not be injected, for example, if it is embedded in the service request payload or the service endpoint acquires it out of band, then one can use `JWTParser`:
-```
+
+[source,java]
+----
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.smallrye.jwt.auth.principal.JWTParser;
 ...
@@ -677,11 +679,12 @@ String token = getTokenFromOidcServer();
 
 // Parse and verify the token
 JsonWebToken jwt = parser.parse(token);
-```
+----
 
 You can also use it to customize the way the token is verified or decrypted. For example, one can supply a local `SecretKey`:
 
-```
+[source,java]
+----
 import javax.crypto.SecretKey;
 import javax.ws.rs.GET;
 import javax.ws.rs.core.NewCookie;
@@ -692,12 +695,12 @@ import io.smallrye.jwt.build.Jwt;
 
 @Path("/secured")
 public class SecuredResource {
- @Inject JWTParser parser;
- private String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+  @Inject JWTParser parser;
+  private String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
- @GET
- @Produces("text/plain")
- public Response getUserName(@CookieParam("jwt") String jwtCookie) {
+  @GET
+  @Produces("text/plain")
+  public Response getUserName(@CookieParam("jwt") String jwtCookie) {
     Response response = null;
     if (jwtCookie == null) {
         // Create a JWT token signed using the 'HS256' algorithm
@@ -705,14 +708,15 @@ public class SecuredResource {
         // or create a JWT token encrypted using the 'A256KW' algorithm
         // Jwt.upn("alice").encryptWithSecret(secret);
         return Response.ok("Alice").cookie(new NewCookie("jwt", newJwtCookie)).build();
-    else {
+    } else {
         // All mp.jwt and smallrye.jwt properties are still effective, only the verification key is customized.
         JsonWebToken jwt = parser.verify(jwtCookie, secret);
         // or jwt = parser.decrypt(jwtCookie, secret);
         return Response.ok(jwt.getName()).build();
     }
+  }
 }
-```
+----
 
 == Token Decryption
 
@@ -875,7 +879,9 @@ String jwt = Jwt.claims("/tokenClaims.json").innerSign().encrypt();
 === Fast JWT Generation
 
 If `smallrye.jwt.sign.key-location` or/and `smallrye.jwt.encrypt.key-location` properties are set then one can secure the existing claims (resources, maps, JsonObjects) with a single call:
-```
+
+[source,java]
+----
 // More compact than Jwt.claims("/claims.json").sign();
 Jwt.sign("/claims.json");
 
@@ -884,7 +890,7 @@ Jwt.encrypt("/claims.json");
 
 // More compact than Jwt.claims("/claims.json").innerSign().encrypt();
 Jwt.signAndEncrypt("/claims.json");
-```
+----
 As mentioned above, `iat`, `exp`, `jti` and `iss` claims will be added if needed.
 
 === SmallRye JWT Builder configuration

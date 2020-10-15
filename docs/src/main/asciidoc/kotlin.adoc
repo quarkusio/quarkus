@@ -29,7 +29,7 @@ NB: For Gradle project setup please see below, and for further reference consult
 
 First, we need a new Kotlin project. This can be done using the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

@@ -35,7 +35,7 @@ The solution is located in the `spring-data-jpa-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -144,9 +144,10 @@ This configuration assumes that PostgreSQL will be running locally.
 
 A very easy way to accomplish that is by using the following Docker command:
 
-```
+[source,bash]
+----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:11.5
-```
+----
 
 If you plan on using a different setup, please change your `application.properties` accordingly.
 

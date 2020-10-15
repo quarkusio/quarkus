@@ -49,7 +49,7 @@ public class Fruit {
 ====
 Do you need a ready-to-use PostgreSQL server to try out the examples?
 
-[source,shell]
+[source,bash]
 ----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:10.5
 ----
@@ -62,7 +62,7 @@ docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name qua
 First, make sure your project has the `quarkus-reactive-pg-client` extension enabled.
 If you are creating a new project, set the `extensions` parameter as follows:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -73,7 +73,7 @@ cd reactive-pg-client-quickstart
 
 If you have an already created project, the `reactive-pg-client` extension can be added to an existing Quarkus project with the `add-extension` command:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="reactive-pg-client"
 ----
@@ -92,7 +92,7 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 
 Reactive REST endpoints in your application that return Uni or Multi need `Mutiny support for RESTEasy` extension (`io.quarkus:quarkus-resteasy-mutiny`) to work properly:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
 ----
@@ -108,7 +108,7 @@ If you're not familiar with Mutiny reactive types, read the link:getting-started
 We will expose `Fruit` instances over HTTP in the JSON format.
 Consequently, you also need to add the `quarkus-resteasy-jsonb` extension:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="resteasy-jsonb"
 ----
@@ -129,7 +129,7 @@ Of course, this is only a requirement for this guide, not any application using 
 
 The Reactive PostgreSQL Client can be configured with standard Quarkus datasource properties and a reactive URL:
 
-[source]
+[source,properties]
 .src/main/resources/application.properties
 ----
 quarkus.datasource.db-kind=postgresql
@@ -267,14 +267,14 @@ public Multi<Fruit> get() {
 
 Now start Quarkus in `dev` mode with:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
 
 Lastly, open your browser and navigate to http://localhost:8080/fruits, you should see:
 
-[source, shell]
+[source,json]
 ----
 [{"id":3,"name":"Apple"},{"id":1,"name":"Orange"},{"id":2,"name":"Pear"}]
 ----

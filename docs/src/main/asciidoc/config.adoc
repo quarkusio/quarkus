@@ -32,7 +32,7 @@ The solution is located in the `config-quickstart` {quickstarts-tree-url}/config
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -99,7 +99,7 @@ public String hello() {
 By default, Quarkus reads `application.properties`.
 Edit the `src/main/resources/application.properties` with the following content:
 
-[source,shell]
+[source,properties]
 ----
 # Your configuration properties
 greeting.message = hello
@@ -374,7 +374,7 @@ All the Quarkus configuration properties are link:all-config[documented and sear
 It is also possible to generate an example `application.properties` with all known configuration properties, to make
 it easy to see what Quarkus configuration options are available. To do this, run:
 
-[source,shell]
+[source,bash]
 --
 ./mvnw quarkus:generate-config
 --
@@ -395,7 +395,7 @@ when applicable. For example this HTTP port config entry will appear as:
 Rather than generating an example config file, you can also add these to you actual config file by setting the `-Dfile`
 parameter:
 
-[source,shell]
+[source,bash]
 --
 ./mvnw quarkus:generate-config -Dfile=application.properties
 --
@@ -409,7 +409,7 @@ Quarkus does much of its configuration and bootstrap at build time.
 Most properties will then be read and set during the build time step.
 To change them, make sure to repackage your application.
 
-[source,shell]
+[source,bash]
 --
 ./mvnw clean package
 --
@@ -586,7 +586,7 @@ corresponding system property, or setting the corresponding environment variable
 ==== Miscellaneous
 The default Quarkus application runtime profile is set to the profile used to build the application.
 For example:
-[source,shell]
+[source,bash]
 ----
 ./mvnw package -Pnative -Dquarkus.profile=prod-aws
 ./target/my-app-1.0-runner // <1>

@@ -194,7 +194,7 @@ include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-server-con
 
 To enable TLS, use the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.grpc.server.ssl.certificate=src/main/resources/tls/server.pem
 quarkus.grpc.server.ssl.key=src/main/resources/tls/server.key
@@ -206,7 +206,7 @@ NOTE: When SSL/TLS is configured, `plain-text` is automatically disabled.
 
 To use TLS with mutual authentication, use the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.grpc.server.ssl.certificate=src/main/resources/tls/server.pem
 quarkus.grpc.server.ssl.key=src/main/resources/tls/server.key

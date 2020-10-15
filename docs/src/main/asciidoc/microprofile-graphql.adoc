@@ -65,7 +65,7 @@ The solution is located in the `microprofile-graphql-quickstart` {quickstarts-tr
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -360,7 +360,7 @@ Launch the quarkus app:
 
 The full schema of the GraphQL API can be retrieved by calling the following:
 
-[source]
+[source,bash]
 ----
 curl http://localhost:8080/graphql/schema.graphql
 ----

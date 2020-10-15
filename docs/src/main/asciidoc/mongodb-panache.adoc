@@ -63,7 +63,7 @@ The solution is located in the `mongodb-panache-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

@@ -39,7 +39,7 @@ To complete this guide, you need:
 
 The easiest way to start working with KMS is to run a local instance as a container.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 docker run --rm --name local-kms --publish 8011:4599 -e SERVICES=kms -e START_WEB=0 -d localstack/localstack:0.11.1
 ----
@@ -59,18 +59,18 @@ Default output format [None]:
 
 Create a KMS master key queue using AWS CLI and store in `MASTER_KEY_ARN` environment variable.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 MASTER_KEY_ARN=`aws kms create-key --profile localstack --endpoint-url=http://localhost:8011 | cut -f3`
 ----
 Generate a key data as 256-bit symmetric key (AES 256)
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 aws kms generate-data-key --key-id $MASTER_KEY_ARN --key-spec AES_256 --profile localstack --endpoint-url=http://localhost:8011
 ----
 
 Or, if you want to use your AWS account create a key using your default profile
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 MASTER_KEY_ARN=`aws kms create-key | cut -f3`
 aws kms generate-data-key --key-id $MASTER_KEY_ARN --key-spec AES_256
@@ -90,7 +90,7 @@ The solution is located in the `amazon-kms-quickstart` {quickstarts-tree-url}/am
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

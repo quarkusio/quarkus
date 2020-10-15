@@ -277,7 +277,7 @@ quarkus.native.additional-build-args=--initialize-at-run-time=com.example.SomeCl
 
 and in the case of using the Maven configuration instead of `application.properties`:
 
-[source]
+[source,xml]
 ----
 <quarkus.native.additional-build-args>--initialize-at-run-time=com.example.SomeClass\,org.acme.SomeOtherClass</quarkus.native.additional-build-args>
 ----

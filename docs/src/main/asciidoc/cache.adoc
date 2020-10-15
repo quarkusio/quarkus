@@ -42,7 +42,7 @@ The solution is located in the `cache-quickstart` directory.
 
 First, we need to create a new Quarkus project using Maven with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -191,7 +191,7 @@ First, run the application using `./mvnw compile quarkus:dev` from the project d
 Then, call `http://localhost:8080/weather?city=Raleigh` from a browser.
 After six long seconds, the application will answer something like this:
 
-[source]
+[source,json]
 ----
 {"dailyForecasts":["MONDAY will be cloudy in Raleigh","TUESDAY will be chilly in Raleigh","WEDNESDAY will be rainy in Raleigh"],"executionTimeInMs":6001}
 ----

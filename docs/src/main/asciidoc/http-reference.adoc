@@ -102,7 +102,7 @@ As with the certificate/key file combination, Quarkus will first try to resolve 
 
 Add the following property to your `application.properties`:
 
-[source,shell]
+[source,bash]
 ----
 quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
 ----

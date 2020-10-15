@@ -37,7 +37,7 @@ The solution is located in the `spring-web-quickstart` {quickstarts-tree-url}/sp
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

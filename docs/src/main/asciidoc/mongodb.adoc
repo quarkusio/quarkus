@@ -41,7 +41,7 @@ The solution is located in the `mongodb-quickstart` {quickstarts-tree-url}/mongo
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -293,7 +293,7 @@ The old `io.quarkus.mongodb.runtime.MongoClientName` has been deprecated. It sti
 As by default, `MongoClient` is configured to access a local MongoDB database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
 
 If you want to use Docker to run a MongoDB database, you can use the following command to launch one:
-[source,shell]
+[source,bash]
 ----
 docker run -ti --rm -p 27017:27017 mongo:4.0
 ----

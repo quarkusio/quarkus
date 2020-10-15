@@ -39,7 +39,7 @@ The solution is located in the `opentracing-quickstart` {quickstarts-tree-url}/o
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -108,7 +108,7 @@ There are two ways to configure the Jaeger tracer within the application.
 
 The first approach is by providing the properties within the `src/main/resources/application.properties` file:
 
-[source,shell]
+[source,properties]
 ----
 quarkus.jaeger.service-name=myservice // <1>
 quarkus.jaeger.sampler-type=const // <2>
@@ -127,36 +127,39 @@ The second approach is to supply the properties as https://www.jaegertracing.io/
 
 The first step is to start the tracing system to collect and display the captured traces:
 
-[source, text]
+[source,bash]
 ----
 docker run -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 jaegertracing/all-in-one:latest
 ----
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
-[source, text]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
 
 or if configuring the tracer via environment variables:
 
-[source, text]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1"
 ----
 
 Once both the application and tracing system are started, you can make a request to the provided endpoint:
 
-```
+[source,shell]
+----
 $ curl http://localhost:8080/hello
 hello
-```
+----
 When the first request has been submitted, the Jaeger tracer within the app will be initialized:
-```
+
+[source]
+----
 2019-10-16 09:35:23,464 INFO  [io.jae.Configuration] (executor-thread-1) Initialized tracer=JaegerTracer(version=Java-0.34.0, serviceName=myservice, reporter=RemoteReporter(sender=UdpSender(), closeEnqueueTimeout=1000), sampler=ConstSampler(decision=true, tags={sampler.type=const, sampler.param=true}), tags={hostname=localhost.localdomain, jaeger.version=Java-0.34.0, ip=127.0.0.1}, zipkinSharedRpcSpan=false, expandExceptionLogs=false, useTraceId128Bit=false)
 13:20:11 INFO  traceId=1336b2b0a76a96a3, parentId=0, spanId=1336b2b0a76a96a3, sampled=true [or.ac.qu.TracedResource] (executor-thread-63) hello
-```
+----
 
 Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 

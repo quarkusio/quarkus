@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.jackson.runtime;
+package io.quarkus.resteasy.common.runtime.jackson;
 
 import java.io.File;
 import java.io.IOException;

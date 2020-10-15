@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.deployment;
+package io.quarkus.resteasy.common.deployment;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;

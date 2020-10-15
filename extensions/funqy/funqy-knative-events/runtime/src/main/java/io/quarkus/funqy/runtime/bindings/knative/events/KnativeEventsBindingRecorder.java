@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -29,7 +28,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -94,7 +92,7 @@ public class KnativeEventsBindingRecorder {
         return new ObjectMapper();
     }
 
-    public Consumer<Route> start(
+    public Handler<RoutingContext> start(
             FunqyConfig funqyConfig,
             FunqyKnativeEventsConfig eventsConfig,
             Supplier<Vertx> vertx,
@@ -150,12 +148,6 @@ public class KnativeEventsBindingRecorder {
         Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), beanContainer, objectMapper, eventsConfig,
                 defaultInvoker, typeTriggers, executor);
 
-        return new Consumer<Route>() {
-
-            @Override
-            public void accept(Route route) {
-                route.handler(handler);
-            }
-        };
+        return handler;
     }
 }

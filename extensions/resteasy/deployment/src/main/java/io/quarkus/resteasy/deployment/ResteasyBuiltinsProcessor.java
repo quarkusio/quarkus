@@ -20,6 +20,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.resteasy.common.deployment.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationFailedExceptionMapper;
@@ -45,6 +46,11 @@ public class ResteasyBuiltinsProcessor {
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.RESTEASY);
+    }
+
+    @BuildStep
+    ResteasyConfigBuildItem resteasyConfig(ResteasyJsonConfig resteasyJsonConfig) {
+        return new ResteasyConfigBuildItem(resteasyJsonConfig.jsonDefault);
     }
 
     @BuildStep

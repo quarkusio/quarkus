@@ -1,55 +1,25 @@
 package io.quarkus.maven;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.Set;
 import java.util.function.Consumer;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
-import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.prebuild.CodeGenFailureException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.deployment.CodeGenerator;
-import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.bootstrap.model.AppModel;
 
 @Mojo(name = "generate-code", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
-public class GenerateCodeMojo extends AbstractMojo {
-
-    @Parameter(defaultValue = "${project.build.directory}")
-    private File buildDir;
-
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    protected MavenProject project;
-
-    @Component
-    private RepositorySystem repoSystem;
-
-    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
-    private RepositorySystemSession repoSession;
-
-    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
-    private List<RemoteRepository> repos;
+public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
     /**
      * Skip the execution of this mojo
@@ -58,96 +28,55 @@ public class GenerateCodeMojo extends AbstractMojo {
     private boolean skipSourceGeneration = false;
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        String projectDir = project.getBasedir().getAbsolutePath();
-        Path sourcesDir = Paths.get(projectDir, "src", "main");
-        doExecute(sourcesDir, path -> project.addCompileSourceRoot(path.toString()), false);
-    }
-
-    void doExecute(Path sourcesDir,
-            Consumer<Path> sourceRegistrar,
-            boolean test) throws MojoFailureException, MojoExecutionException {
-        if (project.getPackaging().equals("pom")) {
+    protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
+        if (mavenProject().getPackaging().equals("pom")) {
             getLog().info("Type of the artifact is POM, skipping build goal");
-            return;
+            return false;
         }
         if (skipSourceGeneration) {
-            getLog().info(
-                    "Skipping quarkus:" + (test ? "generate-code-tests" : "generate-code") + " (Quarkus code generation)");
-            return;
+            getLog().info("Skipping Quarkus code generation");
+            return false;
         }
+        return true;
+    }
 
+    @Override
+    protected void doExecute() throws MojoExecutionException, MojoFailureException {
+        String projectDir = mavenProject().getBasedir().getAbsolutePath();
+        Path sourcesDir = Paths.get(projectDir, "src", "main");
+        generateCode(sourcesDir, path -> mavenProject().addCompileSourceRoot(path.toString()), false);
+    }
+
+    void generateCode(Path sourcesDir,
+            Consumer<Path> sourceRegistrar,
+            boolean test) throws MojoFailureException, MojoExecutionException {
+
+        ClassLoader originalTccl = Thread.currentThread().getContextClassLoader();
         try {
 
-            final Properties projectProperties = project.getProperties();
-            final Properties realProperties = new Properties();
-            for (String name : projectProperties.stringPropertyNames()) {
-                if (name.startsWith("quarkus.")) {
-                    realProperties.setProperty(name, projectProperties.getProperty(name));
-                }
-            }
-
-            MavenArtifactResolver resolver = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(repoSession)
-                    .setRemoteRepositories(repos)
-                    .build();
-
-            final AppArtifact appArtifact = getAppArtifact();
-
-            CuratedApplication curatedApplication = QuarkusBootstrap.builder()
-                    .setAppArtifact(appArtifact)
-                    .setProjectRoot(project.getBasedir().toPath())
-                    .setMavenArtifactResolver(resolver)
-                    .setBaseClassLoader(BuildMojo.class.getClassLoader())
-                    .setBuildSystemProperties(realProperties)
-                    .setLocalProjectDiscovery(false)
-                    .setTargetDirectory(buildDir.toPath())
-                    .build().bootstrap();
-
-            Path generatedSourcesDir = test
-                    ? buildDir.toPath().resolve("generated-test-sources")
-                    : buildDir.toPath().resolve("generated-sources");
+            final CuratedApplication curatedApplication = bootstrapApplication();
 
             QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
-            List<CodeGenData> codeGens = CodeGenerator.init(deploymentClassLoader,
-                    Collections.singleton(sourcesDir),
-                    generatedSourcesDir,
-                    buildDir.toPath(),
-                    sourceRegistrar);
+            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
-            for (CodeGenData codeGen : codeGens) {
-                CodeGenerator.trigger(
-                        deploymentClassLoader,
-                        codeGen,
-                        curatedApplication.getAppModel());
-            }
-        } catch (CodeGenFailureException any) {
-            throw new MojoFailureException("Prepare phase of the quarkus-maven-plugin failed: " + any.getMessage(), any);
+            final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
+            final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, Set.class, Path.class,
+                    Path.class,
+                    Consumer.class, AppModel.class);
+            initAndRun.invoke(null, deploymentClassLoader,
+                    Collections.singleton(sourcesDir),
+                    generatedSourcesDir(test),
+                    buildDir().toPath(),
+                    sourceRegistrar,
+                    curatedApplication.getAppModel());
         } catch (Exception any) {
-            throw new MojoExecutionException("Prepare phase of the quarkus-maven-plugin threw an error: " + any.getMessage(),
-                    any);
+            throw new MojoExecutionException("Quarkus code generation phase has failed", any);
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalTccl);
         }
     }
 
-    private AppArtifact getAppArtifact() throws MojoExecutionException {
-        final Path classesDir = Paths.get(project.getBuild().getOutputDirectory());
-        if (!Files.exists(classesDir)) {
-            if (getLog().isDebugEnabled()) {
-                getLog().debug("Creating empty " + classesDir + " just to be able to resolve the project's artifact");
-            }
-            try {
-                Files.createDirectories(classesDir);
-            } catch (IOException e) {
-                throw new MojoExecutionException("Failed to create " + classesDir);
-            }
-        }
-
-        final Artifact projectArtifact = project.getArtifact();
-        final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
-                projectArtifact.getVersion());
-        appArtifact.setPath(classesDir);
-        return appArtifact;
+    private Path generatedSourcesDir(boolean test) {
+        return test ? buildDir().toPath().resolve("generated-test-sources") : buildDir().toPath().resolve("generated-sources");
     }
 }

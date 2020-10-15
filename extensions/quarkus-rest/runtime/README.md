@@ -69,6 +69,8 @@
   but it was obsoleted in https://tools.ietf.org/html/rfc2965 and then in https://tools.ietf.org/html/rfc6265, which does not send cookie params to the server
   and those params are not `$`-prefixed anymore.
 - Should add HTTP status codes constants, without requiring to go via Response.Status.OK.getStatus() which is not a constant
+- Parameter-less `@*Param` annotations, make `@Context` optional for method parameters, same for `@PathParam`
+- Turn `@BeanParam` into a type declaration
 
 *** Spec extensions proposed
 

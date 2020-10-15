@@ -107,6 +107,7 @@ import io.quarkus.rest.runtime.core.parameters.converters.PathSegmentParamConver
 import io.quarkus.rest.runtime.core.parameters.converters.RuntimeResolvedConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SetConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SortedSetConverter;
+import io.quarkus.rest.runtime.mapping.URITemplate;
 import io.quarkus.rest.runtime.model.BeanParamInfo;
 import io.quarkus.rest.runtime.model.InjectableBean;
 import io.quarkus.rest.runtime.model.MethodParameter;
@@ -208,12 +209,7 @@ public class EndpointIndexer {
     public ResourceClass createEndpoints(ClassInfo classInfo) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer,
-                    recorder, existingConverters, config, additionalReaders,
-                    additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters);
             ResourceClass clazz = new ResourceClass();
-            clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
             if (path != null) {
                 if (path.endsWith("/")) {
@@ -225,6 +221,12 @@ public class EndpointIndexer {
                 clazz.setPath(path);
             }
             clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
+            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
+                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer,
+                    recorder, existingConverters, config, additionalReaders,
+                    additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters,
+                    clazz.getPathParameters());
+            clazz.getMethods().addAll(methods);
 
             // get an InjectableBean view of our class
             InjectableBean injectableBean = scanInjectableBean(classInfo, classInfo,
@@ -285,7 +287,9 @@ public class EndpointIndexer {
             }
             ParameterExtractor extractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
                     generatedClassBuildItemBuildProducer, existingConverters, additionalReaders, false, false,
-                    annotations, field.type(), field.toString(), true, hasRuntimeConverters);
+                    annotations, field.type(), field.toString(), true, hasRuntimeConverters,
+                    // We don't support annotation-less path params in injectable beans: only annotations
+                    Collections.emptySet(), field.name());
             ParameterExtractor result = extractor.invoke();
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
@@ -346,12 +350,7 @@ public class EndpointIndexer {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             String path) {
         try {
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
-                    recorder, existingConverters, config, additionalReaders,
-                    additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters);
             RestClientInterface clazz = new RestClientInterface();
-            clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
             if (path != null) {
                 if (path.endsWith("/")) {
@@ -362,6 +361,12 @@ public class EndpointIndexer {
                 }
                 clazz.setPath(path);
             }
+            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
+                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                    recorder, existingConverters, config, additionalReaders,
+                    additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters,
+                    clazz.getPathParameters());
+            clazz.getMethods().addAll(methods);
             return clazz;
         } catch (Exception e) {
             //kinda bogus, but we just ignore failed interfaces for now
@@ -378,7 +383,8 @@ public class EndpointIndexer {
             QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
             AdditionalWriters additionalWriters, Map<String, InjectableBean> injectableBeans,
-            Map<DotName, String> httpAnnotationToMethod, MethodCreator initConverters, boolean hasRuntimeConverters) {
+            Map<DotName, String> httpAnnotationToMethod, MethodCreator initConverters, boolean hasRuntimeConverters,
+            Set<String> pathParameters) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
@@ -410,7 +416,7 @@ public class EndpointIndexer {
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath,
                             existingConverters,
                             config, additionalReaders, additionalWriters, httpAnnotationToMethod, injectableBeans,
-                            initConverters, hasRuntimeConverters);
+                            initConverters, hasRuntimeConverters, pathParameters);
 
                     ret.add(method);
                 }
@@ -440,7 +446,7 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath,
                             existingConverters, config, additionalReaders, additionalWriters, httpAnnotationToMethod,
-                            injectableBeans, initConverters, hasRuntimeConverters);
+                            injectableBeans, initConverters, hasRuntimeConverters, pathParameters);
                     ret.add(method);
                 }
             }
@@ -453,7 +459,8 @@ public class EndpointIndexer {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
                         generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                         recorder, existingConverters, config, additionalReaders,
-                        additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters));
+                        additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters,
+                        pathParameters));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -463,7 +470,8 @@ public class EndpointIndexer {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
                         generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                         recorder, existingConverters, config, additionalReaders,
-                        additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters));
+                        additionalWriters, injectableBeans, httpAnnotationToMethod, initConverters, hasRuntimeConverters,
+                        pathParameters));
             }
         }
         return ret;
@@ -491,8 +499,11 @@ public class EndpointIndexer {
             String methodPath, Map<String, String> existingConverters, QuarkusRestConfig config,
             AdditionalReaders additionalReaders, AdditionalWriters additionalWriters,
             Map<DotName, String> httpAnnotationToMethod,
-            Map<String, InjectableBean> injectableBeans, MethodCreator initConverters, boolean hasRuntimeConverters) {
+            Map<String, InjectableBean> injectableBeans, MethodCreator initConverters, boolean hasRuntimeConverters,
+            Set<String> classPathParameters) {
         try {
+            Set<String> pathParameters = new HashSet<>(classPathParameters);
+            URITemplate.parsePathParameters(methodPath, pathParameters);
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
                     .size()];
@@ -516,7 +527,8 @@ public class EndpointIndexer {
 
                 ParameterExtractor parameterExtractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
                         generatedClassBuildItemBuildProducer, existingConverters, additionalReaders, suspended, sse,
-                        anns, paramType, errorLocation, false, hasRuntimeConverters).invoke();
+                        anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters, info.parameterName(i))
+                                .invoke();
                 suspended |= parameterExtractor.isSuspended();
                 sse |= parameterExtractor.isSse();
                 String name = parameterExtractor.getName();
@@ -910,12 +922,14 @@ public class EndpointIndexer {
         private ParameterConverterSupplier converter;
         private final boolean field;
         private boolean hasRuntimeConverters;
+        private Set<String> pathParameters;
+        private String sourceName;
 
         public ParameterExtractor(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
                 Map<String, String> existingConverters, AdditionalReaders additionalReaders, boolean suspended, boolean sse,
                 Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
-                boolean hasRuntimeConverters) {
+                boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName) {
             this.currentClassInfo = currentClassInfo;
             this.actualEndpointInfo = actualEndpointInfo;
             this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
@@ -928,6 +942,8 @@ public class EndpointIndexer {
             this.errorLocation = errorLocation;
             this.field = field;
             this.hasRuntimeConverters = hasRuntimeConverters;
+            this.pathParameters = pathParameters;
+            this.sourceName = sourceName;
         }
 
         public boolean isObtainedAsCollection() {
@@ -1031,12 +1047,18 @@ public class EndpointIndexer {
                 type = ParameterType.MATRIX;
                 convertable = true;
             } else {
-                //unannoated field
-                //just ignore it
-                if (field) {
-                    return this;
+                if (pathParameters.contains(sourceName)) {
+                    name = sourceName;
+                    type = ParameterType.PATH;
+                    convertable = true;
+                } else {
+                    //unannoated field
+                    //just ignore it
+                    if (field) {
+                        return this;
+                    }
+                    type = ParameterType.BODY;
                 }
-                type = ParameterType.BODY;
             }
             single = true;
             converter = null;

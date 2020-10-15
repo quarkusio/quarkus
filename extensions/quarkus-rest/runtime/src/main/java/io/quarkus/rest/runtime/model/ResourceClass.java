@@ -1,8 +1,11 @@
 package io.quarkus.rest.runtime.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import io.quarkus.rest.runtime.mapping.URITemplate;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
 public class ResourceClass {
@@ -26,6 +29,8 @@ public class ResourceClass {
     private boolean perRequestResource;
 
     private boolean isFormParamRequired;
+
+    private Set<String> pathParameters = new HashSet<>();
 
     public boolean isSubResource() {
         return path == null;
@@ -55,6 +60,10 @@ public class ResourceClass {
 
     public ResourceClass setPath(String path) {
         this.path = path;
+        if (path != null) {
+            pathParameters.clear();
+            URITemplate.parsePathParameters(path, pathParameters);
+        }
         return this;
     }
 
@@ -76,6 +85,15 @@ public class ResourceClass {
 
     public ResourceClass setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
+        return this;
+    }
+
+    public Set<String> getPathParameters() {
+        return pathParameters;
+    }
+
+    public ResourceClass setPathParameters(Set<String> pathParameters) {
+        this.pathParameters = pathParameters;
         return this;
     }
 }

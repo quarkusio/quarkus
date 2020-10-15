@@ -41,7 +41,8 @@ public class SimpleQuarkusRestTestCase {
                                     SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class,
                                     ParameterWithFromString.class, BeanParamSubClass.class, FieldInjectedSubClassResource.class,
                                     BeanParamSuperClass.class, IllegalClassExceptionMapper.class,
-                                    MyParameterProvider.class, MyParameterConverter.class, MyParameter.class);
+                                    MyParameterProvider.class, MyParameterConverter.class, MyParameter.class,
+                                    NewParamsRestResource.class);
                 }
             });
 
@@ -413,5 +414,13 @@ public class SimpleQuarkusRestTestCase {
                 .queryParam("int", "666")
                 .get("/injection-subclass/param2")
                 .then().body(Matchers.equalTo("OK"));
+    }
+
+    @Test
+    public void testNewParams() {
+        RestAssured.get("/new-params/myklass/myregex/mymethod")
+                .then()
+                .log().ifError()
+                .body(Matchers.equalTo("GET:myklass:myregex:mymethod"));
     }
 }

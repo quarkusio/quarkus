@@ -36,7 +36,7 @@ to Azure.
 Create the azure maven project for your Quarkus application using our Maven Archetype.
 
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn archetype:generate \
     -DarchetypeGroupId=io.quarkus \
@@ -61,7 +61,7 @@ The values above are defined as properties in the generated `pom.xml` file.
 
 If you don't login to Azure you won't be able to deploy.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 az login
 ----
@@ -72,7 +72,7 @@ The `pom.xml` you generated in the previous step pulls in the `azure-functions-m
 generates config files and a staging directory required by the `azure-functions-maven-plugin`.  Here's
 how to execute it.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean install azure-functions:deploy
 ----

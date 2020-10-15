@@ -80,7 +80,7 @@ The solution is located in the `kogito-quickstart` {quickstarts-tree-url}/kogito
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

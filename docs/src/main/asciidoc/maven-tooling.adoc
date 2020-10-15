@@ -12,7 +12,7 @@ include::./attributes.adoc[]
 
 With Maven, you can scaffold a new project with:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
@@ -85,14 +85,14 @@ Instructions to build the image and run the container are written in those Docke
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:list-extensions
 ----
 
 You can enable an extension using:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
 ----
@@ -120,7 +120,7 @@ $ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 
 You can install all extensions which match a globbing pattern :
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="hibernate-*"
 ----
@@ -130,7 +130,7 @@ You can install all extensions which match a globbing pattern :
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw compile quarkus:dev
 ----
@@ -184,7 +184,7 @@ jar, do not attempt to run normal devmode.
 
 Now you need to connect your local agent to the remote host, using the `remote-dev` command:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:remote-dev -Dquarkus.live-reload.url=http://my-remote-host:8080
 ----
@@ -318,7 +318,7 @@ To be able to use it, the following plugin configuration has to be added to the 
 
 Now you should be able to execute `./mvnw quarkus-bootstrap:build-tree` on your project and see something like:
 
-[source,shell,subs=attributes+]
+[source,text,subs=attributes+]
 ----
 [INFO] --- quarkus-bootstrap-maven-plugin:{quarkus-version}:build-tree (default-cli) @ getting-started ---
 [INFO] org.acme:getting-started:jar:1.0-SNAPSHOT
@@ -345,7 +345,7 @@ To run Integration Tests on the native executable, make sure to have the proper 
 
 [source,shell]
 ----
-./mvnw verify -Pnative
+$ ./mvnw verify -Pnative
 ...
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms
@@ -379,7 +379,7 @@ Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/gettin
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
 ----

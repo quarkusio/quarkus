@@ -25,7 +25,7 @@ when all that is needed is the ability to push to a container image registry.
 
 To use this feature, add the following extension to your project:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="container-image-jib"
 ----
@@ -48,7 +48,7 @@ The extension `quarkus-container-image-docker` is using the Docker binary and th
 
 To use this feature, add the following extension to your project.
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="container-image-docker"
 ----
@@ -75,7 +75,7 @@ The creation of such objects is being taken care of by the Quarkus Kubernetes ex
 
 To build a container image for your project, `quarkus.container-image.build=true` needs to be set using any of the ways that Quarkus supports.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.container-image.build=true
 ----
@@ -84,7 +84,7 @@ To build a container image for your project, `quarkus.container-image.build=true
 
 To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.container-image.push=true
 ----
@@ -97,7 +97,7 @@ It does not make sense to use multiple extension as part of the same build. When
 
 For example, if both `container-image-docker` and `container-image-s2i` are present and the user needs to use `container-image-docker`:
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.builder=docker
 ----
@@ -119,7 +119,7 @@ For example, https://gitlab.com/[GitLab] provides such a registry and in the pro
 makes available the `CI_REGISTRY_IMAGE` environment variable
 (see GitLab's https://docs.gitlab.com/ee/ci/variables/[documentation]) for more information), which can be used in Quarkus like so:
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.image=${CI_REGISTRY_IMAGE}
 ----

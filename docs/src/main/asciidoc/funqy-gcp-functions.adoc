@@ -28,14 +28,14 @@ To complete this guide, you need:
 
 Login to Google Cloud is necessary for deploying the application and it can be done as follows:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud auth login
 ----
 
 At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud components install beta
 ----
@@ -51,7 +51,7 @@ The solution is located in the `funqy-google-cloud-functions-quickstart` {quicks
 Create an application with the `quarkus-funqy-google-cloud-functions` extension.
 You can use the following Maven command to create it:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -80,7 +80,7 @@ Only one Funqy function can be exported per Google Cloud Functions deployment.  
 annotated with `@Funq` in your project, then there is no worries.  If you have multiple functions defined
 within your project, then you will need to choose the function within your Quarkus `application.properties`:
 
-[source, subs=attributes+]
+[source,properties,subs=attributes+]
 ----
 quarkus.funqy.export=greet
 ----
@@ -91,7 +91,7 @@ Alternatively, you can set the `QUARKUS_FUNQY_EXPORT` environment variable when 
 
 Build the project using maven.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package
 ----
@@ -159,9 +159,11 @@ Then you will be able to use `gcloud` to deploy your function to Google Cloud, t
 [WARNING]
 ====
 The first time you launch the `gcloud beta functions deploy`, you can have the following error message:
-```
+
+[source]
+----
 ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
-```
+----
 This means that Cloud Build is not activated yet. To overcome this error, open the URL shown in the error, follow the instructions and then wait a few minutes before retrying the command.
 ====
 
@@ -169,7 +171,7 @@ This means that Cloud Build is not activated yet. To overcome this error, open t
 
 Use this command to deploy to Google Cloud Functions:
 
-[source]
+[source,bash]
 ----
 gcloud beta functions deploy quarkus-example-funky-pubsub \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
@@ -185,7 +187,7 @@ define that this function will be triggered by all message publication inside th
 
 To trigger an event to this function, you can use the `gcloud functions call` command:
 
-[source]
+[source,bash]
 ----
 gcloud functions call quarkus-example-funky-pubsub --data '{"data":"Pub/Sub"}'
 ----
@@ -196,14 +198,14 @@ The `--data '{"data":"Hello, Pub/Sub"}'` option allow to specify the message to 
 
 Before deploying your function, you need to create a bucket.
 
-[source]
+[source,bash]
 ----
 gsutil mb gs://quarkus-hello
 ----
 
 Then, use this command to deploy to Google Cloud Functions:
 
-[source]
+[source,bash]
 ----
 gcloud beta functions deploy quarkus-example-funky-storage \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction \
@@ -219,7 +221,7 @@ define that this function will be triggered by all new file inside this bucket.
 
 To trigger an event to this function, you can use the `gcloud functions call` command:
 
-[source]
+[source,bash]
 ----
 gcloud functions call quarkus-example-funky-storage --data '{"name":"test.txt"}'
 ----
@@ -234,7 +236,7 @@ The easiest way to locally test your function is using the Cloud Function invoke
 
 You can download it via Maven using the following command:
 
-[source]
+[source,bash]
 ----
 mvn dependency:copy \
   -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
@@ -249,7 +251,7 @@ Then you can use it to launch your function locally, again, the command depends 
 
 For background functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction`.
 
-[source]
+[source,bash]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
   --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
@@ -260,7 +262,7 @@ IMPORTANT: The `--classpath` parameter needs to be set to the previously package
 
 Then you can call your background function via an HTTP call with a payload containing the event:
 
-[source]
+[source,bash]
 ----
 curl localhost:8080 -d '{"data":{"data":"world"}}'
 ----
@@ -271,7 +273,7 @@ This will call your PubSub background function with a PubSubMessage `{"data":"he
 
 For background functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction`.
 
-[source]
+[source,bash]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
   --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
@@ -282,7 +284,7 @@ IMPORTANT: The `--classpath` parameter needs to be set to the previously package
 
 Then you can call your background function via an HTTP call with a payload containing the event:
 
-[source]
+[source,bash]
 ----
 curl localhost:8080 -d '{"data":{"name":"text"}}'
 ----

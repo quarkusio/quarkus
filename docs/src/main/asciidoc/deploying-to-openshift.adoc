@@ -25,7 +25,7 @@ To complete this guide, you need:
 
 First, we need a new project that contains the OpenShift extension. This can be done using the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -61,14 +61,14 @@ Furthermore, the items provided by `io.quarkus.deployment.ApplicationConfig` aff
 
 If the OpenShift extension was not included during the bootstraping of the project nor was it added subsequently (check pom.xml file for it), then it can be added like this:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
  ./mvnw quarkus:add-extension -Dextensions="openshift"
 ----
  
 Building is handled by the link:container-image#s2i[container-image-s2i] extension. To trigger a build:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.container-image.build=true
 ----
@@ -76,7 +76,7 @@ Building is handled by the link:container-image#s2i[container-image-s2i] extensi
 The build that will be performed is an s2i binary build. The input of the build is the jar that has been built locally and the output of the build is an ImageStream that is configured to automatically trigger a deployment.
 
 To deploy the container image created in the above step to OpenShift, follow these commands:
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 oc get is
 oc new-app --name=greeting <project>/openshift-quickstart:1.0-SNAPSHOT
@@ -101,14 +101,14 @@ When a non-s2i container image extension is used, an ImageStream is created that
 
 To select which extension will be used for building the image:
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.builder=docker
 ----
 
 or
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.builder=jib
 ----
@@ -117,14 +117,14 @@ quarkus.container-image.builder=jib
 
 If the OpenShift extension was not included during the bootstraping of the project nor was it added subsequently (check pom.xml file for it), then it can be added like this:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
  ./mvnw quarkus:add-extension -Dextensions="openshift"
 ----
 
 To trigger a build and deployment in a single step:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.kubernetes.deploy=true
 ----
@@ -135,7 +135,7 @@ In other words, any container image build after the initial deployment will auto
 
 To confirm the above command has created an image stream, a service resource and has deployed the application (has a pod running), apply these commands:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 oc get is
 oc get pods
@@ -144,7 +144,7 @@ oc get svc
 
 To expose the created service to a route and test it:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 oc expose svc/greeting
 oc get routes
@@ -161,14 +161,14 @@ Some examples are provided in the sections below:
 
 To expose a `Route` for the Quarkus application:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.expose=true
 ----
 
 Tip: You don't necessarily need to add this property in the `application.properties`. You can pass it as a command line argument:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.openshift.expose=true
 ----
@@ -179,7 +179,7 @@ The same applies to all properties listed below.
 
 To add a label in the generated resources:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.labels.foo=bar
 ----
@@ -188,7 +188,7 @@ quarkus.openshift.labels.foo=bar
 
 To add an annotation in the generated resources:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.annotations.foo=bar
 ----
@@ -197,7 +197,7 @@ quarkus.openshift.annotations.foo=bar
 
 To add an annotation in the generated resources:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.env-vars.my-env-var.value=foobar
 ----
@@ -212,7 +212,7 @@ That is because for environment variables there are additional options rather th
 
 To add all key value pairs of a `Secret` as environment variables:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.env-vars.my-env-var.secret=my-secret
 ----
@@ -221,7 +221,7 @@ quarkus.openshift.env-vars.my-env-var.secret=my-secret
 
 To add all key value pairs of a `ConfigMap` as environment variables:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.env-vars.my-env-var.configmap=my-secret
 ----
@@ -233,7 +233,7 @@ The OpenShift extension allows the user to configure both volumes and mounts for
 
 Any volume can be mounted with a simple configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.mounts.my-volume.path=/where/to/mount
 ----
@@ -244,14 +244,14 @@ The volumes themselves can be configured as shown in the sections below:
 
 ===== Secret volumes
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.secret-volumes.my-volume.secret-name=my-secret
 ----
 
 ===== ConfigMap volumes
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-secret
 ----
@@ -262,7 +262,7 @@ OpenShift also provides the ability to use Knative via the link:https://www.open
 
 The first order of business is to instruct Quarkus to generate Knative resources by setting:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.deployment-target=knative
 ----
@@ -270,7 +270,7 @@ quarkus.kubernetes.deployment-target=knative
 In order to leverage OpenShift S2I to build the container image on the cluster and use the resulting container image for the Knative application,
 we need to set a couple of configuration properties:
 
-[source]
+[source,properties]
 ----
 # set the Kubernetes namespace which will be used to run the application
 quarkus.container-image.group=geoand

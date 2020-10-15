@@ -35,7 +35,7 @@ It contains a very simple UI to use the JAX-RS resources created here, too.
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -144,7 +144,7 @@ For all configuration properties, see the link:#config-reference[Configuration r
 
 Now we are ready to run our application. Use:
 
-[source,shell]
+[source,bash]
 ----
 ./mvnw quarkus:dev
 ----
@@ -244,7 +244,7 @@ You need to obtain the token from a standard OAuth2 authentication server (https
 
 You can find below a curl example of such call for a `client_credential` flow:
 
-[source,shell]
+[source,bash]
 ----
 curl -X POST "http://oauth-server/token?grant_type=client_credentials" \
 -H  "Accept: application/json" -H  "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ="

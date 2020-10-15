@@ -43,7 +43,7 @@ The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/mi
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -171,7 +171,7 @@ To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`
 
 First, ask the endpoint whether some numbers are prime numbers.
 
-[source,shell]
+[source,bash]
 ----
 curl localhost:8080/350
 ----
@@ -180,7 +180,7 @@ The application will respond that 350 is not a prime number because it can be di
 
 Now for some large prime number so that the test takes a bit more time:
 
-[source,shell]
+[source,bash]
 ----
 curl localhost:8080/629521085409773
 ----
@@ -199,7 +199,7 @@ spent determining whether or not a number is prime. The Micrometer extension
 enables additional system, jvm, and http metrics. A subset of the collected metrics
 are shown below.
 
-[source,shell]
+[source,text]
 ----
 # HELP http_server_requests_seconds
 # TYPE http_server_requests_seconds summary

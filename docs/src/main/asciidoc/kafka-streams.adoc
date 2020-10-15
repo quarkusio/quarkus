@@ -32,14 +32,14 @@ Using the dev mode, you'll instantly see messages on the output topic(s) as prod
 
 For the best development experience, we recommend applying the following configuration settings to your Kafka broker:
 
-[source, subs=attributes+]
+[source,properties,subs=attributes+]
 ----
 group.min.session.timeout.ms=250
 ----
 
 Also specify the following settings in your Quarkus `application.properties`:
 
-[source, subs=attributes+]
+[source,properties,subs=attributes+]
 ----
 kafka-streams.consumer.session.timeout.ms=250
 kafka-streams.consumer.heartbeat.interval.ms=200
@@ -82,7 +82,7 @@ The solution is located in the `kafka-streams-quickstart` {quickstarts-tree-url}
 First, we need a new project with the temperature value producer.
 Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -213,7 +213,7 @@ The two methods each return a _reactive stream_ whose items are sent to the stre
 The two channels are mapped to Kafka topics using the Quarkus configuration file `application.properties`.
 For that, add the following to the file `producer/src/main/resources/application.properties`:
 
-[source]
+[source,properties]
 ----
 # Configure the Kafka broker location
 kafka.bootstrap.servers=localhost:9092
@@ -236,7 +236,7 @@ With the producer application in place, it's time to implement the actual aggreg
 which will run the Kafka Streams pipeline.
 Create another project like so:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -475,7 +475,7 @@ Changing their values requires a rebuild of the application.
 
 We now can build the `producer` and `aggregator` applications:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -f producer/pom.xml
 ./mvnw clean package -f aggregator/pom.xml
@@ -559,14 +559,14 @@ You should see log statements from the `producer` application about messages bei
 Now run an instance of the _debezium/tooling_ image, attaching to the same network all the other containers run in.
 This image provides several useful tools such as _kafkacat_ and _httpie_:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 docker run --tty --rm -i --network ks debezium/tooling:1.1
 ----
 
 Within the tooling container, run _kafkacat_ to examine the results of the streaming pipeline:
 
-[source, subs=attributes+]
+[source,subs=attributes+]
 ----
 kafkacat -b kafka:9092 -C -o beginning -q -t temperatures-aggregated
 
@@ -763,7 +763,7 @@ public class WeatherStationEndpoint {
 
 With this code in place, it's time to rebuild the application and the `aggregator` service in Docker Compose:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -f aggregator/pom.xml
 docker-compose stop aggregator
@@ -1013,7 +1013,7 @@ public class WeatherStationEndpoint {
 Now stop the `aggregator` service again and rebuild it.
 Then let's spin up three instances of it:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -f aggregator/pom.xml
 docker-compose stop aggregator
@@ -1070,7 +1070,8 @@ http 2af13fe516a9:8080/weather-stations/data/1
 
 If that node holds the data for key "1", you'll get a response like this:
 
-```
+[source]
+----
 HTTP/1.1 200 OK
 Connection: keep-alive
 Content-Length: 74
@@ -1085,23 +1086,25 @@ Date: Tue, 11 Jun 2019 19:16:31 GMT
   "stationId": 1,
   "stationName": "Hamburg"
 }
-```
+----
 
 Otherwise, the service will send a redirect:
 
-```
+[source]
+----
 HTTP/1.1 303 See Other
 Connection: keep-alive
 Content-Length: 0
 Date: Tue, 18 Jun 2019 20:01:03 GMT
 Location: http://1eb39af8d587:8080/weather-stations/data/1
-```
+----
 
 You can also have _httpie_ automatically follow the redirect by passing the `--follow option`:
 
-```bash
+[source,bash]
+----
 http --follow 2af13fe516a9:8080/weather-stations/data/1
-```
+----
 
 == Running Natively
 
@@ -1111,7 +1114,7 @@ natively via GraalVM without further configuration.
 To run both the `producer` and `aggregator` applications in native mode,
 the Maven builds can be executed using the `native` profile:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw clean package -f producer/pom.xml -Pnative -Dnative-image.container-runtime=docker
 ./mvnw clean package -f aggregator/pom.xml -Pnative -Dnative-image.container-runtime=docker
@@ -1119,7 +1122,7 @@ the Maven builds can be executed using the `native` profile:
 
 Now create an environment variable named `QUARKUS_MODE` and with value set to "native":
 
-[source, shell]
+[source,bash]
 ----
 export QUARKUS_MODE=native
 ----
@@ -1128,7 +1131,7 @@ This is used by the Docker Compose file to use the correct `Dockerfile` when bui
 The Kafka Streams application can work with less than 50 MB RSS in native mode.
 To do so, add the `Xmx` option to the program invocation in `aggregator/src/main/docker/Dockerfile.native`:
 
-[source, shell]
+[source,dockerfile]
 ----
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Xmx32m"]
 ----
@@ -1190,7 +1193,9 @@ Obviously you can create your liveness and readiness probes based on the respect
 === Liveness health check
 
 Here is an example of the liveness check:
-```
+
+[source]
+----
 curl -i http://aggregator:8080/health/live
 
 HTTP/1.1 503 Service Unavailable
@@ -1209,13 +1214,15 @@ content-length: 225
         }
     ]
 }
-```
+----
 The `state` is coming from the `KafkaStreams.State` enum.
 
 === Readiness health check
 
 Here is an example of the readiness check:
-```
+
+[source]
+----
 curl -i http://aggregator:8080/health/ready
 
 HTTP/1.1 503 Service Unavailable
@@ -1234,8 +1241,7 @@ content-length: 265
         }
     ]
 }
-
-```
+----
 
 == Going Further
 

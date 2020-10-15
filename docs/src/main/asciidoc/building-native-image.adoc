@@ -90,7 +90,7 @@ What does having a working C developer environment mean?
 
 * On Linux, you will need GCC, and the glibc and zlib headers. Examples for common distributions:
 +
-[source,shell]
+[source,bash]
 ----
 # dnf (rpm-based)
 sudo dnf install gcc glibc-devel zlib-devel libstdc++-static
@@ -99,7 +99,7 @@ sudo apt-get install build-essential libz-dev zlib1g-dev
 ----
 * XCode provides the required dependencies on macOS:
 +
-[source,shell]
+[source,bash]
 ----
 xcode-select --install
 ----
@@ -122,14 +122,14 @@ Version {graalvm-version} is required. Using the community edition is enough.
 Make sure to download and install at Java 11 version.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
-[source,shell]
+[source,bash]
 ----
 export GRAALVM_HOME=$HOME/Development/graalvm/
 ----
 +
 On macOS, point the variable to the `Home` sub-directory:
 +
-[source,shell]
+[source,bash]
 ----
 export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/
 ----
@@ -142,7 +142,7 @@ Installing via scoop will do this for you.
 ====
 3. Install the `native-image` tool using `gu install`:
 +
-[source,shell]
+[source,bash]
 ----
 ${GRAALVM_HOME}/bin/gu install native-image
 ----
@@ -150,13 +150,13 @@ ${GRAALVM_HOME}/bin/gu install native-image
 Some previous releases of GraalVM included the `native-image` tool by default.  This is no longer the case; it must be installed as a second step after GraalVM itself is installed. Note: there is an outstanding issue xref:graal-and-catalina[using GraalVM with macOS Catalina].
 4. (Optional) Set the `JAVA_HOME` environment variable to the GraalVM installation directory.
 +
-[source,shell]
+[source,bash]
 ----
 export JAVA_HOME=${GRAALVM_HOME}
 ----
 5. (Optional) Add the GraalVM `bin` directory to the path
 +
-[source,shell]
+[source,bash]
 ----
 export PATH=${GRAALVM_HOME}/bin:$PATH
 ----
@@ -167,14 +167,14 @@ export PATH=${GRAALVM_HOME}/bin:$PATH
 ====
 GraalVM binaries are not (yet) notarized for macOS Catalina as reported in this https://github.com/oracle/graal/issues/1724[GraalVM issue]. This means that you may see the following error when using `gu`:
 
-[source,shell]
+[source,bash]
 ----
 “gu” cannot be opened because the developer cannot be verified
 ----
 
 Use the following command to recursively delete the `com.apple.quarantine` extended attribute on the GraalVM install directory as a workaround:
 
-[source,shell]
+[source,bash]
 -----
 xattr -r -d com.apple.quarantine ${GRAALVM_HOME}/../..
 -----
@@ -234,7 +234,7 @@ the `x64 Native Tools Command Prompt` that was installed with the Visual Studio 
 
 Another solution is to write a script to do this for you:
 
-[source,shell]
+[source,bash]
 ----
 cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && mvn package -Pnative'
 ----
@@ -298,7 +298,7 @@ The executable is retrieved using the `native.image.path` system property config
 To see the `NativeGreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
 [source,shell]
 ----
-./mvnw verify -Pnative
+$ ./mvnw verify -Pnative
 ...
 [getting-started-1.0-SNAPSHOT-runner:18820]     universe:     587.26 ms
 [getting-started-1.0-SNAPSHOT-runner:18820]      (parse):   2,247.59 ms
@@ -368,7 +368,7 @@ to install as little software as possible).
 To this end, Quarkus provides a very convenient way of creating a native Linux executable by leveraging a container runtime such as Docker or podman.
 The easiest way of accomplishing this task is to execute:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw package -Pnative -Dquarkus.native.container-build=true
 ----
@@ -376,7 +376,7 @@ The easiest way of accomplishing this task is to execute:
 [TIP]
 ====
 You can also select the container runtime to use with:
-[source,shell]
+[source,bash]
 ----
 # Docker
 ./mvnw package -Pnative -Dquarkus.native.container-runtime=docker
@@ -392,7 +392,7 @@ it is recommended you add these to your `application.properties` in order to avo
 [TIP]
 ====
 Building with Mandrel requires a custom builder image parameter to be passed additionally:
-[source,shell]
+[source,bash]
 ----
 ./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
 ----
@@ -413,7 +413,7 @@ By far the easiest way to create a container-image from your Quarkus application
 
 If one of those extensions is present, then creating a container image for the native executable is essentially a matter of executing a single command:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
 ----
@@ -464,14 +464,14 @@ You can read more about UBI on:
 
 Then, if you didn't delete the generated native executable, you can build the docker image with:
 
-[source,shell]
+[source,bash]
 ----
 docker build -f src/main/docker/Dockerfile.native -t quarkus-quickstart/getting-started .
 ----
 
 And finally, run it with:
 
-[source,shell]
+[source,bash]
 ----
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
@@ -548,14 +548,14 @@ If you are using Gradle in your project, you can use this sample Dockerfile.  Sa
 Before launching our Docker build, we need to update the default `.dockerignore` file as it filters everything except the `target` directory and as we plan to build inside a container we need to be able to copy the `src` directory. So edit your `.dockerignore` and remove or comment its content.
 ====
 
-[source,shell]
+[source,bash]
 ----
 docker build -f src/main/docker/Dockerfile.multistage -t quarkus-quickstart/getting-started .
 ----
 
 And finally, run it with:
 
-[source,shell]
+[source,bash]
 ----
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
@@ -597,7 +597,7 @@ The location of source cache is `target/{project.name}-{project.version}-native-
 ====
 To load the sources in `gdb`, run:
 
-[source,shell]
+[source,bash]
 ----
 directory target/{project.name}-{project.version}-native-image-source-jar
 ----
@@ -606,13 +606,13 @@ in the `gdb` prompt.
 
 Or start `gdb` with:
 
-[source,shell]
+[source,bash]
 ----
 gdb -ex 'directory target/{project.name}-{project.version}-native-image-source-jar' target/{project.name}-{project.version}-runner
 ----
 
 e.g.,
-[source,shell]
+[source,bash]
 ----
 gdb -ex 'directory target/getting-started-1.0-SNAPSHOT-native-image-source-jar' target/getting-started-1.0-SNAPSHOT-runner
 ----

@@ -47,20 +47,20 @@ To complete this guide, you need:
 
 Let's start Vault in development mode:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 docker run --rm --cap-add=IPC_LOCK -e VAULT_ADDR=http://localhost:8200 -p 8200:8200 -d --name=dev-vault vault:{vault-version}
 ----
 
 You can check that vault is running with:
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 docker logs dev-vault
 ----
 
 You should see:
 
-[source, shell, subs=attributes+]
+[source,text, subs=attributes+]
 ----
 ==> Vault server configuration:
 
@@ -115,21 +115,21 @@ to access a secret stored in the _kv secret engine_.
 
 First open a shell inside the vault container:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 docker exec -it dev-vault sh
 ----
 
 Set the `VAULT_TOKEN` with the value that was printed in the logs:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 export VAULT_TOKEN={root-token}
 ----
 
 You can check Vault's status using the CLI command `vault status`:
 
-[source, shell]
+[source,text]
 ----
 Key             Value
 ---             -----
@@ -146,7 +146,7 @@ HA Enabled      false
 
 Now let's add a secret configuration for our application:
 
-[source, shell]
+[source,bash]
 ----
 vault kv put secret/myapps/vault-quickstart/config a-private-key=123456
 ----
@@ -155,7 +155,7 @@ We have defined a path `secret/myapps/vault-quickstart` in Vault that we need to
 
 Create a policy that gives read access to `secret/myapps/vault-quickstart` and subpaths:
 
-[source, shell]
+[source,bash]
 ----
 cat <<EOF | vault policy write vault-quickstart-policy -
 path "secret/data/myapps/vault-quickstart/*" {
@@ -176,7 +176,7 @@ It would be `secret/myapps/vault-quickstart/*` with a _kv secret engine version 
 
 And finally, let's enable the _userpass auth secret engine_, and create user `bob` with access to the `vault-quickstart-policy`:
 
-[source, shell]
+[source,bash]
 ----
 vault auth enable userpass
 vault write auth/userpass/users/bob password=sinclair policies=vault-quickstart-policy
@@ -189,14 +189,14 @@ Quarkus supports additional Vault Authentication methods. Check the {vault-auth-
 
 To check that the configuration is correct, try logging in:
 
-[source, shell]
+[source,bash]
 ----
 vault login -method=userpass username=bob password=sinclair
 ----
 
 You should see:
 
-[source, shell, subs=attributes+]
+[source,text, subs=attributes+]
 ----
 Success! You are now authenticated. The token information displayed below
 is already stored in the token helper. You do NOT need to run "vault login"
@@ -216,7 +216,7 @@ token_meta_username    bob
 
 Now set `VAULT_TOKEN` to the `token` above (instead of the root token), and try reading the vault-quickstart secret config:
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 export VAULT_TOKEN={client-token}
 vault kv get secret/myapps/vault-quickstart/config
@@ -224,7 +224,7 @@ vault kv get secret/myapps/vault-quickstart/config
 
 You should see:
 
-[source, shell]
+[source,text]
 ----
 ======== Data ========
 Key              Value
@@ -234,7 +234,7 @@ a-private-key    123456
 
 == Create a Quarkus application with a secret configuration
 
-[source, shell, subs=attributes+]
+[source,bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -303,7 +303,7 @@ public class GreetingResource {
 
 Now compile the application and run it:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw clean install
 java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
@@ -311,14 +311,14 @@ java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
 
 Finally test the new endpoint:
 
-[source, shell]
+[source,bash]
 ----
 curl http://localhost:8080/hello/private-key
 ----
 
 You should see:
 
-[source, shell]
+[source,text]
 ----
 123456
 ----
@@ -347,20 +347,20 @@ public String getSecrets(@PathParam("vault-path") String vaultPath) {
 ----
 
 Add a new key in Vault:
-[source, shell]
+[source,bash]
 ----
 vault kv put secret/myapps/vault-quickstart/private mysecret=abc
 ----
 
 Restart the application after rebuilding it, and test it with the new endpoint:
 
-[source, shell]
+[source,bash]
 ----
 curl http://localhost:8080/hello/secrets/private
 ----
 
 You should see:
-[source, shell]
+[source,text]
 ----
 {mysecret=abc}
 ----

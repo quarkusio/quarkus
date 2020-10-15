@@ -86,7 +86,7 @@ image::getting-started-architecture.png[alt=Architecture]
 
 First, we need a Java file. jbang lets you create an initial version using:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 jbang init scripting/quarkusapp.java
 cd scripting
@@ -118,7 +118,7 @@ Is illustrating how you add dependencies to this script. This is a feature of `j
 
 Go ahead and update this line to include the `quarkus-resteasy` dependency like so:
 
-[source,shell,subs=attributes+]
+[source,java,subs=attributes+]
 ----
 //DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
 ----
@@ -337,7 +337,7 @@ The reason is that JAX-RS `@PathParam` relies on the `-parameters` compiler flag
 
 We fix that by adding the following comment instruction to the file:
 
-[source,shell,subs=attributes+]
+[source,java,subs=attributes+]
 ----
 //JAVAC_OPTIONS -parameters
 ----

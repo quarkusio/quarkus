@@ -34,7 +34,7 @@ However, you can go right to the completed example.
 
 Download an {quickstarts-archive-url}[archive] or clone the git repository:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 git clone {quickstarts-clone-url}
 ----
@@ -164,7 +164,7 @@ The easiest way to create a new Quarkus project is to open a terminal and run th
 
 For Linux and macOS users
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -179,14 +179,14 @@ For Windows users
 
 - If using cmd, (don't use forward slash `\`)
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-mutiny,resteasy-jsonb"
 ----
 
 - If using Powershell, wrap `-D` parameters in double quotes
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-mutiny,resteasy-jsonb"
 ----
@@ -294,7 +294,7 @@ While, in this example, the resulting item is emitted immediately, you can imagi
 
 NOTE: In order to get Mutiny working properly with JAX-RS resources, make sure the Mutiny support for RESTEasy extension (`io.quarkus:quarkus-resteasy-mutiny`) is present, otherwise add the extension by executing the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:add-extensions \
     -Dextensions="io.quarkus:quarkus-resteasy-mutiny"
@@ -312,7 +312,7 @@ Or add `quarkus-resteasy-mutiny` into your dependencies manually.
 
 Now, start the application using:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw quarkus:dev
 ----
@@ -353,7 +353,8 @@ This endpoint streams the items to the client as a JSON Array.
 The name and number of messages are parameterized using path parameters.
 
 So calling the endpoint produces something like:
-[source, shell]
+
+[source,shell]
 ----
 $ curl http://localhost:8080/hello/greeting/3/neo
 ["hello neo - 0","hello neo - 1","hello neo - 2"]
@@ -377,7 +378,7 @@ As the `@Produces` annotation defines `SERVER_SENT_EVENTS`, JAX-RS needs it to k
 
 You can see the result using:
 
-[source, shell]
+[source,shell]
 ----
 $ curl -N http://localhost:8080/hello/stream/5/neo
 data: hello neo - 0
@@ -400,7 +401,7 @@ In this section, we are going to see how you can use the Reactive PostgreSQL dri
 
 Create a new project using:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -413,7 +414,7 @@ cd getting-started-reactive-crud
 
 This application is interacting with a PostgreSQL database, so you need one:
 
-[source, shell]
+[source,bash]
 ----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
            --name postgres-quarkus-reactive -e POSTGRES_USER=quarkus_test \
@@ -613,7 +614,7 @@ Also, you can use Vert.x clients directly.
 
 First of all, make sure the `quarkus-vertx` extension is present. If not, activate the extension by executing the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:add-extensions \
     -Dextensions=vertx

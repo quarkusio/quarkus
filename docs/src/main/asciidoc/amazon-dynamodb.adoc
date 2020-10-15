@@ -40,7 +40,7 @@ To complete this guide, you need:
 
 The easiest way to start working with DynamoDB is to run a local instance as a container.
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 docker run --publish 8000:8000 amazon/dynamodb-local:1.11.477 -jar DynamoDBLocal.jar -inMemory -sharedDb
 ----
@@ -76,7 +76,7 @@ For more information, see https://docs.aws.amazon.com/amazondynamodb/latest/deve
 
 We recommend to use the AWS CLI to provision the table:
 
-[source,shell,subs="verbatim,attributes"]
+[source,bash,subs="verbatim,attributes"]
 ----
 aws dynamodb create-table --table-name QuarkusFruits \
                           --attribute-definitions AttributeName=fruitName,AttributeType=S \
@@ -98,7 +98,7 @@ The solution is located in the `amazon-dynamodb-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

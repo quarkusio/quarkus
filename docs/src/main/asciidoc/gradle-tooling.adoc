@@ -17,7 +17,7 @@ This is just a caution, and we recommend if you like Gradle you try it out and g
 
 The easiest way to scaffold a Gradle project, is currently to use the Quarkus Maven plugin like so:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
@@ -120,14 +120,14 @@ It is not possible to use a custom test configuration profile in native mode for
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew listExtensions
 ----
 
 You can enable an extension using:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew addExtension --extensions="hibernate-validator"
 ----
@@ -141,7 +141,7 @@ If no extension is found or if more than one extensions match, you will see a re
 
 [source,shell]
 ----
-./gradlew addExtension --extensions="jdbc,agroal,non-exist-ent"
+$ ./gradlew addExtension --extensions="jdbc,agroal,non-exist-ent"
 [...]
 ❌ Multiple extensions matching 'jdbc'
      * io.quarkus:quarkus-jdbc-h2
@@ -155,7 +155,7 @@ If no extension is found or if more than one extensions match, you will see a re
 
 You can install all extensions which match a globbing pattern:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew addExtension --extensions="hibernate*"
 ----
@@ -165,7 +165,7 @@ You can install all extensions which match a globbing pattern:
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew quarkusDev
 ----
@@ -208,7 +208,7 @@ WARNING: Do not use this in production. This should only be used in a developmen
 
 To do this you must have the `quarkus-undertow-websockets` extension installed:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew addExtension --extensions="undertow-websockets"
 ----
@@ -223,7 +223,7 @@ password must be set on both the local and remote processes, while the url only 
 
 Start Quarkus in dev mode on the remote host. Now you need to connect your local agent to the remote host:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew quarkusRemoteDev -Dquarkus.live-reload.url=http://my-remote-host:8080
 ----
@@ -331,7 +331,7 @@ quarkusBuild {
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
 ----
@@ -355,7 +355,7 @@ Be aware that a given Quarkus version might not be compatible with all the image
 
 Run the native tests using:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew testNative
 ----
@@ -366,14 +366,14 @@ This task depends on `quarkusBuild`, so it will generate the native image before
 
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying an `--uber-jar` argument as follows:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew quarkusBuild --uber-jar
 ----
 
 When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `--ignored-entry` argument:
 
-[source,shell]
+[source,bash]
 ----
 ./gradlew quarkusBuild --uber-jar --ignored-entry=META-INF/file1.txt
 ----

@@ -107,7 +107,7 @@ public class SimpleFunctionChain {
 The `configChain` function has its Cloud Event mapping changed by configuration within {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/resources/application.properties[application.properties].
 
 
-[source, subs=attributes+]
+[source,properties,subs=attributes+]
 ----
 quarkus.funqy.knative-events.mapping.configChain.trigger=defaultChain.output
 quarkus.funqy.knative-events.mapping.configChain.response-type=annotated
@@ -207,14 +207,14 @@ Funqy also works with Quarkus Dev mode!
 
 First build the Java artifacts:
 
-[source, shell]
+[source,bash]
 ----
 mvn clean install
 ----
 
 Next, a docker image is required by Knative, so you'll need to build that next:
 
-[source, shell]
+[source,bash]
 ----
 docker build -f src/main/docker/Dockerfile.jvm -t yourAccountName/funqy-knative-events-quickstart .
 ----
@@ -224,7 +224,7 @@ Dockerfile is a standard Quarkus dockerfile.  No special Knative magic.
 
 Push your image to docker hub or quay
 
-[source, shell]
+[source,bash]
 ----
 docker push yourAccountName/funqy-knative-events-quickstart
 ----
@@ -263,7 +263,7 @@ don't have to have a deployment per function, the quickstart combines everything
 
 Deploy the service yaml.
 
-[source, shell]
+[source,bash]
 ----
 kubectl apply -n knativetutorial -f src/main/k8s/funqy-service.yaml
 ----
@@ -296,7 +296,7 @@ When a Cloud Event is pushed to the Broker, it will trigger the spin up of the s
 
 There's a trigger yaml file for each of our 4 Funqy functions.  Deploy them all:
 
-[source, shell]
+[source,bash]
 ----
 kubectl apply -n knativetutorial -f src/main/k8s/defaultChain-trigger.yaml
 kubectl apply -n knativetutorial -f src/main/k8s/configChain-trigger.yaml
@@ -312,14 +312,14 @@ files so you can see the messages flowing through the Funqy function event chain
 Make sure you have the `stern` tool installed.  See the Knative Tutorial setup for information on that.  Run stern
 to look for logs outputted by our Funqy deployment
 
-[source, shell]
+[source,bash]
 ----
 stern funq user-container
 ----
 
 Open a separate terminal.  You'll first need to learn the URL of the broker.  Execute this command to find it.
 
-[source, shell]
+[source,bash]
 ----
 kubectl get broker default -o jsonpath='{.status.address.url}'
 ----
@@ -329,14 +329,14 @@ Remember this URL.
 
 Next thing we need to do is ssh into our Kubernetes cluster so that we can send a curl request to our broker.
 
-[source, shell]
+[source,bash]
 ----
 kubectl -n knativetutorial exec -it curler -- /bin/bash
 ----
 
 You will now be in a shell within the Kubernetes cluster.  Within the shell, execute this curl command
 
-[source, shell]
+[source,bash]
 ----
 curl -v "http://default-broker.knativetutorial.svc.cluster.local" \
 -X POST \

@@ -43,7 +43,7 @@ The solution is located in the `kafka-quickstart` {quickstarts-tree-url}/kafka-q
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -249,7 +249,7 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 * `generated-price` -> sink in which we write the prices
 * `prices` -> source in which we read the prices
 
-[source]
+[source,properties]
 ----
 # Configure the SmallRye Kafka connector
 kafka.bootstrap.servers=localhost:9092
@@ -313,7 +313,7 @@ Nothing spectacular here. On each received price, it updates the page.
 If you followed the instructions, you should have Kafka running.
 Then, you just need to run the application using:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw quarkus:dev
 ----
@@ -326,7 +326,7 @@ NOTE: If you started the Kafka broker with docker compose, stop it using `CTRL+C
 
 You can build the native executable with:
 
-[source, shell]
+[source,bash]
 ----
 ./mvnw package -Pnative
 ----

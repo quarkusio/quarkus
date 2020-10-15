@@ -27,7 +27,7 @@ To complete this guide, you need:
 
 Let's create a new project that contains both the Kubernetes and Jib extensions:
 
-[source,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -142,7 +142,7 @@ The full source of the `kubernetes.json` file looks something like this:
 
 The generated manifest can be applied to the cluster from the project root using `kubectl`:
 
-[source]
+[source,bash]
 ----
 kubectl apply -f target/kubernetes/kubernetes.json
 ----
@@ -152,7 +152,7 @@ The name of the image is controlled by the Jib extension and can be customized u
 
 For example with a configuration like:
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.group=quarkus #optional, default to the system user name
 quarkus.container-image.name=demo-app #optional, defaults to the application name
@@ -165,7 +165,7 @@ The image that will be used in the generated manifests will be `quarkus/demo-app
 
 The Docker registry can be specified with the following property:
 
-[source]
+[source,properties]
 ----
 quarkus.container-image.registry=my.docker-registry.net
 ----
@@ -181,7 +181,7 @@ The generated manifests use the Kubernetes link:https://kubernetes.io/docs/conce
 These labels can be customized using `quarkus.kubernetes.name`, `quarkus.kubernetes.version` and `quarkus.kubernetes.part-of`.
 For example by adding the following configuration to your `application.properties`:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.part-of=todo-app
 quarkus.kubernetes.name=todo-rest
@@ -193,7 +193,7 @@ quarkus.kubernetes.version=1.0-rc.1
 As is described in detail in the <<#openshift, OpenShift>> section, customizing OpenShift (or Knative) properties is done in the same way, but replacing
 `kubernetes` with `openshift` (or `knative`). The previous example for OpenShift would look like this:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.part-of=todo-app
 quarkus.openshift.name=todo-rest
@@ -216,7 +216,7 @@ The labels in generated resources will look like:
 
 To add additional custom labels, for example `foo=bar` just apply the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.labels.foo=bar
 ----
@@ -239,7 +239,7 @@ Out of the box, the generated resources will be annotated with version control r
 
 Custom annotations can be added in a way similar to labels.For example to add the annotation `foo=bar` and `app.quarkus/id=42` just apply the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.annotations.foo=bar
 quarkus.kubernetes.annotations."app.quarkus/id"=42
@@ -360,7 +360,7 @@ This would generate the following in the `env` section of your container:
 
 It's also possible to use the value from another field to add a new environment variable by specifying the path of the field to be used as a source, as follows:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.env.fields.foo=metadata.name
 ----
@@ -370,7 +370,7 @@ quarkus.kubernetes.env.fields.foo=metadata.name
 As is described in detail in the <<#openshift, OpenShift>> section, customizing OpenShift properties is done in the same way, but replacing
 `kubernetes` with `openshift`. The previous example for OpenShift would look like this:
 
-[source]
+[source,properties]
 ----
 quarkus.openshift.env.fields.foo=metadata.name
 ----
@@ -410,7 +410,7 @@ only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
 The Kubernetes extension allows the user to configure both volumes and mounts for the application.
 Any volume can be mounted with a simple configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.mounts.my-volume.path=/where/to/mount
 ----
@@ -420,14 +420,14 @@ The volumes themselves can be configured as shown in the sections below.
 
 ===== Secret volumes
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.secret-volumes.my-volume.secret-name=my-secret
 ----
 
 ===== ConfigMap volumes
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-secret
 ----
@@ -436,7 +436,7 @@ quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-secret
 
 To change the number of replicas from 1 to 3:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.replicas=3
 ----
@@ -459,7 +459,7 @@ More information about the health extension can be found in the relevant link:mi
 === Customizing the readiness probe:
 To set the initial delay of the probe to 20 seconds and the period to 45:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.readiness-probe.initial-delay=20s
 quarkus.kubernetes.readiness-probe.period=45s
@@ -468,7 +468,7 @@ quarkus.kubernetes.readiness-probe.period=45s
 === Add hostAliases
 To add entries to a Pod's `/etc/hosts` file (more information can be found in https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/[Kubernetes documentation]), just apply the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.hostaliases."10.0.0.0".hostnames=foo.com,bar.org
 ----
@@ -523,7 +523,7 @@ This extension assumes a couple things:
 * Users won't be using an image registry and will instead make their container image accessible to the Kubernetes cluster by building it directly
 into Minikube's Docker daemon. To use Minikube's Docker daemon you must first execute:
 +
-[source]
+[source,bash]
 ----
 eval $(minikube -p minikube docker-env)
 ----
@@ -531,7 +531,7 @@ eval $(minikube -p minikube docker-env)
 * Applications deployed to Kubernetes won't be accessed via a Kubernetes `Ingress`, but rather as a `NodePort` `Service`.
 The advantage of doing this is that the URL of an application can be retrieved trivially by executing:
 +
-[source]
+[source,bash]
 ----
 minikube service list
 ----
@@ -593,7 +593,7 @@ The table below describe all the available configuration options.
 Properties that use non-standard types, can be referenced by expanding the property.
 For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.readiness-probe.initial-delay=20s
 quarkus.kubernetes.readiness-probe.period=45s
@@ -733,7 +733,7 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 
 One way to deploy an application to OpenShift is to use s2i (source to image) to create an image stream from the source and then deploy the image stream:
 
-[source]
+[source,bash]
 ----
 ./mvnw quarkus:remove-extension -Dextensions="kubernetes, jib"
 ./mvnw quarkus:add-extension -Dextensions="openshift"
@@ -753,14 +753,14 @@ A description of OpenShift resources and customisable properties is given below 
 
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.deployment-target=openshift
 ----
 
 If you need to generate resources for both platforms (vanilla Kubernetes and OpenShift), then you need to include both (comma separated).
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.deployment-target=kubernetes,openshift
 ----
@@ -770,14 +770,14 @@ Following the execution of `./mvnw package -Dquarkus.container-image.build=true 
 
 These manifests can be deployed as is to a running cluster, using `kubectl`:
 
-[source]
+[source,bash]
 ----
 kubectl apply -f target/kubernetes/openshift.json
 ----
 
 OpenShift users might want to use `oc` instead of `kubectl`:
 
-[source]
+[source,bash]
 ----
 oc apply -f target/kubernetes/openshift.json
 ----
@@ -828,7 +828,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 To enable the generation of Knative resources, you need to include Knative in the target platforms:
 
-[source]
+[source,properties]
 ----
 quarkus.kubernetes.deployment-target=knative
 ----
@@ -877,7 +877,7 @@ The full source of the `knative.json` file looks something like this:
 
 The generated manifest can be deployed as is to a running cluster, using `kubectl`:
 
-[source]
+[source,bash]
 ----
 kubectl apply -f target/kubernetes/knative.json
 ----
@@ -949,7 +949,7 @@ Properties referring to config group arrays (e.g. `kubernetes.labels[0]`, `kuber
 
 The code below demonstrates the change in `labels` config:
 
-[source]
+[source,properties]
 ----
 # Old labels config:
 kubernetes.labels[0].name=foo
@@ -961,7 +961,7 @@ quarkus.kubernetes.labels.foo=bar
 
 The code below demonstrates the change in `env-vars` config:
 
-[source]
+[source,properties]
 ----
 # Old env-vars config:
 kubernetes.env-vars[0].name=foo
@@ -981,7 +981,7 @@ See <<#env-vars>> and more specifically <<env-vars-backwards>> for more details.
 To trigger building and deploying a container image you need to enable the `quarkus.kubernetes.deploy` flag (the flag is disabled by default - furthermore it has no effect during test runs or dev mode).
 This can be easily done with the command line:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 ./mvnw clean package -Dquarkus.kubernetes.deploy=true
 ----

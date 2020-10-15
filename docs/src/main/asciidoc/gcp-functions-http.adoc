@@ -44,7 +44,7 @@ The solution is located in the `google-cloud-functions-http-quickstart` {quickst
 Create an application with the `quarkus-google-cloud-functions-http` extension.
 You can use the following Maven command to create it:
 
-[source,shell,subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -58,14 +58,14 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 
 Login to Google Cloud is necessary for deploying the application and it can be done as follows:
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud auth login
 ----
 
 At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
 
-[source, subs=attributes+]
+[source,bash,subs=attributes+]
 ----
 gcloud components install beta
 ----
@@ -169,7 +169,7 @@ The result of the previous command is a single JAR file inside the `target/deplo
 
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 
-[source]
+[source,bash]
 ----
 gcloud beta functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
@@ -207,7 +207,7 @@ The easiest way to locally test your function is using the Cloud Function invoke
 
 You can download it via Maven using the following command:
 
-[source]
+[source,bash]
 ----
 mvn dependency:copy \
   -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
@@ -218,7 +218,7 @@ Before using the invoker, you first need to build your function via `mvn package
 
 Then you can use it to launch your function locally.
 
-[source]
+[source,bash]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
   --classpath target/deployment/google-cloud-functions-http-1.0.0-SNAPSHOT-runner.jar \

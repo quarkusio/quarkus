@@ -10,10 +10,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import javax.inject.Singleton;
 import javax.validation.ClockProvider;
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -44,6 +46,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -53,6 +56,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -68,7 +72,9 @@ import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
+import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
@@ -116,9 +122,13 @@ class HibernateValidatorProcessor {
     }
 
     @BuildStep
-    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerAdditionalBeans(HibernateValidatorRecorder hibernateValidatorRecorder,
+            Optional<ResteasyConfigBuildItem> resteasyConfigBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBean,
             BuildProducer<AutoAddScopeBuildItem> autoScopes,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItems,
             Capabilities capabilities) {
         // The bean encapsulating the Validator and ValidatorFactory
         additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
@@ -132,6 +142,13 @@ class HibernateValidatorProcessor {
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyContextLocaleResolver"));
+
+            syntheticBeanBuildItems.produce(SyntheticBeanBuildItem.configure(ResteasyConfigSupport.class)
+                    .scope(Singleton.class)
+                    .unremovable()
+                    .supplier(hibernateValidatorRecorder.resteasyConfigSupportSupplier(
+                            resteasyConfigBuildItem.isPresent() ? resteasyConfigBuildItem.get().isJsonDefault() : false))
+                    .done());
         }
 
         // A constraint validator with an injection point but no scope is added as @Singleton

@@ -47,6 +47,11 @@
 
         <dependency>
             <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-azure-monitor</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-datadog</artifactId>
             <scope>test</scope>
         </dependency>
@@ -62,12 +67,12 @@
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-stackdriver</artifactId>
+            <artifactId>micrometer-registry-signalfx</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-azure-monitor</artifactId>
+            <artifactId>micrometer-registry-stackdriver</artifactId>
             <scope>test</scope>
         </dependency>
 

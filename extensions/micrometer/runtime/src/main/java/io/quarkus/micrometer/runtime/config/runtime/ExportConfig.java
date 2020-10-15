@@ -88,7 +88,7 @@ public class ExportConfig {
      * Prometheus registry configuration properties.
      * <p>
      * A property source for configuration of the Prometheus MeterRegistry,
-     * see https://micrometer.io/docs/registry/prometheus
+     * see https://micrometer.io/docs/registry/prometheus.
      *
      * @asciidoclet
      */
@@ -98,9 +98,10 @@ public class ExportConfig {
 
     // @formatter:off
     /**
-     * Azure Monitor registry configuration properties.
+     * SignalFx registry configuration properties.
      * <p>
-     * A property source for configuration of the AzureMonitor MeterRegistry,
+     * A property source for configuration of the SignalFx MeterRegistry,
+     * see https://micrometer.io/docs/registry/signalFx.
      *
      * Available values:
      *
@@ -109,9 +110,19 @@ public class ExportConfig {
      * h!Property=Default
      * h!Description
      *
-     * !`instrumentation-key`
-     * !Define the instrumentationKey used to push data to Azure Insights Monitor
+     * !`access-token=MY_ACCESS_TOKEN`
+     * !Define the access token required to push data to SignalFx
      *
+     * !`source=identifier`
+     * !Unique identifier for the app instance that is publishing metrics to SignalFx.
+     * Defaults to the local host name.
+     *
+     * !`uri=https://ingest.signalfx.com`
+     * !Define the the URI to ship metrics to. Use this attribute to specify
+     * the location of an internal proxy, if necessary.
+     *
+     * !`step=1m`
+     * !The interval at which metrics are sent to SignalFx Monitoring. The default is 1 minute.
      * !===
      *
      * Other micrometer configuration attributes can also be specified.
@@ -120,7 +131,8 @@ public class ExportConfig {
      */
     // @formatter:on
     @ConfigItem
-    Map<String, String> azuremonitor;
+    Map<String, String> signalfx;
+
     // @formatter:off
     /**
      * Stackdriver registry configuration properties.
@@ -139,7 +151,7 @@ public class ExportConfig {
      * !Define the project id used to push data to Stackdriver Monitoring
      *
      * !`publish=true`
-     * !By default, gathered metrics will be published to Datadog when the MeterRegistry is enabled.
+     * !By default, gathered metrics will be published to Stackdriver when the MeterRegistry is enabled.
      * Use this attribute to selectively disable publication of metrics in some environments.
      *
      * !`step=1m`

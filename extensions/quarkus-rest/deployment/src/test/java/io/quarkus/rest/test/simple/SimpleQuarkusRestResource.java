@@ -36,7 +36,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Providers;
 
 import io.quarkus.rest.Blocking;
-import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Uni;
@@ -265,19 +264,19 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("fast-writer")
     @Produces("text/plain")
-    public String fastWriter(@Context QuarkusRestRequestContext context) {
+    public String fastWriter() {
         return "OK";
     }
 
     @GET
     @Path("lookup-writer")
-    public Object slowWriter(@Context QuarkusRestRequestContext context) {
+    public Object slowWriter() {
         return "OK";
     }
 
     @GET
     @Path("writer/vertx-buffer")
-    public Buffer vertxBuffer(@Context QuarkusRestRequestContext context) {
+    public Buffer vertxBuffer() {
         return Buffer.buffer("VERTX-BUFFER");
     }
 

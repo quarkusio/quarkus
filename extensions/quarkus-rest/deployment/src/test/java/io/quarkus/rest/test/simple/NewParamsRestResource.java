@@ -3,6 +3,20 @@ package io.quarkus.rest.test.simple;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.container.ResourceContext;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Configuration;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.Providers;
+import javax.ws.rs.sse.Sse;
+import javax.ws.rs.sse.SseEventSink;
+
+import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.rest.RestCookie;
 import io.quarkus.rest.RestForm;
@@ -10,6 +24,9 @@ import io.quarkus.rest.RestHeader;
 import io.quarkus.rest.RestMatrix;
 import io.quarkus.rest.RestPath;
 import io.quarkus.rest.RestQuery;
+import io.quarkus.rest.runtime.spi.QuarkusRestContext;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 @Path("/new-params/{klass}/{regex:[^/]+}")
 public class NewParamsRestResource {
@@ -31,4 +48,44 @@ public class NewParamsRestResource {
         return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f + ", m: " + m + ", c: " + c;
     }
 
+    @GET
+    @Path("context")
+    public String context(// Spec:
+            UriInfo uriInfo,
+            HttpHeaders headers,
+            Request request,
+            SecurityContext securityContext,
+            Providers providers,
+            ResourceContext resourceContext,
+            Configuration configuration,
+            // Extras
+            ResourceInfo resourceInfo,
+            QuarkusRestContext restContext,
+            HttpServerRequest httpServerRequest,
+            HttpServerResponse httpServerResponse) {
+        Assertions.assertNotNull(uriInfo);
+        Assertions.assertNotNull(headers);
+        Assertions.assertNotNull(request);
+        Assertions.assertNotNull(securityContext);
+        Assertions.assertNotNull(providers);
+        Assertions.assertNotNull(resourceContext);
+        Assertions.assertNotNull(configuration);
+        Assertions.assertNotNull(resourceInfo);
+        Assertions.assertNotNull(restContext);
+        Assertions.assertNotNull(httpServerRequest);
+        Assertions.assertNotNull(httpServerResponse);
+        return "OK";
+    }
+
+    @GET
+    @Path("sse")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public void eventStream(SseEventSink eventSink,
+            Sse sse) {
+        Assertions.assertNotNull(eventSink);
+        Assertions.assertNotNull(sse);
+        try (SseEventSink sink = eventSink) {
+            eventSink.send(sse.newEvent("OK"));
+        }
+    }
 }

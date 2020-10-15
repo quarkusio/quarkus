@@ -112,10 +112,10 @@ final class CustomProviderGenerator {
                 } else if (HTTP_HEADERS.equals(paramDotName)) {
                     paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getHttpHeaders",
                             QuarkusRestHttpHeaders.class);
-                } else if (JAXRS_REQUEST.equals(paramDotName)) {
+                } else if (REQUEST.equals(paramDotName)) {
                     paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getRequest",
-                            JAXRS_REQUEST);
-                } else if (VERTX_HTTP_SERVER_REQUEST.equals(paramDotName)) {
+                            REQUEST);
+                } else if (HTTP_SERVER_REQUEST.equals(paramDotName)) {
                     ResultHandle routingContextHandle = routingContextHandler(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
                             ofMethod(RoutingContext.class, "request", HttpServerRequest.class), routingContextHandle);

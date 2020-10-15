@@ -80,12 +80,14 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 
@@ -137,6 +139,23 @@ public class EndpointIndexer {
             .unmodifiableSet(new HashSet<>(Arrays.asList(PRIMITIVE_INTEGER, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE,
                     PRIMITIVE_BOOLEAN, PRIMITIVE_CHAR, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, CHARACTER, BIG_DECIMAL,
                     BIG_INTEGER)));
+    // NOTE: sync with ContextProducer and ContextParamExtractor
+    private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            // spec
+            QuarkusRestDotNames.URI_INFO,
+            QuarkusRestDotNames.HTTP_HEADERS,
+            QuarkusRestDotNames.REQUEST,
+            QuarkusRestDotNames.SECURITY_CONTEXT,
+            QuarkusRestDotNames.PROVIDERS,
+            QuarkusRestDotNames.RESOURCE_CONTEXT,
+            QuarkusRestDotNames.CONFIGURATION,
+            QuarkusRestDotNames.SSE,
+            QuarkusRestDotNames.SSE_EVENT_SINK,
+            // extras
+            QuarkusRestDotNames.QUARKUS_REST_CONTEXT,
+            QuarkusRestDotNames.RESOURCE_INFO,
+            QuarkusRestDotNames.HTTP_SERVER_REQUEST,
+            QuarkusRestDotNames.HTTP_SERVER_RESPONSE)));
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
@@ -525,6 +544,7 @@ public class EndpointIndexer {
             boolean suspended = false;
             boolean sse = false;
             boolean formParamRequired = false;
+            boolean hasBodyParam = false;
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 boolean encoded = anns.containsKey(QuarkusRestDotNames.ENCODED);
@@ -540,6 +560,12 @@ public class EndpointIndexer {
                 String name = parameterExtractor.getName();
                 String defaultValue = parameterExtractor.getDefaultValue();
                 ParameterType type = parameterExtractor.getType();
+                if (type == ParameterType.BODY) {
+                    if (hasBodyParam)
+                        throw new RuntimeException(
+                                "Resource method " + info + " can only have a single body parameter: " + info.parameterName(i));
+                    hasBodyParam = true;
+                }
                 String elementType = parameterExtractor.getElementType();
                 boolean single = parameterExtractor.isSingle();
                 ParameterConverterSupplier converter = parameterExtractor.getConverter();
@@ -1083,7 +1109,13 @@ public class EndpointIndexer {
                 type = ParameterType.ASYNC_RESPONSE;
                 suspended = true;
             } else {
-                if (pathParameters.contains(sourceName)) {
+                // auto context parameters
+                if (!field
+                        && paramType.kind() == Kind.CLASS
+                        && isContextType(paramType.asClassType())) {
+                    // no name required
+                    type = ParameterType.CONTEXT;
+                } else if (!field && pathParameters.contains(sourceName)) {
                     name = sourceName;
                     type = ParameterType.PATH;
                     convertable = true;
@@ -1153,6 +1185,10 @@ public class EndpointIndexer {
                 throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
             }
             return this;
+        }
+
+        private boolean isContextType(ClassType klass) {
+            return CONTEXT_TYPES.contains(klass.name());
         }
 
         private String valueOrDefault(AnnotationValue annotation, String defaultValue) {

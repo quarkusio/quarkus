@@ -34,6 +34,7 @@ import io.vertx.core.http.HttpServerResponse;
 public class ContextProducers {
 
     // NOTE: Same list for parameters in ContextParamExtractor
+    // and in EndpointIndexer.CONTEXT_TYPES
 
     @Inject
     CurrentVertxRequest currentVertxRequest;

@@ -5,6 +5,7 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.SecurityContext;
@@ -33,18 +34,18 @@ public class ContextParamExtractor implements ParameterExtractor {
 
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
-        // NOTE: Same list for CDI at ContextProducers
+        // NOTE: Same list for CDI at ContextProducers and in EndpointIndexer.CONTEXT_TYPES
         if (type.equals(QuarkusRestContext.class.getName())) {
             return context;
         }
         if (type.equals(HttpHeaders.class.getName())) {
             return context.getHttpHeaders();
         }
-        if (type.equals(QuarkusRestRequestContext.class.getName())) {
-            return context;
-        }
         if (type.equals(UriInfo.class.getName())) {
             return context.getUriInfo();
+        }
+        if (type.equals(Configuration.class.getName())) {
+            return context.getDeployment().getConfiguration();
         }
         if (type.equals(AsyncResponse.class.getName())) {
             QuarkusRestAsyncResponse response = new QuarkusRestAsyncResponse(context);

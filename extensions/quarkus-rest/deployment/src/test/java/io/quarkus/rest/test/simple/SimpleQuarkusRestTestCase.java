@@ -432,6 +432,14 @@ public class SimpleQuarkusRestTestCase {
                 .then()
                 .log().ifError()
                 .body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv, m: mv, c: cv"));
+        RestAssured.get("/new-params/myklass/myregex/context")
+                .then()
+                .log().ifError()
+                .body(Matchers.equalTo("OK"));
+        RestAssured.get("/new-params/myklass/myregex/sse")
+                .then()
+                .log().ifError()
+                .body(Matchers.equalTo("data:OK\n\n"));
     }
 
     @Test

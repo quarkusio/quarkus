@@ -433,4 +433,10 @@ public class SimpleQuarkusRestTestCase {
                 .log().ifError()
                 .body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv, m: mv, c: cv"));
     }
+
+    @Test
+    public void simplifiedResourceInfo() {
+        RestAssured.get("/simple/simplifiedResourceInfo")
+                .then().statusCode(200).body(Matchers.containsString("SimpleQuarkusRestResource#simplifiedResourceInfo-1"));
+    }
 }

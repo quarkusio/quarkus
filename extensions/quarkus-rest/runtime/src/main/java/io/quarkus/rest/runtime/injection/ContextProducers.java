@@ -20,6 +20,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSse;
 import io.quarkus.rest.runtime.spi.QuarkusRestContext;
+import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -92,6 +93,12 @@ public class ContextProducers {
     @Produces
     ResourceInfo resourceInfo() {
         return getContext().getTarget().getLazyMethod();
+    }
+
+    @RequestScoped
+    @Produces
+    SimplifiedResourceInfo simplifiedResourceInfo() {
+        return getContext().getTarget().getSimplifiedResourceInfo();
     }
 
     @ApplicationScoped

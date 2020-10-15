@@ -19,6 +19,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
 import io.quarkus.rest.runtime.spi.QuarkusRestContext;
+import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -72,6 +73,9 @@ public class ContextParamExtractor implements ParameterExtractor {
         }
         if (type.equals(ResourceInfo.class.getName())) {
             return context.getTarget().getLazyMethod();
+        }
+        if (type.equals(SimplifiedResourceInfo.class.getName())) {
+            return context.getTarget().getSimplifiedResourceInfo();
         }
         if (type.equals(Application.class.getName())) {
             return CDI.current().select(Application.class).get();

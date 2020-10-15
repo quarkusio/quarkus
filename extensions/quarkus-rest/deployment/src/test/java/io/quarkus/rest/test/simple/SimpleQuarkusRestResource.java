@@ -37,6 +37,7 @@ import javax.ws.rs.ext.Providers;
 
 import io.quarkus.rest.Blocking;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
@@ -386,5 +387,13 @@ public class SimpleQuarkusRestResource {
     @TRACE
     public Response trace() {
         return Response.status(Response.Status.OK).build();
+    }
+
+    @GET
+    @Path("simplifiedResourceInfo")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String simplifiedResourceInfo(@Context SimplifiedResourceInfo simplifiedResourceInfo) {
+        return simplifiedResourceInfo.getResourceClass().getName() + "#" + simplifiedResourceInfo.getMethodName() + "-"
+                + simplifiedResourceInfo.parameterTypes().length;
     }
 }

@@ -7,9 +7,11 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.rest.runtime.core.LazyMethod;
+import io.quarkus.rest.runtime.core.QuarkusRestSimplifiedResourceInfo;
 import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
+import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.quarkus.rest.runtime.util.ScoreSystem;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 
@@ -106,6 +108,10 @@ public class RuntimeResource {
 
     public LazyMethod getLazyMethod() {
         return lazyMethod;
+    }
+
+    public SimplifiedResourceInfo getSimplifiedResourceInfo() {
+        return new QuarkusRestSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
     }
 
     /**

@@ -31,7 +31,7 @@ public class QuarkusRestDevModeProcessor {
     void setupExceptionMapper(BuildProducer<ExceptionMapperBuildItem> providers, HttpRootPathBuildItem httpRoot,
             ExceptionMapperRecorder recorder) {
         providers.produce(new ExceptionMapperBuildItem(NotFoundExceptionMapper.class.getName(),
-                NotFoundException.class.getName(), Priorities.USER + 1));
+                NotFoundException.class.getName(), Priorities.USER + 1, true));
         recorder.setHttpRoot(httpRoot.getRootPath());
     }
 

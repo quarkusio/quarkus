@@ -52,6 +52,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -169,6 +170,18 @@ public class QuarkusRestProcessor {
         return new AutoInjectAnnotationBuildItem(DotName.createSimple(Context.class.getName()),
                 DotName.createSimple(BeanParam.class.getName()));
 
+    }
+
+    @BuildStep
+    void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PATH, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.APPLICATION_PATH,
+                        BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PROVIDER,
+                        BuiltinScope.SINGLETON.getName()));
     }
 
     @BuildStep
@@ -295,20 +308,54 @@ public class QuarkusRestProcessor {
                     .setUnremovable().build());
         }
 
-        // TODO: we currently make all additional providers beans, even if they don't inject anything, perhaps we want to change that?
         AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
         for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
-            additionalProviders.addBeanClass(requestFilter.getClassName());
+            if (requestFilter.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(requestFilter.getClassName());
+            }
         }
         for (ContainerResponseFilterBuildItem responseFilter : additionalContainerResponseFilters) {
-            additionalProviders.addBeanClass(responseFilter.getClassName());
+            if (responseFilter.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(responseFilter.getClassName());
+            }
         }
         for (ExceptionMapperBuildItem exceptionMapper : additionalExceptionMappers) {
-            additionalProviders.addBeanClass(exceptionMapper.getClassName());
+            if (exceptionMapper.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(exceptionMapper.getClassName());
+            }
         }
         for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
-            additionalProviders.addBeanClass(dynamicFeature.getClassName());
+            if (dynamicFeature.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(dynamicFeature.getClassName());
+            }
         }
+        additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
+    }
+
+    @BuildStep
+    public void handleCustomProviders(
+            // TODO: We need to use this index instead of BeanArchiveIndexBuildItem to avoid build cycles. It it OK?
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            BuildProducer<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
+
+        Collection<AnnotationInstance> containerRequestFilterInstances = index
+                .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_REQUEST_FILTER);
+        for (AnnotationInstance instance : containerRequestFilterInstances) {
+            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            MethodInfo methodInfo = instance.target().asMethod();
+            // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+            additionalProviders.addBeanClass(methodInfo.declaringClass().name().toString());
+            String generatedClassName = CustomProviderGenerator.generateContainerRequestFilter(methodInfo,
+                    new GeneratedBeanGizmoAdaptor(generatedBean));
+            additionalContainerRequestFilters.produce(new ContainerRequestFilterBuildItem(generatedClassName, false)); // it has already been made a bean
+        }
+
         additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 
@@ -976,18 +1023,6 @@ public class QuarkusRestProcessor {
             return Collections.emptyList();
         }
         return Arrays.asList(produces.value().asStringArray());
-    }
-
-    @BuildStep
-    void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PATH, BuiltinScope.SINGLETON.getName()));
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.APPLICATION_PATH,
-                        BuiltinScope.SINGLETON.getName()));
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PROVIDER,
-                        BuiltinScope.SINGLETON.getName()));
     }
 
     private Map<String, RuntimeValue<Function<WebTarget, ?>>> generateClientInvokers(RecorderContext recorderContext,

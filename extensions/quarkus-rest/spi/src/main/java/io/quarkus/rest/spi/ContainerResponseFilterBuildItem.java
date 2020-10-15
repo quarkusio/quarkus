@@ -2,18 +2,17 @@ package io.quarkus.rest.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class ContainerResponseFilterBuildItem extends MultiBuildItem {
+public final class ContainerResponseFilterBuildItem extends MultiBuildItem implements CheckBean {
 
     private final String className;
     private final Integer priority;
 
-    public ContainerResponseFilterBuildItem(String className) {
-        this(className, null);
-    }
+    private final boolean registerAsBean;
 
-    public ContainerResponseFilterBuildItem(String className, Integer priority) {
+    public ContainerResponseFilterBuildItem(String className, Integer priority, boolean registerAsBean) {
         this.className = className;
         this.priority = priority;
+        this.registerAsBean = registerAsBean;
     }
 
     public String getClassName() {
@@ -22,5 +21,10 @@ public final class ContainerResponseFilterBuildItem extends MultiBuildItem {
 
     public Integer getPriority() {
         return priority;
+    }
+
+    @Override
+    public boolean isRegisterAsBean() {
+        return registerAsBean;
     }
 }

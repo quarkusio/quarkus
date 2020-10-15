@@ -30,16 +30,20 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.client.InvocationCallback;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Feature;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -61,8 +65,10 @@ import io.quarkus.rest.RestHeader;
 import io.quarkus.rest.RestMatrix;
 import io.quarkus.rest.RestPath;
 import io.quarkus.rest.RestQuery;
+import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
 public final class QuarkusRestDotNames {
 
@@ -159,6 +165,17 @@ public final class QuarkusRestDotNames {
     public static final DotName JSONP_JSON_NUMBER = DotName.createSimple(javax.json.JsonNumber.class.getName());
     public static final DotName JSONP_JSON_VALUE = DotName.createSimple(javax.json.JsonValue.class.getName());
     public static final DotName JSONP_JSON_STRING = DotName.createSimple(javax.json.JsonString.class.getName());
+
+    public static final DotName CUSTOM_CONTAINER_REQUEST_FILTER = DotName
+            .createSimple(io.quarkus.rest.ContainerRequestFilter.class.getName());
+
+    public static final DotName URI_INFO = DotName.createSimple(UriInfo.class.getName());
+    public static final DotName HTTP_HEADERS = DotName.createSimple(HttpHeaders.class.getName());
+    public static final DotName CONTAINER_REQUEST_CONTEXT = DotName.createSimple(ContainerRequestContext.class.getName());
+    public static final DotName JAXRS_REQUEST = DotName.createSimple(javax.ws.rs.core.Request.class.getName());
+    public static final DotName VERTX_HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
+    public static final DotName RESOURCE_INFO = DotName.createSimple(ResourceInfo.class.getName());
+    public static final DotName SIMPLIFIED_RESOURCE_INFO = DotName.createSimple(SimplifiedResourceInfo.class.getName());
 
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(
             Arrays.asList(QUERY_PARAM, HEADER_PARAM, PATH_PARAM, MATRIX_PARAM, COOKIE_PARAM));

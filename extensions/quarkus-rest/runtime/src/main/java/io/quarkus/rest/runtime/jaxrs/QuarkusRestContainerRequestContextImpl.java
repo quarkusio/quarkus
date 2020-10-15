@@ -22,38 +22,38 @@ import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 
 public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContainerRequestContext {
 
-    private QuarkusRestRequestContext context;
+    private final QuarkusRestRequestContext quarkusRestContext;
     private boolean aborted;
     private boolean preMatch;
     private boolean response;
 
     public QuarkusRestContainerRequestContextImpl(QuarkusRestRequestContext requestContext) {
-        this.context = requestContext;
+        this.quarkusRestContext = requestContext;
     }
 
     @Override
     public Object getProperty(String name) {
-        return context.getProperty(name);
+        return quarkusRestContext.getProperty(name);
     }
 
     @Override
     public Collection<String> getPropertyNames() {
-        return context.getPropertyNames();
+        return quarkusRestContext.getPropertyNames();
     }
 
     @Override
     public void setProperty(String name, Object object) {
-        context.setProperty(name, object);
+        quarkusRestContext.setProperty(name, object);
     }
 
     @Override
     public void removeProperty(String name) {
-        context.removeProperty(name);
+        quarkusRestContext.removeProperty(name);
     }
 
     @Override
     public UriInfo getUriInfo() {
-        return context.getUriInfo();
+        return quarkusRestContext.getUriInfo();
     }
 
     @Override
@@ -64,23 +64,23 @@ public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContai
     @Override
     public void setRequestUri(URI baseUri, URI requestUri) {
         assertPreMatch();
-        context.setRequestUri(baseUri.resolve(requestUri));
+        quarkusRestContext.setRequestUri(baseUri.resolve(requestUri));
     }
 
     @Override
     public Request getRequest() {
-        return context.getRequest();
+        return quarkusRestContext.getRequest();
     }
 
     @Override
     public String getMethod() {
-        return context.getMethod();
+        return quarkusRestContext.getMethod();
     }
 
     @Override
     public void setMethod(String method) {
         assertPreMatch();
-        context.setMethod(method);
+        quarkusRestContext.setMethod(method);
     }
 
     public void assertPreMatch() {
@@ -97,47 +97,47 @@ public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContai
 
     @Override
     public MultivaluedMap<String, String> getHeaders() {
-        return context.getHttpHeaders().getMutableHeaders();
+        return quarkusRestContext.getHttpHeaders().getMutableHeaders();
     }
 
     @Override
     public String getHeaderString(String name) {
-        return context.getHttpHeaders().getHeaderString(name);
+        return quarkusRestContext.getHttpHeaders().getHeaderString(name);
     }
 
     @Override
     public Date getDate() {
-        return context.getHttpHeaders().getDate();
+        return quarkusRestContext.getHttpHeaders().getDate();
     }
 
     @Override
     public Locale getLanguage() {
-        return context.getHttpHeaders().getLanguage();
+        return quarkusRestContext.getHttpHeaders().getLanguage();
     }
 
     @Override
     public int getLength() {
-        return context.getHttpHeaders().getLength();
+        return quarkusRestContext.getHttpHeaders().getLength();
     }
 
     @Override
     public MediaType getMediaType() {
-        return context.getHttpHeaders().getMediaType();
+        return quarkusRestContext.getHttpHeaders().getMediaType();
     }
 
     @Override
     public List<MediaType> getAcceptableMediaTypes() {
-        return context.getHttpHeaders().getAcceptableMediaTypes();
+        return quarkusRestContext.getHttpHeaders().getAcceptableMediaTypes();
     }
 
     @Override
     public List<Locale> getAcceptableLanguages() {
-        return context.getHttpHeaders().getAcceptableLanguages();
+        return quarkusRestContext.getHttpHeaders().getAcceptableLanguages();
     }
 
     @Override
     public Map<String, Cookie> getCookies() {
-        return context.getHttpHeaders().getCookies();
+        return quarkusRestContext.getHttpHeaders().getCookies();
     }
 
     @Override
@@ -150,24 +150,24 @@ public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContai
 
     @Override
     public InputStream getEntityStream() {
-        return context.getInputStream();
+        return quarkusRestContext.getInputStream();
     }
 
     @Override
     public void setEntityStream(InputStream input) {
         assertNotResponse();
-        context.setInputStream(input);
+        quarkusRestContext.setInputStream(input);
     }
 
     @Override
     public SecurityContext getSecurityContext() {
-        return context.getSecurityContext();
+        return quarkusRestContext.getSecurityContext();
     }
 
     @Override
     public void setSecurityContext(SecurityContext context) {
         assertNotResponse();
-        this.context.setSecurityContext(context);
+        this.quarkusRestContext.setSecurityContext(context);
     }
 
     public boolean isPreMatch() {
@@ -182,12 +182,12 @@ public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContai
     @Override
     public void abortWith(Response response) {
         assertNotResponse();
-        context.setResult(response);
-        context.restart(context.getAbortHandlerChain());
+        quarkusRestContext.setResult(response);
+        quarkusRestContext.restart(quarkusRestContext.getAbortHandlerChain());
         aborted = true;
         // this is a valid action after suspend, in which case we must resume
-        if (context.isSuspended())
-            context.resume();
+        if (quarkusRestContext.isSuspended())
+            quarkusRestContext.resume();
     }
 
     public boolean isResponse() {
@@ -205,21 +205,21 @@ public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContai
 
     @Override
     public QuarkusRestContext getQuarkusRestContext() {
-        return context;
+        return quarkusRestContext;
     }
 
     @Override
     public void suspend() {
-        context.suspend();
+        quarkusRestContext.suspend();
     }
 
     @Override
     public void resume() {
-        context.resume();
+        quarkusRestContext.resume();
     }
 
     @Override
     public void resume(Throwable t) {
-        context.resume(t);
+        quarkusRestContext.resume(t);
     }
 }

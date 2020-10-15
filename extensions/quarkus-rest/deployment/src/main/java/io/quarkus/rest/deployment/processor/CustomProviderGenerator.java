@@ -26,6 +26,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestHttpHeaders;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.spi.QuarkusRestContainerRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestContainerResponseContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
@@ -106,6 +107,9 @@ final class CustomProviderGenerator {
                 DotName paramDotName = param.name();
                 if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(0);
+                } else if (QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
+                    targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
+                            QuarkusRestContainerRequestContext.class);
                 } else if (URI_INFO.equals(paramDotName)) {
                     paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getUriInfo",
                             URI_INFO);
@@ -212,8 +216,14 @@ final class CustomProviderGenerator {
                 DotName paramDotName = param.name();
                 if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(0);
+                } else if (QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
+                    targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
+                            QuarkusRestContainerRequestContext.class);
                 } else if (CONTAINER_RESPONSE_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(1);
+                } else if (QUARKUS_REST_CONTAINER_RESPONSE_CONTEXT.equals(paramDotName)) {
+                    targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(1),
+                            QuarkusRestContainerResponseContext.class);
                 } else if (RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(

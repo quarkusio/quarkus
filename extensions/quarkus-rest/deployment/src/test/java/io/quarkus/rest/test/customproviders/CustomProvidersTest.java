@@ -24,7 +24,7 @@ public class CustomProvidersTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(CustomContainerRequestFilter.class, CustomProvidersResource.class,
-                                    CustomContainerResponseFilter.class, AssertContainerRequestFilter.class, SomeBean.class);
+                                    CustomContainerResponseFilter.class, AssertContainerFilter.class, SomeBean.class);
                 }
             });
 
@@ -33,6 +33,6 @@ public class CustomProvidersTest {
         Headers headers = RestAssured.given().header("some-input", "bar").get("/custom/req")
                 .then().statusCode(200).body(Matchers.containsString("/custom/req-bar")).extract().headers();
         assertThat(headers.getValues("java-method")).containsOnly("filters");
-        Assertions.assertEquals(2, AssertContainerRequestFilter.COUNT.get());
+        Assertions.assertEquals(3, AssertContainerFilter.COUNT.get());
     }
 }

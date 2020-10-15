@@ -73,6 +73,8 @@ import io.quarkus.rest.RestHeader;
 import io.quarkus.rest.RestMatrix;
 import io.quarkus.rest.RestPath;
 import io.quarkus.rest.RestQuery;
+import io.quarkus.rest.runtime.spi.QuarkusRestContainerRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestContainerResponseContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.smallrye.mutiny.Multi;
@@ -198,6 +200,10 @@ public final class QuarkusRestDotNames {
 
     public static final DotName CONTAINER_REQUEST_CONTEXT = DotName.createSimple(ContainerRequestContext.class.getName());
     public static final DotName CONTAINER_RESPONSE_CONTEXT = DotName.createSimple(ContainerResponseContext.class.getName());
+    public static final DotName QUARKUS_REST_CONTAINER_REQUEST_CONTEXT = DotName
+            .createSimple(QuarkusRestContainerRequestContext.class.getName());
+    public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_CONTEXT = DotName
+            .createSimple(QuarkusRestContainerResponseContext.class.getName());
     public static final DotName SIMPLIFIED_RESOURCE_INFO = DotName.createSimple(SimplifiedResourceInfo.class.getName());
 
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(

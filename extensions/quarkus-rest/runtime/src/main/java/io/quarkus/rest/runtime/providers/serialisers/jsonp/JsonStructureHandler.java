@@ -30,7 +30,7 @@ public class JsonStructureHandler implements MessageBodyReader<JsonStructure>, Q
     @Override
     public void writeResponse(JsonStructure o, QuarkusRestRequestContext context) throws WebApplicationException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (JsonWriter writer = JsonpUtil.writer(out, context.getResponse().getMediaType())) {
+        try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseContentMediaType())) {
             writer.write(o);
         }
         context.getContext().response().end(Buffer.buffer(out.toByteArray()));

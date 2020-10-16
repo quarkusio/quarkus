@@ -23,7 +23,7 @@ public class MediaTypeDelegatingEntityWriter implements EntityWriter {
 
     @Override
     public void write(QuarkusRestRequestContext context, Object entity) throws IOException {
-        EntityWriter delegate = typeMap.get(context.getResponse().getMediaType());
+        EntityWriter delegate = typeMap.get(context.getResponseContentMediaType());
         if (delegate != null) {
             delegate.write(context, entity);
             return;

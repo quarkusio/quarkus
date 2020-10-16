@@ -48,6 +48,8 @@ public class SimpleQuarkusRestTestCase {
 
     @Test
     public void simpleTest() {
+        RestAssured.get("/missing")
+                .then().statusCode(404);
         RestAssured.get("/simple")
                 .then().body(Matchers.equalTo("GET"));
         RestAssured.get("/simple/foo")
@@ -55,9 +57,6 @@ public class SimpleQuarkusRestTestCase {
 
         RestAssured.post("/simple")
                 .then().body(Matchers.equalTo("POST"));
-
-        RestAssured.get("/missing")
-                .then().statusCode(404);
 
         RestAssured.post("/missing")
                 .then().statusCode(404);

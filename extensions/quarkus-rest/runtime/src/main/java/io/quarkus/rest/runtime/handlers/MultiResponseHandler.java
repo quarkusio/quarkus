@@ -127,12 +127,12 @@ public class MultiResponseHandler implements RestHandler {
             if (mediaTypes.length != 1)
                 throw new IllegalStateException(
                         "Negotiation or dynamic media type not supported yet for Multi: please use a single @Produces annotation");
-            requestContext.setProducesMediaType(mediaTypes[0]);
+            requestContext.setResponseContentType(mediaTypes[0]);
             // this is the non-async return type
             requestContext.setGenericReturnType(requestContext.getTarget().getReturnType());
             // we have several possibilities here, but in all we suspend
             requestContext.suspend();
-            if (requestContext.getProducesMediaType().isCompatible(MediaType.SERVER_SENT_EVENTS_TYPE)) {
+            if (requestContext.getResponseContentType().getMediaType().isCompatible(MediaType.SERVER_SENT_EVENTS_TYPE)) {
                 handleSse(requestContext, result);
             } else {
                 handleStreaming(requestContext, result);

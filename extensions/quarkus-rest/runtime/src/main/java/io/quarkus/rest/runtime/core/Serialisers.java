@@ -25,6 +25,7 @@ import java.util.function.Function;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -232,7 +233,6 @@ public class Serialisers {
             Serialisers serialisers, MediaType mediaType) throws IOException {
         //note that GenericEntity is not a factor here. It should have already been unwrapped
 
-        Response response = context.getResponse();
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
         if (writer instanceof QuarkusRestMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
@@ -240,9 +240,9 @@ public class Serialisers {
             RuntimeResource target = context.getTarget();
             Serialisers.encodeResponseHeaders(context);
             if (quarkusRestWriter.isWriteable(entity.getClass(), target == null ? null : target.getLazyMethod(),
-                    context.getProducesMediaType())) {
+                    context.getResponseContentMediaType())) {
                 if (mediaType != null) {
-                    context.setProducesMediaType(mediaType);
+                    context.setResponseContentType(mediaType);
                 }
                 quarkusRestWriter.writeResponse(entity, context);
                 return true;
@@ -251,9 +251,10 @@ public class Serialisers {
             }
         } else {
             if (writer.isWriteable(entity.getClass(), context.getGenericReturnType(), context.getAllAnnotations(),
-                    context.getProducesMediaType())) {
+                    context.getResponseContentMediaType())) {
+                Response response = context.getResponse().get();
                 if (mediaType != null) {
-                    context.setProducesMediaType(mediaType);
+                    context.setResponseContentType(mediaType);
                 }
                 if (writerInterceptors == null) {
                     ByteArrayOutputStream baos = context.getOrCreateOutputStream();
@@ -728,7 +729,19 @@ public class Serialisers {
 
     public static void encodeResponseHeaders(QuarkusRestRequestContext requestContext) {
         HttpServerResponse vertxResponse = requestContext.getContext().response();
-        Response response = requestContext.getResponse();
+        if (!requestContext.getResponse().isCreated()) {
+            //fast path
+            //there is no response, so we just set the content type
+            if (requestContext.getResponseEntity() == null) {
+                vertxResponse.setStatusCode(Response.Status.NO_CONTENT.getStatusCode());
+            }
+            EncodedMediaType contentType = requestContext.getResponseContentType();
+            if (contentType != null) {
+                vertxResponse.putHeader(HttpHeaders.CONTENT_TYPE, contentType.toString());
+            }
+            return;
+        }
+        Response response = requestContext.getResponse().get();
         vertxResponse.setStatusCode(response.getStatus());
         MultiMap vertxHeaders = vertxResponse.headers();
 

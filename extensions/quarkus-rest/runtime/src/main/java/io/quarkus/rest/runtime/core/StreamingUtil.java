@@ -53,7 +53,7 @@ public class StreamingUtil {
         Serialisers serialisers = context.getDeployment().getSerialisers();
         Class<?> entityClass = entity.getClass();
         Type entityType = context.getGenericReturnType();
-        MediaType mediaType = context.getProducesMediaType();
+        MediaType mediaType = context.getResponseContentMediaType();
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
@@ -83,7 +83,7 @@ public class StreamingUtil {
         // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
-            response.putHeader(HttpHeaders.CONTENT_TYPE, context.getProducesMediaType().toString());
+            response.putHeader(HttpHeaders.CONTENT_TYPE, context.getResponseContentType().toString());
             response.setChunked(true);
             // FIXME: other headers?
         }

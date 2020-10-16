@@ -29,7 +29,7 @@ public class JsonObjectHandler implements MessageBodyReader<JsonObject>, Quarkus
     @Override
     public void writeResponse(JsonObject o, QuarkusRestRequestContext context) throws WebApplicationException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (JsonWriter writer = JsonpUtil.writer(out, context.getResponse().getMediaType())) {
+        try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseContentMediaType())) {
             writer.writeObject(o);
         }
         context.getContext().response().end(Buffer.buffer(out.toByteArray()));

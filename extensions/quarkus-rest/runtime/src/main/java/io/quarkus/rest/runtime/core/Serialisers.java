@@ -34,6 +34,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import io.netty.util.AsciiString;
 import io.quarkus.rest.runtime.client.QuarkusRestClientReaderInterceptorContext;
 import io.quarkus.rest.runtime.client.QuarkusRestClientWriterInterceptorContext;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
@@ -64,13 +65,13 @@ import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedMap;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
 public class Serialisers {
 
     private static final Map<Class<?>, Class<?>> primitivesToWrappers = new HashMap<>();
+    private static final AsciiString CONTENT_TYPE = AsciiString.cached("Content-Type"); // use this instead of the Vert.x constant because the TCK expects upper case
 
     static {
         primitivesToWrappers.put(boolean.class, Boolean.class);
@@ -737,7 +738,7 @@ public class Serialisers {
             }
             EncodedMediaType contentType = requestContext.getResponseContentType();
             if (contentType != null) {
-                vertxResponse.putHeader(HttpHeaders.CONTENT_TYPE, contentType.toString());
+                vertxResponse.putHeader(CONTENT_TYPE, contentType.toString());
             }
             return;
         }

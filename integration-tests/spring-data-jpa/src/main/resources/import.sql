@@ -48,6 +48,17 @@ INSERT INTO song(id, title, author) VALUES (4, 'Whatever it takes' , 'Imagine Dr
 INSERT INTO song(id, title, author) VALUES (5, 'Santos que yo te pinte' , 'Los planetas');
 INSERT INTO song(id, title, author) VALUES (6, 'Drinkee' , 'Sofi Tukker');
 
+INSERT INTO liked_songs(person_id, song_id) VALUES (1,1);
+INSERT INTO liked_songs(person_id, song_id) VALUES (1,3);
+INSERT INTO liked_songs(person_id, song_id) VALUES (1,4);
+INSERT INTO liked_songs(person_id, song_id) VALUES (2,5);
+INSERT INTO liked_songs(person_id, song_id) VALUES (2,6);
+INSERT INTO liked_songs(person_id, song_id) VALUES (3,1);
+INSERT INTO liked_songs(person_id, song_id) VALUES (4,3);
+INSERT INTO liked_songs(person_id, song_id) VALUES (4,4);
+INSERT INTO liked_songs(person_id, song_id) VALUES (5,5);
+INSERT INTO liked_songs(person_id, song_id) VALUES (6,6);
+
 INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (1, 'Jason', 'Bourne',  'jason.bourne@mail.com', '0102030405', TRUE);
 INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (2, 'Homer', 'Simpson', 'homer.simpson@mail.com',  '0605040302', TRUE);
 INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (3, 'Peter', 'Quin', 'pater.quin@mail.com',  '0706050403', FALSE);

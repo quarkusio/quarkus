@@ -15,4 +15,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByPostedBefore(ZonedDateTime zdt);
 
     List<Post> findAllByOrganization(String organization);
+
+    long deleteByOrganization(String organization);
 }

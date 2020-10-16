@@ -2,14 +2,18 @@ package io.quarkus.it.spring.data.jpa;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.CascadeType;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 @Entity(name = "Post")
@@ -17,13 +21,17 @@ import javax.persistence.Table;
 public class Post {
 
     @Id
-    @GeneratedValue
+    @SequenceGenerator(name = "postSeqGen", sequenceName = "postSeq", initialValue = 100, allocationSize = 1)
+    @GeneratedValue(generator = "postSeqGen")
     private Long id;
 
     private String title;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<PostComment> comments = new ArrayList<>();
+
+    @ElementCollection
+    private Map<String, String> metadata = new HashMap<>();
 
     private boolean bypass;
 
@@ -77,6 +85,14 @@ public class Post {
 
     public void setOrganization(String organization) {
         this.organization = organization;
+    }
+
+    public Map<String, String> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, String> metadata) {
+        this.metadata = metadata;
     }
 
     public void addComment(PostComment comment) {

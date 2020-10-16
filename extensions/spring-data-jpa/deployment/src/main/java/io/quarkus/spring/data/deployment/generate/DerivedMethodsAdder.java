@@ -19,6 +19,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.spring.data.deployment.DotNames;
 import io.quarkus.spring.data.deployment.MethodNameParser;
@@ -190,7 +191,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
                     // call JpaOperations.delete()
                     ResultHandle delete = methodCreator.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(JpaOperations.class, "delete", long.class,
+                            MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "deleteWithCascade", long.class,
                                     Class.class, String.class, Object[].class),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(parseResult.getQuery()), paramsArray);

@@ -35,8 +35,8 @@
             <artifactId>quarkus-swagger-ui</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>swagger-ui</artifactId>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-open-api-ui</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

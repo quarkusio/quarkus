@@ -3,24 +3,17 @@ package io.quarkus.smallrye.health.deployment;
 import static io.quarkus.arc.processor.Annotations.containsAny;
 import static io.quarkus.arc.processor.Annotations.getAnnotations;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -44,7 +37,6 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -55,14 +47,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -101,11 +91,8 @@ class SmallRyeHealthProcessor {
     // For the UI
     private static final String HEALTH_UI_WEBJAR_GROUP_ID = "io.smallrye";
     private static final String HEALTH_UI_WEBJAR_ARTIFACT_ID = "smallrye-health-ui";
-    private static final String HEALTH_UI_WEBJAR_PREFIX = "META-INF/resources/health-ui";
-    private static final String OWN_MEDIA_FOLDER = "META-INF/resources/";
+    private static final String HEALTH_UI_WEBJAR_PREFIX = "META-INF/resources/health-ui/";
     private static final String HEALTH_UI_FINAL_DESTINATION = "META-INF/health-ui-files";
-    private static final String TEMP_DIR_PREFIX = "quarkus-health-ui_" + System.nanoTime();
-    private static final List<String> IGNORE_LIST = Arrays.asList("logo.png", "favicon.ico");
     private static final String FILE_TO_UPDATE = "healthui.js";
 
     static class OpenAPIIncluded implements BooleanSupplier {
@@ -360,7 +347,6 @@ class SmallRyeHealthProcessor {
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
             SmallRyeHealthRecorder recorder,
             LaunchModeBuildItem launchMode,
-            LiveReloadBuildItem liveReload,
             HttpRootPathBuildItem httpRootPath,
             CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
 
@@ -374,126 +360,40 @@ class SmallRyeHealthProcessor {
 
         String healthPath = httpRootPath.adjustPath(health.rootPath);
 
-        if (launchMode.getLaunchMode().isDevOrTest()) {
-            CachedHealthUI cached = liveReload.getContextObject(CachedHealthUI.class);
-            boolean extractionNeeded = cached == null;
+        AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, HEALTH_UI_WEBJAR_GROUP_ID,
+                HEALTH_UI_WEBJAR_ARTIFACT_ID);
 
-            if (cached != null && !cached.cachedHealthPath.equals(healthPath)) {
-                try {
-                    FileUtil.deleteDirectory(Paths.get(cached.cachedDirectory));
-                } catch (IOException e) {
-                    LOG.error("Failed to clean Health UI temp directory on restart", e);
-                }
-                extractionNeeded = true;
-            }
-            if (extractionNeeded) {
-                if (cached == null) {
-                    cached = new CachedHealthUI();
-                    liveReload.setContextObject(CachedHealthUI.class, cached);
-                    Runtime.getRuntime().addShutdownHook(new Thread(cached, "Health UI Shutdown Hook"));
-                }
-                try {
-                    AppArtifact artifact = getHealthUiArtifact(curateOutcomeBuildItem);
-                    Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX).toRealPath();
-                    extractHealthUi(artifact, tempDir);
-                    updateApiUrl(tempDir.resolve(FILE_TO_UPDATE), healthPath);
-                    cached.cachedDirectory = tempDir.toAbsolutePath().toString();
-                    cached.cachedHealthPath = healthPath;
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-            Handler<RoutingContext> handler = recorder.uiHandler(cached.cachedDirectory,
+        if (launchMode.getLaunchMode().isDevOrTest()) {
+            Path tempPath = WebJarUtil.devOrTest(curateOutcomeBuildItem, launchMode, artifact, HEALTH_UI_WEBJAR_PREFIX);
+            updateApiUrl(tempPath.resolve(FILE_TO_UPDATE), healthPath);
+
+            Handler<RoutingContext> handler = recorder.uiHandler(tempPath.toAbsolutePath().toString(),
                     httpRootPath.adjustPath(health.ui.rootPath));
             routeProducer.produce(new RouteBuildItem(health.ui.rootPath, handler));
             routeProducer.produce(new RouteBuildItem(health.ui.rootPath + "/*", handler));
             notFoundPageDisplayableEndpointProducer
                     .produce(new NotFoundPageDisplayableEndpointBuildItem(health.ui.rootPath + "/"));
         } else if (health.ui.alwaysInclude) {
-            AppArtifact artifact = getHealthUiArtifact(curateOutcomeBuildItem);
-            //we are including in a production artifact
-            //just stick the files in the generated output
-            //we could do this for dev mode as well but then we need to extract them every time
-            for (Path p : artifact.getPaths()) {
-                File artifactFile = p.toFile();
-                try (JarFile jarFile = new JarFile(artifactFile)) {
-                    Enumeration<JarEntry> entries = jarFile.entries();
+            Map<String, byte[]> files = WebJarUtil.production(curateOutcomeBuildItem, artifact, HEALTH_UI_WEBJAR_PREFIX);
 
-                    while (entries.hasMoreElements()) {
-                        JarEntry entry = entries.nextElement();
-                        if (entry.getName().startsWith(HEALTH_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
-                            try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                                String filename = entry.getName().replace(HEALTH_UI_WEBJAR_PREFIX + "/", "");
-                                byte[] content = FileUtil.readFileContents(inputStream);
-                                if (entry.getName().endsWith(FILE_TO_UPDATE)) {
-                                    content = updateApiUrl(new String(content, StandardCharsets.UTF_8), healthPath)
-                                            .getBytes(StandardCharsets.UTF_8);
-                                }
-                                if (IGNORE_LIST.contains(filename)) {
-                                    ClassLoader classLoader = SmallRyeHealthProcessor.class.getClassLoader();
-                                    try (InputStream resourceAsStream = classLoader
-                                            .getResourceAsStream(OWN_MEDIA_FOLDER + filename)) {
-                                        content = IoUtil.readBytes(resourceAsStream);
-                                    }
-                                }
+            for (Map.Entry<String, byte[]> file : files.entrySet()) {
 
-                                String fileName = HEALTH_UI_FINAL_DESTINATION + "/" + filename;
-
-                                generatedResourceProducer
-                                        .produce(new GeneratedResourceBuildItem(fileName, content));
-
-                                nativeImageResourceProducer
-                                        .produce(new NativeImageResourceBuildItem(fileName));
-
-                            }
-                        }
-                    }
+                String fileName = file.getKey();
+                byte[] content = file.getValue();
+                if (fileName.endsWith(FILE_TO_UPDATE)) {
+                    content = updateApiUrl(new String(content, StandardCharsets.UTF_8), healthPath)
+                            .getBytes(StandardCharsets.UTF_8);
                 }
+                fileName = HEALTH_UI_FINAL_DESTINATION + "/" + fileName;
+
+                generatedResourceProducer.produce(new GeneratedResourceBuildItem(fileName, content));
+                nativeImageResourceProducer.produce(new NativeImageResourceBuildItem(fileName));
             }
 
             Handler<RoutingContext> handler = recorder
                     .uiHandler(HEALTH_UI_FINAL_DESTINATION, httpRootPath.adjustPath(health.ui.rootPath));
             routeProducer.produce(new RouteBuildItem(health.ui.rootPath, handler));
             routeProducer.produce(new RouteBuildItem(health.ui.rootPath + "/*", handler));
-        }
-    }
-
-    private AppArtifact getHealthUiArtifact(CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        for (AppDependency dep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-            if (dep.getArtifact().getArtifactId().equals(HEALTH_UI_WEBJAR_ARTIFACT_ID)
-                    && dep.getArtifact().getGroupId().equals(HEALTH_UI_WEBJAR_GROUP_ID)) {
-                return dep.getArtifact();
-            }
-        }
-        throw new RuntimeException("Could not find artifact " + HEALTH_UI_WEBJAR_GROUP_ID + ":" + HEALTH_UI_WEBJAR_ARTIFACT_ID
-                + " among the application dependencies");
-    }
-
-    private void extractHealthUi(AppArtifact artifact, Path resourceDir) throws IOException {
-        for (Path p : artifact.getPaths()) {
-            File artifactFile = p.toFile();
-            try (JarFile jarFile = new JarFile(artifactFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(HEALTH_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
-                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                            String filename = entry.getName().replace(HEALTH_UI_WEBJAR_PREFIX + "/", "");
-                            if (!IGNORE_LIST.contains(filename)) {
-                                Files.copy(inputStream, resourceDir.resolve(filename));
-                            }
-                        }
-                    }
-                }
-                // Now add our own logo and favicon
-                ClassLoader classLoader = SmallRyeHealthProcessor.class.getClassLoader();
-                for (String ownMedia : IGNORE_LIST) {
-                    try (InputStream logo = classLoader.getResourceAsStream(OWN_MEDIA_FOLDER + ownMedia)) {
-                        Files.copy(logo, resourceDir.resolve(ownMedia));
-                    }
-                }
-            }
         }
     }
 
@@ -507,20 +407,5 @@ class SmallRyeHealthProcessor {
 
     public String updateApiUrl(String original, String healthPath) {
         return original.replace("url = \"/health\";", "url = \"" + healthPath + "\";");
-    }
-
-    private static final class CachedHealthUI implements Runnable {
-
-        String cachedHealthPath;
-        String cachedDirectory;
-
-        @Override
-        public void run() {
-            try {
-                FileUtil.deleteDirectory(Paths.get(cachedDirectory));
-            } catch (IOException e) {
-                LOG.error("Failed to clean Health UI temp directory on shutdown", e);
-            }
-        }
     }
 }

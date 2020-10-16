@@ -1,23 +1,14 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.IndexView;
@@ -28,7 +19,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -41,7 +31,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -51,9 +40,8 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
@@ -93,12 +81,11 @@ public class SmallRyeGraphQLProcessor {
     // For the UI
     private static final String GRAPHQL_UI_WEBJAR_GROUP_ID = "io.smallrye";
     private static final String GRAPHQL_UI_WEBJAR_ARTIFACT_ID = "smallrye-graphql-ui-graphiql";
-    private static final String GRAPHQL_UI_WEBJAR_PREFIX = "META-INF/resources/graphql-ui";
-    private static final String OWN_MEDIA_FOLDER = "META-INF/resources/";
+    private static final String GRAPHQL_UI_WEBJAR_PREFIX = "META-INF/resources/graphql-ui/";
     private static final String GRAPHQL_UI_FINAL_DESTINATION = "META-INF/graphql-ui-files";
-    private static final String TEMP_DIR_PREFIX = "quarkus-graphql-ui_" + System.nanoTime();
-    private static final List<String> IGNORE_LIST = Arrays.asList("logo.png", "favicon.ico");
     private static final String FILE_TO_UPDATE = "render.js";
+    private static final String LINE_TO_UPDATE = "const api = '";
+    private static final String LINE_FORMAT = LINE_TO_UPDATE + "%s';";
 
     SmallRyeGraphQLConfig quarkusConfig;
 
@@ -363,7 +350,6 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
             SmallRyeGraphQLRecorder recorder,
             LaunchModeBuildItem launchMode,
-            LiveReloadBuildItem liveReload,
             HttpRootPathBuildItem httpRootPath,
             CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
 
@@ -377,153 +363,42 @@ public class SmallRyeGraphQLProcessor {
 
         String graphQLPath = httpRootPath.adjustPath(quarkusConfig.rootPath);
 
+        AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, GRAPHQL_UI_WEBJAR_GROUP_ID,
+                GRAPHQL_UI_WEBJAR_ARTIFACT_ID);
         if (launchMode.getLaunchMode().isDevOrTest()) {
-            CachedGraphQLUI cached = liveReload.getContextObject(CachedGraphQLUI.class);
-            boolean extractionNeeded = cached == null;
+            Path tempPath = WebJarUtil.devOrTest(curateOutcomeBuildItem, launchMode, artifact, GRAPHQL_UI_WEBJAR_PREFIX);
+            WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT);
 
-            if (cached != null && !cached.cachedGraphQLPath.equals(graphQLPath)) {
-                try {
-                    FileUtil.deleteDirectory(Paths.get(cached.cachedDirectory));
-                } catch (IOException e) {
-                    LOG.error("Failed to clean GraphQL UI temp directory on restart", e);
-                }
-                extractionNeeded = true;
-            }
-            if (extractionNeeded) {
-                if (cached == null) {
-                    cached = new CachedGraphQLUI();
-                    liveReload.setContextObject(CachedGraphQLUI.class, cached);
-                    Runtime.getRuntime().addShutdownHook(new Thread(cached, "GraphQL UI Shutdown Hook"));
-                }
-                try {
-                    AppArtifact artifact = getGraphQLUiArtifact(curateOutcomeBuildItem);
-                    Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX).toRealPath();
-                    extractGraphQLUi(artifact, tempDir);
-                    updateApiUrl(tempDir.resolve(FILE_TO_UPDATE), graphQLPath);
-                    cached.cachedDirectory = tempDir.toAbsolutePath().toString();
-                    cached.cachedGraphQLPath = graphQLPath;
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-            Handler<RoutingContext> handler = recorder.uiHandler(cached.cachedDirectory,
+            Handler<RoutingContext> handler = recorder.uiHandler(tempPath.toAbsolutePath().toString(),
                     httpRootPath.adjustPath(quarkusConfig.ui.rootPath));
             routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath, handler));
             routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath + "/*", handler));
             notFoundPageDisplayableEndpointProducer
                     .produce(new NotFoundPageDisplayableEndpointBuildItem(quarkusConfig.ui.rootPath + "/"));
+
         } else if (quarkusConfig.ui.alwaysInclude) {
-            AppArtifact artifact = getGraphQLUiArtifact(curateOutcomeBuildItem);
-            //we are including in a production artifact
-            //just stick the files in the generated output
-            //we could do this for dev mode as well but then we need to extract them every time
-            for (Path p : artifact.getPaths()) {
-                File artifactFile = p.toFile();
-                try (JarFile jarFile = new JarFile(artifactFile)) {
-                    Enumeration<JarEntry> entries = jarFile.entries();
 
-                    while (entries.hasMoreElements()) {
-                        JarEntry entry = entries.nextElement();
-                        if (entry.getName().startsWith(GRAPHQL_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
-                            try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                                String filename = entry.getName().replace(GRAPHQL_UI_WEBJAR_PREFIX + "/", "");
-                                byte[] content = FileUtil.readFileContents(inputStream);
-                                if (entry.getName().endsWith(FILE_TO_UPDATE)) {
-                                    content = updateApiUrl(new String(content, StandardCharsets.UTF_8), graphQLPath)
-                                            .getBytes(StandardCharsets.UTF_8);
-                                }
-                                if (IGNORE_LIST.contains(filename)) {
-                                    ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
-                                    try (InputStream resourceAsStream = classLoader
-                                            .getResourceAsStream(OWN_MEDIA_FOLDER + filename)) {
-                                        content = IoUtil.readBytes(resourceAsStream);
-                                    }
-                                }
+            Map<String, byte[]> files = WebJarUtil.production(curateOutcomeBuildItem, artifact, GRAPHQL_UI_WEBJAR_PREFIX);
 
-                                String fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + filename;
+            for (Map.Entry<String, byte[]> file : files.entrySet()) {
 
-                                generatedResourceProducer
-                                        .produce(new GeneratedResourceBuildItem(fileName, content));
-
-                                nativeImageResourceProducer
-                                        .produce(new NativeImageResourceBuildItem(fileName));
-
-                            }
-                        }
-                    }
+                String fileName = file.getKey();
+                byte[] content = file.getValue();
+                if (fileName.endsWith(FILE_TO_UPDATE)) {
+                    content = WebJarUtil
+                            .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT)
+                            .getBytes(StandardCharsets.UTF_8);
                 }
+                fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + fileName;
+
+                generatedResourceProducer.produce(new GeneratedResourceBuildItem(fileName, content));
+                nativeImageResourceProducer.produce(new NativeImageResourceBuildItem(fileName));
             }
 
             Handler<RoutingContext> handler = recorder
                     .uiHandler(GRAPHQL_UI_FINAL_DESTINATION, httpRootPath.adjustPath(quarkusConfig.ui.rootPath));
             routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath, handler));
             routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath + "/*", handler));
-        }
-    }
-
-    private AppArtifact getGraphQLUiArtifact(CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        for (AppDependency dep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-            if (dep.getArtifact().getArtifactId().equals(GRAPHQL_UI_WEBJAR_ARTIFACT_ID)
-                    && dep.getArtifact().getGroupId().equals(GRAPHQL_UI_WEBJAR_GROUP_ID)) {
-                return dep.getArtifact();
-            }
-        }
-        throw new RuntimeException("Could not find artifact " + GRAPHQL_UI_WEBJAR_GROUP_ID + ":" + GRAPHQL_UI_WEBJAR_ARTIFACT_ID
-                + " among the application dependencies");
-    }
-
-    private void extractGraphQLUi(AppArtifact artifact, Path resourceDir) throws IOException {
-        for (Path p : artifact.getPaths()) {
-            File artifactFile = p.toFile();
-            try (JarFile jarFile = new JarFile(artifactFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(GRAPHQL_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
-                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                            String filename = entry.getName().replace(GRAPHQL_UI_WEBJAR_PREFIX + "/", "");
-                            if (!IGNORE_LIST.contains(filename)) {
-                                Files.copy(inputStream, resourceDir.resolve(filename));
-                            }
-                        }
-                    }
-                }
-                // Now add our own logo and favicon
-                ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
-                for (String ownMedia : IGNORE_LIST) {
-                    try (InputStream logo = classLoader.getResourceAsStream(OWN_MEDIA_FOLDER + ownMedia)) {
-                        Files.copy(logo, resourceDir.resolve(ownMedia));
-                    }
-                }
-            }
-        }
-    }
-
-    private void updateApiUrl(Path renderJs, String graphqlPath) throws IOException {
-        String content = new String(Files.readAllBytes(renderJs), StandardCharsets.UTF_8);
-        String result = updateApiUrl(content, graphqlPath);
-        if (result != null) {
-            Files.write(renderJs, result.getBytes(StandardCharsets.UTF_8));
-        }
-    }
-
-    public String updateApiUrl(String original, String graphqlPath) {
-        return original.replace("const api = '/graphql';", "const api = '" + graphqlPath + "';");
-    }
-
-    private static final class CachedGraphQLUI implements Runnable {
-
-        String cachedGraphQLPath;
-        String cachedDirectory;
-
-        @Override
-        public void run() {
-            try {
-                FileUtil.deleteDirectory(Paths.get(cachedDirectory));
-            } catch (IOException e) {
-                LOG.error("Failed to clean GraphQL UI temp directory on shutdown", e);
-            }
         }
     }
 }

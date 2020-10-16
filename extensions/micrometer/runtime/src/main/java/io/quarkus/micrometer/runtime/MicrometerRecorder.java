@@ -15,7 +15,6 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 
-import org.eclipse.microprofile.config.Config;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
@@ -43,7 +42,6 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 @Recorder
 public class MicrometerRecorder {
     private static final Logger log = Logger.getLogger(MicrometerRecorder.class);
-    static final int TRIM_POS = "quarkus.micrometer.export.".length();
     static final String DEFAULT_EXCEPTION_TAG_VALUE = "none";
     static MicrometerMetricsFactory factory;
 
@@ -152,44 +150,6 @@ public class MicrometerRecorder {
 
     public void registerMetrics(Consumer<MetricsFactory> consumer) {
         consumer.accept(factory);
-    }
-
-    public static Map<String, String> captureProperties(Config config, String prefix) {
-        final Map<String, String> properties = new HashMap<>();
-
-        // Rename and store stackdriver properties
-        for (String name : config.getPropertyNames()) {
-            if (name.startsWith(prefix)) {
-                String key = convertKey(name);
-                String value = config.getValue(name, String.class);
-                properties.put(key, value);
-            }
-        }
-        return properties;
-    }
-
-    static String convertKey(String name) {
-        String key = name.substring(TRIM_POS);
-        key = MicrometerRecorder.camelHumpify(key);
-        return key;
-    }
-
-    static String camelHumpify(String s) {
-        if (s.indexOf('-') >= 0) {
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < s.length(); i++) {
-                if (s.charAt(i) == '-') {
-                    i++;
-                    if (i < s.length()) {
-                        b.append(Character.toUpperCase(s.charAt(i)));
-                    }
-                } else {
-                    b.append(s.charAt(i));
-                }
-            }
-            return b.toString();
-        }
-        return s;
     }
 
     public static Class<?> getClassForName(String classname) {

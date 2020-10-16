@@ -12,27 +12,32 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SecondPrometheusTest {
+public class SignalFxEnabledTest {
+    static final String REGISTRY_CLASS_NAME = "io.micrometer.signalfx.SignalFxMeterRegistry";
+    static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
-            .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
+            .overrideConfigKey("quarkus.micrometer.export.signalfx.enabled", "true")
+            .overrideConfigKey("quarkus.micrometer.export.signalfx.access-token", "required")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(PrometheusRegistryProcessor.REGISTRY_CLASS)
-                    .addClass(SecondPrometheusProvider.class));
+                    .addClass(StackdriverRegistryProcessor.REGISTRY_CLASS));
 
     @Inject
     MeterRegistry registry;
 
     @Test
     public void testMeterRegistryPresent() {
-        // We want a composite that contains both registries.
+        // SignalFx is enabled (alone, all others disabled)
         Assertions.assertNotNull(registry, "A registry should be configured");
         Set<MeterRegistry> subRegistries = ((CompositeMeterRegistry) registry).getRegistries();
-        Assertions.assertEquals(2, subRegistries.size(), "Should be two sub registries");
+        Assertions.assertEquals(REGISTRY_CLASS, subRegistries.iterator().next().getClass(),
+                "Should be SignalFxMeterRegistry");
     }
 }

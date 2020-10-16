@@ -6,12 +6,12 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class AzureMonitorConfig implements MicrometerConfig.CapabilityEnabled {
+public class SignalFxConfig implements MicrometerConfig.CapabilityEnabled {
     /**
-     * Support for export to AzureMonitor.
+     * Support for export to SignalFx.
      * <p>
-     * Support for AzureMonitor will be enabled if micrometer
-     * support is enabled, the AzureMonitorMeterRegistry is on the classpath
+     * Support for SignalFx will be enabled if micrometer
+     * support is enabled, the SignalFxMeterRegistry is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.registry-enabled-default} is true.
      */

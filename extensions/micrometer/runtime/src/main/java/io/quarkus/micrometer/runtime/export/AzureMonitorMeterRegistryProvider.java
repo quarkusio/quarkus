@@ -11,8 +11,10 @@ import io.micrometer.azuremonitor.AzureMonitorConfig;
 import io.micrometer.azuremonitor.AzureMonitorMeterRegistry;
 import io.micrometer.azuremonitor.AzureMonitorNamingConvention;
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.config.MeterRegistryConfigValidator;
+import io.micrometer.core.instrument.config.validate.Validated;
+import io.micrometer.core.instrument.step.StepRegistryConfig;
 import io.quarkus.arc.DefaultBean;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 
 @Singleton
 public class AzureMonitorMeterRegistryProvider {
@@ -22,14 +24,23 @@ public class AzureMonitorMeterRegistryProvider {
     @Singleton
     @DefaultBean
     public AzureMonitorConfig configure(Config config) {
-        final Map<String, String> properties = MicrometerRecorder.captureProperties(config, PREFIX);
+        final Map<String, String> properties = ConfigAdapter.captureProperties(config, PREFIX);
 
-        return new AzureMonitorConfig() {
+        return ConfigAdapter.validate(new AzureMonitorConfig() {
             @Override
             public String get(String key) {
                 return properties.get(key);
             }
-        };
+
+            @Override
+            // Bug in micrometer: instrumentationKey is required
+            public Validated<?> validate() {
+                return MeterRegistryConfigValidator.checkAll(this,
+                        c -> StepRegistryConfig.validate(c),
+                        MeterRegistryConfigValidator.checkRequired("instrumentationKey",
+                                AzureMonitorConfig::instrumentationKey));
+            }
+        });
     }
 
     @Produces

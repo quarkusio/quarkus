@@ -1,6 +1,5 @@
 package io.quarkus.micrometer.runtime.export;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.inject.Produces;
@@ -10,11 +9,10 @@ import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.config.validate.Validated;
 import io.micrometer.stackdriver.StackdriverConfig;
 import io.micrometer.stackdriver.StackdriverMeterRegistry;
+import io.micrometer.stackdriver.StackdriverNamingConvention;
 import io.quarkus.arc.DefaultBean;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 
 @Singleton
 public class StackdriverMeterRegistryProvider {
@@ -28,7 +26,7 @@ public class StackdriverMeterRegistryProvider {
     @Singleton
     @DefaultBean
     public StackdriverConfig configure(Config config) throws Throwable {
-        final Map<String, String> properties = MicrometerRecorder.captureProperties(config, PREFIX);
+        final Map<String, String> properties = ConfigAdapter.captureProperties(config, PREFIX);
 
         // Special check: if publish is set, override the value of enabled
         // Specifically, the stackdriver registry must be enabled for this
@@ -39,21 +37,18 @@ public class StackdriverMeterRegistryProvider {
             properties.put(ENABLED, properties.get(PUBLISH));
         }
 
-        StackdriverConfig sdConfig = new StackdriverConfig() {
+        return ConfigAdapter.validate(new StackdriverConfig() {
             @Override
             public String get(String key) {
                 return properties.get(key);
             }
-        };
+        });
+    }
 
-        Validated validated = sdConfig.validate();
-        List<Validated.Invalid<?>> errors = validated.failures();
-        if (validated.isInvalid()) {
-            errors.stream().forEach(x -> {
-                log.error(x.getMessage(), x.getException());
-            });
-        }
-        return sdConfig;
+    @Produces
+    @DefaultBean
+    public StackdriverNamingConvention namingConvention() {
+        return new StackdriverNamingConvention();
     }
 
     @Produces

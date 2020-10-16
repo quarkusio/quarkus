@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
@@ -181,18 +182,17 @@ public class ArcContainerImpl implements ArcContainer {
         } else if (Singleton.class.equals(scopeType)) {
             return singletonContext;
         }
-        List<InjectableContext> active = new ArrayList<>();
+        InjectableContext selected = null;
         for (InjectableContext context : contexts) {
             if (scopeType.equals(context.getScope()) && context.isActive()) {
-                active.add(context);
+                if (selected != null) {
+                    throw new IllegalArgumentException(
+                            "More than one context object for the given scope: " + selected + " " + context);
+                }
+                selected = context;
             }
         }
-        if (active.isEmpty()) {
-            return null;
-        } else if (active.size() == 1) {
-            return active.get(0);
-        }
-        throw new IllegalArgumentException("More than one context object for the given scope: " + active);
+        return selected;
     }
 
     @Override
@@ -261,6 +261,39 @@ public class ArcContainerImpl implements ArcContainer {
         Objects.requireNonNull(bean);
         requireRunning();
         return (InstanceHandle<T>) beanInstanceHandle(bean, null);
+    }
+
+    @Override
+    public <T> T normalScopedInstance(InjectableBean<T> bean) {
+        requireRunning();
+        Class<? extends Annotation> scopeType = bean.getScope();
+        // Application/Singleton context is always active
+        if (ApplicationScoped.class.equals(scopeType)) {
+            return applicationContext.getOrCreate(bean);
+        } else if (Singleton.class.equals(scopeType)) {
+            return applicationContext.getOrCreate(bean);
+        }
+        T result = null;
+        InjectableContext selectedContext = null;
+        for (InjectableContext context : contexts) {
+            if (scopeType.equals(context.getScope())) {
+                if (result != null) {
+                    if (context.isActive()) {
+                        throw new IllegalArgumentException(
+                                "More than one context object for the given scope: " + selectedContext + " " + context);
+                    }
+                } else {
+                    result = context.getOrCreate(bean);
+                    if (result != null) {
+                        selectedContext = context;
+                    }
+                }
+            }
+        }
+        if (result == null) {
+            throw new ContextNotActiveException();
+        }
+        return result;
     }
 
     @Override

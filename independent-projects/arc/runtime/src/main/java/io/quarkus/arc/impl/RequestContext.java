@@ -49,6 +49,27 @@ class RequestContext implements ManagedContext {
         return RequestScoped.class;
     }
 
+    @Override
+    public <T> T getOrCreate(Contextual<T> contextual) {
+        if (contextual == null) {
+            throw new IllegalArgumentException("Contextual parameter must not be null");
+        }
+        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
+        if (ctx == null) {
+            // Thread local not set - context is not active!
+            return null;
+        }
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctx.get(contextual);
+        if (instance == null) {
+            CreationalContext<T> creationalContext = new CreationalContextImpl<>(contextual);
+            // Bean instance does not exist - create one if we have CreationalContext
+            instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
+                    contextual.create(creationalContext), creationalContext);
+            ctx.put(contextual, instance);
+        }
+        return instance.get();
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {

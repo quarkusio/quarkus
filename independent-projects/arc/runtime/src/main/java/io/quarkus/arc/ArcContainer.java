@@ -99,6 +99,14 @@ public interface ArcContainer {
     <T> InstanceHandle<T> instance(InjectableBean<T> bean);
 
     /**
+     * Returns an instance of a normal scoped bean
+     *
+     * @param bean
+     * @return a new bean instance
+     */
+    <T> T normalScopedInstance(InjectableBean<T> bean);
+
+    /**
      * Instances of dependent scoped beans obtained with the returned injectable instance must be explicitly destroyed, either
      * via the {@link Instance#destroy(Object)} method invoked upon the same injectable instance or with
      * {@link InstanceHandle#destroy()}.

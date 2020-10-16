@@ -1,8 +1,10 @@
 package io.quarkus.arc;
 
+import io.quarkus.arc.impl.CreationalContextImpl;
 import java.util.Map;
 import javax.enterprise.context.NormalScope;
 import javax.enterprise.context.spi.AlterableContext;
+import javax.enterprise.context.spi.Contextual;
 
 /**
  * A context implementing this interface allows to capture and view its state via {@link ContextState}.
@@ -21,6 +23,27 @@ public interface InjectableContext extends AlterableContext {
      * @return the current state
      */
     ContextState getState();
+
+    /**
+     * Attempts to get or create a new isntance of the given contextual. If the scope is not active this returns null.
+     *
+     * This allows for the isActive check and the actual creation to happen in a single method, which gives a performance
+     * benefit by performing fewer thread local operations.
+     *
+     * @param contextual The bean
+     * @param <T> The type of bean
+     * @return
+     */
+    default <T> T getOrCreate(Contextual<T> contextual) {
+        if (!isActive()) {
+            return null;
+        }
+        T result = get(contextual);
+        if (result != null) {
+            return result;
+        }
+        return get(contextual, new CreationalContextImpl<>(contextual));
+    }
 
     /**
      * Destroy all contextual instances from the given state.

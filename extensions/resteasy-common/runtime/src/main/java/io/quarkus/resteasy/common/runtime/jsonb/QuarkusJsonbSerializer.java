@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.jsonb.runtime;
+package io.quarkus.resteasy.common.runtime.jsonb;
 
 import java.io.File;
 import java.io.IOException;

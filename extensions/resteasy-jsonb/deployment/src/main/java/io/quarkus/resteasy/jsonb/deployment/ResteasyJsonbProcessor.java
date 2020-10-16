@@ -11,9 +11,6 @@ import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
-import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.deployment.ResteasyJsonConfig;
-import io.quarkus.resteasy.jsonb.runtime.QuarkusJsonbSerializer;
 import io.quarkus.resteasy.jsonb.vertx.VertxJson;
 
 public class ResteasyJsonbProcessor {
@@ -43,13 +40,5 @@ public class ResteasyJsonbProcessor {
             BuildProducer<JsonbDeserializerBuildItem> deserializers) {
         serializers.produce(new JsonbSerializerBuildItem(VERTX_SERIALIZERS));
         deserializers.produce(new JsonbDeserializerBuildItem(VERTX_DESERIALIZERS));
-    }
-
-    @BuildStep
-    ResteasyJaxrsProviderBuildItem provider(ResteasyJsonConfig config) {
-        if (config.jsonDefault) {
-            return new ResteasyJaxrsProviderBuildItem(QuarkusJsonbSerializer.class.getName());
-        }
-        return null;
     }
 }

@@ -167,13 +167,16 @@ depending on the extension you chose when initializing the project.
 
 [NOTE]
 ====
-When JSON extension is installed such as `quarkus-resteasy-jsonb` Quarkus will use this by default for most return values, unless the media type is explicitly set via
-and `@Produces` or `@Consumes` annotation (there are some exceptions for well known types, such as `String` and `File`, which default to `text/plain` and `application/octet-stream`
+When a JSON extension is installed such as `quarkus-resteasy-jsonb` or `quarkus-resteasy-jackson`, Quarkus will use the `application/json` media type
+by default for most return values, unless the media type is explicitly set via
+`@Produces` or `@Consumes` annotations (there are some exceptions for well known types, such as `String` and `File`, which default to `text/plain` and `application/octet-stream`
 respectively).
 
-If you don't want JSON by default you can set `quarkus.resteasy-json.default-json=false` and the default will change back to `application/octet-stream`. If you set this
+If you don't want JSON by default you can set `quarkus.resteasy-json.default-json=false` and the default will change back to being auto-negotiated. If you set this
 you will need to add `@Produces(MediaType.APPLICATION_JSON)` and `@Consumes(MediaType.APPLICATION_JSON)` to your endpoints in order to use JSON.
 
+If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
+It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
 ====
 
 === Configuring JSON support

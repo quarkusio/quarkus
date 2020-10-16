@@ -126,7 +126,6 @@ public interface CountriesService {
 
     @GET
     @Path("/name/{name}")
-    @Produces("application/json")
     Set<Country> getByName(@PathParam String name);
 }
 ----
@@ -142,9 +141,15 @@ CDI injection as a REST Client
 
 [NOTE]
 ====
-While `@Consumes` and `@Produces` are optional as auto-negotiation is supported,
-it is heavily recommended to annotate your endpoints with them to define precisely the expected content-types.
+When a JSON extension is installed such as `quarkus-rest-client-jsonb` or `quarkus-rest-client-jackson`, Quarkus will use the `application/json` media type
+by default for most return values, unless the media type is explicitly set via
+`@Produces` or `@Consumes` annotations (there are some exceptions for well known types, such as `String` and `File`, which default to `text/plain` and `application/octet-stream`
+respectively).
 
+If you don't want JSON by default you can set `quarkus.resteasy-json.default-json=false` and the default will change back to being auto-negotiated. If you set this
+you will need to add `@Produces(MediaType.APPLICATION_JSON)` and `@Consumes(MediaType.APPLICATION_JSON)` to your endpoints in order to use JSON.
+
+If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
 It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
 ====
 
@@ -211,7 +216,6 @@ public class CountriesResource {
 
     @GET
     @Path("/name/{name}")
-    @Produces(MediaType.APPLICATION_JSON)
     public Set<Country> name(@PathParam String name) {
         return countriesService.getByName(name);
     }
@@ -320,14 +324,12 @@ public class CountriesResource {
 
     @GET
     @Path("/name/{name}")
-    @Produces(MediaType.APPLICATION_JSON)
     public Set<Country> name(@PathParam String name) {
         return countriesService.getByName(name);
     }
 
     @GET
     @Path("/name-async/{name}")
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<Set<Country>> nameAsync(@PathParam String name) {
         return countriesService.getByNameAsync(name);
     }
@@ -409,7 +411,6 @@ public class CountriesResource {
 
     @GET
     @Path("/name-uni/{name}")
-    @Produces(MediaType.APPLICATION_JSON)
     public Uni<Set<Country>> nameAsync(@PathParam String name) {
         return countriesService.getByNameAsUni(name);
     }

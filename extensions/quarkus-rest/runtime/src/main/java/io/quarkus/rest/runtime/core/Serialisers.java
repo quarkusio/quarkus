@@ -738,7 +738,7 @@ public class Serialisers {
             }
             EncodedMediaType contentType = requestContext.getResponseContentType();
             if (contentType != null) {
-                vertxResponse.putHeader(CONTENT_TYPE, contentType.toString());
+                vertxResponse.headers().set(CONTENT_TYPE, contentType.toString());
             }
             return;
         }

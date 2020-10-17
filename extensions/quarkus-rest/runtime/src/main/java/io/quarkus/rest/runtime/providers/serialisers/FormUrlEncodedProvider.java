@@ -77,7 +77,7 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
     public void writeResponse(MultivaluedMap o, QuarkusRestRequestContext context) throws WebApplicationException {
         try {
             // FIXME: use response encoding
-            context.getContext().response().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));
+            context.getHttpServerResponse().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));
         } catch (UnsupportedEncodingException e) {
             throw new WebApplicationException(e);
         }

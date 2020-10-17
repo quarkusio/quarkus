@@ -33,7 +33,7 @@ public class JsonStructureHandler implements MessageBodyReader<JsonStructure>, Q
         try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseContentMediaType())) {
             writer.write(o);
         }
-        context.getContext().response().end(Buffer.buffer(out.toByteArray()));
+        context.getHttpServerResponse().end(Buffer.buffer(out.toByteArray()));
     }
 
     @Override

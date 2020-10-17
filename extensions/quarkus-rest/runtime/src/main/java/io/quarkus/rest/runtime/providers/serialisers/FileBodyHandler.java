@@ -96,7 +96,7 @@ public class FileBodyHandler implements MessageBodyReader<File>, QuarkusRestMess
 
     @Override
     public void writeResponse(File o, QuarkusRestRequestContext context) throws WebApplicationException {
-        HttpServerResponse vertxResponse = context.getContext().response();
+        HttpServerResponse vertxResponse = context.getHttpServerResponse();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             doWrite(o, baos);

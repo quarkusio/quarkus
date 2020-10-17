@@ -63,7 +63,7 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
             context.setResult(Response.fromResponse(response).replaceAll(headers).build());
             Serialisers.encodeResponseHeaders(context);
             context.getOutputStream().close();
-            context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
+            context.getHttpServerResponse().end(Buffer.buffer(baos.toByteArray()));
             done = true;
         } else {
             interceptors[index++].aroundWriteTo(this);
@@ -71,7 +71,7 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
                 //TODO: how to handle
                 context.setResult(Response.fromResponse(response).replaceAll(headers).build());
                 Serialisers.encodeResponseHeaders(context);
-                context.getContext().response().end();
+                context.getHttpServerResponse().end();
             }
         }
 

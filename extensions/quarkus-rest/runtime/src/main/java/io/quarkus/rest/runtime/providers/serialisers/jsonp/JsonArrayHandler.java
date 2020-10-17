@@ -32,7 +32,7 @@ public class JsonArrayHandler implements MessageBodyReader<JsonArray>, QuarkusRe
         try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseContentType().getMediaType())) {
             writer.writeArray(o);
         }
-        context.getContext().response().end(Buffer.buffer(out.toByteArray()));
+        context.getHttpServerResponse().end(Buffer.buffer(out.toByteArray()));
     }
 
     @Override

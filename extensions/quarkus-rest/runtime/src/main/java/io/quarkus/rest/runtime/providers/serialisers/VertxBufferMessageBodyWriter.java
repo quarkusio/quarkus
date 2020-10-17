@@ -14,7 +14,6 @@ import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 
 @Provider
 public class VertxBufferMessageBodyWriter implements QuarkusRestMessageBodyWriter<Buffer> {
@@ -37,7 +36,6 @@ public class VertxBufferMessageBodyWriter implements QuarkusRestMessageBodyWrite
 
     @Override
     public void writeResponse(Buffer buffer, QuarkusRestRequestContext context) throws WebApplicationException {
-        HttpServerResponse vertxResponse = context.getContext().response();
-        vertxResponse.end(buffer);
+        context.getHttpServerResponse().end(buffer);
     }
 }

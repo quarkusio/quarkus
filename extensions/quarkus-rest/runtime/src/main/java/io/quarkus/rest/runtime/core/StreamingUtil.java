@@ -22,11 +22,11 @@ import io.vertx.core.http.HttpServerResponse;
 public class StreamingUtil {
 
     public static CompletionStage<?> send(QuarkusRestRequestContext context, Object entity) {
-        if (context.getContext().response().closed()) {
+        HttpServerResponse response = context.getContext().response();
+        if (response.closed()) {
             // FIXME: check spec
             return CompletableFuture.completedFuture(null);
         }
-        HttpServerResponse response = context.getContext().response();
         CompletableFuture<?> ret = new CompletableFuture<>();
         Buffer data;
         try {

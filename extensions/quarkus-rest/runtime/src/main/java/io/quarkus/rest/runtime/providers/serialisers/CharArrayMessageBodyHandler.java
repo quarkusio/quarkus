@@ -16,7 +16,6 @@ import javax.ws.rs.ext.Provider;
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
-import io.vertx.core.http.HttpServerResponse;
 
 @Provider
 public class CharArrayMessageBodyHandler implements QuarkusRestMessageBodyWriter<char[]>, MessageBodyReader<char[]> {
@@ -41,8 +40,7 @@ public class CharArrayMessageBodyHandler implements QuarkusRestMessageBodyWriter
     @Override
     public void writeResponse(char[] o, QuarkusRestRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
-        HttpServerResponse vertxResponse = context.getContext().response();
-        vertxResponse.end(new String(o));
+        context.getHttpServerResponse().end(new String(o));
     }
 
     @Override

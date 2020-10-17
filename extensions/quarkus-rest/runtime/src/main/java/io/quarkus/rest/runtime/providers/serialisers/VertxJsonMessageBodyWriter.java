@@ -13,7 +13,6 @@ import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 
 // this gets conditionally registered
@@ -38,7 +37,6 @@ public class VertxJsonMessageBodyWriter implements QuarkusRestMessageBodyWriter<
 
     @Override
     public void writeResponse(Object o, QuarkusRestRequestContext context) throws WebApplicationException {
-        HttpServerResponse vertxResponse = context.getContext().response();
-        vertxResponse.end(Json.encodeToBuffer(o));
+        context.getHttpServerResponse().end(Json.encodeToBuffer(o));
     }
 }

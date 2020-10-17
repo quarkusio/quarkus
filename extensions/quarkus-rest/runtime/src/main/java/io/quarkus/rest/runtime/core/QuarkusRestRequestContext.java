@@ -60,6 +60,7 @@ import io.quarkus.rest.runtime.util.PathSegmentImpl;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -127,6 +128,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     private EntityWriter entityWriter;
     private QuarkusRestContainerRequestContextImpl containerRequestContext;
     private QuarkusRestContainerResponseContextImpl containerResponseContext;
+    private HttpServerResponse httpServerResponse; // store it as obtaining it from Vert.x isn't dirt cheap and it's done in a lot of places
     private String method; // used to hold the explicitly set method performed by a ContainerRequestFilter
     private String originalMethod; // store the original method as obtaining it from Vert.x isn't dirt cheap
     // this is only set if we override the requestUri
@@ -347,6 +349,13 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     public RoutingContext getContext() {
         return context;
+    }
+
+    public HttpServerResponse getHttpServerResponse() {
+        if (httpServerResponse == null) {
+            httpServerResponse = context.response();
+        }
+        return httpServerResponse;
     }
 
     public Object[] getParameters() {

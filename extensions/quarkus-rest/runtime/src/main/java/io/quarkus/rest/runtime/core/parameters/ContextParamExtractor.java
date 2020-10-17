@@ -61,7 +61,7 @@ public class ContextParamExtractor implements ParameterExtractor {
             return context.getRequest();
         }
         if (type.equals(HttpServerResponse.class.getName())) {
-            return context.getContext().response();
+            return context.getHttpServerResponse();
         }
         if (type.equals(HttpServerRequest.class.getName())) {
             return context.getContext().request();

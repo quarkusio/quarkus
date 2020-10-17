@@ -58,7 +58,7 @@ public class JsonbMessageBodyWriter implements QuarkusRestMessageBodyWriter<Obje
 
     @Override
     public void writeResponse(Object o, QuarkusRestRequestContext context) throws WebApplicationException {
-        HttpServerResponse vertxResponse = context.getContext().response();
+        HttpServerResponse vertxResponse = context.getHttpServerResponse();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         json.toJson(o, baos);
         vertxResponse.end(Buffer.buffer(baos.toByteArray()));

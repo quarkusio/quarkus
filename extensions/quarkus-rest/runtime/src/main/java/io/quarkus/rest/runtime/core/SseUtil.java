@@ -24,11 +24,11 @@ public class SseUtil {
     private static final String NL = "\n";
 
     public static CompletionStage<?> send(QuarkusRestRequestContext context, OutboundSseEvent event) {
-        if (context.getContext().response().closed()) {
+        HttpServerResponse response = context.getHttpServerResponse();
+        if (response.closed()) {
             // FIXME: check spec
             return CompletableFuture.completedFuture(null);
         }
-        HttpServerResponse response = context.getContext().response();
         CompletableFuture<?> ret = new CompletableFuture<>();
         Buffer data;
         try {

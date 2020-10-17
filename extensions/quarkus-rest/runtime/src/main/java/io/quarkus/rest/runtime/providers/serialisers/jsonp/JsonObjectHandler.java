@@ -32,7 +32,7 @@ public class JsonObjectHandler implements MessageBodyReader<JsonObject>, Quarkus
         try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseContentMediaType())) {
             writer.writeObject(o);
         }
-        context.getContext().response().end(Buffer.buffer(out.toByteArray()));
+        context.getHttpServerResponse().end(Buffer.buffer(out.toByteArray()));
     }
 
     @Override

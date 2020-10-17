@@ -263,7 +263,7 @@ public class Serialisers {
                             context.getAllAnnotations(), response.getMediaType(), response.getHeaders(),
                             context.getOutputStream());
                     Serialisers.encodeResponseHeaders(context);
-                    context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
+                    context.getHttpServerResponse().end(Buffer.buffer(baos.toByteArray()));
                 } else {
                     runWriterInterceptors(context, entity, writer, response, writerInterceptors, serialisers);
                 }
@@ -729,7 +729,7 @@ public class Serialisers {
     }
 
     public static void encodeResponseHeaders(QuarkusRestRequestContext requestContext) {
-        HttpServerResponse vertxResponse = requestContext.getContext().response();
+        HttpServerResponse vertxResponse = requestContext.getHttpServerResponse();
         if (!requestContext.getResponse().isCreated()) {
             //fast path
             //there is no response, so we just set the content type

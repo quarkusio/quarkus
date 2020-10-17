@@ -47,7 +47,7 @@ public class QuarkusRestRequest implements Request {
         negotiation.setAcceptLanguageHeaders(requestHeaders.get(HttpHeaders.ACCEPT_LANGUAGE));
 
         varyHeader = QuarkusRestResponseBuilder.createVaryHeader(variants);
-        requestContext.getContext().response().headers().set(HttpHeaders.VARY, varyHeader);
+        requestContext.getHttpServerResponse().headers().set(HttpHeaders.VARY, varyHeader);
         //response.getOutputHeaders().add(VARY, varyHeader);
         return negotiation.getBestMatch(variants);
     }

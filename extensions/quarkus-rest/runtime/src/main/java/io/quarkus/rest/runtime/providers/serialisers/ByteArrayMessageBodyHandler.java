@@ -16,7 +16,6 @@ import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 
 @Provider
 public class ByteArrayMessageBodyHandler implements QuarkusRestMessageBodyWriter<byte[]>, MessageBodyReader<byte[]> {
@@ -40,8 +39,7 @@ public class ByteArrayMessageBodyHandler implements QuarkusRestMessageBodyWriter
     @Override
     public void writeResponse(byte[] o, QuarkusRestRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
-        HttpServerResponse vertxResponse = context.getContext().response();
-        vertxResponse.end(Buffer.buffer(o));
+        context.getHttpServerResponse().end(Buffer.buffer(o));
     }
 
     @Override

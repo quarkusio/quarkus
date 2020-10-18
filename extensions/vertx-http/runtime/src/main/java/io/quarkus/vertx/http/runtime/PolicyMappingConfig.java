@@ -10,6 +10,14 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class PolicyMappingConfig {
 
     /**
+     * Determines whether the entire permission set is enabled, or not.
+     * 
+     * By default, if the permission set is defined, it is enabled.
+     */
+    @ConfigItem
+    public Optional<Boolean> enabled;
+
+    /**
      * The HTTP policy that this permission set is linked to.
      *
      * There are 3 built in policies: permit, deny and authenticated. Role based

@@ -34,7 +34,8 @@ public class InvocationHandler implements RestHandler {
                 requestContext.setResult(result);
             }
         } catch (Throwable t) {
-            requestContext.handleException(t);
+            // passing true since the target doesn't change and we want response filters to be able to know what the resource method was
+            requestContext.handleException(t, true);
             if (async) {
                 requestContext.resume();
             }

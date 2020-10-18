@@ -307,10 +307,16 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
      * @param newHandlerChain The new handler chain
      */
     public void restart(RestHandler[] newHandlerChain) {
+        restart(newHandlerChain, false);
+    }
+
+    public void restart(RestHandler[] newHandlerChain, boolean keepTarget) {
         this.handlers = newHandlerChain;
         position = 0;
         parameters = new Object[0];
-        target = null;
+        if (!keepTarget) {
+            target = null;
+        }
     }
 
     /**
@@ -511,11 +517,15 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
      * a response result and switch to the abort chain
      */
     public void handleException(Throwable t) {
+        handleException(t, false);
+    }
+
+    public void handleException(Throwable t, boolean keepSameTarget) {
         if (handlers == abortHandlerChain) {
             sendInternalError(t);
         } else {
             this.throwable = t;
-            restart(abortHandlerChain);
+            restart(abortHandlerChain, keepSameTarget);
         }
     }
 

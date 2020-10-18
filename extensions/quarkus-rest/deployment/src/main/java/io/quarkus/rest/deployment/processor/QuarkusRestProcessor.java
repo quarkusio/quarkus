@@ -40,8 +40,10 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
@@ -71,6 +73,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
@@ -124,6 +127,8 @@ import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
+import io.quarkus.rest.spi.CustomContainerRequestFilterBuildItem;
+import io.quarkus.rest.spi.CustomContainerResponseFilterBuildItem;
 import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.RuntimeValue;
@@ -337,11 +342,28 @@ public class QuarkusRestProcessor {
             // TODO: We need to use this index instead of BeanArchiveIndexBuildItem to avoid build cycles. It it OK?
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            List<CustomContainerRequestFilterBuildItem> customContainerRequestFilters,
+            List<CustomContainerResponseFilterBuildItem> customContainerResponseFilters,
             BuildProducer<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
             BuildProducer<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
             BuildProducer<AdditionalBeanBuildItem> additionalBean) {
         IndexView index = combinedIndexBuildItem.getIndex();
         AdditionalBeanBuildItem.Builder additionalBeans = AdditionalBeanBuildItem.builder();
+
+        // if we have custom filters, we need to index these classes
+        if (!customContainerRequestFilters.isEmpty() || !customContainerResponseFilters.isEmpty()) {
+            Indexer indexer = new Indexer();
+            Set<DotName> additionalIndex = new HashSet<>();
+            for (CustomContainerRequestFilterBuildItem filter : customContainerRequestFilters) {
+                IndexingUtil.indexClass(filter.getClassName(), indexer, index, additionalIndex,
+                        Thread.currentThread().getContextClassLoader());
+            }
+            for (CustomContainerResponseFilterBuildItem filter : customContainerResponseFilters) {
+                IndexingUtil.indexClass(filter.getClassName(), indexer, index, additionalIndex,
+                        Thread.currentThread().getContextClassLoader());
+            }
+            index = CompositeIndex.create(index, indexer.complete());
+        }
 
         for (AnnotationInstance instance : index
                 .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_REQUEST_FILTER)) {

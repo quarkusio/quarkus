@@ -44,6 +44,11 @@
             <artifactId>quarkus-resteasy</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

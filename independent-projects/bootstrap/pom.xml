@@ -40,7 +40,7 @@
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
         <commons-lang.version>3.9</commons-lang.version>
-        <guava.version>27.0.1-jre</guava.version>
+        <guava.version>30.0-jre</guava.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
         <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>

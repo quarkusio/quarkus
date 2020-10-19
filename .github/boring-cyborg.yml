@@ -127,8 +127,8 @@ labelPRBasedOnFilePath:
         - integration-tests/spring-data-jpa/**/*
 
     area/hibernate-search:
-        - extensions/hibernate-search-elasticsearch/**/*
-        - integration-tests/hibernate-search-elasticsearch/**/*
+        - extensions/hibernate-search-orm-elasticsearch/**/*
+        - integration-tests/hibernate-search-orm-elasticsearch/**/*
         - extensions/elasticsearch-rest-client/**/*
 
     area/hibernate-validator:

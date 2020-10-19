@@ -464,7 +464,7 @@ jobs:
             test-modules: >
               elasticsearch-rest-client
               elasticsearch-rest-high-level-client
-              hibernate-search-elasticsearch
+              hibernate-search-orm-elasticsearch
           - category: Amazon
             amazonServices: "true"
             timeout: 45

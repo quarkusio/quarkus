@@ -77,7 +77,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
 
  * the Agroal connection pooling extension (`quarkus-agroal`),
  * the Amazon DynamoDB extension (`quarkus-amazon-dynamodb`),
- * the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-elasticsearch`),
+ * the Hibernate Search Elasticsearch extension (`quarkus-hibernate-search-orm-elasticsearch`),
  * the Infinispan Client extension (`quarkus-infinispan-client`).
  * the Jaeger extension (`quarkus-jaeger`),
  * the JGit extension (`quarkus-jgit`),

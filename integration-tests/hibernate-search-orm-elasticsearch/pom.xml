@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-hibernate-search-elasticsearch</artifactId>
+    <artifactId>quarkus-integration-test-hibernate-search-orm-elasticsearch</artifactId>
     <name>Quarkus - Integration Tests - Hibernate Search + Elasticsearch</name>
     <dependencies>
         <dependency>
@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-search-elasticsearch</artifactId>
+            <artifactId>quarkus-hibernate-search-orm-elasticsearch</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -57,7 +57,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-search-elasticsearch-deployment</artifactId>
+            <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

@@ -56,7 +56,7 @@ public class QuarkusTestPlatformDescriptorLoader
         addExtension("quarkus-scala", "Scala", "url://", "scala");
         addExtension("quarkus-config-yaml", "Config Yaml", "url://", "config-yaml");
         addExtension("quarkus-hibernate-orm-panache", "Hibernate ORM Panache");
-        addExtension("quarkus-hibernate-search-elasticsearch", "Elasticsearch");
+        addExtension("quarkus-hibernate-search-orm-elasticsearch", "Elasticsearch");
         addExtension("quarkus-hibernate-validator", "Hibernate Validator");
         addExtension("quarkus-jdbc-postgresql", "JDBC PostreSQL");
         addExtension("quarkus-jdbc-h2", "JDBC H2");

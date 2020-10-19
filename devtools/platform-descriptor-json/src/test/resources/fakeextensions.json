@@ -336,7 +336,7 @@
                 ]
             },
             "group-id": "io.quarkus",
-            "artifact-id": "quarkus-hibernate-search-elasticsearch",
+            "artifact-id": "quarkus-hibernate-search-orm-elasticsearch",
             "version": "999-SNAPSHOT",
             "description": "Automatically index your Hibernate entities in Elasticsearch"
         },

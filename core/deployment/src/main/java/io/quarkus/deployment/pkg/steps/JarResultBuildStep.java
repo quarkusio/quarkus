@@ -609,7 +609,11 @@ public class JarResultBuildStep {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     List<String> paths = new ArrayList<>();
                     for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-                        paths.addAll(relativePaths.get(i.getArtifact().getKey()));
+                        final List<String> list = relativePaths.get(i.getArtifact().getKey());
+                        // some of the dependencies may have been filtered out
+                        if (list != null) {
+                            paths.addAll(list);
+                        }
                     }
                     obj.writeObject(paths);
                     obj.close();

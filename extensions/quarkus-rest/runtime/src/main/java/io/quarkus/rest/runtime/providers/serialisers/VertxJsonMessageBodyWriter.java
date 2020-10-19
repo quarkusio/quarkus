@@ -14,6 +14,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.jackson.DatabindCodec;
 
 // this gets conditionally registered
 public class VertxJsonMessageBodyWriter implements QuarkusRestMessageBodyWriter<Object> {
@@ -36,7 +37,9 @@ public class VertxJsonMessageBodyWriter implements QuarkusRestMessageBodyWriter<
     }
 
     @Override
-    public void writeResponse(Object o, QuarkusRestRequestContext context) throws WebApplicationException {
-        context.getHttpServerResponse().end(Json.encodeToBuffer(o));
+    public void writeResponse(Object o, QuarkusRestRequestContext context) throws WebApplicationException, IOException {
+        try (OutputStream stream = context.getOrCreateOutputStream()) {
+            DatabindCodec.mapper().writeValue(stream, o);
+        }
     }
 }

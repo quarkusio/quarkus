@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.jaxrs;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -20,7 +19,6 @@ import javax.ws.rs.ext.WriterInterceptorContext;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
-import io.vertx.core.buffer.Buffer;
 
 public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInterceptorContext
         implements WriterInterceptorContext {
@@ -57,13 +55,11 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
                 }
                 effectiveWriter = newWriters.get(0);
             }
-            ByteArrayOutputStream baos = context.getOrCreateOutputStream();
             effectiveWriter.writeTo(entity, type, genericType,
-                    annotations, mediaType, response.getHeaders(), context.getOutputStream());
+                    annotations, mediaType, response.getHeaders(), context.getOrCreateOutputStream());
             context.setResult(Response.fromResponse(response).replaceAll(headers).build());
             Serialisers.encodeResponseHeaders(context);
             context.getOutputStream().close();
-            context.getHttpServerResponse().end(Buffer.buffer(baos.toByteArray()));
             done = true;
         } else {
             interceptors[index++].aroundWriteTo(this);

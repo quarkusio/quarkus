@@ -258,12 +258,11 @@ public class Serialisers {
                     context.setResponseContentType(mediaType);
                 }
                 if (writerInterceptors == null) {
-                    ByteArrayOutputStream baos = context.getOrCreateOutputStream();
                     writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
                             context.getAllAnnotations(), response.getMediaType(), response.getHeaders(),
-                            context.getOutputStream());
+                            context.getOrCreateOutputStream());
                     Serialisers.encodeResponseHeaders(context);
-                    context.getHttpServerResponse().end(Buffer.buffer(baos.toByteArray()));
+                    context.getOrCreateOutputStream().close();
                 } else {
                     runWriterInterceptors(context, entity, writer, response, writerInterceptors, serialisers);
                 }

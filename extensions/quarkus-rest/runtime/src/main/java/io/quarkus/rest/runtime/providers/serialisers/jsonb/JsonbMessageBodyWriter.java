@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.providers.serialisers.jsonb;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -18,7 +17,6 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 
 // this gets conditionally registered
@@ -57,10 +55,11 @@ public class JsonbMessageBodyWriter implements QuarkusRestMessageBodyWriter<Obje
     }
 
     @Override
-    public void writeResponse(Object o, QuarkusRestRequestContext context) throws WebApplicationException {
+    public void writeResponse(Object o, QuarkusRestRequestContext context) throws WebApplicationException, IOException {
         HttpServerResponse vertxResponse = context.getHttpServerResponse();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        json.toJson(o, baos);
-        vertxResponse.end(Buffer.buffer(baos.toByteArray()));
+        try (OutputStream stream = context.getOrCreateOutputStream()) {
+            json.toJson(o, stream);
+        }
+
     }
 }

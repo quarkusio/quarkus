@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.runtime.standalone;
+package io.quarkus.vertx.core.runtime;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

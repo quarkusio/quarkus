@@ -1,5 +1,7 @@
 package io.quarkus.rest.runtime.spi;
 
+import java.io.IOException;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -15,6 +17,6 @@ public interface QuarkusRestMessageBodyWriter<T> extends MessageBodyWriter<T> {
 
     public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType);
 
-    public void writeResponse(T o, QuarkusRestRequestContext context) throws WebApplicationException;
+    public void writeResponse(T o, QuarkusRestRequestContext context) throws WebApplicationException, IOException;
 
 }

@@ -1,7 +1,7 @@
 package io.quarkus.rest.runtime.core;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -166,8 +166,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     private SecurityContext securityContext;
     private OutputStream outputStream;
-    //TODO: use a real stream in some circumstances
-    private ByteArrayOutputStream underlyingOutputStream;
+    private OutputStream underlyingOutputStream;
 
     private List<CompletionCallback> completionCallbacks;
     private List<ConnectionCallback> connectionCallbacks;
@@ -543,6 +542,20 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     @Override
     public void close() {
+        try {
+            if (outputStream != null) {
+                outputStream.close();
+            }
+        } catch (IOException e) {
+            log.debug("Failed to close stream", e);
+        }
+        try {
+            if (underlyingOutputStream != null) {
+                underlyingOutputStream.close();
+            }
+        } catch (IOException e) {
+            log.debug("Failed to close stream", e);
+        }
         //TODO: do we even have any other resources to close?
         if (this.currentRequestScope != null) {
             this.requestContext.destroy(this.currentRequestScope);
@@ -1092,13 +1105,11 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return outputStream;
     }
 
-    public ByteArrayOutputStream getOrCreateOutputStream() {
-        if (underlyingOutputStream != null) {
-            return underlyingOutputStream;
+    public OutputStream getOrCreateOutputStream() {
+        if (outputStream == null) {
+            return outputStream = underlyingOutputStream = new VertxOutputStream(this);
         }
-        underlyingOutputStream = new ByteArrayOutputStream();
-        outputStream = underlyingOutputStream;
-        return underlyingOutputStream;
+        return outputStream;
     }
 
     synchronized void onComplete(Throwable throwable) {

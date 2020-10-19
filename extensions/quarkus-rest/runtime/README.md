@@ -71,6 +71,10 @@
 - Should add HTTP status codes constants, without requiring to go via Response.Status.OK.getStatus() which is not a constant
 - Parameter-less `@*Param` annotations, make `@Context` optional for method parameters, same for `@PathParam`
 - Turn `@BeanParam` into a type declaration
+- Support the new annotated filters
+- Spec should say when `CompletionCallback` run: is it after the request is sent, or before? ATM it can be before (that's how we do it
+  but it leads in tests that get a response before the callbacks are run and a nightmare to test because the next request can be executed
+  before the callbacks are run).
 
 *** Spec extensions proposed
 

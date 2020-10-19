@@ -101,6 +101,7 @@
                 <groupId>{quarkus.maven-plugin.group-id}</groupId>
                 <artifactId>{quarkus.maven-plugin.artifact-id}</artifactId>
                 <version>$\{quarkus-plugin.version}</version>
+                <extensions>true</extensions>
                 {#if uberjar}
                 <configuration>
                     <uberJar>true</uberJar>

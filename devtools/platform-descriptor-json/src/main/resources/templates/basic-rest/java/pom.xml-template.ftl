@@ -58,6 +58,7 @@
                 <groupId>${maven_plugin_groupId}</groupId>
                 <artifactId>${maven_plugin_artifactId}</artifactId>
                 <version>${quarkus-plugin.version}</version>
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <goals>

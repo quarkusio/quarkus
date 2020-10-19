@@ -59,7 +59,7 @@ public class WebJarUtil {
 
         // Clean on non dev mode
         if (!launch.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
-            IoUtils.recursiveDeleteAndThenCreate(path);
+            IoUtils.createOrEmptyDir(path);
         }
 
         if (isEmpty(path)) {

@@ -129,7 +129,7 @@ public class DevModeTask {
                 //not all local projects are dependencies
                 continue;
             }
-            IoUtils.recursiveDeleteAndThenCreate(moduleClasses);
+            IoUtils.createOrEmptyDir(moduleClasses);
             for (Path p : dep.getPaths()) {
                 if (Files.isDirectory(p)) {
                     Path moduleTarget = moduleClasses;

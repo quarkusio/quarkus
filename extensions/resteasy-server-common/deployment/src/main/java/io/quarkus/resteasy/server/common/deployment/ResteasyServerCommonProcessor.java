@@ -407,6 +407,7 @@ public class ResteasyServerCommonProcessor {
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("io.quarkus.security")); // same for the security annotations
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("java.lang"));
         return prefixes;
     }
 

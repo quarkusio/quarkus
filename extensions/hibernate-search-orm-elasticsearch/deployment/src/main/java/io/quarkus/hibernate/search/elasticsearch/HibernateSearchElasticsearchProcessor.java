@@ -110,7 +110,7 @@ class HibernateSearchElasticsearchProcessor {
             // we validate that the version is present for the default backend
             if (!buildTimeConfig.defaultBackend.version.isPresent()) {
                 throw new ConfigurationError(
-                        "The Elasticsearch version needs to be defined via the quarkus.hibernate-search.elasticsearch.version property.");
+                        "The Elasticsearch version needs to be defined via the quarkus.hibernate-search-orm.elasticsearch.version property.");
             }
         }
 

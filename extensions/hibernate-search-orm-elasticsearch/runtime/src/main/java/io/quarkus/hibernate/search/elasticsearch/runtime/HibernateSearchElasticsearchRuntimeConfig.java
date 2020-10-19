@@ -21,7 +21,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "hibernate-search", phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(name = "hibernate-search-orm", phase = ConfigPhase.RUN_TIME)
 public class HibernateSearchElasticsearchRuntimeConfig {
 
     /**
@@ -360,7 +360,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     }
 
     // We can't set actual default values in this section,
-    // otherwise "quarkus.hibernate-search.elasticsearch.index-defaults" will be ignored.
+    // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
     public static class ElasticsearchIndexSchemaManagementConfig {
         /**
@@ -379,7 +379,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     }
 
     // We can't set actual default values in this section,
-    // otherwise "quarkus.hibernate-search.elasticsearch.index-defaults" will be ignored.
+    // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
     public static class ElasticsearchIndexIndexingConfig {
         /**

@@ -51,7 +51,8 @@ If you wish to generate code from different `proto` files for tests, also add th
 
 With this configuration, you can put your service and message definitions in the `src/main/proto` directory.
 `quarkus-maven-plugin` will generate Java files from your `proto` files.
-Alternatively to using the `prepare` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
+
+Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
 
 Let's start with a simple _Hello_ service.
 Create the `src/main/proto/helloworld.proto` file with the following content:
@@ -95,7 +96,7 @@ $ mvn compile
 
 Once generated, you can look at the `target/generated-sources/grpc` directory:
 
-[source, txt]
+[source,txt]
 ----
 target/generated-sources/grpc
 └── io
@@ -114,6 +115,25 @@ These are the classes we are going to use.
 
 IMPORTANT: Every time you update the `proto` files, you need to re-generate the classes (using `mvn compile`).
 
+=== `proto` files with imports
+
+Protocol Buffers specification provides a way to import `proto` files.
+The Quarkus code generation mechanism lets you control the scope of dependencies to scan for possible imports by setting the `quarkus.generate-code.grpc.scan-for-imports` property to one of the following:
+
+- `all` - scan all the dependencies
+- `none` - don't scan the dependencies, use only what is defined in the `src/main/proto` or `src/test/proto`
+- `groupId1:artifactId1,groupId2:artifactId2` - scan only the dependencies with group id and artifact id in the list.
+
+If not specified, the property is set to `com.google.protobuf:protobuf-java`.
+To override it, set the `quarkus.generate-code.grpc.scan-for-imports` property in your pom.xml (or gradle.properties) to the desired value, e.g.
+
+[source,xml]
+----
+<properties>
+  <quarkus.generate-code.grpc.scan-for-imports>all</quarkus.generate-code.grpc.scan-for-imports>
+</properties>
+----
+
 == Implementing a gRPC service
 
 Now that we have the generated classes let's implement our _hello_ service.
@@ -126,7 +146,7 @@ IMPORTANT: Don't use `@ApplicationScoped` as the gRPC service implementation can
 
 Create the `src/main/java/org/acme/HelloService.java` file with the following content:
 
-[source, java]
+[source,java]
 ----
 package org.acme;
 

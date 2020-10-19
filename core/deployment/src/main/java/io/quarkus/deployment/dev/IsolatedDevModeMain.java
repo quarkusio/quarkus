@@ -102,7 +102,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }
                         });
 
-                startCodeGenWatcher(deploymentClassLoader, codeGens);
+                startCodeGenWatcher(deploymentClassLoader, codeGens, context.getBuildSystemProperties());
 
                 augmentDone = true;
                 runner = start.runMainClass(context.getArgs());
@@ -143,7 +143,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         }
     }
 
-    private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens) {
+    private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens,
+            Map<String, String> properties) {
 
         Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>();
         for (CodeGenData codeGen : codeGens) {
@@ -152,7 +153,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         try {
                             CodeGenerator.trigger(classLoader,
                                     codeGen,
-                                    curatedApplication.getAppModel());
+                                    curatedApplication.getAppModel(), properties);
                         } catch (Exception any) {
                             log.warn("Code generation failed", any);
                         }

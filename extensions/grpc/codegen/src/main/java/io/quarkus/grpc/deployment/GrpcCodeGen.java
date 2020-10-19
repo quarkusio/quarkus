@@ -2,6 +2,7 @@ package io.quarkus.grpc.deployment;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
+import static org.codehaus.plexus.util.FileUtils.copyStreamToFile;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -9,9 +10,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import org.codehaus.plexus.util.io.RawInputStreamFacade;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -22,13 +33,19 @@ import io.quarkus.bootstrap.prebuild.CodeGenFailureException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
 import io.quarkus.deployment.util.ProcessUtil;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.utilities.JavaBinFinder;
 import io.quarkus.utilities.OS;
 
+/**
+ * Code generation for gRPC. Generates java classes from proto files placed in either src/main/proto or src/test/proto
+ * Inspired by <a href="https://github.com/xolstice/protobuf-maven-plugin">Protobuf Maven Plugin</a>
+ */
 public class GrpcCodeGen implements CodeGenProvider {
     private static final Logger log = Logger.getLogger(GrpcCodeGen.class);
 
     private static final String quarkusProtocPluginMain = "io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator";
+    private static final String PROTO = ".proto";
 
     private Executables executables;
 
@@ -61,16 +78,22 @@ public class GrpcCodeGen implements CodeGenProvider {
             if (Files.isDirectory(protoDir)) {
                 List<String> protoFiles = Files.walk(protoDir)
                         .filter(Files::isRegularFile)
-                        .filter(path -> path.toString().endsWith(".proto"))
+                        .filter(path -> path.toString().endsWith(PROTO))
                         .map(Path::toString)
                         .map(this::escapeWhitespace)
                         .collect(Collectors.toList());
                 if (!protoFiles.isEmpty()) {
                     initExecutables(workDir, context.appModel());
 
+                    Collection<String> protosToImport = gatherImports(workDir.resolve("protoc-dependencies"), context);
+
                     List<String> command = new ArrayList<>();
-                    command.addAll(asList(executables.protoc.toString(),
-                            "-I=" + escapeWhitespace(protoDir.toString()),
+                    command.add(executables.protoc.toString());
+                    for (String protoImportDir : protosToImport) {
+                        command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
+                    }
+
+                    command.addAll(asList("-I=" + escapeWhitespace(protoDir.toString()),
                             "--plugin=protoc-gen-grpc=" + executables.grpc,
                             "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
                             "--q-grpc_out=" + outDir,
@@ -93,6 +116,68 @@ public class GrpcCodeGen implements CodeGenProvider {
             throw new CodeGenException("Failed to generate java files from proto file in " + protoDir.toAbsolutePath(), e);
         }
         return false;
+    }
+
+    private Collection<String> gatherImports(Path workDir, CodeGenContext context) throws CodeGenException {
+        Map<String, String> properties = context.properties();
+
+        String scanForImports = properties.getOrDefault("quarkus.generate-code.grpc.scan-for-imports",
+                "com.google.protobuf:protobuf-java");
+
+        if ("none".equals(scanForImports.toLowerCase(Locale.getDefault()))) {
+            return Collections.emptyList();
+        }
+
+        boolean scanAll = "all".equals(scanForImports.toLowerCase(Locale.getDefault()));
+        List<String> dependenciesToScan = Arrays.asList(scanForImports.split(","));
+
+        Set<String> importDirectories = new HashSet<>();
+        AppModel appModel = context.appModel();
+        for (AppDependency dependency : appModel.getUserDependencies()) {
+            AppArtifact artifact = dependency.getArtifact();
+            if (scanAll
+                    || dependenciesToScan.contains(String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
+                for (Path path : artifact.getPaths()) {
+                    Path jarName = path.getFileName();
+                    if (jarName.toString().endsWith(".jar")) {
+                        final JarFile jar;
+                        try {
+                            jar = new JarFile(path.toFile());
+                        } catch (final IOException e) {
+                            throw new CodeGenException("Failed to read Jar: " + path.normalize().toAbsolutePath(), e);
+                        }
+
+                        for (JarEntry jarEntry : jar.stream().collect(Collectors.toList())) {
+                            String jarEntryName = jarEntry.getName();
+                            if (jarEntryName.endsWith(PROTO)) {
+                                Path protoUnzipDir = workDir.resolve(HashUtil.sha1(jar.getName())).normalize().toAbsolutePath();
+                                try {
+                                    Files.createDirectories(protoUnzipDir);
+                                    importDirectories.add(protoUnzipDir.toString());
+                                } catch (IOException e) {
+                                    throw new CodeGenException(
+                                            "Failed to create directory: " + protoUnzipDir, e);
+                                }
+                                // checking for https://snyk.io/research/zip-slip-vulnerability
+                                Path unzippedProto = protoUnzipDir.resolve(jarEntryName);
+                                if (!unzippedProto.normalize().toAbsolutePath().startsWith(workDir.toAbsolutePath())) {
+                                    throw new CodeGenException("Attempted to unzip " + jarEntryName
+                                            + " to a location outside the working directory");
+                                }
+                                try {
+                                    copyStreamToFile(new RawInputStreamFacade(jar.getInputStream(jarEntry)),
+                                            unzippedProto.toFile());
+                                } catch (IOException e) {
+                                    throw new CodeGenException("Failed to create input stream for reading " + jarEntryName
+                                            + " from " + jar.getName(), e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return importDirectories;
     }
 
     private String escapeWhitespace(String path) {

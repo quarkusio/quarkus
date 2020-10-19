@@ -140,9 +140,8 @@ public class ClassRoutingHandler implements RestHandler {
                     } else {
                         acceptsMediaTypes = Collections.singletonList(toMediaType(accepts));
                     }
-
-                    List<MediaType> producesMediaTypes = Arrays.asList(target.value.getProduces().getSortedMediaTypes());
-                    if (MediaTypeHelper.getFirstMatch(producesMediaTypes, acceptsMediaTypes) == null) {
+                    if (MediaTypeHelper.getFirstMatch(Arrays.asList(target.value.getProduces().getSortedMediaTypes()),
+                            acceptsMediaTypes) == null) {
                         throw new NotAcceptableException();
                     }
                 }
@@ -161,7 +160,7 @@ public class ClassRoutingHandler implements RestHandler {
     }
 
     private MediaType toMediaType(String mediaTypeStr) {
-        return MediaTypeHeaderDelegate.INSTANCE.fromString(mediaTypeStr);
+        return MediaTypeHeaderDelegate.parse(mediaTypeStr);
     }
 
     private void throwNotFound(QuarkusRestRequestContext requestContext) {

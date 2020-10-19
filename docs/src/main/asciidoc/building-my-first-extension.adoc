@@ -708,7 +708,7 @@ You can launch your application with the following command line:
 ./gradlew quarkusDev -Dorg.gradle.daemon.debug=true
 ----
 
-By default, Maven will wait for a connection on `localhost:5005`.
+By default, Gradle will wait for a connection on `localhost:5005`.
 Now, you can run your IDE `Remote` configuration to attach it to `localhost:5005`.
 
 

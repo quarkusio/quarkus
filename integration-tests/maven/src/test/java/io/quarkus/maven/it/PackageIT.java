@@ -85,6 +85,28 @@ public class PackageIT extends MojoTestBase {
         assertThat(jars).hasSize(1);
     }
 
+    /**
+     * POM files are often found among the project's dependencies.
+     * This test makes sure such projects can be built with mutable-jar format
+     * without choking on non-jar dependencies.
+     */
+    @Test
+    public void testDependencyOnPomMutableJar()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/dependency-on-pom");
+
+        running = new RunningInvoker(testDir, false);
+        // we do want to run the tests too
+        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        File targetDir = getTargetDir();
+        List<File> jars = getFilesEndingWith(targetDir, ".jar");
+        assertThat(jars).hasSize(1);
+    }
+
     @Test
     public void testPackageWorksWhenUberjarIsTrue()
             throws MavenInvocationException, IOException, InterruptedException {

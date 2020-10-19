@@ -9,8 +9,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -23,6 +25,7 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -63,11 +66,21 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
     @Component
     private RepositorySystem repoSystem;
 
+    @Component
+    private RemoteRepositoryManager remoteRepoManager;
+
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     private List<RemoteRepository> repos;
+
+    /**
+     * Group ID's that we know don't contain extensions. This can speed up the process
+     * by preventing the download of artifacts that are not required.
+     */
+    @Parameter
+    private Set<String> ignoredGroupIds = new HashSet<>(0);
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -82,6 +95,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
                     .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepoManager)
                     .build();
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to initialize maven artifact resolver", e);
@@ -142,7 +156,8 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
 
         for (Dependency dep : bomDeps) {
             final Artifact artifact = dep.getArtifact();
-            if (!artifact.getExtension().equals("jar")
+            if (ignoredGroupIds.contains(artifact.getGroupId())
+                    || !artifact.getExtension().equals("jar")
                     || "javadoc".equals(artifact.getClassifier())
                     || "tests".equals(artifact.getClassifier())
                     || "sources".equals(artifact.getClassifier())) {

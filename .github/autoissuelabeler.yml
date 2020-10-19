@@ -60,8 +60,8 @@
   description: "(?i).*mongo.*"
   notify: [loicmathieu,evanchooly]
 - labels: [area/openapi, area/smallrye]
-  title: "(?i).*openapi.*"
-  description: "(?i).*openapi.*"
+  title: "(?i).*(openapi|swagger).*"
+  description: "(?i).*(openapi|swagger).*"
   notify: [EricWittmann,MikeEdgar,phillip-kruger]
 - labels: [area/graphql, area/smallrye]
   title: "(?i).*graphql.*"

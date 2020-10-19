@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-test-hibernate-search-orm-elasticsearch</artifactId>
-    <name>Quarkus - Integration Tests - Hibernate Search + Elasticsearch</name>
+    <name>Quarkus - Integration Tests - Hibernate Search ORM + Elasticsearch</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

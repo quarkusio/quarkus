@@ -1,4 +1,4 @@
-package io.quarkus.liquibase;
+package io.quarkus.liquibase.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
@@ -40,6 +40,8 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.liquibase.LiquibaseDataSource;
+import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseContainerProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;

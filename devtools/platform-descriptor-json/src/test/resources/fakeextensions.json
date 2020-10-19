@@ -325,7 +325,7 @@
         },
         {
             "name": "Hibernate Search + Elasticsearch",
-            "guide": "https://quarkus.io/guides/hibernate-search-elasticsearch",
+            "guide": "https://quarkus.io/guides/hibernate-search-orm-elasticsearch",
             "metadata": {
                 "keywords": [
                     "hibernate-search-elasticsearch",

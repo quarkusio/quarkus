@@ -5,6 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
@@ -55,4 +56,14 @@ import io.vertx.core.http.HttpServerRequest;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ContainerRequestFilter {
+
+    /**
+     * The priority with which this request filter will be executed
+     */
+    int priority() default Priorities.USER;
+
+    /**
+     * Whether or not the filter is a pre-matching filter
+     */
+    boolean preMatching() default false;
 }

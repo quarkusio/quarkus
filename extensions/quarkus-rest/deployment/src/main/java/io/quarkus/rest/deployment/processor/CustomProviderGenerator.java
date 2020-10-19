@@ -233,6 +233,9 @@ final class CustomProviderGenerator {
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
                             runtimeResourceHandle);
+                } else if (THROWABLE.equals(paramDotName)) {
+                    paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getThrowable",
+                            THROWABLE);
                 } else {
                     String parameterName = targetMethod.parameterName(i);
                     throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()

@@ -433,6 +433,10 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return result;
     }
 
+    public Throwable getThrowable() {
+        return throwable;
+    }
+
     public Object getResponseEntity() {
         Object result = responseEntity();
         if (result instanceof GenericEntity) {

@@ -6,8 +6,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class DynamicFeatureBuildItem extends MultiBuildItem implements CheckBean {
 
     private final String className;
-
     private final boolean registerAsBean;
+
+    public DynamicFeatureBuildItem(String className) {
+        this(className, true);
+    }
 
     public DynamicFeatureBuildItem(String className, boolean registerAsBean) {
         this.className = className;

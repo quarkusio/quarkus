@@ -10,21 +10,11 @@ public final class ContainerRequestFilterBuildItem extends MultiBuildItem implem
 
     private final boolean registerAsBean;
 
-    // TODO: use builder
-
     public ContainerRequestFilterBuildItem(String className) {
         this(className, null, null, true);
     }
 
-    public ContainerRequestFilterBuildItem(String className, boolean registerAsBean) {
-        this(className, null, null, registerAsBean);
-    }
-
-    public ContainerRequestFilterBuildItem(String className, Integer priority, Boolean preMatching) {
-        this(className, priority, preMatching, true);
-    }
-
-    public ContainerRequestFilterBuildItem(String className, Integer priority, Boolean preMatching, boolean registerAsBean) {
+    private ContainerRequestFilterBuildItem(String className, Integer priority, Boolean preMatching, boolean registerAsBean) {
         this.className = className;
         this.priority = priority;
         this.preMatching = preMatching;
@@ -45,5 +35,36 @@ public final class ContainerRequestFilterBuildItem extends MultiBuildItem implem
 
     public boolean isRegisterAsBean() {
         return registerAsBean;
+    }
+
+    public static final class Builder {
+        private final String className;
+
+        private Integer priority;
+        private Boolean preMatching;
+        private boolean registerAsBean = true;
+
+        public Builder(String className) {
+            this.className = className;
+        }
+
+        public Builder setPriority(Integer priority) {
+            this.priority = priority;
+            return this;
+        }
+
+        public Builder setPreMatching(Boolean preMatching) {
+            this.preMatching = preMatching;
+            return this;
+        }
+
+        public Builder setRegisterAsBean(boolean registerAsBean) {
+            this.registerAsBean = registerAsBean;
+            return this;
+        }
+
+        public ContainerRequestFilterBuildItem build() {
+            return new ContainerRequestFilterBuildItem(className, priority, preMatching, registerAsBean);
+        }
     }
 }

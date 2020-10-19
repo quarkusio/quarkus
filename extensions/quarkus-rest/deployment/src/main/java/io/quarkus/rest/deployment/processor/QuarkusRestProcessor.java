@@ -375,7 +375,18 @@ public class QuarkusRestProcessor {
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             String generatedClassName = CustomProviderGenerator.generateContainerRequestFilter(methodInfo,
                     new GeneratedBeanGizmoAdaptor(generatedBean));
-            additionalContainerRequestFilters.produce(new ContainerRequestFilterBuildItem(generatedClassName, false)); // it has already been made a bean
+
+            ContainerRequestFilterBuildItem.Builder builder = new ContainerRequestFilterBuildItem.Builder(generatedClassName)
+                    .setRegisterAsBean(false); // it has already been made a bean
+            AnnotationValue priorityValue = instance.value("priority");
+            if (priorityValue != null) {
+                builder.setPriority(priorityValue.asInt());
+            }
+            AnnotationValue preMatchingValue = instance.value("preMatching");
+            if (preMatchingValue != null) {
+                builder.setPreMatching(preMatchingValue.asBoolean());
+            }
+            additionalContainerRequestFilters.produce(builder.build());
         }
         for (AnnotationInstance instance : index
                 .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_RESPONSE_FILTER)) {
@@ -387,7 +398,13 @@ public class QuarkusRestProcessor {
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             String generatedClassName = CustomProviderGenerator.generateContainerResponseFilter(methodInfo,
                     new GeneratedBeanGizmoAdaptor(generatedBean));
-            additionalContainerResponseFilters.produce(new ContainerResponseFilterBuildItem(generatedClassName, false)); // it has already been made a bean
+            ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(generatedClassName)
+                    .setRegisterAsBean(false);// it has already been made a bean
+            AnnotationValue priorityValue = instance.value("priority");
+            if (priorityValue != null) {
+                builder.setPriority(priorityValue.asInt());
+            }
+            additionalContainerResponseFilters.produce(builder.build());
         }
 
         additionalBean.produce(additionalBeans.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());

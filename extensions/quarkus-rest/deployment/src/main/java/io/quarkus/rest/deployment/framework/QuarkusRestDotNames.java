@@ -185,6 +185,7 @@ public final class QuarkusRestDotNames {
     public static final DotName BYTE_ARRAY_DOT_NAME = DotName.createSimple(byte[].class.getName());
     public static final DotName INPUT_STREAM = DotName.createSimple(InputStream.class.getName());
     public static final DotName OUTPUT_STREAM = DotName.createSimple(OutputStream.class.getName());
+    public static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
 
     public static final DotName JSONP_JSON_OBJECT = DotName.createSimple(javax.json.JsonObject.class.getName());
     public static final DotName JSONP_JSON_ARRAY = DotName.createSimple(javax.json.JsonArray.class.getName());

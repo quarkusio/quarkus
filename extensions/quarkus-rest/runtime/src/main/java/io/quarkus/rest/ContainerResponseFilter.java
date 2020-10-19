@@ -5,6 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ResourceInfo;
@@ -44,9 +45,15 @@ import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
  * <li>{@link ContainerResponseContext}
  * <li>{@link ResourceInfo}
  * <li>{@link SimplifiedResourceInfo}
+ * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown
  * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ContainerResponseFilter {
+
+    /**
+     * The priority with which this response filter will be executed
+     */
+    int priority() default Priorities.USER;
 }

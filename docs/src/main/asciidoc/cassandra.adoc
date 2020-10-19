@@ -66,6 +66,11 @@ The most important part of the `pom.xml` is adding the `cassandra-quarkus` exten
 </dependency>
 ----
 
+Also make sure to follow the
+link:https://docs.datastax.com/en/developer/java-driver/latest/manual/mapper/config/[instructions]
+on how to add an annotation processor to the compiler configuration. When the project is compiled,
+additional mapper classes are generated.
+
 == Creating JSON REST service
 
 In this example, we will create an application to manage a list of fruits.
@@ -178,6 +183,9 @@ public class FruitDaoProducer {
 
 Note how the `QuarkusCqlSession` instance is injected automatically by the cassandra-quarkus
 extension in the `FruitDaoProducer` constructor.
+
+Also note that `FruitMapperBuilder` is one of the classes generated automatically by the
+`java-driver-mapper-processor` annotation processor.
 
 Now create a `FruitService` that will be the business layer of our application and store/load the
 fruits from the Cassandra database.

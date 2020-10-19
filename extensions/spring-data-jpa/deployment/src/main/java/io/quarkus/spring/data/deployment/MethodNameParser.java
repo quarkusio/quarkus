@@ -194,8 +194,8 @@ public class MethodNameParser {
             }
             FieldInfo fieldInfo = getField(fieldName);
             if (fieldInfo == null) {
-                String parsingExceptionMethod = "Entity " + entityClass + " does not contain a field named: " + part + ". " +
-                        "Offending method is " + methodName;
+                String parsingExceptionMethod = "Entity " + entityClass + " does not contain a field named: " + fieldName +
+                        ". " + "Offending method is " + methodName;
 
                 // determine if we are trying to use a field of one of the associated entities
 
@@ -587,13 +587,13 @@ public class MethodNameParser {
         List<ClassInfo> mappedSuperClassInfoElements = new ArrayList<>(3);
         Type superClassType = entityClass.superClassType();
         while (superClassType != null && !superClassType.name().equals(DotNames.OBJECT)) {
-            ClassInfo superClass = indexView.getClassByName(entityClass.superName());
+            ClassInfo superClass = indexView.getClassByName(superClassType.name());
             if (superClass.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
                 mappedSuperClassInfoElements.add(superClass);
             }
 
             if (superClassType.kind() == Kind.CLASS) {
-                superClassType = indexView.getClassByName(superClassType.name()).superClassType();
+                superClassType = superClass.superClassType();
             } else if (superClassType.kind() == Kind.PARAMETERIZED_TYPE) {
                 ParameterizedType parameterizedType = superClassType.asParameterizedType();
                 superClassType = parameterizedType.owner();

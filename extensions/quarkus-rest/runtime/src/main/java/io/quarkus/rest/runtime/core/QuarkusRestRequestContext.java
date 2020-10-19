@@ -289,6 +289,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         requestScopeActivated = true;
         if (currentRequestScope == null) {
             requestContext.activate();
+            // if we don't do this we can't close it in close()
+            currentRequestScope = requestContext.getState();
             QuarkusHttpUser user = (QuarkusHttpUser) context.user();
             if (user != null) {
                 fireSecurityIdentity(user.getSecurityIdentity());
@@ -543,7 +545,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     public void close() {
         //TODO: do we even have any other resources to close?
         if (this.currentRequestScope != null) {
-            this.requestContext.destroy();
+            this.requestContext.destroy(this.currentRequestScope);
         }
         // FIXME: this could be moved to a handler I guess
         onComplete(throwable);

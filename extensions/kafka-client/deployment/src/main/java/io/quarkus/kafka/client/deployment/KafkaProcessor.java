@@ -7,12 +7,14 @@ import java.util.function.Consumer;
 
 import javax.security.auth.spi.LoginModule;
 
+import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.ConsumerPartitionAssignor;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
 import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
+import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
 import org.apache.kafka.common.security.authenticator.DefaultLogin;
@@ -112,6 +114,8 @@ public class KafkaProcessor {
         // PartitionAssignor is now deprecated, replaced by ConsumerPartitionAssignor
         collectImplementors(toRegister, indexBuildItem, PartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
+        collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
+        collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
 
         for (Class<?> i : BUILT_INS) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, i.getName()));

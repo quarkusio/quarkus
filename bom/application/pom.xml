@@ -78,7 +78,7 @@
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
         <graal-sdk.version>20.2.0</graal-sdk.version>
-        <gizmo.version>1.0.4.Final</gizmo.version>
+        <gizmo.version>1.0.5.Final</gizmo.version>
         <jackson.version>2.11.3</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.9</commons-lang3.version>
@@ -4273,7 +4273,7 @@
                 <artifactId>jProcesses</artifactId>
                 <version>${jprocesses.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>

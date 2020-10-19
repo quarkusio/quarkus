@@ -54,7 +54,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 
 Now, let's remove what's not needed inside the generated application:
 
-- Remove the dependency `io.quarkus:quarkus-reasteasy` from your `pom.xml` file.
+- Remove the dependency `io.quarkus:quarkus-resteasy` from your `pom.xml` file.
 - Remove the generated `org.acme.quickstart.GreetingResource` class.
 - Remove the `index.html` from `resources/META-INF/resources` or it will be picked up instead of your Function.
 - Remove the existing tests.

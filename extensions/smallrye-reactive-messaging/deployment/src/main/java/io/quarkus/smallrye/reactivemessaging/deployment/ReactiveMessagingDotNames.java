@@ -31,6 +31,8 @@ public final class ReactiveMessagingDotNames {
     static final DotName MERGE = DotName.createSimple(Merge.class.getName());
     static final DotName BROADCAST = DotName.createSimple(Broadcast.class.getName());
 
+    static final DotName SMALLRYE_BLOCKING = DotName.createSimple(io.smallrye.common.annotation.Blocking.class.getName());
+
     // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be present)
     static final DotName METRIC_DECORATOR = DotName.createSimple("io.smallrye.reactive.messaging.metrics.MetricDecorator");
 

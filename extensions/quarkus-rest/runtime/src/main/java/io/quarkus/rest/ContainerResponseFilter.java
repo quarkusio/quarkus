@@ -11,6 +11,8 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ResourceInfo;
 
 import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 /**
  * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerResponseContext} is generated
@@ -43,6 +45,8 @@ import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
  * <ul>
  * <li>{@link ContainerRequestContext}
  * <li>{@link ContainerResponseContext}
+ * <li>{@link HttpServerRequest}
+ * <li>{@link HttpServerResponse}
  * <li>{@link ResourceInfo}
  * <li>{@link SimplifiedResourceInfo}
  * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown

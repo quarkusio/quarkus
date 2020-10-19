@@ -30,6 +30,7 @@ import io.quarkus.rest.runtime.spi.QuarkusRestContainerResponseContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestContext;
 import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -224,6 +225,14 @@ final class CustomProviderGenerator {
                 } else if (QUARKUS_REST_CONTAINER_RESPONSE_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(1),
                             QuarkusRestContainerResponseContext.class);
+                } else if (HTTP_SERVER_REQUEST.equals(paramDotName)) {
+                    ResultHandle routingContextHandle = routingContextHandler(filterMethod, qrReqCtxHandle);
+                    targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
+                            ofMethod(RoutingContext.class, "request", HttpServerRequest.class), routingContextHandle);
+                } else if (HTTP_SERVER_RESPONSE.equals(paramDotName)) {
+                    ResultHandle routingContextHandle = routingContextHandler(filterMethod, qrReqCtxHandle);
+                    targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
+                            ofMethod(RoutingContext.class, "response", HttpServerResponse.class), routingContextHandle);
                 } else if (RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(

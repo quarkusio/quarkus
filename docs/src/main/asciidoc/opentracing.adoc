@@ -165,6 +165,33 @@ Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
 
 Hit `CTRL+C` to stop the application.
 
+== Tracing additional methods
+
+REST endpoints are automatically traced.
+If you need to trace additional methods, you can use the `org.eclipse.microprofile.opentracing.Traced` annotation at class or method level.
+
+This can be useful to trace incoming requests from non-REST calls (like request coming from a message) or to create spans inside a trace.
+
+Here is an example of a `FrancophoneService` which methods are traced.
+
+[code, java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.opentracing.Traced;
+
+@Traced
+@ApplicationScoped
+public class FrancophoneService {
+
+    public String bonjour() {
+        return "bonjour";
+    }
+}
+----
+
+NOTE: the best way to add OpenTracing capability to reactive messaging based applications is by adding the `Traced` annotation to all incoming methods.
+
 == Additional instrumentation
 
 The https://github.com/opentracing-contrib[OpenTracing API Contributions project] offers additional instrumentation that can be used to add tracing to a large variety of technologies/components.
@@ -200,4 +227,3 @@ quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
 == Jaeger Configuration Reference
 
 include::{generated-dir}/config/quarkus-jaeger.adoc[leveloffset=+1, opts=optional]
-

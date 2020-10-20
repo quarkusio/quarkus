@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+repositories {
+    jcenter()
+    mavenLocal()
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation 'io.quarkus:quarkus-grpc'
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-resteasy'
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+}
+
+group 'org.acme'
+version '1.0.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

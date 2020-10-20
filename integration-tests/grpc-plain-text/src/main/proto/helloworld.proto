@@ -36,6 +36,8 @@ option objc_class_prefix = "HLW";
 
 package helloworld;
 
+import "google/protobuf/timestamp.proto";
+
 // The greeting service definition.
 service Greeter {
     // Sends a greeting
@@ -45,6 +47,7 @@ service Greeter {
 // The request message containing the user's name.
 message HelloRequest {
     string name = 1;
+    google.protobuf.Timestamp date_time = 2;
 }
 
 // The response message containing the greetings

@@ -89,7 +89,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
                         paths.iterator().next(),
                         buildDir,
                         sourceRegistrar,
-                        appCreationContext.getAppModel());
+                        appCreationContext.getAppModel(),
+                        realProperties);
 
             }
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {

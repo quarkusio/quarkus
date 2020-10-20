@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -62,13 +63,14 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
             final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, Set.class, Path.class,
                     Path.class,
-                    Consumer.class, AppModel.class);
+                    Consumer.class, AppModel.class, Map.class);
             initAndRun.invoke(null, deploymentClassLoader,
                     Collections.singleton(sourcesDir),
                     generatedSourcesDir(test),
                     buildDir().toPath(),
                     sourceRegistrar,
-                    curatedApplication.getAppModel());
+                    curatedApplication.getAppModel(),
+                    mavenProject().getProperties());
         } catch (Exception any) {
             throw new MojoExecutionException("Quarkus code generation phase has failed", any);
         } finally {

@@ -19,7 +19,7 @@ public class CodeGenData {
         this.provider = provider;
         this.outPath = outPath;
         this.sourceDir = sourceDir;
-        this.buildDir = buildDir;
+        this.buildDir = buildDir.normalize();
         this.redirectIO = redirectIO;
     }
 

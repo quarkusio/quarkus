@@ -34,6 +34,7 @@ import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
+import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 
 @SuppressWarnings("unused")
@@ -56,7 +57,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
 
         try {
-            return nettyDispatch(clientAddress, request);
+            return nettyDispatch(clientAddress, request, context);
         } catch (Exception e) {
             log.error("Request Failure", e);
             return new AwsProxyResponse(500, errorHeaders, "{ \"message\": \"Internal Server Error\" }");
@@ -145,7 +146,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
     }
 
-    private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request) throws Exception {
+    private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request, Context context)
+            throws Exception {
         String path = request.getPath();
         //log.info("---- Got lambda request: " + path);
         if (request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters().isEmpty()) {
@@ -172,8 +174,10 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
             }
             path = sb.toString();
         }
+        QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
+        quarkusHeaders.setContextObject(Context.class, context);
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getHttpMethod()), path);
+                HttpMethod.valueOf(request.getHttpMethod()), path, quarkusHeaders);
         if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent
             for (Map.Entry<String, List<String>> header : request.getMultiValueHeaders().entrySet()) {
                 nettyRequest.headers().add(header.getKey(), header.getValue());

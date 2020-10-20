@@ -5,6 +5,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 @Path("/hello")
@@ -38,6 +39,16 @@ public class GreetingResource {
     @Path("empty")
     public void empty() {
 
+    }
+
+    @GET
+    @Path("context")
+    @Produces(MediaType.TEXT_PLAIN)
+    public void context(@Context com.amazonaws.services.lambda.runtime.Context ctx) {
+        if (ctx == null)
+            throw new RuntimeException();
+        if (ctx.getAwsRequestId() == null)
+            throw new RuntimeException("aws context not set");
     }
 
 }

@@ -189,6 +189,7 @@
         <module>picocli</module>
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>
+        <module>grpc-common</module>
     </modules>
 
     <build>

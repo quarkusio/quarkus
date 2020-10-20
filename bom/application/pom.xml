@@ -1344,6 +1344,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+            <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc-codegen</artifactId>
                 <version>${project.version}</version>
@@ -1356,6 +1361,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

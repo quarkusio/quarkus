@@ -19,6 +19,7 @@ import io.quarkus.rest.runtime.ExceptionMapperRecorder;
 import io.quarkus.rest.runtime.NotFoundExceptionMapper;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
@@ -55,5 +56,18 @@ public class QuarkusRestDevModeProcessor {
             reactiveRoutes.add(description.getDescription());
         }
         recorder.setReactiveRoutes(reactiveRoutes);
+    }
+
+    @Record(STATIC_INIT)
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void addAdditionalEndpointsExceptionMapper(List<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            ExceptionMapperRecorder recorder, HttpRootPathBuildItem httpRoot) {
+        List<String> endpoints = displayableEndpoints
+                .stream()
+                .map(NotFoundPageDisplayableEndpointBuildItem::getEndpoint)
+                .sorted()
+                .collect(Collectors.toList());
+
+        recorder.setAdditionalEndpoints(endpoints);
     }
 }

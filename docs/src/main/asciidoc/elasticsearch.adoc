@@ -380,11 +380,11 @@ In this example you can note the following:
 
 == Hibernate Search Elasticsearch
 
-Quarkus supports Hibernate Search with Elasticsearch via the `hibernate-search-elasticsearch` extension.
+Quarkus supports Hibernate Search with Elasticsearch via the `hibernate-search-orm-elasticsearch` extension.
 
 Hibernate Search Elasticsearch allows to synchronize your JPA entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
 
-If you're interested in it, you can read the link:hibernate-search-elasticsearch[Hibernate Search with Elasticsearch guide].
+If you're interested in it, you can read the link:hibernate-search-orm-elasticsearch[Hibernate Search with Elasticsearch guide].
 
 == Cluster Health Check
 

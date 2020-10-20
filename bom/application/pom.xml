@@ -792,12 +792,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-search-elasticsearch</artifactId>
+                <artifactId>quarkus-hibernate-search-orm-elasticsearch</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-search-elasticsearch-deployment</artifactId>
+                <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

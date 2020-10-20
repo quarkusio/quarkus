@@ -12,6 +12,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -86,10 +87,6 @@ public class GenerateConfigMojo extends AbstractMojo {
     @Parameter(defaultValue = "${file}")
     private String file;
 
-    public GenerateConfigMojo() {
-        MojoLogger.logSupplier = this::getLog;
-    }
-
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -151,5 +148,11 @@ public class GenerateConfigMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate config file", e);
         }
+    }
+
+    @Override
+    public void setLog(Log log) {
+        super.setLog(log);
+        MojoLogger.delegate = log;
     }
 }

@@ -22,7 +22,7 @@ Be aware that it’s not an _über-jar_ as the dependencies are copied into the 
 
 If you want to build an _über-jar_, execute the following command:
 ```shell script
-{buildtool.cli} {buildtool.cmd.package-uberjar}
+{buildtool.cli} {buildtool.cmd.package-uber-jar}
 ```
 
 The application is now runnable using `java -jar {buildtool.build-dir}/{project.artifact-id}-{project.version}-runner.jar`.

@@ -3,7 +3,7 @@
 #
 # Before building the container image run:
 #
-# {#insert quarkusbuild} mvn package {/}
+# {#insert quarkusbuild /}
 #
 # Then, build the image with:
 #

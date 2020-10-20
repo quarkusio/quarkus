@@ -3,7 +3,7 @@
 #
 # Before building the container image run:
 #
-# mvn package -Pnative -Dquarkus.native.container-build=true
+# {buildtool.cli} {buildtool.cmd.package-native}
 #
 # Then, build the image with:
 #

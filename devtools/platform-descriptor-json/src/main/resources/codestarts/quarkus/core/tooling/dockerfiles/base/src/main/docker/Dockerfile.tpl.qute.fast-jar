@@ -1,5 +1,5 @@
 {#include Dockerfile-layout type='fast-jar'}
-    {#quarkusbuild}mvn package -Pquarkus.package.type=fast-jar{/quarkusbuild}
+    {#quarkusbuild}mvn package -Dquarkus.package.type=fast-jar{/quarkusbuild}
     {#image}{dockerfile.fast-jar.from} {/image}
     {#args}
 ARG JAVA_PACKAGE={dockerfile.fast-jar.java-package}

@@ -15,7 +15,7 @@
     <version>999-SNAPSHOT</version>
 
     <name>Qute - Parent</name>
-    
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -23,20 +23,20 @@
             <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
         </license>
     </licenses>
-    
+
     <scm>
         <url>https://github.com/quarkusio/quarkus</url>
         <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
         <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
-    
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <version.junit>5.7.0</version.junit>
-        <version.gizmo>1.0.4.Final</version.gizmo>
+        <version.gizmo>1.0.5.Final</version.gizmo>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
@@ -217,7 +217,7 @@
             </plugins>
         </pluginManagement>
     </build>
-    
+
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>

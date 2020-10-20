@@ -19,7 +19,7 @@ include::./status-include.adoc[]
 
 == Hello World with JAX-RS
 
-If you want to use Qute in your JAX-RS application, you need to add the `quarkus-qute-resteasy` extension first.
+If you want to use Qute in your JAX-RS application, you need to add the `quarkus-resteasy-qute` extension first.
 In your `pom.xml` file, add:
 
 [source,xml]

@@ -8,6 +8,8 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
+import org.hibernate.engine.query.spi.QueryPlanCache;
+
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -239,11 +241,20 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigGroup
     public static class HibernateOrmConfigPersistenceUnitQuery {
 
+        private static final int DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE = 2048;
+
+        public enum NullOrdering {
+            NONE,
+            FIRST,
+            LAST
+        }
+
         /**
          * The maximum size of the query plan cache.
+         * see #{@value QueryPlanCache#DEFAULT_QUERY_PLAN_MAX_COUNT}
          */
-        @ConfigItem
-        public Optional<String> queryPlanCacheMaxSize;
+        @ConfigItem(defaultValue = "2048")
+        public int queryPlanCacheMaxSize;
 
         /**
          * Default precedence of null values in `ORDER BY` clauses.
@@ -252,11 +263,12 @@ public class HibernateOrmConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        @ConfigItem
-        public Optional<String> defaultNullOrdering;
+        @ConfigItem(defaultValue = "none")
+        public NullOrdering defaultNullOrdering;
 
         public boolean isAnyPropertySet() {
-            return queryPlanCacheMaxSize.isPresent() || defaultNullOrdering.isPresent();
+            return queryPlanCacheMaxSize != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE
+                    || defaultNullOrdering != NullOrdering.NONE;
         }
     }
 

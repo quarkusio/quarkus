@@ -213,7 +213,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context, DefaultTenantConfigResolver resolver) {
-        JsonObject params = new JsonObject();
 
         String code = context.request().getParam("code");
         if (code == null) {
@@ -221,8 +220,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         TenantConfigContext configContext = resolver.resolve(context, true);
+
         Cookie stateCookie = context.getCookie(getStateCookieName(configContext));
 
+        String userPath = null;
         String userQuery = null;
         if (stateCookie != null) {
             List<String> values = context.queryParam("state");
@@ -233,58 +234,31 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             } else if (!stateCookie.getValue().startsWith(values.get(0))) {
                 LOG.debug("State cookie value does not match the state query parameter value");
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
-            } else if (context.queryParam("pathChecked").isEmpty()) {
-                // This is an original redirect from IDP, check if the request path needs to be updated
-                String[] pair = COOKIE_PATTERN.split(stateCookie.getValue());
-                if (pair.length == 2) {
-                    // The extra path that needs to be added to the current request path
-                    String extraPath = pair[1];
-
-                    // The original user query if any will be added to the final redirect URI
-                    // after the authentication has been complete
-
-                    int userQueryIndex = extraPath.indexOf("?");
-                    if (userQueryIndex != 0) {
-                        if (userQueryIndex > 0) {
-                            extraPath = extraPath.substring(0, userQueryIndex);
-                        }
-                        // Adding a query marker that the state cookie has already been used to restore the path
-                        // as deleting it now would increase the risk of CSRF
-                        String extraQuery = "?pathChecked=true";
-
-                        // The query parameters returned from IDP need to be included
-                        if (context.request().query() != null) {
-                            extraQuery += ("&" + context.request().query());
-                        }
-
-                        String localRedirectUri = buildUri(context, isForceHttps(configContext), extraPath + extraQuery);
-                        LOG.debugf("Local redirect URI: %s", localRedirectUri);
-                        return Uni.createFrom().failure(new AuthenticationRedirectException(localRedirectUri));
-                    } else if (userQueryIndex + 1 < extraPath.length()) {
-                        // only the user query needs to be restored, no need to redirect
-                        userQuery = extraPath.substring(userQueryIndex + 1);
-                    }
-                }
-                // The original request path does not have to be restored, the state cookie is no longer needed
-                removeCookie(context, configContext, getStateCookieName(configContext));
             } else {
+                // This is an original redirect from IDP, check if the original request path and query need to be restored
                 String[] pair = COOKIE_PATTERN.split(stateCookie.getValue());
                 if (pair.length == 2) {
                     int userQueryIndex = pair[1].indexOf("?");
-                    if (userQueryIndex >= 0 && userQueryIndex + 1 < pair[1].length()) {
-                        userQuery = pair[1].substring(userQueryIndex + 1);
+                    if (userQueryIndex >= 0) {
+                        userPath = pair[1].substring(0, userQueryIndex);
+                        if (userQueryIndex + 1 < pair[1].length()) {
+                            userQuery = pair[1].substring(userQueryIndex + 1);
+                        }
+                    } else {
+                        userPath = pair[1];
                     }
                 }
-                // Local redirect restoring the original request path, the state cookie is no longer needed
                 removeCookie(context, configContext, getStateCookieName(configContext));
             }
         } else {
             // State cookie must be available to minimize the risk of CSRF
-            LOG.debug("The state cookie is missing after a redirect from IDP");
+            LOG.debug("The state cookie is missing after a redirect from IDP, authentication has failed");
             return Uni.createFrom().failure(new AuthenticationCompletionException());
         }
 
         // Code grant request
+        JsonObject params = new JsonObject();
+
         // 'code': the code grant value returned from IDP
         params.put("code", code);
 
@@ -303,6 +277,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             params.put("client_assertion", signJwtWithClientSecret(configContext.oidcConfig));
         }
 
+        final String finalUserPath = userPath;
         final String finalUserQuery = userQuery;
         return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
             @Override
@@ -326,13 +301,24 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         processSuccessfulAuthentication(context, configContext, authResult.idToken(),
                                                 opaqueIdToken, opaqueAccessToken, opaqueRefreshToken, identity);
 
-                                        if (configContext.oidcConfig.authentication.isRemoveRedirectParameters()
-                                                && context.request().query() != null) {
-                                            String finalRedirectUri = buildUriWithoutQueryParams(context,
-                                                    isForceHttps(configContext));
-                                            if (finalUserQuery != null) {
-                                                finalRedirectUri += ("?" + finalUserQuery);
+                                        boolean removeRedirectParams = configContext.oidcConfig.authentication
+                                                .isRemoveRedirectParameters();
+                                        if (removeRedirectParams || finalUserPath != null || finalUserQuery != null) {
+
+                                            final String scheme = isForceHttps(configContext) ? "https"
+                                                    : context.request().scheme();
+                                            URI absoluteUri = URI.create(context.request().absoluteURI());
+                                            StringBuilder sb = new StringBuilder(scheme).append("://")
+                                                    .append(absoluteUri.getAuthority())
+                                                    .append(finalUserPath != null ? finalUserPath : absoluteUri.getRawPath());
+                                            if (!removeRedirectParams) {
+                                                sb.append('?').append(absoluteUri.getRawQuery());
                                             }
+                                            if (finalUserQuery != null) {
+                                                sb.append(!removeRedirectParams ? "" : "?");
+                                                sb.append(finalUserQuery);
+                                            }
+                                            String finalRedirectUri = sb.toString();
                                             LOG.debugf("Final redirect URI: %s", finalRedirectUri);
                                             uniEmitter.fail(new AuthenticationRedirectException(finalRedirectUri));
                                         } else {
@@ -462,15 +448,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return new StringBuilder(scheme).append("://")
                 .append(URI.create(context.request().absoluteURI()).getAuthority())
                 .append(path)
-                .toString();
-    }
-
-    private String buildUriWithoutQueryParams(RoutingContext context, boolean forceHttps) {
-        final String scheme = forceHttps ? "https" : context.request().scheme();
-        URI absoluteUri = URI.create(context.request().absoluteURI());
-        return new StringBuilder(scheme).append("://")
-                .append(absoluteUri.getAuthority())
-                .append(absoluteUri.getRawPath())
                 .toString();
     }
 

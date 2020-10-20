@@ -440,9 +440,9 @@ public class CodeFlowTest {
 
     @Test
     public void testAuthenticationCompletionFailedNoStateCookie() throws IOException, InterruptedException {
-        // tenant-3 configuration uses a '/some/other/path' redirect parameter which does not have the same root
+        // tenant-3 configuration uses a '/web-app3' redirect parameter which does not have the same root
         // as the original request which is 'web-app', as a result, when the user is returned back to Quarkus
-        // to '/some/other/path' no state cookie is detected.
+        // to '/web-app3' no state cookie is detected.
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect?tenantId=tenant-3");
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -468,7 +468,7 @@ public class CodeFlowTest {
         // When the user is redirected back, CustomTenantResolver will resolve a 'tenant-1' configuration with
         // a redirect_uri '/web-app/callback-after-redirect' which will cause a code to token exchange failure
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect?tenantId");
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-wrong-redirect");
             assertEquals("Log in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
@@ -644,7 +644,7 @@ public class CodeFlowTest {
     }
 
     @Test
-    public void testAccessAndRefreshTokenInjectionWithoutIndexHtmlWithQuery() throws Exception {
+    public void testAccessAndRefreshTokenInjectionWithQuery() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh-query?a=aValue");
             assertEquals("/web-app/refresh-query?a=aValue", getStateCookieSavedPath(webClient, null));

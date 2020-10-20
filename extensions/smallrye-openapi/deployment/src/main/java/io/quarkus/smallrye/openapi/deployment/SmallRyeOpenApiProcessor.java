@@ -364,11 +364,12 @@ public class SmallRyeOpenApiProcessor {
             return false;
         }
 
-        // Only scan if either JaxRS, Spring Web or Vert.x Web (with @Route) is used
-        boolean isJaxrs = capabilities.isPresent(Capability.RESTEASY);
+        // Only scan if either RESTEasy, Quarkus REST, Spring Web or Vert.x Web (with @Route) is used
+        boolean isRestEasy = capabilities.isPresent(Capability.RESTEASY);
+        boolean isQuarkusRest = capabilities.isPresent(Capability.QUARKUS_REST);
         boolean isSpring = capabilities.isPresent(Capability.SPRING_WEB);
         boolean isVertx = isUsingVertxRoute(index);
-        return isJaxrs || isSpring || isVertx;
+        return isRestEasy || isQuarkusRest || isSpring || isVertx;
     }
 
     private boolean isUsingVertxRoute(IndexView index) {
@@ -401,6 +402,7 @@ public class SmallRyeOpenApiProcessor {
         if (capabilities.isPresent(Capability.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
         }
+        // TODO: add a Quarkus-REST specific extension that knows the Quarkus REST specific annotations as well as the fact that *param annotations aren't necessary
 
         String defaultPath;
         if (resteasyJaxrsConfig.isPresent()) {
@@ -418,7 +420,7 @@ public class SmallRyeOpenApiProcessor {
 
     private String[] getScanners(Capabilities capabilities, IndexView index) {
         List<String> scanners = new ArrayList<>();
-        if (capabilities.isPresent(Capability.RESTEASY)) {
+        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.QUARKUS_REST)) {
             scanners.add(JAX_RS);
         }
         if (capabilities.isPresent(Capability.SPRING_WEB)) {

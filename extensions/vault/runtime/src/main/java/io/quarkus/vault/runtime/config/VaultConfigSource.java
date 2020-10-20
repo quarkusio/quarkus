@@ -56,7 +56,8 @@ public class VaultConfigSource implements ConfigSource {
     public static final Pattern CREDENTIALS_PATTERN = Pattern.compile("^quarkus\\.vault\\.credentials-provider\\.([^.]+)\\.");
     public static final Pattern TRANSIT_KEY_PATTERN = Pattern.compile("^quarkus\\.vault\\.transit.key\\.([^.]+)\\.");
     public static final Pattern SECRET_CONFIG_KV_PATH_PATTERN = Pattern
-            .compile("^quarkus\\.vault\\.secret-config-kv-path\\.([^.]+)$");
+            .compile("^quarkus\\.vault\\.secret-config-kv-path\\.(?:([^.]+)|(?:\"([^\"]+)\"))$");
+    public static final Pattern EXPANSION_PATTERN = Pattern.compile("\\$\\{([^}]+)\\}");
 
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
     private AtomicReference<VaultRuntimeConfig> serverConfig = new AtomicReference<>(null);
@@ -312,7 +313,35 @@ public class VaultConfigSource implements ConfigSource {
 
     private String getVaultProperty(String key, String defaultValue) {
         String propertyName = PROPERTY_PREFIX + key;
+        return getProperty(propertyName, defaultValue, 0);
+    }
 
+    protected String getProperty(String propertyName, String defaultValue, int depth) {
+
+        if (depth == 3) {
+            throw new RuntimeException("max expansion depth reached when looking for key " + propertyName);
+        }
+
+        String result = getBaseProperty(propertyName, defaultValue);
+
+        if (result != null) {
+            Matcher matcher = EXPANSION_PATTERN.matcher(result);
+            while (matcher.find()) {
+                String expansionKey = matcher.group(1);
+                String replacement = getProperty(expansionKey, null, depth + 1);
+                if (replacement == null) {
+                    throw new RuntimeException(
+                            "unable to find expansion key " + expansionKey + " when fetching " + propertyName);
+                }
+                result = result.substring(0, matcher.start()) + replacement + result.substring(matcher.end());
+                matcher = EXPANSION_PATTERN.matcher(result);
+            }
+        }
+
+        return result;
+    }
+
+    protected String getBaseProperty(String propertyName, String defaultValue) {
         return getConfigSourceStream()
                 .map(configSource -> configSource.getValue(propertyName))
                 .filter(value -> value != null && value.length() != 0)
@@ -354,7 +383,7 @@ public class VaultConfigSource implements ConfigSource {
 
     private String getSecretConfigKvPrefixPathName(String propertyName) {
         Matcher matcher = SECRET_CONFIG_KV_PATH_PATTERN.matcher(propertyName);
-        return matcher.find() ? matcher.group(1) : null;
+        return matcher.matches() ? (matcher.group(1) != null ? matcher.group(1) : matcher.group(2)) : null;
     }
 
     private List<String> getSecretConfigKvPrefixPath(String prefixName) {

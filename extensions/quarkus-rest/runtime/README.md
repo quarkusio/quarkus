@@ -75,6 +75,7 @@
 - Spec should say when `CompletionCallback` run: is it after the request is sent, or before? ATM it can be before (that's how we do it
   but it leads in tests that get a response before the callbacks are run and a nightmare to test because the next request can be executed
   before the callbacks are run).
+- We should fix the client `WebApplicationException` usage that leaks the `Response` when on the server
 
 *** Spec extensions proposed
 

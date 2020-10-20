@@ -1,5 +1,6 @@
 package io.quarkus.deployment.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -90,6 +91,12 @@ public class WebJarUtil {
             }
         }
         return path;
+    }
+
+    public static void updateFile(Path original, byte[] newContent) throws IOException {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(newContent)) {
+            createFile(bais, original);
+        }
     }
 
     public static void updateUrl(Path original, String path, String lineStartsWith, String format) throws IOException {
@@ -260,11 +267,14 @@ public class WebJarUtil {
     }
 
     private static void createFile(InputStream source, Path targetDir, String filename) throws IOException {
-        Path target = targetDir.resolve(filename);
+        createFile(source, targetDir.resolve(filename));
+    }
+
+    private static void createFile(InputStream source, Path targetFile) throws IOException {
         FileLock lock = null;
         FileOutputStream fos = null;
         try {
-            fos = new FileOutputStream(target.toString());
+            fos = new FileOutputStream(targetFile.toString());
             FileChannel channel = fos.getChannel();
             lock = channel.tryLock();
             if (lock != null) {

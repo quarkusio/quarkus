@@ -28,17 +28,16 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.jdbc.mysql.runtime.MySQLAgroalConnectionConfigurer;
-import io.quarkus.jdbc.mysql.runtime.MySQLRecorder;
 
 public class JDBCMySQLProcessor {
 
@@ -66,12 +65,6 @@ public class JDBCMySQLProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void abandonedConnectionCleanUp(MySQLRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
-        recorder.startAbandonedConnectionCleanup(shutdownContextBuildItem);
-    }
-
-    @BuildStep
     NativeImageResourceBuildItem resource() {
         return new NativeImageResourceBuildItem("com/mysql/cj/util/TimeZoneMapping.properties");
     }
@@ -84,6 +77,16 @@ public class JDBCMySQLProcessor {
     @BuildStep
     NativeImageEnableAllTimeZonesBuildItem enableAllTimeZones() {
         return new NativeImageEnableAllTimeZonesBuildItem();
+    }
+
+    @BuildStep
+    NativeImageSystemPropertyBuildItem disableAbandonedConnectionCleanUpInNativeMode() {
+        return new NativeImageSystemPropertyBuildItem("com.mysql.cj.disableAbandonedConnectionCleanup", "true");
+    }
+
+    @BuildStep(onlyIfNot = NativeBuild.class)
+    SystemPropertyBuildItem disableAbandonedConnectionCleanUpInJVMMode() {
+        return new SystemPropertyBuildItem("com.mysql.cj.disableAbandonedConnectionCleanup", "true");
     }
 
     @BuildStep

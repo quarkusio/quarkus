@@ -23,7 +23,7 @@ public class RedisWithNamedClientResource {
     RedisClient redisClient;
 
     @Inject
-    @RedisClientName("named-client")
+    @RedisClientName("named-reactive-client")
     ReactiveRedisClient reactiveRedisClient;
 
     // synchronous

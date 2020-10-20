@@ -34,7 +34,7 @@ public class TransactionScopedEntityManager implements EntityManager {
     private final TransactionSynchronizationRegistry tsr;
     private final EntityManagerFactory emf;
     private final String unitName;
-    private static final Object transactionKey = new Object();
+    private final Object entityManagerKey;
     private final Instance<RequestScopedEntityManagerHolder> requestScopedEms;
 
     public TransactionScopedEntityManager(TransactionManager transactionManager,
@@ -46,17 +46,18 @@ public class TransactionScopedEntityManager implements EntityManager {
         this.emf = emf;
         this.unitName = unitName;
         this.requestScopedEms = requestScopedEms;
+        this.entityManagerKey = this.getClass().getSimpleName() + "-" + unitName;
     }
 
     EntityManagerResult getEntityManager() {
         if (isInTransaction()) {
-            EntityManager em = (EntityManager) tsr.getResource(transactionKey);
+            EntityManager em = (EntityManager) tsr.getResource(entityManagerKey);
             if (em != null) {
                 return new EntityManagerResult(em, false, true);
             }
             EntityManager newEm = emf.createEntityManager();
             newEm.joinTransaction();
-            tsr.putResource(transactionKey, newEm);
+            tsr.putResource(entityManagerKey, newEm);
             tsr.registerInterposedSynchronization(new Synchronization() {
                 @Override
                 public void beforeCompletion() {

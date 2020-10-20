@@ -525,7 +525,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.fast-jar")).exists()
-                .satisfies(checkContains("mvn package -Pquarkus.package.type=fast-jar"))
+                .satisfies(checkContains("mvn package -Dquarkus.package.type=fast-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.fast-jar"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.1"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))

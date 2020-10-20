@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -18,6 +18,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -90,31 +91,27 @@ public class IoUtils {
         }
     }
 
-    public static void recursiveDeleteAndThenCreate(Path root) throws IOException {
-        recursiveDelete(root);
-        if (!PropertyUtils.isWindows()) {
-            Files.createDirectories(root);
+    /**
+     * Creates a new empty directory or empties an existing one.
+     * 
+     * @param dir directory
+     * @throws IOException in case of a failure
+     */
+    public static void createOrEmptyDir(Path dir) throws IOException {
+        Objects.requireNonNull(dir);
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
             return;
         }
-
-        // in Windows, recreating a directory right after deleting it can be problematic, see https://bugs.openjdk.java.net/browse/JDK-8029608
-        // so we just try the create a operation a few times and hope it works
-
-        final int maxTries = 3;
-        int i = 0;
-        while (true) {
-            try {
-                Files.createDirectories(root);
-                return;
-            } catch (AccessDeniedException e) {
-                if (++i == maxTries) {
-                    throw e;
-                }
-
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException ignored) {
-
+        if (!Files.isDirectory(dir)) {
+            throw new IllegalArgumentException(dir + " is not a directory");
+        }
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path p : stream) {
+                if (Files.isDirectory(p)) {
+                    recursiveDelete(p);
+                } else {
+                    Files.delete(p);
                 }
             }
         }

@@ -2628,7 +2628,7 @@
                 <artifactId>quarkus-minikube</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
+           <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-minikube-deployment</artifactId>
                 <version>${project.version}</version>
@@ -2641,6 +2641,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kind-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+             <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-tekton</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+             <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-tekton-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3158,6 +3168,12 @@
             <dependency>
                 <groupId>io.dekorate</groupId>
                 <artifactId>servicebinding-annotations</artifactId>
+                <version>${dekorate.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>tekton-annotations</artifactId>
                 <version>${dekorate.version}</version>
                 <classifier>noapt</classifier>
             </dependency>

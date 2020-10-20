@@ -483,9 +483,17 @@ quarkus.http.port=9090
 
 And then set the `QUARKUS_PROFILE` environment variable to `staging` to activate my profile.
 
+==== Multiple Profiles
+
+Multiple Profiles may be active at the same time. The configuration `quarkus.profile` or `QUARKUS_PROFILE` accepts a
+comma-separated list of profile names.
+
+When multiple profiles are active, the rules for profile configuration are exactly the same. If two profiles define the
+same configuration, then the last listed profile has priority.
+
 [NOTE]
 ====
-The proper way to check the active profile programmatically is to use the `getActiveProfile` method of `io.quarkus.runtime.configuration.ProfileManager`.
+The proper way to check the active profile programmatically is to use the `isProfileActive` method of `io.quarkus.runtime.configuration.ProfileManager`.
 
 Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
 ====
@@ -816,7 +824,7 @@ quarkus:
 In general, `null` YAML keys are not included in assembly of the configuration property name, allowing them to be used to
 any level for disambiguating configuration keys.
 
-== More info on how to configure
+== Additional Configuration Features
 
 Quarkus relies on SmallRye Config and inherits its features.
 
@@ -829,6 +837,8 @@ SmallRye Config provides:
 * Fallback Configuration Properties
 * Logging
 * Hide Secrets
+* Config Mappings
+* Multiple Profiles
 
 For more information, please check the
 link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].

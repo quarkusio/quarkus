@@ -36,7 +36,6 @@
       <scope>test</scope>
     </dependency>
 
-
     <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -83,6 +82,15 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${compiler-plugin.version}</version>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <quarkus.test.profile>common,test</quarkus.test.profile>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -96,6 +104,24 @@
       </activation>
       <build>
         <plugins>
+          <!-- This makes sure that the native binary builds with the common and prod profiles -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>properties-maven-plugin</artifactId>
+            <version>1.0.0</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>set-system-properties</goal>
+                </goals>
+                <configuration>
+                  <properties>
+                    <quarkus.profile>common,prod</quarkus.profile>
+                  </properties>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
@@ -112,6 +138,9 @@
                   <goal>verify</goal>
                 </goals>
                 <configuration>
+                  <environmentVariables>
+                    <QUARKUS_PROFILE>common,prod</QUARKUS_PROFILE>
+                  </environmentVariables>
                   <systemPropertyVariables>
                     <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                   </systemPropertyVariables>

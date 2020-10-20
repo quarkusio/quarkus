@@ -35,14 +35,14 @@ public class ProfileManagerTestCase {
 
     @Test
     public void testDefaultTestProfile() {
-        Assertions.assertEquals(LaunchMode.TEST.getDefaultProfile(), ProfileManager.getActiveProfile());
+        Assertions.assertTrue(ProfileManager.isProfileActive(LaunchMode.TEST.getDefaultProfile()));
     }
 
     @Test
     public void testCustomTestProfile() {
         String customProfile = "foo";
         System.setProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP, customProfile);
-        Assertions.assertEquals(customProfile, ProfileManager.getActiveProfile());
+        Assertions.assertTrue(ProfileManager.isProfileActive(customProfile));
     }
 
     @Test
@@ -60,7 +60,7 @@ public class ProfileManagerTestCase {
         ProfileManager.setRuntimeDefaultProfile("foo");
         String customProfile = "bar";
         System.setProperty(ProfileManager.QUARKUS_PROFILE_PROP, customProfile);
-        Assertions.assertEquals(customProfile, ProfileManager.getActiveProfile());
+        Assertions.assertTrue(ProfileManager.isProfileActive(customProfile));
     }
 
     @Test
@@ -78,7 +78,7 @@ public class ProfileManagerTestCase {
         ProfileManager.setRuntimeDefaultProfile("foo");
         String customProfile = "bar";
         System.setProperty(BACKWARD_COMPATIBLE_QUARKUS_PROFILE_PROP, customProfile);
-        Assertions.assertEquals(customProfile, ProfileManager.getActiveProfile());
+        Assertions.assertTrue(ProfileManager.isProfileActive(customProfile));
     }
 
     @Test
@@ -95,7 +95,7 @@ public class ProfileManagerTestCase {
         ProfileManager.setLaunchMode(launchMode);
         String customProfile = "foo";
         ProfileManager.setRuntimeDefaultProfile(customProfile);
-        Assertions.assertEquals(customProfile, ProfileManager.getActiveProfile());
+        Assertions.assertTrue(ProfileManager.isProfileActive(customProfile));
     }
 
     @Test
@@ -110,6 +110,6 @@ public class ProfileManagerTestCase {
 
     private void testDefaultProfile(LaunchMode launchMode) {
         ProfileManager.setLaunchMode(launchMode);
-        Assertions.assertEquals(launchMode.getDefaultProfile(), ProfileManager.getActiveProfile());
+        Assertions.assertTrue(ProfileManager.isProfileActive(launchMode.getDefaultProfile()));
     }
 }

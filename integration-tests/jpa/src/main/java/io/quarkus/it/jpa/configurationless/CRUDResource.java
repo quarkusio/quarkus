@@ -82,7 +82,7 @@ public class CRUDResource {
     @Transactional
     @Path("/import")
     public Map<String, String> get() {
-        boolean isProdMode = ProfileManager.getActiveProfile().equals(LaunchMode.NORMAL.getDefaultProfile());
+        boolean isProdMode = ProfileManager.isProfileActive(LaunchMode.NORMAL.getDefaultProfile());
         Gift gift = em.find(Gift.class, 100000L);
         Map<String, String> map = new HashMap<>();
         // Native tests are run under the 'prod' profile for now. In NORMAL mode, Quarkus doesn't execute the SQL import file

@@ -71,7 +71,7 @@ public final class ConfigUtils {
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
         final ApplicationPropertiesConfigSource.MpConfigInJar mpConfig = new ApplicationPropertiesConfigSource.MpConfigInJar();
         builder.withSources(inFileSystem, inJar, mpConfig, new DotEnvConfigSource());
-        builder.withProfile(ProfileManager.getActiveProfile());
+        builder.withProfile(ProfileManager.getProfileConfiguration());
         builder.addDefaultInterceptors();
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (runTime) {

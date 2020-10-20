@@ -46,7 +46,7 @@ public class ConfigProfileTestCase {
         return new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()
                 .withSources(new PropertiesConfigSource(maps(keyValues), "test input", 500))
-                .withProfile(ProfileManager.getActiveProfile());
+                .withProfile(ProfileManager.getProfileConfiguration());
     }
 
     private SmallRyeConfig buildConfig(String... keyValues) {

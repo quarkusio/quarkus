@@ -161,7 +161,7 @@ public class ApplicationLifecycleManager {
                     }
                 } else {
                     applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
-                            ProfileManager.getActiveProfile());
+                            ProfileManager.getActiveProfiles());
                 }
             }
             stateLock.lock();

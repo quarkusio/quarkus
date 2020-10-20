@@ -613,6 +613,19 @@ public class PriceStorage {
 
 The complete example is available in the `kafka-panache-quickstart` {quickstarts-tree-url}/kafka-panache-quickstart[directory].
 
+[NOTE]
+====
+There are 2 `@Blocking` annotations:
+
+ 1. `io.smallrye.reactive.messaging.annotations.Blocking`
+ 2. `io.smallrye.common.annotation.Blocking`
+
+They have the same effect.
+Thus, you can use both.
+The first one provides more fine-grain tuning such as the worker pool to use and whether it preserves the order.
+The second one, used in also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
+====
+
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.

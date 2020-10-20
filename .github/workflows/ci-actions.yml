@@ -494,11 +494,11 @@ jobs:
             timeout: 70
             keycloak: "true"
             test-modules: >
-              elytron-resteasy
               oidc
               oidc-code-flow
               oidc-tenancy
               keycloak-authorization
+              oidc-wiremock
           - category: Security3
             timeout: 50
             test-modules: >
@@ -514,6 +514,7 @@ jobs:
           - category: HTTP
             timeout: 60
             test-modules: >
+              elytron-resteasy
               resteasy-jackson
               resteasy-mutiny
               vertx

@@ -36,6 +36,7 @@
         <module>undertow-websockets</module>
         <module>webjars-locator</module>
         <module>quarkus-rest</module>
+        <module>quarkus-rest-qute</module>
 
         <!-- Monitoring -->
         <module>smallrye-health</module>

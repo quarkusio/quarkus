@@ -178,6 +178,9 @@
                                     <jsonGroupId>io.quarkus</jsonGroupId>
                                     <jsonArtifactId>quarkus-bom-descriptor-json</jsonArtifactId>
                                     <jsonVersion>${project.version}</jsonVersion>
+                                    <ignoredGroupIds>
+                                        <ignoredGroupId>software.amazon.awssdk</ignoredGroupId>
+                                    </ignoredGroupIds>
                                 </configuration>
                             </execution>
                         </executions>

@@ -409,7 +409,7 @@ public class GreetingResource {
 ----
 
 Some might say that this approach is preferable since the field can be *final* like this. Anyway, in some cases you might need an explicit constructor. And, in that case, the coverage is not reported properly by JaCoCo.
-This is because Quarkus generates a constructor without any parameter and does some bycode manipulations in order to add it to the class. That is what happened here, just before the execution of the integration tests:
+This is because Quarkus generates a constructor without any parameter and does some bytecode manipulations in order to add it to the class. That is what happened here, just before the execution of the integration tests:
 
 [source,shell,subs=attributes+]
 ----

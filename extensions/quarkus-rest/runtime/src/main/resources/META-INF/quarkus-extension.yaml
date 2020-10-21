@@ -1,13 +1,11 @@
 ---
-name: "RESTEasy JAX-RS"
+name: "Quarkus REST"
 metadata:
-  short-name: "jax-rs"
+  short-name: "quarkus-rest"
   keywords:
-  - "resteasy"
   - "jaxrs"
   - "web"
   - "rest"
-  guide: "https://quarkus.io/guides/rest-json"
   categories:
   - "web"
-  status: "stable"
+  status: "experimental"

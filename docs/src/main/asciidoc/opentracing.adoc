@@ -223,6 +223,40 @@ quarkus.datasource.jdbc.driver=io.opentracing.contrib.jdbc.TracingDriver
 quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
 ----
 
+
+=== Kafka
+
+The https://github.com/opentracing-contrib/java-kafka-client[Kafka instrumentation] will add a span for each message sent to or received from a Kafka topic. To enable it, add the following dependency to your pom.xml:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.opentracing.contrib</groupId>
+    <artifactId>opentracing-kafka-client</artifactId>
+    <version>${opentracing-kafka.version}</version>
+</dependency>
+----
+
+It contains OpenTracing interceptors that must be registered on Kafka producers and consumers.
+
+If you followed the link:kafka[Kafka guide], the interceptors can be added on the `generated-price` and the `prices` channels as follows:
+
+[source, properties]
+----
+# Configure the Kafka sink (we write to it)
+mp.messaging.outgoing.generated-price.connector=smallrye-kafka
+mp.messaging.outgoing.generated-price.topic=prices
+mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer
+mp.messaging.outgoing.generated-price.interceptor.classes=io.opentracing.contrib.kafka.TracingProducerInterceptor
+
+# Configure the Kafka source (we read from it)
+mp.messaging.incoming.prices.connector=smallrye-kafka
+mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
+mp.messaging.incoming.prices.interceptor.classes=io.opentracing.contrib.kafka.TracingConsumerInterceptor
+----
+
+NOTE: `interceptor.classes` accept a list of classes separated by a comma.
+
 [[configuration-reference]]
 == Jaeger Configuration Reference
 

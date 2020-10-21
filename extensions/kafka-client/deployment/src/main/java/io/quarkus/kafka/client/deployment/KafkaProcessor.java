@@ -7,12 +7,14 @@ import java.util.function.Consumer;
 
 import javax.security.auth.spi.LoginModule;
 
+import org.apache.kafka.clients.consumer.ConsumerInterceptor;
 import org.apache.kafka.clients.consumer.ConsumerPartitionAssignor;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
 import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
+import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
 import org.apache.kafka.common.security.authenticator.DefaultLogin;
@@ -45,6 +47,7 @@ import org.jboss.jandex.Type.Kind;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -112,6 +115,8 @@ public class KafkaProcessor {
         // PartitionAssignor is now deprecated, replaced by ConsumerPartitionAssignor
         collectImplementors(toRegister, indexBuildItem, PartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
+        collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
+        collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
 
         for (Class<?> i : BUILT_INS) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, i.getName()));
@@ -207,6 +212,19 @@ public class KafkaProcessor {
 
         } catch (ClassNotFoundException e) {
             //ignore, Apicurio Avro is not in the classpath
+        }
+
+        //opentracing contrib kafka interceptors: https://github.com/opentracing-contrib/java-kafka-client
+        if (capabilities.isPresent(Capability.OPENTRACING)) {
+            try {
+                Class.forName("io.opentracing.contrib.kafka.TracingProducerInterceptor", false,
+                        Thread.currentThread().getContextClassLoader());
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
+                        "io.opentracing.contrib.kafka.TracingProducerInterceptor",
+                        "io.opentracing.contrib.kafka.TracingConsumerInterceptor"));
+            } catch (ClassNotFoundException e) {
+                //ignore, opentracing contrib kafka is not in the classpath
+            }
         }
 
     }

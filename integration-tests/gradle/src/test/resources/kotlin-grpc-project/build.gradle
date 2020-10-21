@@ -23,33 +23,16 @@ dependencies {
 group 'org.acme'
 version '1.0.0-SNAPSHOT'
 
-quarkus {
-    setOutputDirectory("$projectDir/build/classes/kotlin/main")
-}
-
-quarkusDev {
-    setSourceDir("$projectDir/src/main/kotlin")
-}
-
 allOpen {
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
 compileKotlin {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
     kotlinOptions.javaParameters = true
 }
 
-compileTestKotlin {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
-}
 test {
     systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }

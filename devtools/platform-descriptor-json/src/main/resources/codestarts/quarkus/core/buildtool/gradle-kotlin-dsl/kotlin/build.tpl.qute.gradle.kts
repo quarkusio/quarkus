@@ -8,14 +8,6 @@ plugins {
 {/plugins}
 {/include}
 
-quarkus {
-    setOutputDirectory("$projectDir/build/classes/kotlin/main")
-}
-
-tasks.withType<io.quarkus.gradle.tasks.QuarkusDev> {
-    setSourceDir("$projectDir/src/main/kotlin")
-}
-
 allOpen {
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")

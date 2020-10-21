@@ -28,7 +28,7 @@ public class PrimeNumberResource {
     @GET
     @Path("/{number}")
     @Produces("text/plain")
-    public String checkIfPrime(@PathParam("number") int number) {
+    public String checkIfPrime(@PathParam("number") long number) {
         if (number < 1) {
             return "Only natural numbers can be prime numbers.";
         }

@@ -27,6 +27,9 @@ import io.quarkus.deployment.CodeGenerator;
 
 public class QuarkusGenerateCode extends QuarkusTask {
 
+    public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
+    public static final String QUARKUS_TEST_GENERATED_SOURCES = "quarkus-test-generated-sources";
+
     public static final String INIT_AND_RUN = "initAndRun";
     private Set<Path> sourcesDirectories;
     private Consumer<Path> sourceRegistrar;
@@ -61,9 +64,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
             final Convention convention = getProject().getConvention();
             JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
             if (javaConvention != null) {
-                String generateSourcesDir = test ? "quarkus-test-generated-sources" : "quarkus-generated-sources";
-                final SourceSet generatedSources = javaConvention.getSourceSets().create(generateSourcesDir);
-                generatedSources.getOutput().dir(generateSourcesDir);
+                final String generateSourcesDir = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
+                final SourceSet generatedSources = javaConvention.getSourceSets().findByName(generateSourcesDir);
                 List<Path> paths = new ArrayList<>();
                 generatedSources.getOutput()
                         .filter(f -> f.getName().equals(generateSourcesDir))

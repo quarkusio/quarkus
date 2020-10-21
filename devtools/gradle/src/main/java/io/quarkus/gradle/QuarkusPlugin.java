@@ -181,10 +181,16 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     tasks.withType(Test.class).forEach(configureTestTask);
                     tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);
+
+                    sourceSets.create(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES).getOutput()
+                            .dir(QuarkusGenerateCode.QUARKUS_GENERATED_SOURCES);
+                    sourceSets.create(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES).getOutput()
+                            .dir(QuarkusGenerateCode.QUARKUS_TEST_GENERATED_SOURCES);
                 });
+
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
-            Task compileKotlinTask = tasks.getByName("compileKotlin");
-            compileKotlinTask.dependsOn(quarkusGenerateCode, quarkusGenerateCodeTests);
+            tasks.getByName("compileKotlin").dependsOn(quarkusGenerateCode);
+            tasks.getByName("compileTestKotlin").dependsOn(quarkusGenerateCodeTests);
         });
     }
 

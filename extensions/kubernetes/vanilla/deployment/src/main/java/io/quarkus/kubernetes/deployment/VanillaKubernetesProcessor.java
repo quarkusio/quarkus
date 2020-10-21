@@ -99,7 +99,7 @@ public class VanillaKubernetesProcessor {
         final List<DecoratorBuildItem> result = new ArrayList<>();
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
-        Project project = KubernetesCommonHelper.createProject(applicationInfo, outputTarget, packageConfig);
+        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, outputTarget, packageConfig);
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
                 annotations, labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
 

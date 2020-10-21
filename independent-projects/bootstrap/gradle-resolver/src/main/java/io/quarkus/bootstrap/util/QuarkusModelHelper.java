@@ -145,6 +145,12 @@ public class QuarkusModelHelper {
             appArtifact.setPaths(paths.build());
         }
 
+        for (WorkspaceModule module : model.getWorkspace().getAllModules()) {
+            final ArtifactCoords coords = module.getArtifactCoords();
+            appBuilder.addLocalProjectArtifact(
+                    new AppArtifactKey(coords.getGroupId(), coords.getArtifactId(), null, coords.getType()));
+        }
+
         appBuilder.addRuntimeDeps(userDeps)
                 .addFullDeploymentDeps(fullDeploymentDeps)
                 .addDeploymentDeps(deploymentDeps)

@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-container-image-docker-parent</artifactId>
-    <name>Quarkus - Container - Image - Docker - Parent</name>
+    <name>Quarkus - Container Image - Docker - Parent</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

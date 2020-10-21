@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-container-image-util</artifactId>
-    <name>Quarkus - Container - Image - Util</name>
+    <name>Quarkus - Container Image - Util</name>
     <description>Utility classes common to the container image extensions</description>
 
 </project>

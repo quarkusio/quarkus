@@ -148,7 +148,10 @@ public class DefaultExtensionRegistry implements ExtensionRegistry {
         }
         for (io.quarkus.registry.model.Extension extension : registry.getExtensions()) {
             for (ExtensionRelease extensionRelease : extension.getReleases()) {
-                if (quarkusCore.equals(extensionRelease.getRelease().getQuarkusCore())) {
+                // If it's an individual extension (does not belong to any platform), add to the query
+                // TODO: Validate if the Quarkus core version is compatible for individual extensions
+                if (extensionRelease.getPlatforms().isEmpty() ||
+                        quarkusCore.equals(extensionRelease.getRelease().getQuarkusCore())) {
                     ExtensionReleaseTuple tuple = ExtensionReleaseTuple.builder().extension(extension)
                             .release(extensionRelease).build();
                     // If no filter is defined, just return the tuple

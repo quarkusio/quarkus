@@ -20,6 +20,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
+import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.funqy.runtime.bindings.http.FunqyHttpBindingRecorder;
 import io.quarkus.jackson.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -57,6 +58,7 @@ public class FunqyHttpBuildStep {
     @BuildStep
     @Record(RUNTIME_INIT)
     public void boot(ShutdownContextBuildItem shutdown,
+            FunqyConfig funqyConfig,
             FunqyHttpBindingRecorder binding,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<RouteBuildItem> routes,
@@ -72,19 +74,22 @@ public class FunqyHttpBuildStep {
         feature.produce(new FeatureBuildItem(FUNQY_HTTP_FEATURE));
 
         String rootPath = httpConfig.rootPath;
+        if (rootPath == null) {
+            rootPath = "/";
+        } else if (!rootPath.endsWith("/")) {
+            rootPath += "/";
+        }
+
         Handler<RoutingContext> handler = binding.start(rootPath,
+                funqyConfig,
                 vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),
                 executorBuildItem.getExecutorProxy());
 
+        routes.produce(new RouteBuildItem("/", handler, false));
         for (FunctionBuildItem function : functions) {
-            if (rootPath == null)
-                rootPath = "/";
-            else if (!rootPath.endsWith("/"))
-                rootPath += "/";
             String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
-            //String path = rootPath + name;
             String path = "/" + name;
             routes.produce(new RouteBuildItem(path, handler, false));
         }

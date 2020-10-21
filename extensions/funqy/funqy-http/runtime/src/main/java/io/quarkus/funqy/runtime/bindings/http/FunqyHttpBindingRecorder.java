@@ -15,6 +15,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
+import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.funqy.runtime.query.QueryObjectMapper;
 import io.quarkus.funqy.runtime.query.QueryReader;
 import io.quarkus.runtime.ShutdownContext;
@@ -59,6 +60,7 @@ public class FunqyHttpBindingRecorder {
     }
 
     public Handler<RoutingContext> start(String contextPath,
+            FunqyConfig funqyConfig,
             Supplier<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
@@ -73,6 +75,18 @@ public class FunqyHttpBindingRecorder {
         });
         FunctionConstructor.CONTAINER = beanContainer;
 
-        return new VertxRequestHandler(vertx.get(), beanContainer, contextPath, executor);
+        final FunctionInvoker defaultInvoker;
+        if (funqyConfig.export.isPresent()) {
+            defaultInvoker = FunctionRecorder.registry.matchInvoker(funqyConfig.export.get());
+            if (defaultInvoker == null) {
+                throw new RuntimeException("quarkus.funqy.export value does not map a function: " + funqyConfig.export.get());
+            }
+        } else if (FunctionRecorder.registry.invokers().size() == 1) {
+            defaultInvoker = FunctionRecorder.registry.invokers().iterator().next();
+        } else {
+            defaultInvoker = null;
+        }
+
+        return new VertxRequestHandler(vertx.get(), defaultInvoker, beanContainer, contextPath, executor);
     }
 }

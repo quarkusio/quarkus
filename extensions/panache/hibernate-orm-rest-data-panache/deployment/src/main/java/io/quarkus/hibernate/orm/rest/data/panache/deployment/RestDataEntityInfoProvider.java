@@ -34,8 +34,8 @@ final class RestDataEntityInfoProvider {
                     return field;
                 }
             }
-            if (classInfo.superName() != null) {
-                tmpClassInfo = index.getClassByName(classInfo.superName());
+            if (tmpClassInfo.superName() != null) {
+                tmpClassInfo = index.getClassByName(tmpClassInfo.superName());
             } else {
                 tmpClassInfo = null;
             }

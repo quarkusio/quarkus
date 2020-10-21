@@ -58,4 +58,12 @@ public class MultiplePersistenceResourceInjectionUnitsTest {
         assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown entity");
     }
+
+    @Test
+    @Transactional
+    public void testAccessBothPersistenceUnits() {
+        testUser();
+        testPlane();
+    }
+
 }

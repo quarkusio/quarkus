@@ -3,7 +3,6 @@ package io.quarkus.maven;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.shared.utils.logging.MessageBuilder;
@@ -17,7 +16,7 @@ import org.wildfly.common.Assert;
 public class MojoLogger implements LoggerProvider {
     static final Object[] NO_PARAMS = new Object[0];
 
-    public static volatile Supplier<Log> logSupplier;
+    public static volatile Log delegate;
 
     @Override
     public Logger getLogger(final String name) {
@@ -25,9 +24,8 @@ public class MojoLogger implements LoggerProvider {
             @Override
             protected void doLog(final Level level, final String loggerClassName, final Object message,
                     final Object[] parameters, final Throwable thrown) {
-                final Supplier<Log> logSupplier = MojoLogger.logSupplier;
-                if (logSupplier != null) {
-                    Log log = logSupplier.get();
+                final Log log = delegate;
+                if (log != null) {
                     String text;
                     if (parameters == null || parameters.length == 0) {
                         text = String.valueOf(message);
@@ -47,9 +45,8 @@ public class MojoLogger implements LoggerProvider {
             @Override
             protected void doLogf(final Level level, final String loggerClassName, final String format,
                     final Object[] parameters, final Throwable thrown) {
-                final Supplier<Log> logSupplier = MojoLogger.logSupplier;
-                if (logSupplier != null) {
-                    Log log = logSupplier.get();
+                final Log log = delegate;
+                if (log != null) {
                     String text;
                     if (parameters == null) {
                         try {
@@ -73,10 +70,9 @@ public class MojoLogger implements LoggerProvider {
 
             @Override
             public boolean isEnabled(final Level level) {
-                final Supplier<Log> logSupplier = MojoLogger.logSupplier;
-                if (logSupplier == null)
+                final Log log = delegate;
+                if (log == null)
                     return false;
-                Log log = logSupplier.get();
                 switch (level) {
                     case FATAL:
                     case ERROR:

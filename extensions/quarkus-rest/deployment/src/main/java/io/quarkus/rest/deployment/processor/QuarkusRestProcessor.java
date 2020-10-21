@@ -32,7 +32,6 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -120,9 +119,6 @@ import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.exceptionmappers.AuthenticationFailedExceptionMapper;
 import io.quarkus.rest.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
-import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
-import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
-import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
@@ -131,6 +127,8 @@ import io.quarkus.rest.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.CustomContainerResponseFilterBuildItem;
 import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
+import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
+import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.UnauthorizedException;
@@ -294,24 +292,11 @@ public class QuarkusRestProcessor {
     }
 
     @BuildStep
-    void additionalBeans(Capabilities capabilities,
-            List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
+    void additionalBeans(List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
             List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
             List<DynamicFeatureBuildItem> additionalDynamicFeatures,
             List<ExceptionMapperBuildItem> additionalExceptionMappers,
             BuildProducer<AdditionalBeanBuildItem> additionalBean) {
-        if (capabilities.isPresent(Capability.JACKSON)) {
-            additionalBean.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass(VertxJsonMessageBodyWriter.class.getName())
-                    .setUnremovable().build());
-        }
-        // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
-        if (capabilities.isPresent(Capability.JSONB)) {
-            additionalBean.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass(JsonbMessageBodyReader.class.getName())
-                    .addBeanClass(JsonbMessageBodyWriter.class.getName())
-                    .setUnremovable().build());
-        }
 
         AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
         for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
@@ -427,6 +412,8 @@ public class QuarkusRestProcessor {
             List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
             List<ExceptionMapperBuildItem> additionalExceptionMappers,
             List<DynamicFeatureBuildItem> additionalDynamicFeatures,
+            List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
+            List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes) {
 
@@ -847,6 +834,17 @@ public class QuarkusRestProcessor {
                     reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClassName));
                 }
             }
+            for (MessageBodyWriterBuildItem additionalWriter : additionalMessageBodyWriters) {
+                ResourceWriter writer = new ResourceWriter();
+                writer.setBuiltin(false);
+                String writerClassName = additionalWriter.getClassName();
+                writer.setFactory(factory(writerClassName, singletonClasses, recorder, beanContainerBuildItem));
+                if (!additionalWriter.getMediaTypeStrings().isEmpty()) {
+                    writer.setMediaTypeStrings(additionalWriter.getMediaTypeStrings());
+                }
+                recorder.registerWriter(serialisers, additionalWriter.getHandledClassName(), writer);
+            }
+
             for (ClassInfo readerClass : readers) {
                 KeepProviderResult keepProviderResult = keepProvider(readerClass, filterClasses, allowedClasses);
                 if (keepProviderResult != KeepProviderResult.DISCARD) {
@@ -872,19 +870,15 @@ public class QuarkusRestProcessor {
                     reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClassName));
                 }
             }
-
-            // additional readers / writers based on capabilities
-
-            if (capabilities.isPresent(Capability.JACKSON)) {
-                // TODO: this is probably not the right thing to do as Vertx doesn't the Quarkus CDI configured ObjectMapper here
-                registerWriter(recorder, serialisers, Object.class, VertxJsonMessageBodyWriter.class,
-                        beanContainerBuildItem.getValue(), MediaType.APPLICATION_JSON);
-            }
-            if (capabilities.isPresent(Capability.JSONB)) {
-                registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class,
-                        beanContainerBuildItem.getValue(), MediaType.APPLICATION_JSON, null);
-                registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class,
-                        beanContainerBuildItem.getValue(), MediaType.APPLICATION_JSON);
+            for (MessageBodyReaderBuildItem additionalReader : additionalMessageBodyReaders) {
+                ResourceReader reader = new ResourceReader();
+                reader.setBuiltin(false);
+                String readerClassName = additionalReader.getClassName();
+                reader.setFactory(factory(readerClassName, singletonClasses, recorder, beanContainerBuildItem));
+                if (!additionalReader.getMediaTypeStrings().isEmpty()) {
+                    reader.setMediaTypeStrings(additionalReader.getMediaTypeStrings());
+                }
+                recorder.registerReader(serialisers, additionalReader.getHandledClassName(), reader);
             }
 
             // built-ins

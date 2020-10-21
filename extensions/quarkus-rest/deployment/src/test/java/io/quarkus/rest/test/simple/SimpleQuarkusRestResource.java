@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
-import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
@@ -24,9 +23,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -117,62 +114,6 @@ public class SimpleQuarkusRestResource {
         Person person = new Person();
         person.setFirst("Bob");
         person.setLast("Builder");
-        return person;
-    }
-
-    @GET
-    @Path("/async-person")
-    @Produces(MediaType.APPLICATION_JSON)
-    public void getPerson(@Suspended AsyncResponse response) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Person person = new Person();
-                person.setFirst("Bob");
-                person.setLast("Builder");
-                response.resume(person);
-            }
-        }).start();
-    }
-
-    @POST
-    @Path("/person")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Person getPerson(Person person) {
-        if (BlockingOperationControl.isBlockingAllowed()) {
-            throw new RuntimeException("should not have dispatched");
-        }
-        return person;
-    }
-
-    @POST
-    @Path("/person-large")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Person personTest(Person person) {
-        //large requests should get bumped from the IO thread
-        if (!BlockingOperationControl.isBlockingAllowed()) {
-            throw new RuntimeException("should have dispatched");
-        }
-        return person;
-    }
-
-    @POST
-    @Path("/person-validated")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Person getValidatedPerson(@Valid Person person) {
-        return person;
-    }
-
-    @POST
-    @Path("/person-invalid-result")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Valid
-    public Person getInvalidPersonResult(@Valid Person person) {
-        person.setLast(null);
         return person;
     }
 

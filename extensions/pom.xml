@@ -36,6 +36,8 @@
         <module>undertow-websockets</module>
         <module>webjars-locator</module>
         <module>quarkus-rest</module>
+        <module>quarkus-rest-jsonb</module>
+        <module>quarkus-rest-jackson</module>
         <module>quarkus-rest-qute</module>
 
         <!-- Monitoring -->

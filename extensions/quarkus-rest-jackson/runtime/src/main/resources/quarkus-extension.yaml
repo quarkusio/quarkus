@@ -1,0 +1,15 @@
+---
+name: "Quarkus REST JSON-B"
+metadata:
+  short-name: "quarkus-rest-jackson"
+  keywords:
+    - "rest-jackson"
+    - "quarkus-rest-json"
+    - "jaxrs-json"
+    - "rest"
+    - "jaxrs"
+    - "json"
+    - "jackson"
+  categories:
+  - "web"
+  status: "experimental"

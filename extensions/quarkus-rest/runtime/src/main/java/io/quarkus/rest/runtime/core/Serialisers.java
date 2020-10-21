@@ -569,7 +569,7 @@ public class Serialisers {
         }
 
         Map.Entry<MediaType, MediaType> selectedMediaTypes = null;
-        ResourceWriter selectedResourceWriter = null;
+        List<ResourceWriter> selectedResourceWriters = null;
         for (ResourceWriter resourceWriter : candidates) {
             if (!resourceWriter.matchesRuntimeType(RuntimeType.SERVER)) {
                 continue;
@@ -580,16 +580,23 @@ public class Serialisers {
             }
             if (selectedMediaTypes == null) {
                 selectedMediaTypes = current;
-                selectedResourceWriter = resourceWriter;
+                selectedResourceWriters = new ArrayList<>(1);
+                selectedResourceWriters.add(resourceWriter);
             } else {
-                if (MediaTypeHelper.COMPARATOR.compare(current.getValue(), selectedMediaTypes.getValue()) <= -1) {
+                int compare = MediaTypeHelper.COMPARATOR.compare(current.getValue(), selectedMediaTypes.getValue());
+                if (compare == 0) {
+                    selectedResourceWriters.add(resourceWriter);
+                } else if (compare < 0) {
                     selectedMediaTypes = current;
-                    selectedResourceWriter = resourceWriter;
+                    selectedResourceWriters = new ArrayList<>(1);
+                    selectedResourceWriters.add(resourceWriter);
                 }
             }
         }
         if (selectedMediaTypes != null) {
-            result.add(selectedResourceWriter.getInstance(), selectedMediaTypes.getKey());
+            for (ResourceWriter selectedResourceWriter : selectedResourceWriters) {
+                result.add(selectedResourceWriter.getInstance(), selectedMediaTypes.getKey());
+            }
         }
     }
 

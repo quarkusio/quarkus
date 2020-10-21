@@ -108,7 +108,7 @@ public class MultipleAcceptHeaderTest {
     @DisplayName("Test Single Accept Header")
     public void testSingleAcceptHeader() throws Exception {
         String result = service.getJson();
-        Assertions.assertEquals("\"" + APPLICATION_JSON + "\"", result);
+        Assertions.assertEquals(APPLICATION_JSON, result);
     }
 
     @Test

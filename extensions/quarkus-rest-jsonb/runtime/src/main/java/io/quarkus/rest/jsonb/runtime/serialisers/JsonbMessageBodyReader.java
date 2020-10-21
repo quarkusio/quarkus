@@ -1,4 +1,4 @@
-package io.quarkus.rest.runtime.providers.serialisers.jsonb;
+package io.quarkus.rest.jsonb.runtime.serialisers;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,35 +7,16 @@ import java.lang.reflect.Type;
 
 import javax.inject.Inject;
 import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 
-// this gets conditionally registered
 public class JsonbMessageBodyReader implements MessageBodyReader<Object> {
 
     private final Jsonb json;
-
-    public JsonbMessageBodyReader() {
-        ArcContainer arcContainer = Arc.container();
-        if (arcContainer != null) {
-            InstanceHandle<Jsonb> jsonbInstanceHandle = Arc.container().instance(Jsonb.class);
-            if (jsonbInstanceHandle.isAvailable()) {
-                this.json = jsonbInstanceHandle.get();
-            } else {
-                this.json = JsonbBuilder.create();
-            }
-        } else {
-            this.json = JsonbBuilder.create();
-        }
-    }
 
     @Inject
     public JsonbMessageBodyReader(Jsonb json) {

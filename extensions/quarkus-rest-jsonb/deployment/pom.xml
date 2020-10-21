@@ -1,50 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>quarkus-rest-parent</artifactId>
+        <artifactId>quarkus-rest-jsonb-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-rest</artifactId>
-    <name>Quarkus - REST - Runtime</name>
-    <description>REST endpoint framework implementing JAX-RS and more</description>
+    <artifactId>quarkus-rest-jsonb-deployment</artifactId>
+    <name>Quarkus - REST - JSON-B - Deployment</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http</artifactId>
+            <artifactId>quarkus-jsonb-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <optional>true</optional>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jsonb</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonp</artifactId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -55,6 +61,7 @@
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
         </plugins>

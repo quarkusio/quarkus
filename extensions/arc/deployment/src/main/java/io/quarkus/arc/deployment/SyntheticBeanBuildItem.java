@@ -5,6 +5,8 @@ import java.util.function.Supplier;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanConfiguratorBase;
@@ -22,6 +24,15 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
     public static ExtendedBeanConfigurator configure(Class<?> implClazz) {
         return configure(DotName.createSimple(implClazz.getName()));
+    }
+
+    public static ExtendedBeanConfigurator configure(Class<?> implClazz, Class<?>... genericTypeParameters) {
+        DotName implDotName = DotName.createSimple(implClazz.getName());
+        Type[] genericTypes = new Type[genericTypeParameters.length];
+        for (int i = 0; i < genericTypeParameters.length; i++) {
+            genericTypes[i] = Type.create(DotName.createSimple(genericTypeParameters[i].getName()), Type.Kind.CLASS);
+        }
+        return configure(implDotName).addType(ParameterizedType.create(implDotName, genericTypes, null));
     }
 
     public static ExtendedBeanConfigurator configure(DotName implClazz) {

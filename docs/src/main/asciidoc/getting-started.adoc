@@ -87,7 +87,7 @@ cd getting-started
 
 For Windows users
 
-- If using cmd , (don't use forward slash `\`)
+- If using cmd , (don't use backward slash `\`)
 
 [source,bash,subs=attributes+]
 ----

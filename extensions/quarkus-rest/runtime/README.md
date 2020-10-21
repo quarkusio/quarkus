@@ -10,11 +10,9 @@
     - Reconnect special responses that should stop reconnecting
     - Last-Event-Id not sent
 - RESTEasy extensions
-    - Async request/response filters: allow suspending, needs rewriting the filter handlers into the context handlers
     - Async Reader/Writer and interceptors: do we need this?
     - Servlet replacement for remote host/IP (HttpRequest.getRemoteHost/Address)
     - resteasy-links (used by quarkus-data-rest)
-    - param-less `@*Param` annotations?
 - Default readers/writers
     - Vertx JSON types
     - Async variants of spec
@@ -34,7 +32,6 @@
 ** TODO later list
 
 - XML?
-- Optim: do not register handlers for return types Uni/Multi/CompletionStage if the static return type doesn't allow it (unless it's Response)
 - Optim: CookieParser splits things without checking if a separator exists, but it's too weird to touch ATM (see spec discussion)
 - I don't think we handle generic endpoints well: we don't appear to apply type arguments for methods defined in generic supertypes,
   so we see all method parameters as `Object`. Same for bean params.

@@ -91,7 +91,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/commandmode/HelloCommando.java")).exists();
@@ -110,7 +110,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/com/test/andy/AndyCommando.java")).exists()
@@ -132,7 +132,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/com/andy/BonjourResource.java")).exists()
@@ -189,7 +189,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/kotlin/com/andy/BonjourResource.kt")).exists()
@@ -222,7 +222,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/scala/com/andy/BonjourResource.scala")).exists()
@@ -250,7 +250,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
@@ -269,7 +269,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
@@ -288,7 +288,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigYaml(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/config/GreetingResource.java")).exists();
@@ -306,7 +306,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/kotlin/org/acme/resteasy/ExampleResource.kt")).exists();
@@ -326,7 +326,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/scala/org/acme/resteasy/ExampleResource.scala")).exists();
@@ -347,7 +347,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkGradle(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
@@ -369,7 +369,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkGradle(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/kotlin/org/acme/resteasy/ExampleResource.kt")).exists();
@@ -390,7 +390,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkGradle(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/scala/org/acme/resteasy/ExampleResource.scala")).exists();
@@ -410,7 +410,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkGradleWithKotlinDsl(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE_KOTLIN_DSL);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
@@ -429,7 +429,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkGradleWithKotlinDsl(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE_KOTLIN_DSL);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/kotlin/org/acme/resteasy/ExampleResource.kt")).exists();
@@ -448,7 +448,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkGradleWithKotlinDsl(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE_KOTLIN_DSL);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/scala/org/acme/resteasy/ExampleResource.scala")).exists();
@@ -466,7 +466,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
         assertThat(projectDir.resolve("src/main/java/org/acme/qute/Item.java")).exists();
@@ -516,21 +516,56 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve("src/main/scala")).doesNotExist();
     }
 
-    private void checkDockerfiles(Path projectDir) {
+    private void checkDockerfiles(Path projectDir, BuildTool buildTool) {
+        switch (buildTool) {
+            case MAVEN:
+                checkDockerfilesWithMaven(projectDir);
+                break;
+            case GRADLE_KOTLIN_DSL:
+            case GRADLE:
+                checkDockerfilesWithGradle(projectDir);
+                break;
+            default:
+                throw new IllegalArgumentException("Unhandled buildtool");
+        }
+    }
+
+    private void checkDockerfilesWithMaven(Path projectDir) {
         assertThat(projectDir.resolve(".dockerignore")).exists();
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
-                .satisfies(checkContains("mvn package"))
+                .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.1"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.fast-jar")).exists()
-                .satisfies(checkContains("mvn package -Dquarkus.package.type=fast-jar"))
+                .satisfies(checkContains("./mvnw package -Dquarkus.package.type=fast-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.fast-jar"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.1"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
+                .satisfies(checkContains("./mvnw package -Pnative"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.1"))
+                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+    }
+
+    private void checkDockerfilesWithGradle(Path projectDir) {
+        assertThat(projectDir.resolve(".dockerignore")).exists();
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
+                .satisfies(checkContains("./gradlew build"))
+                .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.1"))
+                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
+                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.fast-jar")).exists()
+                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=fast-jar"))
+                .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.fast-jar"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.1"))
+                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
+                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
+                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.1"))
                 .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }

@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-container-image-s2i</artifactId>
-    <name>Quarkus - Container - Image - S2I</name>
+    <name>Quarkus - Container Image - S2I</name>
     <description>Build container images of your application using OpenShift S2I</description>
 
     <dependencies>

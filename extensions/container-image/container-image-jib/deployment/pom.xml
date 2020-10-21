@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-container-image-jib-deployment</artifactId>
-    <name>Quarkus - Container - Image - Jib - Deployment</name>
+    <name>Quarkus - Container Image - Jib - Deployment</name>
 
     <dependencies>
         <dependency>

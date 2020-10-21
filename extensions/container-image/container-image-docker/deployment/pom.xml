@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-container-image-docker-deployment</artifactId>
-    <name>Quarkus - Container - Image - Docker - Deployment</name>
+    <name>Quarkus - Container Image - Docker - Deployment</name>
 
     <dependencies>
         <dependency>

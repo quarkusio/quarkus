@@ -1,8 +1,8 @@
 ---
-name: "Container Image Openshift"
+name: "Container Image OpenShift"
 metadata:
   keywords:
-    - "openshidt"
+    - "openshift"
     - "container"
     - "image"
   categories:

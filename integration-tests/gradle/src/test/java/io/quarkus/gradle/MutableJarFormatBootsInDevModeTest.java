@@ -7,6 +7,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -16,15 +17,15 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
-public class FastJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
+public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTestBase {
     private static Future<?> jarRun;
 
     @Test
     public void testFastJarFormatWorks() throws Exception {
 
-        final File projectDir = getProjectDir("test-that-fast-jar-format-works");
+        final File projectDir = getProjectDir("mutable-jar");
 
-        runGradleWrapper(projectDir, "clean", "build");
+        runGradleWrapper(projectDir, "clean", "quarkusBuild");
 
         final Path quarkusApp = projectDir.toPath().resolve("build").resolve("quarkus-app");
         assertThat(quarkusApp).exists();
@@ -33,7 +34,7 @@ public class FastJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
 
         File output = new File(projectDir, "build/output.log");
         output.createNewFile();
-        Process process = launch(jar, output);
+        Process process = launch(jar, output, Collections.singletonMap("QUARKUS_LAUNCH_DEVMODE", "true"));
         try {
             //Wait until server up
             dumpFileContentOnFailure(() -> {

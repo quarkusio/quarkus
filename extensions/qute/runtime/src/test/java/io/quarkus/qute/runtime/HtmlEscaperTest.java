@@ -37,7 +37,12 @@ public class HtmlEscaperTest {
             }
 
             @Override
-            public int getLineCharacter() {
+            public int getLineCharacterStart() {
+                return 0;
+            }
+
+            @Override
+            public int getLineCharacterEnd() {
                 return 0;
             }
 

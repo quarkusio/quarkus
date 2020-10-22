@@ -113,8 +113,14 @@ public class ParserTest {
                 + "{#for item in foo.items}\n\n"
                 + "{item.name}"
                 + "{/}");
-        assertEquals(6, find(template.getExpressions(), "foo.items").getOrigin().getLine());
-        assertEquals(8, find(template.getExpressions(), "item.name").getOrigin().getLine());
+        Origin fooItemsOrigin = find(template.getExpressions(), "foo.items").getOrigin();
+        assertEquals(6, fooItemsOrigin.getLine());
+        assertEquals(14, fooItemsOrigin.getLineCharacterStart());
+        assertEquals(24, fooItemsOrigin.getLineCharacterEnd());
+        Origin itemNameOrigin = find(template.getExpressions(), "item.name").getOrigin();
+        assertEquals(8, itemNameOrigin.getLine());
+        assertEquals(1, itemNameOrigin.getLineCharacterStart());
+        assertEquals(11, itemNameOrigin.getLineCharacterEnd());
     }
 
     @Test

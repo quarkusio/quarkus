@@ -1,7 +1,9 @@
 package io.quarkus.runtime.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOError;
@@ -46,6 +48,15 @@ public class ExceptionUtilTest {
             assertTrue(line.startsWith("Resulted in: " + expected), "Unexpected stacktrace element '" + line + "'");
         }
         assertTrue(expectedResultedIns.isEmpty(), "Reversed stacktrace is missing certain elements");
+    }
+
+    @Test
+    public void testGetRootCause() {
+        Throwable e = generateException();
+        Throwable rootCause = ExceptionUtil.getRootCause(e);
+        assertEquals(NumberFormatException.class, rootCause.getClass());
+        assertNull(ExceptionUtil.getRootCause(null));
+        assertEquals(NullPointerException.class, ExceptionUtil.getRootCause(new NullPointerException()).getClass());
     }
 
     private Throwable generateException() {

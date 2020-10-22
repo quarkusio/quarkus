@@ -290,8 +290,7 @@ public class MessageBundleProcessor {
                                 name + " is not a parameter of the message bundle method "
                                         + messageBundleMethod.getMethod().declaringClass().name() + "#"
                                         + messageBundleMethod.getMethod().name() + "()",
-                                expression.getOrigin().getLine(),
-                                expression.getOrigin().getTemplateGeneratedId()));
+                                expression.getOrigin()));
                     } else {
                         usedParamNames.add(name);
                     }
@@ -374,8 +373,7 @@ public class MessageBundleProcessor {
                                     "Message bundle [name=" + entry.getKey() + ", interface="
                                             + defaultBundleInterface
                                             + "] does not define a method for key: " + methodPart.getName(),
-                                    expression.getOrigin().getLine(),
-                                    expression.getOrigin().getTemplateGeneratedId()));
+                                    expression.getOrigin()));
                             continue;
                         }
                     }
@@ -390,8 +388,7 @@ public class MessageBundleProcessor {
                                     "Message bundle [name=" + entry.getKey() + ", interface="
                                             + defaultBundleInterface
                                             + "] - wrong number of parameters for method: " + method.toString(),
-                                    expression.getOrigin().getLine(),
-                                    expression.getOrigin().getTemplateGeneratedId()));
+                                    expression.getOrigin()));
                             continue;
                         }
 
@@ -411,8 +408,7 @@ public class MessageBundleProcessor {
                                             "Message bundle method " + method.declaringClass().name() + "#" +
                                                     method.name() + "() parameter [" + method.parameterName(idx)
                                                     + "] does not match the type: " + match.type,
-                                            expression.getOrigin().getLine(),
-                                            expression.getOrigin().getTemplateGeneratedId()));
+                                            expression.getOrigin()));
                                 }
                             }
                             idx++;

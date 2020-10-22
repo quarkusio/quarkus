@@ -27,6 +27,7 @@ import software.amazon.awssdk.http.async.SdkAsyncHttpService;
 
 public class AmazonServicesClientsProcessor {
     public static final String AWS_SDK_APPLICATION_ARCHIVE_MARKERS = "software/amazon/awssdk";
+    public static final String AWS_SDK_XRAY_ARCHIVE_MARKER = "com/amazonaws/xray";
 
     private static final String APACHE_HTTP_SERVICE = "software.amazon.awssdk.http.apache.ApacheSdkHttpService";
     private static final String NETTY_HTTP_SERVICE = "software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService";
@@ -41,8 +42,9 @@ public class AmazonServicesClientsProcessor {
     }
 
     @BuildStep
-    AdditionalApplicationArchiveMarkerBuildItem awsAppArchiveMarkers() {
-        return new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_APPLICATION_ARCHIVE_MARKERS);
+    void awsAppArchiveMarkers(BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> archiveMarker) {
+        archiveMarker.produce(new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_APPLICATION_ARCHIVE_MARKERS));
+        archiveMarker.produce(new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_XRAY_ARCHIVE_MARKER));
     }
 
     @BuildStep

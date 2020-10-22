@@ -93,7 +93,7 @@ public class QuarkusUnitTest
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
     private Consumer<List<LogRecord>> assertLogRecords;
 
-    private static final Timer timeoutTimer = new Timer("Test thread dump timer");
+    private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
     private Runnable beforeAllCustomizer;
@@ -360,6 +360,7 @@ public class QuarkusUnitTest
                 }
             }
         };
+        timeoutTimer = new Timer("Test thread dump timer");
         timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
         if (logFileName != null) {
             PropertyTestUtil.setLogFileProperty(logFileName);
@@ -514,18 +515,22 @@ public class QuarkusUnitTest
         try {
             if (runningQuarkusApplication != null) {
                 runningQuarkusApplication.close();
+                runningQuarkusApplication = null;
             }
             if (afterUndeployListener != null) {
                 afterUndeployListener.run();
             }
             if (curatedApplication != null) {
                 curatedApplication.close();
+                curatedApplication = null;
             }
         } finally {
             System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
+            originalClassLoader = null;
             timeoutTask.cancel();
             timeoutTask = null;
+            timeoutTimer = null;
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);
             }

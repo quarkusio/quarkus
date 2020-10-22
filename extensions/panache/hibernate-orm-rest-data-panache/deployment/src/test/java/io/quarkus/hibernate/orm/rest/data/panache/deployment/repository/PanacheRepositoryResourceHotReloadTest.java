@@ -12,8 +12,8 @@ public class PanacheRepositoryResourceHotReloadTest extends AbstractHotReloadTes
     @RegisterExtension
     public final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, CollectionsController.class, CollectionsRepository.class, AbstractItem.class,
-                            Item.class)
+                    .addClasses(Collection.class, CollectionsController.class, CollectionsRepository.class,
+                            AbstractEntity.class, AbstractItem.class, Item.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 

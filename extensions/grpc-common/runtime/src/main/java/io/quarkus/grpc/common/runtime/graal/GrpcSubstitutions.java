@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime.graal;
+package io.quarkus.grpc.common.runtime.graal;
 
 import static io.grpc.InternalServiceProviders.getCandidatesViaHardCoded;
 

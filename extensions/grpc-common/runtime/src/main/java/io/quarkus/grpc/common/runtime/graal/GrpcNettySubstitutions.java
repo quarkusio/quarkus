@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime.graal;
+package io.quarkus.grpc.common.runtime.graal;
 
 import java.security.Provider;
 import java.util.logging.Level;

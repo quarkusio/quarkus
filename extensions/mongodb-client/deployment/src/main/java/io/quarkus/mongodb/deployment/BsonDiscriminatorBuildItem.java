@@ -4,6 +4,9 @@ import java.util.List;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * Register additional BsonDiscriminator's for the MongoDB clients.
+ */
 public final class BsonDiscriminatorBuildItem extends SimpleBuildItem {
 
     private List<String> bsonDiscriminatorClassNames;

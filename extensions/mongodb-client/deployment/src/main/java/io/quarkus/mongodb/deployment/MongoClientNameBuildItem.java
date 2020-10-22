@@ -4,7 +4,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.mongodb.MongoClientName;
 
 /**
- * Represents the values of the {@link MongoClientName}
+ * Represents the values of the {@link MongoClientName}.
  */
 public final class MongoClientNameBuildItem extends MultiBuildItem {
 

@@ -3,7 +3,7 @@ package io.quarkus.mongodb.deployment;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Holds a Mongo connection name
+ * Holds a MongoDB connection name.
  */
 final class MongoConnectionNameBuildItem extends MultiBuildItem {
 

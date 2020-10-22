@@ -48,6 +48,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         OidcTokenCredential credential = (OidcTokenCredential) request.getToken();
         RoutingContext vertxContext = credential.getRoutingContext();
         vertxContext.put(AuthenticationRequestContext.class.getName(), context);
+        TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext, true);
+
         return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<SecurityIdentity> get() {
@@ -55,20 +57,19 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return context.runBlocking(new Supplier<SecurityIdentity>() {
                         @Override
                         public SecurityIdentity get() {
-                            return authenticate(request, vertxContext).await().indefinitely();
+                            return authenticate(request, vertxContext, resolvedContext).await().indefinitely();
                         }
                     });
                 }
 
-                return authenticate(request, vertxContext);
+                return authenticate(request, vertxContext, resolvedContext);
             }
         });
 
     }
 
     private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
-            RoutingContext vertxContext) {
-        TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext, true);
+            RoutingContext vertxContext, TenantConfigContext resolvedContext) {
 
         if (resolvedContext.oidcConfig.publicKey.isPresent()) {
             return validateTokenWithoutOidcServer(request, resolvedContext);

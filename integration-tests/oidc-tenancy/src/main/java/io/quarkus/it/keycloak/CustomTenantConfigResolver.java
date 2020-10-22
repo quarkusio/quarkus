@@ -3,6 +3,8 @@ package io.quarkus.it.keycloak;
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.vertx.ext.web.RoutingContext;
 
@@ -40,6 +42,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.setDiscoveryEnabled(false);
             config.setJwksPath("jwks");
             config.setClientId("client");
+            return config;
+        } else if ("tenant-web-app-dynamic".equals(tenantId)) {
+            OidcTenantConfig config = new OidcTenantConfig();
+            config.setTenantId("tenant-web-app-dynamic");
+            config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-webapp");
+            config.setClientId("quarkus-app-webapp");
+            config.getCredentials().setSecret("secret");
+            config.getAuthentication().setUserInfoRequired(true);
+            config.getRoles().setSource(Source.userinfo);
+            config.setApplicationType(ApplicationType.WEB_APP);
             return config;
         }
         return null;

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
@@ -33,6 +34,7 @@ final class Names {
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
     static final DotName CHECKED_TEMPLATE = DotName.createSimple(CheckedTemplate.class.getName());
     static final DotName TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
+    static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
 
     private Names() {
     }

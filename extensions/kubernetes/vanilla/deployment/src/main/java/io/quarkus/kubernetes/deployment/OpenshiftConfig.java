@@ -14,6 +14,19 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class OpenshiftConfig implements PlatformConfiguration {
 
+    public static enum OpenshiftFlavor {
+        v3,
+        v4;
+    }
+
+    /**
+     * The OpenShift flavor / version to use.
+     * Older versions of OpenShift have minor differrences in the labels and fields they support.
+     * This option allows users to have their manifests automatically aligned to the OpenShift 'flavor' they use.
+     */
+    @ConfigItem(defaultValue = "v4")
+    OpenshiftFlavor flavor;
+
     /**
      * The name of the group this component belongs too
      */

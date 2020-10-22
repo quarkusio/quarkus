@@ -157,12 +157,6 @@ public class KubernetesCommonHelper {
                             : AddRoleBindingResourceDecorator.RoleKind.Role))));
         }
 
-        // The presence of optional is causing issues in OCP 3.11, so we better remove them.
-        // The following 4 decorator will set the optional property to null, so that it won't make it into the file.
-        result.add(new DecoratorBuildItem(target, new RemoveOptionalFromSecretEnvSourceDecorator()));
-        result.add(new DecoratorBuildItem(target, new RemoveOptionalFromConfigMapEnvSourceDecorator()));
-        result.add(new DecoratorBuildItem(target, new RemoveOptionalFromSecretKeySelectorDecorator()));
-        result.add(new DecoratorBuildItem(target, new RemoveOptionalFromConfigMapKeySelectorDecorator()));
         return result;
     }
 

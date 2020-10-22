@@ -25,6 +25,7 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 
 /**
@@ -51,17 +52,19 @@ final class JpaJandexScavenger {
 
     private final List<PersistenceXmlDescriptorBuildItem> explicitDescriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
+    private final BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod;
     private final IndexView indexView;
     private final Set<String> nonJpaModelClasses;
     private final Set<String> ignorableNonIndexedClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<PersistenceXmlDescriptorBuildItem> explicitDescriptors,
-            IndexView indexView,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod, IndexView indexView,
             Set<String> nonJpaModelClasses,
             Set<String> ignorableNonIndexedClasses) {
         this.reflectiveClass = reflectiveClass;
         this.explicitDescriptors = explicitDescriptors;
+        this.reflectiveMethod = reflectiveMethod;
         this.indexView = indexView;
         this.nonJpaModelClasses = nonJpaModelClasses;
         this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
@@ -90,7 +93,7 @@ final class JpaJandexScavenger {
                     managedClassNames, unindexedClasses);
         }
 
-        domainObjectCollector.registerAllForReflection(reflectiveClass);
+        domainObjectCollector.registerAllForReflection(reflectiveMethod, reflectiveClass, indexView);
 
         if (!enumTypeCollector.isEmpty()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Enum.class.getName()));

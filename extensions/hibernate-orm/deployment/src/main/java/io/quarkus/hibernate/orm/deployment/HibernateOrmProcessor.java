@@ -99,6 +99,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -325,6 +326,7 @@ public final class HibernateOrmProcessor {
             List<IgnorableNonIndexedClasses> ignorableNonIndexedClassesBuildItems,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors) throws Exception {
 
         Set<String> nonJpaModelClasses = nonJpaModelBuildItems.stream()
@@ -340,7 +342,7 @@ public final class HibernateOrmProcessor {
         }
 
         JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, persistenceXmlDescriptors,
-                indexBuildItem.getIndex(),
+                reflectiveMethod, indexBuildItem.getIndex(),
                 nonJpaModelClasses, ignorableNonIndexedClasses);
         final JpaEntitiesBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
         domainObjectsProducer.produce(domainObjects);

@@ -296,25 +296,29 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
 
     private void addDevModePaths(final DependencyImpl dep, ResolvedArtifact a, Project project) {
         final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
-        if (javaConvention != null) {
-            SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-            final File classesDir = new File(QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false));
-            if (classesDir.exists()) {
-                dep.addPath(classesDir);
-            }
-            for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
-                if (resourcesDir.exists()) {
-                    dep.addPath(resourcesDir);
-                }
-            }
-            for (File outputDir : project.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
-                    .getOutputs().getFiles()) {
-                if (outputDir.exists()) {
-                    dep.addPath(outputDir);
-                }
-            }
-        } else {
+        if (javaConvention == null) {
             dep.addPath(a.getFile());
+        } else {
+            SourceSet mainSourceSet = javaConvention.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            if (mainSourceSet != null) {
+                final File classesDir = new File(QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false));
+                if (classesDir.exists()) {
+                    dep.addPath(classesDir);
+                }
+                for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
+                    if (resourcesDir.exists()) {
+                        dep.addPath(resourcesDir);
+                    }
+                }
+                for (File outputDir : project.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
+                        .getOutputs().getFiles()) {
+                    if (outputDir.exists()) {
+                        dep.addPath(outputDir);
+                    }
+                }
+            } else {
+                dep.addPath(a.getFile());
+            }
         }
     }
 

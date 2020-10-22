@@ -28,7 +28,7 @@ To complete this guide, you need:
 
 == Solutions
 
-We recommend that you follow the instructions from <<bootstrapping-the-project,Boostrapping project>> and onwards to create the application step by step.
+We recommend that you follow the instructions from <<bootstrapping-the-project,Bootstrapping project>> and onwards to create the application step by step.
 
 However, you can go right to the completed example.
 

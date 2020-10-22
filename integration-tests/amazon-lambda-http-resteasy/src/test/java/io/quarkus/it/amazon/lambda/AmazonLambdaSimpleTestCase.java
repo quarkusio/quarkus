@@ -16,6 +16,15 @@ import io.quarkus.test.junit.QuarkusTest;
 public class AmazonLambdaSimpleTestCase {
 
     @Test
+    public void testContext() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("GET");
+        request.setPath("/hello/context");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 204);
+    }
+
+    @Test
     public void testGetText() throws Exception {
         testGetText("/hello");
     }

@@ -4,13 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class KotlinGRPCProjectBuildTest extends QuarkusGradleWrapperTestBase {
 
     @Test
-    @Disabled
     public void testBasicMultiModuleBuild() throws Exception {
         final File projectDir = getProjectDir("kotlin-grpc-project");
         final BuildResult build = runGradleWrapper(projectDir, "clean", "build");

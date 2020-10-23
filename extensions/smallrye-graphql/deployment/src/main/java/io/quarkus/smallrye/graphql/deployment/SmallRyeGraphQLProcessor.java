@@ -78,6 +78,11 @@ public class SmallRyeGraphQLProcessor {
     private static final String SCHEMA_PATH = "/schema.graphql";
     private static final String SPI_PATH = "META-INF/services/";
 
+    // For Service integration
+    private static final String SERVICE_NOT_AVAILABLE_WARNING = "The %s property is true, but the %s extension is not present. SmallRye GraphQL %s will be disabled.";
+    private static final String TRUE = "true";
+    private static final String FALSE = "false";
+
     // For the UI
     private static final String GRAPHQL_UI_WEBJAR_GROUP_ID = "io.smallrye";
     private static final String GRAPHQL_UI_WEBJAR_ARTIFACT_ID = "smallrye-graphql-ui-graphiql";
@@ -156,28 +161,6 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    void activateMetrics(Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsCapability,
-            SmallRyeGraphQLConfig smallRyeGraphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        if (smallRyeGraphQLConfig.metricsEnabled) {
-            if (metricsCapability.isPresent()) {
-                if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
-                    unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
-                }
-                systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "true"));
-            } else {
-                LOG.info("The quarkus.smallrye-graphql.metrics.enabled property is true, but a metrics " +
-                        "extension is not present. SmallRye GraphQL Metrics will be disabled.");
-                systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "false"));
-            }
-        } else {
-            systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "false"));
-        }
-    }
-
-    @BuildStep
     void requireBody(BuildProducer<RequireBodyHandlerBuildItem> requireBodyHandlerProducer) {
         // Because we need to read the body
         requireBodyHandlerProducer.produce(new RequireBodyHandlerBuildItem());
@@ -222,17 +205,6 @@ public class SmallRyeGraphQLProcessor {
         Handler<RoutingContext> schemaHandler = recorder.schemaHandler();
         routeProducer.produce(
                 new RouteBuildItem(quarkusConfig.rootPath + SCHEMA_PATH, schemaHandler, HandlerType.BLOCKING));
-    }
-
-    @BuildStep
-    void openTracingIntegration(Capabilities capabilities,
-            BuildProducer<SystemPropertyBuildItem> properties) {
-        // if there is an opentracing tracer available, enable tracing within SmallRye GraphQL
-        if (capabilities.isPresent(Capability.OPENTRACING)) {
-            properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "true"));
-        } else {
-            properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "false"));
-        }
     }
 
     private String[] getSchemaJavaClasses(Schema schema) {
@@ -340,6 +312,104 @@ public class SmallRyeGraphQLProcessor {
         }
         return classes;
     }
+
+    // Services Integrations
+
+    @BuildStep
+    void activateMetrics(Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+
+        boolean activate = shouldActivateService(capabilities,
+                quarkusConfig.metricsEnabled,
+                metricsCapability.isPresent(),
+                "quarkus-smallrye-metrics",
+                "metrics",
+                "quarkus.smallrye-graphql.metrics.enabled");
+        if (activate) {
+            if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+                unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
+            }
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, TRUE));
+        } else {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, FALSE));
+        }
+    }
+
+    @BuildStep
+    void activateTracing(Capabilities capabilities,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+
+        boolean activate = shouldActivateService(capabilities,
+                quarkusConfig.tracingEnabled,
+                "quarkus-smallrye-opentracing",
+                Capability.OPENTRACING,
+                "quarkus.smallrye-graphql.tracing.enabled");
+        if (activate) {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, TRUE));
+        } else {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, FALSE));
+        }
+    }
+
+    @BuildStep
+    void activateValidation(Capabilities capabilities,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+
+        boolean activate = shouldActivateService(capabilities,
+                quarkusConfig.validationEnabled,
+                "quarkus-hibernate-validator",
+                Capability.HIBERNATE_VALIDATOR,
+                "quarkus.smallrye-graphql.validation.enabled");
+        if (activate) {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, TRUE));
+        } else {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, FALSE));
+        }
+    }
+
+    @BuildStep
+    void activateEventing(BuildProducer<SystemPropertyBuildItem> systemProperties) {
+        if (quarkusConfig.eventsEnabled) {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_EVENTS, TRUE));
+        } else {
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_EVENTS, FALSE));
+        }
+    }
+
+    private boolean shouldActivateService(Capabilities capabilities,
+            Optional<Boolean> serviceEnabled,
+            String linkedExtensionName,
+            Capability linkedCapability,
+            String configKey) {
+
+        return shouldActivateService(capabilities, serviceEnabled, capabilities.isPresent(linkedCapability),
+                linkedExtensionName, linkedCapability.getName(), configKey);
+    }
+
+    private boolean shouldActivateService(Capabilities capabilities,
+            Optional<Boolean> serviceEnabled,
+            boolean linkedCapabilityIsPresent,
+            String linkedExtensionName,
+            String linkedCapabilityName,
+            String configKey) {
+
+        if (serviceEnabled.isPresent()) {
+            // The user explicitly asked from something
+            boolean isEnabled = serviceEnabled.get();
+            if (isEnabled && !linkedCapabilityIsPresent) {
+                // Warn and disable
+                LOG.warnf(SERVICE_NOT_AVAILABLE_WARNING, configKey, linkedExtensionName, linkedCapabilityName);
+            }
+            return (isEnabled && linkedCapabilityIsPresent);
+        } else {
+            // Auto dis/enable
+            return linkedCapabilityIsPresent;
+        }
+    }
+
+    // UI Related
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

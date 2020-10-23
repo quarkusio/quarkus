@@ -53,6 +53,7 @@ public class GraphQLNamingTest extends AbstractGraphQLTest {
     private static Map<String, String> configuration() {
         Map<String, String> m = new HashMap<>();
         m.put("quarkus.smallrye-graphql.auto-name-strategy", "MergeInnerClass");
+        m.put("quarkus.smallrye-graphql.events.enabled", "true");
         return m;
 
     }

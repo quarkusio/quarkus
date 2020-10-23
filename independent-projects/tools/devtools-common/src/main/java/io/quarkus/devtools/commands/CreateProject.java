@@ -119,6 +119,38 @@ public class CreateProject {
         return this;
     }
 
+    /**
+     * @deprecated As of release 1.10, codestarts are default. Legacy codegen is scheduled to be removed:
+     *             https://github.com/quarkusio/quarkus/issues/12897
+     */
+    @Deprecated
+    public CreateProject codestartsEnabled(boolean value) {
+        return this.legacyCodegen(!value);
+    }
+
+    /**
+     * @deprecated As of release 1.10, codestarts are default. Legacy codegen is scheduled to be removed:
+     *             https://github.com/quarkusio/quarkus/issues/12897
+     */
+    @Deprecated
+    public CreateProject codestartsEnabled() {
+        return this.legacyCodegen(false);
+    }
+
+    /**
+     * @deprecated As of release 1.10, codestarts are default. Legacy codegen is scheduled to be removed:
+     *             https://github.com/quarkusio/quarkus/issues/12897
+     */
+    @Deprecated
+    public CreateProject legacyCodegen() {
+        return this.legacyCodegen(true);
+    }
+
+    /**
+     * @deprecated As of release 1.10, codestarts are default. Legacy codegen is scheduled to be removed:
+     *             https://github.com/quarkusio/quarkus/issues/12897
+     */
+    @Deprecated
     public CreateProject legacyCodegen(boolean value) {
         this.legacyCodegen = value;
         return this;

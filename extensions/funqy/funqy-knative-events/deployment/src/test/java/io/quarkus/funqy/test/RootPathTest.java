@@ -12,28 +12,23 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class RootPathTest {
+
     private static final String APP_PROPS = "" +
             "quarkus.http.root-path=/api\n" +
-            "quarkus.funqy.export=get\n";
+            "quarkus.funqy.export=toLowerCase\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addClasses(PrimitiveFunctions.class, GreetingFunctions.class, Greeting.class, GreetingService.class,
-                            GreetingTemplate.class));
+                    .addClasses(PrimitiveFunctions.class));
 
     @Test
-    public void testGetOrPost() throws Exception {
+    public void testRoot() {
         // RestAssured is aware of quarkus.http.root-path
-        RestAssured.given().get("/get")
-                .then().statusCode(200).body(equalTo("\"get\""));
-        RestAssured.given().post("/get")
-                .then().statusCode(200).body(equalTo("\"get\""));
-        RestAssured.given().get("/")
-                .then().statusCode(200).body(equalTo("\"get\""));
-        RestAssured.given().post("/")
-                .then().statusCode(200).body(equalTo("\"get\""));
+        RestAssured.given().contentType("application/json").body("\"Hello Test\"").post("/")
+                .then().statusCode(200).body(equalTo("\"hello test\""));
+        RestAssured.given().contentType("application/json").body("\"Hello Test\"").post("/toLowerCase")
+                .then().statusCode(200).body(equalTo("\"hello test\""));
     }
-
 }

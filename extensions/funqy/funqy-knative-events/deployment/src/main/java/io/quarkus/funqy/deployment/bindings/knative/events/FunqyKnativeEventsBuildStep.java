@@ -72,10 +72,6 @@ public class FunqyKnativeEventsBuildStep {
             return;
 
         feature.produce(new FeatureBuildItem(FUNQY_KNATIVE_FEATURE));
-        Handler<RoutingContext> handler = binding.start(funqyConfig, eventsConfig, vertx.getVertx(),
-                shutdown,
-                beanContainer.getValue(),
-                executorBuildItem.getExecutorProxy());
 
         String rootPath = httpConfig.rootPath;
         if (rootPath == null) {
@@ -84,11 +80,16 @@ public class FunqyKnativeEventsBuildStep {
             rootPath += "/";
         }
 
-        routes.produce(new RouteBuildItem(rootPath, handler, false));
+        Handler<RoutingContext> handler = binding.start(rootPath, funqyConfig, eventsConfig, vertx.getVertx(),
+                shutdown,
+                beanContainer.getValue(),
+                executorBuildItem.getExecutorProxy());
+
+        routes.produce(new RouteBuildItem("/", handler, false));
 
         for (FunctionBuildItem function : functions) {
             String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
-            String path = rootPath + name;
+            String path = "/" + name;
             routes.produce(new RouteBuildItem(path, handler, false));
         }
     }

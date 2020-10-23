@@ -6,19 +6,24 @@ import java.util.List;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceProviderResolver;
 
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
+
 final class FastBootHibernateReactivePersistenceProviderResolver implements PersistenceProviderResolver {
 
-    private static final List<PersistenceProvider> HARDCODED_PROVIDER_LIST = Collections
-            .singletonList(new FastBootHibernateReactivePersistenceProvider());
+    private final List<PersistenceProvider> persistenceProviders;
+
+    public FastBootHibernateReactivePersistenceProviderResolver(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+        persistenceProviders = Collections
+                .singletonList(new FastBootHibernateReactivePersistenceProvider(hibernateOrmRuntimeConfig));
+    }
 
     @Override
     public List<PersistenceProvider> getPersistenceProviders() {
-        return HARDCODED_PROVIDER_LIST;
+        return persistenceProviders;
     }
 
     @Override
     public void clearCachedProviders() {
         // done!
     }
-
 }

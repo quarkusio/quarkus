@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment.metrics;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -10,6 +11,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
+import io.quarkus.hibernate.orm.deployment.PersistenceProviderSetUpBuildItem;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateMetricsRecorder;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
@@ -18,10 +20,12 @@ import io.quarkus.runtime.metrics.MetricsFactory;
  * Avoid hard dependencies in main processor
  */
 public final class HibernateOrmMetricsProcessor {
+
     @BuildStep
     @Record(RUNTIME_INIT)
     public void metrics(HibernateOrmConfig config,
             HibernateMetricsRecorder metricsRecorder,
+            List<PersistenceProviderSetUpBuildItem> persistenceUnitsStarted,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             BuildProducer<MetricsFactoryConsumerBuildItem> datasourceMetrics) {
 

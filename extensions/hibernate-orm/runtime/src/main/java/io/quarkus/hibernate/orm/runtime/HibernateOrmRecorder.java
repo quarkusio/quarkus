@@ -45,6 +45,10 @@ public class HibernateOrmRecorder {
         Hibernate.featureInit(enabled);
     }
 
+    public void setupPersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig);
+    }
+
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies proxyDefinitions) {

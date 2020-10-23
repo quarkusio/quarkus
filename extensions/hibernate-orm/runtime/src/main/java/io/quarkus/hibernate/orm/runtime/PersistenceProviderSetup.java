@@ -6,9 +6,13 @@ public final class PersistenceProviderSetup {
         // not to be constructed
     }
 
-    public static void registerPersistenceProvider() {
+    public static void registerStaticInitPersistenceProvider() {
         javax.persistence.spi.PersistenceProviderResolverHolder
-                .setPersistenceProviderResolver(new FastBootHibernatePersistenceProviderResolver());
+                .setPersistenceProviderResolver(new StaticInitHibernatePersistenceProviderResolver());
     }
 
+    public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+        javax.persistence.spi.PersistenceProviderResolverHolder
+                .setPersistenceProviderResolver(new FastBootHibernatePersistenceProviderResolver(hibernateOrmRuntimeConfig));
+    }
 }

@@ -67,7 +67,7 @@ public class SseTestCase {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + "sse/multi");
         Multi<String> multi = target.request().rx(QuarkusRestMultiInvoker.class).get(String.class);
-        List<String> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(10));
+        List<String> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(30));
         Assertions.assertEquals(2, list.size());
         Assertions.assertEquals("hello", list.get(0));
         Assertions.assertEquals("stef", list.get(1));

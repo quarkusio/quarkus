@@ -26,7 +26,7 @@ import javax.inject.Qualifier;
  *     RedisClient client;
  * </pre>
  */
-@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
+@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER })
 @Retention(RUNTIME)
 @Documented
 @Qualifier

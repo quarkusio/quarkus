@@ -58,7 +58,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
     }
 
     @Test
-    @Timeout(2)
+    @Timeout(5)
     @DisplayName("Should generate correctly multiple times in parallel with multiple threads")
     void generateMultipleTimes() throws InterruptedException {
         final ExecutorService executorService = Executors.newFixedThreadPool(4);

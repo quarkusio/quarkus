@@ -4,6 +4,15 @@ type: code
 tags: example
 language:
   base:
+    data:
+      title: Funqy HTTP example
+      description: |
+        <p>Quark is a type of elementary particle and a fundamental constituent of matter, Charm is a Quark flavor. Try to guess the Charm Quark symbol with this Funqy function by changing the <code>value</code> query param.</p>
+        <p><b>Go Subatomic!</b></p>
+      paths:
+        - method: GET
+          path: /charm?value=s
+      guide: https://quarkus.io/guides/funqy-http
     dependencies:
       - io.quarkus:quarkus-funqy-http
     test-dependencies:

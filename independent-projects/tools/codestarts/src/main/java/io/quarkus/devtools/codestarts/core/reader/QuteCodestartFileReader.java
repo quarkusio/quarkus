@@ -95,6 +95,9 @@ final class QuteCodestartFileReader implements CodestartFileReader {
         }
 
         public String map(Object result, Expression expression) {
+            if (expression.toOriginalString().equals("merged-content")) {
+                return "{merged-content}";
+            }
             throw new TemplateException("Missing required data: {" + expression.toOriginalString() + "}");
         }
     }

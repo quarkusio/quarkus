@@ -6,9 +6,6 @@ tags:
   - singleton-example
 language:
   base:
-    shared-data:
-      supports:
-        dev-mode: false
     dependencies:
       - io.quarkus:quarkus-amazon-lambda
     test-dependencies:

@@ -70,10 +70,10 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static void flatten(String prefix, Map<String, String> target, Map<String, ?> map) {
+    static void flatten(String prefix, Map<String, String> target, Map<String, ?> map) {
         for (Map.Entry entry : map.entrySet()) {
             if (entry.getValue() instanceof Map) {
-                flatten(entry.getKey() + ".", target, (Map) entry.getValue());
+                flatten(prefix + entry.getKey() + ".", target, (Map) entry.getValue());
             } else {
                 // TODO: handle different types of values
                 target.put(prefix + entry.getKey(), entry.getValue().toString());

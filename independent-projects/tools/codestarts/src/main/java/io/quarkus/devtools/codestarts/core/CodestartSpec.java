@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 public final class CodestartSpec {
@@ -118,6 +117,8 @@ public final class CodestartSpec {
         private static final String GROUP_ID = "groupId";
         private static final String ARTIFACT_ID = "artifactId";
         private static final String VERSION = "version";
+        private static final String FORMATTED_GAV = "formatted-gav";
+        private static final String FORMATTED_GA = "formatted-ga";
 
         public CodestartDep() {
         }
@@ -130,9 +131,15 @@ public final class CodestartSpec {
             }
             this.put(GROUP_ID, split[0]);
             this.put(ARTIFACT_ID, split[1]);
+
             if (split.length == 3) {
                 this.put(VERSION, split[2]);
+                this.put(FORMATTED_GA, split[0] + ":" + split[1]);
+            } else {
+                this.put(FORMATTED_GA, expression);
             }
+            this.put(FORMATTED_GAV, expression);
+
         }
 
         public String getGroupId() {
@@ -149,8 +156,7 @@ public final class CodestartSpec {
 
         @Override
         public String toString() {
-            final String version = Optional.ofNullable(getVersion()).map(v -> ":" + v).orElse("");
-            return getGroupId() + ":" + getArtifactId() + version;
+            return this.get(FORMATTED_GAV);
         }
 
         @Override

@@ -4,9 +4,15 @@ type: code
 tags: example
 language:
   base:
+    data:
+      title: RESTEasy JSON serialisation using Jackson
+      description: |
+        <p>This example demonstrate RESTEasy JSON serialisation by letting you list, add and remove quark types from a list.</p>
+        <p><b>Quarked!</b></p>
+      guide: https://quarkus.io/guides/rest-json
+      paths:
+        - method: GET/POST/DELETE
+          path: /resteasy-jackson/quarks/
     dependencies:
       - io.quarkus:quarkus-resteasy
       - io.quarkus:quarkus-resteasy-jackson
-    test-dependencies:
-      - io.rest-assured:rest-assured
-

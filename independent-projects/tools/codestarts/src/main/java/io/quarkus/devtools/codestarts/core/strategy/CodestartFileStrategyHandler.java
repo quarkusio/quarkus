@@ -19,6 +19,7 @@ public interface CodestartFileStrategyHandler {
     Map<String, CodestartFileStrategyHandler> BY_NAME = Stream
             .of(DEFAULT_STRATEGY,
                     new AppendCodestartFileStrategyHandler(),
+                    new ContentMergeCodestartFileStrategyHandler(),
                     new ExecutableFileStrategyHandler(),
                     new ReplaceCodestartFileStrategyHandler(),
                     new ForbiddenCodestartFileStrategyHandler(),

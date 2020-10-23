@@ -4,7 +4,15 @@ type: code
 tags: example
 language:
   base:
+    data:
+      title: Qute example
+      description: |
+        <p>This example uses a Qute template to render a subatomic-particle generator web page.</p>
+        <p><b>Go subatomic!</b></p>
+      paths:
+        - method: GET
+          path: /qute/quarks
+      guide: https://quarkus.io/guides/qute
+      reference-guide: https://quarkus.io/guides/qute-reference
     dependencies:
       - io.quarkus:quarkus-resteasy-qute
-    test-dependencies:
-      - io.rest-assured:rest-assured

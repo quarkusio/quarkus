@@ -6,3 +6,5 @@ language:
       language:
         dir:
           code: src/main/kotlin
+    dependencies:
+      io.quarkus:quarkus-kotlin

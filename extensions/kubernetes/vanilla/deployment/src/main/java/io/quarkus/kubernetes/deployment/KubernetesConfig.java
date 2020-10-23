@@ -220,6 +220,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     Map<String, HostAliasConfig> hostAliases;
 
     /**
+     * Resources requirements
+     */
+    @ConfigItem
+    ResourcesConfig resources;
+
+    /**
      * If true, a Kubernetes Ingress will be created
      */
     @ConfigItem
@@ -393,6 +399,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Map<String, HostAliasConfig> getHostAliases() {
         return hostAliases;
+    }
+
+    public ResourcesConfig getResources() {
+        return resources;
     }
 
     @Override

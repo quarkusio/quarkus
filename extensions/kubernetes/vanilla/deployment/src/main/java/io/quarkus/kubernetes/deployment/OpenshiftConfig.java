@@ -221,7 +221,13 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Map<String, HostAliasConfig> hostAliases;
 
     /**
-     * If true, an OpenShift Route will be created
+     * Resources requirements
+     */
+    @ConfigItem
+    ResourcesConfig resources;
+
+    /**
+     * If true, an Openshift Route will be created
      */
     @ConfigItem
     boolean expose;
@@ -343,6 +349,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Map<String, HostAliasConfig> getHostAliases() {
         return hostAliases;
+    }
+
+    public ResourcesConfig getResources() {
+        return resources;
     }
 
     public Map<String, ContainerConfig> getInitContainers() {

@@ -197,6 +197,12 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem
     Map<String, HostAliasConfig> hostAliases;
 
+    /**
+     * Resources requirements
+     */
+    @ConfigItem
+    ResourcesConfig resources;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -317,6 +323,10 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Map<String, HostAliasConfig> getHostAliases() {
         return hostAliases;
+    }
+
+    public ResourcesConfig getResources() {
+        return resources;
     }
 
     /**

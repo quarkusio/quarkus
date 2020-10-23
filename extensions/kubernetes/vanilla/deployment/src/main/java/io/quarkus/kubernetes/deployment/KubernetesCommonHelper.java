@@ -38,6 +38,10 @@ import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
 import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
+import io.dekorate.kubernetes.decorator.ApplyLimitsCpuDecorator;
+import io.dekorate.kubernetes.decorator.ApplyLimitsMemoryDecorator;
+import io.dekorate.kubernetes.decorator.ApplyRequestsCpuDecorator;
+import io.dekorate.kubernetes.decorator.ApplyRequestsMemoryDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
@@ -168,7 +172,7 @@ public class KubernetesCommonHelper {
 
     /**
      * Creates container decorator build items.
-     * 
+     *
      * @param target The deployment target (e.g. kubernetes, openshift, knative)
      * @param name The name of the resource to accept the configuration
      * @param config The {@link PlatformConfiguration} instance
@@ -197,7 +201,7 @@ public class KubernetesCommonHelper {
 
     /**
      * Creates pod decorator build items.
-     * 
+     *
      * @param target The deployment target (e.g. kubernetes, openshift, knative)
      * @param name The name of the resource to accept the configuration
      * @param config The {@link PlatformConfiguration} instance
@@ -223,6 +227,22 @@ public class KubernetesCommonHelper {
 
         config.getSidecars().entrySet().forEach(e -> {
             result.add(new DecoratorBuildItem(target, new AddSidecarDecorator(name, ContainerConverter.convert(e))));
+        });
+
+        config.getResources().limits.cpu.ifPresent(c -> {
+            result.add(new DecoratorBuildItem(target, new ApplyLimitsCpuDecorator(name, c)));
+        });
+
+        config.getResources().limits.memory.ifPresent(m -> {
+            result.add(new DecoratorBuildItem(target, new ApplyLimitsMemoryDecorator(name, m)));
+        });
+
+        config.getResources().requests.cpu.ifPresent(c -> {
+            result.add(new DecoratorBuildItem(target, new ApplyRequestsCpuDecorator(name, c)));
+        });
+
+        config.getResources().requests.memory.ifPresent(m -> {
+            result.add(new DecoratorBuildItem(target, new ApplyRequestsMemoryDecorator(name, m)));
         });
 
         return result;

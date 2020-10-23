@@ -68,6 +68,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Map<String, HostAliasConfig> getHostAliases();
 
+    ResourcesConfig getResources();
+
     default boolean isExpose() {
         return false;
     }

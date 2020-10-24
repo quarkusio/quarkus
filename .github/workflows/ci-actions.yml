@@ -511,7 +511,7 @@ jobs:
               -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M \
               -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true \
               -Dkeycloak.profile.feature.upload_scripts=enabled" \
-            -d quay.io/keycloak/keycloak:11.0.1
+            -d quay.io/keycloak/keycloak:11.0.2
         if: matrix.keycloak
       - name: Elasticsearch Service
         run: |

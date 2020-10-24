@@ -28,6 +28,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.execution.DefaultMavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -49,6 +51,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
+import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsUtils;
 
@@ -160,18 +163,52 @@ public class CreateProjectMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException("Could not create directory " + outputDirectory, e);
         }
-        File projectRoot = outputDirectory;
-        File pom = new File(projectRoot, "pom.xml");
 
-        if (pom.isFile()) {
-            throw new MojoExecutionException("Unable to generate the project in a directory that already contains a pom.xml");
-        } else {
-            askTheUserForMissingValues();
-            projectRoot = new File(outputDirectory, projectArtifactId);
-            if (projectRoot.exists()) {
-                throw new MojoExecutionException("Unable to create the project, " +
-                        "the directory " + projectRoot.getAbsolutePath() + " already exists");
+        File projectRoot = outputDirectory;
+        File pom = project != null ? project.getFile() : null;
+        Model parentPomModel = null;
+
+        boolean containsAtLeastOneGradleFile = false;
+        for (String gradleFile : Arrays.asList("build.gradle", "settings.gradle", "build.gradle.kts", "settings.gradle.kts")) {
+            containsAtLeastOneGradleFile |= new File(projectRoot, gradleFile).isFile();
+        }
+
+        BuildTool buildToolEnum = BuildTool.findTool(buildTool);
+        if (buildToolEnum == null) {
+            String validBuildTools = String.join(",",
+                    Arrays.asList(BuildTool.values()).stream().map(BuildTool::toString).collect(Collectors.toList()));
+            throw new IllegalArgumentException("Choose a valid build tool. Accepted values are: " + validBuildTools);
+        }
+        if (BuildTool.MAVEN.equals(buildToolEnum)) {
+            if (pom != null && pom.isFile()) {
+                try {
+                    parentPomModel = MojoUtils.readPom(pom);
+                    if (!"pom".equals(parentPomModel.getPackaging())) {
+                        throw new MojoExecutionException(
+                                "The parent project must have a packaging type of POM. Current packaging: "
+                                        + parentPomModel.getPackaging());
+                    }
+                } catch (IOException e) {
+                    throw new MojoExecutionException("Could not access parent pom.", e);
+                }
+            } else if (containsAtLeastOneGradleFile) {
+                throw new MojoExecutionException(
+                        "You are trying to create maven project in a directory that contains only gradle build files.");
             }
+        } else if (BuildTool.GRADLE.equals(buildToolEnum) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildToolEnum)) {
+            if (containsAtLeastOneGradleFile) {
+                throw new MojoExecutionException("Adding subprojects to gradle projects is not implemented.");
+            } else if (pom != null && pom.isFile()) {
+                throw new MojoExecutionException(
+                        "You are trying to create gradle project in a directory that contains only maven build files.");
+            }
+        }
+
+        askTheUserForMissingValues();
+        projectRoot = new File(outputDirectory, projectArtifactId);
+        if (projectRoot.exists()) {
+            throw new MojoExecutionException("Unable to create the project, " +
+                    "the directory " + projectRoot.getAbsolutePath() + " already exists");
         }
 
         boolean success;
@@ -181,12 +218,6 @@ public class CreateProjectMojo extends AbstractMojo {
             final SourceType sourceType = CreateProject.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
-            BuildTool buildToolEnum = BuildTool.findTool(buildTool);
-            if (buildToolEnum == null) {
-                String validBuildTools = String.join(",",
-                        Arrays.asList(BuildTool.values()).stream().map(BuildTool::toString).collect(Collectors.toList()));
-                throw new IllegalArgumentException("Choose a valid build tool. Accepted values are: " + validBuildTools);
-            }
             final CreateProject createProject = new CreateProject(projectDirPath, platform)
                     .buildTool(buildToolEnum)
                     .groupId(projectGroupId)
@@ -202,7 +233,21 @@ public class CreateProjectMojo extends AbstractMojo {
             }
 
             success = createProject.execute().isSuccess();
-
+            if (success && parentPomModel != null && BuildTool.MAVEN.equals(buildToolEnum)) {
+                // Write to parent pom and submodule pom if project creation is successful
+                if (!parentPomModel.getModules().contains(this.projectArtifactId)) {
+                    parentPomModel.addModule(this.projectArtifactId);
+                }
+                File subModulePomFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
+                Model subModulePomModel = MojoUtils.readPom(subModulePomFile);
+                Parent parent = new Parent();
+                parent.setGroupId(parentPomModel.getGroupId());
+                parent.setArtifactId(parentPomModel.getArtifactId());
+                parent.setVersion(parentPomModel.getVersion());
+                subModulePomModel.setParent(parent);
+                MojoUtils.write(parentPomModel, pom);
+                MojoUtils.write(subModulePomModel, subModulePomFile);
+            }
             if (legacyCodegen) {
                 File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
                 if (BuildTool.MAVEN.equals(buildToolEnum)) {

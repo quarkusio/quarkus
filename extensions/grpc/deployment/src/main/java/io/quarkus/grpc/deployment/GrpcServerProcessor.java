@@ -4,10 +4,13 @@ import static io.quarkus.deployment.Feature.GRPC_SERVER;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.grpc.internal.ServerImpl;
@@ -47,7 +50,13 @@ public class GrpcServerProcessor {
                 .getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
         for (ClassInfo service : bindableServices) {
             if (!Modifier.isAbstract(service.flags()) && service.classAnnotation(DotNames.SINGLETON) != null) {
-                bindables.produce(new BindableServiceBuildItem(service.name()));
+                BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
+                for (MethodInfo method : service.methods()) {
+                    if (method.hasAnnotation(GrpcDotNames.BLOCKING)) {
+                        item.registerBlockingMethod(method.name());
+                    }
+                }
+                bindables.produce(item);
             }
         }
     }
@@ -78,8 +87,17 @@ public class GrpcServerProcessor {
     ServiceStartBuildItem build(GrpcServerRecorder recorder, GrpcConfiguration config,
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
             VertxBuildItem vertx) {
+
+        // Build the list of blocking methods per service implementation
+        Map<String, List<String>> blocking = new HashMap<>();
+        for (BindableServiceBuildItem bindable : bindables) {
+            if (bindable.hasBlockingMethods()) {
+                blocking.put(bindable.serviceClass.toString(), bindable.blockingMethods);
+            }
+        }
+
         if (!bindables.isEmpty()) {
-            recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown);
+            recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown, blocking);
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;

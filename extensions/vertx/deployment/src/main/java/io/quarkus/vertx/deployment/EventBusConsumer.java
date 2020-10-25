@@ -1,7 +1,12 @@
 package io.quarkus.vertx.deployment;
 
 import static io.quarkus.vertx.ConsumeEvent.FAILURE_CODE;
-import static io.quarkus.vertx.deployment.VertxConstants.*;
+import static io.quarkus.vertx.deployment.VertxConstants.AXLE_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.RX_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 
 import java.lang.annotation.Annotation;
 import java.util.concurrent.CompletableFuture;
@@ -10,6 +15,7 @@ import java.util.function.BiConsumer;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -35,6 +41,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -88,6 +95,7 @@ class EventBusConsumer {
             .ofMethod(Throwable.class, "getMessage", String.class);
     protected static final MethodDescriptor THROWABLE_TO_STRING = MethodDescriptor
             .ofMethod(Throwable.class, "toString", String.class);
+    protected static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
 
     static String generateInvoker(BeanInfo bean, MethodInfo method,
             AnnotationInstance consumeEvent,
@@ -118,7 +126,8 @@ class EventBusConsumer {
         ResultHandle containerHandle = invoke.invokeStaticMethod(ARC_CONTAINER);
 
         AnnotationValue blocking = consumeEvent.value("blocking");
-        if (blocking != null && blocking.asBoolean()) {
+        boolean blockingAnnotation = method.hasAnnotation(BLOCKING);
+        if ((blocking != null && blocking.asBoolean()) || blockingAnnotation) {
             // Blocking operation must be performed on a worker thread
             ResultHandle vertxHandle = invoke
                     .invokeInterfaceMethod(INSTANCE_HANDLE_GET,

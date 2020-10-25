@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.eventbus.EventBus;
@@ -181,6 +182,18 @@ public class MessageConsumerMethodTest {
         assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
     }
 
+    @Test
+    public void testBlockingConsumerUsingSmallRyeBlocking() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        SimpleBean.latch = new CountDownLatch(1);
+        eventBus.publish("worker", "Hello");
+        SimpleBean.latch.await(2, TimeUnit.SECONDS);
+        assertEquals(1, SimpleBean.MESSAGES.size());
+        String message = SimpleBean.MESSAGES.get(0);
+        assertTrue(message.contains("hello::true"));
+    }
+
     static class SimpleBean {
 
         static volatile CountDownLatch latch;
@@ -249,6 +262,13 @@ public class MessageConsumerMethodTest {
         @ConsumeEvent("request")
         String requestContextActive(String message) {
             return transformer.transform(message);
+        }
+
+        @ConsumeEvent(value = "worker")
+        @Blocking
+        void consumeBlockingUsingRunOnWorkerThread(String message) {
+            MESSAGES.add(message.toLowerCase() + "::" + Context.isOnWorkerThread());
+            latch.countDown();
         }
     }
 

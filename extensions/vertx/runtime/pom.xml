@@ -35,6 +35,10 @@
             <artifactId>quarkus-vertx-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-axle-generator</artifactId>
             <exclusions>

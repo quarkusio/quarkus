@@ -11,6 +11,7 @@ import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
@@ -49,5 +50,6 @@ final class DotNames {
     static final DotName LIST = DotName.createSimple(List.class.getName());
     static final DotName EXCEPTION = DotName.createSimple(Exception.class.getName());
     static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
+    static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
 
 }

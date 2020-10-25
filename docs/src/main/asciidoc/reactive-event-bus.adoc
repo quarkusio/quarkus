@@ -89,6 +89,18 @@ void consumeBlocking(String message) {
     // Something blocking
 }
 ----
+
+Alternatively, you can annotate your method with `@io.smallrye.common.annotation.Blocking`:
+[source, java]
+----
+@ConsumeEvent(value = "blocking-consumer")
+@Blocking
+void consumeBlocking(String message) {
+    // Something blocking
+}
+----
+
+When using `@Blocking`, it ignores the value of the `blocking` attribute of `@ConsumeEvent`.
 ====
 
 Asynchronous processing is also possible by returning either an `io.smallrye.mutiny.Uni` or a `java.util.concurrent.CompletionStage`:

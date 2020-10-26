@@ -17,11 +17,11 @@ import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
 
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyReader;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.Encode;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
@@ -35,7 +35,8 @@ import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 @Produces("application/x-www-form-urlencoded")
 @Consumes("application/x-www-form-urlencoded")
 @ConstrainedTo(RuntimeType.CLIENT)
-public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>, QuarkusRestMessageBodyWriter<MultivaluedMap> {
+public class FormUrlEncodedProvider
+        implements QuarkusRestMessageBodyReader<MultivaluedMap>, QuarkusRestMessageBodyWriter<MultivaluedMap> {
 
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return MultivaluedMap.class.equals(type);
@@ -43,6 +44,21 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
 
     public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
+        return doReadFrom(mediaType, entityStream);
+    }
+
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {
+        return MultivaluedMap.class.equals(type);
+    }
+
+    @Override
+    public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, MediaType mediaType,
+            QuarkusRestRequestContext context) throws WebApplicationException, IOException {
+        return doReadFrom(mediaType, context.getInputStream());
+    }
+
+    private MultivaluedMap<String, String> doReadFrom(MediaType mediaType, InputStream entityStream) throws IOException {
         String charset = MessageReaderUtil.charsetFromMediaType(mediaType);
         return Encode.decode(parseForm(entityStream, mediaType), charset);
     }

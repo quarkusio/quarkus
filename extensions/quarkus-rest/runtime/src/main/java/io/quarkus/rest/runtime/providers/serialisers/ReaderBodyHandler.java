@@ -8,12 +8,16 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-public class ReaderBodyHandler implements MessageBodyWriter<Reader>, MessageBodyReader<Reader> {
+import io.quarkus.rest.runtime.core.LazyMethod;
+import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyReader;
+
+public class ReaderBodyHandler implements MessageBodyWriter<Reader>, QuarkusRestMessageBodyReader<Reader> {
 
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return type.equals(Reader.class);
@@ -22,6 +26,17 @@ public class ReaderBodyHandler implements MessageBodyWriter<Reader>, MessageBody
     public Reader readFrom(Class<Reader> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
         return new InputStreamReader(entityStream, MessageReaderUtil.charsetFromMediaType(mediaType));
+    }
+
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {
+        return type.equals(Reader.class);
+    }
+
+    @Override
+    public Reader readFrom(Class<Reader> type, Type genericType, MediaType mediaType, QuarkusRestRequestContext context)
+            throws WebApplicationException, IOException {
+        return new InputStreamReader(context.getInputStream(), MessageReaderUtil.charsetFromMediaType(mediaType));
     }
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

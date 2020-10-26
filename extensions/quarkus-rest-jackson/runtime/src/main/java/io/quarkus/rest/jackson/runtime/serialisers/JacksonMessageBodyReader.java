@@ -9,14 +9,16 @@ import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
+import io.quarkus.rest.runtime.core.LazyMethod;
+import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyReader;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
 
-public class JacksonMessageBodyReader implements MessageBodyReader<Object> {
+public class JacksonMessageBodyReader implements QuarkusRestMessageBodyReader<Object> {
 
     private final ObjectReader reader;
 
@@ -33,6 +35,21 @@ public class JacksonMessageBodyReader implements MessageBodyReader<Object> {
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+        return doReadFrom(type, genericType, entityStream);
+    }
+
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {
+        return true;
+    }
+
+    @Override
+    public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, QuarkusRestRequestContext context)
+            throws WebApplicationException, IOException {
+        return doReadFrom(type, genericType, context.getInputStream());
+    }
+
+    private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
         if (entityStream instanceof EmptyInputStream) {
             return null;
         }

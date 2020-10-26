@@ -1,6 +1,6 @@
 package io.quarkus.rest.runtime.handlers;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.List;
 
@@ -18,6 +18,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestReaderInterceptorContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyReader;
 
 public class RequestDeserializeHandler implements ServerRestHandler {
 
@@ -50,21 +51,19 @@ public class RequestDeserializeHandler implements ServerRestHandler {
         if (readers.isEmpty()) {
             throw new NotSupportedException();
         }
-        InputStream in = requestContext.getInputStream();
-        Annotation[] annotations = requestContext.getTarget().getLazyMethod().getParameterAnnotations(parameterIndex);
         for (MessageBodyReader<?> reader : readers) {
-            if (reader.isReadable(type, type, annotations, requestType)) {
+            if (isReadable(reader, requestContext, requestType)) {
                 Object result;
                 ReaderInterceptor[] interceptors = requestContext.getReaderInterceptors();
                 try {
                     try {
                         if (interceptors == null) {
-                            result = reader.readFrom((Class) type, type, annotations, requestType,
-                                    requestContext.getHttpHeaders().getRequestHeaders(), in);
+                            result = readFrom(reader, requestContext, requestType);
                         } else {
                             result = new QuarkusRestReaderInterceptorContext(requestContext,
-                                    annotations,
-                                    type, type, requestType, reader, in, interceptors, serialisers).proceed();
+                                    getAnnotations(requestContext),
+                                    type, type, requestType, reader, requestContext.getInputStream(), interceptors, serialisers)
+                                            .proceed();
                         }
                     } catch (NoContentException e) {
                         throw new BadRequestException(e);
@@ -79,5 +78,27 @@ public class RequestDeserializeHandler implements ServerRestHandler {
             }
         }
         throw new NotSupportedException();
+    }
+
+    private boolean isReadable(MessageBodyReader<?> reader, QuarkusRestRequestContext requestContext, MediaType requestType) {
+        if (reader instanceof QuarkusRestMessageBodyReader) {
+            return ((QuarkusRestMessageBodyReader<?>) reader).isReadable(type, type, requestContext.getTarget().getLazyMethod(),
+                    requestType);
+        }
+        return reader.isReadable(type, type, getAnnotations(requestContext), requestType);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Object readFrom(MessageBodyReader<?> reader, QuarkusRestRequestContext requestContext, MediaType requestType)
+            throws IOException {
+        if (reader instanceof QuarkusRestMessageBodyReader) {
+            return ((QuarkusRestMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
+        }
+        return reader.readFrom((Class) type, type, getAnnotations(requestContext), requestType,
+                requestContext.getHttpHeaders().getRequestHeaders(), requestContext.getInputStream());
+    }
+
+    private Annotation[] getAnnotations(QuarkusRestRequestContext requestContext) {
+        return requestContext.getTarget().getLazyMethod().getParameterAnnotations(parameterIndex);
     }
 }

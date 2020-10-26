@@ -29,6 +29,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
+import io.quarkus.resteasy.runtime.ResteasyServlet;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServletMappingBuildItem;
 import io.quarkus.undertow.deployment.FilterBuildItem;
@@ -114,7 +115,7 @@ public class ResteasyServletProcessor {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ResteasyFilter.class.getName()));
             } else {
                 String mappingPath = getMappingPath(path);
-                servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName())
+                servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyServlet.class.getName())
                         .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
             }

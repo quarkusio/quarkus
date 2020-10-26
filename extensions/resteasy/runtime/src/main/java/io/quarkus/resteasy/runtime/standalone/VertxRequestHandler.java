@@ -3,7 +3,6 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.enterprise.inject.Instance;
@@ -20,15 +19,14 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.resteasy.runtime.ContextUtil;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -131,12 +129,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             try {
                 ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request, routingContext));
                 ResteasyContext.pushContext(RoutingContext.class, routingContext);
-                MultiMap qheaders = routingContext.request().headers();
-                if (qheaders instanceof QuarkusHttpHeaders) {
-                    for (Map.Entry<Class<?>, Object> entry : ((QuarkusHttpHeaders) qheaders).getContextObjects().entrySet()) {
-                        ResteasyContext.pushContext((Class) entry.getKey(), entry.getValue());
-                    }
-                }
+                ContextUtil.pushContext(routingContext);
                 dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true);
             } catch (Failure e1) {
                 vertxResponse.setStatus(e1.getErrorCode());
@@ -175,4 +168,5 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             }
         }
     }
+
 }

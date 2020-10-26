@@ -161,3 +161,79 @@ As usual, the application can be packaged using `./mvnw clean package` and execu
 You can also build the native executable using `./mvnw package -Pnative`.
 
 You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].
+
+== Weboscket Clients
+
+Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection.
+
+When you connect to the server you can either pass in the Class of the annotated client endpoint you want to use, or a an instance of `javax.websocket.Endpoint`. If you
+are using the annotated endpoint then you can use the exact same annotations as you can on the server, except it must be annotated with `@ClientEndpoint` instead of
+`@ServerEndpoint`.
+
+The example below shows the client being used to test the chat endpoint above.
+
+[source,java]
+----
+package org.acme.websockets;
+
+import java.net.URI;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ContainerProvider;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class ChatTest {
+
+    private static final LinkedBlockingDeque<String> MESSAGES = new LinkedBlockingDeque<>();
+
+    @TestHTTPResource("/chat/stu")
+    URI uri;
+
+    @Test
+    public void testWebsocketChat() throws Exception {
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(Client.class, uri)) {
+            Assertions.assertEquals("CONNECT", MESSAGES.poll(10, TimeUnit.SECONDS));
+            Assertions.assertEquals("User stu joined", MESSAGES.poll(10, TimeUnit.SECONDS));
+            session.getAsyncRemote().sendText("hello world");
+            Assertions.assertEquals(">> stu: hello world", MESSAGES.poll(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @ClientEndpoint
+    public static class Client {
+
+        @OnOpen
+        public void open(Session session) {
+            MESSAGES.add("CONNECT");
+            // Send a message to indicate that we are ready,
+            // as the message handler may not be registered immediately after this callback.
+            session.getAsyncRemote().sendText("_ready_");
+        }
+
+        @OnMessage
+        void message(String msg) {
+            MESSAGES.add(msg);
+        }
+
+    }
+
+}
+----
+
+
+== More WebSocket Information
+
+The Quarkus WebSocket implementation is an implementation of link:https://eclipse-ee4j.github.io/websocket-api/[Jakarta Websockets].
+
+

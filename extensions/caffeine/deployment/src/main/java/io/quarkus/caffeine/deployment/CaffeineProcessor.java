@@ -16,7 +16,9 @@ public class CaffeineProcessor {
 
     @BuildStep
     ReflectiveClassBuildItem cacheClasses() throws IOException {
-        //todo: how to we want to handle this? There are a lot of different cache classes
+        // for now, we register classes that have been required by our users
+        // registering all the implementations for reflection gives us a 14 MB penalty in native executable size
+        // see https://github.com/quarkusio/quarkus/issues/12961
         return new ReflectiveClassBuildItem(false, false,
                 "com.github.benmanes.caffeine.cache.SSLMS",
                 "com.github.benmanes.caffeine.cache.SILMS",
@@ -24,7 +26,11 @@ public class CaffeineProcessor {
                 "com.github.benmanes.caffeine.cache.PDMS",
                 "com.github.benmanes.caffeine.cache.SSMS",
                 "com.github.benmanes.caffeine.cache.SSLA",
-                "com.github.benmanes.caffeine.cache.PSA");
+                "com.github.benmanes.caffeine.cache.PSA",
+                "com.github.benmanes.caffeine.cache.SSMSW",
+                "com.github.benmanes.caffeine.cache.PSWMW",
+                "com.github.benmanes.caffeine.cache.SSW",
+                "com.github.benmanes.caffeine.cache.PSW");
     }
 
     @BuildStep

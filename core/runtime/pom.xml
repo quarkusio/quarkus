@@ -131,6 +131,7 @@
                         <parentFirstArtifact>org.ow2.asm:asm-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
                         <parentFirstArtifact>org.codehaus.plexus:plexus-utils</parentFirstArtifact>
+                        <parentFirstArtifact>xml-apis:xml-apis</parentFirstArtifact>
                         <!--
                         This is a temporary fix, we need a better way to be able to
                         add these exclusions outside the quarkus-extension.properties file.

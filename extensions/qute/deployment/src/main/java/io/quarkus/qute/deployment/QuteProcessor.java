@@ -1048,6 +1048,19 @@ public class QuteProcessor {
                 matchType = extractMatchType(closure, Names.ITERATOR, firstParamType);
             }
         }
+
+        // Handle CompletionStage specially
+        if (matchType == null && ValueResolverGenerator.hasCompletionStageInTypeClosure(match.clazz, index)) {
+            Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
+                    match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
+            Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
+            // CompletionStage<List<Item>> => List<Item>
+            match.type = extractMatchType(closure, Names.COMPLETION_STAGE, firstParamType);
+            match.clazz = index.getClassByName(match.type.name());
+            processLoopHint(match, index, expression);
+            return;
+        }
+
         if (matchType != null) {
             match.type = matchType;
             match.clazz = index.getClassByName(match.type.name());

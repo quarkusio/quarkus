@@ -55,7 +55,7 @@ public class JsonConfig {
     /**
      * Override name for "level" log key.
      * <p>
-     *  Is useful when environment expects key for logging level other than default "level".
+     * Is useful when environment expects key for logging level other than default "level".
      */
     @ConfigItem
     Optional<String> levelNameOverride;

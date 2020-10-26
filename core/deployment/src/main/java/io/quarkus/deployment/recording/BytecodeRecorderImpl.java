@@ -62,6 +62,7 @@ import io.quarkus.runtime.ObjectSubstitution;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
+import io.quarkus.runtime.annotations.IgnoreProperty;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.RelaxedValidation;
 
@@ -1149,6 +1150,18 @@ public class BytecodeRecorderImpl implements RecorderContext {
         Set<String> handledProperties = new HashSet<>();
         Property[] desc = PropertyUtils.getPropertyDescriptors(param);
         for (Property i : desc) {
+            // check if the getter is ignored
+            if ((i.getReadMethod() != null) && (i.getReadMethod().getAnnotation(IgnoreProperty.class) != null)) {
+                continue;
+            }
+            // check if the matching field is ignored
+            try {
+                if (param.getClass().getDeclaredField(i.getName()).getAnnotation(IgnoreProperty.class) != null) {
+                    continue;
+                }
+            } catch (NoSuchFieldException ignored) {
+
+            }
             Integer ctorParamIndex = constructorParamNameMap.remove(i.name);
             if (i.getReadMethod() != null && i.getWriteMethod() == null && ctorParamIndex == null) {
                 try {
@@ -1321,6 +1334,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         //now handle accessible fields
         for (Field field : param.getClass().getFields()) {
+            // check if the field is ignored
+            if (field.getAnnotation(IgnoreProperty.class) != null) {
+                continue;
+            }
             if (!handledProperties.contains(field.getName())) {
                 Integer ctorParamIndex = constructorParamNameMap.remove(field.getName());
                 if ((ctorParamIndex != null || !Modifier.isFinal(field.getModifiers())) &&

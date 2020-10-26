@@ -160,6 +160,17 @@ public class BytecodeRecorderTestCase {
     }
 
     @Test
+    public void testIgnoredProperties() throws Exception {
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            IgnoredProperties ignoredProperties = new IgnoredProperties();
+            ignoredProperties.setNotIgnored("Shows up");
+            ignoredProperties.setIgnoredField("Does not show up");
+            recorder.ignoredProperties(ignoredProperties);
+        }, new IgnoredProperties("Shows up", null));
+    }
+
+    @Test
     public void testJavaBeanWithEmbeddedReturnValue() throws Exception {
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);

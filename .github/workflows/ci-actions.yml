@@ -109,17 +109,17 @@ jobs:
         java :
           - { name: "8",
               java-version: 8,
-              maven_args: "-pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/kubernetes/quarkus-standard-way"
+              maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
           }
           - {
             name: "11",
             java-version: 11,
-            maven_args: "-pl !integration-tests/gradle -pl !integration-tests/maven"
+            maven_args: ""
           }
           - {
             name: "15",
             java-version: 15,
-            maven_args: "-pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/kubernetes/quarkus-standard-way"
+            maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
           }
 
     steps:
@@ -154,7 +154,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
-        run: eval mvn $JVM_TEST_MAVEN_OPTS install ${{ matrix.java.maven_args}}
+        run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args}}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -191,7 +191,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         shell: bash
-        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dno-native -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven install
+        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dno-native -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -350,6 +350,83 @@ jobs:
           wrapper-directory: integration-tests/gradle
           build-root-directory: integration-tests/gradle
           arguments: clean test -i -S --stacktrace --no-daemon
+
+  linux-jvm-devtools-tests:
+    name: Devtools Tests - JDK ${{matrix.java.name}}
+    runs-on: ubuntu-latest
+    needs: build-jdk11
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "11",
+            java-version: 11
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK ${{ matrix.java.name }}
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        with:
+          java-version: ${{ matrix.java.java-version }}
+      - name: Run Devtools integration tests
+        run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-linux-devtools-java${{matrix.java.name}}
+          path: 'test-reports.tgz'
+
+  windows-jdk11-jvm-devtools-tests:
+    name: Devtools Tests - JDK 11 Windows
+    runs-on: windows-latest
+    needs: build-jdk11
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        with:
+          java-version: 11
+      - name: Run Devtools integration tests
+        shell: bash
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-windows-devtools-java11
+          path: 'test-reports.tgz'
 
   tcks-test:
     name: MicroProfile TCKs Tests

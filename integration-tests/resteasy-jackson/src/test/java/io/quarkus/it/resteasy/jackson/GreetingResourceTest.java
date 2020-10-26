@@ -20,4 +20,14 @@ class GreetingResourceTest {
                 .body(containsString("[2019,1,1]"));
     }
 
+    @Test
+    public void testAbstract() {
+        given()
+                .when().get("/abstract/inherited")
+                .then()
+                .statusCode(200)
+                .body(containsString("concrete"));
+
+    }
+
 }

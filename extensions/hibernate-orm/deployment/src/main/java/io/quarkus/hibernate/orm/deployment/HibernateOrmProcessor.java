@@ -566,7 +566,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void produceLoggingCategories(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<LogCategoryBuildItem> categories) {
-        if (hibernateOrmConfig.log.bindParam) {
+        if (hibernateOrmConfig.log.bindParam || hibernateOrmConfig.log.bindParameters) {
             categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
         }
     }

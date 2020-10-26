@@ -63,10 +63,19 @@ public class HibernateOrmConfig {
          * Setting it to true is obviously not recommended in production.
          */
         @ConfigItem
+        @Deprecated
         public boolean bindParam;
 
+        /**
+         * Logs SQL bind parameters.
+         * <p>
+         * Setting it to true is obviously not recommended in production.
+         */
+        @ConfigItem
+        public boolean bindParameters;
+
         public boolean isAnyPropertySet() {
-            return bindParam;
+            return bindParam || bindParameters;
         }
     }
 }

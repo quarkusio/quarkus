@@ -1235,8 +1235,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         //check if there is actually a field with the name
                         try {
                             i.getReadMethod().getDeclaringClass().getDeclaredField(i.getName());
-                            throw new RuntimeException("Cannot serialise field " + i.getName() + " on object " + param
-                                    + " as the property is read only");
+                            throw new RuntimeException("Cannot serialise field '" + i.getName() + "' on object '" + param
+                                    + "' as the property is read only");
                         } catch (NoSuchFieldException e) {
                             //if there is no underlying field then we ignore the property
                         }

@@ -126,6 +126,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RelaxedValidation;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -1191,12 +1192,12 @@ public class QuarkusRestRecorder {
     }
 
     public void registerWriter(Serialisers serialisers, String entityClassName,
-            ResourceWriter writer) {
+            @RelaxedValidation ResourceWriter writer) {
         serialisers.addWriter(loadClass(entityClassName), writer);
     }
 
     public void registerReader(Serialisers serialisers, String entityClassName,
-            ResourceReader reader) {
+            @RelaxedValidation ResourceReader reader) {
         serialisers.addReader(loadClass(entityClassName), reader);
     }
 

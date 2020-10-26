@@ -7,6 +7,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.OPTIONS;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
+import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -24,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Priorities;
@@ -32,6 +34,7 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -415,12 +418,17 @@ public class QuarkusRestProcessor {
             List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<RouteBuildItem> routes) {
+            BuildProducer<RouteBuildItem> routes) throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
             return;
         }
+
+        recorderContext.registerNonDefaultConstructor(
+                MediaType.class.getDeclaredConstructor(String.class, String.class, String.class),
+                mediaType -> Stream.of(mediaType.getType(), mediaType.getSubtype(), mediaType.getParameters())
+                        .collect(toList()));
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<ClassInfo> applications = index

@@ -74,8 +74,7 @@ updates:
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies
-      - dependency-name: io.rest-assured:rest-assured
-      - dependency-name: io.rest-assured:json-schema-validator
+      - dependency-name: io.rest-assured:*
       - dependency-name: org.junit:junit-bom
       - dependency-name: org.assertj:assertj-core
       - dependency-name: org.testcontainers:testcontainers-bom

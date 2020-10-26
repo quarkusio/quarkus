@@ -5,6 +5,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.SecurityContext;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -39,6 +41,15 @@ public class ProtectedResource {
 
     @Inject
     RefreshToken refreshToken;
+
+    @Context
+    SecurityContext securityContext;
+
+    @GET
+    @Path("sec")
+    public String hello() {
+        return securityContext.getUserPrincipal().getName();
+    }
 
     @GET
     public String getName() {

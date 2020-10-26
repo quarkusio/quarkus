@@ -32,6 +32,11 @@
             <artifactId>quarkus-micrometer</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-security</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -209,7 +214,9 @@
                                 </goals>
                                 <configuration>
                                     <systemPropertyVariables>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                                        <native.image.path>
+                                            ${project.build.directory}/${project.build.finalName}-runner
+                                        </native.image.path>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>

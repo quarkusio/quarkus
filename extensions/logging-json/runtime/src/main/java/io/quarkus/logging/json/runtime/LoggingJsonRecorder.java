@@ -5,10 +5,10 @@ import java.util.Optional;
 import java.util.logging.Formatter;
 
 import org.jboss.logmanager.formatters.JsonFormatter;
+import org.jboss.logmanager.formatters.StructuredFormatter;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import org.jboss.logmanager.formatters.StructuredFormatter;
 
 @Recorder
 public class LoggingJsonRecorder {

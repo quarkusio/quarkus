@@ -32,16 +32,6 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
-    public void canRunListExtensions() throws Exception {
-        createProject(SourceType.JAVA);
-
-        BuildResult build = runGradleWrapper(projectRoot, "listExtensions");
-
-        assertThat(build.getTasks().get(":listExtensions")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(build.getOutput()).contains("Quarkus - Core");
-    }
-
-    @Test
     public void canGenerateConfig() throws Exception {
         createProject(SourceType.JAVA);
 

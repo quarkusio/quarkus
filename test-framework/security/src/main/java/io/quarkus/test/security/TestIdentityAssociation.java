@@ -26,7 +26,7 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
         }
     }
 
-    SecurityIdentity testIdentity;
+    volatile SecurityIdentity testIdentity;
 
     /**
      * A request scoped delegate that allows the system to function as normal when
@@ -64,8 +64,15 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
 
     @Override
     public SecurityIdentity getIdentity() {
-        if (testIdentity != null) {
-            return testIdentity;
+        //we check the underlying identity first
+        //in most cases this will have been set by the TestHttpAuthenticationMechanism
+        //this means that all the usual auth process will run, including augmentors and
+        //the identity ends up in the routing context
+        SecurityIdentity underlying = delegate.getIdentity();
+        if (underlying.isAnonymous()) {
+            if (testIdentity != null) {
+                return testIdentity;
+            }
         }
         return delegate.getIdentity();
     }

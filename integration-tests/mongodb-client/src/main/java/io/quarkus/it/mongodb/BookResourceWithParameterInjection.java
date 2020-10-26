@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -19,8 +20,11 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
 import io.quarkus.mongodb.MongoClientName;
+import io.quarkus.rest.Blocking;
 
 @Path("/books-with-parameter-injection")
+@ApplicationScoped
+@Blocking
 public class BookResourceWithParameterInjection {
     private MongoClient client;
     private MongoCollection<Book> collection;

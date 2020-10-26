@@ -3,6 +3,6 @@ package io.quarkus.redis.it;
 import io.quarkus.test.junit.NativeImageTest;
 
 @NativeImageTest
-class QuarkusRedisWithNamedClientIT extends QuarkusRedisWithNamedTest {
+class QuarkusRedisWithNamedClientIT extends QuarkusRedisWithNamedClientTest {
 
 }

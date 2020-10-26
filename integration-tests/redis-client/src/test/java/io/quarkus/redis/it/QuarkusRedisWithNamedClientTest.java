@@ -7,7 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-class QuarkusRedisWithNamedTest {
+class QuarkusRedisWithNamedClientTest {
     static final String SYNC_KEY = "named-sync-key";
     static final String SYNC_VALUE = "named-sync-value";
 

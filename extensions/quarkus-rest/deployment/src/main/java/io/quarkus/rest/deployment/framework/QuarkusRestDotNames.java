@@ -13,7 +13,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
 
 import javax.annotation.Priority;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Vetoed;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.ConstrainedTo;
@@ -61,7 +65,6 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -129,10 +132,7 @@ public final class QuarkusRestDotNames {
     public static final DotName FEATURE = DotName.createSimple(Feature.class.getName());
     public static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
     public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
-    public static final DotName CONFIG_PROPERTY = DotName
-            .createSimple(ConfigProperty.class.getName());
-    public static final DotName CDI_INSTANCE = DotName
-            .createSimple(javax.enterprise.inject.Instance.class.getName());
+    public static final DotName CDI_INJECT = DotName.createSimple(Inject.class.getName());
     public static final DotName PRIORITY = DotName.createSimple(Priority.class.getName());
     public static final DotName APPLICATION = DotName.createSimple(Application.class.getName());
     public static final DotName CONTAINER_REQUEST_FILTER = DotName.createSimple(ContainerRequestFilter.class.getName());
@@ -147,6 +147,9 @@ public final class QuarkusRestDotNames {
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
     public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());
     public static final DotName VETOED = DotName.createSimple(Vetoed.class.getName());
+    public static final DotName APPLICATION_SCOPED = DotName.createSimple(ApplicationScoped.class.getName());
+    public static final DotName SINGLETON = DotName.createSimple(Singleton.class.getName());
+    public static final DotName REQUEST_SCOPED = DotName.createSimple(RequestScoped.class.getName());
 
     public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());
 

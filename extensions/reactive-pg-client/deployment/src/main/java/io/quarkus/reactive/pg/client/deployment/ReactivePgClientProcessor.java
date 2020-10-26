@@ -1,6 +1,6 @@
 package io.quarkus.reactive.pg.client.deployment;
 
-import javax.inject.Singleton;
+import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
@@ -121,7 +121,7 @@ class ReactivePgClientProcessor {
         ExtendedBeanConfigurator pgPoolBeanConfigurator = SyntheticBeanBuildItem.configure(PgPool.class)
                 .defaultBean()
                 .addType(Pool.class)
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .runtimeValue(pool)
                 .unremovable()
                 .setRuntimeInit();
@@ -133,7 +133,7 @@ class ReactivePgClientProcessor {
         ExtendedBeanConfigurator mutinyPgPoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.pgclient.PgPool.class)
                 .defaultBean()
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .runtimeValue(recorder.mutinyPgPool(pool))
                 .setRuntimeInit();
 

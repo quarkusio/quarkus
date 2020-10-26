@@ -411,6 +411,29 @@ f3cg+fr8aou7pr9SHhJlZCU=
 
 We will use a `smallrye.jwt.sign.key-location` property to point to this private signing key.
 
+[NOTE]
+.Generating Keys with OpenSSL
+====
+It is also possible to generate a public and private key pair using the OpenSSL command line tool.
+
+.openssl commands for generating keys
+[source, text]
+----
+openssl genrsa -out rsaPrivateKey.pem 2048
+openssl rsa -pubout -in rsaPrivateKey.pem -out publicKey.pem
+----
+
+An additional step is needed for generating the private key for converting it into the PKCS#8 format.
+
+.openssl command for converting private key
+[source, text]
+----
+openssl pkcs8 -topk8 -nocrypt -inform pem -in rsaPrivateKey.pem -outform pem -out privateKey.pem
+----
+
+You can use the generated pair of keys instead of the keys used in this quickstart.
+====
+
 Now we can generate a JWT to use with `TokenSecuredResource` endpoint. To do this, run the following command:
 
 .Command to Generate JWT

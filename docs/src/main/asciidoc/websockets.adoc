@@ -163,7 +163,7 @@ You can also build the native executable using `./mvnw package -Pnative`.
 
 You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].
 
-== Weboscket Clients
+== WebSocket Clients
 
 Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection.
 

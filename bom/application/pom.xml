@@ -100,7 +100,7 @@
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
+        <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.13.1.Final</wildfly-elytron.version>
@@ -3556,8 +3556,8 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.slf4j</groupId>
-                <artifactId>slf4j-jboss-logging</artifactId>
-                <version>${slf4j-jboss-logging.version}</version>
+                <artifactId>slf4j-jboss-logmanager</artifactId>
+                <version>${slf4j-jboss-logmanager.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.enterprise</groupId>

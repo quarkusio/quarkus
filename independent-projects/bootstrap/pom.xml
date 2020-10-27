@@ -42,8 +42,9 @@
         <commons-lang.version>3.9</commons-lang.version>
         <guava.version>30.0-jre</guava.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
-        <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
-        <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
+        <jboss-logmanager-embedded.version>1.0.5</jboss-logmanager-embedded.version>
+        <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
+        <slf4j-api.version>1.7.30</slf4j-api.version>
         <graal-sdk.version>20.2.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
@@ -324,8 +325,13 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.slf4j</groupId>
-                <artifactId>slf4j-jboss-logging</artifactId>
-                <version>${slf4j-jboss-logging.version}</version>
+                <artifactId>slf4j-jboss-logmanager</artifactId>
+                <version>${slf4j-jboss-logmanager.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.plexus</groupId>
@@ -450,7 +456,8 @@
                                             <exclude>commons-logging:commons-logging-api</exclude>
                                             <exclude>org.springframework:spring-jcl</exclude>
                                             <exclude>org.slf4j:jcl-over-slf4j</exclude>
-                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logging instead) -->
+                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logmanager instead) -->
+                                            <exclude>org.jboss.slf4j:slf4j-jboss-logging</exclude>
                                             <exclude>org.slf4j:slf4j-simple</exclude>
                                             <exclude>org.slf4j:slf4j-nop</exclude>
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>

@@ -72,7 +72,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.slf4j</groupId>
-            <artifactId>slf4j-jboss-logging</artifactId>
+            <artifactId>slf4j-jboss-logmanager</artifactId>
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
@@ -125,6 +125,8 @@
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-app-model</parentFirstArtifact>
+                        <parentFirstArtifact>org.slf4j:slf4j-api</parentFirstArtifact>
+                        <parentFirstArtifact>org.jboss.slf4j:slf4j-jboss-logmanager</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
                         <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>

@@ -40,6 +40,9 @@ public class CombinedQuarkusPlatformDescriptor implements QuarkusPlatformDescrip
         }
 
         public QuarkusPlatformDescriptor build() {
+            if (platforms.size() == 1) {
+                return platforms.get(0);
+            }
             return new CombinedQuarkusPlatformDescriptor(this);
         }
     }

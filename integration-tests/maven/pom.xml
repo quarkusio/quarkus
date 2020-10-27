@@ -27,9 +27,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom-descriptor-json</artifactId>
+            <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
             <version>${project.version}</version>
             <type>json</type>
+            <classifier>${project.version}</classifier>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -176,7 +177,7 @@
                                 <configuration>
                                     <skip>${skipTests}</skip>
                                     <jsonGroupId>io.quarkus</jsonGroupId>
-                                    <jsonArtifactId>quarkus-bom-descriptor-json</jsonArtifactId>
+                                    <jsonArtifactId>quarkus-bom-quarkus-platform-descriptor</jsonArtifactId>
                                     <jsonVersion>${project.version}</jsonVersion>
                                     <ignoredGroupIds>
                                         <ignoredGroupId>software.amazon.awssdk</ignoredGroupId>

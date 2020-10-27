@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-bom-descriptor-json</artifactId>
+    <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
     <packaging>pom</packaging>
     <name>Quarkus - BOM - Descriptor JSON</name>
 
@@ -34,6 +34,7 @@
                                 <ignoredGroupId>software.amazon.awssdk</ignoredGroupId>
                             </ignoredGroupIds>
                             <bomArtifactId>quarkus-bom</bomArtifactId>
+                            <resolveDependencyManagement>true</resolveDependencyManagement>
                         </configuration>
                     </execution>
                 </executions>

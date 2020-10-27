@@ -12,6 +12,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.ListExtensions;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.registry.DefaultExtensionRegistry;
 
 public class QuarkusListExtensions extends QuarkusPlatformTask {
@@ -96,7 +97,11 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @TaskAction
     public void listExtensions() {
         try {
-            ListExtensions listExtensions = new ListExtensions(getQuarkusProject())
+            final QuarkusProject quarkusProject = getQuarkusProject();
+            getLogger().info("Quarkus platform " + quarkusProject.getPlatformDescriptor().getBomGroupId() + ":"
+                    + quarkusProject.getPlatformDescriptor().getBomArtifactId() + ":"
+                    + quarkusProject.getPlatformDescriptor().getBomVersion());
+            ListExtensions listExtensions = new ListExtensions(quarkusProject)
                     .all(isFromCli() ? false : isAll())
                     .fromCli(isFromCli())
                     .format(getFormat())

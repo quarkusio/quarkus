@@ -187,15 +187,14 @@ public class OidcTenantConfig {
          * Certificate validation and hostname verification, which can be one of the following values from enum
          * {@link Verification}. Default is required.
          */
-        @ConfigItem(defaultValue = "REQUIRED")
-        public Verification verification;
+        public Optional<Verification> verification = Optional.empty();
 
-        public Verification getVerification() {
+        public Optional<Verification> getVerification() {
             return verification;
         }
 
         public void setVerification(Verification verification) {
-            this.verification = verification;
+            this.verification = Optional.ofNullable(verification);
         }
 
     }

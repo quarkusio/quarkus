@@ -35,6 +35,7 @@ import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
@@ -92,9 +93,10 @@ public class OidcBuildStep {
     public SyntheticBeanBuildItem setup(
             OidcConfig config,
             OidcRecorder recorder,
-            CoreVertxBuildItem vertxBuildItem) {
+            CoreVertxBuildItem vertxBuildItem,
+            TlsConfig tlsConfig) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
-                .supplier(recorder.setup(config, vertxBuildItem.getVertx()))
+                .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig))
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();

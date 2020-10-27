@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuthBody;
@@ -83,8 +84,8 @@ public class OkHttpVaultClient implements VaultClient {
     private String kubernetesAuthMountPath;
     private ObjectMapper mapper = new ObjectMapper();
 
-    public OkHttpVaultClient(VaultRuntimeConfig serverConfig) {
-        this.client = createHttpClient(serverConfig);
+    public OkHttpVaultClient(VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
+        this.client = createHttpClient(serverConfig, tlsConfig);
         this.url = serverConfig.url.get();
         this.mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

@@ -1,5 +1,6 @@
 package io.quarkus.vault.test.client;
 
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.runtime.VaultManager;
 import io.quarkus.vault.runtime.client.OkHttpVaultClient;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRandomBody;
@@ -13,11 +14,11 @@ import io.quarkus.vault.test.client.dto.VaultTransitRandom;
 public class TestVaultClient extends OkHttpVaultClient {
 
     public TestVaultClient() {
-        this(VaultManager.getInstance().getServerConfig());
+        this(VaultManager.getInstance().getServerConfig(), VaultManager.getInstance().getTlsConfig());
     }
 
-    public TestVaultClient(VaultRuntimeConfig serverConfig) {
-        super(serverConfig);
+    public TestVaultClient(VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
+        super(serverConfig, tlsConfig);
     }
 
     public VaultAppRoleSecretId generateAppRoleSecretId(String token, String roleName) {

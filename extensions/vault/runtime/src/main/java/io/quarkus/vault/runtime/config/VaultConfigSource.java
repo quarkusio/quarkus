@@ -10,7 +10,6 @@ import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KV_SECR
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_READ_TIMEOUT;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_RENEW_GRACE_PERIOD;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_SECRET_CONFIG_CACHE_PERIOD;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_SKIP_VERIFY;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_USE_KUBERNETES_CACERT;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.KV_SECRET_ENGINE_VERSION_V2;
 import static java.lang.Boolean.parseBoolean;
@@ -43,6 +42,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.LogConfidentialityLevel;
@@ -62,6 +62,7 @@ public class VaultConfigSource implements ConfigSource {
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
     private AtomicReference<VaultRuntimeConfig> serverConfig = new AtomicReference<>(null);
     private AtomicReference<VaultBuildTimeConfig> buildServerConfig = new AtomicReference<>(null);
+    private AtomicReference<TlsConfig> tlsConfig = new AtomicReference<>(null);
 
     private AtomicBoolean init = new AtomicBoolean(false);
     private int ordinal;
@@ -155,10 +156,11 @@ public class VaultConfigSource implements ConfigSource {
 
         VaultBuildTimeConfig buildTimeConfig = getBuildtimeConfig();
         VaultRuntimeConfig serverConfig = getRuntimeConfig();
+        TlsConfig tlsConfig = getTlsConfig();
 
         // init at most once
         if (init.compareAndSet(false, true)) {
-            VaultManager.init(buildTimeConfig, serverConfig);
+            VaultManager.init(buildTimeConfig, serverConfig, tlsConfig);
         }
 
         return VaultManager.getInstance();
@@ -170,6 +172,10 @@ public class VaultConfigSource implements ConfigSource {
 
     private VaultBuildTimeConfig getBuildtimeConfig() {
         return getConfig(this.buildServerConfig, () -> loadBuildtimeConfig(), "buildtime");
+    }
+
+    private TlsConfig getTlsConfig() {
+        return getConfig(this.tlsConfig, () -> loadTlsConfig(), "tls");
     }
 
     private <T> T getConfig(AtomicReference<T> ref, Supplier<T> supplier, String name) {
@@ -237,7 +243,7 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.kvSecretEngineMountPath = getVaultProperty("kv-secret-engine-mount-path",
                 DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH);
         serverConfig.secretConfigKvPath = getOptionalListProperty("secret-config-kv-path");
-        serverConfig.tls.skipVerify = parseBoolean(getVaultProperty("tls.skip-verify", DEFAULT_TLS_SKIP_VERIFY));
+        serverConfig.tls.skipVerify = getOptionalVaultProperty("tls.skip-verify").map(Boolean::parseBoolean);
         serverConfig.tls.useKubernetesCaCert = parseBoolean(
                 getVaultProperty("tls.use-kubernetes-ca-cert", DEFAULT_TLS_USE_KUBERNETES_CACERT));
         serverConfig.tls.caCert = getOptionalVaultProperty("tls.ca-cert");
@@ -249,6 +255,12 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.secretConfigKvPrefixPath = getSecretConfigKvPrefixPaths();
 
         return serverConfig;
+    }
+
+    private TlsConfig loadTlsConfig() {
+        TlsConfig tlsConfig = new TlsConfig();
+        tlsConfig.trustAll = Boolean.parseBoolean(getProperty("quarkus.tls.trust-all", "false", 0));
+        return tlsConfig;
     }
 
     private VaultMapConfigParser<CredentialsProviderConfig> createCredentialProviderConfigParser() {

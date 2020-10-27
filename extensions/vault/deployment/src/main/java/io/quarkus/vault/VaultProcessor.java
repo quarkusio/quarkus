@@ -17,6 +17,7 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vault.runtime.Base64StringDeserializer;
 import io.quarkus.vault.runtime.Base64StringSerializer;
@@ -73,8 +74,9 @@ public class VaultProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configure(VaultRecorder recorder, VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig) {
-        recorder.configureRuntimeProperties(buildTimeConfig, serverConfig);
+    void configure(VaultRecorder recorder, VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig,
+            TlsConfig tlsConfig) {
+        recorder.configureRuntimeProperties(buildTimeConfig, serverConfig, tlsConfig);
     }
 
     @BuildStep

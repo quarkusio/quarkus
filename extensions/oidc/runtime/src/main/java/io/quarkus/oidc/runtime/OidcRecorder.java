@@ -21,6 +21,7 @@ import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
@@ -44,7 +45,7 @@ public class OidcRecorder {
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
 
-    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx) {
+    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
         final Vertx vertxValue = vertx.get();
         Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
 
@@ -57,10 +58,12 @@ public class OidcRecorder {
                 throw new OIDCException("Configuration has 2 different tenant-id values: '"
                         + tenant.getKey() + "' and '" + tenant.getValue().getTenantId().get() + "'");
             }
-            staticTenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue(), tenant.getKey()));
+            staticTenantsConfig.put(tenant.getKey(),
+                    createTenantContext(vertxValue, tenant.getValue(), tlsConfig, tenant.getKey()));
         }
 
-        TenantConfigContext tenantContext = createTenantContext(vertxValue, config.defaultTenant, "Default");
+        TenantConfigContext tenantContext = createTenantContext(vertxValue, config.defaultTenant, tlsConfig, "Default");
+
         return new Supplier<TenantConfigBean>() {
             @Override
             public TenantConfigBean get() {
@@ -73,13 +76,13 @@ public class OidcRecorder {
                                     @Override
                                     public void accept(UniEmitter<? super TenantConfigContext> uniEmitter) {
                                         if (BlockingOperationControl.isBlockingAllowed()) {
-                                            createDynamicTenantContext(uniEmitter, vertxValue, config,
+                                            createDynamicTenantContext(uniEmitter, vertxValue, config, tlsConfig,
                                                     config.getTenantId().get());
                                         } else {
                                             ExecutorRecorder.getCurrent().execute(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    createDynamicTenantContext(uniEmitter, vertxValue, config,
+                                                    createDynamicTenantContext(uniEmitter, vertxValue, config, tlsConfig,
                                                             config.getTenantId().get());
                                                 }
                                             });
@@ -95,10 +98,10 @@ public class OidcRecorder {
     }
 
     private void createDynamicTenantContext(UniEmitter<? super TenantConfigContext> uniEmitter, Vertx vertx,
-            OidcTenantConfig oidcConfig, String tenantId) {
+            OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
         try {
             if (!dynamicTenantsConfig.containsKey(tenantId)) {
-                dynamicTenantsConfig.putIfAbsent(tenantId, createTenantContext(vertx, oidcConfig, tenantId));
+                dynamicTenantsConfig.putIfAbsent(tenantId, createTenantContext(vertx, oidcConfig, tlsConfig, tenantId));
             }
             uniEmitter.complete(dynamicTenantsConfig.get(tenantId));
         } catch (Throwable t) {
@@ -106,7 +109,8 @@ public class OidcRecorder {
         }
     }
 
-    private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, String tenantId) {
+    private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, TlsConfig tlsConfig,
+            String tenantId) {
         if (!oidcConfig.tenantId.isPresent()) {
             oidcConfig.tenantId = Optional.of(tenantId);
         }
@@ -234,7 +238,9 @@ public class OidcRecorder {
             options.setProxyOptions(proxyOpt.get());
         }
 
-        if (oidcConfig.tls.verification == Verification.NONE) {
+        boolean trustAll = oidcConfig.tls.verification.isPresent() ? oidcConfig.tls.verification.get() == Verification.NONE
+                : tlsConfig.trustAll;
+        if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
         }

@@ -46,6 +46,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.OutputFrame;
 
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.runtime.VaultManager;
@@ -168,7 +169,7 @@ public class VaultTestExtension {
         VaultRuntimeConfig serverConfig = new VaultRuntimeConfig();
         serverConfig.tls = new VaultTlsConfig();
         serverConfig.url = getVaultUrl();
-        serverConfig.tls.skipVerify = true;
+        serverConfig.tls.skipVerify = Optional.of(true);
         serverConfig.tls.caCert = Optional.empty();
         serverConfig.connectTimeout = Duration.ofSeconds(5);
         serverConfig.readTimeout = Duration.ofSeconds(1);
@@ -177,8 +178,9 @@ public class VaultTestExtension {
 
         VaultBuildTimeConfig buildTimeConfig = new VaultBuildTimeConfig();
         buildTimeConfig.health = new HealthConfig();
+        TlsConfig tlsConfig = new TlsConfig();
 
-        return new VaultManager(buildTimeConfig, serverConfig, new TestVaultClient(serverConfig));
+        return new VaultManager(buildTimeConfig, serverConfig, new TestVaultClient(serverConfig, tlsConfig), tlsConfig);
     }
 
     private static Optional<URL> getVaultUrl() {

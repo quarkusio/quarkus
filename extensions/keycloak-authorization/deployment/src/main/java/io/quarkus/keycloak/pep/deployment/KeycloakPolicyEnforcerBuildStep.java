@@ -15,6 +15,7 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
 import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
@@ -71,11 +72,11 @@ public class KeycloakPolicyEnforcerBuildStep {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    public void setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig,
+    public void setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig, TlsConfig tlsConfig,
             KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder, BeanContainerBuildItem bc,
             HttpConfiguration httpConfiguration) {
         if (oidcBuildTimeConfig.enabled && keycloakConfig.policyEnforcer.enable) {
-            recorder.setup(oidcRunTimeConfig, keycloakConfig, bc.getValue(), httpConfiguration);
+            recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig, bc.getValue(), httpConfiguration);
         }
     }
 }

@@ -1,6 +1,5 @@
 package io.quarkus.vault.runtime.config;
 
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_SKIP_VERIFY;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_USE_KUBERNETES_CACERT;
 
 import java.util.Optional;
@@ -18,8 +17,8 @@ public class VaultTlsConfig {
      * certificate presented by Vault. This is discouraged in production because it allows man in the middle
      * type of attacks.
      */
-    @ConfigItem(defaultValue = DEFAULT_TLS_SKIP_VERIFY)
-    public boolean skipVerify;
+    @ConfigItem
+    public Optional<Boolean> skipVerify = Optional.empty();
 
     /**
      * Certificate bundle used to validate TLS communications with Vault.

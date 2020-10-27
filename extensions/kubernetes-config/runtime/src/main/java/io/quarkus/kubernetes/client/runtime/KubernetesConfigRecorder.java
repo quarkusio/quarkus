@@ -9,6 +9,7 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 
@@ -21,7 +22,8 @@ public class KubernetesConfigRecorder {
 
     public RuntimeValue<ConfigSourceProvider> configSources(KubernetesConfigSourceConfig kubernetesConfigSourceConfig,
             KubernetesConfigBuildTimeConfig buildTimeConfig,
-            KubernetesClientBuildConfig clientConfig) {
+            KubernetesClientBuildConfig clientConfig,
+            TlsConfig tlsConfig) {
         if ((!kubernetesConfigSourceConfig.enabled && !buildTimeConfig.secretsEnabled) || isExplicitlyDisabled()) {
             log.debug(
                     "No attempt will be made to obtain configuration from the Kubernetes API server because the functionality has been disabled via configuration");
@@ -29,7 +31,7 @@ public class KubernetesConfigRecorder {
         }
 
         return new RuntimeValue<>(new KubernetesConfigSourceProvider(kubernetesConfigSourceConfig, buildTimeConfig,
-                KubernetesClientUtils.createClient(clientConfig)));
+                KubernetesClientUtils.createClient(clientConfig, tlsConfig)));
     }
 
     // We don't want to enable the reading of anything if 'quarkus.kubernetes-config.enabled' is EXPLICITLY set to false

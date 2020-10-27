@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-container-image-jib-parent</artifactId>
-    <name>Quarkus - Container - Image - Jib - Parent</name>
+    <name>Quarkus - Container Image - Jib - Parent</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

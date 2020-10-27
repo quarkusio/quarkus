@@ -29,7 +29,7 @@ final class ReplaceCodestartFileStrategyHandler implements DefaultCodestartFileS
         final Path targetPath = targetDirectory.resolve(relativePath);
         checkTargetDoesNotExist(targetPath);
         createDirectories(targetPath);
-        Files.write(targetPath,
-                codestartFiles.get(codestartFiles.size() - 1).getContent().getBytes());
+        writeFile(targetPath,
+                codestartFiles.get(codestartFiles.size() - 1).getContent());
     }
 }

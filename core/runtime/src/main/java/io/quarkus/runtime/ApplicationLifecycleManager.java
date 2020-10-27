@@ -1,5 +1,6 @@
 package io.quarkus.runtime;
 
+import java.net.BindException;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -14,6 +15,7 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 import org.wildfly.common.lock.Locks;
@@ -139,8 +141,28 @@ public class ApplicationLifecycleManager {
             }
         } catch (Exception e) {
             if (exitCodeHandler == null) {
-                Logger.getLogger(Application.class).errorv(e, "Failed to start application (with profile {0})",
-                        ProfileManager.getActiveProfile());
+                Throwable rootCause = e;
+                while (rootCause.getCause() != null) {
+                    rootCause = rootCause.getCause();
+                }
+                Logger applicationLogger = Logger.getLogger(Application.class);
+                if (rootCause instanceof BindException) {
+                    int port = ConfigProviderResolver.instance().getConfig()
+                            .getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+                    applicationLogger.error("Port " + port + " seems to be in use by another process. " +
+                            "Quarkus may already be running or the port is used by another application.");
+                    if (System.getProperty("os.name").startsWith("Windows")) {
+                        applicationLogger.info("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
+                        applicationLogger.info("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
+                    } else {
+                        applicationLogger
+                                .info("Use 'netstat -anop | grep " + port + "' to identify the process occupying the port.");
+                        applicationLogger.info("You can try to kill it with 'kill -9 <pid>'.");
+                    }
+                } else {
+                    applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
+                            ProfileManager.getActiveProfile());
+                }
             }
             stateLock.lock();
             try {

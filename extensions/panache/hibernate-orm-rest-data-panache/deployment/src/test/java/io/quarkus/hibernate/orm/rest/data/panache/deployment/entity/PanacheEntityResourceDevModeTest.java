@@ -12,7 +12,8 @@ public class PanacheEntityResourceDevModeTest extends AbstractDevModeTest {
     @RegisterExtension
     static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, AbstractItem.class, Item.class, ItemsController.class)
+                    .addClasses(Collection.class, AbstractEntity.class, AbstractItem.class, Item.class,
+                            ItemsController.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 

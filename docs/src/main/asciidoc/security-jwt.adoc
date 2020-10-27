@@ -438,7 +438,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: MP-JWT, hasJWT: true, birthdate: 2001-07-13
+hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 Success! We now have:
@@ -550,7 +550,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed-admin; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: MP-JWT, hasJWT: true, birthdate: 2001-07-13
+hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 === Package and run the application

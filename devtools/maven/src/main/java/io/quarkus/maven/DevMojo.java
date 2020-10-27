@@ -38,6 +38,7 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.artifact.Artifact;
@@ -75,6 +76,7 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
@@ -93,6 +95,7 @@ import io.quarkus.utilities.JavaBinFinder;
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
+    private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
 
     /**
      * running any one of these phases means the compile phase will have been run, if these have
@@ -712,11 +715,35 @@ public class DevMojo extends AbstractMojo {
 
             //in most cases these are not used, however they need to be present for some
             //parent-first cases such as logging
+            //first we go through and get all the parent first artifacts
+            Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
+            for (Artifact appDep : project.getArtifacts()) {
+                if (appDep.getArtifactHandler().getExtension().equals("jar") && appDep.getFile().isFile()) {
+                    try (ZipFile file = new ZipFile(appDep.getFile())) {
+                        ZipEntry entry = file.getEntry(EXT_PROPERTIES_PATH);
+                        if (entry != null) {
+                            Properties p = new Properties();
+                            try (InputStream inputStream = file.getInputStream(entry)) {
+                                p.load(inputStream);
+                                String parentFirst = p.getProperty(AppModel.PARENT_FIRST_ARTIFACTS);
+                                if (parentFirst != null) {
+                                    String[] artifacts = parentFirst.split(",");
+                                    for (String artifact : artifacts) {
+                                        parentFirstArtifacts.add(new AppArtifactKey(artifact.split(":")));
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
             for (Artifact appDep : project.getArtifacts()) {
                 // only add the artifact if it's present in the dev mode context
                 // we need this to avoid having jars on the classpath multiple times
-                if (!devModeContext.getLocalArtifacts().contains(new AppArtifactKey(appDep.getGroupId(), appDep.getArtifactId(),
-                        appDep.getClassifier(), appDep.getArtifactHandler().getExtension()))) {
+                AppArtifactKey key = new AppArtifactKey(appDep.getGroupId(), appDep.getArtifactId(),
+                        appDep.getClassifier(), appDep.getArtifactHandler().getExtension());
+                if (!devModeContext.getLocalArtifacts().contains(key) && parentFirstArtifacts.contains(key)) {
                     addToClassPaths(classPathManifest, appDep.getFile());
                 }
             }
@@ -898,6 +925,11 @@ public class DevMojo extends AbstractMojo {
                 @Override
                 public void run() {
                     process.destroy();
+                    try {
+                        process.waitFor();
+                    } catch (InterruptedException ignored) {
+                        getLog().warn("Unable to properly wait for dev-mode end", ignored);
+                    }
                 }
             }, "Development Mode Shutdown Hook"));
         }

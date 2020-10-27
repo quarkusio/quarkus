@@ -2,7 +2,6 @@ package io.quarkus.devtools.codestarts.core.strategy;
 
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +22,6 @@ final class AppendCodestartFileStrategyHandler implements CodestartFileStrategyH
         checkTargetDoesNotExist(targetPath);
         createDirectories(targetPath);
         final String content = codestartFiles.stream().map(TargetFile::getContent).collect(Collectors.joining("\n"));
-        Files.write(targetPath, content.getBytes());
+        writeFile(targetPath, content);
     }
 }

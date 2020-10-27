@@ -70,7 +70,7 @@ public class AppArtifactKey implements Serializable {
     protected final String classifier;
     protected final String type;
 
-    protected AppArtifactKey(String[] parts) {
+    public AppArtifactKey(String[] parts) {
         this.groupId = parts[0];
         this.artifactId = parts[1];
         if (parts.length == 2 || parts[2] == null) {

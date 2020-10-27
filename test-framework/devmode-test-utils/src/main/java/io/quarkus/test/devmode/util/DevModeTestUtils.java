@@ -160,10 +160,14 @@ public class DevModeTestUtils {
     }
 
     public static boolean getHttpResponse(String path, int expectedStatus) {
+        return getHttpResponse(path, expectedStatus, 5, TimeUnit.MINUTES);
+    }
+
+    public static boolean getHttpResponse(String path, int expectedStatus, long timeout, TimeUnit tu) {
         AtomicBoolean code = new AtomicBoolean();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.MINUTES).until(() -> {
+                .atMost(timeout, tu).until(() -> {
                     try {
                         URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -203,7 +207,23 @@ public class DevModeTestUtils {
     }
 
     public static String get() throws IOException {
-        URL url = new URL("http://localhost:8080");
-        return IOUtils.toString(url, StandardCharsets.UTF_8);
+        return get("http://localhost:8080");
+    }
+
+    public static String get(String urlStr) throws IOException {
+        return IOUtils.toString(new URL(urlStr), StandardCharsets.UTF_8);
+    }
+
+    public static boolean isCode(String path, int code) {
+        try {
+            URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            // the default Accept header used by HttpURLConnection is not compatible with
+            // RESTEasy negotiation as it uses q=.2
+            connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+            return connection.getResponseCode() == code;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

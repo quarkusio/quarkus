@@ -17,8 +17,8 @@ class PanacheEntityResourcePathCustomisationTest extends AbstractPathCustomisati
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, CollectionsController.class, AbstractItem.class, Item.class,
-                            CustomPathCollectionsController.class)
+                    .addClasses(Collection.class, CollectionsController.class, AbstractEntity.class, AbstractItem.class,
+                            Item.class, CustomPathCollectionsController.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 

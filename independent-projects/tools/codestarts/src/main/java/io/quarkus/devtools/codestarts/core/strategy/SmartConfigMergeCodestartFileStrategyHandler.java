@@ -7,7 +7,6 @@ import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -67,7 +66,7 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
         final Path propertiesTargetPath = targetPath.getParent()
                 .resolve(targetPath.getFileName().toString().replace(".yml", ".properties"));
         checkTargetDoesNotExist(propertiesTargetPath);
-        Files.write(propertiesTargetPath, builder.toString().getBytes());
+        writeFile(propertiesTargetPath, builder.toString());
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

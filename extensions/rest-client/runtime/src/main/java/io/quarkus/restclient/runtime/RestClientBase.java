@@ -1,6 +1,11 @@
 package io.quarkus.restclient.runtime;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyStore;
@@ -12,16 +17,15 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.graal.DisabledSSLContext;
+import io.quarkus.runtime.ssl.SslContextConfiguration;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.graalvm.nativeimage.ImageInfo;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.graal.DisabledSSLContext;
-import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 public class RestClientBase {
 
@@ -92,12 +96,16 @@ public class RestClientBase {
     private void registerHostnameVerifier(String verifier, RestClientBuilder builder) {
         try {
             Class<?> verifierClass = Class.forName(verifier, true, Thread.currentThread().getContextClassLoader());
-            builder.hostnameVerifier((HostnameVerifier) verifierClass.newInstance());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Could not find hostname verifier class" + verifier, e);
-        } catch (InstantiationException | IllegalAccessException e) {
+            builder.hostnameVerifier((HostnameVerifier) verifierClass.getDeclaredConstructor().newInstance());
+        } catch (NoSuchMethodException e) {
             throw new RuntimeException(
-                    "Failed to instantiate hostname verifier class. Make sure it has a public, no-argument constructor", e);
+                    "Could not find a public, no-argument constructor for the hostname verifier class " + verifier, e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Could not find hostname verifier class " + verifier, e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(
+                    "Failed to instantiate hostname verifier class " + verifier
+                            + ". Make sure it has a public, no-argument constructor", e);
         } catch (ClassCastException e) {
             throw new RuntimeException("The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier",
                     e);

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.reactive.runtime;
 
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -12,6 +13,10 @@ public class HibernateReactiveRecorder {
      */
     public void callHibernateReactiveFeatureInit(boolean enabled) {
         HibernateReactive.featureInit(enabled);
+    }
+
+    public void initializePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+        ReactivePersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig);
     }
 
 }

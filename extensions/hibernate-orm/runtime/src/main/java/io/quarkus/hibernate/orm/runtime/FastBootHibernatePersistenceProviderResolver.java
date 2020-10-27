@@ -8,12 +8,15 @@ import javax.persistence.spi.PersistenceProviderResolver;
 
 final class FastBootHibernatePersistenceProviderResolver implements PersistenceProviderResolver {
 
-    private static final List<PersistenceProvider> HARDCODED_PROVIDER_LIST = Collections
-            .<PersistenceProvider> singletonList(new FastBootHibernatePersistenceProvider());
+    private final List<PersistenceProvider> persistenceProviders;
+
+    public FastBootHibernatePersistenceProviderResolver(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+        persistenceProviders = Collections.singletonList(new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig));
+    }
 
     @Override
     public List<PersistenceProvider> getPersistenceProviders() {
-        return HARDCODED_PROVIDER_LIST;
+        return persistenceProviders;
     }
 
     @Override

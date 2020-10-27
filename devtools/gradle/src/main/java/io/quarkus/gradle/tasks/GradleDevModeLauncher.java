@@ -6,6 +6,12 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 
 public class GradleDevModeLauncher extends QuarkusDevModeLauncher {
 
+    /**
+     * Initializes the launcher builder
+     *
+     * @param logger the logger
+     * @return launcher builder
+     */
     public static Builder builder(Logger logger) {
         return new GradleDevModeLauncher(logger).new Builder();
     }
@@ -13,6 +19,7 @@ public class GradleDevModeLauncher extends QuarkusDevModeLauncher {
     public class Builder extends QuarkusDevModeLauncher.Builder<GradleDevModeLauncher, Builder> {
 
         private Builder() {
+            super(null);
         }
     }
 

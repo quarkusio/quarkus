@@ -93,7 +93,7 @@ public class HibernateOrmCdiProcessor {
         return new AnnotationsTransformerBuildItem(transformer);
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void generateDataSourceBeans(HibernateOrmRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
@@ -156,7 +156,6 @@ public class HibernateOrmCdiProcessor {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
                 .scope(Singleton.class)
-                .setRuntimeInit()
                 .unremovable()
                 .supplier(supplier);
 

@@ -1,6 +1,5 @@
 package io.quarkus.it.envers;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -18,7 +17,6 @@ import io.quarkus.rest.Blocking;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/project")
-@ApplicationScoped
 @Blocking
 public class ProjectResource {
 

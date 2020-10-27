@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.metrics.runtime;
 
 import io.quarkus.rest.ContainerResponseFilter;
-import io.quarkus.rest.runtime.spi.SimplifiedResourceInfo;
+import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 
 /**
  * Quarkus REST does not suffer from the limitations mentioned in {@link QuarkusRestEasyMetricsFilter} so we can

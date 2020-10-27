@@ -10,13 +10,16 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-rest-parent</artifactId>
-    <name>Quarkus - REST</name>
+    <artifactId>rest-parent-aggregator</artifactId>
+    <name>Quarkus - REST Parent</name>
     <packaging>pom</packaging>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-        <module>spi</module>
+        <module>quarkus-rest-common</module>
+        <module>quarkus-rest</module>
+        <module>quarkus-jaxrs-client</module>
+        <module>quarkus-rest-jackson</module>
+        <module>quarkus-rest-jsonb</module>
+        <module>quarkus-rest-qute</module>
     </modules>
 
 </project>

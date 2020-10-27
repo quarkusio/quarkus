@@ -1,0 +1,139 @@
+package io.quarkus.rest.server.runtime.mapping;
+
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
+import io.quarkus.rest.common.runtime.util.ServerMediaType;
+import io.quarkus.rest.server.runtime.core.LazyMethod;
+import io.quarkus.rest.server.runtime.core.QuarkusRestSimplifiedResourceInfo;
+import io.quarkus.rest.server.runtime.handlers.ServerRestHandler;
+import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
+import io.quarkus.rest.server.runtime.util.ScoreSystem;
+import io.quarkus.rest.spi.BeanFactory;
+import io.quarkus.rest.spi.EndpointInvoker;
+
+public class RuntimeResource {
+
+    private final String httpMethod;
+    private final URITemplate path;
+    private final URITemplate classPath;
+    private final ServerMediaType produces;
+    private final List<MediaType> consumes;
+    private final EndpointInvoker invoker;
+    private final BeanFactory<Object> endpointFactory;
+    private final ServerRestHandler[] handlerChain;
+    private final String javaMethodName;
+    private final Class<?>[] parameterTypes;
+    private final Type returnType;
+    private final boolean blocking;
+    private final Class<?> resourceClass;
+    private final LazyMethod lazyMethod;
+    private final Map<String, Integer> pathParameterIndexes;
+    private final Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score;
+
+    public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
+            List<MediaType> consumes,
+            EndpointInvoker invoker,
+            BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
+            Class<?>[] parameterTypes,
+            Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
+            Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score) {
+        this.httpMethod = httpMethod;
+        this.path = path;
+        this.classPath = classPath;
+        this.produces = produces;
+        this.consumes = consumes;
+        this.invoker = invoker;
+        this.endpointFactory = endpointFactory;
+        this.handlerChain = handlerChain;
+        this.javaMethodName = javaMethodName;
+        this.parameterTypes = parameterTypes;
+        this.returnType = returnType;
+        this.blocking = blocking;
+        this.resourceClass = resourceClass;
+        this.lazyMethod = lazyMethod;
+        this.pathParameterIndexes = pathParameterIndexes;
+        this.score = score;
+    }
+
+    public ServerRestHandler[] getHandlerChain() {
+        return handlerChain;
+    }
+
+    public String getJavaMethodName() {
+        return javaMethodName;
+    }
+
+    public Class<?>[] getParameterTypes() {
+        return parameterTypes;
+    }
+
+    public Type getReturnType() {
+        return returnType;
+    }
+
+    public String getHttpMethod() {
+        return httpMethod;
+    }
+
+    public URITemplate getPath() {
+        return path;
+    }
+
+    public ServerMediaType getProduces() {
+        return produces;
+    }
+
+    public List<MediaType> getConsumes() {
+        return consumes;
+    }
+
+    public EndpointInvoker getInvoker() {
+        return invoker;
+    }
+
+    public boolean isBlocking() {
+        return blocking;
+    }
+
+    public Class<?> getResourceClass() {
+        return resourceClass;
+    }
+
+    public BeanFactory<Object> getEndpointFactory() {
+        return endpointFactory;
+    }
+
+    public LazyMethod getLazyMethod() {
+        return lazyMethod;
+    }
+
+    public SimplifiedResourceInfo getSimplifiedResourceInfo() {
+        return new QuarkusRestSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
+    }
+
+    /**
+     * The @Path that is present on the class itself
+     * 
+     * @return
+     */
+    public URITemplate getClassPath() {
+        return classPath;
+    }
+
+    public Map<String, Integer> getPathParameterIndexes() {
+        return pathParameterIndexes;
+    }
+
+    public Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> getScore() {
+        return score;
+    }
+
+    @Override
+    public String toString() {
+        return "RuntimeResource{ method: " + javaMethodName + ", path: " + path + "}";
+    }
+}

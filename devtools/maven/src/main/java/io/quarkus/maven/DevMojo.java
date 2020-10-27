@@ -46,6 +46,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.toolchain.Toolchain;
+import org.apache.maven.toolchain.ToolchainManager;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -83,6 +85,7 @@ import io.quarkus.maven.utilities.MojoUtils;
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
+
     private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
 
     private static final String KOTLIN_MAVEN_PLUGIN_GA = "org.jetbrains.kotlin:kotlin-maven-plugin";
@@ -117,6 +120,7 @@ public class DevMojo extends AbstractMojo {
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
     private static final String MAVEN_RESOURCES_PLUGIN = "maven-resources-plugin";
+    private static final String MAVEN_TOOLCHAINS_PLUGIN = "maven-toolchains-plugin";
 
     private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
     private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
@@ -265,10 +269,15 @@ public class DevMojo extends AbstractMojo {
 
     private Boolean debugPortOk;
 
+    @Component
+    private ToolchainManager toolchainManager;
+
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
 
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
+
+        initToolchain();
 
         //we always want to compile if needed, so if it is run from the parent it will compile dependent projects
         handleAutoCompile();
@@ -366,37 +375,22 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
+    private void initToolchain() throws MojoExecutionException {
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain");
+    }
+
     private void triggerPrepare() throws MojoExecutionException {
-        Plugin quarkusPlugin = project.getPlugin(QUARKUS_PLUGIN_GROUPID + ":" + QUARKUS_PLUGIN_ARTIFACTID);
-        if (quarkusPlugin == null) {
-            return;
-        }
-        executeMojo(
-                quarkusPlugin,
-                goal(QUARKUS_GENERATE_CODE_GOAL),
-                configuration(),
-                executionEnvironment(
-                        project,
-                        session,
-                        pluginManager));
+        executeIfConfigured(QUARKUS_PLUGIN_GROUPID, QUARKUS_PLUGIN_ARTIFACTID, QUARKUS_GENERATE_CODE_GOAL);
     }
 
     private void triggerCompile() throws MojoExecutionException {
         handleResources();
 
         // compile the Kotlin sources if needed
-        final String kotlinMavenPluginKey = ORG_JETBRAINS_KOTLIN + ":" + KOTLIN_MAVEN_PLUGIN;
-        final Plugin kotlinMavenPlugin = project.getPlugin(kotlinMavenPluginKey);
-        if (kotlinMavenPlugin != null) {
-            executeCompileGoal(kotlinMavenPlugin, ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN);
-        }
+        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, "compile");
 
         // Compile the Java sources if needed
-        final String compilerPluginKey = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
-        final Plugin compilerPlugin = project.getPlugin(compilerPluginKey);
-        if (compilerPlugin != null) {
-            executeCompileGoal(compilerPlugin, ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN);
-        }
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, "compile");
     }
 
     /**
@@ -407,32 +401,21 @@ public class DevMojo extends AbstractMojo {
         if (resources.isEmpty()) {
             return;
         }
-        Plugin resourcesPlugin = project.getPlugin(ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_RESOURCES_PLUGIN);
-        if (resourcesPlugin == null) {
+        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, "resources");
+    }
+
+    private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
+        final Plugin plugin = project.getPlugin(pluginGroupId + ":" + pluginArtifactId);
+        if (plugin == null) {
             return;
         }
         executeMojo(
                 plugin(
-                        groupId(ORG_APACHE_MAVEN_PLUGINS),
-                        artifactId(MAVEN_RESOURCES_PLUGIN),
-                        version(resourcesPlugin.getVersion()),
-                        resourcesPlugin.getDependencies()),
-                goal("resources"),
-                getPluginConfig(resourcesPlugin),
-                executionEnvironment(
-                        project,
-                        session,
-                        pluginManager));
-    }
-
-    private void executeCompileGoal(Plugin plugin, String groupId, String artifactId) throws MojoExecutionException {
-        executeMojo(
-                plugin(
-                        groupId(groupId),
-                        artifactId(artifactId),
+                        groupId(pluginGroupId),
+                        artifactId(pluginArtifactId),
                         version(plugin.getVersion()),
                         plugin.getDependencies()),
-                goal("compile"),
+                goal(goal),
                 getPluginConfig(plugin),
                 executionEnvironment(
                         project,
@@ -583,7 +566,19 @@ public class DevMojo extends AbstractMojo {
     }
 
     private QuarkusDevModeLauncher newLauncher() throws Exception {
-        final MavenDevModeLauncher.Builder builder = MavenDevModeLauncher.builder(getLog())
+        System.out.println("DevMojo.newLauncher " + toolchainManager);
+        String java = null;
+        // See if a toolchain is configured
+        if (toolchainManager != null) {
+            Toolchain toolchain = toolchainManager.getToolchainFromBuildContext("jdk", session);
+            System.out.println("  " + toolchain);
+            if (toolchain != null) {
+                java = toolchain.findTool("java");
+                getLog().info("JVM from toolchain: " + java);
+            }
+        }
+
+        final MavenDevModeLauncher.Builder builder = MavenDevModeLauncher.builder(java, getLog())
                 .preventnoverify(preventnoverify)
                 .buildDir(buildDir)
                 .outputDir(outputDirectory)

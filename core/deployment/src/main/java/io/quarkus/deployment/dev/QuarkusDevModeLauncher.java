@@ -36,9 +36,9 @@ public abstract class QuarkusDevModeLauncher {
 
     public class Builder<R extends QuarkusDevModeLauncher, B extends Builder<R, B>> {
 
-        protected Builder() {
+        protected Builder(String java) {
             args = new ArrayList<>();
-            String javaTool = JavaBinFinder.findBin();
+            final String javaTool = java == null ? JavaBinFinder.findBin() : java;
             QuarkusDevModeLauncher.this.debug("Using javaTool: %s", javaTool);
             args.add(javaTool);
 

@@ -42,7 +42,7 @@ The operation of compiling Java bytecode into a native system-specific machine c
 
 * build time vs runtime in classic Java frameworks
   ** The build time corresponds to all the actions you apply to your Java source files to convert them into something runnable (class files, jar/war, native images).
-  Usually this stage is composed by the compilation, annotation processing, bytecode generation, etc. At this point, everything is under developer's scope and control.
+  Usually this stage is composed by the compilation, annotation processing, bytecode generation, etc. At this point, everything is under the developer's scope and control.
   ** The runtime is all the actions that happen when you execute your application.
   It's obviously focused on starting your business-oriented actions but it relies on a lot of technical actions like loading libraries and configuration files, scanning the application's classpath, configuring the dependency injection, setting up your Object-Relational Mapping, instantiating your REST controllers, etc.
 
@@ -674,7 +674,7 @@ Edsger W. Dijkstra
 ==== Debugging your application build
 
 Since your extension deployment is made during the application build, this process is triggered by your build tool.
-That means if your want to debug this phase you need to launch your build tool with the remote debug mode switched one.
+That means if you want to debug this phase you need to launch your build tool with the remote debug mode switched one.
 
 ===== Maven
 
@@ -718,7 +718,7 @@ By default, Maven will wait for a connection on `localhost:5005`.
 
 === Extension publication
 
-Now that you just finish to build your first extension you should be eager to use it in a Quarkus application! 
+Now that you just finished building your first extension you should be eager to use it in a Quarkus application! 
 
 *Classic Maven publication*
 

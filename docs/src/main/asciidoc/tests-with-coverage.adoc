@@ -284,7 +284,7 @@ NOTE: If you run `./mvnw clean test` the coverage information will be collected 
 
 == Measuring separately the coverage of each test type
 
-It is not strictly necessary, but let's distinguish the coverage brought by each test type. To do so, we`ll just output the coverage info in two different files, one in `jacoco-ut.exec` and one in `jacoco-it.exec`.
+It is not strictly necessary, but let's distinguish the coverage brought by each test type. To do so, we'll just output the coverage info in two different files, one in `jacoco-ut.exec` and one in `jacoco-it.exec`.
 We also need to generate a separate report for each test execution. Let's adjust the Jacoco configuration for that:
 
 [source,xml,subs=attributes+]

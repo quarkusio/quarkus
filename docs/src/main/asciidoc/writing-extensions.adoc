@@ -321,7 +321,7 @@ These operations should be done at build time and the metamodel be passed to the
 Get a CDI portable extension running::
 The CDI portable extension model is very flexible.
 Too flexible to benefit from the build time boot promoted by Quarkus.
-Most extension we have seen do not make use of these extreme flexibilities capabilities.
+Most extension we have seen do not make use of these extreme flexibility capabilities.
 The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parlance).
 
 == Technical aspect
@@ -380,7 +380,7 @@ TIP: You may want to use the `create-extension` mojo of `io.quarkus:quarkus-mave
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
 You will also need to include the `io.quarkus:quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
-Futhermore, you'll need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
+Furthermore, you'll need to configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor.
 
 NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
 has no suffix (and is what the end user adds to their project).

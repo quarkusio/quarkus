@@ -135,14 +135,16 @@ public abstract class AbstractQuarkusRestContext<T extends AbstractQuarkusRestCo
                     boolean over = handlers == abortHandlerChain;
                     handleException(t);
                     if (over) {
+                        running = false;
                         return;
                     }
                 }
             }
+            running = false;
         } catch (Throwable t) {
             handleUnrecoverableError(t);
-        } finally {
             running = false;
+        } finally {
             if (position == handlers.length && !suspended) {
                 close();
             } else if (disasociateRequestScope) {

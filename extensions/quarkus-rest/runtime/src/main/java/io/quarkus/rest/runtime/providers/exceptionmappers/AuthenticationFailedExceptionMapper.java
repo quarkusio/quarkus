@@ -1,20 +1,45 @@
 package io.quarkus.rest.runtime.providers.exceptionmappers;
 
-import javax.annotation.Priority;
-import javax.ws.rs.Priorities;
+import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 
+import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestExceptionMapper;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
+import io.vertx.ext.web.RoutingContext;
 
-@Priority(Priorities.USER)
-@Provider
-public class AuthenticationFailedExceptionMapper implements ExceptionMapper<AuthenticationFailedException> {
+/**
+ * TODO: We'll probably need to make QuarkusRestExceptionMapper work in an async manner as
+ * this implementation blocks
+ */
+public class AuthenticationFailedExceptionMapper implements QuarkusRestExceptionMapper<AuthenticationFailedException> {
 
     @Override
     public Response toResponse(AuthenticationFailedException exception) {
-        return Response.status(Response.Status.UNAUTHORIZED).build();
+        return doToResponse(CDI.current().select(CurrentVertxRequest.class).get().getCurrent());
     }
 
+    @Override
+    public Response toResponse(AuthenticationFailedException exception, QuarkusRestRequestContext ctx) {
+        return doToResponse(ctx.getContext());
+    }
+
+    private Response doToResponse(RoutingContext routingContext) {
+        if (routingContext != null) {
+            HttpAuthenticator authenticator = routingContext.get(HttpAuthenticator.class.getName());
+            if (authenticator != null) {
+                ChallengeData challengeData = authenticator.getChallenge(routingContext)
+                        .await().indefinitely();
+                Response.ResponseBuilder status = Response.status(challengeData.status);
+                if (challengeData.headerName != null) {
+                    status.header(challengeData.headerName.toString(), challengeData.headerContent);
+                }
+                return status.build();
+            }
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("Not Authenticated").build();
+    }
 }

@@ -10,6 +10,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import org.jboss.logging.Logger;
 
 import io.quarkus.rest.runtime.model.ResourceExceptionMapper;
+import io.quarkus.rest.runtime.spi.QuarkusRestExceptionMapper;
 
 public class ExceptionMapping {
 
@@ -18,7 +19,7 @@ public class ExceptionMapping {
     private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
 
     @SuppressWarnings("unchecked")
-    public Response mapException(Throwable throwable) {
+    public Response mapException(Throwable throwable, QuarkusRestRequestContext context) {
         Class<?> klass = throwable.getClass();
         boolean isWebApplicationException = throwable instanceof WebApplicationException;
         Response response = null;
@@ -30,6 +31,9 @@ public class ExceptionMapping {
         // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
         ExceptionMapper exceptionMapper = getExceptionMapper((Class<Throwable>) klass);
         if (exceptionMapper != null) {
+            if (exceptionMapper instanceof QuarkusRestExceptionMapper) {
+                return ((QuarkusRestExceptionMapper) exceptionMapper).toResponse(throwable, context);
+            }
             return exceptionMapper.toResponse(throwable);
         }
         if (isWebApplicationException) {

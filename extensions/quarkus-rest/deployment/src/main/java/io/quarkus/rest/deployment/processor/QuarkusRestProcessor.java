@@ -120,7 +120,10 @@ import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
+import io.quarkus.rest.runtime.providers.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.rest.runtime.providers.exceptionmappers.AuthenticationFailedExceptionMapper;
+import io.quarkus.rest.runtime.providers.exceptionmappers.AuthenticationRedirectExceptionMapper;
+import io.quarkus.rest.runtime.providers.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.rest.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.util.Encode;
@@ -133,7 +136,10 @@ import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationRedirectException;
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
@@ -750,14 +756,30 @@ public class QuarkusRestProcessor {
             // built-ins
             registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
                     beanContainerBuildItem,
-                    UnauthorizedExceptionMapper.class.getName(),
-                    DotName.createSimple(UnauthorizedException.class.getName()),
+                    AuthenticationCompletionExceptionMapper.class.getName(),
+                    DotName.createSimple(AuthenticationCompletionException.class.getName()),
                     Priorities.USER, singletonClasses);
             registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
                     beanContainerBuildItem,
                     AuthenticationFailedExceptionMapper.class.getName(),
                     DotName.createSimple(AuthenticationFailedException.class.getName()),
+                    Priorities.USER + 1, singletonClasses);
+            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
+                    beanContainerBuildItem,
+                    AuthenticationRedirectExceptionMapper.class.getName(),
+                    DotName.createSimple(AuthenticationRedirectException.class.getName()),
                     Priorities.USER, singletonClasses);
+            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
+                    beanContainerBuildItem,
+                    ForbiddenExceptionMapper.class.getName(),
+                    DotName.createSimple(ForbiddenException.class.getName()),
+                    Priorities.USER + 1, singletonClasses);
+            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
+                    beanContainerBuildItem,
+                    UnauthorizedExceptionMapper.class.getName(),
+                    DotName.createSimple(UnauthorizedException.class.getName()),
+                    Priorities.USER + 1, singletonClasses);
+
             for (Map.Entry<DotName, ResourceExceptionMapper<Throwable>> entry : handledExceptionToHigherPriorityMapper
                     .entrySet()) {
                 recorder.registerExceptionMapper(exceptionMapping, entry.getKey().toString(), entry.getValue());

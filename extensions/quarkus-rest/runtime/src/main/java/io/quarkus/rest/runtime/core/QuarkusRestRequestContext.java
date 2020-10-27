@@ -318,7 +318,7 @@ public class QuarkusRestRequestContext extends AbstractQuarkusRestContext<Quarku
         // we got an exception
         if (throwable != null) {
             this.responseContentType = null;
-            setResult(deployment.getExceptionMapping().mapException(throwable));
+            setResult(deployment.getExceptionMapping().mapException(throwable, this));
             // NOTE: keep the throwable around for close() AsyncResponse notification
         }
     }

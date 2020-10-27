@@ -1,23 +1,53 @@
 package io.quarkus.rest.runtime.providers.exceptionmappers;
 
-import javax.annotation.Priority;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.HttpHeaders;
+import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 
+import org.jboss.logging.Logger;
+
+import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.spi.QuarkusRestExceptionMapper;
 import io.quarkus.security.UnauthorizedException;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
+import io.vertx.ext.web.RoutingContext;
 
-@Priority(Priorities.USER)
-@Provider
-public class UnauthorizedExceptionMapper implements ExceptionMapper<UnauthorizedException> {
+/**
+ * TODO: We'll probably need to make QuarkusRestExceptionMapper work in an async manner as
+ * this implementation blocks
+ */
+public class UnauthorizedExceptionMapper implements QuarkusRestExceptionMapper<UnauthorizedException> {
+
+    private static final Logger log = Logger.getLogger(UnauthorizedExceptionMapper.class.getName());
 
     @Override
     public Response toResponse(UnauthorizedException exception) {
-        // FIXME: figure out the realm
-        return Response.status(Response.Status.UNAUTHORIZED)
-                .header(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Please log in\"").build();
+        return doToResponse(CDI.current().select(CurrentVertxRequest.class).get().getCurrent());
     }
 
+    @Override
+    public Response toResponse(UnauthorizedException exception, QuarkusRestRequestContext ctx) {
+        return doToResponse(ctx.getContext());
+    }
+
+    private Response doToResponse(RoutingContext context) {
+        if (context != null) {
+            HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
+            if (authenticator != null) {
+                ChallengeData challengeData = authenticator.getChallenge(context)
+                        .await().indefinitely();
+                if (challengeData != null) {
+                    Response.ResponseBuilder status = Response.status(challengeData.status);
+                    if (challengeData.headerName != null) {
+                        status.header(challengeData.headerName.toString(), challengeData.headerContent);
+                    }
+                    return status.build();
+                } else {
+                    return Response.status(Response.Status.UNAUTHORIZED).build();
+                }
+            }
+        }
+        return Response.status(Response.Status.UNAUTHORIZED).entity("Not authorized").build();
+    }
 }

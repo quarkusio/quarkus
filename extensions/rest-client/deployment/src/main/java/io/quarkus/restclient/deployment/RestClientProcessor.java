@@ -77,6 +77,7 @@ import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.RestClientBuildItem;
+import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 
@@ -405,11 +406,14 @@ class RestClientProcessor {
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             ResteasyInjectionReadyBuildItem injectorFactory,
-            RestClientRecorder restClientRecorder) {
+            RestClientRecorder restClientRecorder,
+            ResteasyCommonConfig commonConfig) {
 
         restClientRecorder.initializeResteasyProviderFactory(injectorFactory.getInjectorFactory(),
                 jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
-                jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+                jaxrsProvidersToRegisterBuildItem.getProviders(),
+                jaxrsProvidersToRegisterBuildItem.getContributedProviders(),
+                commonConfig.gzip.maxInput.asLongValue());
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {

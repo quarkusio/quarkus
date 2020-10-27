@@ -12,6 +12,7 @@ import org.jboss.resteasy.core.providerfactory.ResteasyProviderFactoryImpl;
 import org.jboss.resteasy.microprofile.client.RestClientBuilderImpl;
 import org.jboss.resteasy.microprofile.client.RestClientExtension;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
+import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.InjectorFactory;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
@@ -46,7 +47,8 @@ public class RestClientRecorder {
 
     public void initializeResteasyProviderFactory(RuntimeValue<InjectorFactory> ifc, boolean useBuiltIn,
             Set<String> providersToRegister,
-            Set<String> contributedProviders) {
+            Set<String> contributedProviders,
+            long gzipMaxInput) {
         ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(RuntimeType.CLIENT,
                 new ResteasyProviderFactoryImpl()) {
             @Override
@@ -59,6 +61,9 @@ public class RestClientRecorder {
                 return ifc.getValue();
             }
         };
+
+        clientProviderFactory.property(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
+                Long.toString(gzipMaxInput));
 
         registerProviders(clientProviderFactory, useBuiltIn, providersToRegister, contributedProviders);
         RestClientBuilderImpl.setProviderFactory(clientProviderFactory);

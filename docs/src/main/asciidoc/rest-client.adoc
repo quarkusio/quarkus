@@ -190,6 +190,16 @@ country-api/mp-rest/url=https://restcountries.eu/rest #
 country-api/mp-rest/scope=javax.inject.Singleton # /
 ----
 
+
+=== Disabling Hostname Verification
+
+To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:
+
+[source,properties]
+----
+country-api/mp-rest/hostnameVerifier=io.quarkus.restclient.NoopHostnameVerifier
+----
+
 == Update the JAX-RS resource
 
 Open the `src/main/java/org/acme/rest/client/CountriesResource.java` file and update it with the following content:

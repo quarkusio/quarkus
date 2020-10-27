@@ -17,15 +17,16 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.graal.DisabledSSLContext;
-import io.quarkus.runtime.ssl.SslContextConfiguration;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.graalvm.nativeimage.ImageInfo;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.graal.DisabledSSLContext;
+import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 public class RestClientBase {
 
@@ -95,7 +96,7 @@ public class RestClientBase {
 
     private void registerHostnameVerifier(String verifier, RestClientBuilder builder) {
         try {
-            Class<?> verifierClass = Class.forName(verifier, true, Thread.currentThread().getContextClassLoader());
+            Class<?> verifierClass = Thread.currentThread().getContextClassLoader().loadClass(verifier);
             builder.hostnameVerifier((HostnameVerifier) verifierClass.getDeclaredConstructor().newInstance());
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(
@@ -105,7 +106,8 @@ public class RestClientBase {
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(
                     "Failed to instantiate hostname verifier class " + verifier
-                            + ". Make sure it has a public, no-argument constructor", e);
+                            + ". Make sure it has a public, no-argument constructor",
+                    e);
         } catch (ClassCastException e) {
             throw new RuntimeException("The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier",
                     e);

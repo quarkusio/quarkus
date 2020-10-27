@@ -9,6 +9,7 @@ import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -372,6 +373,11 @@ public class VertxCoreRecorder {
                 return threads;
             }
         };
+    }
+
+    public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config) {
+        return vertx = new VertxSupplier(config, Collections.emptyList());
+
     }
 
     static class VertxSupplier implements Supplier<Vertx> {

@@ -20,7 +20,7 @@ complete the conversion of these credentials to `SecurityIdentity`.
 
 For example, the credentials may be coming with the HTTP `Authorization` header, client HTTPS certificates or cookies.
 
-`IdentityProvider` verifies the authentication credentials and maps them to `SecurityIdentity` which contains the user name, roles, the original authentication credentials, and other attributes.
+`IdentityProvider` verifies the authentication credentials and maps them to `SecurityIdentity` which contains the username, roles, the original authentication credentials, and other attributes.
 
 For every authenticated resource, you can inject a `SecurityIdentity` instance to get the authenticated identity information.
 

@@ -701,7 +701,7 @@ In environments with read only file systems you may receive errors of the form:
 java.lang.IllegalStateException: Failed to create cache dir
 ----
 
-Assuming `/tmp/` is writeable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
+Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
 
 [[reverse-proxy]]
 == Running behind a reverse proxy
@@ -767,7 +767,7 @@ There are many other facets of Quarkus using Vert.x underneath:
 Quarkus integrates it so different beans can interact with asynchronous messages.
 This part is covered in the link:reactive-event-bus[event bus documentation].
 
-* Data streaming and Apache Kafka are a important parts of modern systems.
+* Data streaming and Apache Kafka are an important part of modern systems.
 Quarkus integrates data streaming using Reactive Messaging.
 More details on link:kafka[Interacting with Kafka].
 

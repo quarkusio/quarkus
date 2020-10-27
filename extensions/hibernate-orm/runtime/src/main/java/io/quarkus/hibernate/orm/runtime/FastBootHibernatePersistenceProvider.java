@@ -6,10 +6,8 @@ import java.util.Map;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
-import javax.persistence.spi.LoadState;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
-import javax.persistence.spi.ProviderUtil;
 import javax.sql.DataSource;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -17,7 +15,6 @@ import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 import org.hibernate.service.internal.ProvidedService;
 import org.jboss.logging.Logger;
 
@@ -41,7 +38,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
     private static final Logger log = Logger.getLogger(FastBootHibernatePersistenceProvider.class);
 
-    private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
+    private final ProviderUtil providerUtil = new ProviderUtil();
 
     @SuppressWarnings("rawtypes")
     @Override
@@ -286,22 +283,5 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, dataSourceHandle.get());
     }
-
-    private final ProviderUtil providerUtil = new ProviderUtil() {
-        @Override
-        public LoadState isLoadedWithoutReference(Object proxy, String property) {
-            return PersistenceUtilHelper.isLoadedWithoutReference(proxy, property, cache);
-        }
-
-        @Override
-        public LoadState isLoadedWithReference(Object proxy, String property) {
-            return PersistenceUtilHelper.isLoadedWithReference(proxy, property, cache);
-        }
-
-        @Override
-        public LoadState isLoaded(Object o) {
-            return PersistenceUtilHelper.isLoaded(o);
-        }
-    };
 
 }

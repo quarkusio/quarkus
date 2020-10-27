@@ -35,6 +35,11 @@
             <groupId>org.hibernate.reactive</groupId>
             <artifactId>hibernate-reactive-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

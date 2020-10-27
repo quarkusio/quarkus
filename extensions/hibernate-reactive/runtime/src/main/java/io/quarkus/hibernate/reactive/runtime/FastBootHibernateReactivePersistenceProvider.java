@@ -47,7 +47,9 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     public static final String IMPLEMENTATION_NAME = "org.hibernate.reactive.provider.ReactivePersistenceProvider";
 
-    private final FastBootHibernatePersistenceProvider delegate = new FastBootHibernatePersistenceProvider();
+    private final ProviderUtil providerUtil = new io.quarkus.hibernate.orm.runtime.ProviderUtil();
+
+    private volatile FastBootHibernatePersistenceProvider delegate;
 
     @Override
     public EntityManagerFactory createEntityManagerFactory(String emName, Map properties) {
@@ -208,25 +210,38 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     @Override
-    public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
-        //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
-        //persistence provider name checks and possibly reject if it's not a suitable.
-        return delegate.createContainerEntityManagerFactory(info, map);
+    public ProviderUtil getProviderUtil() {
+        return providerUtil;
     }
 
     @Override
-    public ProviderUtil getProviderUtil() {
-        return delegate.getProviderUtil();
+    public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
+        //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
+        //persistence provider name checks and possibly reject if it's not a suitable.
+        return getJdbcHibernatePersistenceProviderDelegate().createContainerEntityManagerFactory(info, map);
     }
 
     @Override
     public void generateSchema(PersistenceUnitInfo info, Map map) {
-        delegate.generateSchema(info, map);
+        getJdbcHibernatePersistenceProviderDelegate().generateSchema(info, map);
     }
 
     @Override
     public boolean generateSchema(String persistenceUnitName, Map map) {
-        return delegate.generateSchema(persistenceUnitName, map);
+        return getJdbcHibernatePersistenceProviderDelegate().generateSchema(persistenceUnitName, map);
+    }
+
+    private FastBootHibernatePersistenceProvider getJdbcHibernatePersistenceProviderDelegate() {
+        FastBootHibernatePersistenceProvider localDelegate = this.delegate;
+        if (localDelegate == null) {
+            synchronized (this) {
+                localDelegate = this.delegate;
+                if (localDelegate == null) {
+                    this.delegate = localDelegate = new FastBootHibernatePersistenceProvider();
+                }
+            }
+        }
+        return localDelegate;
     }
 
 }

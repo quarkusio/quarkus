@@ -23,6 +23,7 @@ import io.quarkus.deployment.builditem.ManagedExecutorInitializedBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationRecorder;
+import io.smallrye.context.SmallRyeManagedExecutor;
 
 /**
  * The deployment processor for MP-CP applications
@@ -76,8 +77,9 @@ class SmallRyeContextPropagationProcessor {
 
         // Synthetic bean for ManagedExecutor
         syntheticBeans.produce(
-                SyntheticBeanBuildItem.configure(ManagedExecutor.class)
+                SyntheticBeanBuildItem.configure(SmallRyeManagedExecutor.class)
                         .scope(ApplicationScoped.class)
+                        .addType(ManagedExecutor.class)
                         .defaultBean()
                         .unremovable()
                         .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy()))

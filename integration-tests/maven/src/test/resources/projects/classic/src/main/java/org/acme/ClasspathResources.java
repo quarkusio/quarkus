@@ -31,7 +31,8 @@ public class ClasspathResources {
                 () -> assertInvalidExactFileLocation(),
                 () -> assertCorrectExactFileLocation(),
                 () -> assertInvalidDirectory(),
-                () -> assertCorrectDirectory()
+                () -> assertCorrectDirectory(),
+                () -> assertMultiRelease()
         );
     }
 
@@ -61,6 +62,24 @@ public class ClasspathResources {
         }
     }
 
+    private String assertMultiRelease() {
+        final String testType = "assert-multi-release-jar";
+        if (System.getProperty("java.version").startsWith("1.")) {
+            return SUCCESS;
+        }
+        try {
+            //this class is only present in multi release jars
+            //for fast-jar we need to make sure it is loaded correctly
+            Class<?> clazz = this.getClass().getClassLoader().loadClass("io.smallrye.context.Jdk9CompletableFutureWrapper");
+            if (clazz.getClassLoader() == getClass().getClassLoader()) {
+                return SUCCESS;
+            }
+            return errorResult(testType, "Incorrect ClassLoader for " + clazz);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return errorResult(testType, "exception during resolution of resource");
+        }
+    }
     private String assertCorrectExactFileLocation() {
         final String testType = "correct-exact-location";
         try {

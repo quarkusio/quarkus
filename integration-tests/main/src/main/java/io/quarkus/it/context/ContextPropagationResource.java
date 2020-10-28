@@ -14,10 +14,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
-import org.eclipse.microprofile.context.ManagedExecutor;
+import org.eclipse.microprofile.context.ThreadContext;
 import org.wildfly.common.Assert;
 
 import io.quarkus.arc.Arc;
+import io.smallrye.context.SmallRyeManagedExecutor;
 
 @Path("context-propagation")
 public class ContextPropagationResource {
@@ -25,14 +26,42 @@ public class ContextPropagationResource {
     @Inject
     RequestBean doNotRemove;
     @Inject
-    ManagedExecutor allExec;
+    SmallRyeManagedExecutor smallRyeAllExec;
+    @Inject
+    SmallRyeManagedExecutor allExec;
+    @Inject
+    ThreadContext context;
+    @Inject
+    ThreadContext smallRyeContext;
     @Inject
     TransactionManager transactionManager;
 
+    @Path("managed-executor/created")
     @Transactional
     @GET
-    public CompletionStage<String> test(@Context UriInfo uriInfo) throws SystemException {
-        CompletableFuture<String> ret = allExec.completedFuture("OK");
+    public CompletionStage<String> testManagedExecutorCreated(@Context UriInfo uriInfo) throws SystemException {
+        return testCompletionStage(allExec.completedFuture("OK"), uriInfo);
+    }
+
+    @Path("managed-executor/obtained")
+    @Transactional
+    @GET
+    public CompletionStage<String> testManagedExecutorObtained(@Context UriInfo uriInfo) throws SystemException {
+        // make sure we can also do that with CF we obtained from other sources, via ManagedExecutor
+        CompletableFuture<String> completedFuture = CompletableFuture.completedFuture("OK");
+        return testCompletionStage(allExec.copy(completedFuture), uriInfo);
+    }
+
+    @Path("thread-context")
+    @Transactional
+    @GET
+    public CompletionStage<String> testThreadContext(@Context UriInfo uriInfo) throws SystemException {
+        // make sure we can also do that with CF we obtained from other sources, via ThreadContext
+        CompletableFuture<String> completedFuture = CompletableFuture.completedFuture("OK");
+        return testCompletionStage(context.withContextCapture(completedFuture), uriInfo);
+    }
+
+    private CompletionStage<String> testCompletionStage(CompletionStage<String> stage, UriInfo uriInfo) throws SystemException {
         // Transaction
         Transaction t1 = transactionManager.getTransaction();
         Assert.assertTrue(t1 != null);
@@ -43,7 +72,7 @@ public class ContextPropagationResource {
         Assert.assertTrue(rb1 != null);
         String rbValue = rb1.callMe();
 
-        return ret.thenApplyAsync(text -> {
+        return stage.thenApplyAsync(text -> {
             // RESTEasy
             uriInfo.getAbsolutePath();
             // ArC

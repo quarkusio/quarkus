@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -18,6 +19,7 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
@@ -30,7 +32,23 @@ import org.jboss.logging.Logger;
  */
 public class JarClassPathElement implements ClassPathElement {
 
+    private static final int JAVA_VERSION;
+
+    static {
+        int version = 8;
+        try {
+            Method versionMethod = Runtime.class.getMethod("version");
+            Object v = versionMethod.invoke(null);
+            List<Integer> list = (List<Integer>) v.getClass().getMethod("version").invoke(v);
+            version = list.get(0);
+        } catch (Exception e) {
+            //version 8
+        }
+        JAVA_VERSION = version;
+    }
+
     private static final Logger log = Logger.getLogger(JarClassPathElement.class);
+    public static final String META_INF_VERSIONS = "META-INF/versions/";
     private final File file;
     private final URL jarPath;
     private final Path root;
@@ -145,6 +163,26 @@ public class JarClassPathElement implements ClassPathElement {
                         paths.add(entry.getName().substring(0, entry.getName().length() - 1));
                     } else {
                         paths.add(entry.getName());
+                    }
+                }
+                //multi release jars can add additional entries
+                if (JarFiles.isMultiRelease(jarFile)) {
+                    Set<String> copy = new HashSet<>(paths);
+                    for (String i : copy) {
+                        if (i.startsWith(META_INF_VERSIONS)) {
+                            String part = i.substring(META_INF_VERSIONS.length());
+                            int slash = part.indexOf("/");
+                            if (slash != -1) {
+                                try {
+                                    int ver = Integer.parseInt(part.substring(0, slash));
+                                    if (ver <= JAVA_VERSION) {
+                                        paths.add(part.substring(slash + 1));
+                                    }
+                                } catch (NumberFormatException e) {
+                                    log.debug("Failed to parse META-INF/versions entry", e);
+                                }
+                            }
+                        }
                     }
                 }
                 return paths;

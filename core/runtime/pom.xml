@@ -119,6 +119,7 @@
                 <configuration>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-io</parentFirstArtifact>
                         <parentFirstArtifact>org.wildfly.common:wildfly-common</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:graal-sdk</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.nativeimage:svm</parentFirstArtifact>

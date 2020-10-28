@@ -566,12 +566,10 @@ public class DevMojo extends AbstractMojo {
     }
 
     private QuarkusDevModeLauncher newLauncher() throws Exception {
-        System.out.println("DevMojo.newLauncher " + toolchainManager);
         String java = null;
         // See if a toolchain is configured
         if (toolchainManager != null) {
             Toolchain toolchain = toolchainManager.getToolchainFromBuildContext("jdk", session);
-            System.out.println("  " + toolchain);
             if (toolchain != null) {
                 java = toolchain.findTool("java");
                 getLog().info("JVM from toolchain: " + java);

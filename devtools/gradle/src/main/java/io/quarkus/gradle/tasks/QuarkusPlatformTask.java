@@ -16,8 +16,8 @@ import org.gradle.api.tasks.Internal;
 
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.BuildFile;
-import io.quarkus.gradle.GroovyBuildFileFromConnector;
-import io.quarkus.gradle.KotlinBuildFileFromConnector;
+import io.quarkus.devtools.project.buildfile.GradleGroovyProjectBuildFile;
+import io.quarkus.devtools.project.buildfile.GradleKotlinProjectBuildFile;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
@@ -70,24 +70,23 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     @Internal
-    protected BuildFile getGradleBuildFile() {
+    protected QuarkusProject getQuarkusProject() {
+        final QuarkusPlatformDescriptor platformDescriptor = platformDescriptor();
         final Path projectDirPath = getProject().getProjectDir().toPath();
         final Path rootProjectPath = getProject().getParent() != null ? getProject().getRootProject().getProjectDir().toPath()
                 : projectDirPath;
+        final BuildFile buildFile;
         if (Files.exists(rootProjectPath.resolve("settings.gradle.kts"))
                 && Files.exists(projectDirPath.resolve("build.gradle.kts"))) {
-            return new KotlinBuildFileFromConnector(projectDirPath, platformDescriptor(), rootProjectPath);
+            buildFile = new GradleKotlinProjectBuildFile(getProject(), platformDescriptor);
         } else if (Files.exists(rootProjectPath.resolve("settings.gradle"))
                 && Files.exists(projectDirPath.resolve("build.gradle"))) {
-            return new GroovyBuildFileFromConnector(projectDirPath, platformDescriptor(), rootProjectPath);
+            buildFile = new GradleGroovyProjectBuildFile(getProject(), platformDescriptor);
+        } else {
+            throw new GradleException(
+                    "Mixed DSL is not supported. Both build and settings file need to use either Kotlin or Groovy DSL");
         }
-        throw new GradleException(
-                "Mixed DSL is not supported. Both build and settings file need to use either Kotlin or Groovy DSL");
-    }
-
-    @Internal
-    protected QuarkusProject getQuarkusProject() {
-        return QuarkusProject.of(getProject().getProjectDir().toPath(), platformDescriptor(), getGradleBuildFile());
+        return QuarkusProject.of(getProject().getProjectDir().toPath(), platformDescriptor, buildFile);
     }
 
     protected static URL toURL(String url) {

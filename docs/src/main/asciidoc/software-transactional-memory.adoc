@@ -180,7 +180,7 @@ concurrency control.
 <2> Then you create an instance that implements `FlightService`. You should not use it directly at this stage because
     access to it is not being managed by the STM subsystem.
 <3> To obtain a managed instance, pass the original object to the STM `container` which then returns a reference
-    through which you will be able perform transactional operations. This reference can be used safely from multiple threads.
+    through which you will be able to perform transactional operations. This reference can be used safely from multiple threads.
 
 == Defining transaction boundaries
 

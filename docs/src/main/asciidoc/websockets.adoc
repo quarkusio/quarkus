@@ -166,7 +166,7 @@ You can also test your web socket applications using the approach detailed {quic
 
 Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection.
 
-When you connect to the server you can either pass in the Class of the annotated client endpoint you want to use, or a an instance of `javax.websocket.Endpoint`. If you
+When you connect to the server you can either pass in the Class of the annotated client endpoint you want to use, or an instance of `javax.websocket.Endpoint`. If you
 are using the annotated endpoint then you can use the exact same annotations as you can on the server, except it must be annotated with `@ClientEndpoint` instead of
 `@ServerEndpoint`.
 

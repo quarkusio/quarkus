@@ -30,6 +30,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
      */
     final Set<String> requireConstPoolEntry;
 
+    final boolean cacheable;
+
     public BytecodeTransformerBuildItem(String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
         this(classToTransform, visitorFunction, null);
@@ -46,11 +48,23 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     }
 
     public BytecodeTransformerBuildItem(boolean eager, String classToTransform,
+            BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction, boolean cacheable) {
+        this(eager, classToTransform, visitorFunction, null, cacheable);
+    }
+
+    public BytecodeTransformerBuildItem(boolean eager, String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction, Set<String> requireConstPoolEntry) {
+        this(eager, classToTransform, visitorFunction, requireConstPoolEntry, false);
+    }
+
+    public BytecodeTransformerBuildItem(boolean eager, String classToTransform,
+            BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction, Set<String> requireConstPoolEntry,
+            boolean cacheable) {
         this.eager = eager;
         this.classToTransform = classToTransform;
         this.visitorFunction = visitorFunction;
         this.requireConstPoolEntry = requireConstPoolEntry;
+        this.cacheable = cacheable;
     }
 
     public String getClassToTransform() {
@@ -67,5 +81,9 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     public boolean isEager() {
         return eager;
+    }
+
+    public boolean isCacheable() {
+        return cacheable;
     }
 }

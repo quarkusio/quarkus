@@ -28,6 +28,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.AugmentAction;
+import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
@@ -45,6 +46,7 @@ import io.quarkus.deployment.util.FSWatchUtil;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
+import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
@@ -72,7 +74,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             boolean augmentDone = false;
             //ok, we have resolved all the deps
             try {
-                StartupAction start = augmentAction.createInitialRuntimeApplication();
+                StartupActionImpl start = (StartupActionImpl) augmentAction.createInitialRuntimeApplication();
                 //this is a bit yuck, but we need replace the default
                 //exit handler in the runtime class loader
                 //TODO: look at implementing a common core classloader, that removes the need for this sort of crappy hack
@@ -96,7 +98,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     }
                                     System.out.println("Restarting...");
                                     RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
-                                    restartApp(RuntimeUpdatesProcessor.INSTANCE.checkForFileChange());
+                                    restartApp(RuntimeUpdatesProcessor.INSTANCE.checkForFileChange(), null);
                                 } catch (Exception e) {
                                     log.error("Failed to restart", e);
                                 }
@@ -104,7 +106,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         });
 
                 startCodeGenWatcher(deploymentClassLoader, codeGens, context.getBuildSystemProperties());
-
                 augmentDone = true;
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
@@ -168,7 +169,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         FSWatchUtil.observe(watchers, 500);
     }
 
-    public synchronized void restartApp(Set<String> changedResources) {
+    public void restartCallback(Set<String> changedResources, ClassScanResult result) {
+        restartApp(changedResources,
+                new ClassChangeInformation(result.changedClassNames, result.deletedClassNames, result.addedClassNames));
+    }
+
+    public synchronized void restartApp(Set<String> changedResources, ClassChangeInformation classChangeInformation) {
         restarting = true;
         stop();
         Timing.restart(curatedApplication.getAugmentClassLoader());
@@ -178,7 +184,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
             //ok, we have resolved all the deps
             try {
-                StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources);
+                StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources,
+                        classChangeInformation);
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
@@ -217,7 +224,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 return null;
             }
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(appRoot, context, compiler,
-                    devModeType, this::restartApp, null);
+                    devModeType, this::restartCallback, null);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
                     curatedApplication.getBaseRuntimeClassLoader())) {

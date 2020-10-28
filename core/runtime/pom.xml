@@ -148,6 +148,7 @@
                         <parentFirstArtifact>org.junit.jupiter:junit-jupiter-params</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>

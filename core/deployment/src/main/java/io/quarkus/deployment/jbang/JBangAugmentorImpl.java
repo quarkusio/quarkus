@@ -2,7 +2,13 @@ package io.quarkus.deployment.jbang;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -58,7 +64,8 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
 
         builder.setLaunchMode(LaunchMode.NORMAL);
         builder.setRebuild(quarkusBootstrap.isRebuild());
-        builder.setLiveReloadState(new LiveReloadBuildItem(false, Collections.emptySet(), new HashMap<>()));
+        builder.setLiveReloadState(
+                new LiveReloadBuildItem(false, Collections.emptySet(), new HashMap<>(), null));
         for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
             //this gets added to the class path either way
             //but we only need to add it to the additional app archives

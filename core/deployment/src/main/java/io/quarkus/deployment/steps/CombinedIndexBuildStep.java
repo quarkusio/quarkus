@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.index.IndexWrapper;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.index.PersistentClassIndex;
@@ -51,6 +52,7 @@ public class CombinedIndexBuildStep {
         }
 
         CompositeIndex compositeIndex = CompositeIndex.create(archivesIndex, indexer.complete());
+        RuntimeUpdatesProcessor.setLastStartIndex(compositeIndex);
         return new CombinedIndexBuildItem(compositeIndex,
                 new IndexWrapper(compositeIndex, Thread.currentThread().getContextClassLoader(), index));
     }

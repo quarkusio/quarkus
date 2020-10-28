@@ -13,7 +13,7 @@ public class CodestartProjectInputBuilder {
     Map<String, Object> data = new HashMap<>();
     MessageWriter messageWriter = MessageWriter.info();
 
-    CodestartProjectInputBuilder() {
+    protected CodestartProjectInputBuilder() {
 
     }
 

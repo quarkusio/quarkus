@@ -1,4 +1,4 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.codestarts.quarkus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,11 +12,14 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
+import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.project.BuildTool;
 
 class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
 
-    private final Path projectPath = Paths.get("target/codestarts-test");
+    private final Path projectPath = Paths.get("target/quarkus-codestart-catalog-test");
 
     @BeforeEach
     void setUp() throws IOException {
@@ -24,7 +27,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void loadQuarkusCodestartsTest() throws IOException {
+    void loadTest() throws IOException {
         final QuarkusCodestartCatalog catalog = getCatalog();
         assertThat(catalog.getCodestarts())
                 .filteredOn(c -> c.getType().isBase())

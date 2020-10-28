@@ -1,4 +1,4 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.codestarts.quarkus;
 
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.HashMap;

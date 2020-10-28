@@ -1,8 +1,15 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.codestarts.quarkus;
 
+import static io.quarkus.devtools.codestarts.QuarkusPlatformCodestartResourceLoader.platformPathLoader;
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
+import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartPathLoader;
+import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -69,11 +76,6 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         }
         final Map<String, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
         return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
-    }
-
-    @Override
-    public CodestartProjectDefinition createProject(QuarkusCodestartProjectInput projectInput) {
-        return super.createProject(projectInput);
     }
 
     @Override
@@ -153,25 +155,8 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return codestarts;
     }
 
-    public static CodestartPathLoader platformPathLoader(QuarkusPlatformDescriptor platformDescr) {
-        return new QuarkusPlatformCodestartResourceLoader(platformDescr);
-    }
-
     public static boolean isExample(Codestart codestart) {
         return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.getKey());
-    }
-
-    private static class QuarkusPlatformCodestartResourceLoader implements CodestartPathLoader {
-        private QuarkusPlatformDescriptor platformDescr;
-
-        QuarkusPlatformCodestartResourceLoader(QuarkusPlatformDescriptor platformDescr) {
-            this.platformDescr = platformDescr;
-        }
-
-        @Override
-        public <T> T loadResourceAsPath(String name, PathConsumer<T> consumer) throws IOException {
-            return platformDescr.loadResourceAsPath(name, consumer::consume);
-        }
     };
 
     interface KeySupplier {

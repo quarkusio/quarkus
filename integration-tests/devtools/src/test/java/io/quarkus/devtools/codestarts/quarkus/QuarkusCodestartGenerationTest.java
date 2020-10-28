@@ -1,7 +1,7 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.codestarts.quarkus;
 
 import static io.quarkus.devtools.ProjectTestUtil.checkContains;
-import static io.quarkus.devtools.codestarts.QuarkusCodestartData.DataKey.*;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.DataKey.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -23,7 +23,7 @@ import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
-    private static final Path testDirPath = Paths.get("target/codestarts-test");
+    private static final Path testDirPath = Paths.get("target/quarkus-codestart-gen-test");
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -60,14 +60,14 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectEmpty() throws IOException {
+    void generateDefault() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .noExamples()
                 .noDockerfiles()
                 .noBuildToolWrapper()
                 .addData(getTestInputData())
                 .build();
-        final Path projectDir = testDirPath.resolve("empty");
+        final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
 
         checkMaven(projectDir);
@@ -80,13 +80,13 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectCommandMode() throws IOException {
+    void generateCommandMode() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addCodestart("commandmode")
                 .addData(getTestInputData())
                 .build();
 
-        final Path projectDir = testDirPath.resolve("default-examples");
+        final Path projectDir = testDirPath.resolve("commandmode");
         getCatalog().createProject(input).generate(projectDir);
 
         checkMaven(projectDir);
@@ -98,7 +98,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectCommandModeCustom() throws IOException {
+    void generateCommandModeCustom() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addCodestart("commandmode")
                 .addData(getTestInputData())
@@ -119,7 +119,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectRESTEasyJavaCustom() throws IOException {
+    void generateRESTEasyJavaCustom() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -155,7 +155,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectRESTEasySpringWeb() throws IOException {
+    void generateRESTEasySpringWeb() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -185,7 +185,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateMavenProjectWithCustomDep() throws IOException {
+    void generateMavenWithCustomDep() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -209,7 +209,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectRESTEasyKotlinCustom() throws IOException {
+    void generateRESTEasyKotlinCustom() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -242,7 +242,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectRESTEasyScalaCustom() throws IOException {
+    void generateRESTEasyScalaCustom() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -275,7 +275,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectMavenDefaultJava() throws IOException {
+    void generateMavenDefaultJava() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData())
                 .build();
@@ -293,7 +293,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectMavenResteasyJava() throws IOException {
+    void generateMavenResteasyJava() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getTestInputData())
@@ -312,7 +312,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectMavenConfigYamlJava() throws IOException {
+    void generateMavenConfigYamlJava() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .addData(getTestInputData())
@@ -329,7 +329,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectMavenResteasyKotlin() throws IOException {
+    void generateMavenResteasyKotlin() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
@@ -349,7 +349,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectMavenResteasyScala() throws IOException {
+    void generateMavenResteasyScala() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
@@ -369,7 +369,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectGradleResteasyJava() throws IOException {
+    void generateGradleResteasyJava() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
                 .addCodestart("gradle")
@@ -390,7 +390,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectGradleResteasyKotlin() throws IOException {
+    void generateGradleResteasyKotlin() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -412,7 +412,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectGradleResteasyScala() throws IOException {
+    void generateGradleResteasyScala() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -433,7 +433,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectGradleWithKotlinDslResteasyJava() throws IOException {
+    void generateGradleWithKotlinDslResteasyJava() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -451,7 +451,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectGradleWithKotlinDslResteasyKotlin() throws IOException {
+    void generateGradleWithKotlinDslResteasyKotlin() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -470,7 +470,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectGradleWithKotlinDslResteasyScala() throws IOException {
+    void generateGradleWithKotlinDslResteasyScala() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -489,7 +489,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateProjectQute() throws IOException {
+    void generateQute() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-qute"))
                 .addCodestart("qute")

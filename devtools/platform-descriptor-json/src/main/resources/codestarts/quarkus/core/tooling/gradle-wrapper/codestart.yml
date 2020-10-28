@@ -1,5 +1,8 @@
 name: gradle-wrapper
 type: tooling
+output-strategy:
+  "gradlew": "executable"
+  "gradlew.bat": "executable"
 language:
   base:
     data:

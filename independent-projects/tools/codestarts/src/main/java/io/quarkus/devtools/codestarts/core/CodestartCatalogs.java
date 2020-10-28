@@ -1,7 +1,5 @@
 package io.quarkus.devtools.codestarts.core;
 
-import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
-
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;

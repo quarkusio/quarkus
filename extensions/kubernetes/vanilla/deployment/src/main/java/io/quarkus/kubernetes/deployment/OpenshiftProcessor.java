@@ -8,6 +8,7 @@ import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
+import static io.quarkus.kubernetes.deployment.OpenshiftConfig.OpenshiftFlavor.v3;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
 import java.util.ArrayList;
@@ -129,6 +130,20 @@ public class OpenshiftProcessor {
         result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, config, metricsConfiguration,
                 annotations, labels, command,
                 ports, livenessPath, readinessPath, roles, roleBindings));
+
+        if (config.flavor == v3) {
+            //Openshift 3.x doesn't recognize 'app.kubernetes.io/name', it uses 'app' instead.
+            //The decorator will be applied even on non-openshift resources is it may affect for example: knative
+            result.add(new DecoratorBuildItem(new AddLabelDecorator(name, "app", name)));
+
+            // The presence of optional is causing issues in OCP 3.11, so we better remove them.
+            // The following 4 decorator will set the optional property to null, so that it won't make it into the file.
+            //The decorators will be applied even on non-openshift resources is they may affect for example: knative
+            result.add(new DecoratorBuildItem(new RemoveOptionalFromSecretEnvSourceDecorator()));
+            result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapEnvSourceDecorator()));
+            result.add(new DecoratorBuildItem(new RemoveOptionalFromSecretKeySelectorDecorator()));
+            result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapKeySelectorDecorator()));
+        }
 
         if (config.getReplicas() != 1) {
             result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyReplicasDecorator(name, config.getReplicas())));

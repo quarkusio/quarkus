@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -129,7 +131,7 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             public Mail apply(List<?> ignored) {
                 for (Result res : results) {
                     // We can safely access the content here: 1. it has been resolved, 2. it's cached.
-                    String content = res.value.await().indefinitely();
+                    String content = res.getRendered();
                     if (res.variant.getContentType().equals(Variant.TEXT_HTML)) {
                         mail.setHtml(content);
                     } else if (res.variant.getContentType().equals(Variant.TEXT_PLAIN)) {
@@ -145,14 +147,25 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
         final Variant variant;
         final Uni<String> value;
+        final AtomicReference<String> rendered = new AtomicReference<>();
 
         public Result(Variant variant, Uni<String> result) {
             this.variant = variant;
-            this.value = result.cache();
+            this.value = result
+                    .onItem().invoke(new Consumer<String>() {
+                        @Override
+                        public void accept(String r) {
+                            rendered.set(r);
+                        }
+                    });
         }
 
         Uni<String> getValue() {
             return value;
+        }
+
+        public String getRendered() {
+            return rendered.get();
         }
     }
 

@@ -50,7 +50,9 @@ public class SseTestCase {
     private void testSse(String path) throws Exception {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
-        try (SseEventSource eventSource = SseEventSource.target(target).build()) {
+        // do not reconnect
+        try (SseEventSource eventSource = SseEventSource.target(target).reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS)
+                .build()) {
             CompletableFuture<List<String>> res = new CompletableFuture<>();
             List<String> collect = new ArrayList<>();
             eventSource.register(new Consumer<InboundSseEvent>() {

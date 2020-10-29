@@ -69,7 +69,8 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
             HttpClientResponse vertxResponse) {
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
-        QuarkusRestSseEventSource sseSource = new QuarkusRestSseEventSource(target, 500, TimeUnit.MILLISECONDS);
+        // For now we don't want multi to reconnect
+        QuarkusRestSseEventSource sseSource = new QuarkusRestSseEventSource(target, Integer.MAX_VALUE, TimeUnit.SECONDS);
         // FIXME: deal with cancellation
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or

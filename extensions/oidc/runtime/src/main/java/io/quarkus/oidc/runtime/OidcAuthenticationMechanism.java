@@ -64,10 +64,10 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     private boolean isWebApp(RoutingContext context, TenantConfigContext tenantContext) {
-        if (OidcTenantConfig.ApplicationType.HYBRID == tenantContext.oidcConfig.applicationType) {
+        if (OidcTenantConfig.ApplicationType.HYBRID == tenantContext.oidcConfig.getApplicationType()) {
             return context.request().getHeader("Authorization") == null;
         }
-        return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.applicationType;
+        return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.getApplicationType();
     }
 
     @Override

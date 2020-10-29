@@ -80,6 +80,8 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         realm.getRoles().getRealm().add(new RoleRepresentation("confidential", null, false));
 
+        realm.setAccessTokenLifespan(10);
+
         return realm;
     }
 

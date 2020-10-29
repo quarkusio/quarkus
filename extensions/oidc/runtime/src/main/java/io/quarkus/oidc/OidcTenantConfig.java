@@ -187,8 +187,8 @@ public class OidcTenantConfig {
          * Certificate validation and hostname verification, which can be one of the following values from enum
          * {@link Verification}. Default is required.
          */
-        @ConfigItem(defaultValue = "REQUIRED")
-        public Verification verification;
+        @ConfigItem(defaultValue = "required")
+        public Verification verification = Verification.REQUIRED;
 
         public Verification getVerification() {
             return verification;
@@ -257,7 +257,7 @@ public class OidcTenantConfig {
          * Default TokenStateManager strategy.
          */
         @ConfigItem(defaultValue = "keep_all_tokens")
-        public Strategy strategy;
+        public Strategy strategy = Strategy.KEEP_ALL_TOKENS;
 
         /**
          * Default TokenStateManager keeps all tokens (ID, access and refresh)
@@ -435,6 +435,14 @@ public class OidcTenantConfig {
 
     public Logout getLogout() {
         return logout;
+    }
+
+    public ApplicationType getApplicationType() {
+        return applicationType;
+    }
+
+    public void setApplicationType(ApplicationType applicationType) {
+        this.applicationType = applicationType;
     }
 
     @ConfigGroup

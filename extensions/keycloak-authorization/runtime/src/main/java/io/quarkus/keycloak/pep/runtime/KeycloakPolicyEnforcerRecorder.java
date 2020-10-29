@@ -12,8 +12,9 @@ public class KeycloakPolicyEnforcerRecorder {
 
     public void setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config, BeanContainer beanContainer,
             HttpConfiguration httpConfiguration) {
-        if (oidcConfig.defaultTenant.applicationType == OidcTenantConfig.ApplicationType.WEB_APP) {
-            throw new OIDCException("Application type [" + oidcConfig.defaultTenant.applicationType + "] is not supported");
+        if (oidcConfig.defaultTenant.getApplicationType() == OidcTenantConfig.ApplicationType.WEB_APP) {
+            throw new OIDCException(
+                    "Application type [" + oidcConfig.defaultTenant.getApplicationType() + "] is not supported");
         }
         beanContainer.instance(KeycloakPolicyEnforcerAuthorizer.class).init(oidcConfig, config, httpConfiguration);
     }

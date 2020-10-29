@@ -618,8 +618,6 @@ public class QuarkusRestRequestContext extends AbstractQuarkusRestContext<Quarku
     @Override
     protected void restarted(boolean keepTarget) {
         parameters = new Object[0];
-        target = null;
-        parameters = new Object[0];
         if (!keepTarget) {
             target = null;
         }

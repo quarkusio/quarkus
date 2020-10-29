@@ -41,6 +41,7 @@ import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.RE
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.REST_QUERY_PARAM;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.SORTED_SET;
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.SSE_ELEMENT_TYPE;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.UNI;
@@ -251,6 +252,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
+        String classSseElementType = null;
+        AnnotationInstance classSseElementTypeAnnotation = currentClassInfo.classAnnotation(SSE_ELEMENT_TYPE);
+        if (classSseElementTypeAnnotation != null) {
+            classSseElementType = classSseElementTypeAnnotation.value().asString();
+        }
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
@@ -275,7 +281,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                         methodPath = "/";
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                            classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, pathParameters);
+                            classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, pathParameters,
+                            classSseElementType);
 
                     ret.add(method);
                 }
@@ -303,7 +310,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             classProduces, classConsumes, classNameBindings, null, info, methodPath,
-                            pathParameters);
+                            pathParameters, classSseElementType);
                     ret.add(method);
                 }
             }
@@ -345,7 +352,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     private ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
-            Set<String> classPathParameters) {
+            Set<String> classPathParameters, String classSseElementType) {
         try {
             Set<String> pathParameters = new HashSet<>(classPathParameters);
             URLUtils.parsePathParameters(methodPath, pathParameters);
@@ -412,6 +419,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
 
             String[] produces = extractProducesConsumesValues(info.annotation(PRODUCES), classProduces);
             produces = applyDefaultProduces(produces, nonAsyncReturnType);
+
+            String sseElementType = classSseElementType;
+            AnnotationInstance sseElementTypeAnnotation = info.annotation(SSE_ELEMENT_TYPE);
+            if (sseElementTypeAnnotation != null) {
+                sseElementType = sseElementTypeAnnotation.value().asString();
+            }
             Set<String> nameBindingNames = nameBindingNames(info, classNameBindings);
             boolean blocking = defaultBlocking;
             AnnotationInstance blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
@@ -444,6 +457,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                     .setBlocking(blocking)
                     .setSuspended(suspended)
                     .setSse(sse)
+                    .setSseElementType(sseElementType)
                     .setFormParamRequired(formParamRequired)
                     .setCDIRequestScopeRequired(cdiRequestScopeRequired)
                     .setParameters(methodParameters)

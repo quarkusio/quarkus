@@ -39,34 +39,42 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
         this.reconnectDelay = reconnectDelay;
         this.type = type;
         this.genericType = genericType;
-        this.mediaType = mediaType;
+        this.mediaType = mediaType != null ? mediaType : MediaType.TEXT_PLAIN_TYPE;
+        this.mediaTypeSet = mediaType != null;
         this.data = data;
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public long getReconnectDelay() {
         return reconnectDelay;
     }
 
+    @Override
     public boolean isReconnectDelaySet() {
         return reconnectDelay > -1;
     }
 
+    @Override
     public Class<?> getType() {
         return type;
     }
 
+    @Override
     public Type getGenericType() {
         return genericType;
     }
 
+    @Override
     public MediaType getMediaType() {
         return mediaType;
     }
@@ -80,10 +88,12 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
         mediaTypeSet = true;
     }
 
+    @Override
     public String getComment() {
         return comment;
     }
 
+    @Override
     public Object getData() {
         return data;
     }
@@ -111,19 +121,22 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
 
         private Object data;
 
-        private MediaType mediaType = MediaType.TEXT_PLAIN_TYPE;
+        private MediaType mediaType;
 
-        public Builder name(String name) {
+        @Override
+        public BuilderImpl name(String name) {
             this.name = name;
             return this;
         }
 
-        public Builder id(String id) {
+        @Override
+        public BuilderImpl id(String id) {
             this.id = id;
             return this;
         }
 
-        public Builder reconnectDelay(long milliseconds) {
+        @Override
+        public BuilderImpl reconnectDelay(long milliseconds) {
             if (milliseconds < 0) {
                 milliseconds = SseEvent.RECONNECT_NOT_SET;
             }
@@ -131,18 +144,21 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
             return this;
         }
 
-        public Builder mediaType(final MediaType mediaType) {
+        @Override
+        public BuilderImpl mediaType(final MediaType mediaType) {
             Objects.requireNonNull(mediaType);
             this.mediaType = mediaType;
             return this;
         }
 
-        public Builder comment(String comment) {
+        @Override
+        public BuilderImpl comment(String comment) {
             this.comment = comment;
             return this;
         }
 
-        public Builder data(Class type, Object data) {
+        @Override
+        public BuilderImpl data(Class type, Object data) {
             Objects.requireNonNull(type);
             Objects.requireNonNull(data);
 
@@ -152,7 +168,8 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
             return this;
         }
 
-        public Builder data(GenericType type, Object data) {
+        @Override
+        public BuilderImpl data(GenericType type, Object data) {
             Objects.requireNonNull(type);
             Objects.requireNonNull(data);
 
@@ -162,7 +179,8 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
             return this;
         }
 
-        public Builder data(Object data) {
+        @Override
+        public BuilderImpl data(Object data) {
             Objects.requireNonNull(data);
 
             if (data instanceof GenericEntity) {
@@ -177,7 +195,8 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
             return this;
         }
 
-        public OutboundSseEvent build() {
+        @Override
+        public QuarkusRestOutboundSseEvent build() {
             if (this.comment == null && this.data == null) {
                 throw new IllegalArgumentException("Must set either comment or data");
             }

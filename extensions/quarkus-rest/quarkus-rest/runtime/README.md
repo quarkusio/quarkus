@@ -35,6 +35,9 @@
 - Optim: CookieParser splits things without checking if a separator exists, but it's too weird to touch ATM (see spec discussion)
 - I don't think we handle generic endpoints well: we don't appear to apply type arguments for methods defined in generic supertypes,
   so we see all method parameters as `Object`. Same for bean params.
+- SSE questions
+  - Should we add @Sse annotation instead of @Produces(MediaType.SERVER_SENT_EVENTS), and use @Produces for the current @SseElementType?
+  - Should we do something to prevent reconnect when the server is done?
 
 ** JAXRS SPEC observations
 

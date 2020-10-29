@@ -35,13 +35,21 @@ public class SseTestCase {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SseResource.class));
+                    .addClasses(SseResource.class, Message.class));
 
     @Test
-    public void testSse() throws Exception {
+    public void testSseFromSse() throws Exception {
+        testSse("sse");
+    }
 
+    @Test
+    public void testSseFromMulti() throws Exception {
+        testSse("sse/multi");
+    }
+
+    private void testSse(String path) throws Exception {
         Client client = ClientBuilder.newBuilder().build();
-        WebTarget target = client.target(uri.toString() + "sse");
+        WebTarget target = client.target(uri.toString() + path);
         try (SseEventSource eventSource = SseEventSource.target(target).build()) {
             CompletableFuture<List<String>> res = new CompletableFuture<>();
             List<String> collect = new ArrayList<>();
@@ -65,13 +73,43 @@ public class SseTestCase {
 
     @Disabled("This is too unstable at the moment")
     @Test
-    public void testSseMulti() throws Exception {
+    public void testMultiFromSse() throws Exception {
+        testMulti("sse");
+    }
+
+    @Test
+    public void testMultiFromMulti() throws Exception {
+        testMulti("sse/multi");
+    }
+
+    private void testMulti(String path) {
         Client client = ClientBuilder.newBuilder().build();
-        WebTarget target = client.target(uri.toString() + "sse/multi");
+        WebTarget target = client.target(uri.toString() + path);
         Multi<String> multi = target.request().rx(QuarkusRestMultiInvoker.class).get(String.class);
         List<String> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(30));
         Assertions.assertEquals(2, list.size());
         Assertions.assertEquals("hello", list.get(0));
         Assertions.assertEquals("stef", list.get(1));
+    }
+
+    @Test
+    public void testJsonMultiFromSse() throws Exception {
+        testJsonMulti("sse/json");
+        testJsonMulti("sse/json2");
+    }
+
+    @Test
+    public void testJsonMultiFromMulti() throws Exception {
+        testJsonMulti("sse/json/multi");
+    }
+
+    private void testJsonMulti(String path) {
+        Client client = ClientBuilder.newBuilder().build();
+        WebTarget target = client.target(uri.toString() + path);
+        Multi<Message> multi = target.request().rx(QuarkusRestMultiInvoker.class).get(Message.class);
+        List<Message> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(30));
+        Assertions.assertEquals(2, list.size());
+        Assertions.assertEquals("hello", list.get(0).name);
+        Assertions.assertEquals("stef", list.get(1).name);
     }
 }

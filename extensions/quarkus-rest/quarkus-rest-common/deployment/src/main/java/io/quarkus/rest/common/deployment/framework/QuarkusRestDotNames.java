@@ -77,6 +77,7 @@ import io.quarkus.rest.RestHeader;
 import io.quarkus.rest.RestMatrix;
 import io.quarkus.rest.RestPath;
 import io.quarkus.rest.RestQuery;
+import io.quarkus.rest.SseElementType;
 import io.quarkus.rest.common.runtime.core.QuarkusRestContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -100,6 +101,7 @@ public final class QuarkusRestDotNames {
     public static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
     public static final DotName QUARKUS_REST_CONTEXT = DotName.createSimple(QuarkusRestContext.class.getName());
 
+    public static final DotName SSE_ELEMENT_TYPE = DotName.createSimple(SseElementType.class.getName());
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
     public static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
     public static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());

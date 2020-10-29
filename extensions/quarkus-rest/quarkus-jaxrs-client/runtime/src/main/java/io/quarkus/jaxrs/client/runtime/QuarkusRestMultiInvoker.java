@@ -51,7 +51,7 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     // FIXME: this is probably not good enough
                     if (response.getStatus() == 200
                             && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
-                        registerForSse(emitter, vertxResponse);
+                        registerForSse(emitter, responseType, response, vertxResponse);
                     } else {
                         // read stuff in chunks
                         registerForChunks(emitter, restClientRequestContext, responseType, response, vertxResponse);
@@ -63,15 +63,18 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
         });
     }
 
-    @SuppressWarnings("unchecked")
-    private <R> void registerForSse(MultiEmitter<? super R> emitter, HttpClientResponse vertxResponse) {
+    private <R> void registerForSse(MultiEmitter<? super R> emitter,
+            GenericType<R> responseType,
+            Response response,
+            HttpClientResponse vertxResponse) {
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
         QuarkusRestSseEventSource sseSource = new QuarkusRestSseEventSource(target, 500, TimeUnit.MILLISECONDS);
         // FIXME: deal with cancellation
         sseSource.register(event -> {
-            // FIXME: non-String
-            emitter.emit((R) event.readData());
+            // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
+            // the content-type SSE field
+            emitter.emit((R) event.readData(responseType));
         }, error -> {
             emitter.fail(error);
         }, () -> {

@@ -33,6 +33,7 @@ public class RuntimeResource {
     private final LazyMethod lazyMethod;
     private final Map<String, Integer> pathParameterIndexes;
     private final Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score;
+    private final MediaType sseElementType;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
             List<MediaType> consumes,
@@ -40,7 +41,8 @@ public class RuntimeResource {
             BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
             Class<?>[] parameterTypes,
             Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
-            Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score) {
+            Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score,
+            MediaType sseElementType) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.classPath = classPath;
@@ -57,6 +59,7 @@ public class RuntimeResource {
         this.lazyMethod = lazyMethod;
         this.pathParameterIndexes = pathParameterIndexes;
         this.score = score;
+        this.sseElementType = sseElementType;
     }
 
     public ServerRestHandler[] getHandlerChain() {
@@ -113,6 +116,10 @@ public class RuntimeResource {
 
     public SimplifiedResourceInfo getSimplifiedResourceInfo() {
         return new QuarkusRestSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
+    }
+
+    public MediaType getSseElementType() {
+        return sseElementType;
     }
 
     /**

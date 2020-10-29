@@ -2,6 +2,7 @@ package io.quarkus.jaxrs.client.runtime;
 
 import java.nio.charset.StandardCharsets;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.SseEvent;
 
 import io.vertx.core.Handler;
@@ -45,6 +46,14 @@ public class SseParser implements Handler<Buffer> {
      */
     private String eventType;
     /**
+     * The content type we're reading. Defaults to the X-Sse-Element-Type header and changes with the "content-type" fields
+     */
+    private String contentType;
+    /**
+     * The content type we're reading. Defaults to the X-Sse-Element-Type header
+     */
+    private String contentTypeHeader;
+    /**
      * The event data we're reading. Defaults to "" and changes with "data" fields
      */
     private StringBuffer dataBuffer = new StringBuffer();
@@ -60,6 +69,10 @@ public class SseParser implements Handler<Buffer> {
 
     public SseParser(QuarkusRestSseEventSource sseEventSource) {
         this.sseEventSource = sseEventSource;
+    }
+
+    public void setSseContentTypeHeader(String sseContentTypeHeader) {
+        this.contentTypeHeader = sseContentTypeHeader;
     }
 
     @Override
@@ -83,6 +96,7 @@ public class SseParser implements Handler<Buffer> {
             valueBuffer.setLength(0);
             commentBuffer.setLength(0);
             dataBuffer.setLength(0);
+            contentType = contentTypeHeader;
             // SSE spec says default is "message" but JAX-RS says null
             eventType = null;
             eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
@@ -148,6 +162,7 @@ public class SseParser implements Handler<Buffer> {
         // SSE spec says "message" is the default, but JAX-RS says null if not specified
         event.setName(eventType);
         event.setReconnectDelay(eventReconnectTime);
+        event.setMediaType(contentType != null ? MediaType.valueOf(contentType) : null);
         sseEventSource.fireEvent(event);
     }
 
@@ -214,6 +229,9 @@ public class SseParser implements Handler<Buffer> {
         switch (name) {
             case "event":
                 eventType = value;
+                break;
+            case "content-type":
+                contentType = value;
                 break;
             case "data":
                 if (dataBuffer.length() > 0) {
@@ -325,5 +343,4 @@ public class SseParser implements Handler<Buffer> {
         return new IllegalStateException("Illegal Server-Sent Event input at byte index " + i + " while parsing: "
                 + new String(bytes, StandardCharsets.UTF_8));
     }
-
 }

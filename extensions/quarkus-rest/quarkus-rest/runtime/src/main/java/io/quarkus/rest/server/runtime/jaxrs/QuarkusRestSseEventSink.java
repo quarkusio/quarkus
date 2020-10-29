@@ -32,6 +32,7 @@ public class QuarkusRestSseEventSink implements SseEventSink {
     public CompletionStage<?> send(OutboundSseEvent event) {
         if (isClosed())
             throw new IllegalStateException("Already closed");
+        // NOTE: we can't cast event to QuarkusRestOutboundSseEvent because the TCK sends us its own subclass
         CompletionStage<?> ret = SseUtil.send(context, event);
         if (broadcaster != null) {
             return ret.whenComplete((value, x) -> {
@@ -58,7 +59,7 @@ public class QuarkusRestSseEventSink implements SseEventSink {
 
     public void sendInitialResponse(HttpServerResponse response) {
         if (!response.headWritten()) {
-            SseUtil.setHeaders(response);
+            SseUtil.setHeaders(context, response);
             // send the headers over the wire
             context.suspend();
             response.write(EMPTY_BUFFER, new Handler<AsyncResult<Void>>() {

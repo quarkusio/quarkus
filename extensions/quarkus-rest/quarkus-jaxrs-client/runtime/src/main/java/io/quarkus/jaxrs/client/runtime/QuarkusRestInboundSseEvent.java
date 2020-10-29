@@ -21,6 +21,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
     private String name;
     private String comment;
     private String data;
+    private MediaType mediaType;
     private long reconnectDelay = SseEvent.RECONNECT_NOT_SET;
     private Serialisers serialisers;
     private QuarkusRestConfiguration configuration;
@@ -28,6 +29,15 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
     public QuarkusRestInboundSseEvent(QuarkusRestConfiguration configuration, Serialisers serialisers) {
         this.configuration = configuration;
         this.serialisers = serialisers;
+    }
+
+    public MediaType getMediaType() {
+        return mediaType;
+    }
+
+    public QuarkusRestInboundSseEvent setMediaType(MediaType mediaType) {
+        this.mediaType = mediaType;
+        return this;
     }
 
     @Override
@@ -92,12 +102,12 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
 
     @Override
     public <T> T readData(Class<T> type) {
-        return readData(type, null);
+        return readData(type, mediaType);
     }
 
     @Override
     public <T> T readData(GenericType<T> type) {
-        return readData(type, null);
+        return readData(type, mediaType);
     }
 
     @Override
@@ -123,6 +133,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
                 + ", name: " + name
                 + ", id: " + id
                 + ", comment: " + comment
+                + ", mediaType: " + mediaType
                 + ", reconnectDelay: " + reconnectDelay
                 + "]";
     }
@@ -131,7 +142,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + Objects.hash(comment, data, id, name);
+        result = prime * result + Objects.hash(mediaType, comment, data, id, name);
         result = prime * result + (int) (reconnectDelay ^ (reconnectDelay >>> 32));
         return result;
     }
@@ -142,10 +153,11 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
             return true;
         if (obj == null)
             return false;
-        if (obj instanceof InboundSseEvent == false)
+        if (obj instanceof QuarkusRestInboundSseEvent == false)
             return false;
-        InboundSseEvent other = (InboundSseEvent) obj;
+        QuarkusRestInboundSseEvent other = (QuarkusRestInboundSseEvent) obj;
         return Objects.equals(getComment(), other.getComment())
+                && Objects.equals(getMediaType(), other.getMediaType())
                 && Objects.equals(getId(), other.getId())
                 && Objects.equals(getName(), other.getName())
                 && getReconnectDelay() == other.getReconnectDelay()

@@ -15,12 +15,14 @@ import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 
 import io.quarkus.rest.common.runtime.core.Serialisers;
+import io.quarkus.rest.common.runtime.util.CommonSseUtil;
+import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestOutboundSseEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 
-public class SseUtil {
+public class SseUtil extends CommonSseUtil {
 
     private static final String NL = "\n";
 
@@ -38,7 +40,7 @@ public class SseUtil {
             ret.completeExceptionally(e);
             return ret;
         }
-        setHeaders(response);
+        setHeaders(context, response);
         response.write(data, new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
@@ -52,8 +54,15 @@ public class SseUtil {
         return ret;
     }
 
-    private static Buffer serialiseEvent(QuarkusRestRequestContext context, OutboundSseEvent event) throws IOException {
+    private static Buffer serialiseEvent(QuarkusRestRequestContext context, OutboundSseEvent event)
+            throws IOException {
         StringBuilder sb = new StringBuilder();
+        MediaType eventMediaType = null;
+        // NOT IN SPEC
+        if (event instanceof QuarkusRestOutboundSseEvent && ((QuarkusRestOutboundSseEvent) event).isMediaTypeSet()) {
+            eventMediaType = event.getMediaType();
+            serialiseField(context, sb, "content-type", eventMediaType.toString(), false);
+        }
         if (event.getComment() != null) {
             // empty field name
             serialiseField(context, sb, "", event.getComment(), false);
@@ -69,7 +78,7 @@ public class SseUtil {
             if (event.getReconnectDelay() >= 0)
                 serialiseField(context, sb, "retry", Long.toString(event.getReconnectDelay()), false);
         }
-        String data = serialiseDataToString(context, event);
+        String data = serialiseDataToString(context, event, eventMediaType);
         serialiseField(context, sb, "data", data, true);
         sb.append(NL);
         // return a UTF8 buffer
@@ -112,12 +121,17 @@ public class SseUtil {
 
     }
 
-    private static String serialiseDataToString(QuarkusRestRequestContext context, OutboundSseEvent event) throws IOException {
+    private static String serialiseDataToString(QuarkusRestRequestContext context, OutboundSseEvent event,
+            MediaType eventMediaType)
+            throws IOException {
         ServerSerialisers serialisers = context.getDeployment().getSerialisers();
         Object entity = event.getData();
         Class<?> entityClass = event.getType();
         Type entityType = event.getGenericType();
-        MediaType mediaType = event.getMediaType();
+        MediaType mediaType = eventMediaType != null ? eventMediaType : context.getTarget().getSseElementType();
+        if (mediaType == null) {
+            mediaType = MediaType.TEXT_PLAIN_TYPE;
+        }
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
@@ -142,12 +156,15 @@ public class SseUtil {
         return baos.toString(StandardCharsets.UTF_8.name());
     }
 
-    public static void setHeaders(HttpServerResponse response) {
+    public static void setHeaders(QuarkusRestRequestContext context, HttpServerResponse response) {
         // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
         // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
             response.putHeader(HttpHeaders.CONTENT_TYPE, MediaType.SERVER_SENT_EVENTS);
+            if (context.getTarget().getSseElementType() != null) {
+                response.putHeader(SSE_CONTENT_TYPE, context.getTarget().getSseElementType().toString());
+            }
             response.setChunked(true);
             // FIXME: other headers?
         }

@@ -1,7 +1,6 @@
 package io.quarkus.rest.server.runtime.handlers;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.OutboundSseEvent;
 
 import org.jboss.logging.Logger;
 import org.reactivestreams.Subscriber;
@@ -23,7 +22,7 @@ public class MultiResponseHandler implements ServerRestHandler {
 
         @Override
         public void onNext(Object item) {
-            OutboundSseEvent event = new QuarkusRestOutboundSseEvent.BuilderImpl().data(item).build();
+            QuarkusRestOutboundSseEvent event = new QuarkusRestOutboundSseEvent.BuilderImpl().data(item).build();
             SseUtil.send(requestContext, event).handle((v, t) -> {
                 if (t != null) {
                     // need to cancel because the exception didn't come from the Multi

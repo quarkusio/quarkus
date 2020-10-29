@@ -29,6 +29,12 @@ public class ResourceMethod {
     private String[] produces;
 
     /**
+     * The value of the {@link io.quarkus.rest.SseElementType} annotation, if none is specified on the method
+     * then this represents the value inherited from the class level, or null if not specified.
+     */
+    private String sseElementType;
+
+    /**
      * The value of the {@link javax.ws.rs.Consumes} annotation, if none is specified on the method
      * then this represents the value inherited from the class level, or null if not specified.
      */
@@ -196,6 +202,15 @@ public class ResourceMethod {
     public ResourceMethod setCDIRequestScopeRequired(boolean cdiRequestScopeRequired) {
         this.cdiRequestScopeRequired = cdiRequestScopeRequired;
         return this;
+    }
+
+    public ResourceMethod setSseElementType(String sseElementType) {
+        this.sseElementType = sseElementType;
+        return this;
+    }
+
+    public String getSseElementType() {
+        return sseElementType;
     }
 
     @Override

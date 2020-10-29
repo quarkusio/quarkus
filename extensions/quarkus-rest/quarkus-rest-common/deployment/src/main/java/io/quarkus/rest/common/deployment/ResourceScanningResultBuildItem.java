@@ -17,17 +17,19 @@ public final class ResourceScanningResultBuildItem extends SimpleBuildItem {
     final Map<DotName, String> pathInterfaces;
     final Map<DotName, MethodInfo> resourcesThatNeedCustomProducer;
     final Set<String> beanParams;
+    final Map<DotName, String> httpAnnotationToMethod;
 
     public ResourceScanningResultBuildItem(Map<DotName, ClassInfo> scannedResources, Map<DotName, String> scannedResourcePaths,
             Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
             Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            Set<String> beanParams) {
+            Set<String> beanParams, Map<DotName, String> httpAnnotationToMethod) {
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;
         this.possibleSubResources = possibleSubResources;
         this.pathInterfaces = pathInterfaces;
         this.resourcesThatNeedCustomProducer = resourcesThatNeedCustomProducer;
         this.beanParams = beanParams;
+        this.httpAnnotationToMethod = httpAnnotationToMethod;
     }
 
     public Map<DotName, ClassInfo> getScannedResources() {
@@ -52,5 +54,9 @@ public final class ResourceScanningResultBuildItem extends SimpleBuildItem {
 
     public Set<String> getBeanParams() {
         return beanParams;
+    }
+
+    public Map<DotName, String> getHttpAnnotationToMethod() {
+        return httpAnnotationToMethod;
     }
 }

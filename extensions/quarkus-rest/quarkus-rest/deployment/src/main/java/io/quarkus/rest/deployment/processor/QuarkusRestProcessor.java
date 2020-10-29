@@ -1,15 +1,7 @@
 package io.quarkus.rest.deployment.processor;
 
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.DELETE;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.GET;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.HEAD;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.OPTIONS;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.PATCH;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.POST;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.PUT;
 import static java.util.stream.Collectors.toList;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,14 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -57,7 +46,6 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -76,21 +64,21 @@ import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem.KeepProviderResult;
 import io.quarkus.rest.common.deployment.FactoryUtils;
 import io.quarkus.rest.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.rest.common.deployment.SerializersUtil;
+import io.quarkus.rest.common.deployment.framework.AdditionalReaders;
+import io.quarkus.rest.common.deployment.framework.AdditionalWriters;
 import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
+import io.quarkus.rest.common.runtime.QuarkusRestConfig;
 import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.core.Serialisers;
 import io.quarkus.rest.common.runtime.core.SingletonBeanFactory;
 import io.quarkus.rest.common.runtime.model.InjectableBean;
-import io.quarkus.rest.common.runtime.model.ParameterType;
+import io.quarkus.rest.common.runtime.model.ResourceClass;
 import io.quarkus.rest.common.runtime.model.ResourceContextResolver;
 import io.quarkus.rest.common.runtime.model.ResourceDynamicFeature;
 import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
@@ -104,10 +92,7 @@ import io.quarkus.rest.common.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceWriter;
 import io.quarkus.rest.common.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.common.runtime.util.Encode;
-import io.quarkus.rest.deployment.framework.AdditionalReaders;
-import io.quarkus.rest.deployment.framework.AdditionalWriters;
-import io.quarkus.rest.deployment.framework.EndpointIndexer;
-import io.quarkus.rest.server.runtime.QuarkusRestConfig;
+import io.quarkus.rest.deployment.framework.ServerEndpointIndexer;
 import io.quarkus.rest.server.runtime.QuarkusRestInitialiser;
 import io.quarkus.rest.server.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.server.runtime.core.ContextResolvers;
@@ -118,17 +103,12 @@ import io.quarkus.rest.server.runtime.core.ParamConverterProviders;
 import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.server.runtime.core.ServerSerialisers;
 import io.quarkus.rest.server.runtime.injection.ContextProducers;
-import io.quarkus.rest.server.runtime.model.MethodParameter;
-import io.quarkus.rest.server.runtime.model.ResourceClass;
-import io.quarkus.rest.server.runtime.model.ResourceMethod;
-import io.quarkus.rest.server.runtime.model.RestClientInterface;
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationFailedExceptionMapper;
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationRedirectExceptionMapper;
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.rest.spi.BeanFactory;
-import io.quarkus.rest.spi.ClientProxiesBuildItem;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.rest.spi.CustomContainerRequestFilterBuildItem;
@@ -137,7 +117,6 @@ import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -153,18 +132,6 @@ import io.vertx.ext.web.RoutingContext;
 public class QuarkusRestProcessor {
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
-    private static Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = new HashMap<>();
-
-    static {
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(GET, "GET");
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(POST, "POST");
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(HEAD, "HEAD");
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(PUT, "PUT");
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(DELETE, "DELETE");
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(PATCH, "PATCH");
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(OPTIONS, "OPTIONS");
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
-    }
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -333,7 +300,6 @@ public class QuarkusRestProcessor {
             RecorderContext recorderContext,
             ShutdownContextBuildItem shutdownContext,
             HttpBuildTimeConfig vertxConfig,
-            Capabilities capabilities,
             List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
             List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
             List<ExceptionMapperBuildItem> additionalExceptionMappers,
@@ -342,7 +308,6 @@ public class QuarkusRestProcessor {
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
-            BuildProducer<ClientProxiesBuildItem> clientProxiesBuildItemBuildProducer,
             ApplicationResultBuildItem applicationResultBuildItem) throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -382,15 +347,6 @@ public class QuarkusRestProcessor {
         Map<DotName, ClassInfo> possibleSubResources = resourceScanningResultBuildItem.get().getPossibleSubResources();
         Map<DotName, String> pathInterfaces = resourceScanningResultBuildItem.get().getPathInterfaces();
 
-        Map<DotName, String> httpAnnotationToMethod = new HashMap<>(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
-        Collection<AnnotationInstance> httpMethodInstances = index.getAnnotations(QuarkusRestDotNames.HTTP_METHOD);
-        for (AnnotationInstance httpMethodInstance : httpMethodInstances) {
-            if (httpMethodInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
-                continue;
-            }
-            httpAnnotationToMethod.put(httpMethodInstance.target().asClass().name(), httpMethodInstance.value().asString());
-        }
-
         Set<String> allowedClasses = applicationResultBuildItem.getAllowedClasses();
         Set<String> singletonClasses = applicationResultBuildItem.getSingletonClasses();
         Set<String> globalNameBindings = applicationResultBuildItem.getGlobalNameBindings();
@@ -419,33 +375,34 @@ public class QuarkusRestProcessor {
         AdditionalReaders additionalReaders = new AdditionalReaders();
         AdditionalWriters additionalWriters = new AdditionalWriters();
         Map<String, InjectableBean> injectableBeans = new HashMap<>();
-        EndpointIndexer endpointIndexer;
-
+        ServerEndpointIndexer serverEndpointIndexer;
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
                 QUARKUS_INIT_CLASS, null, Object.class.getName(), QuarkusRestInitialiser.class.getName());
                 MethodCreator initConverters = c.getMethodCreator("init", void.class, QuarkusRestDeployment.class)) {
 
-            endpointIndexer = new EndpointIndexer.Builder()
+            serverEndpointIndexer = new ServerEndpointIndexer.Builder()
                     .setIndex(index)
                     .setBeanContainer(beanContainerBuildItem.getValue())
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
                     .setBytecodeTransformerBuildItemBuildProducer(bytecodeTransformerBuildItemBuildProducer)
                     .setRecorder(recorder)
                     .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths).setConfig(config)
-                    .setAdditionalReaders(additionalReaders).setHttpAnnotationToMethod(httpAnnotationToMethod)
+                    .setAdditionalReaders(additionalReaders)
+                    .setHttpAnnotationToMethod(resourceScanningResultBuildItem.get().getHttpAnnotationToMethod())
                     .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(applicationResultBuildItem.isBlocking())
                     .setHasRuntimeConverters(!converterProviders.getParamConverterProviders().isEmpty())
                     .setInitConverters(initConverters).build();
+
             if (selectedAppClass != null) {
-                globalNameBindings = endpointIndexer.nameBindingNames(selectedAppClass);
+                globalNameBindings = serverEndpointIndexer.nameBindingNames(selectedAppClass);
             }
 
             for (ClassInfo i : scannedResources.values()) {
                 if (filterClasses && !allowedClasses.contains(i.name().toString())) {
                     continue;
                 }
-                ResourceClass endpoints = endpointIndexer.createEndpoints(i);
+                ResourceClass endpoints = serverEndpointIndexer.createEndpoints(i);
                 if (singletonClasses.contains(i.name().toString())) {
                     endpoints.setFactory(new SingletonBeanFactory<>(i.name().toString()));
                 }
@@ -453,27 +410,10 @@ public class QuarkusRestProcessor {
                     resourceClasses.add(endpoints);
                 }
             }
-
-            List<RestClientInterface> clientDefinitions = new ArrayList<>();
-            for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
-                ClassInfo clazz = index.getClassByName(i.getKey());
-                //these interfaces can also be clients
-                //so we generate client proxies for them
-                RestClientInterface clientProxy = endpointIndexer.createClientProxy(clazz,
-                        bytecodeTransformerBuildItemBuildProducer,
-                        i.getValue());
-                if (clientProxy != null) {
-                    clientDefinitions.add(clientProxy);
-                }
-            }
-            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = generateClientInvokers(recorderContext,
-                    clientDefinitions, generatedClassBuildItemBuildProducer);
-
-            clientProxiesBuildItemBuildProducer.produce(new ClientProxiesBuildItem(clientImplementations));
             //now index possible sub resources. These are all classes that have method annotations
             //that are not annotated @Path
             Deque<ClassInfo> toScan = new ArrayDeque<>();
-            for (DotName methodAnnotation : httpAnnotationToMethod.keySet()) {
+            for (DotName methodAnnotation : resourceScanningResultBuildItem.get().getHttpAnnotationToMethod().keySet()) {
                 for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                     MethodInfo method = instance.target().asMethod();
                     ClassInfo classInfo = method.declaringClass();
@@ -488,7 +428,7 @@ public class QuarkusRestProcessor {
                     continue;
                 }
                 possibleSubResources.put(classInfo.name(), classInfo);
-                ResourceClass endpoints = endpointIndexer.createEndpoints(classInfo);
+                ResourceClass endpoints = serverEndpointIndexer.createEndpoints(classInfo);
                 if (endpoints != null) {
                     subResourceClasses.add(endpoints);
                 }
@@ -509,7 +449,7 @@ public class QuarkusRestProcessor {
                     if (interceptor.isPreMatching()) {
                         interceptors.addResourcePreMatchInterceptor(interceptor);
                     } else {
-                        Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
+                        Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
                         if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
                             interceptors.addGlobalRequestInterceptor(interceptor);
                         } else {
@@ -547,7 +487,7 @@ public class QuarkusRestProcessor {
                     ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
                     interceptor
                             .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-                    Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
+                    Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
                         interceptors.addGlobalResponseInterceptor(interceptor);
                     } else {
@@ -575,7 +515,7 @@ public class QuarkusRestProcessor {
                     ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
                     interceptor
                             .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-                    Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
+                    Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
                         interceptors.addGlobalWriterInterceptor(interceptor);
                     } else {
@@ -594,7 +534,7 @@ public class QuarkusRestProcessor {
                     ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
                     interceptor
                             .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-                    Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
+                    Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
                         interceptors.addGlobalReaderInterceptor(interceptor);
                     } else {
@@ -778,7 +718,6 @@ public class QuarkusRestProcessor {
                     dynamicFeats,
                     serialisers, resourceClasses, subResourceClasses,
                     beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
-                    clientImplementations,
                     genericTypeMapping, converterProviders, initClassFactory,
                     application == null ? Application.class : application.getClass(), singletonClasses.isEmpty());
 
@@ -897,99 +836,4 @@ public class QuarkusRestProcessor {
         return Arrays.asList(produces.value().asStringArray());
     }
 
-    private Map<String, RuntimeValue<Function<WebTarget, ?>>> generateClientInvokers(RecorderContext recorderContext,
-            List<RestClientInterface> clientDefinitions,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
-        Map<String, RuntimeValue<Function<WebTarget, ?>>> ret = new HashMap<>();
-        for (RestClientInterface restClientInterface : clientDefinitions) {
-            boolean subResource = false;
-            //if the interface contains sub resource locator methods we ignore it
-            for (ResourceMethod i : restClientInterface.getMethods()) {
-                if (i.getHttpMethod() == null) {
-                    subResource = true;
-                }
-                break;
-            }
-            if (subResource) {
-                continue;
-            }
-            String name = restClientInterface.getClassName() + "$$QuarkusRestClientInterface";
-            MethodDescriptor ctorDesc = MethodDescriptor.ofConstructor(name, WebTarget.class.getName());
-            try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
-                    name, null, Object.class.getName(), restClientInterface.getClassName())) {
-
-                FieldDescriptor target = FieldDescriptor.of(name, "target", WebTarget.class);
-                c.getFieldCreator(target).setModifiers(Modifier.FINAL);
-
-                MethodCreator ctor = c.getMethodCreator(ctorDesc);
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
-
-                ResultHandle res = ctor.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(WebTarget.class, "path", WebTarget.class, String.class),
-                        ctor.getMethodParam(0), ctor.load(restClientInterface.getPath()));
-                ctor.writeInstanceField(target, ctor.getThis(), res);
-                ctor.returnValue(null);
-
-                for (ResourceMethod method : restClientInterface.getMethods()) {
-                    MethodCreator m = c.getMethodCreator(method.getName(), method.getReturnType(),
-                            Arrays.stream(method.getParameters()).map(s -> s.type).toArray());
-                    ResultHandle tg = m.readInstanceField(target, m.getThis());
-                    if (method.getPath() != null) {
-                        tg = m.invokeInterfaceMethod(MethodDescriptor.ofMethod(WebTarget.class, "path", WebTarget.class,
-                                String.class), tg, m.load(method.getPath()));
-                    }
-
-                    for (int i = 0; i < method.getParameters().length; ++i) {
-                        MethodParameter p = method.getParameters()[i];
-                        if (p.parameterType == ParameterType.QUERY) {
-                            //TODO: converters
-                            ResultHandle array = m.newArray(Object.class, 1);
-                            m.writeArrayValue(array, 0, m.getMethodParam(i));
-                            tg = m.invokeInterfaceMethod(
-                                    MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
-                                            String.class, Object[].class),
-                                    tg, m.load(p.name), array);
-                        }
-
-                    }
-
-                    ResultHandle builder;
-                    if (method.getProduces() == null || method.getProduces().length == 0) {
-                        builder = m.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(WebTarget.class, "request", Invocation.Builder.class), tg);
-                    } else {
-
-                        ResultHandle array = m.newArray(String.class, method.getProduces().length);
-                        for (int i = 0; i < method.getProduces().length; ++i) {
-                            m.writeArrayValue(array, i, m.load(method.getProduces()[i]));
-                        }
-                        builder = m.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(WebTarget.class, "request", Invocation.Builder.class, String[].class),
-                                tg, array);
-                    }
-                    //TODO: async return types
-
-                    ResultHandle result = m
-                            .invokeInterfaceMethod(
-                                    MethodDescriptor.ofMethod(Invocation.Builder.class, "method", Object.class, String.class,
-                                            Class.class),
-                                    builder, m.load(method.getHttpMethod()), m.loadClass(method.getSimpleReturnType()));
-
-                    m.returnValue(result);
-                }
-
-            }
-            String creatorName = restClientInterface.getClassName() + "$$QuarkusRestClientInterfaceCreator";
-            try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
-                    creatorName, null, Object.class.getName(), Function.class.getName())) {
-
-                MethodCreator apply = c
-                        .getMethodCreator(MethodDescriptor.ofMethod(creatorName, "apply", Object.class, Object.class));
-                apply.returnValue(apply.newInstance(ctorDesc, apply.getMethodParam(0)));
-            }
-            ret.put(restClientInterface.getClassName(), recorderContext.newInstance(creatorName));
-
-        }
-        return ret;
-    }
 }

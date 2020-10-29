@@ -1,11 +1,11 @@
-package io.quarkus.rest.server.runtime.model;
+package io.quarkus.rest.common.runtime.model;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import io.quarkus.rest.server.runtime.mapping.URITemplate;
+import io.quarkus.rest.common.runtime.util.URLUtils;
 
 public class RestClientInterface {
 
@@ -43,7 +43,7 @@ public class RestClientInterface {
         this.path = path;
         if (path != null) {
             pathParameters.clear();
-            URITemplate.parsePathParameters(path, pathParameters);
+            URLUtils.parsePathParameters(path, pathParameters);
         }
         return this;
     }

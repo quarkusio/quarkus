@@ -1,7 +1,4 @@
-package io.quarkus.rest.server.runtime.model;
-
-import io.quarkus.rest.common.runtime.model.ParameterType;
-import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverterSupplier;
+package io.quarkus.rest.common.runtime.model;
 
 public class MethodParameter {
     public String name;
@@ -15,7 +12,6 @@ public class MethodParameter {
     public ParameterType parameterType;
     public boolean encoded;
     private boolean single;
-    public ParameterConverterSupplier converter;
     private String defaultValue;
     private boolean isObtainedAsCollection;
 
@@ -23,10 +19,9 @@ public class MethodParameter {
     }
 
     public MethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
-            ParameterConverterSupplier converter, String defaultValue, boolean isObtainedAsCollection, boolean encoded) {
+            String defaultValue, boolean isObtainedAsCollection, boolean encoded) {
         this.name = name;
         this.type = type;
-        this.converter = converter;
         this.parameterType = parameterType;
         this.single = single;
         this.defaultValue = defaultValue;
@@ -57,15 +52,6 @@ public class MethodParameter {
 
     public void setParameterType(ParameterType parameterType) {
         this.parameterType = parameterType;
-    }
-
-    public ParameterConverterSupplier getConverter() {
-        return converter;
-    }
-
-    public MethodParameter setConverter(ParameterConverterSupplier converter) {
-        this.converter = converter;
-        return this;
     }
 
     public String getDefaultValue() {

@@ -18,8 +18,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.deployment.util.AsmUtil;
+import io.quarkus.rest.common.deployment.framework.IndexedParameter;
 import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
-import io.quarkus.rest.deployment.framework.EndpointIndexer.ParameterExtractor;
 import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.server.runtime.core.parameters.converters.DelegatingParameterConverterSupplier;
 import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverter;
@@ -56,10 +56,10 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     private static final String INIT_CONVERTER_FIELD_NAME = "__quarkus_converter__";
     private static final String INIT_CONVERTER_METHOD_DESCRIPTOR = "(" + QUARKUS_REST_DEPLOYMENT_DESCRIPTOR + ")V";
 
-    private final Map<FieldInfo, ParameterExtractor> fieldExtractors;
+    private final Map<FieldInfo, ServerIndexedParameter> fieldExtractors;
     private final boolean superTypeIsInjectable;
 
-    public ClassInjectorTransformer(Map<FieldInfo, ParameterExtractor> fieldExtractors, boolean superTypeIsInjectable) {
+    public ClassInjectorTransformer(Map<FieldInfo, ServerIndexedParameter> fieldExtractors, boolean superTypeIsInjectable) {
         this.fieldExtractors = fieldExtractors;
         this.superTypeIsInjectable = superTypeIsInjectable;
     }
@@ -71,12 +71,12 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
     static class ClassInjectorVisitor extends ClassVisitor {
 
-        private Map<FieldInfo, ParameterExtractor> fieldExtractors;
+        private Map<FieldInfo, ServerIndexedParameter> fieldExtractors;
         private String thisName;
         private boolean superTypeIsInjectable;
         private String superTypeName;
 
-        public ClassInjectorVisitor(int api, ClassVisitor classVisitor, Map<FieldInfo, ParameterExtractor> fieldExtractors,
+        public ClassInjectorVisitor(int api, ClassVisitor classVisitor, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
                 boolean superTypeIsInjectable) {
             super(api, classVisitor);
             this.fieldExtractors = fieldExtractors;
@@ -119,9 +119,9 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         INJECT_METHOD_NAME,
                         INJECT_METHOD_DESCRIPTOR, false);
             }
-            for (Entry<FieldInfo, ParameterExtractor> entry : fieldExtractors.entrySet()) {
+            for (Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
                 FieldInfo fieldInfo = entry.getKey();
-                ParameterExtractor extractor = entry.getValue();
+                ServerIndexedParameter extractor = entry.getValue();
                 switch (extractor.getType()) {
                     case BEAN:
                         // this
@@ -176,9 +176,9 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             injectMethod.visitMaxs(0, 0);
 
             // now generate initialisers for every field converter
-            for (Entry<FieldInfo, ParameterExtractor> entry : fieldExtractors.entrySet()) {
+            for (Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
                 FieldInfo fieldInfo = entry.getKey();
-                ParameterExtractor extractor = entry.getValue();
+                ServerIndexedParameter extractor = entry.getValue();
                 switch (extractor.getType()) {
                     case FORM:
                     case HEADER:
@@ -300,7 +300,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         }
 
         private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
-                ParameterExtractor extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
+                ServerIndexedParameter extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
             // spec says: 
             /*
              * 3.2 Fields and Bean Properties
@@ -401,7 +401,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             injectMethod.visitLabel(endLabel);
         }
 
-        private void convertParameter(MethodVisitor injectMethod, ParameterExtractor extractor, FieldInfo fieldInfo) {
+        private void convertParameter(MethodVisitor injectMethod, ServerIndexedParameter extractor, FieldInfo fieldInfo) {
             ParameterConverterSupplier converter = extractor.getConverter();
             if (converter != null) {
                 // load our converter
@@ -416,7 +416,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             }
         }
 
-        private void loadParameter(MethodVisitor injectMethod, String methodName, ParameterExtractor extractor,
+        private void loadParameter(MethodVisitor injectMethod, String methodName, IndexedParameter extractor,
                 boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
             // ctx param
             injectMethod.visitIntInsn(Opcodes.ALOAD, 1);

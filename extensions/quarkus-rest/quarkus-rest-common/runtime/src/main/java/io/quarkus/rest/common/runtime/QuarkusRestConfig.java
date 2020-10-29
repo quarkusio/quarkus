@@ -1,4 +1,4 @@
-package io.quarkus.rest.server.runtime;
+package io.quarkus.rest.common.runtime;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;

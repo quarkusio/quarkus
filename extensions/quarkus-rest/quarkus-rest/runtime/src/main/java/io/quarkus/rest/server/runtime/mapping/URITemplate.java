@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 public class URITemplate implements Dumpable, Comparable<URITemplate> {
@@ -301,45 +300,4 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         }
     }
 
-    /**
-     * Extract path param names out of a JAX-RS path. Does not detect errors, but should
-     * be fast and correct if the input is correct.
-     */
-    public static void parsePathParameters(String path, Set<String> pathParameters) {
-        if (path == null || path.isEmpty() || path.indexOf('{') == -1)
-            return;
-        int len = path.length();
-        int open = 0;
-        int startName = -1;
-        int endName = -1;
-        for (int i = 0; i < len; i++) {
-            switch (path.charAt(i)) {
-                case '{':
-                    if (open == 0) {
-                        startName = i + 1;
-                        endName = -1;
-                    }
-                    open++;
-                    break;
-                case '}':
-                    // ignore extra closing brackets
-                    if (open > 0) {
-                        open--;
-                        if (open == 0) {
-                            // mark the end, unless we already marked it due to regex
-                            if (endName == -1)
-                                endName = i;
-                            String pathParam = path.substring(startName, endName);
-                            pathParameters.add(pathParam);
-                        }
-                    }
-                    break;
-                case ':':
-                    // mark the end of regex path param name
-                    if (open == 1 && endName == -1)
-                        endName = i;
-                    break;
-            }
-        }
-    }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.rest.deployment.framework;
+package io.quarkus.rest.common.deployment.framework;
 
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.BEAN_PARAM;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.BIG_DECIMAL;
@@ -16,12 +16,6 @@ import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.FL
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.FORM_PARAM;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.HEADER_PARAM;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.INTEGER;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_NUMBER;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRING;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_VALUE;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.LIST;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.LONG;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.MATRIX_PARAM;
@@ -51,8 +45,6 @@ import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.SO
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.UNI;
-import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -63,7 +55,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -73,7 +64,6 @@ import java.util.function.Function;
 
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.sse.SseEventSink;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -82,7 +72,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
@@ -101,45 +90,22 @@ import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
-import io.quarkus.rest.common.runtime.model.BeanParamInfo;
+import io.quarkus.rest.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.rest.common.runtime.QuarkusRestConfig;
 import io.quarkus.rest.common.runtime.model.InjectableBean;
+import io.quarkus.rest.common.runtime.model.MethodParameter;
 import io.quarkus.rest.common.runtime.model.ParameterType;
-import io.quarkus.rest.server.runtime.QuarkusRestConfig;
-import io.quarkus.rest.server.runtime.QuarkusRestRecorder;
-import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
-import io.quarkus.rest.server.runtime.core.parameters.converters.GeneratedParameterConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.ListConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.NoopParameterConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverterSupplier;
-import io.quarkus.rest.server.runtime.core.parameters.converters.PathSegmentParamConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.RuntimeResolvedConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.SetConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.SortedSetConverter;
-import io.quarkus.rest.server.runtime.mapping.URITemplate;
-import io.quarkus.rest.server.runtime.model.MethodParameter;
-import io.quarkus.rest.server.runtime.model.ResourceClass;
-import io.quarkus.rest.server.runtime.model.ResourceMethod;
-import io.quarkus.rest.server.runtime.model.RestClientInterface;
-import io.quarkus.rest.server.runtime.providers.serialisers.ServerFormUrlEncodedProvider;
-import io.quarkus.rest.server.runtime.providers.serialisers.jsonp.ServerJsonArrayHandler;
-import io.quarkus.rest.server.runtime.providers.serialisers.jsonp.ServerJsonObjectHandler;
-import io.quarkus.rest.server.runtime.providers.serialisers.jsonp.ServerJsonStructureHandler;
-import io.quarkus.rest.server.runtime.providers.serialisers.jsonp.ServerJsonValueHandler;
+import io.quarkus.rest.common.runtime.model.ResourceClass;
+import io.quarkus.rest.common.runtime.model.ResourceMethod;
+import io.quarkus.rest.common.runtime.util.URLUtils;
 import io.quarkus.rest.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
 
-public class EndpointIndexer {
+public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM extends IndexedParameter<PARAM>> {
 
-    private static final Map<String, String> primitiveTypes;
+    protected static final Map<String, String> primitiveTypes;
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
-    private static final Set<DotName> SUPPORTED_TEXT_PLAIN_READER_TYPES = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(PRIMITIVE_INTEGER, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE,
-                    PRIMITIVE_BOOLEAN, PRIMITIVE_CHAR, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, CHARACTER, BIG_DECIMAL,
-                    BIG_INTEGER)));
     // NOTE: sync with ContextProducer and ContextParamExtractor
     private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             // spec
@@ -154,12 +120,12 @@ public class EndpointIndexer {
             QuarkusRestDotNames.SSE_EVENT_SINK,
             // extras
             QuarkusRestDotNames.QUARKUS_REST_CONTEXT,
-            QuarkusRestServerDotNames.SIMPLIFIED_RESOURCE_INFO,
+            DotName.createSimple("io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo"), //TODO: fixme
             QuarkusRestDotNames.RESOURCE_INFO,
             QuarkusRestDotNames.HTTP_SERVER_REQUEST,
             QuarkusRestDotNames.HTTP_SERVER_RESPONSE)));
 
-    private static final Logger log = Logger.getLogger(EndpointInvoker.class);
+    protected static final Logger log = Logger.getLogger(EndpointInvoker.class);
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
 
@@ -201,11 +167,11 @@ public class EndpointIndexer {
         supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
     }
 
-    private final IndexView index;
+    protected final IndexView index;
     private final BeanContainer beanContainer;
-    private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
+    protected final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer;
-    private final QuarkusRestRecorder recorder;
+    private final QuarkusRestCommonRecorder recorder;
     private final Map<String, String> existingConverters;
     private final Map<DotName, String> scannedResourcePaths;
     private final QuarkusRestConfig config;
@@ -213,11 +179,10 @@ public class EndpointIndexer {
     private final Map<DotName, String> httpAnnotationToMethod;
     private final Map<String, InjectableBean> injectableBeans;
     private final AdditionalWriters additionalWriters;
-    private final MethodCreator initConverters;
     private final boolean hasRuntimeConverters;
     private final boolean defaultBlocking;
 
-    EndpointIndexer(Builder builder) {
+    protected EndpointIndexer(Builder<T, ?> builder) {
         this.index = builder.index;
         this.beanContainer = builder.beanContainer;
         this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
@@ -230,7 +195,6 @@ public class EndpointIndexer {
         this.httpAnnotationToMethod = builder.httpAnnotationToMethod;
         this.injectableBeans = builder.injectableBeans;
         this.additionalWriters = builder.additionalWriters;
-        this.initConverters = builder.initConverters;
         this.hasRuntimeConverters = builder.hasRuntimeConverters;
         this.defaultBlocking = builder.defaultBlocking;
     }
@@ -256,9 +220,8 @@ public class EndpointIndexer {
 
             // get an InjectableBean view of our class
             InjectableBean injectableBean = scanInjectableBean(classInfo, classInfo,
-                    generatedClassBuildItemBuildProducer,
                     bytecodeTransformerBuildItemBuildProducer, existingConverters,
-                    additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
+                    additionalReaders, injectableBeans, hasRuntimeConverters);
 
             // at this point we've scanned the class and its bean infos, which can have form params
             if (injectableBean.isFormParamRequired()) {
@@ -284,122 +247,7 @@ public class EndpointIndexer {
         }
     }
 
-    private InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
-            ClassInfo actualEndpointInfo,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
-            Map<String, String> existingConverters,
-            AdditionalReaders additionalReaders,
-            Map<String, InjectableBean> injectableBeans,
-            MethodCreator initConverters,
-            boolean hasRuntimeConverters) {
-
-        // do not scan a bean twice
-        String currentTypeName = currentClassInfo.name().toString();
-        InjectableBean currentInjectableBean = injectableBeans.get(currentTypeName);
-        if (currentInjectableBean != null) {
-            return currentInjectableBean;
-        }
-        currentInjectableBean = new BeanParamInfo();
-        injectableBeans.put(currentTypeName, currentInjectableBean);
-
-        // LinkedHashMap the TCK expects that fields annotated with @BeanParam are handled last
-        Map<FieldInfo, ParameterExtractor> fieldExtractors = new LinkedHashMap<>();
-        Map<FieldInfo, ParameterExtractor> beanParamFields = new LinkedHashMap<>();
-        for (FieldInfo field : currentClassInfo.fields()) {
-            Map<DotName, AnnotationInstance> annotations = new HashMap<>();
-            for (AnnotationInstance i : field.annotations()) {
-                annotations.put(i.name(), i);
-            }
-            ParameterExtractor extractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
-                    generatedClassBuildItemBuildProducer, existingConverters, additionalReaders, false, false,
-                    annotations, field.type(), field.toString(), true, hasRuntimeConverters,
-                    // We don't support annotation-less path params in injectable beans: only annotations
-                    Collections.emptySet(), field.name());
-            ParameterExtractor result = extractor.invoke();
-            if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
-                //BODY means no annotation, so for fields not injectable
-                fieldExtractors.put(field, extractor);
-            }
-            if (result.getConverter() != null) {
-                initConverters.invokeStaticMethod(MethodDescriptor.ofMethod(currentTypeName,
-                        ClassInjectorTransformer.INIT_CONVERTER_METHOD_NAME + field.name(),
-                        void.class, QuarkusRestDeployment.class),
-                        initConverters.getMethodParam(0));
-            }
-            if (result.getType() == ParameterType.BEAN) {
-                beanParamFields.put(field, extractor);
-                // transform the bean param
-                // FIXME: pretty sure this doesn't work with generics
-                ClassInfo beanParamClassInfo = index.getClassByName(field.type().name());
-                InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo, actualEndpointInfo,
-                        generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
-                        existingConverters, additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
-                // inherit form param requirement from field
-                if (injectableBean.isFormParamRequired()) {
-                    currentInjectableBean.setFormParamRequired(true);
-                }
-            } else if (result.getType() == ParameterType.FORM) {
-                // direct form param requirement
-                currentInjectableBean.setFormParamRequired(true);
-            }
-        }
-        // the TCK expects that fields annotated with @BeanParam are handled last
-        fieldExtractors.putAll(beanParamFields);
-
-        DotName superClassName = currentClassInfo.superName();
-        boolean superTypeIsInjectable = false;
-        if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
-            ClassInfo superClass = index.getClassByName(superClassName);
-            if (superClass != null) {
-                InjectableBean superInjectableBean = scanInjectableBean(superClass, actualEndpointInfo,
-                        generatedClassBuildItemBuildProducer,
-                        bytecodeTransformerBuildProducer,
-                        existingConverters, additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
-                superTypeIsInjectable = superInjectableBean.isInjectionRequired();
-                // inherit form param requirement from supertype
-                if (superInjectableBean.isFormParamRequired()) {
-                    currentInjectableBean.setFormParamRequired(true);
-                }
-            }
-        }
-
-        if (!fieldExtractors.isEmpty()) {
-            bytecodeTransformerBuildProducer.produce(new BytecodeTransformerBuildItem(currentTypeName,
-                    new ClassInjectorTransformer(fieldExtractors, superTypeIsInjectable)));
-        }
-        currentInjectableBean.setInjectionRequired(!fieldExtractors.isEmpty() || superTypeIsInjectable);
-        return currentInjectableBean;
-    }
-
-    public RestClientInterface createClientProxy(ClassInfo classInfo,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
-            String path) {
-        try {
-            RestClientInterface clazz = new RestClientInterface();
-            clazz.setClassName(classInfo.name().toString());
-            if (path != null) {
-                if (path.endsWith("/")) {
-                    path = path.substring(0, path.length() - 1);
-                }
-                if (!path.startsWith("/")) {
-                    path = "/" + path;
-                }
-                clazz.setPath(path);
-            }
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
-                    clazz.getPathParameters());
-            clazz.getMethods().addAll(methods);
-            return clazz;
-        } catch (Exception e) {
-            //kinda bogus, but we just ignore failed interfaces for now
-            //they can have methods that are not valid until they are actually extended by a concrete type
-            log.debug("Ignoring interface for creating client proxy" + classInfo.name(), e);
-            return null;
-        }
-    }
-
-    private List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
+    protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
             Set<String> pathParameters) {
         List<ResourceMethod> ret = new ArrayList<>();
@@ -502,7 +350,7 @@ public class EndpointIndexer {
             Set<String> classPathParameters) {
         try {
             Set<String> pathParameters = new HashSet<>(classPathParameters);
-            URITemplate.parsePathParameters(methodPath, pathParameters);
+            URLUtils.parsePathParameters(methodPath, pathParameters);
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
                     .size()];
@@ -525,38 +373,35 @@ public class EndpointIndexer {
                 Type paramType = info.parameters().get(i);
                 String errorLocation = "method " + info + " on class " + info.declaringClass();
 
-                ParameterExtractor parameterExtractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
-                        generatedClassBuildItemBuildProducer, existingConverters, additionalReaders, suspended, sse,
-                        anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters, info.parameterName(i))
-                                .invoke();
-                suspended |= parameterExtractor.isSuspended();
-                sse |= parameterExtractor.isSse();
-                String name = parameterExtractor.getName();
-                String defaultValue = parameterExtractor.getDefaultValue();
-                ParameterType type = parameterExtractor.getType();
+                PARAM parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo,
+                        existingConverters, additionalReaders,
+                        anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters, info.parameterName(i));
+                suspended |= parameterResult.isSuspended();
+                sse |= parameterResult.isSse();
+                String name = parameterResult.getName();
+                String defaultValue = parameterResult.getDefaultValue();
+                ParameterType type = parameterResult.getType();
                 if (type == ParameterType.BODY) {
                     if (hasBodyParam)
                         throw new RuntimeException(
                                 "Resource method " + info + " can only have a single body parameter: " + info.parameterName(i));
                     hasBodyParam = true;
                 }
-                String elementType = parameterExtractor.getElementType();
-                boolean single = parameterExtractor.isSingle();
-                ParameterConverterSupplier converter = parameterExtractor.getConverter();
+                String elementType = parameterResult.getElementType();
+                boolean single = parameterResult.isSingle();
                 if (defaultValue == null && paramType.kind() == Type.Kind.PRIMITIVE) {
                     defaultValue = "0";
                 }
-                methodParameters[i] = new MethodParameter(name,
-                        elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index), type, single,
-                        converter, defaultValue, parameterExtractor.isObtainedAsCollection(), encoded);
+                methodParameters[i] = createMethodParameter(currentClassInfo, actualEndpointInfo, encoded, paramType,
+                        parameterResult, name, defaultValue, type, elementType, single);
 
                 if (type == ParameterType.BEAN) {
                     // transform the bean param
                     ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
                     InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                             actualEndpointInfo,
-                            generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer,
-                            existingConverters, additionalReaders, injectableBeans, initConverters, hasRuntimeConverters);
+                            bytecodeTransformerBuildItemBuildProducer,
+                            existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
                     if (injectableBean.isFormParamRequired()) {
                         formParamRequired = true;
                     }
@@ -679,6 +524,18 @@ public class EndpointIndexer {
         }
     }
 
+    protected abstract InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
+            ClassInfo actualEndpointInfo,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
+            Map<String, String> existingConverters,
+            AdditionalReaders additionalReaders,
+            Map<String, InjectableBean> injectableBeans,
+            boolean hasRuntimeConverters);
+
+    protected abstract MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+            boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
+            ParameterType type, String elementType, boolean single);
+
     private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
         if (produces != null && produces.length != 0)
             return produces;
@@ -713,35 +570,9 @@ public class EndpointIndexer {
         //        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }
 
-    private static void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
-        DotName dotName = paramType.name();
-        if (dotName.equals(JSONP_JSON_VALUE)
-                || dotName.equals(JSONP_JSON_NUMBER)
-                || dotName.equals(JSONP_JSON_STRING)) {
-            additionalWriters.add(ServerJsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
-        } else if (dotName.equals(JSONP_JSON_ARRAY)) {
-            additionalWriters.add(ServerJsonArrayHandler.class, APPLICATION_JSON, javax.json.JsonArray.class);
-        } else if (dotName.equals(JSONP_JSON_OBJECT)) {
-            additionalWriters.add(ServerJsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
-        } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
-            additionalWriters.add(ServerJsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
-        }
-    }
+    protected abstract void addWriterForType(AdditionalWriters additionalWriters, Type paramType);
 
-    private static void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
-        DotName dotName = paramType.name();
-        if (dotName.equals(JSONP_JSON_NUMBER)
-                || dotName.equals(JSONP_JSON_VALUE)
-                || dotName.equals(JSONP_JSON_STRING)) {
-            additionalReaders.add(ServerJsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
-        } else if (dotName.equals(JSONP_JSON_ARRAY)) {
-            additionalReaders.add(ServerJsonArrayHandler.class, APPLICATION_JSON, javax.json.JsonArray.class);
-        } else if (dotName.equals(JSONP_JSON_OBJECT)) {
-            additionalReaders.add(ServerJsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
-        } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
-            additionalReaders.add(ServerJsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
-        }
-    }
+    protected abstract void addReaderForType(AdditionalReaders additionalReaders, Type paramType);
 
     @SuppressWarnings("unchecked")
     private static <T> Class<T> getSupportedReaderJavaClass(Type paramType) {
@@ -852,7 +683,7 @@ public class EndpointIndexer {
         return classProduces;
     }
 
-    private static String toClassName(Type indexType, ClassInfo currentClass, ClassInfo actualEndpointClass,
+    protected static String toClassName(Type indexType, ClassInfo currentClass, ClassInfo actualEndpointClass,
             IndexView indexView) {
         switch (indexType.kind()) {
             case VOID:
@@ -909,367 +740,224 @@ public class EndpointIndexer {
         }
     }
 
-    class ParameterExtractor {
-        private ClassInfo currentClassInfo;
-        private ClassInfo actualEndpointInfo;
-        private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-        private Map<String, String> existingEndpoints;
-        private AdditionalReaders additionalReaders;
-        private boolean suspended;
-        private boolean sse;
-        private Map<DotName, AnnotationInstance> anns;
-        private Type paramType;
-        private String errorLocation;
-        private String name;
-        private String defaultValue;
-        private ParameterType type;
-        private String elementType;
-        private boolean single;
-        private ParameterConverterSupplier converter;
-        private final boolean field;
-        private boolean hasRuntimeConverters;
-        private Set<String> pathParameters;
-        private String sourceName;
+    protected abstract PARAM createIndexedParam();
 
-        public ParameterExtractor(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
-                BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-                Map<String, String> existingConverters, AdditionalReaders additionalReaders, boolean suspended, boolean sse,
-                Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
-                boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName) {
-            this.currentClassInfo = currentClassInfo;
-            this.actualEndpointInfo = actualEndpointInfo;
-            this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
-            this.existingEndpoints = existingConverters;
-            this.additionalReaders = additionalReaders;
-            this.suspended = suspended;
-            this.sse = sse;
-            this.anns = anns;
-            this.paramType = paramType;
-            this.errorLocation = errorLocation;
-            this.field = field;
-            this.hasRuntimeConverters = hasRuntimeConverters;
-            this.pathParameters = pathParameters;
-            this.sourceName = sourceName;
+    public PARAM extractParameterInfo(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+            Map<String, String> existingConverters, AdditionalReaders additionalReaders,
+            Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
+            boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName) {
+        PARAM builder = createIndexedParam()
+                .setCurrentClassInfo(currentClassInfo)
+                .setActualEndpointInfo(actualEndpointInfo)
+                .setExistingConverters(existingConverters)
+                .setAdditionalReaders(additionalReaders)
+                .setAnns(anns)
+                .setParamType(paramType)
+                .setErrorLocation(errorLocation)
+                .setField(field)
+                .setHasRuntimeConverters(hasRuntimeConverters)
+                .setPathParameters(pathParameters)
+                .setSourceName(sourceName);
+
+        AnnotationInstance beanParam = anns.get(BEAN_PARAM);
+        AnnotationInstance pathParam = anns.get(PATH_PARAM);
+        AnnotationInstance queryParam = anns.get(QUERY_PARAM);
+        AnnotationInstance headerParam = anns.get(HEADER_PARAM);
+        AnnotationInstance formParam = anns.get(FORM_PARAM);
+        AnnotationInstance matrixParam = anns.get(MATRIX_PARAM);
+        AnnotationInstance cookieParam = anns.get(COOKIE_PARAM);
+        AnnotationInstance restPathParam = anns.get(REST_PATH_PARAM);
+        AnnotationInstance restQueryParam = anns.get(REST_QUERY_PARAM);
+        AnnotationInstance restHeaderParam = anns.get(REST_HEADER_PARAM);
+        AnnotationInstance restFormParam = anns.get(REST_FORM_PARAM);
+        AnnotationInstance restMatrixParam = anns.get(REST_MATRIX_PARAM);
+        AnnotationInstance restCookieParam = anns.get(REST_COOKIE_PARAM);
+        AnnotationInstance contextParam = anns.get(CONTEXT);
+        AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
+        AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
+        boolean convertable = false;
+        if (defaultValueAnnotation != null) {
+            builder.setDefaultValue(defaultValueAnnotation.value().asString());
         }
-
-        public boolean isObtainedAsCollection() {
-            return !single
-                    && (type == ParameterType.HEADER
-                            || type == ParameterType.MATRIX
-                            || type == ParameterType.FORM
-                            || type == ParameterType.QUERY);
-        }
-
-        public boolean isSuspended() {
-            return suspended;
-        }
-
-        public boolean isSse() {
-            return sse;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getDefaultValue() {
-            return defaultValue;
-        }
-
-        public ParameterType getType() {
-            return type;
-        }
-
-        public String getElementType() {
-            return elementType;
-        }
-
-        public boolean isSingle() {
-            return single;
-        }
-
-        public ParameterConverterSupplier getConverter() {
-            return converter;
-        }
-
-        public ParameterExtractor invoke() {
-            name = null;
-            AnnotationInstance beanParam = anns.get(BEAN_PARAM);
-            AnnotationInstance pathParam = anns.get(PATH_PARAM);
-            AnnotationInstance queryParam = anns.get(QUERY_PARAM);
-            AnnotationInstance headerParam = anns.get(HEADER_PARAM);
-            AnnotationInstance formParam = anns.get(FORM_PARAM);
-            AnnotationInstance matrixParam = anns.get(MATRIX_PARAM);
-            AnnotationInstance cookieParam = anns.get(COOKIE_PARAM);
-            AnnotationInstance restPathParam = anns.get(REST_PATH_PARAM);
-            AnnotationInstance restQueryParam = anns.get(REST_QUERY_PARAM);
-            AnnotationInstance restHeaderParam = anns.get(REST_HEADER_PARAM);
-            AnnotationInstance restFormParam = anns.get(REST_FORM_PARAM);
-            AnnotationInstance restMatrixParam = anns.get(REST_MATRIX_PARAM);
-            AnnotationInstance restCookieParam = anns.get(REST_COOKIE_PARAM);
-            AnnotationInstance contextParam = anns.get(CONTEXT);
-            AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
-            AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
-            defaultValue = null;
-            boolean convertable = false;
-            if (defaultValueAnnotation != null) {
-                defaultValue = defaultValueAnnotation.value().asString();
+        if (moreThanOne(pathParam, queryParam, headerParam, formParam, cookieParam, contextParam, beanParam,
+                restPathParam, restQueryParam, restHeaderParam, restFormParam, restCookieParam)) {
+            throw new RuntimeException(
+                    "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @CookieParam, @BeanParam, @Context on "
+                            + errorLocation);
+        } else if (pathParam != null) {
+            builder.setName(pathParam.value().asString());
+            builder.setType(ParameterType.PATH);
+            convertable = true;
+        } else if (restPathParam != null) {
+            builder.setName(valueOrDefault(restPathParam.value(), sourceName));
+            builder.setType(ParameterType.PATH);
+            convertable = true;
+        } else if (queryParam != null) {
+            builder.setName(queryParam.value().asString());
+            builder.setType(ParameterType.QUERY);
+            convertable = true;
+        } else if (restQueryParam != null) {
+            builder.setName(valueOrDefault(restQueryParam.value(), sourceName));
+            builder.setType(ParameterType.QUERY);
+            convertable = true;
+        } else if (cookieParam != null) {
+            builder.setName(cookieParam.value().asString());
+            builder.setType(ParameterType.COOKIE);
+            convertable = true;
+        } else if (restCookieParam != null) {
+            builder.setName(valueOrDefault(restCookieParam.value(), sourceName));
+            builder.setType(ParameterType.COOKIE);
+            convertable = true;
+        } else if (headerParam != null) {
+            builder.setName(headerParam.value().asString());
+            builder.setType(ParameterType.HEADER);
+            convertable = true;
+        } else if (restHeaderParam != null) {
+            builder.setName(valueOrDefault(restHeaderParam.value(), sourceName));
+            builder.setType(ParameterType.HEADER);
+            convertable = true;
+        } else if (formParam != null) {
+            builder.setName(formParam.value().asString());
+            builder.setType(ParameterType.FORM);
+            convertable = true;
+        } else if (restFormParam != null) {
+            builder.setName(valueOrDefault(restFormParam.value(), sourceName));
+            builder.setType(ParameterType.FORM);
+            convertable = true;
+        } else if (matrixParam != null) {
+            builder.setName(matrixParam.value().asString());
+            builder.setType(ParameterType.MATRIX);
+            convertable = true;
+        } else if (restMatrixParam != null) {
+            builder.setName(valueOrDefault(restMatrixParam.value(), sourceName));
+            builder.setType(ParameterType.MATRIX);
+            convertable = true;
+        } else if (contextParam != null) {
+            //this is handled by CDI
+            if (field) {
+                return builder;
             }
-            if (moreThanOne(pathParam, queryParam, headerParam, formParam, cookieParam, contextParam, beanParam,
-                    restPathParam, restQueryParam, restHeaderParam, restFormParam, restCookieParam)) {
-                throw new RuntimeException(
-                        "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @CookieParam, @BeanParam, @Context on "
-                                + errorLocation);
-            } else if (pathParam != null) {
-                name = pathParam.value().asString();
-                type = ParameterType.PATH;
+            // no name required
+            builder.setType(ParameterType.CONTEXT);
+        } else if (beanParam != null) {
+            // no name required
+            builder.setType(ParameterType.BEAN);
+        } else if (suspendedAnnotation != null) {
+            // no name required
+            builder.setType(ParameterType.ASYNC_RESPONSE);
+            builder.setSuspended(true);
+        } else {
+            // auto context parameters
+            if (!field
+                    && paramType.kind() == Kind.CLASS
+                    && isContextType(paramType.asClassType())) {
+                // no name required
+                builder.setType(ParameterType.CONTEXT);
+            } else if (!field && pathParameters.contains(sourceName)) {
+                builder.setName(sourceName);
+                builder.setType(ParameterType.PATH);
                 convertable = true;
-            } else if (restPathParam != null) {
-                name = valueOrDefault(restPathParam.value(), sourceName);
-                type = ParameterType.PATH;
-                convertable = true;
-            } else if (queryParam != null) {
-                name = queryParam.value().asString();
-                type = ParameterType.QUERY;
-                convertable = true;
-            } else if (restQueryParam != null) {
-                name = valueOrDefault(restQueryParam.value(), sourceName);
-                type = ParameterType.QUERY;
-                convertable = true;
-            } else if (cookieParam != null) {
-                name = cookieParam.value().asString();
-                type = ParameterType.COOKIE;
-                convertable = true;
-            } else if (restCookieParam != null) {
-                name = valueOrDefault(restCookieParam.value(), sourceName);
-                type = ParameterType.COOKIE;
-                convertable = true;
-            } else if (headerParam != null) {
-                name = headerParam.value().asString();
-                type = ParameterType.HEADER;
-                convertable = true;
-            } else if (restHeaderParam != null) {
-                name = valueOrDefault(restHeaderParam.value(), sourceName);
-                type = ParameterType.HEADER;
-                convertable = true;
-            } else if (formParam != null) {
-                name = formParam.value().asString();
-                type = ParameterType.FORM;
-                convertable = true;
-            } else if (restFormParam != null) {
-                name = valueOrDefault(restFormParam.value(), sourceName);
-                type = ParameterType.FORM;
-                convertable = true;
-            } else if (matrixParam != null) {
-                name = matrixParam.value().asString();
-                type = ParameterType.MATRIX;
-                convertable = true;
-            } else if (restMatrixParam != null) {
-                name = valueOrDefault(restMatrixParam.value(), sourceName);
-                type = ParameterType.MATRIX;
-                convertable = true;
-            } else if (contextParam != null) {
-                //this is handled by CDI
+            } else {
+                //unannoated field
+                //just ignore it
                 if (field) {
-                    return this;
+                    return builder;
                 }
-                // no name required
-                type = ParameterType.CONTEXT;
-            } else if (beanParam != null) {
-                // no name required
-                type = ParameterType.BEAN;
-            } else if (suspendedAnnotation != null) {
-                // no name required
-                type = ParameterType.ASYNC_RESPONSE;
-                suspended = true;
+                builder.setType(ParameterType.BODY);
+            }
+        }
+        builder.setSingle(true);
+        boolean typeHandled = false;
+        String elementType = null;
+        final ParameterType type = builder.getType();
+        if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            typeHandled = true;
+            ParameterizedType pt = paramType.asParameterizedType();
+            if (pt.name().equals(LIST)) {
+                builder.setSingle(false);
+                elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
+                handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            } else if (pt.name().equals(SET)) {
+                builder.setSingle(false);
+                elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
+                handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            } else if (pt.name().equals(SORTED_SET)) {
+                builder.setSingle(false);
+                elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
+                handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
+                elementType = pt.name().toString();
+                handleMultiMapParam(additionalReaders, builder);
+            } else if (convertable) {
+                throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
             } else {
-                // auto context parameters
-                if (!field
-                        && paramType.kind() == Kind.CLASS
-                        && isContextType(paramType.asClassType())) {
-                    // no name required
-                    type = ParameterType.CONTEXT;
-                } else if (!field && pathParameters.contains(sourceName)) {
-                    name = sourceName;
-                    type = ParameterType.PATH;
-                    convertable = true;
-                } else {
-                    //unannoated field
-                    //just ignore it
-                    if (field) {
-                        return this;
-                    }
-                    type = ParameterType.BODY;
-                }
+                typeHandled = false;
             }
-            single = true;
-            converter = null;
-            boolean typeHandled = false;
-            if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                typeHandled = true;
-                ParameterizedType pt = paramType.asParameterizedType();
-                if (pt.name().equals(LIST)) {
-                    single = false;
-                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                    converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation, hasRuntimeConverters);
-                    converter = new ListConverter.ListSupplier(converter);
-                } else if (pt.name().equals(SET)) {
-                    single = false;
-                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                    converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation, hasRuntimeConverters);
-                    converter = new SetConverter.SetSupplier(converter);
-                } else if (pt.name().equals(SORTED_SET)) {
-                    single = false;
-                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                    converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation, hasRuntimeConverters);
-                    converter = new SortedSetConverter.SortedSetSupplier(converter);
-                } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
-                    elementType = pt.name().toString();
-                    single = true;
-                    converter = null;
-                    additionalReaders.add(ServerFormUrlEncodedProvider.class, APPLICATION_FORM_URLENCODED,
-                            MultivaluedMap.class);
-                } else if (convertable) {
-                    throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
-                } else {
-                    typeHandled = false;
-                }
-            } else if ((paramType.name().equals(PATH_SEGMENT)) && (type == ParameterType.PATH)) {
-                elementType = paramType.name().toString();
-                single = true;
-                converter = new PathSegmentParamConverter.Supplier();
-                typeHandled = true;
-            }
-            if (!typeHandled) {
-                elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
-                addReaderForType(additionalReaders, paramType);
-
-                if (type != ParameterType.CONTEXT && type != ParameterType.BEAN && type != ParameterType.BODY
-                        && type != ParameterType.ASYNC_RESPONSE) {
-                    converter = extractConverter(elementType, index, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, errorLocation, hasRuntimeConverters);
-                }
-                if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
-                    sse = true;
-                }
-            }
-            if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
-                throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
-            }
-            return this;
+        } else if ((paramType.name().equals(PATH_SEGMENT)) && (type == ParameterType.PATH)) {
+            elementType = paramType.name().toString();
+            handlePathSegmentParam(builder);
+            typeHandled = true;
         }
+        if (!typeHandled) {
+            elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
+            addReaderForType(additionalReaders, paramType);
 
-        private boolean isContextType(ClassType klass) {
-            return CONTEXT_TYPES.contains(klass.name());
-        }
-
-        private String valueOrDefault(AnnotationValue annotation, String defaultValue) {
-            if (annotation == null)
-                return defaultValue;
-            String val = annotation.asString();
-            return val != null && !val.isEmpty() ? val : defaultValue;
-        }
-
-        private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
-                BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-                Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
-            if (elementType.equals(String.class.getName())) {
-                if (hasRuntimeConverters)
-                    return new RuntimeResolvedConverter.Supplier().setDelegate(new NoopParameterConverter.Supplier());
-                // String needs no conversion
-                return null;
-            } else if (existingConverters.containsKey(elementType)) {
-                String className = existingConverters.get(elementType);
-                ParameterConverterSupplier delegate;
-                if (className == null)
-                    delegate = null;
-                else
-                    delegate = new GeneratedParameterConverter().setClassName(className);
-                if (hasRuntimeConverters)
-                    return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
-                if (delegate == null)
-                    throw new RuntimeException("Failed to find converter for " + elementType);
-                return delegate;
+            if (type != ParameterType.CONTEXT && type != ParameterType.BEAN && type != ParameterType.BODY
+                    && type != ParameterType.ASYNC_RESPONSE) {
+                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
+            if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
 
-            MethodDescriptor fromString = null;
-            MethodDescriptor valueOf = null;
-            MethodInfo stringCtor = null;
-            String primitiveWrapperType = primitiveTypes.get(elementType);
-            String prefix = "";
-            if (primitiveWrapperType != null) {
-                valueOf = MethodDescriptor.ofMethod(primitiveWrapperType, "valueOf", primitiveWrapperType, String.class);
-                prefix = "io.quarkus.generated.";
-            } else {
-                ClassInfo type = indexView.getClassByName(DotName.createSimple(elementType));
-                if (type != null) {
-                    for (MethodInfo i : type.methods()) {
-                        if (i.parameters().size() == 1) {
-                            if (i.parameters().get(0).name().equals(STRING)) {
-                                if (i.name().equals("<init>")) {
-                                    stringCtor = i;
-                                } else if (i.name().equals("valueOf")) {
-                                    valueOf = MethodDescriptor.of(i);
-                                } else if (i.name().equals("fromString")) {
-                                    fromString = MethodDescriptor.of(i);
-                                }
-                            }
-                        }
-                    }
-                    if (type.isEnum()) {
-                        //spec weirdness, enums order is different
-                        if (fromString != null) {
-                            valueOf = null;
-                        }
-                    }
-                }
+                builder.setSse(true);
             }
-
-            String baseName;
-            ParameterConverterSupplier delegate;
-            if (stringCtor != null || valueOf != null || fromString != null) {
-                baseName = prefix + elementType + "$quarkusrestparamConverter$";
-                try (ClassCreator classCreator = new ClassCreator(
-                        new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
-                        Object.class.getName(), ParameterConverter.class.getName())) {
-                    MethodCreator mc = classCreator.getMethodCreator("convert", Object.class, Object.class);
-                    if (stringCtor != null) {
-                        ResultHandle ret = mc.newInstance(stringCtor, mc.getMethodParam(0));
-                        mc.returnValue(ret);
-                    } else if (valueOf != null) {
-                        ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
-                        mc.returnValue(ret);
-                    } else if (fromString != null) {
-                        ResultHandle ret = mc.invokeStaticMethod(fromString, mc.getMethodParam(0));
-                        mc.returnValue(ret);
-                    }
-                }
-                delegate = new GeneratedParameterConverter().setClassName(baseName);
-            } else {
-                // let's not try this again
-                baseName = null;
-                delegate = null;
-            }
-            existingConverters.put(elementType, baseName);
-            if (hasRuntimeConverters)
-                return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
-            if (delegate == null)
-                throw new RuntimeException("Failed to find converter for " + elementType);
-            return delegate;
         }
-
+        if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
+            throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+        }
+        builder.setElementType(elementType);
+        return builder;
     }
 
-    public static class Builder {
+    protected void handlePathSegmentParam(PARAM builder) {
+    }
+
+    protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType) {
+    }
+
+    protected void handleMultiMapParam(AdditionalReaders additionalReaders, PARAM builder) {
+    }
+
+    protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
+            boolean hasRuntimeConverters, PARAM builder, String elementType) {
+    }
+
+    protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType) {
+    }
+
+    protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType) {
+    }
+
+    private boolean isContextType(ClassType klass) {
+        return CONTEXT_TYPES.contains(klass.name());
+    }
+
+    private String valueOrDefault(AnnotationValue annotation, String defaultValue) {
+        if (annotation == null)
+            return defaultValue;
+        String val = annotation.asString();
+        return val != null && !val.isEmpty() ? val : defaultValue;
+    }
+
+    public static abstract class Builder<T extends EndpointIndexer<T, ?>, B extends Builder<T, B>> {
         private boolean defaultBlocking;
         private IndexView index;
         private BeanContainer beanContainer;
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
         private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer;
-        private QuarkusRestRecorder recorder;
+        private QuarkusRestCommonRecorder recorder;
         private Map<String, String> existingConverters;
         private Map<DotName, String> scannedResourcePaths;
         private QuarkusRestConfig config;
@@ -1277,88 +965,80 @@ public class EndpointIndexer {
         private Map<DotName, String> httpAnnotationToMethod;
         private Map<String, InjectableBean> injectableBeans;
         private AdditionalWriters additionalWriters;
-        private MethodCreator initConverters;
         private boolean hasRuntimeConverters;
 
-        public Builder setDefaultBlocking(boolean defaultBlocking) {
+        public B setDefaultBlocking(boolean defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
-            return this;
+            return (B) this;
         }
 
-        public Builder setHasRuntimeConverters(boolean hasRuntimeConverters) {
+        public B setHasRuntimeConverters(boolean hasRuntimeConverters) {
             this.hasRuntimeConverters = hasRuntimeConverters;
-            return this;
+            return (B) this;
         }
 
-        public Builder setIndex(IndexView index) {
+        public B setIndex(IndexView index) {
             this.index = index;
-            return this;
+            return (B) this;
         }
 
-        public Builder setBeanContainer(BeanContainer beanContainer) {
+        public B setBeanContainer(BeanContainer beanContainer) {
             this.beanContainer = beanContainer;
-            return this;
+            return (B) this;
         }
 
-        public Builder setGeneratedClassBuildItemBuildProducer(
+        public B setGeneratedClassBuildItemBuildProducer(
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
             this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
-            return this;
+            return (B) this;
         }
 
-        public Builder setBytecodeTransformerBuildItemBuildProducer(
+        public B setBytecodeTransformerBuildItemBuildProducer(
                 BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer) {
             this.bytecodeTransformerBuildItemBuildProducer = bytecodeTransformerBuildItemBuildProducer;
-            return this;
+            return (B) this;
         }
 
-        public Builder setRecorder(QuarkusRestRecorder recorder) {
+        public B setRecorder(QuarkusRestCommonRecorder recorder) {
             this.recorder = recorder;
-            return this;
+            return (B) this;
         }
 
-        public Builder setExistingConverters(Map<String, String> existingConverters) {
+        public B setExistingConverters(Map<String, String> existingConverters) {
             this.existingConverters = existingConverters;
-            return this;
+            return (B) this;
         }
 
-        public Builder setScannedResourcePaths(Map<DotName, String> scannedResourcePaths) {
+        public B setScannedResourcePaths(Map<DotName, String> scannedResourcePaths) {
             this.scannedResourcePaths = scannedResourcePaths;
-            return this;
+            return (B) this;
         }
 
-        public Builder setConfig(QuarkusRestConfig config) {
+        public B setConfig(QuarkusRestConfig config) {
             this.config = config;
-            return this;
+            return (B) this;
         }
 
-        public Builder setAdditionalReaders(AdditionalReaders additionalReaders) {
+        public B setAdditionalReaders(AdditionalReaders additionalReaders) {
             this.additionalReaders = additionalReaders;
-            return this;
+            return (B) this;
         }
 
-        public Builder setHttpAnnotationToMethod(Map<DotName, String> httpAnnotationToMethod) {
+        public B setHttpAnnotationToMethod(Map<DotName, String> httpAnnotationToMethod) {
             this.httpAnnotationToMethod = httpAnnotationToMethod;
-            return this;
+            return (B) this;
         }
 
-        public Builder setInjectableBeans(Map<String, InjectableBean> injectableBeans) {
+        public B setInjectableBeans(Map<String, InjectableBean> injectableBeans) {
             this.injectableBeans = injectableBeans;
-            return this;
+            return (B) this;
         }
 
-        public Builder setAdditionalWriters(AdditionalWriters additionalWriters) {
+        public B setAdditionalWriters(AdditionalWriters additionalWriters) {
             this.additionalWriters = additionalWriters;
-            return this;
+            return (B) this;
         }
 
-        public Builder setInitConverters(MethodCreator initConverters) {
-            this.initConverters = initConverters;
-            return this;
-        }
-
-        public EndpointIndexer build() {
-            return new EndpointIndexer(this);
-        }
+        public abstract T build();
     }
 }

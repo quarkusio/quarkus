@@ -1,4 +1,4 @@
-package io.quarkus.rest.deployment.framework;
+package io.quarkus.rest.common.deployment.framework;
 
 import java.util.ArrayList;
 import java.util.List;

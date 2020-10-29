@@ -3,6 +3,7 @@ package io.quarkus.rest.common.runtime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.common.runtime.core.ArcBeanFactory;
@@ -11,6 +12,7 @@ import io.quarkus.rest.common.runtime.core.Serialisers;
 import io.quarkus.rest.common.runtime.model.ResourceReader;
 import io.quarkus.rest.common.runtime.model.ResourceWriter;
 import io.quarkus.rest.spi.BeanFactory;
+import io.quarkus.rest.spi.EndpointInvoker;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -27,6 +29,20 @@ public class QuarkusRestCommonRecorder {
         prims.put(double.class.getName(), double.class);
         prims.put(long.class.getName(), long.class);
         primitiveTypes = Collections.unmodifiableMap(prims);
+    }
+
+    public Supplier<EndpointInvoker> invoker(String baseName) {
+        return new Supplier<EndpointInvoker>() {
+            @Override
+            public EndpointInvoker get() {
+                try {
+                    return (EndpointInvoker) loadClass(baseName).newInstance();
+                } catch (IllegalAccessException | InstantiationException e) {
+                    throw new RuntimeException("Unable to generate endpoint invoker", e);
+                }
+
+            }
+        };
     }
 
     public <T> BeanFactory<T> factory(String targetClass, BeanContainer beanContainer) {

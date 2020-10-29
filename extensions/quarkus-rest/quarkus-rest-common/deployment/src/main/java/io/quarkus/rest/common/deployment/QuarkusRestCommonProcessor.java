@@ -1,5 +1,13 @@
 package io.quarkus.rest.common.deployment;
 
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.DELETE;
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.GET;
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.HEAD;
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.OPTIONS;
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.PATCH;
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.POST;
+import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.PUT;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -39,6 +47,19 @@ import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
 
 public class QuarkusRestCommonProcessor {
+
+    private static Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = new HashMap<>();
+
+    static {
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(GET, "GET");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(POST, "POST");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(HEAD, "HEAD");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(PUT, "PUT");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(DELETE, "DELETE");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(PATCH, "PATCH");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(OPTIONS, "OPTIONS");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
+    }
 
     @BuildStep
     ApplicationResultBuildItem handleApplication(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
@@ -176,8 +197,17 @@ public class QuarkusRestCommonProcessor {
             }
         }
 
+        Map<DotName, String> httpAnnotationToMethod = new HashMap<>(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
+        Collection<AnnotationInstance> httpMethodInstances = index.getAnnotations(QuarkusRestDotNames.HTTP_METHOD);
+        for (AnnotationInstance httpMethodInstance : httpMethodInstances) {
+            if (httpMethodInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
+                continue;
+            }
+            httpAnnotationToMethod.put(httpMethodInstance.target().asClass().name(), httpMethodInstance.value().asString());
+        }
         resourceScanningResultBuildItemBuildProducer.produce(new ResourceScanningResultBuildItem(scannedResources,
-                scannedResourcePaths, possibleSubResources, pathInterfaces, resourcesThatNeedCustomProducer, beanParams));
+                scannedResourcePaths, possibleSubResources, pathInterfaces, resourcesThatNeedCustomProducer, beanParams,
+                httpAnnotationToMethod));
     }
 
     @BuildStep

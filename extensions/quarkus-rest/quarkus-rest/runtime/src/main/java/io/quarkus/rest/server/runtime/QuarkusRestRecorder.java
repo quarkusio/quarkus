@@ -16,11 +16,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
@@ -37,16 +35,20 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.rest.common.runtime.QuarkusRestConfig;
 import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.core.SingletonBeanFactory;
 import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.common.runtime.model.HasPriority;
+import io.quarkus.rest.common.runtime.model.MethodParameter;
 import io.quarkus.rest.common.runtime.model.ParameterType;
+import io.quarkus.rest.common.runtime.model.ResourceClass;
 import io.quarkus.rest.common.runtime.model.ResourceContextResolver;
 import io.quarkus.rest.common.runtime.model.ResourceDynamicFeature;
 import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.common.runtime.model.ResourceFeature;
 import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
+import io.quarkus.rest.common.runtime.model.ResourceMethod;
 import io.quarkus.rest.common.runtime.model.ResourceReaderInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceResponseInterceptor;
@@ -110,9 +112,7 @@ import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestResourceMethod;
 import io.quarkus.rest.server.runtime.mapping.RequestMapper;
 import io.quarkus.rest.server.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.server.runtime.mapping.URITemplate;
-import io.quarkus.rest.server.runtime.model.MethodParameter;
-import io.quarkus.rest.server.runtime.model.ResourceClass;
-import io.quarkus.rest.server.runtime.model.ResourceMethod;
+import io.quarkus.rest.server.runtime.model.ServerMethodParameter;
 import io.quarkus.rest.server.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.server.runtime.util.RuntimeResourceVisitor;
 import io.quarkus.rest.server.runtime.util.ScoreSystem;
@@ -120,7 +120,6 @@ import io.quarkus.rest.spi.BeanFactory;
 import io.quarkus.rest.spi.EndpointInvoker;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -153,26 +152,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         return currentDeployment;
     }
 
-    public Supplier<EndpointInvoker> invoker(String baseName) {
-        return new Supplier<EndpointInvoker>() {
-            @Override
-            public EndpointInvoker get() {
-                try {
-                    return (EndpointInvoker) loadClass(baseName).newInstance();
-                } catch (IllegalAccessException | InstantiationException e) {
-                    throw new RuntimeException("Unable to generate endpoint invoker", e);
-                }
-
-            }
-        };
-    }
-
     public Handler<RoutingContext> handler(ResourceInterceptors interceptors,
             ExceptionMapping exceptionMapping,
             ContextResolvers ctxResolvers, Features features, DynamicFeatures dynamicFeatures, ServerSerialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
-            String applicationPath, Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations,
+            String applicationPath,
             GenericTypeMapping genericTypeMapping,
             ParamConverterProviders paramConverterProviders, BeanFactory<QuarkusRestInitialiser> initClassFactory,
             Class<? extends Application> applicationClass, boolean applicationSingletonClassesEmpty) {
@@ -726,7 +711,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         LazyMethod lazyMethod = new LazyMethod(method.getName(), resourceClass, parameterTypes);
 
         for (int i = 0; i < parameters.length; i++) {
-            MethodParameter param = parameters[i];
+            ServerMethodParameter param = (ServerMethodParameter) parameters[i];
             boolean single = param.isSingle();
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
                     single, beanContainer, param.encoded);

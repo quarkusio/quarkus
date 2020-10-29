@@ -110,10 +110,12 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
             if (t == ConnectionBase.CLOSED_EXCEPTION) {
                 // we can ignore this one since we registered a closeHandler
             } else {
-                // FIXME: handle real exceptions
-                t.printStackTrace();
+                receiveThrowable(t);
             }
         });
+        // since we registered our exception handler, let's remove the request exception handler
+        // that is set in ClientSendRequestHandler
+        vertxClientResponse.request().exceptionHandler(null);
         connection = vertxClientResponse.request().connection();
         connection.closeHandler(v -> {
             close(true);
@@ -126,8 +128,9 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
     }
 
     private void receiveThrowable(Throwable throwable) {
-        // TODO Auto-generated method stub
-
+        for (Consumer<Throwable> errorListener : errorListeners) {
+            errorListener.accept(throwable);
+        }
     }
 
     @Override

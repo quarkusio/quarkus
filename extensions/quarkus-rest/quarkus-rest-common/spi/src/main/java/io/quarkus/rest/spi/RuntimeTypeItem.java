@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.RuntimeType;
 
-public interface RuntimeTypeBuildItem {
+public interface RuntimeTypeItem {
 
     /**
      * Returns the runtime type for this build item. If the value is null
@@ -13,7 +13,7 @@ public interface RuntimeTypeBuildItem {
      */
     RuntimeType getRuntimeType();
 
-    static <T extends RuntimeTypeBuildItem> Collection<T> filter(Collection<T> items, RuntimeType current) {
+    static <T extends RuntimeTypeItem> Collection<T> filter(Collection<T> items, RuntimeType current) {
         return items.stream().filter(s -> s.getRuntimeType() == null || s.getRuntimeType() == current)
                 .collect(Collectors.toList());
     }

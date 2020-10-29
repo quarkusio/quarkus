@@ -13,7 +13,7 @@ import io.quarkus.rest.common.runtime.model.ResourceReader;
 import io.quarkus.rest.common.runtime.model.ResourceWriter;
 import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
-import io.quarkus.rest.spi.RuntimeTypeBuildItem;
+import io.quarkus.rest.spi.RuntimeTypeItem;
 
 public class SerializersUtil {
 
@@ -25,7 +25,7 @@ public class SerializersUtil {
             ApplicationResultBuildItem applicationResultBuildItem,
             Serialisers serialisers, RuntimeType runtimeType) {
 
-        for (MessageBodyWriterBuildItem additionalWriter : RuntimeTypeBuildItem.filter(messageBodyWriterBuildItems,
+        for (MessageBodyWriterBuildItem additionalWriter : RuntimeTypeItem.filter(messageBodyWriterBuildItems,
                 runtimeType)) {
             ResourceWriter writer = new ResourceWriter();
             writer.setBuiltin(additionalWriter.isBuiltin());
@@ -39,7 +39,7 @@ public class SerializersUtil {
             recorder.registerWriter(serialisers, additionalWriter.getHandledClassName(), writer);
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClassName));
         }
-        for (MessageBodyReaderBuildItem additionalReader : RuntimeTypeBuildItem.filter(messageBodyReaderBuildItems,
+        for (MessageBodyReaderBuildItem additionalReader : RuntimeTypeItem.filter(messageBodyReaderBuildItems,
                 runtimeType)) {
             ResourceReader reader = new ResourceReader();
             reader.setBuiltin(false);

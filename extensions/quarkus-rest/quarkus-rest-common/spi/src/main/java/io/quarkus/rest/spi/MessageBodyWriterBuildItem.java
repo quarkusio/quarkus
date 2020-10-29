@@ -6,7 +6,7 @@ import javax.ws.rs.RuntimeType;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class MessageBodyWriterBuildItem extends MultiBuildItem implements RuntimeTypeBuildItem {
+public final class MessageBodyWriterBuildItem extends MultiBuildItem implements RuntimeTypeItem {
 
     private final String className;
     private final String handledClassName;

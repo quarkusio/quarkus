@@ -2,7 +2,7 @@ package io.quarkus.rest.spi;
 
 import java.util.Set;
 
-public interface NameBoundBuildItem {
+public interface NameBoundItem {
 
     /**
      * Returns the name binding names for this build item, or an empty

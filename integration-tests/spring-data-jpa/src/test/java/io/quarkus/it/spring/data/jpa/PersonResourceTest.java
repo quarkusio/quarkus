@@ -241,7 +241,7 @@ public class PersonResourceTest {
 
     @Test
     @Order(17)
-    void testFindPeopleByAddressZipCode() {
+    void testFindPeopleBySomeAddressZipCode() {
         when().get("/person/addressZipCode/00000").then()
                 .statusCode(200)
                 .body("size()", is(0));
@@ -255,7 +255,7 @@ public class PersonResourceTest {
 
     @Test
     @Order(18)
-    void testFindByAddressId() {
+    void testFindBySomeAddressId() {
         when().get("/person/addressId/00000").then()
                 .statusCode(200)
                 .body("size()", is(0));
@@ -268,7 +268,7 @@ public class PersonResourceTest {
 
     @Test
     @Order(19)
-    void testFindByAddressStreetNumber() {
+    void testFindBySomeAddressStreetNumber() {
         when().get("/person/addressStreetNumber/whatever").then()
                 .statusCode(200)
                 .body("size()", is(0));

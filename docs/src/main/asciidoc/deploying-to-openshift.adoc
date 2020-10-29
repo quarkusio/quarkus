@@ -163,17 +163,20 @@ To expose a `Route` for the Quarkus application:
 
 [source,properties]
 ----
-quarkus.openshift.expose=true
+quarkus.openshift.route.expose=true
 ----
 
-Tip: You don't necessarily need to add this property in the `application.properties`. You can pass it as a command line argument:
+[TIP]
+====
+You don't necessarily need to add this property in the `application.properties`. You can pass it as a command line argument:
 
 [source,bash,subs=attributes+]
 ----
-./mvnw clean package -Dquarkus.openshift.expose=true
+./mvnw clean package -Dquarkus.openshift.route.expose=true
 ----
 
 The same applies to all properties listed below.
+====
 
 ==== Labels
 

@@ -89,6 +89,7 @@ public class OpenshiftProcessor {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
         result.addAll(KubernetesCommonHelper.createPlatformConfigurators(config));
         result.addAll(KubernetesCommonHelper.createGlobalConfigurators(ports));
+        result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator(config.route)));
 
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
@@ -199,5 +200,4 @@ public class OpenshiftProcessor {
 
         return result;
     }
-
 }

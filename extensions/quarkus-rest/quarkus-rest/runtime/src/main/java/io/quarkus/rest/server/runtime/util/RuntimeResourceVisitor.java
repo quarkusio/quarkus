@@ -67,5 +67,6 @@ public interface RuntimeResourceVisitor {
                 }
             }
         }
+        visitor.visitEnd();
     }
 }

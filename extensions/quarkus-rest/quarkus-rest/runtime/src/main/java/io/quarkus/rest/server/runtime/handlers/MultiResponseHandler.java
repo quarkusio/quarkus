@@ -70,7 +70,7 @@ public class MultiResponseHandler implements ServerRestHandler {
         AbstractMultiSubscriber(QuarkusRestRequestContext requestContext) {
             this.requestContext = requestContext;
             // let's make sure we never restart by accident, also make sure we're not marked as completed
-            requestContext.restart(AWOL);
+            requestContext.restart(AWOL, true);
         }
 
         @Override

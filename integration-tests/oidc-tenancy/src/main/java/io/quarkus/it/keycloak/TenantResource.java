@@ -56,8 +56,7 @@ public class TenantResource {
     @Path("webapp")
     @RolesAllowed("user")
     public String userNameWebApp(@PathParam("tenant") String tenant) {
-        if (!tenant.equals("tenant-web-app")
-                && !tenant.equals("tenant-web-app-dynamic") && !tenant.equals("tenant-web-app-no-discovery")) {
+        if (!tenant.equals("tenant-web-app") && !tenant.equals("tenant-web-app-no-discovery")) {
             throw new OIDCException("Wrong tenant");
         }
         UserInfo userInfo = getUserInfo();

@@ -65,6 +65,7 @@ public class HttpRemoteDevClient implements RemoteDevClient {
         private final Thread httpThread;
         private final String url;
         private final URL devUrl;
+        private final URL probeUrl;
         int errorCount;
 
         private Session(RemoteDevState initialState,
@@ -74,6 +75,7 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             this.initialConnectFunction = initialConnectFunction;
             this.changeRequestFunction = changeRequestFunction;
             devUrl = new URL(HttpRemoteDevClient.this.url + RemoteSyncHandler.DEV);
+            probeUrl = new URL(HttpRemoteDevClient.this.url + RemoteSyncHandler.PROBE);
             url = HttpRemoteDevClient.this.url;
             httpThread = new Thread(this, "Remote dev client thread");
             httpThread.start();
@@ -248,7 +250,9 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             }
             while (System.currentTimeMillis() < timeout) {
                 try {
-                    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                    HttpURLConnection connection = (HttpURLConnection) probeUrl.openConnection();
+                    connection.setRequestMethod("POST");
+                    connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(), RemoteSyncHandler.APPLICATION_QUARKUS);
                     IoUtil.readBytes(connection.getInputStream());
                     return doConnect(initialState, initialConnectFunction);
                 } catch (IOException e) {

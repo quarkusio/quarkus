@@ -14,9 +14,10 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.RemoteDevState;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
@@ -31,6 +32,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     public static final String QUARKUS_SESSION_COUNT = "X-Quarkus-Count";
     public static final String CONNECT = "/connect";
     public static final String DEV = "/dev";
+    public static final String PROBE = "/probe"; //used to check that the server is back up after restart
 
     final String password;
     final Handler<HttpServerRequest> next;
@@ -77,12 +79,16 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         final String type = event.headers().get(HttpHeaderNames.CONTENT_TYPE);
         if (APPLICATION_QUARKUS.equals(type)) {
             currentSessionTimeout = time + 60000;
-            ExecutorRecorder.getCurrent().execute(new Runnable() {
+            VertxCoreRecorder.getVertx().get().executeBlocking(new Handler<Promise<Object>>() {
                 @Override
-                public void run() {
-                    handleRequest(event);
+                public void handle(Promise<Object> promise) {
+                    try {
+                        handleRequest(event);
+                    } finally {
+                        promise.complete();
+                    }
                 }
-            });
+            }, null);
             return;
         }
         next.handle(event);
@@ -98,6 +104,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                 handleDev(event);
             } else if (event.path().equals(CONNECT)) {
                 handleConnect(event);
+            } else if (event.path().equals(PROBE)) {
+                event.response().end();
             } else {
                 event.response().setStatusCode(404).end();
             }
@@ -114,9 +122,9 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                 if (checkSession(event, b.getBytes())) {
                     return;
                 }
-                ExecutorRecorder.getCurrent().execute(new Runnable() {
+                VertxCoreRecorder.getVertx().get().executeBlocking(new Handler<Promise<Object>>() {
                     @Override
-                    public void run() {
+                    public void handle(Promise<Object> promise) {
                         try {
                             Throwable problem = (Throwable) new ObjectInputStream(new ByteArrayInputStream(b.getBytes()))
                                     .readObject();
@@ -144,10 +152,11 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                         } catch (Exception e) {
                             log.error("Connect failed", e);
                             event.response().setStatusCode(500).end();
+                        } finally {
+                            promise.complete();
                         }
                     }
-                });
-
+                }, null);
             }
         }).exceptionHandler(new Handler<Throwable>() {
             @Override

@@ -89,7 +89,7 @@ public final class Qualifiers {
         Set<Annotation> qualifiers = new HashSet<>();
         qualifiers.add(Default.Literal.INSTANCE);
         qualifiers.add(Any.Literal.INSTANCE);
-        return qualifiers;
+        return Collections.unmodifiableSet(qualifiers);
     }
 
     private static Object invoke(Method method, Object instance) {

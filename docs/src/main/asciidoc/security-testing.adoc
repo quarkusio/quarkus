@@ -82,6 +82,22 @@ This will run the test with an identity with the given username and roles. Note 
 disable authorization while also providing an identity to run the test under, which can be useful if the endpoint expects an
 identity to be present.
 
+If you need to add claims to the identity the `io.quarkus.test.security.SecurityAttribute` annotation can be used.
+
+[source,java]
+----
+@Test
+@TestSecurity(user = "testUser", roles = {"admin", "user"},
+              attributes = {@SecurityAttribute(key = "birthdate", value = "27-01-2020"),
+                            @SecurityAttribute(key = "petName", value = "Tom")})
+void someTestMethod() {
+...
+}
+----
+
+This will run the tests with an identity with the given username, roles and claims.
+
+
 [WARNING]
 ====
 The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest`.

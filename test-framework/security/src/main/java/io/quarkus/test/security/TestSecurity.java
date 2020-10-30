@@ -24,4 +24,9 @@ public @interface TestSecurity {
      */
     String[] roles() default {};
 
+    /**
+     * Used in combination with {@link #user()} to specify the custom claims.
+     */
+    SecurityAttribute[] attributes() default {};
+
 }

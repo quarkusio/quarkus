@@ -11,44 +11,45 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
-import io.quarkus.micrometer.runtime.export.SignalFxMeterRegistryProvider;
+import io.quarkus.micrometer.runtime.export.StatsdMeterRegistryProvider;
 
 /**
- * Add support for the SignalFx Meter Registry. Note that the registry may not
+ * Add support for the StatsD Meter Registry. Note that the registry may not
  * be available at deployment time for some projects: Avoid direct class
  * references.
  */
-public class SignalFxRegistryProcessor {
-    private static final Logger log = Logger.getLogger(SignalFxRegistryProcessor.class);
+public class StatsdRegistryProcessor {
+    private static final Logger log = Logger.getLogger(StatsdRegistryProcessor.class);
 
-    static final String REGISTRY_CLASS_NAME = "io.micrometer.signalfx.SignalFxMeterRegistry";
+    static final String REGISTRY_CLASS_NAME = "io.micrometer.statsd.StatsdMeterRegistry";
     static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
-    public static class SignalFxRegistryEnabled implements BooleanSupplier {
+    public static class StatsdRegistryEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         @Override
         public boolean getAsBoolean() {
-            return REGISTRY_CLASS != null && mConfig.checkRegistryEnabledWithDefault(mConfig.export.signalfx);
+            return REGISTRY_CLASS != null && mConfig.checkRegistryEnabledWithDefault(mConfig.export.statsd);
         }
     }
 
-    @BuildStep(onlyIf = { NativeBuild.class, SignalFxRegistryEnabled.class })
+    @BuildStep(onlyIf = { NativeBuild.class, StatsdRegistryEnabled.class })
     MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
-        log.info("The SignalFx meter registry does not support running in native mode.");
+        log.info("The StatsD meter registry does not support running in native mode.");
         return null;
     }
 
-    @BuildStep(onlyIf = SignalFxRegistryEnabled.class, onlyIfNot = NativeBuild.class)
-    MicrometerRegistryProviderBuildItem createSignalFxRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    @BuildStep(onlyIf = StatsdRegistryEnabled.class, onlyIfNot = NativeBuild.class)
+    MicrometerRegistryProviderBuildItem createStatsdRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        // Add the SignalFx Registry Producer
+        // Add the Statsd Registry Producer
         additionalBeans.produce(
                 AdditionalBeanBuildItem.builder()
-                        .addBeanClass(SignalFxMeterRegistryProvider.class)
+                        .addBeanClass(StatsdMeterRegistryProvider.class)
                         .setUnremovable().build());
 
-        // Include the SignalFxMeterRegistryProvider in a possible CompositeMeterRegistry
+        // Include the StatsdMeterRegistryProvider in a possible CompositeMeterRegistry
         return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS);
     }
+
 }

@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
@@ -32,7 +33,13 @@ public class AzureMonitorRegistryProcessor {
         }
     }
 
-    @BuildStep(onlyIf = AzureMonitorEnabled.class)
+    @BuildStep(onlyIf = { NativeBuild.class, AzureMonitorEnabled.class })
+    MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
+        log.info("The Azure Monitor meter registry does not support running in native mode.");
+        return null;
+    }
+
+    @BuildStep(onlyIf = AzureMonitorEnabled.class, onlyIfNot = NativeBuild.class)
     MicrometerRegistryProviderBuildItem createAzureMonitorRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the AzureMonitor Registry Producer

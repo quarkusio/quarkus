@@ -29,7 +29,7 @@ public class StackdriverMeterRegistryProvider {
         final Map<String, String> properties = ConfigAdapter.captureProperties(config, PREFIX);
 
         // Special check: if publish is set, override the value of enabled
-        // Specifically, the stackdriver registry must be enabled for this
+        // Specifically, the StackDriver registry must be enabled for this
         // Provider to even be present. If this instance (at runtime) wants
         // to prevent metrics from being published, then it would set
         // quarkus.micrometer.export.stackdriver.publish=false

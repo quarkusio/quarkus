@@ -28,6 +28,7 @@ public class AllRegistriesDisabledTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.export.signalfx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.export.stackdriver.enabled", "false")
+            .overrideConfigKey("quarkus.micrometer.export.statsd.enabled", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Inject

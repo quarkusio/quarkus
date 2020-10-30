@@ -123,6 +123,7 @@ public final class MicrometerConfig {
         public PrometheusConfig prometheus;
         public SignalFxConfig signalfx;
         public StackdriverConfig stackdriver;
+        public StatsdConfig statsd;
     }
 
     public static interface CapabilityEnabled {

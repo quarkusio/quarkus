@@ -231,7 +231,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
             if (annotations == null) {
                 throw new UnsupportedOperationException();
             }
-            return Collections.unmodifiableSet(annotations);
+            return annotations;
         }
 
         @Override

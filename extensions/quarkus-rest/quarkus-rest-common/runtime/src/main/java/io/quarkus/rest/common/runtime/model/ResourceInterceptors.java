@@ -1,102 +1,62 @@
 package io.quarkus.rest.common.runtime.model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.WriterInterceptor;
 
 public class ResourceInterceptors {
 
-    private final List<ResourceRequestInterceptor> resourcePreMatchRequestInterceptors = new ArrayList<>();
-    private final List<ResourceRequestInterceptor> globalResourceRequestInterceptors = new ArrayList<>();
-    private final List<ResourceResponseInterceptor> globalResourceResponseInterceptors = new ArrayList<>();
-    private final List<ResourceRequestInterceptor> nameResourceRequestInterceptors = new ArrayList<>();
-    private final List<ResourceResponseInterceptor> nameResourceResponseInterceptors = new ArrayList<>();
+    private InterceptorContainer<ContainerResponseFilter> containerResponseFilters = new InterceptorContainer.Reversed<>();
+    private PreMatchInterceptorContainer<ContainerRequestFilter> containerRequestFilters = new PreMatchInterceptorContainer<>();
+    private InterceptorContainer<WriterInterceptor> writerInterceptors = new InterceptorContainer<>();
+    private InterceptorContainer<ReaderInterceptor> readerInterceptors = new InterceptorContainer<>();
 
-    private final List<ResourceReaderInterceptor> globalResourceReaderInterceptors = new ArrayList<>();
-    private final List<ResourceWriterInterceptor> globalResourceWriterInterceptors = new ArrayList<>();
-    private final List<ResourceReaderInterceptor> nameResourceReaderInterceptors = new ArrayList<>();
-    private final List<ResourceWriterInterceptor> nameResourceWriterInterceptors = new ArrayList<>();
-
-    public List<ResourceRequestInterceptor> getGlobalRequestInterceptors() {
-        return globalResourceRequestInterceptors;
+    public InterceptorContainer<ContainerResponseFilter> getContainerResponseFilters() {
+        return containerResponseFilters;
     }
 
-    public List<ResourceResponseInterceptor> getGlobalResponseInterceptors() {
-        return globalResourceResponseInterceptors;
+    public ResourceInterceptors setContainerResponseFilters(
+            InterceptorContainer<ContainerResponseFilter> containerResponseFilters) {
+        this.containerResponseFilters = containerResponseFilters;
+        return this;
     }
 
-    public List<ResourceRequestInterceptor> getNameRequestInterceptors() {
-        return nameResourceRequestInterceptors;
+    public PreMatchInterceptorContainer<ContainerRequestFilter> getContainerRequestFilters() {
+        return containerRequestFilters;
     }
 
-    public List<ResourceResponseInterceptor> getNameResponseInterceptors() {
-        return nameResourceResponseInterceptors;
+    public ResourceInterceptors setContainerRequestFilters(
+            PreMatchInterceptorContainer<ContainerRequestFilter> containerRequestFilters) {
+        this.containerRequestFilters = containerRequestFilters;
+        return this;
     }
 
-    public List<ResourceRequestInterceptor> getResourcePreMatchRequestInterceptors() {
-        return resourcePreMatchRequestInterceptors;
+    public InterceptorContainer<WriterInterceptor> getWriterInterceptors() {
+        return writerInterceptors;
     }
 
-    public void addGlobalRequestInterceptor(ResourceRequestInterceptor interceptor) {
-        this.globalResourceRequestInterceptors.add(interceptor);
+    public ResourceInterceptors setWriterInterceptors(InterceptorContainer<WriterInterceptor> writerInterceptors) {
+        this.writerInterceptors = writerInterceptors;
+        return this;
     }
 
-    public void addGlobalResponseInterceptor(ResourceResponseInterceptor interceptor) {
-        this.globalResourceResponseInterceptors.add(interceptor);
+    public InterceptorContainer<ReaderInterceptor> getReaderInterceptors() {
+        return readerInterceptors;
     }
 
-    public void addNameRequestInterceptor(ResourceRequestInterceptor interceptor) {
-        this.nameResourceRequestInterceptors.add(interceptor);
-    }
-
-    public void addNameResponseInterceptor(ResourceResponseInterceptor interceptor) {
-        this.nameResourceResponseInterceptors.add(interceptor);
-    }
-
-    public void addResourcePreMatchInterceptor(ResourceRequestInterceptor interceptor) {
-        resourcePreMatchRequestInterceptors.add(interceptor);
-    }
-
-    public List<ResourceReaderInterceptor> getGlobalResourceReaderInterceptors() {
-        return globalResourceReaderInterceptors;
-    }
-
-    public List<ResourceWriterInterceptor> getGlobalResourceWriterInterceptors() {
-        return globalResourceWriterInterceptors;
-    }
-
-    public List<ResourceReaderInterceptor> getNameResourceReaderInterceptors() {
-        return nameResourceReaderInterceptors;
-    }
-
-    public List<ResourceWriterInterceptor> getNameResourceWriterInterceptors() {
-        return nameResourceWriterInterceptors;
-    }
-
-    public void addGlobalReaderInterceptor(ResourceReaderInterceptor interceptor) {
-        this.globalResourceReaderInterceptors.add(interceptor);
-    }
-
-    public void addGlobalWriterInterceptor(ResourceWriterInterceptor interceptor) {
-        this.globalResourceWriterInterceptors.add(interceptor);
-    }
-
-    public void addNameReaderInterceptor(ResourceReaderInterceptor interceptor) {
-        this.nameResourceReaderInterceptors.add(interceptor);
-    }
-
-    public void addNameWriterInterceptor(ResourceWriterInterceptor interceptor) {
-        this.nameResourceWriterInterceptors.add(interceptor);
+    public ResourceInterceptors setReaderInterceptors(InterceptorContainer<ReaderInterceptor> readerInterceptors) {
+        this.readerInterceptors = readerInterceptors;
+        return this;
     }
 
     // we sort this at build time as the order of the elements in the lists is retained in generated bytecode
     // therefore at runtime the elements are already properly sorted
     public ResourceInterceptors sort() {
-        Collections.sort(resourcePreMatchRequestInterceptors);
-        Collections.sort(globalResourceRequestInterceptors);
-        Collections.sort(globalResourceResponseInterceptors);
-        Collections.sort(nameResourceRequestInterceptors);
-        Collections.sort(nameResourceResponseInterceptors);
+        containerRequestFilters.sort();
+        containerResponseFilters.sort();
+        writerInterceptors.sort();
+        readerInterceptors.sort();
         return this;
     }
 

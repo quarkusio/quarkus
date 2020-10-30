@@ -22,12 +22,11 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.common.runtime.core.ArcBeanFactory;
 import io.quarkus.rest.common.runtime.core.UnmanagedBeanFactory;
 import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
+import io.quarkus.rest.common.runtime.model.InterceptorContainer;
+import io.quarkus.rest.common.runtime.model.PreMatchInterceptorContainer;
 import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
+import io.quarkus.rest.common.runtime.model.ResourceInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
-import io.quarkus.rest.common.runtime.model.ResourceReaderInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceRequestInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceResponseInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.common.runtime.model.SettableResourceInterceptor;
 import io.quarkus.rest.server.runtime.core.ExceptionMapping;
 import io.quarkus.rest.spi.BeanFactory;
@@ -150,28 +149,10 @@ public class QuarkusRestFeatureContext implements FeatureContext {
         boolean isRequest = ContainerRequestFilter.class.isAssignableFrom(componentClass);
         boolean isResponse = ContainerResponseFilter.class.isAssignableFrom(componentClass);
         if (isRequest) {
-            ResourceRequestInterceptor requestInterceptor = new ResourceRequestInterceptor();
-            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority, requestInterceptor);
-            if (componentClass.isAnnotationPresent(PreMatching.class)) {
-                requestInterceptor.setPreMatching(true);
-                interceptors.addGlobalRequestInterceptor(requestInterceptor);
-            } else {
-                if (nameBindings.isEmpty()) {
-                    interceptors.addGlobalRequestInterceptor(requestInterceptor);
-                } else {
-                    interceptors.addNameRequestInterceptor(requestInterceptor);
-                }
-            }
+            register(componentClass, beanFactory, priority, interceptors.getContainerRequestFilters());
         }
         if (isResponse) {
-            ResourceResponseInterceptor responseInterceptor = new ResourceResponseInterceptor();
-            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
-                    responseInterceptor);
-            if (nameBindings.isEmpty()) {
-                interceptors.addGlobalResponseInterceptor(responseInterceptor);
-            } else {
-                interceptors.addNameResponseInterceptor(responseInterceptor);
-            }
+            register(componentClass, beanFactory, priority, interceptors.getContainerResponseFilters());
         }
     }
 
@@ -184,24 +165,25 @@ public class QuarkusRestFeatureContext implements FeatureContext {
         boolean isReader = ReaderInterceptor.class.isAssignableFrom(componentClass);
         boolean isWriter = WriterInterceptor.class.isAssignableFrom(componentClass);
         if (isReader) {
-            ResourceReaderInterceptor resourceReaderInterceptor = new ResourceReaderInterceptor();
-            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
-                    resourceReaderInterceptor);
-            if (nameBindings.isEmpty()) {
-                interceptors.addGlobalReaderInterceptor(resourceReaderInterceptor);
-            } else {
-                interceptors.addNameReaderInterceptor(resourceReaderInterceptor);
-            }
+            register(componentClass, beanFactory, priority, interceptors.getReaderInterceptors());
         }
         if (isWriter) {
-            ResourceWriterInterceptor resourceWriterInterceptor = new ResourceWriterInterceptor();
-            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
-                    resourceWriterInterceptor);
-            if (nameBindings.isEmpty()) {
-                interceptors.addGlobalWriterInterceptor(resourceWriterInterceptor);
-            } else {
-                interceptors.addNameWriterInterceptor(resourceWriterInterceptor);
-            }
+            register(componentClass, beanFactory, priority, interceptors.getWriterInterceptors());
+        }
+    }
+
+    private <T> void register(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority,
+            InterceptorContainer<T> interceptorContainer) {
+        ResourceInterceptor<T> interceptor = interceptorContainer.create();
+        Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
+                interceptor);
+        if (interceptorContainer instanceof PreMatchInterceptorContainer
+                && componentClass.isAnnotationPresent(PreMatching.class)) {
+            ((PreMatchInterceptorContainer<T>) interceptorContainer).addPreMatchInterceptor(interceptor);
+        } else if (nameBindings.isEmpty()) {
+            interceptorContainer.addGlobalRequestInterceptor(interceptor);
+        } else {
+            interceptorContainer.addNameRequestInterceptor(interceptor);
         }
     }
 

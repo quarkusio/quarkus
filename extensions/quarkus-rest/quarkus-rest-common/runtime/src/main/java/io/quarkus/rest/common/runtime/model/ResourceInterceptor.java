@@ -4,15 +4,13 @@ import java.util.Collections;
 import java.util.Set;
 
 import javax.ws.rs.Priorities;
-import javax.ws.rs.ext.ReaderInterceptor;
 
 import io.quarkus.rest.spi.BeanFactory;
 
-public class ResourceReaderInterceptor
-        implements Comparable<ResourceReaderInterceptor>, SettableResourceInterceptor<ReaderInterceptor>, HasPriority {
+public class ResourceInterceptor<T>
+        implements Comparable<ResourceInterceptor<T>>, SettableResourceInterceptor<T>, HasPriority {
 
-    private BeanFactory<ReaderInterceptor> factory;
-    private boolean preMatching;
+    private BeanFactory<T> factory;
     private Integer priority = Priorities.USER; // default priority as defined by spec
 
     /**
@@ -20,23 +18,19 @@ public class ResourceReaderInterceptor
      */
     private Set<String> nameBindingNames = Collections.emptySet();
 
-    public void setFactory(BeanFactory<ReaderInterceptor> factory) {
+    public void setFactory(BeanFactory<T> factory) {
         this.factory = factory;
     }
 
-    public BeanFactory<ReaderInterceptor> getFactory() {
+    public BeanFactory<T> getFactory() {
         return factory;
     }
 
-    public void setPreMatching(boolean preMatching) {
-        this.preMatching = preMatching;
-    }
-
-    public boolean isPreMatching() {
-        return preMatching;
-    }
-
     public Integer getPriority() {
+        return priority;
+    }
+
+    public Integer priority() {
         return priority;
     }
 
@@ -52,9 +46,22 @@ public class ResourceReaderInterceptor
         this.nameBindingNames = nameBindingNames;
     }
 
-    // spec says that reader interceptors are sorted in ascending order
+    // spec says that writer interceptors are sorted in ascending order
     @Override
-    public int compareTo(ResourceReaderInterceptor o) {
-        return this.priority.compareTo(o.priority);
+    public int compareTo(ResourceInterceptor<T> o) {
+        return this.priority().compareTo(o.priority());
+    }
+
+    //Container response filters are reversed
+    public static class Reversed<T> extends ResourceInterceptor<T> {
+
+        @Override
+        public Integer priority() {
+            Integer p = super.priority();
+            if (p == null) {
+                return null;
+            }
+            return -p;
+        }
     }
 }

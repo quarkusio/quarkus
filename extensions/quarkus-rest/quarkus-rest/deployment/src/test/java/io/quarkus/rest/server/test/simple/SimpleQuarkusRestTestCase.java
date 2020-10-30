@@ -129,15 +129,15 @@ public class SimpleQuarkusRestTestCase {
 
     @Test
     public void testFilters() {
-        Headers headers = RestAssured.get("/simple/filters")
-                .then().extract().headers();
-        assertThat(headers.getValues("filter-request")).containsOnly("authentication-authorization-default");
-        assertThat(headers.getValues("filter-response")).containsOnly("default");
-
-        headers = RestAssured.get("/simple/fooFilters")
+        Headers headers = RestAssured.get("/simple/fooFilters")
                 .then().extract().headers();
         assertThat(headers.getValues("filter-request")).containsOnly("authentication-authorization-foo-default");
         assertThat(headers.getValues("filter-response")).containsOnly("default-foo");
+
+        headers = RestAssured.get("/simple/filters")
+                .then().extract().headers();
+        assertThat(headers.getValues("filter-request")).containsOnly("authentication-authorization-default");
+        assertThat(headers.getValues("filter-response")).containsOnly("default");
 
         headers = RestAssured.get("/simple/barFilters")
                 .then().extract().headers();

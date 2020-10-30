@@ -19,6 +19,8 @@ import java.util.stream.Stream;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -78,19 +80,18 @@ import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.core.Serialisers;
 import io.quarkus.rest.common.runtime.core.SingletonBeanFactory;
 import io.quarkus.rest.common.runtime.model.InjectableBean;
+import io.quarkus.rest.common.runtime.model.InterceptorContainer;
+import io.quarkus.rest.common.runtime.model.PreMatchInterceptorContainer;
 import io.quarkus.rest.common.runtime.model.ResourceClass;
 import io.quarkus.rest.common.runtime.model.ResourceContextResolver;
 import io.quarkus.rest.common.runtime.model.ResourceDynamicFeature;
 import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.common.runtime.model.ResourceFeature;
+import io.quarkus.rest.common.runtime.model.ResourceInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
 import io.quarkus.rest.common.runtime.model.ResourceParamConverterProvider;
 import io.quarkus.rest.common.runtime.model.ResourceReader;
-import io.quarkus.rest.common.runtime.model.ResourceReaderInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceRequestInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceWriter;
-import io.quarkus.rest.common.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.common.runtime.util.Encode;
 import io.quarkus.rest.deployment.framework.ServerEndpointIndexer;
 import io.quarkus.rest.server.runtime.QuarkusRestInitialiser;
@@ -440,112 +441,42 @@ public class QuarkusRestProcessor {
 
             ResourceInterceptors interceptors = new ResourceInterceptors();
             for (ClassInfo filterClass : containerRequestFilters) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
-                    interceptor
-                            .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-                    interceptor.setPreMatching(filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null);
-                    if (interceptor.isPreMatching()) {
-                        interceptors.addResourcePreMatchInterceptor(interceptor);
-                    } else {
-                        Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
-                        if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
-                            interceptors.addGlobalRequestInterceptor(interceptor);
-                        } else {
-                            interceptor.setNameBindingNames(nameBindingNames);
-                            interceptors.addNameRequestInterceptor(interceptor);
-                        }
-                    }
-                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                    if (priorityInstance != null) {
-                        interceptor.setPriority(priorityInstance.value().asInt());
-                    }
-                }
+                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
+                        globalNameBindings, serverEndpointIndexer, interceptors.getContainerRequestFilters(), filterClass);
             }
             for (ContainerRequestFilterBuildItem additionalFilter : additionalContainerRequestFilters) {
-                ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
+                ResourceInterceptor<ContainerRequestFilter> interceptor = interceptors.getContainerRequestFilters().create();
                 interceptor.setFactory(recorder.factory(additionalFilter.getClassName(), beanContainerBuildItem.getValue()));
                 if (additionalFilter.getPriority() != null) {
                     interceptor.setPriority(additionalFilter.getPriority());
                 }
-                if (additionalFilter.getPreMatching() != null) {
-                    interceptor.setPreMatching(additionalFilter.getPreMatching());
-                    if (additionalFilter.getPreMatching()) {
-                        interceptors.addResourcePreMatchInterceptor(interceptor);
-                    } else {
-                        interceptors.addGlobalRequestInterceptor(interceptor);
-                    }
+                if (additionalFilter.getPreMatching() != null && additionalFilter.getPreMatching()) {
+                    interceptors.getContainerRequestFilters().addPreMatchInterceptor(interceptor);
                 } else {
-                    interceptors.addGlobalRequestInterceptor(interceptor);
+                    interceptors.getContainerRequestFilters().addGlobalRequestInterceptor(interceptor);
                 }
             }
 
             for (ClassInfo filterClass : containerResponseFilters) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
-                    interceptor
-                            .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-                    Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
-                    if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
-                        interceptors.addGlobalResponseInterceptor(interceptor);
-                    } else {
-                        interceptor.setNameBindingNames(nameBindingNames);
-                        interceptors.addNameResponseInterceptor(interceptor);
-                    }
-                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                    if (priorityInstance != null) {
-                        interceptor.setPriority(priorityInstance.value().asInt());
-                    }
-                }
+                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
+                        globalNameBindings, serverEndpointIndexer, interceptors.getContainerResponseFilters(), filterClass);
             }
             for (ContainerResponseFilterBuildItem additionalFilter : additionalContainerResponseFilters) {
-                ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
+                ResourceInterceptor<ContainerResponseFilter> interceptor = interceptors.getContainerResponseFilters().create();
                 interceptor.setFactory(recorder.factory(additionalFilter.getClassName(), beanContainerBuildItem.getValue()));
                 if (additionalFilter.getPriority() != null) {
                     interceptor.setPriority(additionalFilter.getPriority());
                 }
-                interceptors.addGlobalResponseInterceptor(interceptor);
+                interceptors.getContainerResponseFilters().addGlobalRequestInterceptor(interceptor);
             }
 
             for (ClassInfo filterClass : writerInterceptors) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
-                    interceptor
-                            .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-                    Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
-                    if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
-                        interceptors.addGlobalWriterInterceptor(interceptor);
-                    } else {
-                        interceptor.setNameBindingNames(nameBindingNames);
-                        interceptors.addNameWriterInterceptor(interceptor);
-                    }
-                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                    if (priorityInstance != null) {
-                        interceptor.setPriority(priorityInstance.value().asInt());
-                    }
-                }
+                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
+                        globalNameBindings, serverEndpointIndexer, interceptors.getWriterInterceptors(), filterClass);
             }
             for (ClassInfo filterClass : readerInterceptors) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
-                    interceptor
-                            .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-                    Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
-                    if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
-                        interceptors.addGlobalReaderInterceptor(interceptor);
-                    } else {
-                        interceptor.setNameBindingNames(nameBindingNames);
-                        interceptors.addNameReaderInterceptor(interceptor);
-                    }
-                    AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                    if (priorityInstance != null) {
-                        interceptor.setPriority(priorityInstance.value().asInt());
-                    }
-                }
+                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
+                        globalNameBindings, serverEndpointIndexer, interceptors.getReaderInterceptors(), filterClass);
             }
 
             ExceptionMapping exceptionMapping = new ExceptionMapping();
@@ -733,6 +664,34 @@ public class QuarkusRestProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+        }
+    }
+
+    protected <T> void registerInterceptors(BeanContainerBuildItem beanContainerBuildItem, QuarkusRestRecorder recorder,
+            ApplicationResultBuildItem applicationResultBuildItem, Set<String> singletonClasses, Set<String> globalNameBindings,
+            ServerEndpointIndexer serverEndpointIndexer, InterceptorContainer<T> interceptors, ClassInfo filterClass) {
+        KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
+        if (keepProviderResult != KeepProviderResult.DISCARD) {
+            ResourceInterceptor<T> interceptor = interceptors.create();
+            interceptor
+                    .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
+            if (filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null) {
+                if (interceptors instanceof PreMatchInterceptorContainer) {
+                    ((PreMatchInterceptorContainer<T>) interceptors).addPreMatchInterceptor(interceptor);
+                }
+            } else {
+                Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
+                if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
+                    interceptors.addGlobalRequestInterceptor(interceptor);
+                } else {
+                    interceptor.setNameBindingNames(nameBindingNames);
+                    interceptors.addNameRequestInterceptor(interceptor);
+                }
+            }
+            AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+            if (priorityInstance != null) {
+                interceptor.setPriority(priorityInstance.value().asInt());
+            }
         }
     }
 

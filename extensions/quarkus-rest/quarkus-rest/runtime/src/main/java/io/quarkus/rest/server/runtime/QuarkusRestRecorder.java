@@ -47,12 +47,9 @@ import io.quarkus.rest.common.runtime.model.ResourceContextResolver;
 import io.quarkus.rest.common.runtime.model.ResourceDynamicFeature;
 import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.common.runtime.model.ResourceFeature;
+import io.quarkus.rest.common.runtime.model.ResourceInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
 import io.quarkus.rest.common.runtime.model.ResourceMethod;
-import io.quarkus.rest.common.runtime.model.ResourceReaderInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceRequestInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceResponseInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.common.runtime.util.QuarkusMultivaluedHashMap;
 import io.quarkus.rest.common.runtime.util.ServerMediaType;
 import io.quarkus.rest.server.runtime.core.ContextResolvers;
@@ -140,10 +137,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
     };
 
-    private static final LinkedHashMap<ResourceRequestInterceptor, ContainerRequestFilter> EMPTY_INTERCEPTOR_REQUEST_MAP = new LinkedHashMap<>();
-    private static final LinkedHashMap<ResourceResponseInterceptor, ContainerResponseFilter> EMPTY_INTERCEPTOR_RESPONSE_MAP = new LinkedHashMap<>();
-    private static final LinkedHashMap<ResourceReaderInterceptor, ReaderInterceptor> EMPTY_INTERCEPTOR_READER_MAP = new LinkedHashMap<>();
-    private static final LinkedHashMap<ResourceWriterInterceptor, WriterInterceptor> EMPTY_INTERCEPTOR_WRITER_MAP = new LinkedHashMap<>();
+    private static final LinkedHashMap<ResourceInterceptor, ReaderInterceptor> EMPTY_INTERCEPTOR_MAP = new LinkedHashMap<>();
     public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
 
     private static volatile QuarkusRestDeployment currentDeployment;
@@ -170,29 +164,29 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 beanContainer);
         boolean dynamicFeaturesExist = !dynamicFeatures.getResourceDynamicFeatures().isEmpty();
 
-        Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap = createContainerRequestFilterInstances(
-                interceptors.getGlobalRequestInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> globalRequestInterceptorsMap = createInterceptorInstances(
+                interceptors.getContainerRequestFilters().getGlobalResourceInterceptors(), shutdownContext);
 
-        Map<ResourceResponseInterceptor, ContainerResponseFilter> globalResponseInterceptorsMap = createContainerResponseFilterInstances(
-                interceptors.getGlobalResponseInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> globalResponseInterceptorsMap = createInterceptorInstances(
+                interceptors.getContainerResponseFilters().getGlobalResourceInterceptors(), shutdownContext);
 
-        Map<ResourceRequestInterceptor, ContainerRequestFilter> nameRequestInterceptorsMap = createContainerRequestFilterInstances(
-                interceptors.getNameRequestInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> nameRequestInterceptorsMap = createInterceptorInstances(
+                interceptors.getContainerRequestFilters().getNameResourceInterceptors(), shutdownContext);
 
-        Map<ResourceResponseInterceptor, ContainerResponseFilter> nameResponseInterceptorsMap = createContainerResponseFilterInstances(
-                interceptors.getNameResponseInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> nameResponseInterceptorsMap = createInterceptorInstances(
+                interceptors.getContainerResponseFilters().getNameResourceInterceptors(), shutdownContext);
 
-        Map<ResourceReaderInterceptor, ReaderInterceptor> globalReaderInterceptorsMap = createReaderInterceptorInstances(
-                interceptors.getGlobalResourceReaderInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> globalReaderInterceptorsMap = createInterceptorInstances(
+                interceptors.getReaderInterceptors().getGlobalResourceInterceptors(), shutdownContext);
 
-        Map<ResourceWriterInterceptor, WriterInterceptor> globalWriterInterceptorsMap = createWriterInterceptorInstances(
-                interceptors.getGlobalResourceWriterInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> globalWriterInterceptorsMap = createInterceptorInstances(
+                interceptors.getWriterInterceptors().getGlobalResourceInterceptors(), shutdownContext);
 
-        Map<ResourceReaderInterceptor, ReaderInterceptor> nameReaderInterceptorsMap = createReaderInterceptorInstances(
-                interceptors.getNameResourceReaderInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> nameReaderInterceptorsMap = createInterceptorInstances(
+                interceptors.getReaderInterceptors().getNameResourceInterceptors(), shutdownContext);
 
-        Map<ResourceWriterInterceptor, WriterInterceptor> nameWriterInterceptorsMap = createWriterInterceptorInstances(
-                interceptors.getNameResourceWriterInterceptors(), shutdownContext);
+        Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> nameWriterInterceptorsMap = createInterceptorInstances(
+                interceptors.getWriterInterceptors().getNameResourceInterceptors(), shutdownContext);
 
         Collection<ContainerResponseFilter> responseFilters = globalResponseInterceptorsMap.values();
         List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers = new ArrayList<>(responseFilters.size());
@@ -268,13 +262,13 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 mappers.put(classTemplate, perClassMappers = new HashMap<>());
             }
             for (ResourceMethod method : clazz.getMethods()) {
-                Map<ResourceRequestInterceptor, ContainerRequestFilter> methodSpecificRequestInterceptorsMap = Collections
+                Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> methodSpecificRequestInterceptorsMap = Collections
                         .emptyMap();
-                Map<ResourceResponseInterceptor, ContainerResponseFilter> methodSpecificResponseInterceptorsMap = Collections
+                Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> methodSpecificResponseInterceptorsMap = Collections
                         .emptyMap();
-                Map<ResourceReaderInterceptor, ReaderInterceptor> methodSpecificReaderInterceptorsMap = Collections
+                Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> methodSpecificReaderInterceptorsMap = Collections
                         .emptyMap();
-                Map<ResourceWriterInterceptor, WriterInterceptor> methodSpecificWriterInterceptorsMap = Collections
+                Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> methodSpecificWriterInterceptorsMap = Collections
                         .emptyMap();
 
                 if (dynamicFeaturesExist) {
@@ -289,22 +283,29 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                         DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
                         feature.configure(quarkusRestResourceMethod, context);
                     }
+                    dynamicallyConfiguredInterceptors.sort();
 
-                    if (!dynamicallyConfiguredInterceptors.getGlobalRequestInterceptors().isEmpty()) {
-                        methodSpecificRequestInterceptorsMap = createContainerRequestFilterInstances(
-                                dynamicallyConfiguredInterceptors.getGlobalRequestInterceptors(), shutdownContext);
+                    if (!dynamicallyConfiguredInterceptors.getContainerRequestFilters().getGlobalResourceInterceptors()
+                            .isEmpty()) {
+                        methodSpecificRequestInterceptorsMap = createInterceptorInstances(
+                                dynamicallyConfiguredInterceptors.getContainerRequestFilters().getGlobalResourceInterceptors(),
+                                shutdownContext);
                     }
-                    if (!dynamicallyConfiguredInterceptors.getGlobalResponseInterceptors().isEmpty()) {
-                        methodSpecificResponseInterceptorsMap = createContainerResponseFilterInstances(
-                                dynamicallyConfiguredInterceptors.getGlobalResponseInterceptors(), shutdownContext);
+                    if (!dynamicallyConfiguredInterceptors.getContainerResponseFilters().getGlobalResourceInterceptors()
+                            .isEmpty()) {
+                        methodSpecificResponseInterceptorsMap = createInterceptorInstances(
+                                dynamicallyConfiguredInterceptors.getContainerResponseFilters().getGlobalResourceInterceptors(),
+                                shutdownContext);
                     }
-                    if (!dynamicallyConfiguredInterceptors.getGlobalResourceReaderInterceptors().isEmpty()) {
-                        methodSpecificReaderInterceptorsMap = createReaderInterceptorInstances(
-                                dynamicallyConfiguredInterceptors.getGlobalResourceReaderInterceptors(), shutdownContext);
+                    if (!dynamicallyConfiguredInterceptors.getReaderInterceptors().getGlobalResourceInterceptors().isEmpty()) {
+                        methodSpecificReaderInterceptorsMap = createInterceptorInstances(
+                                dynamicallyConfiguredInterceptors.getReaderInterceptors().getGlobalResourceInterceptors(),
+                                shutdownContext);
                     }
-                    if (!dynamicallyConfiguredInterceptors.getGlobalResourceWriterInterceptors().isEmpty()) {
-                        methodSpecificWriterInterceptorsMap = createWriterInterceptorInstances(
-                                dynamicallyConfiguredInterceptors.getGlobalResourceWriterInterceptors(), shutdownContext);
+                    if (!dynamicallyConfiguredInterceptors.getWriterInterceptors().getGlobalResourceInterceptors().isEmpty()) {
+                        methodSpecificWriterInterceptorsMap = createInterceptorInstances(
+                                dynamicallyConfiguredInterceptors.getWriterInterceptors().getGlobalResourceInterceptors(),
+                                shutdownContext);
                     }
                 }
 
@@ -353,7 +354,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             abortHandlingChain.add(globalInterceptorHandler);
         }
         abortHandlingChain.add(new ExceptionHandler());
-        if (!interceptors.getGlobalResponseInterceptors().isEmpty()) {
+        if (!interceptors.getContainerResponseFilters().getGlobalResourceInterceptors().isEmpty()) {
             abortHandlingChain.addAll(globalResponseInterceptorHandlers);
         }
         abortHandlingChain.add(new ResponseHandler());
@@ -379,9 +380,9 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
 
         //pre matching interceptors are run first
         List<ResourceRequestFilterHandler> preMatchHandlers = null;
-        if (!interceptors.getResourcePreMatchRequestInterceptors().isEmpty()) {
-            Map<ResourceRequestInterceptor, ContainerRequestFilter> preMatchContainerRequestFilters = createContainerRequestFilterInstances(
-                    interceptors.getResourcePreMatchRequestInterceptors(), shutdownContext);
+        if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
+            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> preMatchContainerRequestFilters = createInterceptorInstances(
+                    interceptors.getContainerRequestFilters().getPreMatchInterceptors(), shutdownContext);
             preMatchHandlers = new ArrayList<>(preMatchContainerRequestFilters.size());
             for (ContainerRequestFilter containerRequestFilter : preMatchContainerRequestFilters.values()) {
                 preMatchHandlers.add(new ResourceRequestFilterHandler(containerRequestFilter, true));
@@ -469,85 +470,20 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         return configuration;
     }
 
-    // we need to preserve the order of ResourceRequestInterceptor because they have been sorted according to priorities
-    private LinkedHashMap<ResourceRequestInterceptor, ContainerRequestFilter> createContainerRequestFilterInstances(
-            List<ResourceRequestInterceptor> interceptors, ShutdownContext shutdownContext) {
+    private <T> LinkedHashMap<ResourceInterceptor<T>, T> createInterceptorInstances(
+            List<ResourceInterceptor<T>> interceptors, ShutdownContext shutdownContext) {
 
         if (interceptors.isEmpty()) {
-            return EMPTY_INTERCEPTOR_REQUEST_MAP;
+            return (LinkedHashMap) EMPTY_INTERCEPTOR_MAP;
         }
 
-        LinkedHashMap<ResourceRequestInterceptor, ContainerRequestFilter> result = new LinkedHashMap<>();
-        List<BeanFactory.BeanInstance<ContainerRequestFilter>> responseBeanInstances = new ArrayList<>(interceptors.size());
-        for (ResourceRequestInterceptor interceptor : interceptors) {
-            BeanFactory.BeanInstance<ContainerRequestFilter> beanInstance = interceptor.getFactory().createInstance();
-            responseBeanInstances.add(beanInstance);
-            ContainerRequestFilter containerResponseFilter = beanInstance.getInstance();
-            result.put(interceptor, containerResponseFilter);
-
-        }
-        shutdownContext.addShutdownTask(
-                new ShutdownContext.CloseRunnable(new BeanFactory.BeanInstance.ClosingTask<>(responseBeanInstances)));
-        return result;
-    }
-
-    // we need to preserve the order of ResourceResponseInterceptor because they have been sorted according to priorities
-    private LinkedHashMap<ResourceResponseInterceptor, ContainerResponseFilter> createContainerResponseFilterInstances(
-            List<ResourceResponseInterceptor> interceptors, ShutdownContext shutdownContext) {
-
-        if (interceptors.isEmpty()) {
-            return EMPTY_INTERCEPTOR_RESPONSE_MAP;
-        }
-
-        LinkedHashMap<ResourceResponseInterceptor, ContainerResponseFilter> result = new LinkedHashMap<>();
-        List<BeanFactory.BeanInstance<ContainerResponseFilter>> responseBeanInstances = new ArrayList<>(interceptors.size());
-        for (ResourceResponseInterceptor interceptor : interceptors) {
-            BeanFactory.BeanInstance<ContainerResponseFilter> beanInstance = interceptor.getFactory().createInstance();
-            responseBeanInstances.add(beanInstance);
-            ContainerResponseFilter containerResponseFilter = beanInstance.getInstance();
-            result.put(interceptor, containerResponseFilter);
-
-        }
-        shutdownContext.addShutdownTask(
-                new ShutdownContext.CloseRunnable(new BeanFactory.BeanInstance.ClosingTask<>(responseBeanInstances)));
-        return result;
-    }
-
-    private LinkedHashMap<ResourceReaderInterceptor, ReaderInterceptor> createReaderInterceptorInstances(
-            List<ResourceReaderInterceptor> interceptors, ShutdownContext shutdownContext) {
-
-        if (interceptors.isEmpty()) {
-            return EMPTY_INTERCEPTOR_READER_MAP;
-        }
-
-        LinkedHashMap<ResourceReaderInterceptor, ReaderInterceptor> result = new LinkedHashMap<>();
-        List<BeanFactory.BeanInstance<ReaderInterceptor>> responseBeanInstances = new ArrayList<>(interceptors.size());
+        LinkedHashMap<ResourceInterceptor<T>, T> result = new LinkedHashMap<>();
+        List<BeanFactory.BeanInstance<T>> responseBeanInstances = new ArrayList<>(interceptors.size());
         Collections.sort(interceptors);
-        for (ResourceReaderInterceptor interceptor : interceptors) {
-            BeanFactory.BeanInstance<ReaderInterceptor> beanInstance = interceptor.getFactory().createInstance();
+        for (ResourceInterceptor<T> interceptor : interceptors) {
+            BeanFactory.BeanInstance<T> beanInstance = interceptor.getFactory().createInstance();
             responseBeanInstances.add(beanInstance);
-            ReaderInterceptor containerResponseFilter = beanInstance.getInstance();
-            result.put(interceptor, containerResponseFilter);
-        }
-        shutdownContext.addShutdownTask(
-                new ShutdownContext.CloseRunnable(new BeanFactory.BeanInstance.ClosingTask<>(responseBeanInstances)));
-        return result;
-    }
-
-    private LinkedHashMap<ResourceWriterInterceptor, WriterInterceptor> createWriterInterceptorInstances(
-            List<ResourceWriterInterceptor> interceptors, ShutdownContext shutdownContext) {
-
-        if (interceptors.isEmpty()) {
-            return EMPTY_INTERCEPTOR_WRITER_MAP;
-        }
-        Collections.sort(interceptors);
-
-        LinkedHashMap<ResourceWriterInterceptor, WriterInterceptor> result = new LinkedHashMap<>();
-        List<BeanFactory.BeanInstance<WriterInterceptor>> responseBeanInstances = new ArrayList<>(interceptors.size());
-        for (ResourceWriterInterceptor interceptor : interceptors) {
-            BeanFactory.BeanInstance<WriterInterceptor> beanInstance = interceptor.getFactory().createInstance();
-            responseBeanInstances.add(beanInstance);
-            WriterInterceptor containerResponseFilter = beanInstance.getInstance();
+            T containerResponseFilter = beanInstance.getInstance();
             result.put(interceptor, containerResponseFilter);
         }
         shutdownContext.addShutdownTask(
@@ -617,21 +553,22 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
 
     public RuntimeResource buildResourceMethod(ServerSerialisers serialisers,
             QuarkusRestConfig quarkusRestConfig,
-            Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap,
-            Map<ResourceResponseInterceptor, ContainerResponseFilter> globalResponseInterceptorsMap,
+            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> globalRequestInterceptorsMap,
+            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> globalResponseInterceptorsMap,
             List<ResourceRequestFilterHandler> globalRequestInterceptorHandlers,
             List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers,
-            Map<ResourceRequestInterceptor, ContainerRequestFilter> nameRequestInterceptorsMap,
-            Map<ResourceResponseInterceptor, ContainerResponseFilter> nameResponseInterceptorsMap,
-            Map<ResourceRequestInterceptor, ContainerRequestFilter> methodSpecificRequestInterceptorsMap,
-            Map<ResourceResponseInterceptor, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
-            Map<ResourceReaderInterceptor, ReaderInterceptor> globalReaderInterceptorsMap,
-            Map<ResourceWriterInterceptor, WriterInterceptor> globalWriterInterceptorsMap,
-            Map<ResourceReaderInterceptor, ReaderInterceptor> nameReaderInterceptorsMap,
-            Map<ResourceWriterInterceptor, WriterInterceptor> nameWriterInterceptorsMap,
+            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> nameRequestInterceptorsMap,
+            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> nameResponseInterceptorsMap,
+            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> methodSpecificRequestInterceptorsMap,
+            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
+            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> globalReaderInterceptorsMap,
+            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> globalWriterInterceptorsMap,
+            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> nameReaderInterceptorsMap,
+            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> nameWriterInterceptorsMap,
             InterceptorHandler globalInterceptorHandler,
-            Map<ResourceReaderInterceptor, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
-            Map<ResourceWriterInterceptor, WriterInterceptor> methodSpecificWriterInterceptorsMap, ResourceClass clazz,
+            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
+            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> methodSpecificWriterInterceptorsMap,
+            ResourceClass clazz,
             ResourceLocatorHandler resourceLocatorHandler,
             ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
             DynamicEntityWriter dynamicEntityWriter, BeanContainer beanContainer,
@@ -861,13 +798,15 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         return runtimeResource;
     }
 
-    private void setupInterceptorHandler(Map<ResourceReaderInterceptor, ReaderInterceptor> globalReaderInterceptorsMap,
-            Map<ResourceWriterInterceptor, WriterInterceptor> globalWriterInterceptorsMap,
-            Map<ResourceReaderInterceptor, ReaderInterceptor> nameReaderInterceptorsMap,
-            Map<ResourceWriterInterceptor, WriterInterceptor> nameWriterInterceptorsMap,
+    private void setupInterceptorHandler(
+            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> globalReaderInterceptorsMap,
+            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> globalWriterInterceptorsMap,
+            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> nameReaderInterceptorsMap,
+            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> nameWriterInterceptorsMap,
             InterceptorHandler globalInterceptorHandler,
-            Map<ResourceReaderInterceptor, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
-            Map<ResourceWriterInterceptor, WriterInterceptor> methodSpecificWriterInterceptorsMap, ResourceMethod method,
+            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
+            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> methodSpecificWriterInterceptorsMap,
+            ResourceMethod method,
             List<ServerRestHandler> handlers) {
         if (method.getNameBindingNames().isEmpty() && methodSpecificReaderInterceptorsMap.isEmpty()
                 && methodSpecificWriterInterceptorsMap.isEmpty()) {
@@ -881,27 +820,10 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 handlers.add(globalInterceptorHandler);
             }
         } else {
-            TreeMap<ResourceReaderInterceptor, ReaderInterceptor> readerInterceptorsToUse = new TreeMap<>(
-                    HasPriority.TreeMapComparator.INSTANCE);
-            readerInterceptorsToUse.putAll(globalReaderInterceptorsMap);
-            readerInterceptorsToUse.putAll(methodSpecificReaderInterceptorsMap);
-            for (ResourceReaderInterceptor nameInterceptor : nameReaderInterceptorsMap.keySet()) {
-                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                    readerInterceptorsToUse.put(nameInterceptor, nameReaderInterceptorsMap.get(nameInterceptor));
-                }
-            }
-
-            TreeMap<ResourceWriterInterceptor, WriterInterceptor> writerInterceptorsToUse = new TreeMap<>(
-                    HasPriority.TreeMapComparator.INSTANCE);
-            writerInterceptorsToUse.putAll(globalWriterInterceptorsMap);
-            writerInterceptorsToUse.putAll(methodSpecificWriterInterceptorsMap);
-            for (ResourceWriterInterceptor nameInterceptor : nameWriterInterceptorsMap.keySet()) {
-                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                    writerInterceptorsToUse.put(nameInterceptor, nameWriterInterceptorsMap.get(nameInterceptor));
-                }
-            }
+            TreeMap<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> readerInterceptorsToUse = buildInterceptorMap(
+                    globalReaderInterceptorsMap, nameReaderInterceptorsMap, methodSpecificReaderInterceptorsMap, method, false);
+            TreeMap<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> writerInterceptorsToUse = buildInterceptorMap(
+                    globalWriterInterceptorsMap, nameWriterInterceptorsMap, methodSpecificWriterInterceptorsMap, method, false);
             WriterInterceptor[] writers = null;
             ReaderInterceptor[] readers = null;
             if (!readerInterceptorsToUse.isEmpty()) {
@@ -922,10 +844,28 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
     }
 
-    private void setupRequestFilterHandler(Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap,
+    private <T> TreeMap<ResourceInterceptor<T>, T> buildInterceptorMap(
+            Map<ResourceInterceptor<T>, T> globalInterceptorsMap,
+            Map<ResourceInterceptor<T>, T> nameInterceptorsMap,
+            Map<ResourceInterceptor<T>, T> methodSpecificInterceptorsMap, ResourceMethod method, boolean reversed) {
+        TreeMap<ResourceInterceptor<T>, T> interceptorsToUse = new TreeMap<>(HasPriority.TreeMapComparator.INSTANCE);
+        interceptorsToUse.putAll(globalInterceptorsMap);
+        interceptorsToUse.putAll(methodSpecificInterceptorsMap);
+        for (ResourceInterceptor<T> nameInterceptor : nameInterceptorsMap.keySet()) {
+            // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
+            if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
+                interceptorsToUse.put(nameInterceptor, nameInterceptorsMap.get(nameInterceptor));
+            }
+        }
+        return interceptorsToUse;
+    }
+
+    private void setupRequestFilterHandler(
+            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> globalRequestInterceptorsMap,
             List<ResourceRequestFilterHandler> globalRequestInterceptorsHandlers,
-            Map<ResourceRequestInterceptor, ContainerRequestFilter> nameRequestInterceptorsMap,
-            Map<ResourceRequestInterceptor, ContainerRequestFilter> methodSpecificRequestInterceptorsMap, ResourceMethod method,
+            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> nameRequestInterceptorsMap,
+            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> methodSpecificRequestInterceptorsMap,
+            ResourceMethod method,
             List<ServerRestHandler> handlers) {
         // according to the spec, global request filters apply everywhere
         // and named request filters only apply to methods with exactly matching "qualifiers"
@@ -939,41 +879,21 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 handlers.addAll(globalRequestInterceptorsHandlers);
             }
         } else {
-            // TODO: refactor to use the TreeMap procedure used above for interceptors
-            List<ResourceRequestInterceptor> interceptorsToUse = new ArrayList<>(
-                    globalRequestInterceptorsMap.size() + nameRequestInterceptorsMap.size()
-                            + methodSpecificRequestInterceptorsMap.size());
-            interceptorsToUse.addAll(globalRequestInterceptorsMap.keySet());
-            interceptorsToUse.addAll(methodSpecificRequestInterceptorsMap.keySet());
-            for (ResourceRequestInterceptor nameInterceptor : nameRequestInterceptorsMap.keySet()) {
-                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                    interceptorsToUse.add(nameInterceptor);
-                }
-            }
-            // since we have now mixed global, name and method specific interceptors, we need to sort
-            Collections.sort(interceptorsToUse);
-            for (ResourceRequestInterceptor interceptor : interceptorsToUse) {
-                Map<ResourceRequestInterceptor, ContainerRequestFilter> properMap;
-                if (interceptor.getNameBindingNames().isEmpty()) {
-                    if (methodSpecificRequestInterceptorsMap.containsKey(interceptor)) {
-                        properMap = methodSpecificRequestInterceptorsMap;
-                    } else {
-                        properMap = globalRequestInterceptorsMap;
-                    }
-                } else {
-                    properMap = nameRequestInterceptorsMap;
-                }
-                handlers.add(new ResourceRequestFilterHandler(properMap.get(interceptor), false));
+            TreeMap<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> interceptorsToUse = buildInterceptorMap(
+                    globalRequestInterceptorsMap, nameRequestInterceptorsMap, methodSpecificRequestInterceptorsMap, method,
+                    false);
+            for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorsToUse
+                    .entrySet()) {
+                handlers.add(new ResourceRequestFilterHandler(entry.getValue(), false));
             }
         }
     }
 
     private void setupResponseFilterHandler(
-            Map<ResourceResponseInterceptor, ContainerResponseFilter> globalResponseInterceptorsMap,
+            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> globalResponseInterceptorsMap,
             List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers,
-            Map<ResourceResponseInterceptor, ContainerResponseFilter> nameResponseInterceptorsMap,
-            Map<ResourceResponseInterceptor, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
+            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> nameResponseInterceptorsMap,
+            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
             ResourceMethod method, List<ServerRestHandler> responseFilterHandlers) {
         // according to the spec, global request filters apply everywhere
         // and named request filters only apply to methods with exactly matching "qualifiers"
@@ -987,31 +907,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 responseFilterHandlers.addAll(globalResponseInterceptorHandlers);
             }
         } else {
-            List<ResourceResponseInterceptor> interceptorsToUse = new ArrayList<>(
-                    globalResponseInterceptorsMap.size() + nameResponseInterceptorsMap.size()
-                            + methodSpecificResponseInterceptorsMap.size());
-            interceptorsToUse.addAll(globalResponseInterceptorsMap.keySet());
-            interceptorsToUse.addAll(methodSpecificResponseInterceptorsMap.keySet());
-            for (ResourceResponseInterceptor nameInterceptor : nameResponseInterceptorsMap.keySet()) {
-                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                    interceptorsToUse.add(nameInterceptor);
-                }
-            }
-            // since we have now mixed global, name and method specific interceptors, we need to sort
-            Collections.sort(interceptorsToUse);
-            for (ResourceResponseInterceptor interceptor : interceptorsToUse) {
-                Map<ResourceResponseInterceptor, ContainerResponseFilter> properMap;
-                if (interceptor.getNameBindingNames().isEmpty()) {
-                    if (methodSpecificResponseInterceptorsMap.containsKey(interceptor)) {
-                        properMap = methodSpecificResponseInterceptorsMap;
-                    } else {
-                        properMap = globalResponseInterceptorsMap;
-                    }
-                } else {
-                    properMap = nameResponseInterceptorsMap;
-                }
-                responseFilterHandlers.add(new ResourceResponseFilterHandler(properMap.get(interceptor)));
+            TreeMap<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> interceptorsToUse = buildInterceptorMap(
+                    globalResponseInterceptorsMap, nameResponseInterceptorsMap, methodSpecificResponseInterceptorsMap, method,
+                    true);
+            for (Map.Entry<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> entry : interceptorsToUse
+                    .entrySet()) {
+                responseFilterHandlers.add(new ResourceResponseFilterHandler(entry.getValue()));
             }
         }
     }

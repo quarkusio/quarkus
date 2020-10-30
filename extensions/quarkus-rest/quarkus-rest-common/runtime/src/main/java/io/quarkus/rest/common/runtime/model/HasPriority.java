@@ -4,7 +4,7 @@ import java.util.Comparator;
 
 public interface HasPriority {
 
-    Integer getPriority();
+    Integer priority();
 
     /**
      * This comparator is used when a TreeMap is employed to order objects that have priority
@@ -16,11 +16,17 @@ public interface HasPriority {
 
         @Override
         public int compare(HasPriority o1, HasPriority o2) {
-            int priorityCompare = o1.getPriority().compareTo(o2.getPriority());
-            if (priorityCompare != 0) {
-                return priorityCompare;
+            int res = o1.priority().compareTo(o2.priority());
+            if (res != 0) {
+                return res;
             }
-            return Integer.compare(o1.hashCode(), o2.hashCode());
+            res = Integer.compare(o1.hashCode(), o2.hashCode());
+            if (res != 0) {
+                return res;
+            }
+            //what to do here
+            //they are functionally equal, but we don't want one to be discarded if there is a hash collision
+            return 1;
         }
     }
 }

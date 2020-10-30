@@ -5,9 +5,9 @@ import javax.ws.rs.container.ContainerResponseFilter;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
+import io.quarkus.rest.common.runtime.model.InterceptorContainer;
+import io.quarkus.rest.common.runtime.model.ResourceInterceptor;
 import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
-import io.quarkus.rest.common.runtime.model.ResourceRequestInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.spi.BeanFactory;
 
 // TODO: It might not make sense to have this extend from QuarkusRestFeatureContext
@@ -30,16 +30,18 @@ public class QuarkusRestDynamicFeatureContext extends QuarkusRestFeatureContext 
         boolean isRequest = ContainerRequestFilter.class.isAssignableFrom(componentClass);
         boolean isResponse = ContainerResponseFilter.class.isAssignableFrom(componentClass);
         if (isRequest) {
-            ResourceRequestInterceptor requestInterceptor = new ResourceRequestInterceptor();
-            setFilterPriority(componentClass, priority, requestInterceptor);
-            requestInterceptor.setFactory(getFactory(componentClass, beanFactory));
-            interceptors.addGlobalRequestInterceptor(requestInterceptor);
+            register(componentClass, beanFactory, priority, this.interceptors.getContainerRequestFilters());
         }
         if (isResponse) {
-            ResourceResponseInterceptor responseInterceptor = new ResourceResponseInterceptor();
-            setFilterPriority(componentClass, priority, responseInterceptor);
-            responseInterceptor.setFactory(getFactory(componentClass, beanFactory));
-            interceptors.addGlobalResponseInterceptor(responseInterceptor);
+            register(componentClass, beanFactory, priority, this.interceptors.getContainerResponseFilters());
         }
+    }
+
+    private <T> void register(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority,
+            InterceptorContainer<T> interceptors) {
+        ResourceInterceptor<T> responseInterceptor = interceptors.create();
+        setFilterPriority(componentClass, priority, responseInterceptor);
+        responseInterceptor.setFactory(getFactory(componentClass, beanFactory));
+        interceptors.addGlobalRequestInterceptor(responseInterceptor);
     }
 }

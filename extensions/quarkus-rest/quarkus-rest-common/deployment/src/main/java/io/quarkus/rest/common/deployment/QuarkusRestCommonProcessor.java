@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.RuntimeType;
@@ -33,18 +34,25 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem.KeepProviderResult;
+import io.quarkus.rest.common.deployment.framework.NameBindingUtil;
 import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
+import io.quarkus.rest.spi.AbstractInterceptorBuildItem;
+import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
+import io.quarkus.rest.spi.ReaderInterceptorBuildItem;
+import io.quarkus.rest.spi.WriterInterceptorBuildItem;
 
 public class QuarkusRestCommonProcessor {
 
@@ -62,10 +70,10 @@ public class QuarkusRestCommonProcessor {
     }
 
     @BuildStep
-    ApplicationResultBuildItem handleApplication(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+    ApplicationResultBuildItem handleApplication(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
-        IndexView index = beanArchiveIndexBuildItem.getIndex();
+        IndexView index = combinedIndexBuildItem.getIndex();
         Collection<ClassInfo> applications = index
                 .getAllKnownSubclasses(QuarkusRestDotNames.APPLICATION);
 
@@ -114,6 +122,48 @@ public class QuarkusRestCommonProcessor {
         }
         return new ApplicationResultBuildItem(allowedClasses, singletonClasses, globalNameBindings, filterClasses, application,
                 selectedAppClass, blocking);
+    }
+
+    @BuildStep
+    public void scanForIOInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<WriterInterceptorBuildItem> writerInterceptorProducer,
+            BuildProducer<ReaderInterceptorBuildItem> readerInterceptorProducer) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Collection<ClassInfo> readerInterceptors = index
+                .getAllKnownImplementors(QuarkusRestDotNames.READER_INTERCEPTOR);
+        Collection<ClassInfo> writerInterceptors = index
+                .getAllKnownImplementors(QuarkusRestDotNames.WRITER_INTERCEPTOR);
+
+        for (ClassInfo filterClass : writerInterceptors) {
+            handleDiscoveredInterceptor(applicationResultBuildItem, writerInterceptorProducer, index, filterClass,
+                    WriterInterceptorBuildItem.Builder::new);
+        }
+        for (ClassInfo filterClass : readerInterceptors) {
+            handleDiscoveredInterceptor(applicationResultBuildItem, readerInterceptorProducer, index, filterClass,
+                    ReaderInterceptorBuildItem.Builder::new);
+        }
+    }
+
+    public static <T extends AbstractInterceptorBuildItem, B extends AbstractInterceptorBuildItem.Builder<T, B>> void handleDiscoveredInterceptor(
+            ApplicationResultBuildItem applicationResultBuildItem, BuildProducer<T> producer, IndexView index,
+            ClassInfo filterClass, Function<String, B> builderCreator) {
+        KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
+        if (keepProviderResult != KeepProviderResult.DISCARD) {
+            B builder = builderCreator.apply(filterClass.name().toString());
+            builder.setRegisterAsBean(true);
+            if (filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null) {
+                if (builder instanceof ContainerRequestFilterBuildItem.Builder) {
+                    ((ContainerRequestFilterBuildItem.Builder) builder).setPreMatching(true);
+                }
+            }
+            builder.setNameBindingNames(NameBindingUtil.nameBindingNames(index, filterClass));
+            AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+            if (priorityInstance != null) {
+                builder.setPriority(priorityInstance.value().asInt());
+            }
+            producer.produce(builder.build());
+        }
     }
 
     @BuildStep
@@ -280,6 +330,25 @@ public class QuarkusRestCommonProcessor {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClassName));
             }
         }
+    }
+
+    @BuildStep
+    void additionalBeans(List<WriterInterceptorBuildItem> writerInterceptors,
+            List<ReaderInterceptorBuildItem> readerInterceptors,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+
+        AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
+        for (WriterInterceptorBuildItem i : writerInterceptors) {
+            if (i.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(i.getClassName());
+            }
+        }
+        for (ReaderInterceptorBuildItem i : readerInterceptors) {
+            if (i.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(i.getClassName());
+            }
+        }
+        additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 
     private MethodInfo hasJaxRsCtorParams(ClassInfo classInfo) {

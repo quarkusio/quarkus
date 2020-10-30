@@ -210,6 +210,11 @@ public final class QuarkusRestDotNames {
     public static final IgnoreForReflectionPredicate IGNORE_FOR_REFLECTION_PREDICATE = new IgnoreForReflectionPredicate();
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
+    public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_FILTER = DotName
+            .createSimple("io.quarkus.rest.server.runtime.spi.QuarkusRestContainerResponseFilter");
+    public static final DotName QUARKUS_REST_CONTAINER_REQUEST_FILTER = DotName
+            .createSimple("io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestFilter");
+
     private static class IgnoreForReflectionPredicate implements Predicate<DotName> {
 
         @Override

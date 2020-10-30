@@ -21,7 +21,6 @@ import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.LO
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.MATRIX_PARAM;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.MULTI;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.MULTI_VALUED_MAP;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.NAME_BINDING;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.PATH;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.PATH_PARAM;
 import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.PATH_SEGMENT;
@@ -51,7 +50,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -253,7 +251,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
-        Set<String> classNameBindings = nameBindingNames(currentClassInfo);
+        Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
             List<AnnotationInstance> foundMethods = currentClassInfo.annotations().get(httpMethod);
@@ -589,48 +587,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         return annotation;
     }
 
-    /**
-     * Returns the class names of the {@code @NameBinding} annotations or null if non are present
-     */
-    public Set<String> nameBindingNames(ClassInfo classInfo) {
-        return nameBindingNames(instanceDotNames(classInfo.classAnnotations()));
-    }
-
-    private Set<String> nameBindingNames(MethodInfo methodInfo, Set<String> forClass) {
-        Set<String> fromMethod = nameBindingNames(instanceDotNames(methodInfo.annotations()));
-        if (fromMethod.isEmpty()) {
-            return forClass;
-        }
-        fromMethod.addAll(forClass);
-        return fromMethod;
-    }
-
-    private static List<DotName> instanceDotNames(Collection<AnnotationInstance> instances) {
-        List<DotName> result = new ArrayList<>(instances.size());
-        for (AnnotationInstance instance : instances) {
-            result.add(instance.name());
-        }
-        return result;
-    }
-
-    private Set<String> nameBindingNames(Collection<DotName> annotations) {
-        Set<String> result = new HashSet<>();
-        for (DotName classAnnotationDotName : annotations) {
-            if (classAnnotationDotName.equals(PATH) || classAnnotationDotName.equals(CONSUMES)
-                    || classAnnotationDotName.equals(PRODUCES)) {
-                continue;
-            }
-            ClassInfo classAnnotation = index.getClassByName(classAnnotationDotName);
-            if (classAnnotation == null) {
-                return result;
-            }
-            if (classAnnotation.classAnnotation(NAME_BINDING) != null) {
-                result.add(classAnnotation.name().toString());
-            }
-        }
-        return result;
-    }
-
     private static String methodDescriptor(MethodInfo info) {
         return info.name() + ":" + AsmUtil.getDescriptor(info, s -> null);
     }
@@ -949,6 +905,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             return defaultValue;
         String val = annotation.asString();
         return val != null && !val.isEmpty() ? val : defaultValue;
+    }
+
+    public Set<String> nameBindingNames(ClassInfo selectedAppClass) {
+        return NameBindingUtil.nameBindingNames(index, selectedAppClass);
+    }
+
+    public Set<String> nameBindingNames(MethodInfo methodInfo, Set<String> forClass) {
+        return NameBindingUtil.nameBindingNames(index, methodInfo, forClass);
     }
 
     public static abstract class Builder<T extends EndpointIndexer<T, ?>, B extends Builder<T, B>> {

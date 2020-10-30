@@ -1,56 +1,28 @@
 package io.quarkus.rest.spi;
 
-import io.quarkus.builder.item.MultiBuildItem;
+public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBuildItem {
 
-public final class ContainerRequestFilterBuildItem extends MultiBuildItem implements CheckBean {
+    private final boolean preMatching;
 
-    private final String className;
-    private final Integer priority;
-    private final Boolean preMatching;
-
-    private final boolean registerAsBean;
+    protected ContainerRequestFilterBuildItem(Builder builder) {
+        super(builder);
+        this.preMatching = builder.preMatching;
+    }
 
     public ContainerRequestFilterBuildItem(String className) {
-        this(className, null, null, true);
+        super(className);
+        this.preMatching = false;
     }
 
-    private ContainerRequestFilterBuildItem(String className, Integer priority, Boolean preMatching, boolean registerAsBean) {
-        this.className = className;
-        this.priority = priority;
-        this.preMatching = preMatching;
-        this.registerAsBean = registerAsBean;
-    }
-
-    public String getClassName() {
-        return className;
-    }
-
-    public Integer getPriority() {
-        return priority;
-    }
-
-    public Boolean getPreMatching() {
+    public boolean isPreMatching() {
         return preMatching;
     }
 
-    public boolean isRegisterAsBean() {
-        return registerAsBean;
-    }
-
-    public static final class Builder {
-        private final String className;
-
-        private Integer priority;
-        private Boolean preMatching;
-        private boolean registerAsBean = true;
+    public static final class Builder extends AbstractInterceptorBuildItem.Builder<ContainerRequestFilterBuildItem, Builder> {
+        boolean preMatching = false;
 
         public Builder(String className) {
-            this.className = className;
-        }
-
-        public Builder setPriority(Integer priority) {
-            this.priority = priority;
-            return this;
+            super(className);
         }
 
         public Builder setPreMatching(Boolean preMatching) {
@@ -58,13 +30,8 @@ public final class ContainerRequestFilterBuildItem extends MultiBuildItem implem
             return this;
         }
 
-        public Builder setRegisterAsBean(boolean registerAsBean) {
-            this.registerAsBean = registerAsBean;
-            return this;
-        }
-
         public ContainerRequestFilterBuildItem build() {
-            return new ContainerRequestFilterBuildItem(className, priority, preMatching, registerAsBean);
+            return new ContainerRequestFilterBuildItem(this);
         }
     }
 }

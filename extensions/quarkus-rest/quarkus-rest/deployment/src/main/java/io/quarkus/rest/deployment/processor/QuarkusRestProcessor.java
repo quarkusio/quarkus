@@ -19,8 +19,6 @@ import java.util.stream.Stream;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -70,6 +68,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem.KeepProviderResult;
 import io.quarkus.rest.common.deployment.FactoryUtils;
+import io.quarkus.rest.common.deployment.QuarkusRestCommonProcessor;
 import io.quarkus.rest.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.rest.common.deployment.SerializersUtil;
 import io.quarkus.rest.common.deployment.framework.AdditionalReaders;
@@ -109,6 +108,7 @@ import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationF
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationRedirectExceptionMapper;
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
+import io.quarkus.rest.spi.AbstractInterceptorBuildItem;
 import io.quarkus.rest.spi.BeanFactory;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
@@ -118,6 +118,8 @@ import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
+import io.quarkus.rest.spi.ReaderInterceptorBuildItem;
+import io.quarkus.rest.spi.WriterInterceptorBuildItem;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -183,37 +185,6 @@ public class QuarkusRestProcessor {
                     generatedBeanBuildItemBuildProducer,
                     additionalBeanBuildItemBuildProducer);
         }
-    }
-
-    @BuildStep
-    void additionalBeans(List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
-            List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
-            List<DynamicFeatureBuildItem> additionalDynamicFeatures,
-            List<ExceptionMapperBuildItem> additionalExceptionMappers,
-            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
-
-        AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
-        for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
-            if (requestFilter.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(requestFilter.getClassName());
-            }
-        }
-        for (ContainerResponseFilterBuildItem responseFilter : additionalContainerResponseFilters) {
-            if (responseFilter.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(responseFilter.getClassName());
-            }
-        }
-        for (ExceptionMapperBuildItem exceptionMapper : additionalExceptionMappers) {
-            if (exceptionMapper.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(exceptionMapper.getClassName());
-            }
-        }
-        for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
-            if (dynamicFeature.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(dynamicFeature.getClassName());
-            }
-        }
-        additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 
     @BuildStep
@@ -301,8 +272,10 @@ public class QuarkusRestProcessor {
             RecorderContext recorderContext,
             ShutdownContextBuildItem shutdownContext,
             HttpBuildTimeConfig vertxConfig,
-            List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
-            List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
+            List<ContainerRequestFilterBuildItem> containerRequestFilters,
+            List<ContainerResponseFilterBuildItem> containerResponseFilters,
+            List<WriterInterceptorBuildItem> writerInterceptors,
+            List<ReaderInterceptorBuildItem> readerInterceptors,
             List<ExceptionMapperBuildItem> additionalExceptionMappers,
             List<DynamicFeatureBuildItem> additionalDynamicFeatures,
             List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
@@ -322,14 +295,6 @@ public class QuarkusRestProcessor {
                         .collect(toList()));
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        Collection<ClassInfo> containerRequestFilters = index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_REQUEST_FILTER);
-        Collection<ClassInfo> containerResponseFilters = index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_RESPONSE_FILTER);
-        Collection<ClassInfo> readerInterceptors = index
-                .getAllKnownImplementors(QuarkusRestDotNames.READER_INTERCEPTOR);
-        Collection<ClassInfo> writerInterceptors = index
-                .getAllKnownImplementors(QuarkusRestDotNames.WRITER_INTERCEPTOR);
         Collection<ClassInfo> exceptionMappers = index
                 .getAllKnownImplementors(QuarkusRestDotNames.EXCEPTION_MAPPER);
         Collection<ClassInfo> contextResolvers = index
@@ -440,43 +405,22 @@ public class QuarkusRestProcessor {
             }
 
             ResourceInterceptors interceptors = new ResourceInterceptors();
-            for (ClassInfo filterClass : containerRequestFilters) {
-                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
-                        globalNameBindings, serverEndpointIndexer, interceptors.getContainerRequestFilters(), filterClass);
-            }
-            for (ContainerRequestFilterBuildItem additionalFilter : additionalContainerRequestFilters) {
-                ResourceInterceptor<ContainerRequestFilter> interceptor = interceptors.getContainerRequestFilters().create();
-                interceptor.setFactory(recorder.factory(additionalFilter.getClassName(), beanContainerBuildItem.getValue()));
-                if (additionalFilter.getPriority() != null) {
-                    interceptor.setPriority(additionalFilter.getPriority());
-                }
-                if (additionalFilter.getPreMatching() != null && additionalFilter.getPreMatching()) {
-                    interceptors.getContainerRequestFilters().addPreMatchInterceptor(interceptor);
-                } else {
-                    interceptors.getContainerRequestFilters().addGlobalRequestInterceptor(interceptor);
-                }
+            for (ContainerRequestFilterBuildItem filter : containerRequestFilters) {
+                registerInterceptors(beanContainerBuildItem, recorder, singletonClasses,
+                        globalNameBindings, interceptors.getContainerRequestFilters(), filter);
             }
 
-            for (ClassInfo filterClass : containerResponseFilters) {
-                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
-                        globalNameBindings, serverEndpointIndexer, interceptors.getContainerResponseFilters(), filterClass);
+            for (ContainerResponseFilterBuildItem filterClass : containerResponseFilters) {
+                registerInterceptors(beanContainerBuildItem, recorder, singletonClasses,
+                        globalNameBindings, interceptors.getContainerResponseFilters(), filterClass);
             }
-            for (ContainerResponseFilterBuildItem additionalFilter : additionalContainerResponseFilters) {
-                ResourceInterceptor<ContainerResponseFilter> interceptor = interceptors.getContainerResponseFilters().create();
-                interceptor.setFactory(recorder.factory(additionalFilter.getClassName(), beanContainerBuildItem.getValue()));
-                if (additionalFilter.getPriority() != null) {
-                    interceptor.setPriority(additionalFilter.getPriority());
-                }
-                interceptors.getContainerResponseFilters().addGlobalRequestInterceptor(interceptor);
+            for (WriterInterceptorBuildItem filterClass : writerInterceptors) {
+                registerInterceptors(beanContainerBuildItem, recorder, singletonClasses,
+                        globalNameBindings, interceptors.getWriterInterceptors(), filterClass);
             }
-
-            for (ClassInfo filterClass : writerInterceptors) {
-                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
-                        globalNameBindings, serverEndpointIndexer, interceptors.getWriterInterceptors(), filterClass);
-            }
-            for (ClassInfo filterClass : readerInterceptors) {
-                registerInterceptors(beanContainerBuildItem, recorder, applicationResultBuildItem, singletonClasses,
-                        globalNameBindings, serverEndpointIndexer, interceptors.getReaderInterceptors(), filterClass);
+            for (ReaderInterceptorBuildItem filterClass : readerInterceptors) {
+                registerInterceptors(beanContainerBuildItem, recorder, singletonClasses,
+                        globalNameBindings, interceptors.getReaderInterceptors(), filterClass);
             }
 
             ExceptionMapping exceptionMapping = new ExceptionMapping();
@@ -667,32 +611,91 @@ public class QuarkusRestProcessor {
         }
     }
 
-    protected <T> void registerInterceptors(BeanContainerBuildItem beanContainerBuildItem, QuarkusRestRecorder recorder,
-            ApplicationResultBuildItem applicationResultBuildItem, Set<String> singletonClasses, Set<String> globalNameBindings,
-            ServerEndpointIndexer serverEndpointIndexer, InterceptorContainer<T> interceptors, ClassInfo filterClass) {
-        KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
-        if (keepProviderResult != KeepProviderResult.DISCARD) {
-            ResourceInterceptor<T> interceptor = interceptors.create();
-            interceptor
-                    .setFactory(FactoryUtils.factory(filterClass, singletonClasses, recorder, beanContainerBuildItem));
-            if (filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null) {
-                if (interceptors instanceof PreMatchInterceptorContainer) {
-                    ((PreMatchInterceptorContainer<T>) interceptors).addPreMatchInterceptor(interceptor);
-                }
-            } else {
-                Set<String> nameBindingNames = serverEndpointIndexer.nameBindingNames(filterClass);
-                if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
-                    interceptors.addGlobalRequestInterceptor(interceptor);
-                } else {
-                    interceptor.setNameBindingNames(nameBindingNames);
-                    interceptors.addNameRequestInterceptor(interceptor);
-                }
-            }
-            AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-            if (priorityInstance != null) {
-                interceptor.setPriority(priorityInstance.value().asInt());
+    @BuildStep
+    public void scanForFilters(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<ContainerRequestFilterBuildItem> requestFilterBuildItemBuildProducer,
+            BuildProducer<ContainerResponseFilterBuildItem> responseFilterBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        //the quarkus version of these filters will not be in the index
+        //so you need an explicit check for both
+        Collection<ClassInfo> containerResponseFilters = new HashSet<>(index
+                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_RESPONSE_FILTER));
+        containerResponseFilters.addAll(index
+                .getAllKnownImplementors(QuarkusRestDotNames.QUARKUS_REST_CONTAINER_RESPONSE_FILTER));
+        Collection<ClassInfo> containerRequestFilters = new HashSet<>(index
+                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_REQUEST_FILTER));
+        containerRequestFilters.addAll(index
+                .getAllKnownImplementors(QuarkusRestDotNames.QUARKUS_REST_CONTAINER_REQUEST_FILTER));
+        for (ClassInfo filterClass : containerRequestFilters) {
+            QuarkusRestCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
+                    requestFilterBuildItemBuildProducer, index, filterClass,
+                    ContainerRequestFilterBuildItem.Builder::new);
+        }
+        for (ClassInfo filterClass : containerResponseFilters) {
+            QuarkusRestCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
+                    responseFilterBuildItemBuildProducer, index, filterClass,
+                    ContainerResponseFilterBuildItem.Builder::new);
+        }
+    }
+
+    @BuildStep
+    void additionalBeans(List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
+            List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
+            List<DynamicFeatureBuildItem> additionalDynamicFeatures,
+            List<ExceptionMapperBuildItem> additionalExceptionMappers,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+
+        AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
+        for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
+            if (requestFilter.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(requestFilter.getClassName());
             }
         }
+        for (ContainerResponseFilterBuildItem responseFilter : additionalContainerResponseFilters) {
+            if (responseFilter.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(responseFilter.getClassName());
+            }
+        }
+        for (ExceptionMapperBuildItem exceptionMapper : additionalExceptionMappers) {
+            if (exceptionMapper.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(exceptionMapper.getClassName());
+            }
+        }
+        for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
+            if (dynamicFeature.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(dynamicFeature.getClassName());
+            }
+        }
+        additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
+    }
+
+    protected <T, B extends AbstractInterceptorBuildItem> void registerInterceptors(
+            BeanContainerBuildItem beanContainerBuildItem, QuarkusRestRecorder recorder,
+            Set<String> singletonClasses, Set<String> globalNameBindings,
+            InterceptorContainer<T> interceptors, B filterItem) {
+        ResourceInterceptor<T> interceptor = interceptors.create();
+        Integer priority = filterItem.getPriority();
+        if (priority != null) {
+            interceptor.setPriority(priority);
+        }
+        interceptor
+                .setFactory(
+                        FactoryUtils.factory(filterItem.getClassName(), singletonClasses, recorder, beanContainerBuildItem));
+        if (interceptors instanceof PreMatchInterceptorContainer
+                && ((ContainerRequestFilterBuildItem) filterItem).isPreMatching()) {
+            ((PreMatchInterceptorContainer<T>) interceptors).addPreMatchInterceptor(interceptor);
+
+        } else {
+            Set<String> nameBindingNames = filterItem.getNameBindingNames();
+            if (nameBindingNames.isEmpty() || namePresent(nameBindingNames, globalNameBindings)) {
+                interceptors.addGlobalRequestInterceptor(interceptor);
+            } else {
+                interceptor.setNameBindingNames(nameBindingNames);
+                interceptors.addNameRequestInterceptor(interceptor);
+            }
+        }
+
     }
 
     private boolean namePresent(Set<String> nameBindingNames, Set<String> globalNameBindings) {

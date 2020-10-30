@@ -33,6 +33,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
     private HttpConnection connection;
     private SseParser sseParser;
     private long timerId = -1;
+    private boolean receivedClientClose;
 
     public QuarkusRestSseEventSource(QuarkusRestWebTarget webTarget, long reconnectDelay, TimeUnit reconnectUnit) {
         // tests set a null endpoint
@@ -80,6 +81,8 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
         if (isInProgress)
             return;
         isInProgress = true;
+        // ignore previous client closes
+        receivedClientClose = false;
         QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) webTarget.request().rx();
         RestClientRequestContext restClientRequestContext = invoker.performRequestInternal("GET", null, null, false);
         restClientRequestContext.getResult().handle((response, throwable) -> {
@@ -123,8 +126,10 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
         String sseContentTypeHeader = vertxClientResponse.getHeader(CommonSseUtil.SSE_CONTENT_TYPE);
         sseParser.setSseContentTypeHeader(sseContentTypeHeader);
         vertxClientResponse.handler(sseParser);
+        vertxClientResponse.endHandler(v -> {
+            close(true);
+        });
         vertxClientResponse.resume();
-        // FIXME: handle end of response rather than wait for end of connection
     }
 
     private void receiveThrowable(Throwable throwable) {
@@ -148,6 +153,12 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
         if (!isOpen) {
             return;
         }
+        if (clientClosed) {
+            // do not react more than once on client closing
+            if (this.receivedClientClose) {
+                return;
+            }
+        }
         // it's possible that the client closed our connection, then we registered a reconnect timer
         // and then the user is closing us, so we don't have a connection yet
         if (connection != null) {
@@ -155,12 +166,21 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
         }
         connection = null;
         isInProgress = false;
+        boolean notifyCompletion = true;
         if (!clientClosed) {
             isOpen = false;
+            if (receivedClientClose) {
+                // do not notify completion if we already did as part of the client closing
+                notifyCompletion = false;
+            }
+        } else {
+            receivedClientClose = true;
         }
-        // notify completion before reconnecting
-        for (Runnable runnable : completionListeners) {
-            runnable.run();
+        if (notifyCompletion) {
+            // notify completion before reconnecting
+            for (Runnable runnable : completionListeners) {
+                runnable.run();
+            }
         }
         Vertx vertx = webTarget.getRestClient().getVertx();
         // did we already try to reconnect?

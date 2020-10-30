@@ -18,7 +18,6 @@ import javax.ws.rs.sse.SseEventSource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -73,7 +72,6 @@ public class SseTestCase {
         }
     }
 
-    @Disabled("This is too unstable at the moment")
     @Test
     public void testMultiFromSse() throws Exception {
         testMulti("sse");

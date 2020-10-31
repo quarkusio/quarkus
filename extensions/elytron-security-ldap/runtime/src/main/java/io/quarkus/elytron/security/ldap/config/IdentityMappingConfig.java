@@ -21,6 +21,12 @@ public class IdentityMappingConfig {
     public String searchBaseDn;
 
     /**
+     * If the child nodes are also searched for identities
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean searchRecursive;
+
+    /**
      * The configs how we get from the attribute to the Role
      */
     @ConfigItem
@@ -31,6 +37,7 @@ public class IdentityMappingConfig {
         return "IdentityMappingConfig{" +
                 "rdnIdentifier='" + rdnIdentifier + '\'' +
                 ", searchBaseDn='" + searchBaseDn + '\'' +
+                ", searchRecursive=" + searchRecursive +
                 ", attributeMappings=" + attributeMappings +
                 '}';
     }

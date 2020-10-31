@@ -54,28 +54,11 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testResolveTenantIdentifierWebAppDynamic() throws IOException {
-        try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/webapp");
-            // State cookie is available but there must be no saved path parameter
-            // as the tenant-web-app-dynamic configuration does not set a redirect-path property
-            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app-dynamic"));
-            assertEquals("Log in to quarkus-webapp", page.getTitleText());
-            HtmlForm loginForm = page.getForms().get(0);
-            loginForm.getInputByName("username").setValueAttribute("alice");
-            loginForm.getInputByName("password").setValueAttribute("alice");
-            page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app-dynamic:alice", page.getBody().asText());
-            webClient.getCookieManager().clearCookies();
-        }
-    }
-
-    @Test
     public void testResolveTenantIdentifierWebApp2() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             // State cookie is available but there must be no saved path parameter
-            // as the tenant-web-app2 configuration does not set a redirect-path property
+            // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
             assertEquals("Log in to quarkus-webapp2", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);

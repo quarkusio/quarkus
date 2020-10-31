@@ -99,7 +99,8 @@ public class DefaultTenantConfigResolver {
     boolean isBlocking(RoutingContext context) {
         TenantConfigContext resolver = resolve(context, false);
         return resolver != null
-                && (resolver.oidcConfig.token.refreshExpired || resolver.oidcConfig.authentication.userInfoRequired);
+                && (resolver.auth == null || resolver.oidcConfig.token.refreshExpired
+                        || resolver.oidcConfig.authentication.userInfoRequired);
     }
 
     boolean isSecurityEventObserved() {

@@ -16,7 +16,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.setTenantId("tenant-config-resolver");
             config.setAuthServerUrl(getIssuerUrl() + "/realms/devmode");
             config.setClientId("client-dev-mode");
-            config.setApplicationType(ApplicationType.WEB_APP);
+            config.applicationType = ApplicationType.WEB_APP;
             return config;
         }
         return null;

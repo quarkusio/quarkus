@@ -18,7 +18,6 @@ import io.quarkus.oidc.OidcTenantConfig.Credentials;
 import io.quarkus.oidc.OidcTenantConfig.Credentials.Secret;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
@@ -63,22 +62,9 @@ public class OidcRecorder {
                         new Function<OidcTenantConfig, TenantConfigContext>() {
                             @Override
                             public TenantConfigContext apply(OidcTenantConfig config) {
-                                return Uni.createFrom().emitter(new Consumer<UniEmitter<? super TenantConfigContext>>() {
-                                    @Override
-                                    public void accept(UniEmitter<? super TenantConfigContext> uniEmitter) {
-                                        ExecutorRecorder.getCurrent().execute(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                try {
-                                                    uniEmitter.complete(createTenantContext(vertxValue, config,
-                                                            config.getTenantId().get()));
-                                                } catch (Throwable t) {
-                                                    uniEmitter.fail(t);
-                                                }
-                                            }
-                                        });
-                                    }
-                                }).await().indefinitely();
+                                // OidcTenantConfig resolved by TenantConfigResolver must have its optional tenantId
+                                // initialized which is also enforced by DefaultTenantConfigResolver
+                                return createTenantContext(vertxValue, config, config.getTenantId().get());
                             }
                         });
             }
@@ -134,7 +120,7 @@ public class OidcRecorder {
         options.setSite(authServerUrl);
 
         if (!oidcConfig.discoveryEnabled) {
-            if (oidcConfig.getApplicationType() != ApplicationType.SERVICE) {
+            if (oidcConfig.applicationType != ApplicationType.SERVICE) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
                     throw new OIDCException("'web-app' applications must have 'authorization-path' and 'token-path' properties "
                             + "set when the discovery is disabled.");
@@ -179,7 +165,7 @@ public class OidcRecorder {
                     "Use only 'credentials.secret' or 'credentials.client-secret' or 'credentials.jwt.secret' property");
         }
 
-        if (ApplicationType.SERVICE.equals(oidcConfig.getApplicationType())) {
+        if (ApplicationType.SERVICE.equals(oidcConfig.applicationType)) {
             if (oidcConfig.token.refreshExpired) {
                 throw new RuntimeException(
                         "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
@@ -313,7 +299,7 @@ public class OidcRecorder {
     @SuppressWarnings("deprecation")
     private static TenantConfigContext createdTenantContextFromPublicKey(OAuth2ClientOptions options,
             OidcTenantConfig oidcConfig) {
-        if (oidcConfig.getApplicationType() != ApplicationType.SERVICE) {
+        if (oidcConfig.applicationType != ApplicationType.SERVICE) {
             throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
         }
         LOG.debug("'public-key' property for the local token verification is set,"

@@ -59,6 +59,11 @@ jobs:
          )"
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: n1hility/cancel-previous-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -130,6 +135,11 @@ jobs:
           sudo service mysql stop || true
 
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: apt clean
         shell: bash
@@ -176,6 +186,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
@@ -220,6 +235,11 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -255,6 +275,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -297,6 +322,11 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -327,6 +357,11 @@ jobs:
     timeout-minutes: 80
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
@@ -366,6 +401,11 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -401,6 +441,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -436,6 +481,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
@@ -535,6 +585,12 @@ jobs:
           - category: IT-gRPC
             timeout: 65
     steps:
+      # Login to Docker hub BEFORE starting the containers
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       # These should be services, but services do not (yet) allow conditional execution
       - name: Postgres Service
         run: |

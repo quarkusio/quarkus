@@ -41,6 +41,22 @@ sn: adminUser
 uid: adminUser
 userPassword: adminUserPassword
 
+# A sub OU of Users
+
+dn: ou=SubUsers,ou=Users,dc=quarkus,dc=io
+objectclass: organizationalUnit
+objectclass: top
+ou: SubUsers
+
+dn: uid=subUser,ou=SubUsers,ou=Users,dc=quarkus,dc=io
+objectclass: top
+objectclass: person
+objectclass: inetOrgPerson
+cn: SubUser
+sn: subUser
+uid: subUser
+userpassword: subUserPassword
+
 
 #The roles OU
 
@@ -56,6 +72,7 @@ objectClass: top
 objectClass: groupOfNames
 cn: standardRole
 member: uid=standardUser,ou=Users,dc=quarkus,dc=io
+member: uid=subUser,ou=SubUsers,ou=Users,dc=quarkus,dc=io
 
 dn: cn=adminRole,ou=Roles,dc=quarkus,dc=io
 objectClass: top

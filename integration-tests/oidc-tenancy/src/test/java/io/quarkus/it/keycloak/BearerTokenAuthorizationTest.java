@@ -316,6 +316,23 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("1"));
     }
 
+    @Test
+    public void testResolveTenantIdentifierWebAppDynamic() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/webapp");
+            // State cookie is available but there must be no saved path parameter
+            // as the tenant-web-app-dynamic configuration does not set a redirect-path property
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app-dynamic"));
+            assertEquals("Log in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-web-app-dynamic:alice", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
     private String getAccessToken(String userName, String clientId) {
         return RestAssured
                 .given()

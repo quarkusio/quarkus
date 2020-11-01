@@ -1,7 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
+import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public class KnativeProcessor {
     public void checkKnative(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
         List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         deploymentTargets.produce(
-                new KubernetesDeploymentTargetBuildItem(KNATIVE, DEPLOYMENT, KNATIVE_PRIORITY, targets.contains(KNATIVE)));
+                new KubernetesDeploymentTargetBuildItem(KNATIVE, SERVICE, KNATIVE_PRIORITY, targets.contains(KNATIVE)));
     }
 
     @BuildStep

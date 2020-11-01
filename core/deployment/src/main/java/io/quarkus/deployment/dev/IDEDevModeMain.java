@@ -54,7 +54,6 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 }
 
             }
-
         } catch (AppModelResolverException e) {
             log.error("Failed to load workspace, hot reload will not be available", e);
         }

@@ -1,6 +1,8 @@
 package io.quarkus.rest.deployment.processor;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -26,8 +28,10 @@ import io.quarkus.rest.server.runtime.providers.exceptionmappers.ForbiddenExcept
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
+import io.quarkus.rest.spi.ContextResolverBuildItem;
 import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
+import io.quarkus.rest.spi.JaxrsFeatureBuildItem;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -132,5 +136,52 @@ public class QuarkusRestScanningProcessor {
                         .produce(new DynamicFeatureBuildItem(dynamicFeatureClass.name().toString(), true));
             }
         }
+    }
+
+    @BuildStep
+    public void scanForFeatures(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<JaxrsFeatureBuildItem> featureBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Collection<ClassInfo> dynamicFeatures = index
+                .getAllKnownImplementors(QuarkusRestDotNames.FEATURE);
+
+        for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
+            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
+                    .keepProvider(dynamicFeatureClass);
+            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
+                featureBuildItemBuildProducer
+                        .produce(new JaxrsFeatureBuildItem(dynamicFeatureClass.name().toString(), true));
+            }
+        }
+    }
+
+    @BuildStep
+    public void scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<ContextResolverBuildItem> contextResolverBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Collection<ClassInfo> contextResolvers = index
+                .getAllKnownImplementors(QuarkusRestDotNames.CONTEXT_RESOLVER);
+
+        for (ClassInfo resolverClass : contextResolvers) {
+            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
+                    .keepProvider(resolverClass);
+            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
+                        QuarkusRestDotNames.CONTEXT_RESOLVER,
+                        index);
+                contextResolverBuildItemBuildProducer.produce(new ContextResolverBuildItem(resolverClass.name().toString(),
+                        typeParameters.get(0).name().toString(), getProducesMediaTypes(resolverClass), true));
+            }
+        }
+    }
+
+    private List<String> getProducesMediaTypes(ClassInfo classInfo) {
+        AnnotationInstance produces = classInfo.classAnnotation(QuarkusRestDotNames.PRODUCES);
+        if (produces == null) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(produces.value().asStringArray());
     }
 }

@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -34,7 +33,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
@@ -62,7 +60,6 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem;
@@ -105,10 +102,12 @@ import io.quarkus.rest.spi.AbstractInterceptorBuildItem;
 import io.quarkus.rest.spi.BeanFactory;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
+import io.quarkus.rest.spi.ContextResolverBuildItem;
 import io.quarkus.rest.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.CustomContainerResponseFilterBuildItem;
 import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
+import io.quarkus.rest.spi.JaxrsFeatureBuildItem;
 import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
 import io.quarkus.rest.spi.ReaderInterceptorBuildItem;
@@ -268,6 +267,8 @@ public class QuarkusRestProcessor {
             List<DynamicFeatureBuildItem> dynamicFeatures,
             List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
+            List<JaxrsFeatureBuildItem> features,
+            List<ContextResolverBuildItem> contextResolvers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
             ApplicationResultBuildItem applicationResultBuildItem) throws NoSuchMethodException {
@@ -283,10 +284,6 @@ public class QuarkusRestProcessor {
                         .collect(toList()));
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        Collection<ClassInfo> contextResolvers = index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTEXT_RESOLVER);
-        Collection<ClassInfo> features = index
-                .getAllKnownImplementors(QuarkusRestDotNames.FEATURE);
         Collection<ClassInfo> paramConverterProviders = index
                 .getAllKnownImplementors(QuarkusRestDotNames.PARAM_CONVERTER_PROVIDER);
 
@@ -425,29 +422,22 @@ public class QuarkusRestProcessor {
             }
 
             ContextResolvers ctxResolvers = new ContextResolvers();
-            for (ClassInfo resolverClass : contextResolvers) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(resolverClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
-                            QuarkusRestDotNames.CONTEXT_RESOLVER,
-                            index);
-                    ResourceContextResolver resolver = new ResourceContextResolver();
-                    resolver.setFactory(
-                            FactoryUtils.factory(resolverClass, singletonClasses, recorder, beanContainerBuildItem));
-                    resolver.setMediaTypeStrings(getProducesMediaTypes(resolverClass));
-                    recorder.registerContextResolver(ctxResolvers, typeParameters.get(0).name().toString(), resolver);
-                }
+            for (ContextResolverBuildItem resolverClass : contextResolvers) {
+                ResourceContextResolver resolver = new ResourceContextResolver();
+                resolver.setFactory(
+                        FactoryUtils.factory(resolverClass.getClassName(), singletonClasses, recorder, beanContainerBuildItem));
+                resolver.setMediaTypeStrings(resolverClass.getMediaTypes());
+                recorder.registerContextResolver(ctxResolvers, resolverClass.getProvidedType(), resolver);
             }
 
             Features feats = new Features();
-            for (ClassInfo featureClass : features) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(featureClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    ResourceFeature resourceFeature = new ResourceFeature();
-                    resourceFeature
-                            .setFactory(FactoryUtils.factory(featureClass, singletonClasses, recorder, beanContainerBuildItem));
-                    feats.addFeature(resourceFeature);
-                }
+            for (JaxrsFeatureBuildItem feature : features) {
+                ResourceFeature resourceFeature = new ResourceFeature();
+                resourceFeature
+                        .setFactory(
+                                FactoryUtils.factory(feature.getClassName(), singletonClasses, recorder,
+                                        beanContainerBuildItem));
+                feats.addFeature(resourceFeature);
             }
 
             DynamicFeatures dynamicFeats = new DynamicFeatures();
@@ -530,7 +520,9 @@ public class QuarkusRestProcessor {
             List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
             List<DynamicFeatureBuildItem> additionalDynamicFeatures,
             List<ExceptionMapperBuildItem> additionalExceptionMappers,
-            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            List<JaxrsFeatureBuildItem> featureBuildItems,
+            List<ContextResolverBuildItem> contextResolverBuildItems) {
 
         AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
         for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
@@ -551,6 +543,16 @@ public class QuarkusRestProcessor {
         for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
             if (dynamicFeature.isRegisterAsBean()) {
                 additionalProviders.addBeanClass(dynamicFeature.getClassName());
+            }
+        }
+        for (JaxrsFeatureBuildItem dynamicFeature : featureBuildItems) {
+            if (dynamicFeature.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(dynamicFeature.getClassName());
+            }
+        }
+        for (ContextResolverBuildItem contextResolver : contextResolverBuildItems) {
+            if (contextResolver.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(contextResolver.getClassName());
             }
         }
         additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
@@ -674,14 +676,6 @@ public class QuarkusRestProcessor {
         reader.setMediaTypeStrings(Collections.singletonList(mediaType));
         reader.setConstraint(constraint);
         recorder.registerReader(serialisers, entityClass.getName(), reader);
-    }
-
-    private List<String> getProducesMediaTypes(ClassInfo classInfo) {
-        AnnotationInstance produces = classInfo.classAnnotation(QuarkusRestDotNames.PRODUCES);
-        if (produces == null) {
-            return Collections.emptyList();
-        }
-        return Arrays.asList(produces.value().asStringArray());
     }
 
 }

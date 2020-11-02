@@ -121,6 +121,9 @@ updates:
       - dependency-name: io.micrometer:micrometer-bom
       - dependency-name: io.micrometer:micrometer-registry-stackdriver
     rebase-strategy: disabled
+    ignore:
+      - dependency-name: io.micrometer:micrometer-*
+        versions: ["1.6.x"]
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"
     schedule:
@@ -141,3 +144,4 @@ updates:
     labels:
       - area/dependencies
     rebase-strategy: disabled
+q

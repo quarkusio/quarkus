@@ -98,8 +98,8 @@ Then, we'll add the following dependency to support `multipart/form-data` reques
 [source,xml]
 ----
 <dependency>
-    <groupId>org.jboss.resteasy</groupId>
-    <artifactId>resteasy-multipart-provider</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-multipart</artifactId>
 </dependency>
 ----
 

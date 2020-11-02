@@ -1,16 +1,18 @@
 package io.quarkus.builder;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.wildfly.common.Assert;
+
 import io.quarkus.builder.diag.Diagnostic;
-import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.qlue.Success;
 
 /**
  * The final result of a successful deployment operation.
@@ -18,18 +20,10 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildResult {
-    private final ConcurrentHashMap<ItemId, BuildItem> simpleItems;
-    private final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems;
-    private final List<Diagnostic> diagnostics;
-    private final long nanos;
+    private final Success success;
 
-    BuildResult(final ConcurrentHashMap<ItemId, BuildItem> simpleItems,
-            final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems, final Set<ItemId> finalIds,
-            final List<Diagnostic> diagnostics, final long nanos) {
-        this.simpleItems = simpleItems;
-        this.multiItems = multiItems;
-        this.diagnostics = diagnostics;
-        this.nanos = nanos;
+    BuildResult(final Success success) {
+        this.success = success;
     }
 
     /**
@@ -42,12 +36,7 @@ public final class BuildResult {
      * @throws ClassCastException if the cast failed
      */
     public <T extends SimpleBuildItem> T consume(Class<T> type) {
-        final ItemId itemId = new ItemId(type);
-        final Object item = simpleItems.get(itemId);
-        if (item == null) {
-            throw Messages.msg.undeclaredItem(itemId);
-        }
-        return type.cast(item);
+        return type.cast(success.consume(LegacySimpleItem.class, type).getItem());
     }
 
     /**
@@ -58,12 +47,8 @@ public final class BuildResult {
      * @throws ClassCastException if the cast failed
      */
     public <T extends SimpleBuildItem> T consumeOptional(Class<T> type) {
-        final ItemId itemId = new ItemId(type);
-        final Object item = simpleItems.get(itemId);
-        if (item == null) {
-            return null;
-        }
-        return type.cast(item);
+        LegacySimpleItem item = success.consumeOptional(LegacySimpleItem.class, type);
+        return item == null ? null : type.cast(item.getItem());
     }
 
     /**
@@ -74,13 +59,16 @@ public final class BuildResult {
      * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type) {
-        final ItemId itemId = new ItemId(type);
-        @SuppressWarnings("unchecked")
-        final List<T> items = (List<T>) (List) multiItems.get(itemId);
-        if (items == null) {
+        List<LegacyMultiItem> list = success.consumeMulti(LegacyMultiItem.class, type);
+        if (list.isEmpty()) {
             return Collections.emptyList();
         }
-        return new ArrayList<>(items);
+        int size = list.size();
+        List<T> result = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            result.add(i, type.cast(list.get(i).getItem()));
+        }
+        return result;
     }
 
     /**
@@ -88,8 +76,9 @@ public final class BuildResult {
      *
      * @return the diagnostics reported during build
      */
+    @Deprecated
     public List<Diagnostic> getDiagnostics() {
-        return diagnostics;
+        return Collections.emptyList();
     }
 
     /**
@@ -99,30 +88,25 @@ public final class BuildResult {
      * @return the time
      */
     public long getDuration(TimeUnit timeUnit) {
-        return timeUnit.convert(nanos, TimeUnit.NANOSECONDS);
-    }
-
-    /**
-     * Close all the resultant resources, logging any failures.
-     */
-    public void closeAll() throws RuntimeException {
-        for (BuildItem obj : simpleItems.values()) {
-            if (obj instanceof AutoCloseable)
-                try {
-                    ((AutoCloseable) obj).close();
-                } catch (Exception e) {
-                    Messages.msg.closeFailed(obj, e);
-                }
-        }
-        for (List<? extends BuildItem> list : multiItems.values()) {
-            for (BuildItem obj : list) {
-                if (obj instanceof AutoCloseable)
-                    try {
-                        ((AutoCloseable) obj).close();
-                    } catch (Exception e) {
-                        Messages.msg.closeFailed(obj, e);
-                    }
-            }
+        // todo: timeUnit.toChronoUnit, Java 9+
+        Duration duration = success.getDuration();
+        switch (timeUnit) {
+            case NANOSECONDS:
+                return duration.get(ChronoUnit.NANOS);
+            case MICROSECONDS:
+                return duration.get(ChronoUnit.MICROS);
+            case MILLISECONDS:
+                return duration.get(ChronoUnit.MILLIS);
+            case SECONDS:
+                return duration.get(ChronoUnit.SECONDS);
+            case MINUTES:
+                return duration.get(ChronoUnit.MINUTES);
+            case HOURS:
+                return duration.get(ChronoUnit.HOURS);
+            case DAYS:
+                return duration.get(ChronoUnit.DAYS);
+            default:
+                throw Assert.impossibleSwitchCase(timeUnit);
         }
     }
 }

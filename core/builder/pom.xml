@@ -33,6 +33,10 @@
             <groupId>org.jboss.threads</groupId>
             <artifactId>jboss-threads</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus.qlue</groupId>
+            <artifactId>qlue</artifactId>
+        </dependency>
 
         <!-- Build-time -->
 

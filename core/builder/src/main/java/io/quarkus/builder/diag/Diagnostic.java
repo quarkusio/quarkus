@@ -11,6 +11,7 @@ import io.quarkus.builder.location.Location;
 
 /**
  */
+@Deprecated
 public final class Diagnostic {
     private final Level level;
     private final Location location;

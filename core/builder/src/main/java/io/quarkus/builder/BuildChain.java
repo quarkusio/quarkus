@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.Set;
 
 import org.wildfly.common.Assert;
+
+import io.quarkus.qlue.Chain;
 
 /**
  * A build chain.
@@ -14,27 +15,12 @@ import org.wildfly.common.Assert;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildChain {
-    private final Set<ItemId> initialIds;
-    private final int initialSingleCount;
-    private final int initialMultiCount;
-    private final Set<ItemId> finalIds;
-    private final List<StepInfo> startSteps;
-    private final Set<ItemId> consumed;
     private final List<BuildProvider> providers;
-    private final int endStepCount;
-    private final ClassLoader classLoader;
+    private final Chain chain;
 
-    BuildChain(final int initialSingleCount, final int initialMultiCount, final Set<StepInfo> startSteps,
-            final Set<ItemId> consumed, BuildChainBuilder builder, final int endStepCount) {
-        providers = builder.getProviders();
-        initialIds = builder.getInitialIds();
-        finalIds = builder.getFinalIds();
-        this.initialSingleCount = initialSingleCount;
-        this.initialMultiCount = initialMultiCount;
-        this.startSteps = new ArrayList<>(startSteps);
-        this.consumed = consumed;
-        this.endStepCount = endStepCount;
-        this.classLoader = builder.getClassLoader();
+    BuildChain(final Chain chain, final List<BuildProvider> providers) {
+        this.chain = chain;
+        this.providers = providers;
     }
 
     /**
@@ -44,7 +30,7 @@ public final class BuildChain {
      * @return the new build execution builder (not {@code null})
      */
     public BuildExecutionBuilder createExecutionBuilder(String name) {
-        final BuildExecutionBuilder builder = new BuildExecutionBuilder(this, name);
+        final BuildExecutionBuilder builder = new BuildExecutionBuilder(chain.createExecutionBuilder(), name);
         for (BuildProvider provider : providers) {
             provider.prepareExecution(builder);
         }
@@ -57,7 +43,7 @@ public final class BuildChain {
      * @return the build chain builder (not {@code null})
      */
     public static BuildChainBuilder builder() {
-        return new BuildChainBuilder();
+        return new BuildChainBuilder(Chain.builder());
     }
 
     /**
@@ -92,35 +78,12 @@ public final class BuildChain {
         return builder.build();
     }
 
-    boolean hasInitial(final ItemId itemId) {
-        return initialIds.contains(itemId);
-    }
-
-    int getInitialSingleCount() {
-        return initialSingleCount;
-    }
-
-    int getInitialMultiCount() {
-        return initialMultiCount;
-    }
-
-    List<StepInfo> getStartSteps() {
-        return startSteps;
-    }
-
-    Set<ItemId> getConsumed() {
-        return consumed;
-    }
-
-    Set<ItemId> getFinalIds() {
-        return finalIds;
-    }
-
-    ClassLoader getClassLoader() {
-        return classLoader;
-    }
-
-    int getEndStepCount() {
-        return endStepCount;
+    /**
+     * Get the real chain.
+     *
+     * @return the real chain (not {@code null})
+     */
+    public Chain getChain() {
+        return chain;
     }
 }

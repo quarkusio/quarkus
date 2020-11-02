@@ -7,6 +7,7 @@ import org.wildfly.common.flags.Flags;
  * Flags which can be set on consume declarations.
  */
 public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
+    final io.quarkus.qlue.ProduceFlags realFlags;
 
     @Override
     protected ProduceFlags value(final int bits) {
@@ -33,8 +34,13 @@ public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
         return (ProduceFlags) obj;
     }
 
+    public io.quarkus.qlue.ProduceFlags getRealFlags() {
+        return realFlags;
+    }
+
     private ProduceFlags(int val) {
         super(val);
+        realFlags = io.quarkus.qlue.ProduceFlags.value(val);
     }
 
     private static final ProduceFlag[] enumValues = ProduceFlag.values();

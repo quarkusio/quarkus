@@ -206,6 +206,7 @@
         <log4j2-jboss-logmanager.version>1.0.0.Beta1</log4j2-jboss-logmanager.version>
         <log4j-jboss-logmanager.version>1.2.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.10.0</avro.version>
+        <qlue.version>0.9.0</qlue.version>
     </properties>
 
     <dependencyManagement>
@@ -4489,6 +4490,13 @@
                 <groupId>io.quarkus.qute</groupId>
                 <artifactId>qute-generator</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- Qlue -->
+            <dependency>
+                <groupId>io.quarkus.qlue</groupId>
+                <artifactId>qlue</artifactId>
+                <version>${qlue.version}</version>
             </dependency>
 
             <!-- Jib -->

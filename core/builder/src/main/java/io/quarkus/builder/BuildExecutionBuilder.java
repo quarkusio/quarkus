@@ -1,14 +1,20 @@
 package io.quarkus.builder;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import io.quarkus.qlue.Result;
+import org.jboss.threads.EnhancedQueueExecutor;
+import org.jboss.threads.JBossExecutors;
+import org.jboss.threads.JBossThreadFactory;
 import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.builder.item.EmptyBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.qlue.ExecutionBuilder;
 
 /**
  * A builder for a deployer execution.
@@ -16,16 +22,12 @@ import io.quarkus.builder.item.BuildItem;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildExecutionBuilder {
-    private final BuildChain buildChain;
+    private final ExecutionBuilder executionBuilder;
     private final String buildTargetName;
-    private final Map<ItemId, BuildItem> initialSingle;
-    private final Map<ItemId, ArrayList<BuildItem>> initialMulti;
 
-    BuildExecutionBuilder(final BuildChain buildChain, final String buildTargetName) {
-        this.buildChain = buildChain;
+    BuildExecutionBuilder(final ExecutionBuilder executionBuilder, final String buildTargetName) {
+        this.executionBuilder = executionBuilder;
         this.buildTargetName = buildTargetName;
-        initialSingle = new HashMap<>(buildChain.getInitialSingleCount());
-        initialMulti = new HashMap<>(buildChain.getInitialMultiCount());
     }
 
     /**
@@ -46,9 +48,10 @@ public final class BuildExecutionBuilder {
      * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
      *         or if the item does not allow multiplicity but this method is called more than one time
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T extends BuildItem> BuildExecutionBuilder produce(T item) {
         Assert.checkNotNullParam("item", item);
-        produce(new ItemId(item.getClass()), item);
+        produce((Class) item.getClass(), item);
         return this;
     }
 
@@ -65,7 +68,15 @@ public final class BuildExecutionBuilder {
     public <T extends BuildItem> BuildExecutionBuilder produce(Class<T> type, T item) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("item", item);
-        produce(new ItemId(type), item);
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            executionBuilder.produce(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class),
+                    new LegacyMultiItem((MultiBuildItem) item));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            executionBuilder.produce(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class),
+                    new LegacySimpleItem((SimpleBuildItem) item));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+        }
         return this;
     }
 
@@ -76,41 +87,47 @@ public final class BuildExecutionBuilder {
      * @throws BuildException if build failed
      */
     public BuildResult execute() throws BuildException {
-        return new Execution(this, buildChain.getFinalIds()).run();
-    }
-
-    // -- //
-
-    private void produce(final ItemId id, final BuildItem value) {
-        if (!buildChain.hasInitial(id)) {
-            throw Messages.msg.undeclaredItem(id);
-        }
-        if (id.isMulti()) {
-            final List<BuildItem> list = initialMulti.computeIfAbsent(id, x -> new ArrayList<>());
-            if (Comparable.class.isAssignableFrom(id.getType())) {
-                int pos = Collections.binarySearch((List) list, value);
-                if (pos < 0)
-                    pos = -(pos + 1);
-                list.add(pos, value);
+        final EnhancedQueueExecutor.Builder executorBuilder = new EnhancedQueueExecutor.Builder();
+        executorBuilder.setRegisterMBean(false);
+        executorBuilder.setCorePoolSize(8).setMaximumPoolSize(1024);
+        executorBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
+        executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null, "build-%t",
+                JBossExecutors.loggingExceptionHandler(), null));
+        EnhancedQueueExecutor executor = executorBuilder.build();
+        try {
+            Result result = executionBuilder.execute(executor);
+            executor.shutdown(true);
+            boolean intr = false;
+            try {
+                while (!executor.isTerminated())
+                    try {
+                        executor.awaitTermination(1L, TimeUnit.DAYS);
+                    } catch (InterruptedException e) {
+                        intr = true;
+                    }
+            } finally {
+                if (intr) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            if (result.isFailure()) {
+                List<Throwable> problems = result.asFailure().getProblems();
+                Iterator<Throwable> iterator = problems.iterator();
+                BuildException buildException;
+                if (iterator.hasNext()) {
+                    buildException = new BuildException("Build failed", iterator.next());
+                    while (iterator.hasNext()) {
+                        buildException.addSuppressed(iterator.next());
+                    }
+                } else {
+                    buildException = new BuildException("Build failed (no cause recorded)");
+                }
+                throw buildException;
             } else {
-                list.add(value);
+                return new BuildResult(result.asSuccess());
             }
-        } else {
-            if (initialSingle.putIfAbsent(id, value) != null) {
-                throw Messages.msg.cannotMulti(id);
-            }
+        } finally {
+            executor.shutdownNow();
         }
-    }
-
-    Map<ItemId, BuildItem> getInitialSingle() {
-        return initialSingle;
-    }
-
-    Map<ItemId, ArrayList<BuildItem>> getInitialMulti() {
-        return initialMulti;
-    }
-
-    BuildChain getChain() {
-        return buildChain;
     }
 }

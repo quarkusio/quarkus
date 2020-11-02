@@ -1,14 +1,14 @@
 package io.quarkus.builder;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.EmptyBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.qlue.StepBuilder;
 
 /**
  * A builder for build step instances within a chain. A build step can consume and produce items. It may also register
@@ -16,24 +16,19 @@ import io.quarkus.builder.item.EmptyBuildItem;
  */
 public final class BuildStepBuilder {
     private final BuildChainBuilder buildChainBuilder;
-    private final Map<ItemId, Consume> consumes = new HashMap<>();
-    private final Map<ItemId, Produce> produces = new HashMap<>();
-    private BuildStep buildStep;
+    private final StepBuilder stepBuilder;
 
-    BuildStepBuilder(final BuildChainBuilder buildChainBuilder) {
+    BuildStepBuilder(final BuildChainBuilder buildChainBuilder, final StepBuilder stepBuilder) {
         this.buildChainBuilder = buildChainBuilder;
+        this.stepBuilder = stepBuilder;
     }
 
     /**
-     * Set the build step for this builder. If no build step is specified, then this step will be excluded from
-     * the final chain.
-     *
-     * @param buildStep the build step
-     * @return this builder
+     * This unused method has been deprecated.
      */
-    public BuildStepBuilder setBuildStep(final BuildStep buildStep) {
-        this.buildStep = buildStep;
-        return this;
+    @Deprecated
+    public BuildStepBuilder setBuildStep(final BuildStep ignored) {
+        throw Assert.unsupported();
     }
 
     /**
@@ -45,7 +40,14 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder beforeConsume(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
-        addProduces(new ItemId(type), Constraint.ORDER_ONLY, ProduceFlags.NONE);
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.beforeConsume(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.beforeConsume(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            stepBuilder.beforeConsume(LegacyEmptyItem.class, type.asSubclass(EmptyBuildItem.class));
+        }
         return this;
     }
 
@@ -60,7 +62,14 @@ public final class BuildStepBuilder {
     public BuildStepBuilder beforeConsume(Class<? extends BuildItem> type, ProduceFlag flag) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flag);
-        addProduces(new ItemId(type), Constraint.ORDER_ONLY, ProduceFlags.of(flag));
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.beforeConsume(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class), flag.getRealFlag());
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.beforeConsume(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class), flag.getRealFlag());
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            stepBuilder.beforeConsume(LegacyEmptyItem.class, type.asSubclass(EmptyBuildItem.class), flag.getRealFlag());
+        }
         return this;
     }
 
@@ -73,7 +82,14 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder afterProduce(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
-        addConsumes(new ItemId(type), Constraint.ORDER_ONLY, ConsumeFlags.of(ConsumeFlag.OPTIONAL));
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.afterProduce(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.afterProduce(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            stepBuilder.afterProduce(LegacyEmptyItem.class, type.asSubclass(EmptyBuildItem.class));
+        }
         return this;
     }
 
@@ -87,10 +103,14 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
             throw new IllegalArgumentException("Cannot produce an empty build item");
         }
-        addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.NONE);
         return this;
     }
 
@@ -106,10 +126,14 @@ public final class BuildStepBuilder {
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlag flag) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flag);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class), flag.getRealFlag());
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class), flag.getRealFlag());
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
             throw new IllegalArgumentException("Cannot produce an empty build item");
         }
-        addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.of(flag));
         return this;
     }
 
@@ -125,11 +149,18 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlag flag1, ProduceFlag flag2) {
         Assert.checkNotNullParam("type", type);
-        Assert.checkNotNullParam("flag", flag1);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
+        Assert.checkNotNullParam("flag1", flag1);
+        Assert.checkNotNullParam("flag2", flag2);
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class), flag1.getRealFlag(),
+                    flag2.getRealFlag());
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class), flag1.getRealFlag(),
+                    flag2.getRealFlag());
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
             throw new IllegalArgumentException("Cannot produce an empty build item");
         }
-        addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.of(flag1).with(flag2));
         return this;
     }
 
@@ -144,11 +175,15 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlags flags) {
         Assert.checkNotNullParam("type", type);
-        Assert.checkNotNullParam("flag", flags);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
+        Assert.checkNotNullParam("flags", flags);
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class), flags.getRealFlags());
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.produces(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class), flags.getRealFlags());
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
             throw new IllegalArgumentException("Cannot produce an empty build item");
         }
-        addProduces(new ItemId(type), Constraint.REAL, flags);
         return this;
     }
 
@@ -161,10 +196,14 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder consumes(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.consumes(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.consumes(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
             throw new IllegalArgumentException("Cannot consume an empty build item");
         }
-        addConsumes(new ItemId(type), Constraint.REAL, ConsumeFlags.NONE);
         return this;
     }
 
@@ -178,10 +217,15 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder consumes(Class<? extends BuildItem> type, ConsumeFlags flags) {
         Assert.checkNotNullParam("type", type);
-        if (EmptyBuildItem.class.isAssignableFrom(type)) {
+        Assert.checkNotNullParam("flags", flags);
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.consumes(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class), flags.getRealFlags());
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepBuilder.consumes(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class), flags.getRealFlags());
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
             throw new IllegalArgumentException("Cannot consume an empty build item");
         }
-        addConsumes(new ItemId(type), Constraint.REAL, flags);
         return this;
     }
 
@@ -191,9 +235,8 @@ public final class BuildStepBuilder {
      * @return the chain builder that this step was added to
      */
     public BuildChainBuilder build() {
-        final BuildChainBuilder chainBuilder = this.buildChainBuilder;
-        chainBuilder.addStep(this, new Exception().getStackTrace());
-        return chainBuilder;
+        stepBuilder.build();
+        return buildChainBuilder;
     }
 
     /**
@@ -206,48 +249,22 @@ public final class BuildStepBuilder {
         return supp.getAsBoolean() ? build() : null;
     }
 
+    /**
+     * Get the backing step builder.
+     *
+     * @return the backing step builder (not {@code null})
+     */
+    public StepBuilder getStepBuilder() {
+        return stepBuilder;
+    }
+
     // -- //
-
-    BuildStep getBuildStep() {
-        return buildStep;
-    }
-
-    private void addConsumes(final ItemId itemId, final Constraint constraint, final ConsumeFlags flags) {
-        Assert.checkNotNullParam("flags", flags);
-        consumes.compute(itemId,
-                (id, c) -> c == null ? new Consume(this, itemId, constraint, flags) : c.combine(constraint, flags));
-    }
-
-    private void addProduces(final ItemId itemId, final Constraint constraint, final ProduceFlags flags) {
-        produces.compute(itemId,
-                (id, p) -> p == null ? new Produce(this, itemId, constraint, flags) : p.combine(constraint, flags));
-    }
-
-    Map<ItemId, Consume> getConsumes() {
-        return consumes;
-    }
-
-    Map<ItemId, Produce> getProduces() {
-        return produces;
-    }
-
-    Set<ItemId> getRealConsumes() {
-        final HashMap<ItemId, Consume> map = new HashMap<>(consumes);
-        map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
-        return map.keySet();
-    }
-
-    Set<ItemId> getRealProduces() {
-        final HashMap<ItemId, Produce> map = new HashMap<>(produces);
-        map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
-        return map.keySet();
-    }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append("BuildStep [");
-        builder.append(buildStep);
+        builder.append(stepBuilder);
         builder.append("]");
         return builder.toString();
     }

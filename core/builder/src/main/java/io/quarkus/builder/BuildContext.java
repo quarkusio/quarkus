@@ -1,22 +1,18 @@
 package io.quarkus.builder;
 
-import static io.quarkus.builder.Execution.*;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.wildfly.common.Assert;
 
-import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.builder.location.Location;
+import io.quarkus.qlue.StepContext;
 
 /**
  * The context passed to a deployer's operation.
@@ -24,17 +20,10 @@ import io.quarkus.builder.location.Location;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildContext {
-    private final ClassLoader classLoader;
-    private final StepInfo stepInfo;
-    private final Execution execution;
-    private final AtomicInteger dependencies;
-    private volatile boolean running;
+    private final StepContext stepContext;
 
-    BuildContext(ClassLoader classLoader, final StepInfo stepInfo, final Execution execution) {
-        this.classLoader = classLoader;
-        this.stepInfo = stepInfo;
-        this.execution = execution;
-        dependencies = new AtomicInteger(stepInfo.getDependencies());
+    BuildContext(final StepContext stepContext) {
+        this.stepContext = stepContext;
     }
 
     /**
@@ -44,7 +33,7 @@ public final class BuildContext {
      * @return the name of this build target (not {@code null})
      */
     public String getBuildTargetName() {
-        return execution.getBuildTargetName();
+        return stepContext.toString();
     }
 
     /**
@@ -55,9 +44,10 @@ public final class BuildContext {
      * @throws IllegalArgumentException if the item does not allow multiplicity but this method is called more than one time,
      *         or if the type of item could not be determined
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void produce(BuildItem item) {
         Assert.checkNotNullParam("item", item);
-        doProduce(new ItemId(item.getClass()), item);
+        produce((Class) item.getClass(), item);
     }
 
     /**
@@ -69,7 +59,7 @@ public final class BuildContext {
     public void produce(List<? extends MultiBuildItem> items) {
         Assert.checkNotNullParam("items", items);
         for (MultiBuildItem item : items) {
-            doProduce(new ItemId(item.getClass()), item);
+            produce(item);
         }
     }
 
@@ -85,7 +75,16 @@ public final class BuildContext {
      */
     public <T extends BuildItem> void produce(Class<T> type, T item) {
         Assert.checkNotNullParam("type", type);
-        doProduce(new ItemId(type), type.cast(item));
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            stepContext.produce(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class),
+                    new LegacyMultiItem((MultiBuildItem) item));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            stepContext.produce(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class),
+                    new LegacySimpleItem((SimpleBuildItem) item));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            throw new IllegalArgumentException("Cannot produce an empty build item");
+        }
     }
 
     /**
@@ -99,17 +98,15 @@ public final class BuildContext {
      */
     public <T extends SimpleBuildItem> T consume(Class<T> type) {
         Assert.checkNotNullParam("type", type);
-        if (!running) {
-            throw Messages.msg.buildStepNotRunning();
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot consume single value from multi item");
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            LegacySimpleItem item = stepContext.consume(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class));
+            return item == null ? null : type.cast(item.getItem());
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            throw new IllegalArgumentException("Cannot consume an empty build item");
         }
-        final ItemId id = new ItemId(type);
-        if (id.isMulti()) {
-            throw Messages.msg.cannotMulti(id);
-        }
-        if (!stepInfo.getConsumes().contains(id)) {
-            throw Messages.msg.undeclaredItem(id);
-        }
-        return type.cast(execution.getSingles().get(id));
     }
 
     /**
@@ -124,18 +121,20 @@ public final class BuildContext {
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type) {
         Assert.checkNotNullParam("type", type);
-        if (!running) {
-            throw Messages.msg.buildStepNotRunning();
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            List<LegacyMultiItem> values = stepContext.consumeMulti(LegacyMultiItem.class,
+                    type.asSubclass(MultiBuildItem.class));
+            List<T> result = new ArrayList<>(values.size());
+            for (int i = 0; i < values.size(); i++) {
+                result.add(i, type.cast(values.get(i).getItem()));
+            }
+            return result;
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot consume multi value from single item");
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            throw new IllegalArgumentException("Cannot consume an empty build item");
         }
-        final ItemId id = new ItemId(type);
-        if (!id.isMulti()) {
-            // can happen if obj changes base class
-            throw Messages.msg.cannotMulti(id);
-        }
-        if (!stepInfo.getConsumes().contains(id)) {
-            throw Messages.msg.undeclaredItem(id);
-        }
-        return new ArrayList<>((List<T>) (List) execution.getMultis().getOrDefault(id, Collections.emptyList()));
     }
 
     /**
@@ -162,10 +161,14 @@ public final class BuildContext {
      *         not consume the named item
      */
     public boolean isAvailableToConsume(Class<? extends BuildItem> type) {
-        final ItemId id = new ItemId(type);
-        return stepInfo.getConsumes().contains(id) && id.isMulti()
-                ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
-                : execution.getSingles().containsKey(id);
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            return stepContext.isAvailableToConsume(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            return stepContext.isAvailableToConsume(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            return false;
+        }
     }
 
     /**
@@ -177,44 +180,47 @@ public final class BuildContext {
      *         not produce the named item
      */
     public boolean isConsumed(Class<? extends BuildItem> type) {
-        return execution.getBuildChain().getConsumed().contains(new ItemId(type));
+        if (MultiBuildItem.class.isAssignableFrom(type)) {
+            return stepContext.isConsumed(LegacyMultiItem.class, type.asSubclass(MultiBuildItem.class));
+        } else if (SimpleBuildItem.class.isAssignableFrom(type)) {
+            return stepContext.isConsumed(LegacySimpleItem.class, type.asSubclass(SimpleBuildItem.class));
+        } else {
+            assert EmptyBuildItem.class.isAssignableFrom(type);
+            return stepContext.isConsumed(LegacyEmptyItem.class, type.asSubclass(EmptyBuildItem.class));
+        }
     }
 
     /**
-     * Emit a build note. This indicates information that the user may be interested in.
+     * No operation.
      *
-     * @param location the location of interest (may be {@code null})
-     * @param format the format string (see {@link String#format(String, Object...)})
-     * @param args the format arguments
+     * @param location ignored
+     * @param format ignored
+     * @param args ignored
      */
+    @Deprecated
     public void note(Location location, String format, Object... args) {
-        final List<Diagnostic> list = execution.getDiagnostics();
-        list.add(new Diagnostic(Diagnostic.Level.NOTE, location, format, args));
     }
 
     /**
-     * Emit a build warning. This indicates a significant build problem that the user should be made aware of.
+     * No operation.
      *
-     * @param location the location of interest (may be {@code null})
-     * @param format the format string (see {@link String#format(String, Object...)})
-     * @param args the format arguments
+     * @param location ignored
+     * @param format ignored
+     * @param args ignored
      */
+    @Deprecated
     public void warn(Location location, String format, Object... args) {
-        final List<Diagnostic> list = execution.getDiagnostics();
-        list.add(new Diagnostic(Diagnostic.Level.WARN, location, format, args));
     }
 
     /**
-     * Emit a build error. This indicates a build problem that prevents the build from proceeding.
+     * No operation.
      *
-     * @param location the location of interest (may be {@code null})
-     * @param format the format string (see {@link String#format(String, Object...)})
-     * @param args the format arguments
+     * @param location ignored
+     * @param format ignored
+     * @param args ignored
      */
+    @Deprecated
     public void error(Location location, String format, Object... args) {
-        final List<Diagnostic> list = execution.getDiagnostics();
-        list.add(new Diagnostic(Diagnostic.Level.ERROR, location, format, args));
-        execution.setErrorReported();
     }
 
     /**
@@ -223,78 +229,6 @@ public final class BuildContext {
      * @return an executor which can be used for asynchronous tasks
      */
     public Executor getExecutor() {
-        return execution.getExecutor();
-    }
-
-    // -- //
-
-    private void doProduce(ItemId id, BuildItem value) {
-        if (!running) {
-            throw Messages.msg.buildStepNotRunning();
-        }
-        if (!stepInfo.getProduces().contains(id)) {
-            throw Messages.msg.undeclaredItem(id);
-        }
-        if (id.isMulti()) {
-            final List<BuildItem> list = execution.getMultis().computeIfAbsent(id, x -> new ArrayList<>());
-            synchronized (list) {
-                if (Comparable.class.isAssignableFrom(id.getType())) {
-                    int pos = Collections.binarySearch((List) list, value);
-                    if (pos < 0)
-                        pos = -(pos + 1);
-                    list.add(pos, value);
-                } else {
-                    list.add(value);
-                }
-            }
-        } else {
-            if (execution.getSingles().putIfAbsent(id, value) != null) {
-                throw Messages.msg.cannotMulti(id);
-            }
-        }
-    }
-
-    void depFinished() {
-        final int remaining = dependencies.decrementAndGet();
-        log.tracef("Dependency of \"%2$s\" finished; %1$d remaining", remaining, stepInfo.getBuildStep());
-        if (remaining == 0) {
-            execution.getExecutor().execute(this::run);
-        }
-    }
-
-    void run() {
-        final Execution execution = this.execution;
-        final StepInfo stepInfo = this.stepInfo;
-        final BuildStep buildStep = stepInfo.getBuildStep();
-        final long start = System.currentTimeMillis();
-        log.tracef("Starting step \"%s\"", buildStep);
-        try {
-            if (!execution.isErrorReported()) {
-                running = true;
-                ClassLoader old = Thread.currentThread().getContextClassLoader();
-                try {
-                    Thread.currentThread().setContextClassLoader(classLoader);
-                    buildStep.execute(this);
-                } catch (Throwable t) {
-                    final List<Diagnostic> list = execution.getDiagnostics();
-                    list.add(new Diagnostic(Diagnostic.Level.ERROR, t, null, "Build step %s threw an exception", buildStep));
-                    execution.setErrorReported();
-                } finally {
-                    running = false;
-                    Thread.currentThread().setContextClassLoader(old);
-                }
-            }
-        } finally {
-            log.tracef("Finished step \"%s\" in %s ms", buildStep, System.currentTimeMillis() - start);
-            execution.removeBuildContext(stepInfo, this);
-        }
-        final Set<StepInfo> dependents = stepInfo.getDependents();
-        if (!dependents.isEmpty()) {
-            for (StepInfo info : dependents) {
-                execution.getBuildContext(info).depFinished();
-            }
-        } else {
-            execution.depFinished();
-        }
+        return stepContext.getExecutor();
     }
 }

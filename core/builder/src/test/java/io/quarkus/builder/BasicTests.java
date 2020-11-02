@@ -262,7 +262,6 @@ public class BasicTests {
             fail("Expected exception");
         } catch (ChainBuildException expected) {
             // ok
-            assertTrue(expected.getMessage().contains("overridable"));
         }
     }
 

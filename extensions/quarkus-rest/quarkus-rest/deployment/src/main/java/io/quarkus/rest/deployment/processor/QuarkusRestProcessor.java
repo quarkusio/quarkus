@@ -68,7 +68,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem.KeepProviderResult;
 import io.quarkus.rest.common.deployment.FactoryUtils;
-import io.quarkus.rest.common.deployment.QuarkusRestCommonProcessor;
 import io.quarkus.rest.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.rest.common.deployment.SerializersUtil;
 import io.quarkus.rest.common.deployment.framework.AdditionalReaders;
@@ -103,11 +102,6 @@ import io.quarkus.rest.server.runtime.core.ParamConverterProviders;
 import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.server.runtime.core.ServerSerialisers;
 import io.quarkus.rest.server.runtime.injection.ContextProducers;
-import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationCompletionExceptionMapper;
-import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationFailedExceptionMapper;
-import io.quarkus.rest.server.runtime.providers.exceptionmappers.AuthenticationRedirectExceptionMapper;
-import io.quarkus.rest.server.runtime.providers.exceptionmappers.ForbiddenExceptionMapper;
-import io.quarkus.rest.server.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.rest.spi.AbstractInterceptorBuildItem;
 import io.quarkus.rest.spi.BeanFactory;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
@@ -120,11 +114,6 @@ import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
 import io.quarkus.rest.spi.ReaderInterceptorBuildItem;
 import io.quarkus.rest.spi.WriterInterceptorBuildItem;
-import io.quarkus.security.AuthenticationCompletionException;
-import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.AuthenticationRedirectException;
-import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -276,7 +265,7 @@ public class QuarkusRestProcessor {
             List<ContainerResponseFilterBuildItem> containerResponseFilters,
             List<WriterInterceptorBuildItem> writerInterceptors,
             List<ReaderInterceptorBuildItem> readerInterceptors,
-            List<ExceptionMapperBuildItem> additionalExceptionMappers,
+            List<ExceptionMapperBuildItem> exceptionMappers,
             List<DynamicFeatureBuildItem> additionalDynamicFeatures,
             List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
@@ -295,8 +284,6 @@ public class QuarkusRestProcessor {
                         .collect(toList()));
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        Collection<ClassInfo> exceptionMappers = index
-                .getAllKnownImplementors(QuarkusRestDotNames.EXCEPTION_MAPPER);
         Collection<ClassInfo> contextResolvers = index
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTEXT_RESOLVER);
         Collection<ClassInfo> features = index
@@ -425,26 +412,7 @@ public class QuarkusRestProcessor {
 
             ExceptionMapping exceptionMapping = new ExceptionMapping();
             Map<DotName, ResourceExceptionMapper<Throwable>> handledExceptionToHigherPriorityMapper = new HashMap<>();
-            for (ClassInfo mapperClass : exceptionMappers) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(mapperClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
-                            QuarkusRestDotNames.EXCEPTION_MAPPER,
-                            index);
-                    DotName handledExceptionDotName = typeParameters.get(0).name();
-                    AnnotationInstance priorityInstance = mapperClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                    int priority = Priorities.USER;
-                    if (priorityInstance != null) {
-                        priority = priorityInstance.value().asInt();
-                    }
-                    registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
-                            beanContainerBuildItem,
-                            mapperClass.name().toString(),
-                            handledExceptionDotName,
-                            priority, singletonClasses);
-                }
-            }
-            for (ExceptionMapperBuildItem additionalExceptionMapper : additionalExceptionMappers) {
+            for (ExceptionMapperBuildItem additionalExceptionMapper : exceptionMappers) {
                 DotName handledExceptionDotName = DotName.createSimple(additionalExceptionMapper.getHandledExceptionName());
                 int priority = Priorities.USER;
                 if (additionalExceptionMapper.getPriority() != null) {
@@ -456,33 +424,6 @@ public class QuarkusRestProcessor {
                         handledExceptionDotName,
                         priority, singletonClasses);
             }
-            // built-ins
-            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
-                    beanContainerBuildItem,
-                    AuthenticationCompletionExceptionMapper.class.getName(),
-                    DotName.createSimple(AuthenticationCompletionException.class.getName()),
-                    Priorities.USER, singletonClasses);
-            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
-                    beanContainerBuildItem,
-                    AuthenticationFailedExceptionMapper.class.getName(),
-                    DotName.createSimple(AuthenticationFailedException.class.getName()),
-                    Priorities.USER + 1, singletonClasses);
-            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
-                    beanContainerBuildItem,
-                    AuthenticationRedirectExceptionMapper.class.getName(),
-                    DotName.createSimple(AuthenticationRedirectException.class.getName()),
-                    Priorities.USER, singletonClasses);
-            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
-                    beanContainerBuildItem,
-                    ForbiddenExceptionMapper.class.getName(),
-                    DotName.createSimple(ForbiddenException.class.getName()),
-                    Priorities.USER + 1, singletonClasses);
-            registerExceptionMapper(recorder, handledExceptionToHigherPriorityMapper,
-                    beanContainerBuildItem,
-                    UnauthorizedExceptionMapper.class.getName(),
-                    DotName.createSimple(UnauthorizedException.class.getName()),
-                    Priorities.USER + 1, singletonClasses);
-
             for (Map.Entry<DotName, ResourceExceptionMapper<Throwable>> entry : handledExceptionToHigherPriorityMapper
                     .entrySet()) {
                 recorder.registerExceptionMapper(exceptionMapping, entry.getKey().toString(), entry.getValue());
@@ -608,34 +549,6 @@ public class QuarkusRestProcessor {
             }
             // Match paths that begin with the deployment path
             routes.produce(new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
-        }
-    }
-
-    @BuildStep
-    public void scanForFilters(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
-            BuildProducer<ContainerRequestFilterBuildItem> requestFilterBuildItemBuildProducer,
-            BuildProducer<ContainerResponseFilterBuildItem> responseFilterBuildItemBuildProducer) {
-        IndexView index = combinedIndexBuildItem.getIndex();
-        //the quarkus version of these filters will not be in the index
-        //so you need an explicit check for both
-        Collection<ClassInfo> containerResponseFilters = new HashSet<>(index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_RESPONSE_FILTER));
-        containerResponseFilters.addAll(index
-                .getAllKnownImplementors(QuarkusRestDotNames.QUARKUS_REST_CONTAINER_RESPONSE_FILTER));
-        Collection<ClassInfo> containerRequestFilters = new HashSet<>(index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_REQUEST_FILTER));
-        containerRequestFilters.addAll(index
-                .getAllKnownImplementors(QuarkusRestDotNames.QUARKUS_REST_CONTAINER_REQUEST_FILTER));
-        for (ClassInfo filterClass : containerRequestFilters) {
-            QuarkusRestCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
-                    requestFilterBuildItemBuildProducer, index, filterClass,
-                    ContainerRequestFilterBuildItem.Builder::new);
-        }
-        for (ClassInfo filterClass : containerResponseFilters) {
-            QuarkusRestCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
-                    responseFilterBuildItemBuildProducer, index, filterClass,
-                    ContainerResponseFilterBuildItem.Builder::new);
         }
     }
 

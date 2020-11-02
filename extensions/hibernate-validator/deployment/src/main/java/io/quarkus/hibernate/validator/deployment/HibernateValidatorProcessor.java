@@ -24,8 +24,10 @@ import javax.validation.MessageInterpolator;
 import javax.validation.ParameterNameProvider;
 import javax.validation.TraversableResolver;
 import javax.validation.Valid;
+import javax.validation.ValidationException;
 import javax.validation.executable.ValidateOnExecution;
 import javax.validation.valueextraction.ValueExtractor;
+import javax.ws.rs.Priorities;
 
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.messageinterpolation.AbstractMessageInterpolator;
@@ -72,8 +74,10 @@ import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
+import io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
+import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
@@ -152,8 +156,6 @@ class HibernateValidatorProcessor {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestEndPointValidationInterceptor"));
-            additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestViolationExceptionMapper"));
         }
 
         // A constraint validator with an injection point but no scope is added as @Singleton
@@ -314,6 +316,12 @@ class HibernateValidatorProcessor {
                 .addResourceBundle(AbstractMessageInterpolator.USER_VALIDATION_MESSAGES)
                 .addResourceBundle(AbstractMessageInterpolator.CONTRIBUTOR_VALIDATION_MESSAGES)
                 .build();
+    }
+
+    @BuildStep
+    ExceptionMapperBuildItem mapper() {
+        return new ExceptionMapperBuildItem(QuarkusRestViolationExceptionMapper.class.getName(),
+                ValidationException.class.getName(), Priorities.USER + 1, true);
     }
 
     private static void contributeBuiltinConstraints(Set<String> builtinConstraints,

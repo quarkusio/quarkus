@@ -73,6 +73,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
@@ -160,7 +161,7 @@ class RestClientProcessor {
                 javax.ws.rs.ext.ReaderInterceptor[].class.getName()));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                ResteasyClientBuilder.class.getName()));
+                ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName()));
     }
 
     @BuildStep

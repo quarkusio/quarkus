@@ -533,7 +533,6 @@ public class CreateExtensionMojo extends AbstractMojo {
      * Indicates whether to generate the extension under the current directory or under a directory based on the
      * artifactId
      *
-     * @since TBD
      */
     @Parameter(property = "quarkus.useCurrentDirectory", defaultValue = "false")
     boolean useCurrentDirectory;

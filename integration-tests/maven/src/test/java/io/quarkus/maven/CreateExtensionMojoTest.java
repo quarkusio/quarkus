@@ -195,6 +195,20 @@ public class CreateExtensionMojoTest {
     }
 
     @Test
+    void createNewExtensionOnCurrentDirectory() throws Exception {
+        final CreateExtensionMojo mojo = initMojo(newProjectDir("new-extension-current-directory-project"));
+        mojo.groupId = "org.acme";
+        mojo.artifactId = "my-ext";
+        mojo.version = "1.0-SNAPSHOT";
+        mojo.useCurrentDirectory = true;
+        mojo.assumeManaged = null;
+        mojo.execute();
+        assertTreesMatch(
+                Paths.get("target/test-classes/expected/new-extension-current-directory-project"),
+                mojo.basedir.toPath());
+    }
+
+    @Test
     void createNewExtensionProjectWithJBossParent() throws Exception {
         final CreateExtensionMojo mojo = initMojo(newProjectDir("new-ext-project-with-jboss-parent"));
         mojo.parentGroupId = "org.jboss";

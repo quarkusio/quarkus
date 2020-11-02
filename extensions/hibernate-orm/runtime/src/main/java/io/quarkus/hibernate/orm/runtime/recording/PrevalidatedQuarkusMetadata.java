@@ -49,6 +49,7 @@ public final class PrevalidatedQuarkusMetadata implements Metadata {
 
     public static PrevalidatedQuarkusMetadata validateAndWrap(final MetadataImpl original) {
         original.validate();
+        original.getBootstrapContext().getReflectionManager().reset();
         return new PrevalidatedQuarkusMetadata(original);
     }
 

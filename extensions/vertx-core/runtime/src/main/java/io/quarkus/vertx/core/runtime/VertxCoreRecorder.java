@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -286,12 +285,11 @@ public class VertxCoreRecorder {
                 latch.countDown();
             });
             try {
-                eventLoop.shutdownGracefully().get();
                 latch.await();
                 if (problem.get() != null) {
                     throw new IllegalStateException("Error when closing Vert.x instance", problem.get());
                 }
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Exception when closing Vert.x instance", e);
             }

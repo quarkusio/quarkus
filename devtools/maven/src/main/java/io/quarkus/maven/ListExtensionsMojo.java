@@ -41,6 +41,12 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
     protected String searchPattern;
 
     /**
+     * List the already installed extensions
+     */
+    @Parameter(property = "installed", defaultValue = "false")
+    protected boolean installed;
+
+    /**
      * The extension registry URLs
      */
     @Parameter(property = "registry", alias = "quarkus.extension.registry")
@@ -52,7 +58,8 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
             ListExtensions listExtensions = new ListExtensions(quarkusProject)
                     .all(all)
                     .format(format)
-                    .search(searchPattern);
+                    .search(searchPattern)
+                    .installed(installed);
             if (registries != null && !registries.isEmpty()) {
                 listExtensions.extensionRegistry(DefaultExtensionRegistry.fromURLs(registries));
             }

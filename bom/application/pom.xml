@@ -209,6 +209,15 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Platform descriptor -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
+                <classifier>${project.version}</classifier>
+                <type>json</type>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- External BOMs -->
 
             <!-- Netty dependencies, imported as a BOM -->

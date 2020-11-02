@@ -59,9 +59,10 @@
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>io.quarkus</groupId>
-                                    <artifactId>quarkus-bom-descriptor-json</artifactId>
+                                    <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
                                     <version>${project.version}</version>
                                     <type>json</type>
+                                    <classifier>${project.version}</classifier>
                                     <outputDirectory>${project.build.outputDirectory}/quarkus-bom-descriptor</outputDirectory>
                                     <destFileName>extensions.json</destFileName>
                                 </artifactItem>
@@ -110,9 +111,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom-descriptor-json</artifactId>
+            <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
             <version>${project.version}</version>
             <type>json</type>
+            <classifier>${project.version}</classifier>
         </dependency>
         <!-- extensions reader -->
         <dependency>

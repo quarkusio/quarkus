@@ -103,7 +103,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
 
         final QuarkusPlatformDescriptor descriptor = QuarkusJsonPlatformDescriptorResolver.newInstance()
                 .setArtifactResolver(new BootstrapAppModelResolver(mvn))
-                .resolveFromJson(jsonGroupId, jsonArtifactId, jsonVersion);
+                .resolveFromJson(jsonGroupId, jsonArtifactId, jsonVersion, jsonVersion);
 
         final DefaultArtifact bomArtifact = new DefaultArtifact(descriptor.getBomGroupId(),
                 descriptor.getBomArtifactId(), null, "pom", descriptor.getBomVersion());

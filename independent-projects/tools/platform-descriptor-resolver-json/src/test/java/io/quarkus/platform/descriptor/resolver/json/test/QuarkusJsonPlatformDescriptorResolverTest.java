@@ -7,6 +7,7 @@ import static io.quarkus.platform.tools.ToolsConstants.QUARKUS_CORE_ARTIFACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.ResolverSetupCleanup;
 import io.quarkus.bootstrap.resolver.TsArtifact;
@@ -60,9 +61,11 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
         install(quarkusPlatformDescriptorJson, newJar().getPath(workDir));
 
         // install a few universe versions with the default GA
-        installDefaultUniverse(quarkusCore, "1.0.0.CR50");
-        installDefaultUniverse(quarkusCore, "1.0.0.CR60");
-        installDefaultUniverse(quarkusCore, "1.0.0.CR70");
+        installDefaultUniverseLegacyArtifactId(quarkusCore, "1.0.0.CR50");
+        installDefaultUniverseLegacyArtifactId(quarkusCore, "1.0.0.CR60");
+        installDefaultUniverseLegacyArtifactId(quarkusCore, "1.0.0.CR70");
+
+        installDefaultUniverse(quarkusCore, "1.0.0.CR80");
 
         // install a universe with a custom GA and JSON descriptor with `-descriptor-json` suffix
         TsArtifact universeBom = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe", null, "pom", "1.0.0.CR80")
@@ -84,7 +87,7 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
     @Test
     public void testResolve() throws Exception {
         final QuarkusPlatformDescriptor platform = newResolver().resolve();
-        assertDefaultPlatform(platform, "1.0.0.CR70");
+        assertDefaultPlatform(platform, "1.0.0.CR80");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
@@ -130,8 +133,8 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
     @Test
     public void testResolveFromLatestJson() throws Exception {
         final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID,
-                DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null);
-        assertDefaultPlatform(platform, "1.0.0.CR70");
+                DEFAULT_PLATFORM_BOM_ARTIFACT_ID + "-" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, null, null);
+        assertDefaultPlatform(platform, "1.0.0.CR80");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
@@ -147,7 +150,7 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
     public void testResolveFromLatestBom() throws Exception {
         final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromBom(DEFAULT_PLATFORM_BOM_GROUP_ID,
                 DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null);
-        assertDefaultPlatform(platform, "1.0.0.CR70");
+        assertDefaultPlatform(platform, "1.0.0.CR80");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
@@ -159,12 +162,25 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
-    private void installDefaultUniverse(final TsArtifact quarkusCore, String platformVersion) {
+    private void installDefaultUniverseLegacyArtifactId(final TsArtifact quarkusCore, String platformVersion) {
         final TsArtifact universeBom = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null,
                 "pom", platformVersion)
                         .addManagedDependency(new TsDependency(quarkusCore));
         install(universeBom);
         final TsArtifact universeJson = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null,
+                "json", platformVersion)
+                        .setContent(new TestPlatformJsonDescriptorProvider(universeBom));
+        install(universeJson);
+    }
+
+    private void installDefaultUniverse(final TsArtifact quarkusCore, String platformVersion) {
+        final TsArtifact universeBom = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null,
+                "pom", platformVersion)
+                        .addManagedDependency(new TsDependency(quarkusCore));
+        install(universeBom);
+        final TsArtifact universeJson = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID,
+                DEFAULT_PLATFORM_BOM_ARTIFACT_ID + "-" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
+                platformVersion,
                 "json", platformVersion)
                         .setContent(new TestPlatformJsonDescriptorProvider(universeBom));
         install(universeJson);

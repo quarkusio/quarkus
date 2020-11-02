@@ -34,4 +34,6 @@ public interface BootstrapConstants {
     String EMPTY = "";
     String JAR = AppArtifactCoords.TYPE_JAR;
     String POM = AppArtifactCoords.TYPE_POM;
+
+    String PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX = "quarkus-platform-descriptor";
 }

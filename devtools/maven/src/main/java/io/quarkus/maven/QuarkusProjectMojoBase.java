@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.model.Dependency;
@@ -19,9 +20,11 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
@@ -58,6 +61,9 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     @Parameter(property = "bomVersion", required = false)
     private String bomVersion;
 
+    @Component
+    RemoteRepositoryManager remoteRepositoryManager;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -84,39 +90,56 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     private QuarkusPlatformDescriptor resolvePlatformDescriptor(final MessageWriter log) throws MojoExecutionException {
         // Resolve and setup the platform descriptor
         try {
-            final MavenArtifactResolver mvn = MavenArtifactResolver.builder().setRepositorySystem(repoSystem)
+            final MavenArtifactResolver mvn = MavenArtifactResolver.builder()
+                    .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
-                    .setRemoteRepositories(repos).build();
+                    .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepositoryManager)
+                    .build();
             if (project.getFile() != null) {
-                final List<Artifact> descrArtifactList = new ArrayList<>(2);
-                for (Dependency dep : getManagedDependencies(mvn)) {
-                    if ((dep.getScope() == null || !dep.getScope().equals("import"))
-                            && (dep.getType() == null || !dep.getType().equals("pom"))) {
-                        continue;
-                    }
-                    // We don't know which BOM is the platform one, so we are trying every BOM here
-                    final String bomVersion = resolveValue(dep.getVersion());
-                    final String bomGroupId = resolveValue(dep.getGroupId());
-                    final String bomArtifactId = resolveValue(dep.getArtifactId());
-                    if (bomVersion == null || bomGroupId == null || bomArtifactId == null) {
-                        continue;
-                    }
-
-                    final Artifact jsonArtifact = resolveJsonOrNull(mvn, bomGroupId, bomArtifactId, bomVersion);
-                    if (jsonArtifact != null) {
-                        descrArtifactList.add(jsonArtifact);
-                    }
+                List<Artifact> descrArtifactList = collectQuarkusPlatformDescriptors(log, mvn);
+                if (descrArtifactList.isEmpty()) {
+                    descrArtifactList = resolveLegacyQuarkusPlatformDescriptors(log, mvn);
                 }
                 if (!descrArtifactList.isEmpty()) {
+                    final QuarkusJsonPlatformDescriptorResolver descriptorResolver = QuarkusJsonPlatformDescriptorResolver
+                            .newInstance()
+                            .setArtifactResolver(new BootstrapAppModelResolver(mvn))
+                            .setMessageWriter(log);
+
                     if (descrArtifactList.size() == 1) {
-                        return loadPlatformDescriptor(mvn, log, descrArtifactList.get(0));
-                    } else {
-                        final CombinedQuarkusPlatformDescriptor.Builder builder = CombinedQuarkusPlatformDescriptor.builder();
-                        for (Artifact descrArtifact : descrArtifactList) {
-                            builder.addPlatform(loadPlatformDescriptor(mvn, log, descrArtifact));
-                        }
-                        return builder.build();
+                        return descriptorResolver.resolveFromJson(descrArtifactList.get(0).getFile().toPath());
                     }
+
+                    // Typically, quarkus-bom platform will appear first.
+                    // The descriptors that are generated today are not fragmented and include everything
+                    // a platform offers. Which means if the quarkus-bom platform appears first and its version
+                    // matches the Quarkus core version of the platform built on top of the quarkus-bom
+                    // (e.g. quarkus-universe-bom) the quarkus-bom platform can be skipped,
+                    // since it will already be included in the platform that's built on top of it
+                    int i = 0;
+                    Artifact platformArtifact = descrArtifactList.get(0);
+                    final String quarkusBomPlatformArtifactId = "quarkus-bom-"
+                            + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX;
+                    Artifact quarkusBomPlatformArtifact = null;
+                    if (quarkusBomPlatformArtifactId.equals(platformArtifact.getArtifactId())) {
+                        quarkusBomPlatformArtifact = platformArtifact;
+                    }
+                    final CombinedQuarkusPlatformDescriptor.Builder builder = CombinedQuarkusPlatformDescriptor.builder();
+                    while (++i < descrArtifactList.size()) {
+                        platformArtifact = descrArtifactList.get(i);
+                        final QuarkusPlatformDescriptor descriptor = descriptorResolver
+                                .resolveFromJson(platformArtifact.getFile().toPath());
+                        if (quarkusBomPlatformArtifact != null) {
+                            if (!quarkusBomPlatformArtifact.getVersion().equals(descriptor.getQuarkusVersion())) {
+                                builder.addPlatform(
+                                        descriptorResolver.resolveFromJson(quarkusBomPlatformArtifact.getFile().toPath()));
+                            }
+                            quarkusBomPlatformArtifact = null;
+                        }
+                        builder.addPlatform(descriptorResolver.resolveFromJson(platformArtifact.getFile().toPath()));
+                    }
+                    return builder.build();
                 }
             }
             return CreateUtils.resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion, mvn, getLog());
@@ -125,12 +148,53 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         }
     }
 
-    private QuarkusPlatformDescriptor loadPlatformDescriptor(final MavenArtifactResolver mvn, final MessageWriter log,
-            Artifact descrArtifact) {
-        return QuarkusJsonPlatformDescriptorResolver.newInstance()
-                .setArtifactResolver(new BootstrapAppModelResolver(mvn))
-                .setMessageWriter(log)
-                .resolveFromJson(descrArtifact.getFile().toPath());
+    private List<Artifact> resolveLegacyQuarkusPlatformDescriptors(MessageWriter log, MavenArtifactResolver mvn)
+            throws IOException {
+        final List<Artifact> descrArtifactList = new ArrayList<>(2);
+        for (Dependency dep : getManagedDependencies(mvn)) {
+            if ((dep.getScope() == null || !dep.getScope().equals("import"))
+                    && (dep.getType() == null || !dep.getType().equals("pom"))) {
+                continue;
+            }
+            // We don't know which BOM is the platform one, so we are trying every BOM here
+            final String bomVersion = resolveValue(dep.getVersion());
+            final String bomGroupId = resolveValue(dep.getGroupId());
+            final String bomArtifactId = resolveValue(dep.getArtifactId());
+            if (bomVersion == null || bomGroupId == null || bomArtifactId == null) {
+                continue;
+            }
+
+            final Artifact jsonArtifact = resolveJsonOrNull(mvn, bomGroupId, bomArtifactId, bomVersion);
+            if (jsonArtifact != null) {
+                log.debug("Found legacy platform %s", jsonArtifact);
+                descrArtifactList.add(jsonArtifact);
+            }
+        }
+        return descrArtifactList;
+    }
+
+    private List<Artifact> collectQuarkusPlatformDescriptors(MessageWriter log, MavenArtifactResolver mvn)
+            throws MojoExecutionException {
+        final List<Artifact> descrArtifactList = new ArrayList<>(2);
+        final List<Dependency> constraints = project.getDependencyManagement() == null ? Collections.emptyList()
+                : project.getDependencyManagement().getDependencies();
+        if (!constraints.isEmpty()) {
+            for (Dependency d : constraints) {
+                if (!("json".equals(d.getType())
+                        && d.getArtifactId().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX))) {
+                    continue;
+                }
+                final Artifact a = new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(),
+                        d.getType(), d.getVersion());
+                try {
+                    log.debug("Found platform descriptor %s", a);
+                    descrArtifactList.add(mvn.resolve(a).getArtifact());
+                } catch (Exception e) {
+                    throw new MojoExecutionException("Failed to resolve the platform descriptor " + a, e);
+                }
+            }
+        }
+        return descrArtifactList;
     }
 
     private Artifact resolveJsonOrNull(MavenArtifactResolver mvn, String bomGroupId, String bomArtifactId, String bomVersion) {

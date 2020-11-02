@@ -15,11 +15,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import javax.ws.rs.BeanParam;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -35,13 +33,10 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
-import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.Capability;
@@ -96,7 +91,6 @@ import io.quarkus.rest.server.runtime.core.Features;
 import io.quarkus.rest.server.runtime.core.ParamConverterProviders;
 import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.server.runtime.core.ServerSerialisers;
-import io.quarkus.rest.server.runtime.injection.ContextProducers;
 import io.quarkus.rest.spi.AbstractInterceptorBuildItem;
 import io.quarkus.rest.spi.BeanFactory;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
@@ -134,28 +128,6 @@ public class QuarkusRestProcessor {
     }
 
     @BuildStep
-    AutoInjectAnnotationBuildItem contextInjection(
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
-        additionalBeanBuildItemBuildProducer
-                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class).build());
-        return new AutoInjectAnnotationBuildItem(DotName.createSimple(Context.class.getName()),
-                DotName.createSimple(BeanParam.class.getName()));
-
-    }
-
-    @BuildStep
-    void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PATH, BuiltinScope.SINGLETON.getName()));
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.APPLICATION_PATH,
-                        BuiltinScope.SINGLETON.getName()));
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PROVIDER,
-                        BuiltinScope.SINGLETON.getName()));
-    }
-
-    @BuildStep
     void generateCustomProducer(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
@@ -176,7 +148,6 @@ public class QuarkusRestProcessor {
 
     @BuildStep
     public void handleCustomProviders(
-            // TODO: We need to use this index instead of BeanArchiveIndexBuildItem to avoid build cycles. It it OK?
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             List<CustomContainerRequestFilterBuildItem> customContainerRequestFilters,
@@ -184,19 +155,21 @@ public class QuarkusRestProcessor {
             BuildProducer<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
             BuildProducer<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
             BuildProducer<AdditionalBeanBuildItem> additionalBean) {
-        IndexView index = combinedIndexBuildItem.getIndex();
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
         AdditionalBeanBuildItem.Builder additionalBeans = AdditionalBeanBuildItem.builder();
 
         // if we have custom filters, we need to index these classes
         if (!customContainerRequestFilters.isEmpty() || !customContainerResponseFilters.isEmpty()) {
             Indexer indexer = new Indexer();
             Set<DotName> additionalIndex = new HashSet<>();
+            //we have to use the non-computing index here
+            //the logic checks if the bean is already indexed, so the computing one breaks this
             for (CustomContainerRequestFilterBuildItem filter : customContainerRequestFilters) {
-                IndexingUtil.indexClass(filter.getClassName(), indexer, index, additionalIndex,
+                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
                         Thread.currentThread().getContextClassLoader());
             }
             for (CustomContainerResponseFilterBuildItem filter : customContainerResponseFilters) {
-                IndexingUtil.indexClass(filter.getClassName(), indexer, index, additionalIndex,
+                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
                         Thread.currentThread().getContextClassLoader());
             }
             index = CompositeIndex.create(index, indexer.complete());
@@ -507,49 +480,6 @@ public class QuarkusRestProcessor {
             // Match paths that begin with the deployment path
             routes.produce(new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
         }
-    }
-
-    @BuildStep
-    void additionalBeans(List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
-            List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
-            List<DynamicFeatureBuildItem> additionalDynamicFeatures,
-            List<ExceptionMapperBuildItem> additionalExceptionMappers,
-            BuildProducer<AdditionalBeanBuildItem> additionalBean,
-            List<JaxrsFeatureBuildItem> featureBuildItems,
-            List<ContextResolverBuildItem> contextResolverBuildItems) {
-
-        AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
-        for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
-            if (requestFilter.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(requestFilter.getClassName());
-            }
-        }
-        for (ContainerResponseFilterBuildItem responseFilter : additionalContainerResponseFilters) {
-            if (responseFilter.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(responseFilter.getClassName());
-            }
-        }
-        for (ExceptionMapperBuildItem exceptionMapper : additionalExceptionMappers) {
-            if (exceptionMapper.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(exceptionMapper.getClassName());
-            }
-        }
-        for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
-            if (dynamicFeature.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(dynamicFeature.getClassName());
-            }
-        }
-        for (JaxrsFeatureBuildItem dynamicFeature : featureBuildItems) {
-            if (dynamicFeature.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(dynamicFeature.getClassName());
-            }
-        }
-        for (ContextResolverBuildItem contextResolver : contextResolverBuildItems) {
-            if (contextResolver.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(contextResolver.getClassName());
-            }
-        }
-        additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 
     protected <T, B extends AbstractInterceptorBuildItem> void registerInterceptors(

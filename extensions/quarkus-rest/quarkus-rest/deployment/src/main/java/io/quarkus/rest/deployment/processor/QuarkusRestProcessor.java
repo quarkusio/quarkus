@@ -63,7 +63,6 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.rest.common.deployment.ApplicationResultBuildItem;
-import io.quarkus.rest.common.deployment.ApplicationResultBuildItem.KeepProviderResult;
 import io.quarkus.rest.common.deployment.FactoryUtils;
 import io.quarkus.rest.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.rest.common.deployment.SerializersUtil;
@@ -110,6 +109,7 @@ import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.rest.spi.JaxrsFeatureBuildItem;
 import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
 import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
+import io.quarkus.rest.spi.ParamConverterBuildItem;
 import io.quarkus.rest.spi.ReaderInterceptorBuildItem;
 import io.quarkus.rest.spi.WriterInterceptorBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -268,6 +268,7 @@ public class QuarkusRestProcessor {
             List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             List<JaxrsFeatureBuildItem> features,
+            List<ParamConverterBuildItem> paramConverterBuildItems,
             List<ContextResolverBuildItem> contextResolvers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
@@ -284,8 +285,6 @@ public class QuarkusRestProcessor {
                         .collect(toList()));
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        Collection<ClassInfo> paramConverterProviders = index
-                .getAllKnownImplementors(QuarkusRestDotNames.PARAM_CONVERTER_PROVIDER);
 
         Map<DotName, ClassInfo> scannedResources = resourceScanningResultBuildItem.get().getScannedResources();
         Map<DotName, String> scannedResourcePaths = resourceScanningResultBuildItem.get().getScannedResourcePaths();
@@ -300,17 +299,12 @@ public class QuarkusRestProcessor {
         ClassInfo selectedAppClass = applicationResultBuildItem.getSelectedAppClass();
 
         ParamConverterProviders converterProviders = new ParamConverterProviders();
-        for (ClassInfo converterClass : paramConverterProviders) {
-            KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(converterClass);
-            if (keepProviderResult != KeepProviderResult.DISCARD) {
-                ResourceParamConverterProvider converter = new ResourceParamConverterProvider();
-                converter.setFactory(FactoryUtils.factory(converterClass, singletonClasses, recorder, beanContainerBuildItem));
-                AnnotationInstance priorityInstance = converterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
-                if (priorityInstance != null) {
-                    converter.setPriority(priorityInstance.value().asInt());
-                }
-                converterProviders.addParamConverterProviders(converter);
-            }
+        for (ParamConverterBuildItem paramConverter : paramConverterBuildItems) {
+            ResourceParamConverterProvider converter = new ResourceParamConverterProvider();
+            converter.setFactory(
+                    FactoryUtils.factory(paramConverter.getClassName(), singletonClasses, recorder, beanContainerBuildItem));
+            converter.setPriority(paramConverter.getPriority());
+            converterProviders.addParamConverterProviders(converter);
         }
         converterProviders.sort();
 

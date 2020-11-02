@@ -32,6 +32,7 @@ import io.quarkus.rest.spi.ContextResolverBuildItem;
 import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.rest.spi.JaxrsFeatureBuildItem;
+import io.quarkus.rest.spi.ParamConverterBuildItem;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -175,6 +176,26 @@ public class QuarkusRestScanningProcessor {
                         typeParameters.get(0).name().toString(), getProducesMediaTypes(resolverClass), true));
             }
         }
+    }
+
+    @BuildStep
+    public void scanForParamConverters(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<ParamConverterBuildItem> paramConverterBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Collection<ClassInfo> paramConverterProviders = index
+                .getAllKnownImplementors(QuarkusRestDotNames.PARAM_CONVERTER_PROVIDER);
+
+        for (ClassInfo converterClass : paramConverterProviders) {
+            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
+                    .keepProvider(converterClass);
+            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
+                AnnotationInstance priorityInstance = converterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                paramConverterBuildItemBuildProducer.produce(new ParamConverterBuildItem(converterClass.name().toString(),
+                        priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER, true));
+            }
+        }
+
     }
 
     private List<String> getProducesMediaTypes(ClassInfo classInfo) {

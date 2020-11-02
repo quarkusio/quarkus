@@ -3,6 +3,7 @@ package io.quarkus.jaxrs.client.deployment;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ import javax.ws.rs.client.WebTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -25,9 +27,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -39,7 +43,9 @@ import io.quarkus.rest.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.rest.common.deployment.SerializersUtil;
 import io.quarkus.rest.common.deployment.framework.AdditionalReaders;
 import io.quarkus.rest.common.deployment.framework.AdditionalWriters;
+import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.common.runtime.QuarkusRestConfig;
+import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.core.Serialisers;
 import io.quarkus.rest.common.runtime.model.MethodParameter;
 import io.quarkus.rest.common.runtime.model.ParameterType;
@@ -136,6 +142,27 @@ public class JaxrsClientProcessor {
                     .produce(new ReflectiveClassBuildItem(true, false, false, writerClass.getName()));
         }
 
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    public void registerInvocationCallbacks(CombinedIndexBuildItem index, JaxrsClientRecorder recorder) {
+
+        Collection<ClassInfo> invocationCallbacks = index.getComputingIndex()
+                .getAllKnownImplementors(QuarkusRestDotNames.INVOCATION_CALLBACK);
+
+        GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
+        for (ClassInfo invocationCallback : invocationCallbacks) {
+            try {
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
+                        QuarkusRestDotNames.INVOCATION_CALLBACK, index.getComputingIndex());
+                recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
+                        typeParameters.get(0).name().toString());
+            } catch (Exception ignored) {
+
+            }
+        }
+        recorder.setGenericTypeMapping(genericTypeMapping);
     }
 
     private Map<String, RuntimeValue<Function<WebTarget, ?>>> generateClientInvokers(RecorderContext recorderContext,

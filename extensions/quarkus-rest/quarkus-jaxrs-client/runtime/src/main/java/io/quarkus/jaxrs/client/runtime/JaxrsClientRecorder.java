@@ -61,4 +61,13 @@ public class JaxrsClientRecorder extends QuarkusRestCommonRecorder {
         }
         return new ClientProxies(map);
     }
+
+    public void setGenericTypeMapping(GenericTypeMapping typeMapping) {
+        genericTypeMapping = typeMapping;
+    }
+
+    public void registerInvocationHandlerGenericType(GenericTypeMapping genericTypeMapping, String invocationHandlerClass,
+            String resolvedType) {
+        genericTypeMapping.addInvocationCallback(loadClass(invocationHandlerClass), loadClass(resolvedType));
+    }
 }

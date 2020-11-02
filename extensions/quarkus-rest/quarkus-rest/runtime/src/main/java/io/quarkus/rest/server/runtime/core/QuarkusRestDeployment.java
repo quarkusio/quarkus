@@ -12,7 +12,6 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.common.runtime.model.ResourceParamConverterProvider;
 import io.quarkus.rest.common.runtime.util.Types;
@@ -29,7 +28,6 @@ public class QuarkusRestDeployment {
     private final ServerRestHandler[] abortHandlerChain;
     private final EntityWriter dynamicEntityWriter;
     private final String prefix;
-    private final GenericTypeMapping genericTypeMapping;
     private final ParamConverterProviders paramConverterProviders;
     private final QuarkusRestConfiguration configuration;
     private final Supplier<Application> applicationSupplier;
@@ -37,8 +35,7 @@ public class QuarkusRestDeployment {
     public QuarkusRestDeployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
             ServerRestHandler[] abortHandlerChain,
-            EntityWriter dynamicEntityWriter, String prefix,
-            GenericTypeMapping genericTypeMapping, ParamConverterProviders paramConverterProviders,
+            EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,
             QuarkusRestConfiguration configuration, Supplier<Application> applicationSupplier) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
@@ -46,7 +43,6 @@ public class QuarkusRestDeployment {
         this.abortHandlerChain = abortHandlerChain;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.prefix = prefix;
-        this.genericTypeMapping = genericTypeMapping;
         this.paramConverterProviders = paramConverterProviders;
         this.configuration = configuration;
         this.applicationSupplier = applicationSupplier;
@@ -87,10 +83,6 @@ public class QuarkusRestDeployment {
      */
     public String getPrefix() {
         return prefix;
-    }
-
-    public GenericTypeMapping getGenericTypeMapping() {
-        return genericTypeMapping;
     }
 
     public ParamConverterProviders getParamConverterProviders() {

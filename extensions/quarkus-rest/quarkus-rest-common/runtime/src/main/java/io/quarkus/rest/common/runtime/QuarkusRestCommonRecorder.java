@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.common.runtime.core.ArcBeanFactory;
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.core.Serialisers;
 import io.quarkus.rest.common.runtime.model.ResourceReader;
 import io.quarkus.rest.common.runtime.model.ResourceWriter;
@@ -58,11 +57,6 @@ public class QuarkusRestCommonRecorder {
     public void registerReader(Serialisers serialisers, String entityClassName,
             ResourceReader reader) {
         serialisers.addReader(loadClass(entityClassName), reader);
-    }
-
-    public void registerInvocationHandlerGenericType(GenericTypeMapping genericTypeMapping, String invocationHandlerClass,
-            String resolvedType) {
-        genericTypeMapping.addInvocationCallback(loadClass(invocationHandlerClass), loadClass(resolvedType));
     }
 
     protected static <T> Class<T> loadClass(String name) {

@@ -26,6 +26,7 @@ import io.quarkus.rest.server.runtime.providers.exceptionmappers.ForbiddenExcept
 import io.quarkus.rest.server.runtime.providers.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.rest.spi.ContainerResponseFilterBuildItem;
+import io.quarkus.rest.spi.DynamicFeatureBuildItem;
 import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
@@ -113,5 +114,23 @@ public class QuarkusRestScanningProcessor {
                 UnauthorizedExceptionMapper.class.getName(),
                 UnauthorizedException.class.getName(),
                 Priorities.USER + 1, false));
+    }
+
+    @BuildStep
+    public void scanForDynamicFeatures(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<DynamicFeatureBuildItem> dynamicFeatureBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Collection<ClassInfo> dynamicFeatures = index
+                .getAllKnownImplementors(QuarkusRestDotNames.DYNAMIC_FEATURE);
+
+        for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
+            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
+                    .keepProvider(dynamicFeatureClass);
+            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
+                dynamicFeatureBuildItemBuildProducer
+                        .produce(new DynamicFeatureBuildItem(dynamicFeatureClass.name().toString(), true));
+            }
+        }
     }
 }

@@ -36,7 +36,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.common.runtime.QuarkusRestCommonRecorder;
 import io.quarkus.rest.common.runtime.QuarkusRestConfig;
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.core.SingletonBeanFactory;
 import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.common.runtime.model.HasPriority;
@@ -152,7 +151,6 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
             String applicationPath,
-            GenericTypeMapping genericTypeMapping,
             ParamConverterProviders paramConverterProviders, BeanFactory<QuarkusRestInitialiser> initClassFactory,
             Class<? extends Application> applicationClass, boolean applicationSingletonClassesEmpty) {
 
@@ -372,7 +370,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
-                prefix, genericTypeMapping, paramConverterProviders, quarkusRestConfiguration, applicationSupplier);
+                prefix, paramConverterProviders, quarkusRestConfiguration, applicationSupplier);
 
         initClassFactory.createInstance().getInstance().init(deployment);
 

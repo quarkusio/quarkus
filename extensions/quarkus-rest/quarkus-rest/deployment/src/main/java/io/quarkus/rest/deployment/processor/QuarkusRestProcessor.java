@@ -74,7 +74,6 @@ import io.quarkus.rest.common.deployment.framework.AdditionalReaders;
 import io.quarkus.rest.common.deployment.framework.AdditionalWriters;
 import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.common.runtime.QuarkusRestConfig;
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.common.runtime.core.Serialisers;
 import io.quarkus.rest.common.runtime.core.SingletonBeanFactory;
 import io.quarkus.rest.common.runtime.model.InjectableBean;
@@ -266,7 +265,7 @@ public class QuarkusRestProcessor {
             List<WriterInterceptorBuildItem> writerInterceptors,
             List<ReaderInterceptorBuildItem> readerInterceptors,
             List<ExceptionMapperBuildItem> exceptionMappers,
-            List<DynamicFeatureBuildItem> additionalDynamicFeatures,
+            List<DynamicFeatureBuildItem> dynamicFeatures,
             List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -290,10 +289,6 @@ public class QuarkusRestProcessor {
                 .getAllKnownImplementors(QuarkusRestDotNames.FEATURE);
         Collection<ClassInfo> paramConverterProviders = index
                 .getAllKnownImplementors(QuarkusRestDotNames.PARAM_CONVERTER_PROVIDER);
-        Collection<ClassInfo> dynamicFeatures = index
-                .getAllKnownImplementors(QuarkusRestDotNames.DYNAMIC_FEATURE);
-        Collection<ClassInfo> invocationCallbacks = index
-                .getAllKnownImplementors(QuarkusRestDotNames.INVOCATION_CALLBACK);
 
         Map<DotName, ClassInfo> scannedResources = resourceScanningResultBuildItem.get().getScannedResources();
         Map<DotName, String> scannedResourcePaths = resourceScanningResultBuildItem.get().getScannedResourcePaths();
@@ -456,33 +451,11 @@ public class QuarkusRestProcessor {
             }
 
             DynamicFeatures dynamicFeats = new DynamicFeatures();
-            for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
-                KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(dynamicFeatureClass);
-                if (keepProviderResult != KeepProviderResult.DISCARD) {
-                    ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
-                    resourceFeature
-                            .setFactory(FactoryUtils.factory(dynamicFeatureClass, singletonClasses, recorder,
-                                    beanContainerBuildItem));
-                    dynamicFeats.addFeature(resourceFeature);
-                }
-            }
-            for (DynamicFeatureBuildItem additionalDynamicFeature : additionalDynamicFeatures) {
+            for (DynamicFeatureBuildItem additionalDynamicFeature : dynamicFeatures) {
                 ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
                 resourceFeature.setFactory(
                         recorder.factory(additionalDynamicFeature.getClassName(), beanContainerBuildItem.getValue()));
                 dynamicFeats.addFeature(resourceFeature);
-            }
-
-            GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
-            for (ClassInfo invocationCallback : invocationCallbacks) {
-                try {
-                    List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
-                            QuarkusRestDotNames.INVOCATION_CALLBACK, index);
-                    recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
-                            typeParameters.get(0).name().toString());
-                } catch (Exception ignored) {
-
-                }
             }
 
             ServerSerialisers serialisers = new ServerSerialisers();
@@ -534,7 +507,7 @@ public class QuarkusRestProcessor {
                     dynamicFeats,
                     serialisers, resourceClasses, subResourceClasses,
                     beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
-                    genericTypeMapping, converterProviders, initClassFactory,
+                    converterProviders, initClassFactory,
                     application == null ? Application.class : application.getClass(), singletonClasses.isEmpty());
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);

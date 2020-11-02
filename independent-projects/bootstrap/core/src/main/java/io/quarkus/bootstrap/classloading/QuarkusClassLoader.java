@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.ProtectionDomain;
@@ -72,31 +71,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile MemoryClassPathElement transformedClasses;
     private volatile ClassLoaderState state;
 
-    static final ClassLoader PLATFORM_CLASS_LOADER;
-
-    static {
-        ClassLoader cl = null;
-        try {
-            cl = (ClassLoader) ClassLoader.class.getDeclaredMethod("getPlatformClassLoader").invoke(null);
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-
-        }
-        PLATFORM_CLASS_LOADER = cl;
-    }
-
     private boolean closed;
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
-        //we need the parent to be null
-        //as MP has super broken class loading where it attempts to resolve stuff from the parent
-        //will hopefully be fixed in 1.4
-        //e.g. https://github.com/eclipse/microprofile-config/issues/390
-        //e.g. https://github.com/eclipse/microprofile-reactive-streams-operators/pull/130
-        //to further complicate things we also have https://github.com/quarkusio/quarkus/issues/8985
-        //where getParent must work to load JDK services on JDK9+
-        //to get around this we pass in the platform ClassLoader, if it exists
-        super(PLATFORM_CLASS_LOADER);
+        super(builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;
         this.bannedElements = builder.bannedElements;

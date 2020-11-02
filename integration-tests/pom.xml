@@ -294,6 +294,7 @@
                 <module>picocli-native</module>
                 <module>gradle</module>
                 <module>micrometer-mp-metrics</module>
+                <module>micrometer-native</module>
                 <module>micrometer-prometheus</module>
                 <module>smallrye-metrics</module>
                 <module>logging-json</module>

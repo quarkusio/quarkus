@@ -317,6 +317,32 @@ In this example, a singleton CDI bean will produce two different `MeterFilter` b
 Prometheus `MeterRegistry` instances (using the `@MeterFilterConstraint` qualifier), and another will be applied
 to all `MeterRegistry` instances. An application configuration property is also injected and used as a tag value.
 
+== Creating a customized MeterRegistry
+
+In some instances, you may want to customize how your registry is intialized. Use a custom `@Produces` 
+method to create and produce your initialized `MeterRegistry`.
+
+The following example customizes the line format used for StatsD. 
+
+[source,java]
+----
+@Produces
+@Singleton
+public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, Clock clock) {
+    // define what to do with lines
+    Consumer<String> lineLogger = line -> logger.info(line);
+
+    // inject a configuration object, and then customize the line builder
+    return StatsdMeterRegistry.builder(statsdConfig)
+          .clock(clock)
+          .lineSink(lineLogger)
+          .build();
+}
+----
+
+This example corresponds to the following instructions in the Micrometer documentation: 
+https://micrometer.io/docs/registry/statsD#_customizing_the_metrics_sink
+
 == Support for the MicroProfile Metrics API
 
 If you use the MicroProfile Metrics API in your application, the Micrometer extension will create an adaptive

@@ -75,6 +75,11 @@
             <artifactId>micrometer-registry-stackdriver</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-statsd</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <!-- Dependencies for Binding (optional) -->
 

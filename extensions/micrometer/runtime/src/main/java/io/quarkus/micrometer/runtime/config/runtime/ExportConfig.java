@@ -9,13 +9,14 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * Runtime configuration for Micrometer meter registries.
  */
+@SuppressWarnings("unused")
 @ConfigRoot(name = "micrometer.export", phase = ConfigPhase.RUN_TIME)
 public class ExportConfig {
     // @formatter:off
     /**
      * Azure Monitor registry configuration properties.
      * <p>
-     * A property source for configuration of the AzureMonitor MeterRegistry,
+     * A property source for configuration of the AzureMonitor MeterRegistry.
      *
      * Available values:
      *
@@ -39,7 +40,7 @@ public class ExportConfig {
 
     // @formatter:off
     /**
-     * Datadog MeterRegistry configuration
+     * Datadog MeterRegistry configuration properties.
      * <p>
      * A property source for configuration of the Datadog MeterRegistry to push
      * metrics using the Datadog API, see https://micrometer.io/docs/registry/datadog.
@@ -165,4 +166,54 @@ public class ExportConfig {
     // @formatter:on
     @ConfigItem
     Map<String, String> stackdriver;
+
+    // @formatter:off
+    /**
+     * StatsD registry configuration properties.
+     * <p>
+     * A property source for configuration of the StatsD MeterRegistry,
+     * see https://micrometer.io/docs/registry/statsD.
+     *
+     * Available values:
+     *
+     * [cols=2]
+     * !===
+     * h!Property=Default
+     * h!Description
+     *
+     * !`flavor=datadog`
+     * !Specify the flavor of the StatsD line protocol. The original StatsD line protocol
+     * specification is `etsy`. The default value is `datadog`.
+     *
+     * !`host=localhost`
+     * !The host name of the StatsD agent.
+     *
+     * !`maxPacketLength=1400`
+     * !Adjust the packet length to keep the payload within your network's MTU.
+     *
+     * !`port=8125`
+     * !The port of the StatsD agent`.
+     *
+     * !`protocol=UDP`
+     * !The protocol of the connection to the agent (UDP or TCP).
+     *
+     * !`publish=true`
+     * !By default, gathered metrics will be published to StatsD when the MeterRegistry is enabled.
+     * Use this attribute to selectively disable publication of metrics in some environments.
+     *
+     * !`step=1m`
+     * !The interval at which metrics are sent to StatsD Monitoring. The default is 1 minute.
+     * !===
+     *
+     * Other micrometer configuration attributes can also be specified.
+     *
+     * As mentioned in the Micrometer StatsD documentation, if you want to customize the metrics
+     * sink, do so by providing your own `StatsDMeterRegistry` instance using a CDI `@Produces`
+     * method.
+     *
+     * @asciidoclet
+     */
+    // @formatter:on
+    @ConfigItem
+    Map<String, String> statsd;
 }

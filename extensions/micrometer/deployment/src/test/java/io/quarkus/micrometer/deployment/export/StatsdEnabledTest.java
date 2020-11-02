@@ -15,29 +15,29 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SignalFxEnabledTest {
-    static final String REGISTRY_CLASS_NAME = "io.micrometer.signalfx.SignalFxMeterRegistry";
+public class StatsdEnabledTest {
+    static final String REGISTRY_CLASS_NAME = "io.micrometer.statsd.StatsdMeterRegistry";
     static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
-            .overrideConfigKey("quarkus.micrometer.export.signalfx.enabled", "true")
-            .overrideConfigKey("quarkus.micrometer.export.signalfx.access-token", "required")
+            .overrideConfigKey("quarkus.micrometer.export.statsd.enabled", "true")
+            .overrideConfigKey("quarkus.micrometer.export.statsd.publish", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(SignalFxRegistryProcessor.REGISTRY_CLASS));
+                    .addClass(StatsdRegistryProcessor.REGISTRY_CLASS));
 
     @Inject
     MeterRegistry registry;
 
     @Test
     public void testMeterRegistryPresent() {
-        // SignalFx is enabled (alone, all others disabled)
+        // Stackdriver is enabled (alone, all others disabled)
         Assertions.assertNotNull(registry, "A registry should be configured");
         Set<MeterRegistry> subRegistries = ((CompositeMeterRegistry) registry).getRegistries();
         Assertions.assertEquals(REGISTRY_CLASS, subRegistries.iterator().next().getClass(),
-                "Should be SignalFxMeterRegistry");
+                "Should be StatsdMeterRegistry");
     }
 }

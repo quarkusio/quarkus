@@ -5,3 +5,7 @@
 :idseparator: -
 :icons: font
 :imagesdir: ./images
+
+//docs attributes
+:ProductName: Quarkus
+:ProductVersion: 1.3

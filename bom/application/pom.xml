@@ -28,7 +28,7 @@
         <quarkus-http.version>3.0.16.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>
-        <micrometer.version>1.5.6</micrometer.version>
+        <micrometer.version>1.6.0</micrometer.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>

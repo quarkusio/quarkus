@@ -3,6 +3,7 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.vertx.core.Context;
 import io.vertx.ext.web.RoutingContext;
@@ -29,6 +30,12 @@ public class RequestMetric {
 
     /** Store the sample used to measure the request */
     Timer.Sample sample;
+
+    /**
+     * Store the tags associated with the request (change 1.6.0).
+     * Default is empty, value assigned @ requestBegin
+     */
+    Tags tags = Tags.empty();
 
     /**
      * Stash the RequestMetric in the Vertx Context

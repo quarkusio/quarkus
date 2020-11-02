@@ -124,8 +124,8 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         VertxMetricsTags.parseUriPath(requestMetric, matchPatterns, ignorePatterns, request.path());
         if (requestMetric.measure) {
             // If we're measuring this request, create/remember the sample
-            requestMetric.sample = Timer.start(registry).tags(Tags.of(
-                    VertxMetricsTags.method(request.method())));
+            requestMetric.sample = Timer.start(registry);
+            requestMetric.tags = Tags.of(VertxMetricsTags.method(request.method()));
 
             log.debugf("requestBegin %s: %s, %s", requestMetric.path, socketMetric, requestMetric);
         }
@@ -145,11 +145,13 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         Timer.Sample sample = getRequestSample(requestMetric);
         if (sample != null) {
             String requestPath = getServerRequestPath(requestMetric);
-            sample.stop(registry,
-                    Timer.builder(nameHttpServerRequests).tags(Tags.of(
+            Timer.Builder builder = Timer.builder(nameHttpServerRequests)
+                    .tags(requestMetric.tags)
+                    .tags(Tags.of(
                             VertxMetricsTags.uri(requestPath, 0),
                             Outcome.CLIENT_ERROR.asTag(),
-                            VertxMetricsTags.STATUS_RESET)));
+                            VertxMetricsTags.STATUS_RESET));
+            sample.stop(builder.register(registry));
         }
     }
 
@@ -166,10 +168,14 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         Timer.Sample sample = getRequestSample(requestMetric);
         if (sample != null) {
             String requestPath = getServerRequestPath(requestMetric);
-            sample.stop(registry, Timer.builder(nameHttpServerRequests).tags(Tags.of(
-                    VertxMetricsTags.uri(requestPath, response.getStatusCode()),
-                    VertxMetricsTags.outcome(response),
-                    VertxMetricsTags.status(response.getStatusCode()))));
+            Timer.Builder builder = Timer.builder(nameHttpServerRequests)
+                    .tags(requestMetric.tags)
+                    .tags(Tags.of(
+                            VertxMetricsTags.uri(requestPath, response.getStatusCode()),
+                            VertxMetricsTags.outcome(response),
+                            VertxMetricsTags.status(response.getStatusCode())));
+
+            sample.stop(builder.register(registry));
         }
     }
 

@@ -61,17 +61,16 @@ public class MicrometerTimedInterceptor {
     private Object processWithTimer(InvocationContext context, Timed timed, Tags commonTags, String metricName,
             boolean stopWhenCompleted) throws Exception {
 
-        Timer.Sample sample = Timer.start(meterRegistry)
-                .tags(commonTags)
-                .tags(timed.extraTags());
+        Timer.Sample sample = Timer.start(meterRegistry);
+        Tags timerTags = Tags.concat(commonTags, timed.extraTags());
 
         if (stopWhenCompleted) {
             try {
                 return ((CompletionStage<?>) context.proceed()).whenComplete((result, throwable) -> {
-                    record(timed, metricName, sample, MicrometerRecorder.getExceptionTag(throwable));
+                    record(timed, metricName, sample, MicrometerRecorder.getExceptionTag(throwable), timerTags);
                 });
             } catch (Exception ex) {
-                record(timed, metricName, sample, MicrometerRecorder.getExceptionTag(ex));
+                record(timed, metricName, sample, MicrometerRecorder.getExceptionTag(ex), timerTags);
                 throw ex;
             }
         }
@@ -83,19 +82,20 @@ public class MicrometerTimedInterceptor {
             exceptionClass = MicrometerRecorder.getExceptionTag(ex);
             throw ex;
         } finally {
-            record(timed, metricName, sample, exceptionClass);
+            record(timed, metricName, sample, exceptionClass, timerTags);
         }
     }
 
-    private void record(Timed timed, String metricName, Timer.Sample sample, String exceptionClass) {
+    private void record(Timed timed, String metricName, Timer.Sample sample, String exceptionClass, Tags timerTags) {
         try {
             Timer.Builder builder = Timer.builder(metricName)
                     .description(timed.description().isEmpty() ? null : timed.description())
+                    .tags(timerTags)
                     .tag("exception", exceptionClass)
                     .publishPercentileHistogram(timed.histogram())
                     .publishPercentiles(timed.percentiles().length == 0 ? null : timed.percentiles());
 
-            sample.stop(meterRegistry, builder);
+            sample.stop(builder.register(meterRegistry));
         } catch (Exception e) {
             // ignoring on purpose: possible meter registration error should not interrupt main code flow.
             log.warnf(e, "Unable to record observed timer value for %s with exceptionClass %s",

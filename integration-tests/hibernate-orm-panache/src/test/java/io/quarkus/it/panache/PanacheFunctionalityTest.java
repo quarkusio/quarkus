@@ -183,8 +183,8 @@ public class PanacheFunctionalityTest {
         RestAssured.when()
                 .get("/metrics")
                 .then()
-                .body(containsString("vendor_hibernate_orm_timestamps_cache_hits_total{entityManagerFactory=\""
-                        + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME + "\"}"));
+                .body(containsString("vendor_hibernate_cache_update_timestamps_requests_total{entityManagerFactory=\""
+                        + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME + "\",result=\"miss\"}"));
     }
 
     @DisabledOnNativeImage

@@ -1,5 +1,5 @@
 ---
-name: "Quarkus REST JSON-B"
+name: "Quarkus REST Jackson"
 metadata:
   short-name: "quarkus-rest-jackson"
   keywords:

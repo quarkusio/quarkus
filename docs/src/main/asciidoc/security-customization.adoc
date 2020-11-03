@@ -222,6 +222,8 @@ public class DisabledAuthController extends AuthorizationController {
 
 == Registering Security Providers
 
+=== Default providers
+
 When running in native mode, the default behavior for GraalVM native executable generation is to only include the main "SUN" provider
 unless you have enabled SSL, in which case all security providers are registered. If you are not using SSL, then you can selectively
 register security providers by name using the `quarkus.security.security-providers` property. The following example illustrates
@@ -231,6 +233,48 @@ configuration to register the "SunRsaSign" and "SunJCE" security providers:
 [source,properties]
 ----
 quarkus.security.security-providers=SunRsaSign,SunJCE
+----
+
+=== BouncyCastle
+
+If you need to register an `org.bouncycastle.jce.provider.BouncyCastleProvider` JCE provider then please set a `BC` provider name:
+
+.Example Security Providers BouncyCastle Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BC
+----
+
+and add the latest BouncyCastle provider dependency:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bcprov-jdk15on</artifactId>
+  <version>${bouncycastle.version}</version>
+</dependency>
+----
+
+=== BouncyCastle JSSE
+
+If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use in instead of the default SunJSSE provider then please set a `BCJSSE` provider name:
+
+.Example Security Providers BouncyCastle JSSE Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BCJSSE
+----
+
+and add the latest BouncyCastle TLS dependency:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bctls-jdk15on</artifactId>
+  <version>${bouncycastle.version}</version>
+</dependency>
 ----
 
 == Reactive Security

@@ -80,6 +80,7 @@
                                 <argument>clean</argument>
                                 <argument>${gradle.task}</argument>
                                 <argument>-Pdescription=${project.description}</argument>
+                                <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
                                 <argument>-S</argument>
                                 <argument>--stacktrace</argument>
                                 <argument>--no-daemon</argument>

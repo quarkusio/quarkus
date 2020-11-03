@@ -56,6 +56,7 @@
                                         <argument>clean</argument>
                                         <argument>test</argument>
                                         <argument>-Pdescription=${project.description}</argument>
+                                        <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
                                         <argument>-i</argument> <!-- info logging -->
                                         <argument>-S</argument>
                                         <argument>--stacktrace</argument>

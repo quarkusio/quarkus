@@ -19,6 +19,7 @@ import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -33,17 +34,23 @@ public class DB2PoolRecorder {
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
 
     public RuntimeValue<DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
+            String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactiveDB2Config dataSourceReactiveDB2Config,
+            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
+            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
             ShutdownContext shutdown) {
 
-        DB2Pool pool = initialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
-                dataSourceReactiveRuntimeConfig,
-                dataSourceReactiveDB2Config);
+        DB2Pool db2Pool = initialize(vertx.getValue(),
+                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                dataSourcesReactiveDB2Config.getDataSourceReactiveRuntimeConfig(dataSourceName));
 
-        shutdown.addShutdownTask(pool::close);
-        return new RuntimeValue<>(pool);
+        shutdown.addShutdownTask(db2Pool::close);
+        return new RuntimeValue<>(db2Pool);
+    }
+
+    public RuntimeValue<io.vertx.mutiny.db2client.DB2Pool> mutinyDB2Pool(RuntimeValue<DB2Pool> db2Pool) {
+        return new RuntimeValue<>(io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool.getValue()));
     }
 
     private DB2Pool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,

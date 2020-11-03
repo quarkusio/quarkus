@@ -13,12 +13,12 @@ public class PemTrustCertConfiguration {
      * PEM Trust config is disabled by default.
      */
     @ConfigItem(name = ConfigItem.PARENT, defaultValue = "false")
-    public boolean enabled;
+    public boolean enabled = false;
 
     /**
      * Comma-separated list of the trust certificate files (Pem format).
      */
     @ConfigItem
-    public Optional<List<String>> certs;
+    public Optional<List<String>> certs = Optional.empty();
 
 }

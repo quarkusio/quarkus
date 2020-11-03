@@ -19,6 +19,7 @@ import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -34,17 +35,23 @@ public class PgPoolRecorder {
     private static final Logger log = Logger.getLogger(PgPoolRecorder.class);
 
     public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
+            String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
+            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
+            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
             ShutdownContext shutdown) {
 
-        PgPool pgPool = initialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
-                dataSourceReactiveRuntimeConfig,
-                dataSourceReactivePostgreSQLConfig);
+        PgPool pgPool = initialize(vertx.getValue(),
+                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                dataSourcesReactivePostgreSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
 
         shutdown.addShutdownTask(pgPool::close);
         return new RuntimeValue<>(pgPool);
+    }
+
+    public RuntimeValue<io.vertx.mutiny.pgclient.PgPool> mutinyPgPool(RuntimeValue<PgPool> pgPool) {
+        return new RuntimeValue<>(io.vertx.mutiny.pgclient.PgPool.newInstance(pgPool.getValue()));
     }
 
     private PgPool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,

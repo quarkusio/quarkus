@@ -3,6 +3,7 @@ package io.quarkus.datasource.runtime;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -62,5 +63,18 @@ public class DataSourcesBuildTimeConfig {
      */
     @Deprecated
     public Optional<String> driver;
+
+    public DataSourceBuildTimeConfig getDataSourceRuntimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return defaultDataSource;
+        }
+
+        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = namedDataSources.get(dataSourceName);
+        if (dataSourceBuildTimeConfig == null) {
+            return new DataSourceBuildTimeConfig();
+        }
+
+        return dataSourceBuildTimeConfig;
+    }
 
 }

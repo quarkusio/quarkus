@@ -2,10 +2,12 @@ package io.quarkus.reactive.pg.client.deployment;
 
 import javax.inject.Singleton;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Feature;
@@ -18,11 +20,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
-import io.quarkus.reactive.pg.client.runtime.DataSourceReactivePostgreSQLConfig;
-import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
+import io.quarkus.reactive.pg.client.runtime.DataSourcesReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -31,26 +34,6 @@ import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Pool;
 
 class ReactivePgClientProcessor {
-
-    /**
-     * The producer needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance creation
-     * consumes the AdditionalBeanBuildItems).
-     */
-    @BuildStep
-    void poolProducer(
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
-        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
-            return;
-        }
-
-        additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
-                .addBeanClass(PgPoolProducer.class)
-                .setUnremovable()
-                .setDefaultScope(DotNames.APPLICATION_SCOPED)
-                .build());
-    }
 
     @BuildStep
     NativeImageConfigBuildItem config() {
@@ -65,65 +48,145 @@ class ReactivePgClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             PgPoolRecorder recorder,
             VertxBuildItem vertx,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             ShutdownContextBuildItem shutdown,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig,
-            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
+            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
+            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_PG_CLIENT));
-        // Make sure the PgPoolProducer is initialized before the StartupEvent is fired
-        ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-pg-client");
 
-        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
-            return serviceStart;
+        createPoolIfDefined(recorder, vertx, shutdown, pgPool, vertxPool, syntheticBeans,
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
+                dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
+                dataSourcesReactivePostgreSQLConfig);
+
+        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+            createPoolIfDefined(recorder, vertx, shutdown, pgPool, vertxPool, syntheticBeans, dataSourceName,
+                    dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
+                    dataSourcesReactiveRuntimeConfig, dataSourcesReactivePostgreSQLConfig);
         }
-
-        RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(),
-                dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig,
-                shutdown);
-        pgPool.produce(new PgPoolBuildItem(pool));
-
-        // Synthetic bean for PgPool
-        syntheticBeans.produce(
-                SyntheticBeanBuildItem.configure(PgPool.class).addType(Pool.class).scope(Singleton.class).runtimeValue(pool)
-                        .setRuntimeInit().done());
-
-        boolean isDefault = true; // assume always the default pool for now
-        vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.POSTGRESQL, isDefault));
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REACTIVE_PG_CLIENT));
 
-        return serviceStart;
+        return new ServiceStartBuildItem("reactive-pg-client");
     }
 
+    /**
+     * The health check needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance creation
+     * consumes the AdditionalBeanBuildItems).
+     */
     @BuildStep
     void addHealthCheck(
             BuildProducer<HealthBuildItem> healthChecks,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
-        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig) {
+        if (!hasPools(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig)) {
             return;
         }
 
-        healthChecks.produce(new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourceHealthCheck",
-                dataSourcesBuildTimeConfig.healthEnabled));
+        healthChecks
+                .produce(new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourcesHealthCheck",
+                        dataSourcesBuildTimeConfig.healthEnabled));
     }
 
-    private static boolean createPool(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
-        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
+    private void createPoolIfDefined(PgPoolRecorder recorder,
+            VertxBuildItem vertx,
+            ShutdownContextBuildItem shutdown,
+            BuildProducer<PgPoolBuildItem> pgPool,
+            BuildProducer<VertxPoolBuildItem> vertxPool,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            String dataSourceName,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
+            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
+            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig) {
+
+        if (!isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName)) {
+            return;
+        }
+
+        RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(),
+                dataSourceName,
+                dataSourcesRuntimeConfig,
+                dataSourcesReactiveRuntimeConfig,
+                dataSourcesReactivePostgreSQLConfig,
+                shutdown);
+        pgPool.produce(new PgPoolBuildItem(dataSourceName, pool));
+
+        ExtendedBeanConfigurator pgPoolBeanConfigurator = SyntheticBeanBuildItem.configure(PgPool.class)
+                .defaultBean()
+                .addType(Pool.class)
+                .scope(Singleton.class)
+                .runtimeValue(pool)
+                .unremovable()
+                .setRuntimeInit();
+
+        addQualifiers(pgPoolBeanConfigurator, dataSourceName);
+
+        syntheticBeans.produce(pgPoolBeanConfigurator.done());
+
+        ExtendedBeanConfigurator mutinyPgPoolConfigurator = SyntheticBeanBuildItem
+                .configure(io.vertx.mutiny.pgclient.PgPool.class)
+                .defaultBean()
+                .scope(Singleton.class)
+                .runtimeValue(recorder.mutinyPgPool(pool))
+                .setRuntimeInit();
+
+        addQualifiers(mutinyPgPoolConfigurator, dataSourceName);
+
+        syntheticBeans.produce(mutinyPgPoolConfigurator.done());
+
+        vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.POSTGRESQL, DataSourceUtil.isDefault(dataSourceName)));
+    }
+
+    private static boolean isReactivePostgreSQLPoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName) {
+        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
+                .getDataSourceRuntimeConfig(dataSourceName);
+        DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
+                .getDataSourceReactiveBuildTimeConfig(dataSourceName);
+
+        if (!dataSourceBuildTimeConfig.dbKind.isPresent()) {
             return false;
         }
 
-        if (!DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
+        if (!DatabaseKind.isPostgreSQL(dataSourceBuildTimeConfig.dbKind.get())
                 || !dataSourceReactiveBuildTimeConfig.enabled) {
             return false;
         }
 
         return true;
+    }
+
+    private boolean hasPools(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig) {
+        if (isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME)) {
+            return true;
+        }
+
+        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+            if (isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
+                    dataSourceName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void addQualifiers(ExtendedBeanConfigurator configurator, String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            configurator.addQualifier(DotNames.DEFAULT);
+        } else {
+            configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", dataSourceName).done();
+            configurator.addQualifier().annotation(ReactiveDataSource.class).addValue("value", dataSourceName)
+                    .done();
+        }
     }
 }

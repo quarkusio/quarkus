@@ -46,10 +46,6 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-axle-mysql-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
         </dependency>
         <dependency>

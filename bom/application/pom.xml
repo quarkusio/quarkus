@@ -3829,18 +3829,8 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-sql-client</artifactId>
-                <version>${axle-client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-sql-client</artifactId>
                 <version>${mutiny-client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-mysql-client</artifactId>
-                <version>${axle-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -3851,11 +3841,6 @@
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
                 <version>${mutiny-client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-pg-client</artifactId>
-                <version>${axle-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

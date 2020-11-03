@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
@@ -89,7 +90,6 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
     @Override
     public Object buildAll(String modelName, ModelParameter parameter, Project project) {
         LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
-
         final Set<org.gradle.api.artifacts.Dependency> deploymentDeps = getEnforcedPlatforms(project);
         final Map<ArtifactCoords, Dependency> appDependencies = new LinkedHashMap<>();
         final Set<ArtifactCoords> visitedDeps = new HashSet<>();
@@ -298,26 +298,27 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
         if (javaConvention == null) {
             dep.addPath(a.getFile());
-        } else {
-            SourceSet mainSourceSet = javaConvention.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME);
-            if (mainSourceSet != null) {
-                final File classesDir = new File(QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false));
-                if (classesDir.exists()) {
-                    dep.addPath(classesDir);
-                }
-                for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
-                    if (resourcesDir.exists()) {
-                        dep.addPath(resourcesDir);
-                    }
-                }
-                for (File outputDir : project.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
-                        .getOutputs().getFiles()) {
-                    if (outputDir.exists()) {
-                        dep.addPath(outputDir);
-                    }
-                }
-            } else {
-                dep.addPath(a.getFile());
+            return;
+        }
+        final SourceSet mainSourceSet = javaConvention.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        if (mainSourceSet == null) {
+            dep.addPath(a.getFile());
+            return;
+        }
+
+        final File classesDir = new File(QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false));
+        if (classesDir.exists()) {
+            dep.addPath(classesDir);
+        }
+        for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
+            if (resourcesDir.exists()) {
+                dep.addPath(resourcesDir);
+            }
+        }
+        final Task resourcesTask = project.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
+        for (File outputDir : resourcesTask.getOutputs().getFiles()) {
+            if (outputDir.exists()) {
+                dep.addPath(outputDir);
             }
         }
     }

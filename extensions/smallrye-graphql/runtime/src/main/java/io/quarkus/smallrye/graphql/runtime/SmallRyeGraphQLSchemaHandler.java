@@ -21,13 +21,14 @@ public class SmallRyeGraphQLSchemaHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
+        HttpServerRequest request = event.request();
+        HttpServerResponse response = event.response();
+
         GraphQLSchema graphQLSchema = CDI.current().select(GraphQLSchema.class).get();
         SchemaPrinter schemaPrinter = CDI.current().select(SchemaPrinter.class).get();
 
         String schemaString = schemaPrinter.print(graphQLSchema);
 
-        HttpServerRequest request = event.request();
-        HttpServerResponse response = event.response();
         if (request.method().equals(HttpMethod.OPTIONS)) {
             response.headers().set(HttpHeaders.ALLOW, ALLOWED_METHODS);
         } else if (request.method().equals(HttpMethod.GET)) {

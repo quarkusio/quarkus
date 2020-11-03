@@ -19,10 +19,4 @@ public class SmallRyeGraphQLUIConfig {
      */
     @ConfigItem(defaultValue = "false")
     boolean alwaysInclude;
-
-    /**
-     * If GraphQL UI should be enabled. By default, GraphQL UI is enabled.
-     */
-    @ConfigItem(defaultValue = "true")
-    boolean enable;
 }

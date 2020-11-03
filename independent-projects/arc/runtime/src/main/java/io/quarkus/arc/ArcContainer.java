@@ -2,6 +2,7 @@ package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
@@ -27,6 +28,13 @@ public interface ArcContainer {
      * @throws IllegalArgumentException if there is more than one active context for the given scope
      */
     InjectableContext getActiveContext(Class<? extends Annotation> scopeType);
+
+    /**
+     * 
+     * @param scopeType
+     * @return the matching context objects, never null
+     */
+    Collection<InjectableContext> getContexts(Class<? extends Annotation> scopeType);
 
     /**
      * 
@@ -97,14 +105,6 @@ public interface ArcContainer {
      * @return a new bean instance handle
      */
     <T> InstanceHandle<T> instance(InjectableBean<T> bean);
-
-    /**
-     * Returns an instance of a normal scoped bean
-     *
-     * @param bean
-     * @return a new bean instance
-     */
-    <T> T normalScopedInstance(InjectableBean<T> bean);
 
     /**
      * Instances of dependent scoped beans obtained with the returned injectable instance must be explicitly destroyed, either

@@ -9,8 +9,10 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.ContextNotActiveException;
@@ -49,11 +51,11 @@ class RequestContext implements ManagedContext {
         return RequestScoped.class;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public <T> T getOrCreate(Contextual<T> contextual) {
-        if (contextual == null) {
-            throw new IllegalArgumentException("Contextual parameter must not be null");
-        }
+    public <T> T getIfActive(Contextual<T> contextual, Function<Contextual<T>, CreationalContext<T>> creationalContextFun) {
+        Objects.requireNonNull(contextual, "Contextual must not be null");
+        Objects.requireNonNull(creationalContextFun, "CreationalContext supplier must not be null");
         Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
         if (ctx == null) {
             // Thread local not set - context is not active!
@@ -61,7 +63,7 @@ class RequestContext implements ManagedContext {
         }
         ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctx.get(contextual);
         if (instance == null) {
-            CreationalContext<T> creationalContext = new CreationalContextImpl<>(contextual);
+            CreationalContext<T> creationalContext = creationalContextFun.apply(contextual);
             // Bean instance does not exist - create one if we have CreationalContext
             instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
                     contextual.create(creationalContext), creationalContext);
@@ -70,30 +72,28 @@ class RequestContext implements ManagedContext {
         return instance.get();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
-        if (contextual == null) {
-            throw new IllegalArgumentException("Contextual parameter must not be null");
+        T result = getIfActive(contextual,
+                CreationalContextImpl.unwrap(Objects.requireNonNull(creationalContext, "CreationalContext must not be null")));
+        if (result == null) {
+            // Thread local not set - context is not active!
+            throw new ContextNotActiveException();
         }
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T get(Contextual<T> contextual) {
+        Objects.requireNonNull(contextual, "Contextual must not be null");
         Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
         if (ctx == null) {
             // Thread local not set - context is not active!
             throw new ContextNotActiveException();
         }
         ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctx.get(contextual);
-        if (instance == null && creationalContext != null) {
-            // Bean instance does not exist - create one if we have CreationalContext
-            instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
-                    contextual.create(creationalContext), creationalContext);
-            ctx.put(contextual, instance);
-        }
-        return instance != null ? instance.get() : null;
-    }
-
-    @Override
-    public <T> T get(Contextual<T> contextual) {
-        return get(contextual, null);
+        return instance == null ? null : instance.get();
     }
 
     @Override

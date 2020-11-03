@@ -8,7 +8,7 @@ import io.vertx.ext.web.RoutingContext;
 @RequestScoped
 public class CurrentVertxRequest {
 
-    public RoutingContext current;
+    private RoutingContext current;
 
     @Produces
     @RequestScoped

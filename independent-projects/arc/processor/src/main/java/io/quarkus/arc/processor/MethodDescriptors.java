@@ -8,6 +8,7 @@ import io.quarkus.arc.InjectableBean.Kind;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.impl.ClientProxies;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.FixedValueSupplier;
 import io.quarkus.arc.impl.InjectableReferenceProviders;
@@ -241,6 +242,12 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor REMOVED_BEAN_IMPL = MethodDescriptor.ofConstructor(RemovedBeanImpl.class, Kind.class,
             String.class, Set.class, Set.class);
+
+    public static final MethodDescriptor CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
+            "getApplicationScopedDelegate", Object.class, InjectableContext.class, InjectableBean.class);
+
+    public static final MethodDescriptor CLIENT_PROXIES_GET_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
+            "getDelegate", Object.class, InjectableBean.class);
 
     private MethodDescriptors() {
     }

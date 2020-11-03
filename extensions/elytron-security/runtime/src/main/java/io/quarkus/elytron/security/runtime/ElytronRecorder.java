@@ -8,13 +8,16 @@ import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;
 import org.wildfly.security.authz.AuthorizationIdentity;
+import org.wildfly.security.authz.MappedRoleMapper;
 import org.wildfly.security.authz.PermissionMappable;
 import org.wildfly.security.authz.PermissionMapper;
 import org.wildfly.security.authz.RoleDecoder;
+import org.wildfly.security.authz.RoleMapper;
 import org.wildfly.security.authz.Roles;
 import org.wildfly.security.permission.PermissionVerifier;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.elytron.security.runtime.config.ElytronRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -70,6 +73,14 @@ public class ElytronRecorder {
                 });
 
         return new RuntimeValue<>(domain);
+    }
+
+    public RuntimeValue<RoleMapper> createRoleMapper(ElytronRuntimeConfig elytronRuntimeConfig) {
+        return new RuntimeValue<>(MappedRoleMapper.builder().setRoleMap(elytronRuntimeConfig.groupToRole).build());
+    }
+
+    public void setRoleMapper(RuntimeValue<SecurityDomain.Builder> builder, RuntimeValue<RoleMapper> roleMapper) {
+        builder.getValue().setRoleMapper(roleMapper.getValue());
     }
 
     /**

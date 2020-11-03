@@ -204,11 +204,11 @@ public class QuteProcessor {
             ClassInfo classInfo = annotation.target().asClass();
             NativeCheckedTemplateEnhancer enhancer = new NativeCheckedTemplateEnhancer();
             for (MethodInfo methodInfo : classInfo.methods()) {
-                // only keep native public static methods
-                if (!Modifier.isPublic(methodInfo.flags())
-                        || !Modifier.isStatic(methodInfo.flags())
-                        || !Modifier.isNative(methodInfo.flags()))
+                // only keep native static methods
+                if (!Modifier.isStatic(methodInfo.flags())
+                        || !Modifier.isNative(methodInfo.flags())) {
                     continue;
+                }
                 // check its return type
                 if (methodInfo.returnType().kind() != Type.Kind.CLASS) {
                     throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()

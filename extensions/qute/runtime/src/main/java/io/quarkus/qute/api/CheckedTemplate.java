@@ -13,7 +13,8 @@ import io.quarkus.qute.TemplateInstance;
  * If you place this annotation on a class, all its <code>native static</code> methods will be used to declare
  * templates and the list of parameters they require.
  * <p>
- * If this is placed on an inner class of the class <code>X</code>, a <code>native static</code> method of the name
+ * If this is placed on an inner class of the class with a simple name <code>X</code>, a <code>native static</code> method of
+ * the name
  * <code>foo</code> will refer to a template at the path <code>X/foo</code> (template file extensions are
  * not part of the method name) relative to your templates root.
  * <p>
@@ -37,7 +38,7 @@ import io.quarkus.qute.TemplateInstance;
  *         &#64;CheckedTemplate
  *         class Templates {
  *             // defines a template at ItemResource/item, taking an Item parameter named item
- *             public static native TemplateInstance item(Item item);
+ *             static native TemplateInstance item(Item item);
  *         }
  * 
  *         &#64;GET

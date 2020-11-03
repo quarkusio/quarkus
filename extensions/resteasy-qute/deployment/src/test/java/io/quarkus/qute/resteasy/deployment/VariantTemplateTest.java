@@ -18,9 +18,9 @@ public class VariantTemplateTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ItemResource.class, Item.class)
-                    .addAsResource(new StringAsset("Item {name}: {price}"), "templates/item.txt")
-                    .addAsResource(new StringAsset("<html><body>Item {name}: {price}</body></html>"),
-                            "templates/item.html"));
+                    .addAsResource(new StringAsset("Item {item.name}: {item.price}"), "templates/ItemResource/item.txt")
+                    .addAsResource(new StringAsset("<html><body>Item {item.name}: {item.price}</body></html>"),
+                            "templates/ItemResource/item.html"));
 
     @Test
     public void testVariant() {

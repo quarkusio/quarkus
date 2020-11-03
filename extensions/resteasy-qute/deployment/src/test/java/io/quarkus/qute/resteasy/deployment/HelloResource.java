@@ -28,7 +28,7 @@ public class HelloResource {
 
         public static native TemplateInstance typedTemplate(String name, Map<String, Object> other);
 
-        public static native TemplateInstance typedTemplatePrimitives(boolean bool, byte b, short s, int i, long l, char c,
+        static native TemplateInstance typedTemplatePrimitives(boolean bool, byte b, short s, int i, long l, char c,
                 float f, double d);
     }
 

@@ -248,8 +248,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                     DotName customResultTypeName = resultType.name();
 
                     if (customResultTypeName.equals(entityClassInfo.name())
-                            || customResultTypeName.equals(DotNames.OBJECT)
-                            || isIntLongOrBoolean(customResultTypeName)) {
+                            || isSupportedJavaLangType(customResultTypeName)) {
                         // no special handling needed
                         customResultTypeName = null;
                     } else {
@@ -368,7 +367,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     // Unless it is some kind of collection containing multiple types, 
     // return the type used in the query result.
     private Type verifyQueryResultType(Type t) {
-        if (isIntLongOrBoolean(t.name())) {
+        if (isSupportedJavaLangType(t.name())) {
             return t;
         }
         if (t.kind() == Kind.ARRAY) {
@@ -383,7 +382,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                 }
                 return t;
             }
-        } else if (!DotNames.OBJECT.equals(t.name())) {
+        } else {
             ClassInfo typeClassInfo = index.getClassByName(t.name());
             if (typeClassInfo == null) {
                 throw new IllegalStateException(t.name() + " was not part of the Quarkus index");
@@ -494,6 +493,10 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                 }
             }
         }
+    }
+
+    private boolean isSupportedJavaLangType(DotName dotName) {
+        return isIntLongOrBoolean(dotName) || dotName.equals(DotNames.OBJECT) || dotName.equals(DotNames.STRING);
     }
 
     private ResultHandle castReturnValue(MethodCreator methodCreator, ResultHandle resultHandle, String type) {

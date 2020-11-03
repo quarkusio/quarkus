@@ -57,6 +57,10 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
     @Query(value = "SELECT rating, COUNT(*) FROM Movie GROUP BY rating")
     List<MovieCountByRating> countByRating();
 
+    // issue 13044
+    @Query("SELECT DISTINCT m.rating FROM Movie m where m.rating != null")
+    List<String> findAllRatings();
+
     interface MovieCountByRating {
         String getRating();
 

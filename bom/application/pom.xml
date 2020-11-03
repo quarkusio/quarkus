@@ -2133,11 +2133,25 @@
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>log4j2-jboss-logmanager</artifactId>
                 <version>${log4j2-jboss-logmanager.version}</version>
+                <exclusions>
+                    <!-- we use the embedded version -->
+                    <exclusion>
+                        <groupId>org.jboss.logmanager</groupId>
+                        <artifactId>jboss-logmanager</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>log4j-jboss-logmanager</artifactId>
                 <version>${log4j-jboss-logmanager.version}</version>
+                <exclusions>
+                    <!-- we use the embedded version -->
+                    <exclusion>
+                        <groupId>org.jboss.logmanager</groupId>
+                        <artifactId>jboss-logmanager</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>

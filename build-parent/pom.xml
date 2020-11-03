@@ -391,6 +391,8 @@
                                             <exclude>jakarta.json:jakarta.json-api</exclude>
                                             <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                                             <exclude>io.netty:netty-all</exclude>
+                                            <!-- Ban jboss-logmanager, we use jboss-logmanager-embedded -->
+                                            <exclude>org.jboss.logmanager:jboss-logmanager</exclude>
                                             <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
                                             <exclude>log4j:log4j</exclude>
                                             <exclude>org.apache.logging.log4j:log4j-core</exclude>

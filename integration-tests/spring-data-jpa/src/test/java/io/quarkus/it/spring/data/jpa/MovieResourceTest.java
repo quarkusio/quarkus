@@ -192,6 +192,14 @@ public class MovieResourceTest {
     }
 
     @Test
+    void testFindAllRatings() {
+        when().get("/movie/ratings").then()
+                .statusCode(200)
+                .body(containsString("PG"))
+                .body(containsString("PG-13"));
+    }
+
+    @Test
     void testNewMovie() {
         long id = 999L;
         String title = "tenet";

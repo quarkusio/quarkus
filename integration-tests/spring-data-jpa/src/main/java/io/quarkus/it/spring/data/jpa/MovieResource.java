@@ -123,6 +123,13 @@ public class MovieResource {
         return list;
     }
 
+    @GET
+    @Path("/ratings")
+    @Produces("application/json")
+    public List<String> findAllRatings() {
+        return movieRepository.findAllRatings();
+    }
+
     @Path("/new/{id}/{title}")
     @GET
     @Produces("application/json")

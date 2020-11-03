@@ -43,7 +43,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
-import io.quarkus.gradle.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusDev extends QuarkusTask {
@@ -167,9 +166,6 @@ public class QuarkusDev extends QuarkusTask {
 
     @TaskAction
     public void startDev() {
-        Project project = getProject();
-        QuarkusPluginExtension extension = (QuarkusPluginExtension) project.getExtensions().findByName("quarkus");
-
         if (!getSourceDir().isDirectory()) {
             throw new GradleException("The `src/main/java` directory is required, please create it.");
         }
@@ -182,7 +178,7 @@ public class QuarkusDev extends QuarkusTask {
 
         try {
             QuarkusDevModeLauncher runner = newLauncher();
-            project.exec(action -> {
+            getProject().exec(action -> {
                 action.commandLine(runner.args()).workingDir(getWorkingDir());
                 action.setStandardInput(System.in)
                         .setErrorOutput(System.out)
@@ -330,16 +326,18 @@ public class QuarkusDev extends QuarkusTask {
         }
         //TODO: multiple resource directories
         final File resourcesSrcDir = mainSourceSet.getResources().getSourceDirectories().getSingleFile();
+        // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
+        final File resourcesOutputDir = mainSourceSet.getOutput().getResourcesDir();
 
-        if (sourcePaths.isEmpty() && !resourcesSrcDir.exists()) {
+        if (sourcePaths.isEmpty() && !resourcesOutputDir.exists()) {
             return;
         }
 
         String classesDir = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir());
 
         final String resourcesOutputPath;
-        if (resourcesSrcDir.exists()) {
-            resourcesOutputPath = mainSourceSet.getOutput().getResourcesDir().getAbsolutePath();
+        if (resourcesOutputDir.exists()) {
+            resourcesOutputPath = resourcesOutputDir.getAbsolutePath();
             if (!Files.exists(Paths.get(classesDir))) {
                 // currently classesDir can't be null and is expected to exist
                 classesDir = resourcesOutputPath;

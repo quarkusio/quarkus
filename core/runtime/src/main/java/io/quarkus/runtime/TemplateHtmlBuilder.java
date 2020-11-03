@@ -278,6 +278,11 @@ public class TemplateHtmlBuilder {
         return this;
     }
 
+    public TemplateHtmlBuilder append(String html) {
+        result.append(html);
+        return this;
+    }
+
     @Override
     public String toString() {
         return result.append(HTML_TEMPLATE_END).toString();

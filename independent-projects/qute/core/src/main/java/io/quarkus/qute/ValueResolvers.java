@@ -4,6 +4,7 @@ import static io.quarkus.qute.Booleans.isFalsy;
 
 import io.quarkus.qute.Results.Result;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +29,20 @@ public final class ValueResolvers {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 return CompletableFuture.completedFuture(new RawString(context.getBase().toString()));
+            }
+        };
+    }
+
+    public static ValueResolver listResolver() {
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                return ValueResolver.matchClass(context, List.class);
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                return listResolveAsync(context);
             }
         };
     }
@@ -241,6 +256,30 @@ public final class ValueResolvers {
                     return context.evaluate(context.getParams().get(0)).thenCompose(e -> {
                         return CompletableFuture.completedFuture(collection.contains(e));
                     });
+                }
+            default:
+                return Results.NOT_FOUND;
+        }
+    }
+
+    private static CompletionStage<Object> listResolveAsync(EvalContext context) {
+        List<?> list = (List<?>) context.getBase();
+        switch (context.getName()) {
+            case "get":
+                if (context.getParams().size() == 1) {
+                    return context.evaluate(context.getParams().get(0))
+                            .thenApply(r -> {
+                                try {
+                                    int idx = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
+                                    if (idx >= list.size()) {
+                                        // Be consistent with property resolvers
+                                        return Result.NOT_FOUND;
+                                    }
+                                    return list.get(idx);
+                                } catch (NumberFormatException e) {
+                                    return Result.NOT_FOUND;
+                                }
+                            });
                 }
             default:
                 return Results.NOT_FOUND;

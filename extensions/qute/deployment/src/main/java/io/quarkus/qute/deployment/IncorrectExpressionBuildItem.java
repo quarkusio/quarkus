@@ -1,31 +1,30 @@
 package io.quarkus.qute.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.qute.TemplateNode.Origin;
 
 public final class IncorrectExpressionBuildItem extends MultiBuildItem {
 
     public final String expression;
     public final String property;
     public final String clazz;
-    public final int line;
-    public final String templateId;
+    public final Origin origin;
     public final String reason;
 
-    public IncorrectExpressionBuildItem(String expression, String property, String clazz, int line, String templateId) {
-        this(expression, property, clazz, line, templateId, null);
+    public IncorrectExpressionBuildItem(String expression, String property, String clazz, Origin origin) {
+        this(expression, property, clazz, origin, null);
     }
 
-    public IncorrectExpressionBuildItem(String expression, String reason, int line, String templateId) {
-        this(expression, null, null, line, templateId, reason);
+    public IncorrectExpressionBuildItem(String expression, String reason, Origin origin) {
+        this(expression, null, null, origin, reason);
     }
 
-    public IncorrectExpressionBuildItem(String expression, String property, String clazz, int line, String templateId,
+    public IncorrectExpressionBuildItem(String expression, String property, String clazz, Origin origin,
             String reason) {
         this.expression = expression;
         this.property = property;
         this.clazz = clazz;
-        this.line = line;
-        this.templateId = templateId;
+        this.origin = origin;
         this.reason = reason;
     }
 

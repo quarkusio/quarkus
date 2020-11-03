@@ -83,22 +83,23 @@ final class ExpressionImpl implements Expression {
 
     @Override
     public int hashCode() {
-        return Objects.hash(toOriginalString());
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Objects.hashCode(toOriginalString());
+        result = prime * result + Objects.hashCode(origin);
+        return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
-        if (obj == null) {
+        if (obj == null)
             return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (getClass() != obj.getClass())
             return false;
-        }
         ExpressionImpl other = (ExpressionImpl) obj;
-        return Objects.equals(toOriginalString(), other.toOriginalString());
+        return Objects.equals(toOriginalString(), other.toOriginalString()) && Objects.equals(origin, other.origin);
     }
 
     @Override

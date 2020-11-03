@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.common.runtime.util.ServerMediaType;
 import io.quarkus.rest.server.runtime.core.LazyMethod;
 import io.quarkus.rest.server.runtime.core.QuarkusRestSimplifiedResourceInfo;
@@ -34,6 +35,7 @@ public class RuntimeResource {
     private final Map<String, Integer> pathParameterIndexes;
     private final Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score;
     private final MediaType sseElementType;
+    private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
             List<MediaType> consumes,
@@ -42,7 +44,8 @@ public class RuntimeResource {
             Class<?>[] parameterTypes,
             Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
             Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score,
-            MediaType sseElementType) {
+            MediaType sseElementType,
+            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.classPath = classPath;
@@ -60,6 +63,7 @@ public class RuntimeResource {
         this.pathParameterIndexes = pathParameterIndexes;
         this.score = score;
         this.sseElementType = sseElementType;
+        this.classExceptionMappers = classExceptionMappers;
     }
 
     public ServerRestHandler[] getHandlerChain() {
@@ -137,6 +141,10 @@ public class RuntimeResource {
 
     public Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> getScore() {
         return score;
+    }
+
+    public Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getClassExceptionMappers() {
+        return classExceptionMappers;
     }
 
     @Override

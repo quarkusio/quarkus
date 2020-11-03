@@ -47,7 +47,7 @@ import io.vertx.core.http.HttpServerResponse;
  * <li>{@link HttpServerRequest}
  * <li>{@link HttpServerResponse}
  * <li>{@link ResourceInfo}
- * <li>{@link io.quarkus.rest.runtime.spi.SimplifiedResourceInfo}
+ * <li>{@link io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo}
  * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown
  * </ul>
  */

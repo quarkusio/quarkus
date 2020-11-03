@@ -18,7 +18,7 @@ public class ExceptionMapping {
 
     private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public Response mapException(Throwable throwable, QuarkusRestRequestContext context) {
         Class<?> klass = throwable.getClass();
         boolean isWebApplicationException = throwable instanceof WebApplicationException;
@@ -29,7 +29,7 @@ public class ExceptionMapping {
         if (response != null && response.hasEntity())
             return response;
         // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
-        ExceptionMapper exceptionMapper = getExceptionMapper((Class<Throwable>) klass);
+        ExceptionMapper exceptionMapper = getExceptionMapper((Class<Throwable>) klass, context);
         if (exceptionMapper != null) {
             if (exceptionMapper instanceof QuarkusRestExceptionMapper) {
                 return ((QuarkusRestExceptionMapper) exceptionMapper).toResponse(throwable, context);
@@ -47,10 +47,32 @@ public class ExceptionMapping {
 
     /**
      * Return the proper Exception that handles {@param throwable} or {@code null}
-     * if none is found
+     * if none is found.
+     * First checks if the Resource class that contained the Resource method contained class-level exception mappers
      */
+    public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> clazz, QuarkusRestRequestContext context) {
+        Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers = getClassExceptionMappers(
+                context);
+        if ((classExceptionMappers != null) && !classExceptionMappers.isEmpty()) {
+            ExceptionMapper<T> result = doGetExceptionMapper(clazz, classExceptionMappers);
+            if (result != null) {
+                return result;
+            }
+        }
+        return doGetExceptionMapper(clazz, mappers);
+    }
+
+    private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getClassExceptionMappers(
+            QuarkusRestRequestContext context) {
+        if (context == null) {
+            return null;
+        }
+        return context.getTarget() != null ? context.getTarget().getClassExceptionMappers() : null;
+    }
+
     @SuppressWarnings("unchecked")
-    public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> clazz) {
+    private <T extends Throwable> ExceptionMapper<T> doGetExceptionMapper(Class<T> clazz,
+            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers) {
         Class<?> klass = clazz;
         do {
             ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);

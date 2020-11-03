@@ -180,6 +180,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     private final AdditionalWriters additionalWriters;
     private final boolean hasRuntimeConverters;
     private final boolean defaultBlocking;
+    private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
 
     protected EndpointIndexer(Builder<T, ?> builder) {
         this.index = builder.index;
@@ -196,6 +197,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         this.additionalWriters = builder.additionalWriters;
         this.hasRuntimeConverters = builder.hasRuntimeConverters;
         this.defaultBlocking = builder.defaultBlocking;
+        this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
     }
 
     public ResourceClass createEndpoints(ClassInfo classInfo) {
@@ -213,6 +215,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                 clazz.setPath(path);
             }
             clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
+            Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
+            if (classLevelExceptionMappers != null) {
+                clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
+            }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
                     clazz.getPathParameters());
             clazz.getMethods().addAll(methods);
@@ -944,6 +950,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         private Map<String, InjectableBean> injectableBeans;
         private AdditionalWriters additionalWriters;
         private boolean hasRuntimeConverters;
+        private Map<DotName, Map<String, String>> classLevelExceptionMappers;
 
         public B setDefaultBlocking(boolean defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
@@ -1014,6 +1021,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
 
         public B setAdditionalWriters(AdditionalWriters additionalWriters) {
             this.additionalWriters = additionalWriters;
+            return (B) this;
+        }
+
+        public B setClassLevelExceptionMappers(Map<DotName, Map<String, String>> classLevelExceptionMappers) {
+            this.classLevelExceptionMappers = classLevelExceptionMappers;
             return (B) this;
         }
 

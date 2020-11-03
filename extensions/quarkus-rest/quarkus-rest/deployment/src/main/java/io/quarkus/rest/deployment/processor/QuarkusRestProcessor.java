@@ -137,6 +137,37 @@ public class QuarkusRestProcessor {
     }
 
     @BuildStep
+    void handleCustomExceptionMapper(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers) {
+        if (!resourceScanningResultBuildItem.isPresent()) {
+            return;
+        }
+        List<MethodInfo> methodExceptionMapper = resourceScanningResultBuildItem.get().getClassLevelExceptionMappers();
+        if (methodExceptionMapper.isEmpty()) {
+            return;
+        }
+        GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+        final Map<DotName, Map<String, String>> resultingMappers = new HashMap<>(methodExceptionMapper.size());
+        for (MethodInfo methodInfo : methodExceptionMapper) {
+            Map<String, String> generationResult = ClassLevelExceptionMapperGenerator.generate(methodInfo, classOutput);
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(true, false, false, generationResult.values().toArray(new String[0])));
+            Map<String, String> classMappers;
+            DotName classDotName = methodInfo.declaringClass().name();
+            if (resultingMappers.containsKey(classDotName)) {
+                classMappers = resultingMappers.get(classDotName);
+            } else {
+                classMappers = new HashMap<>();
+                resultingMappers.put(classDotName, classMappers);
+            }
+            classMappers.putAll(generationResult);
+        }
+        classLevelExceptionMappers.produce(new ClassLevelExceptionMappersBuildItem(resultingMappers));
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
@@ -159,6 +190,7 @@ public class QuarkusRestProcessor {
             List<JaxrsFeatureBuildItem> features,
             List<ParamConverterBuildItem> paramConverterBuildItems,
             List<ContextResolverBuildItem> contextResolvers,
+            Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
             ApplicationResultBuildItem applicationResultBuildItem) throws NoSuchMethodException {
@@ -220,6 +252,9 @@ public class QuarkusRestProcessor {
                     .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(applicationResultBuildItem.isBlocking())
                     .setHasRuntimeConverters(!converterProviders.getParamConverterProviders().isEmpty())
+                    .setClassLevelExceptionMappers(
+                            classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
+                                    : Collections.emptyMap())
                     .setInitConverters(initConverters).build();
 
             if (selectedAppClass != null) {

@@ -113,24 +113,27 @@ final class CustomProviderGenerator {
                     targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
                             QuarkusRestContainerRequestContext.class);
                 } else if (URI_INFO.equals(paramDotName)) {
-                    paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getUriInfo",
+                    GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
+                            "getUriInfo",
                             URI_INFO);
                 } else if (HTTP_HEADERS.equals(paramDotName)) {
-                    paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getHttpHeaders",
+                    GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
+                            "getHttpHeaders",
                             QuarkusRestHttpHeaders.class);
                 } else if (REQUEST.equals(paramDotName)) {
-                    paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getRequest",
+                    GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
+                            "getRequest",
                             REQUEST);
                 } else if (HTTP_SERVER_REQUEST.equals(paramDotName)) {
-                    ResultHandle routingContextHandle = routingContextHandler(filterMethod, qrReqCtxHandle);
+                    ResultHandle routingContextHandle = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
                             ofMethod(RoutingContext.class, "request", HttpServerRequest.class), routingContextHandle);
                 } else if (RESOURCE_INFO.equals(paramDotName)) {
-                    ResultHandle runtimeResourceHandle = runtimeResourceHandle(filterMethod, qrReqCtxHandle);
+                    ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getLazyMethod", LazyMethod.class), runtimeResourceHandle);
                 } else if (QuarkusRestServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
-                    ResultHandle runtimeResourceHandle = runtimeResourceHandle(filterMethod, qrReqCtxHandle);
+                    ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
                             runtimeResourceHandle);
@@ -227,24 +230,25 @@ final class CustomProviderGenerator {
                     targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(1),
                             QuarkusRestContainerResponseContext.class);
                 } else if (HTTP_SERVER_REQUEST.equals(paramDotName)) {
-                    ResultHandle routingContextHandle = routingContextHandler(filterMethod, qrReqCtxHandle);
+                    ResultHandle routingContextHandle = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
                             ofMethod(RoutingContext.class, "request", HttpServerRequest.class), routingContextHandle);
                 } else if (HTTP_SERVER_RESPONSE.equals(paramDotName)) {
-                    ResultHandle routingContextHandle = routingContextHandler(filterMethod, qrReqCtxHandle);
+                    ResultHandle routingContextHandle = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
                             ofMethod(RoutingContext.class, "response", HttpServerResponse.class), routingContextHandle);
                 } else if (RESOURCE_INFO.equals(paramDotName)) {
-                    ResultHandle runtimeResourceHandle = runtimeResourceHandle(filterMethod, qrReqCtxHandle);
+                    ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getLazyMethod", LazyMethod.class), runtimeResourceHandle);
                 } else if (QuarkusRestServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
-                    ResultHandle runtimeResourceHandle = runtimeResourceHandle(filterMethod, qrReqCtxHandle);
+                    ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
                             runtimeResourceHandle);
                 } else if (THROWABLE.equals(paramDotName)) {
-                    paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i, "getThrowable",
+                    GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
+                            "getThrowable",
                             THROWABLE);
                 } else {
                     String parameterName = targetMethod.parameterName(i);
@@ -260,32 +264,6 @@ final class CustomProviderGenerator {
             filterMethod.returnValue(null);
         }
         return generatedClassName;
-    }
-
-    private static ResultHandle runtimeResourceHandle(MethodCreator filterMethod, ResultHandle qrReqCtxHandle) {
-        return filterMethod.invokeVirtualMethod(
-                ofMethod(QuarkusRestRequestContext.class, "getTarget", RuntimeResource.class), qrReqCtxHandle);
-    }
-
-    private static ResultHandle routingContextHandler(MethodCreator filterMethod, ResultHandle qrReqCtxHandle) {
-        return filterMethod.invokeVirtualMethod(
-                ofMethod(QuarkusRestRequestContext.class, "getContext", RoutingContext.class), qrReqCtxHandle);
-    }
-
-    private static void paramHandleFromReqContextMethod(MethodCreator m, ResultHandle qrReqCtxHandle,
-            ResultHandle[] targetMethodParamHandles, int i, String methodName, DotName returnType) {
-        paramHandleFromReqContextMethod(m, qrReqCtxHandle, targetMethodParamHandles, i, methodName, returnType.toString());
-    }
-
-    private static void paramHandleFromReqContextMethod(MethodCreator m, ResultHandle qrReqCtxHandle,
-            ResultHandle[] targetMethodParamHandles, int i, String methodName, Class<?> returnType) {
-        paramHandleFromReqContextMethod(m, qrReqCtxHandle, targetMethodParamHandles, i, methodName, returnType.getName());
-    }
-
-    private static void paramHandleFromReqContextMethod(MethodCreator m, ResultHandle qrReqCtxHandle,
-            ResultHandle[] targetMethodParamHandles, int i, String methodName, String returnType) {
-        targetMethodParamHandles[i] = m.invokeVirtualMethod(
-                ofMethod(QuarkusRestRequestContext.class.getName(), methodName, returnType), qrReqCtxHandle);
     }
 
     private static ResultHandle getQRReqCtxHandle(MethodCreator filter, int containerReqCtxParamIndex) {

@@ -1,5 +1,6 @@
 package io.quarkus.rest.common.deployment;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,11 +19,12 @@ public final class ResourceScanningResultBuildItem extends SimpleBuildItem {
     final Map<DotName, MethodInfo> resourcesThatNeedCustomProducer;
     final Set<String> beanParams;
     final Map<DotName, String> httpAnnotationToMethod;
+    final List<MethodInfo> classLevelExceptionMappers;
 
     public ResourceScanningResultBuildItem(Map<DotName, ClassInfo> scannedResources, Map<DotName, String> scannedResourcePaths,
             Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
             Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            Set<String> beanParams, Map<DotName, String> httpAnnotationToMethod) {
+            Set<String> beanParams, Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers) {
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;
         this.possibleSubResources = possibleSubResources;
@@ -30,6 +32,7 @@ public final class ResourceScanningResultBuildItem extends SimpleBuildItem {
         this.resourcesThatNeedCustomProducer = resourcesThatNeedCustomProducer;
         this.beanParams = beanParams;
         this.httpAnnotationToMethod = httpAnnotationToMethod;
+        this.classLevelExceptionMappers = classLevelExceptionMappers;
     }
 
     public Map<DotName, ClassInfo> getScannedResources() {
@@ -58,5 +61,9 @@ public final class ResourceScanningResultBuildItem extends SimpleBuildItem {
 
     public Map<DotName, String> getHttpAnnotationToMethod() {
         return httpAnnotationToMethod;
+    }
+
+    public List<MethodInfo> getClassLevelExceptionMappers() {
+        return classLevelExceptionMappers;
     }
 }

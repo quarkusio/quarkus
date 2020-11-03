@@ -49,7 +49,7 @@ public class QuarkusRestProviders implements Providers {
 
     @Override
     public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> type) {
-        return deployment.getExceptionMapping().getExceptionMapper(type);
+        return deployment.getExceptionMapping().getExceptionMapper(type, null);
     }
 
     @Override

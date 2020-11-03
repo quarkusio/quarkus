@@ -187,6 +187,7 @@ public class QuarkusRestCommonProcessor {
         Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();
+        List<MethodInfo> methodExceptionMappers = new ArrayList<>();
         Set<String> beanParams = new HashSet<>();
 
         for (AnnotationInstance beanParamAnnotation : index.getAnnotations(QuarkusRestDotNames.BEAN_PARAM)) {
@@ -224,6 +225,18 @@ public class QuarkusRestCommonProcessor {
                 if (ctor != null) {
                     resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
                 }
+                List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotations()
+                        .get(QuarkusRestDotNames.EXCEPTION_MAPPER_ANNOTATION);
+                if (exceptionMapperAnnotationInstances != null) {
+                    for (AnnotationInstance instance : exceptionMapperAnnotationInstances) {
+                        if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                            continue;
+                        }
+                        if ((instance.value() != null) && (instance.value().asClassArray().length > 0)) {
+                            methodExceptionMappers.add(instance.target().asMethod());
+                        }
+                    }
+                }
             }
         }
 
@@ -257,7 +270,7 @@ public class QuarkusRestCommonProcessor {
         }
         resourceScanningResultBuildItemBuildProducer.produce(new ResourceScanningResultBuildItem(scannedResources,
                 scannedResourcePaths, possibleSubResources, pathInterfaces, resourcesThatNeedCustomProducer, beanParams,
-                httpAnnotationToMethod));
+                httpAnnotationToMethod, methodExceptionMappers));
     }
 
     @BuildStep

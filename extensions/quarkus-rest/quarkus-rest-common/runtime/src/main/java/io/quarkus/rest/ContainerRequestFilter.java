@@ -49,7 +49,7 @@ import io.vertx.core.http.HttpServerRequest;
  * <li>{@link Request}
  * <li>{@link HttpServerRequest}
  * <li>{@link ResourceInfo}
- * <li>{@link io.quarkus.rest.runtime.spi.SimplifiedResourceInfo}
+ * <li>{@link io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo}
  * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)

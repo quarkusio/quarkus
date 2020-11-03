@@ -12,8 +12,8 @@ class PanacheEntityResourcePostMethodTest extends AbstractPostMethodTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, CollectionsController.class, AbstractEntity.class, AbstractItem.class,
-                            Item.class, ItemsController.class)
+                    .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
+                            Item.class, ItemsResource.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 }

@@ -1,26 +1,25 @@
 package io.quarkus.rest.data.panache.deployment.methods.hal;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-import static io.quarkus.rest.data.panache.deployment.PrivateFields.URI_INFO;
-import static io.quarkus.rest.data.panache.deployment.PrivateMethods.IS_PAGED;
+import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_INDEX;
+import static io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor.DEFAULT_PAGE_SIZE;
+
+import java.util.List;
 
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
-import org.jboss.jandex.IndexView;
-
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.RestDataResource;
-import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
-import io.quarkus.rest.data.panache.deployment.methods.ListMethodImplementor;
-import io.quarkus.rest.data.panache.deployment.methods.MethodImplementor;
-import io.quarkus.rest.data.panache.deployment.methods.MethodMetadata;
-import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
+import io.quarkus.rest.data.panache.deployment.Constants;
+import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
+import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
@@ -28,81 +27,122 @@ import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
 
 public final class ListHalMethodImplementor extends HalMethodImplementor {
 
-    private static final String NAME = "listHal";
+    private static final String METHOD_NAME = "listHal";
+
+    private static final String RESOURCE_METHOD_NAME = "list";
 
     private final PaginationImplementor paginationImplementor = new PaginationImplementor();
 
     private final SortImplementor sortImplementor = new SortImplementor();
 
     /**
-     * Implements HAL version of {@link RestDataResource#list()}.
-     * Generated code looks more or less like this:
-     *
+     * Expose {@link RestDataResource#list(Page, Sort)} via HAL JAX-RS method.
+     * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
+     * query parameters are skipped and null {@link Page} instance is used.
+     * 
      * <pre>
      * {@code
      *     &#64;GET
      *     &#64;Path("")
      *     &#64;Produces({"application/hal+json"})
-     *     public Response listHal() {
-     *         if (this.isPaged()) {
-     *            Page page = ...; // Extract page index and size from a UriInfo field and create a page instance.
-     *            PanacheQuery query = Entity.findAll();
-     *            query.page(page);
-     *            List entities = query.list();
-     *            // Get the page count, and build first, last, next, previous page instances
-     *            HalCollectionWrapper wrapper = new HalCollectionWrapper(entities, Entity.class, "entities");
-     *            // Add first, last, next and previous page URIs to the wrapper if they exist
-     *            Response.ResponseBuilder responseBuilder = Response.status(200);
-     *            responseBuilder.entity(wrapper);
-     *            // Add headers with first, last, next and previous page URIs if they exist
-     *            return responseBuilder.build();
-     *         } else {
-     *             List entities = Entity.listAll();
-     *             return Response.ok(new HalCollectionWrapper(entities, Entity.class, "entities")).build();
-     *         }
-     *     }
+     *     public Response listHal(@QueryParam("page") @DefaultValue("0") int pageIndex,
+     *             &#64;QueryParam("size") @DefaultValue("20") int pageSize,
+     *             &#64;QueryParam("sort") String sortQuery) {
+     *         Page page = Page.of(pageIndex, pageSize);
+     *         Sort sort = ...; // Build a sort instance by parsing a query param
+     *         List<Entity> entities = resource.getAll(page, sort);
+     *         // Get the page count, and build first, last, next, previous page instances
+     *         HalCollectionWrapper wrapper = new HalCollectionWrapper(entities, Entity.class, "entities");
+     *         // Add first, last, next and previous page URIs to the wrapper if they exist
+     *         Response.ResponseBuilder responseBuilder = Response.status(200);
+     *         responseBuilder.entity(wrapper);
+     *         // Add headers with first, last, next and previous page URIs if they exist
+     *         return responseBuilder.build();
+     *    }
      * }
      * </pre>
      */
     @Override
-    protected void implementInternal(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
-            RestDataResourceInfo resourceInfo) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(NAME, Response.class);
-        addGetAnnotation(methodCreator);
-        addPathAnnotation(methodCreator,
-                propertiesAccessor.getPath(resourceInfo.getType(), getMethodMetadata(resourceInfo)));
-        addProducesAnnotation(methodCreator, MethodImplementor.APPLICATION_HAL_JSON);
-
-        MethodDescriptor isPagedMethod = ofMethod(methodCreator.getMethodDescriptor().getDeclaringClass(), IS_PAGED.getName(),
-                IS_PAGED.getType(), IS_PAGED.getParams());
-
-        ResultHandle uriInfo = getInstanceField(methodCreator, URI_INFO.getName(), URI_INFO.getType());
-        BranchResult isPaged = methodCreator.ifTrue(methodCreator.invokeVirtualMethod(isPagedMethod, methodCreator.getThis()));
-        returnPaged(isPaged.trueBranch(), resourceInfo, uriInfo);
-        returnNotPaged(isPaged.falseBranch(), resourceInfo, uriInfo);
-        methodCreator.close();
+    protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceField) {
+        if (resourceProperties.isPaged()) {
+            implementPaged(classCreator, resourceMetadata, resourceProperties, resourceField);
+        } else {
+            implementNotPaged(classCreator, resourceMetadata, resourceProperties, resourceField);
+        }
     }
 
     @Override
-    protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(ListMethodImplementor.NAME);
+    protected String getResourceMethodName() {
+        return RESOURCE_METHOD_NAME;
     }
 
-    private void returnPaged(BytecodeCreator creator, RestDataResourceInfo resourceInfo, ResultHandle uriInfo) {
-        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
-        ResultHandle page = paginationImplementor.getRequestPage(creator, uriInfo);
-        ResultHandle pageCount = resourceInfo.getDataAccessImplementor().pageCount(creator, page);
-        ResultHandle links = paginationImplementor.getLinks(creator, uriInfo, page, pageCount);
-        ResultHandle entities = resourceInfo.getDataAccessImplementor().findAll(creator, page, sort);
-        ResultHandle wrapper = wrapHalEntities(creator, entities, resourceInfo);
-        creator.invokeVirtualMethod(ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper, links);
+    private void implementPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceField) {
+        // Method parameters: sort strings, page index, page size, uri info
+        // TODO could list be an Iterator?
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class, List.class, int.class,
+                int.class, UriInfo.class);
 
-        creator.returnValue(ResponseImplementor.ok(creator, wrapper, links));
+        // Add method annotations
+        addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
+        addGetAnnotation(methodCreator);
+        addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
+        addDefaultValueAnnotation(methodCreator.getParameterAnnotations(1), Integer.toString(DEFAULT_PAGE_INDEX));
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(2), "size");
+        addDefaultValueAnnotation(methodCreator.getParameterAnnotations(2), Integer.toString(DEFAULT_PAGE_SIZE));
+        addContextAnnotation(methodCreator.getParameterAnnotations(3));
+
+        // Invoke resource methods
+        ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
+
+        ResultHandle sortQuery = methodCreator.getMethodParam(0);
+        ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
+        ResultHandle pageIndex = methodCreator.getMethodParam(1);
+        ResultHandle pageSize = methodCreator.getMethodParam(2);
+        ResultHandle page = paginationImplementor.getPage(methodCreator, pageIndex, pageSize);
+        ResultHandle pageCount = methodCreator.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
+                        int.class, Page.class),
+                resource, page);
+        ResultHandle uriInfo = methodCreator.getMethodParam(3);
+        ResultHandle links = paginationImplementor.getLinks(methodCreator, uriInfo, page, pageCount);
+        ResultHandle entities = methodCreator.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
+                resource, page, sort);
+
+        // Wrap and return response
+        ResultHandle wrapper = wrapHalEntities(methodCreator, entities, resourceMetadata);
+        methodCreator.invokeVirtualMethod(
+                ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper, links);
+        methodCreator.returnValue(ResponseImplementor.ok(methodCreator, wrapper, links));
+        methodCreator.close();
     }
 
-    private void returnNotPaged(BytecodeCreator creator, RestDataResourceInfo resourceInfo, ResultHandle uriInfo) {
-        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
-        ResultHandle entities = resourceInfo.getDataAccessImplementor().listAll(creator, sort);
-        creator.returnValue(ResponseImplementor.ok(creator, wrapHalEntities(creator, entities, resourceInfo)));
+    private void implementNotPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceFieldDescriptor) {
+        // TODO could list be an Iterator?
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class, List.class);
+
+        // Add method annotations
+        addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
+        addGetAnnotation(methodCreator);
+        addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
+
+        // Invoke resource methods
+        ResultHandle sortQuery = methodCreator.getMethodParam(0);
+        ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
+        ResultHandle resource = methodCreator.readInstanceField(resourceFieldDescriptor, methodCreator.getThis());
+        ResultHandle entities = methodCreator.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
+                resource, methodCreator.loadNull(), sort);
+
+        // Wrap and return response
+        ResultHandle wrapper = wrapHalEntities(methodCreator, entities, resourceMetadata);
+        methodCreator.returnValue(ResponseImplementor.ok(methodCreator, wrapper));
+        methodCreator.close();
     }
 }

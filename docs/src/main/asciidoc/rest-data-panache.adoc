@@ -77,47 +77,67 @@ public interface PeopleResource extends PanacheRepositoryResource<PersonReposito
 The generated resources will be functionally equivalent for both entities and repositories.
 The only difference being the particular data access pattern in use.
 
-If you have defined one of the `PeopleResource` interfaces mentioned above, REST Data with Panache will generate a JAX-RS resource similar to this:
+If you have defined one of the `PeopleResource` interfaces mentioned above, this extension will generate its implementation using a particular data access strategy.
+The implemented class then will be used by a generated JAX-RS resource, which will look like this:
 
 [source,java]
 ----
-@Path("/people") // Default path is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
-public class PeopleResourceImpl implements PeopleResource { // The actual class name is going to be unique
+public class PeopleResourceJaxRs { // The actual class name is going to be unique
+    @Inject
+    PeopleResource resource;
+
     @GET
-    @Produces("application/json")
     @Path("{id}")
+    @Produces("application/json")
     public Person get(@PathParam("id") Long id){
-        // ...
+        Person person = resource.get(id);
+        if (person == null) {
+            throw new WebApplicationException(404);
+        }
+        return person;
     }
 
     @GET
     @Produces("application/json")
-    public Response list(){
-        // ...
+    public Response list(@QueryParam("sort") List<String> sortQuery,
+            @QueryParam("page") @DefaultValue("0") int pageIndex,
+            @QueryParam("size") @DefaultValue("20") int pageSize) {
+        Page page = Page.of(pageIndex, pageSize);
+        Sort sort = getSortFromQuery(sortQuery);
+        List<Person> people = resource.list(page, sort);
+        // ... build a response with page links and return a 200 response with a list
     }
 
     @Transactional
     @POST
     @Consumes("application/json")
     @Produces("application/json")
-    public Response add(Person entity) {
-        // ..
+    public Response add(Person personToSave) {
+        Person person = resource.add(person);
+        // ... build a new location URL and return 201 response with an entity
     }
 
     @Transactional
     @PUT
+    @Path("{id}")
     @Consumes("application/json")
     @Produces("application/json")
-    @Path("{id}")
-    public Response update(@PathParam("id") Long id, Person person) {
-        // ..
+    public Response update(@PathParam("id") Long id, Person personToSave) {
+        if (resource.get(id) == null) {
+            Person person = resource.update(id, personToSave);
+            return Response.status(204).build();
+        }
+        Person person = resource.update(id, personToSave);
+        // ... build a new location URL and return 201 response with an entity
     }
 
     @Transactional
     @DELETE
     @Path("{id}")
     public void delete(@PathParam("id") Long id) {
-        // ..
+        if (!resource.delete(id)) {
+            throw new WebApplicationException(404);
+        }
     }
 }
 ----
@@ -132,10 +152,10 @@ It can be used in your resource interface:
 @ResourceProperties(hal = true, path = "my-people")
 public interface PeopleResource extends PanacheEntityResource<Person, Long> {
     @MethodProperties(path = "all")
-    Response list();
+    List<Person> list(Page page, Sort sort);
 
     @MethodProperties(exposed = false)
-    void delete(Long id);
+    boolean delete(Long id);
 }
 ----
 

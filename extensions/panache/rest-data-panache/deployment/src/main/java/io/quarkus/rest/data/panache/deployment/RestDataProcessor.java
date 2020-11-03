@@ -14,6 +14,9 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
+import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
+import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesBuildItem;
+import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesProvider;
 import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
 import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapperJacksonSerializer;
 import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapperJsonbSerializer;
@@ -28,11 +31,17 @@ public class RestDataProcessor {
 
     @BuildStep
     void implementResources(CombinedIndexBuildItem index, List<RestDataResourceBuildItem> resourceBuildItems,
+            List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer) {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
-        RestDataResourceImplementor implementor = new RestDataResourceImplementor(index.getIndex());
+        JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor();
+        ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
+
         for (RestDataResourceBuildItem resourceBuildItem : resourceBuildItems) {
-            implementor.implement(classOutput, resourceBuildItem.getResourceInfo());
+            ResourceMetadata resourceMetadata = resourceBuildItem.getResourceMetadata();
+            ResourceProperties resourceProperties = getResourceProperties(resourcePropertiesProvider,
+                    resourceMetadata, resourcePropertiesBuildItems);
+            jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties);
         }
     }
 
@@ -40,7 +49,8 @@ public class RestDataProcessor {
     JacksonModuleBuildItem registerJacksonSerializers() {
         return new JacksonModuleBuildItem.Builder("hal-wrappers")
                 .addSerializer(HalEntityWrapperJacksonSerializer.class.getName(), HalEntityWrapper.class.getName())
-                .addSerializer(HalCollectionWrapperJacksonSerializer.class.getName(), HalCollectionWrapper.class.getName())
+                .addSerializer(HalCollectionWrapperJacksonSerializer.class.getName(),
+                        HalCollectionWrapper.class.getName())
                 .addSerializer(HalLinkJacksonSerializer.class.getName(), HalLink.class.getName())
                 .build();
     }
@@ -56,5 +66,16 @@ public class RestDataProcessor {
     @BuildStep
     RuntimeInitializedClassBuildItem el() {
         return new RuntimeInitializedClassBuildItem(EL.class.getCanonicalName());
+    }
+
+    private ResourceProperties getResourceProperties(ResourcePropertiesProvider resourcePropertiesProvider,
+            ResourceMetadata resourceMetadata, List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems) {
+        for (ResourcePropertiesBuildItem resourcePropertiesBuildItem : resourcePropertiesBuildItems) {
+            if (resourcePropertiesBuildItem.getResourceType().equals(resourceMetadata.getResourceClass())
+                    || resourcePropertiesBuildItem.getResourceType().equals(resourceMetadata.getResourceInterface())) {
+                return resourcePropertiesBuildItem.getResourcePropertiesInfo();
+            }
+        }
+        return resourcePropertiesProvider.getForInterface(resourceMetadata.getResourceInterface());
     }
 }

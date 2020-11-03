@@ -1,25 +1,28 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+
 import javax.ws.rs.core.Response;
 
-import org.jboss.jandex.IndexView;
-
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.data.panache.RestDataResource;
-import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
-import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
+import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
+import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 
 public final class AddMethodImplementor extends StandardMethodImplementor {
 
-    public static final String NAME = "add";
+    private static final String METHOD_NAME = "add";
+
+    private static final String RESOURCE_METHOD_NAME = "add";
 
     private static final String REL = "add";
 
     /**
-     * Implements {@link RestDataResource#add(Object)}.
+     * Generate JAX-RS POST method that exposes {@link RestDataResource#add(Object)}.
      * Generated code looks more or less like this:
      *
      * <pre>
@@ -33,8 +36,8 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
      *         rel = "add",
      *         entityClassName = "com.example.Entity"
      *     )
-     *     public Response add(Entity entity) {
-     *         entity.persist();
+     *     public Response add(Entity entityToSave) {
+     *         Entity entity = restDataResource.add(entityToSave);
      *         String location = new ResourceLinksProvider().getSelfLink(entity);
      *         if (location != null) {
      *             ResponseBuilder responseBuilder = Response.status(201);
@@ -49,27 +52,33 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
      * </pre>
      */
     @Override
-    protected void implementInternal(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
-            RestDataResourceInfo resourceInfo) {
-        MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
-        MethodCreator methodCreator = classCreator
-                .getMethodCreator(methodMetadata.getName(), Response.class.getName(), methodMetadata.getParameterTypes());
+    protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceField) {
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class.getName(),
+                resourceMetadata.getEntityType());
+
+        // Add method annotations
+        addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
         addTransactionalAnnotation(methodCreator);
         addPostAnnotation(methodCreator);
-        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getType(), methodMetadata));
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
-        addLinksAnnotation(methodCreator, resourceInfo.getEntityInfo().getType(), REL);
+        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
 
-        ResultHandle entity = methodCreator.getMethodParam(0);
-        resourceInfo.getDataAccessImplementor().persist(methodCreator, entity);
+        // Invoke resource methods
+        ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
+        ResultHandle entityToSave = methodCreator.getMethodParam(0);
+        ResultHandle entity = methodCreator.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
+                resource, entityToSave);
 
+        // Return response
         methodCreator.returnValue(ResponseImplementor.created(methodCreator, entity));
         methodCreator.close();
     }
 
     @Override
-    protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(NAME, resourceInfo.getEntityInfo().getType());
+    protected String getResourceMethodName() {
+        return RESOURCE_METHOD_NAME;
     }
 }

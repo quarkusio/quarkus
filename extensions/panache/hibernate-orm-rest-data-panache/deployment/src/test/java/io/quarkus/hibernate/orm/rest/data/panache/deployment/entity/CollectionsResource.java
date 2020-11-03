@@ -3,6 +3,6 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment.entity;
 import io.quarkus.hibernate.orm.rest.data.panache.PanacheEntityResource;
 import io.quarkus.rest.data.panache.ResourceProperties;
 
-@ResourceProperties(hal = true)
-public interface ItemsController extends PanacheEntityResource<Item, Long> {
+@ResourceProperties(hal = true, paged = false)
+public interface CollectionsResource extends PanacheEntityResource<Collection, String> {
 }

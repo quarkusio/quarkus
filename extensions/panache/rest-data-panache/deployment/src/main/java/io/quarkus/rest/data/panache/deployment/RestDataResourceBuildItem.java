@@ -4,13 +4,13 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 public final class RestDataResourceBuildItem extends MultiBuildItem {
 
-    private final RestDataResourceInfo resourceInfo;
+    private final ResourceMetadata resourceMetadata;
 
-    public RestDataResourceBuildItem(RestDataResourceInfo resourceInfo) {
-        this.resourceInfo = resourceInfo;
+    public RestDataResourceBuildItem(ResourceMetadata resourceMetadata) {
+        this.resourceMetadata = resourceMetadata;
     }
 
-    public RestDataResourceInfo getResourceInfo() {
-        return resourceInfo;
+    public ResourceMetadata getResourceMetadata() {
+        return resourceMetadata;
     }
 }

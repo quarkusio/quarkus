@@ -51,7 +51,7 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
-    void shouldGetComplexObjects() {
+    void shouldGetComplexObject() {
         given().accept("application/json")
                 .when().get("/collections/full")
                 .then().statusCode(200)
@@ -62,7 +62,7 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
-    void shouldGetComplexHalObjects() {
+    void shouldGetComplexHalObject() {
         given().accept("application/hal+json")
                 .when().get("/collections/full")
                 .then().statusCode(200)

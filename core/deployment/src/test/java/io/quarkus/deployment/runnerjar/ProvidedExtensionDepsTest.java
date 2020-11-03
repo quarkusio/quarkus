@@ -35,6 +35,8 @@ public class ProvidedExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
                 .addDependency(new TsDependency(extAOptionalDeploymentDep, "provided"));
 
         return TsArtifact.jar("app")
+                .addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties())
                 .addDependency(extA);
     }
 

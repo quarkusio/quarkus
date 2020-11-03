@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -11,11 +12,17 @@ import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationContext;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.eclipse.aether.RepositoryException;
@@ -218,6 +225,9 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             }
             managedDeps = mergedManagedDeps;
         }
+
+        collectPlatformProperties(appBuilder, managedDeps);
+
         final List<RemoteRepository> repos = mvn.aggregateRepositories(managedRepos,
                 mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
 
@@ -279,6 +289,60 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 .addFullDeploymentDeps(fullDeploymentDeps)
                 .addRuntimeDeps(userDeps)
                 .build();
+    }
+
+    private void collectPlatformProperties(AppModel.Builder appBuilder, List<Dependency> managedDeps)
+            throws AppModelResolverException {
+        final Set<AppArtifactKey> descriptorKeys = new HashSet<>(4);
+        final Set<AppArtifactKey> propertyKeys = new HashSet<>(2);
+        for (Dependency d : managedDeps) {
+            final Artifact artifact = d.getArtifact();
+            final String extension = artifact.getExtension();
+            final String artifactId = artifact.getArtifactId();
+            if ("json".equals(extension)
+                    && artifactId.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
+                descriptorKeys.add(new AppArtifactKey(artifact.getGroupId(),
+                        artifactId.substring(0,
+                                artifactId.length() - BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
+                        artifact.getVersion()));
+            } else if ("properties".equals(artifact.getExtension())
+                    && artifactId.endsWith(BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX)) {
+                final Path propsPath = resolve(toAppArtifact(artifact));
+                final Properties props = new Properties();
+                try (InputStream is = Files.newInputStream(propsPath)) {
+                    props.load(is);
+                } catch (IOException e) {
+                    throw new AppModelResolverException("Failed to read properties from " + propsPath, e);
+                }
+                final Map<String, String> map = new HashMap<String, String>(props.size());
+                for (Map.Entry<?, ?> prop : props.entrySet()) {
+                    final String name = String.valueOf(prop.getKey());
+                    if (name.startsWith(BootstrapConstants.PLATFORM_PROPERTY_PREFIX)) {
+                        map.put(prop.getKey().toString(), prop.getValue().toString());
+                    }
+                }
+                appBuilder.addPlatformProperties(map);
+                propertyKeys.add(new AppArtifactKey(artifact.getGroupId(),
+                        artifactId.substring(0,
+                                artifactId.length() - BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX.length()),
+                        artifact.getVersion()));
+            }
+        }
+        if (!descriptorKeys.containsAll(propertyKeys)) {
+            final StringBuilder buf = new StringBuilder();
+            buf.append(
+                    "The Quarkus platform properties applied to the project are missing the corresponding Quarkus platform BOM imports:");
+            final int l = buf.length();
+            for (AppArtifactKey key : propertyKeys) {
+                if (!descriptorKeys.contains(key)) {
+                    if (l - buf.length() < 0) {
+                        buf.append(',');
+                    }
+                    buf.append(' ').append(key);
+                }
+            }
+            throw new AppModelResolverException(buf.toString());
+        }
     }
 
     @Override

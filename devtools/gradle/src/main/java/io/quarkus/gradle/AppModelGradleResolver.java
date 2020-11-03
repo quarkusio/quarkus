@@ -87,6 +87,7 @@ public class AppModelGradleResolver implements AppModelResolver {
                                 : a.getClassifier().equals(appArtifact.getClassifier()))
                         && appArtifact.getGroupId().equals(a.getModuleVersion().getId().getGroup())) {
                     appArtifact.setPath(a.getFile().toPath());
+                    break;
                 }
             }
 

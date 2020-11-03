@@ -31,6 +31,7 @@ import org.awaitility.core.ConditionTimeoutException;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
@@ -117,6 +118,55 @@ public class JarRunnerIT extends MojoTestBase {
             process.destroy();
         }
 
+    }
+
+    @Test
+    public void testPlatformPropertiesOverridenInApplicationProperties() throws Exception {
+        final File testDir = initProject("projects/platform-properties-overrides",
+                "projects/platform-props-overriden-in-app-props");
+        final RunningInvoker running = new RunningInvoker(testDir, false);
+
+        final MavenProcessInvocationResult result = running.execute(Arrays.asList("install"),
+                Collections.emptyMap());
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        File output = new File(testDir, "app/target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
+                Collections.emptyList()).start();
+        try {
+            Assert.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
+        } finally {
+            process.destroy();
+        }
+    }
+
+    @Test
+    public void testPlatformPropertiesOverridenOnCommandLine() throws Exception {
+        final File testDir = initProject("projects/platform-properties-overrides",
+                "projects/platform-props-overriden-on-cmd-line");
+        final RunningInvoker running = new RunningInvoker(testDir, false);
+
+        final MavenProcessInvocationResult result = running.execute(
+                Arrays.asList("install -Dquarkus.native.builder-image=commandline -DskipTests"),
+                Collections.emptyMap());
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        File output = new File(testDir, "app/target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
+                Collections.emptyList()).start();
+        try {
+            Assert.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
+        } finally {
+            process.destroy();
+        }
     }
 
     @Test

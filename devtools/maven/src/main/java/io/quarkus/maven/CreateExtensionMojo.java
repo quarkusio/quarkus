@@ -529,6 +529,14 @@ public class CreateExtensionMojo extends AbstractMojo {
     @Parameter(property = "quarkus.generateDevModeTest", defaultValue = "true")
     boolean generateDevModeTest;
 
+    /**
+     * Indicates whether to generate the extension under the current directory or under a directory based on the
+     * artifactId
+     *
+     */
+    @Parameter(property = "quarkus.useCurrentDirectory", defaultValue = "false")
+    boolean useCurrentDirectory;
+
     boolean currentProjectIsBaseDir;
 
     Charset charset;
@@ -624,6 +632,10 @@ public class CreateExtensionMojo extends AbstractMojo {
             boolean setQuarkusVersionProp = true;
             if (isCurrentProjectExists()) {
                 rootPom = getCurrentProjectPom();
+                if (rootPom != null && useCurrentDirectory) {
+                    throw new MojoFailureException(
+                            "Cannot add extension under this directory. Pom file was found.");
+                }
                 rootModel = MojoUtils.readPom(rootPom);
                 if (!"pom".equals(rootModel.getPackaging())) {
                     throw new MojoFailureException(
@@ -801,10 +813,15 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     private Path getExtensionProjectBaseDir() {
         if (currentProjectIsBaseDir) {
+            if (useCurrentDirectory) {
+                return project.getBasedir() == null ? basedir.toPath()
+                        : project.getBasedir().toPath();
+            }
             return project.getBasedir() == null ? basedir.toPath().resolve(artifactIdBase)
                     : project.getBasedir().toPath().resolve(artifactIdBase);
         }
-        return new File(basedir, artifactIdBase).toPath();
+        return useCurrentDirectory ? basedir.toPath()
+                : new File(basedir, artifactIdBase).toPath();
     }
 
     private Path getExtensionRuntimeBaseDir() {
@@ -931,7 +948,7 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     private void generateUnitTestClass(Configuration cfg, TemplateParams model) throws IOException, TemplateException {
         final Path unitTest = basedir.toPath()
-                .resolve(model.artifactIdBase + "/deployment/src/test/java/" + model.javaPackageBase.replace('.', '/')
+                .resolve(getExtensionTestPath(model.artifactIdBase) + model.javaPackageBase.replace('.', '/')
                         + "/test/" + model.artifactIdBaseCamelCase + "Test.java");
 
         evalTemplate(cfg, "UnitTest.java", unitTest, model);
@@ -940,7 +957,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     private void generateDevModeTestClass(Configuration cfg, TemplateParams model) throws IOException, TemplateException {
         final Path devModeTest = basedir
                 .toPath()
-                .resolve(model.artifactIdBase + "/deployment/src/test/java/" + model.javaPackageBase.replace('.', '/')
+                .resolve(getExtensionTestPath(model.artifactIdBase) + model.javaPackageBase.replace('.', '/')
                         + "/test/" + model.artifactIdBaseCamelCase + "DevModeTest.java");
 
         evalTemplate(cfg, "DevModeTest.java", devModeTest, model);
@@ -1144,6 +1161,10 @@ public class CreateExtensionMojo extends AbstractMojo {
         } else {
             return artifactId;
         }
+    }
+
+    private String getExtensionTestPath(String artifactIdBase) {
+        return useCurrentDirectory ? "deployment/src/test/java/" : artifactIdBase + "/deployment/src/test/java/";
     }
 
     public void setItestParentPath(String itestParentPath) {

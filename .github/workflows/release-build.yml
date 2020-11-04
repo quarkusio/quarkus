@@ -25,6 +25,7 @@ jobs:
       - name: Build and Test
         run: |
           mvn --settings .github/mvn-settings.xml \
+            -B \
             -DskipITs -Dinvoker.skip=true \
             -Dmaven.repo.local=$HOME/release/repository \
             clean install

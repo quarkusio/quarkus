@@ -168,7 +168,7 @@ public class HibernateSearchElasticsearchRecorder {
         private void contributeBackendIndexBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
                 String backendName, String indexName, ElasticsearchIndexBuildTimeConfig indexConfig) {
             addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchBackendSettings.ANALYSIS_CONFIGURER,
+                    ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
                     indexConfig.analysis.configurer,
                     Optional::isPresent, c -> c.get().getName());
         }

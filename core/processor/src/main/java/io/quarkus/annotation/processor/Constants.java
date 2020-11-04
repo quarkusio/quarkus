@@ -38,9 +38,10 @@ final public class Constants {
     public static final String COMMON = "common";
     public static final String RUNTIME = "runtime";
     public static final String DEPLOYMENT = "deployment";
+    public static final String CONFIG = "config";
 
     public static final Pattern CLASS_NAME_PATTERN = Pattern.compile("^.+[\\.$](\\w+)$");
-    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?");
+    public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?\\.?(\\w+)?");
 
     public static final String INSTANCE_SYM = "__instance";
     public static final String QUARKUS = "quarkus";

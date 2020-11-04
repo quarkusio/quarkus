@@ -158,5 +158,5 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 [[spring-cloud-config-client-configuration-reference]]
 == Spring Cloud Config Client Reference
 
-include::{generated-dir}/config/quarkus-spring-cloud-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-spring-cloud-config-client.adoc[leveloffset=+1, opts=optional]
 

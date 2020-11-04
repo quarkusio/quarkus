@@ -95,6 +95,7 @@ public abstract class AbstractQuarkusRestContext<T extends AbstractQuarkusRestCo
     @Override
     public void run() {
         running = true;
+        boolean submittedToExecutor = false;
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
         boolean disasociateRequestScope = false;
@@ -126,6 +127,7 @@ public abstract class AbstractQuarkusRestContext<T extends AbstractQuarkusRestCo
                         if (exec != null) {
                             //outside sync block
                             exec.execute(this);
+                            submittedToExecutor = true;
                             return;
                         }
                     }
@@ -143,7 +145,9 @@ public abstract class AbstractQuarkusRestContext<T extends AbstractQuarkusRestCo
             handleUnrecoverableError(t);
             running = false;
         } finally {
-            if (position == handlers.length && !suspended) {
+            // we need to make sure we don't close the underlying stream in the event loop if the task
+            // has been offloaded to the executor
+            if (position == handlers.length && !suspended && !submittedToExecutor) {
                 close();
             } else if (disasociateRequestScope) {
                 requestContext.deactivate();

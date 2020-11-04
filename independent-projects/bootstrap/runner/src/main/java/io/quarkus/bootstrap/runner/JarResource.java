@@ -70,7 +70,7 @@ public class JarResource implements ClassLoadingResource {
                 realName = realName.substring(0, realName.length() - 1);
             }
             URI jarUri = jarPath.toUri();
-            return new URL("jar", null, jarUri.getScheme() + ":" + jarUri.getPath() + "!/" + resource);
+            return new URL("jar", null, jarUri.getScheme() + ':' + jarUri.getPath() + "!/" + resource);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -87,7 +87,7 @@ public class JarResource implements ClassLoadingResource {
         try {
             String path = jarPath.toAbsolutePath().toString();
             if (!path.startsWith("/")) {
-                path = "/" + path;
+                path = '/' + path;
             }
             URI uri = new URI("file", null, path, null);
             url = uri.toURL();

@@ -27,7 +27,7 @@ public interface Engine {
      * @return the template
      */
     default Template parse(String content) {
-        return parse(content, null);
+        return parse(content, null, null);
     }
 
     /**
@@ -40,7 +40,7 @@ public interface Engine {
      * @return the template
      */
     default Template parse(String content, Variant variant) {
-        return parse(content, null, null);
+        return parse(content, variant, null);
     }
 
     /**

@@ -144,7 +144,7 @@ It can be used in the same way as for the production application with the except
 
 ```shell script
 # profile CPU startup
-mvn quarkus:dev -Djvm.args="agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.svg,interval=1000000,width=1600,simple"
+mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.svg,interval=1000000,width=1600,simple"
 
 # profile allocation startup
 mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.svg,interval=1000000,width=1600,simple"

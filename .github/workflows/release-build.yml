@@ -2,7 +2,7 @@ name: Quarkus Release Test Build
 
 on:
   schedule:
-    - cron: '0 3 * * 2'
+    - cron: '0 3 * * *'
 env:
   LANG: en_US.UTF-8
 jobs:

@@ -361,4 +361,4 @@ DevMojoIT require a few minutes to run but anything more than that is not expect
 * The native integration test for my extension didn't run in the CI
 
 In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which are run in parallel. 
-This means that each new extension needs to be configured explicitly in [`ci-actions.yml`](.github/workflows/ci-actions.yml) to have its integration tests run in native mode.
+This means that each new extension needs to be configured explicitly in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.

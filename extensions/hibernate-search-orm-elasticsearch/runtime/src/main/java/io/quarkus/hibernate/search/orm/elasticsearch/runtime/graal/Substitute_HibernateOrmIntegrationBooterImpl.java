@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.elasticsearch.runtime.graal;
+package io.quarkus.hibernate.search.orm.elasticsearch.runtime.graal;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.elasticsearch;
+package io.quarkus.hibernate.search.orm.elasticsearch;
 
 import java.util.ArrayList;
 import java.util.Arrays;

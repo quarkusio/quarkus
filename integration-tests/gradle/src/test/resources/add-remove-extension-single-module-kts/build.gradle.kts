@@ -4,8 +4,12 @@ plugins {
 }
 
 repositories {
-     mavenLocal()
-     mavenCentral()
+    if (System.getProperties().containsKey("maven.repo.local")) {
+        maven(url = System.getProperties().get("maven.repo.local")!!)
+    } else {
+        mavenLocal()
+    }
+    mavenCentral()
 }
 
 val quarkusPlatformGroupId: String by project

@@ -1,5 +1,8 @@
 package io.quarkus.runtime.logging;
 
+import java.util.Map;
+
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -12,4 +15,15 @@ public class LogBuildTimeConfig {
      */
     @ConfigItem(name = "metrics.enabled", defaultValue = "false")
     public boolean metricsEnabled;
+
+    /**
+     * Logging categories.
+     * <p>
+     * Logging is done on a per-category basis. Each category can be independently configured.
+     * A configuration which applies to a category will also apply to all sub-categories of that category,
+     * unless there is a more specific matching sub-category configuration.
+     */
+    @ConfigItem(name = "category")
+    @ConfigDocSection
+    public Map<String, CategoryBuildTimeConfig> categories;
 }

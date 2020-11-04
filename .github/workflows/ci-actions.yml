@@ -476,49 +476,173 @@ jobs:
       max-parallel: 8
       fail-fast: false
       matrix:
-        category: [IT-Main, IT-Data1, IT-Data2, IT-Data3, IT-Data4, IT-Data5, IT-Data6, IT-Security1, IT-Security2, IT-Security3, IT-Amazon, IT-Messaging, IT-Cache, IT-HTTP, IT-Misc1, IT-Misc2, IT-Misc3, IT-Misc4, IT-Spring, IT-gRPC]
+        category: [Main, Data1, Data2, Data3, Data4, Data5, Data6, Security1, Security2, Security3, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Misc4, Spring, gRPC]
         include:
-          - category: IT-Main
+          - category: Main
             timeout: 40
-          - category: IT-Data1
+            test-modules: main
+          - category: Data1
             timeout: 65
-          - category: IT-Data2
+            test-modules: >
+              jpa-h2
+              jpa-mariadb
+              jpa-mssql
+              jpa-derby
+              jpa-without-entity
+              hibernate-tenancy
+          - category: Data2
             timeout: 65
-          - category: IT-Data3
+            test-modules: >
+              jpa
+              jpa-mysql
+              jpa-db2
+              reactive-mysql-client
+              reactive-db2-client
+              hibernate-reactive-db2
+              hibernate-reactive-mysql
+          - category: Data3
             timeout: 70
-          - category: IT-Data4
+            test-modules: >
+              flyway
+              hibernate-orm-panache
+              hibernate-orm-panache-kotlin
+              hibernate-orm-envers
+              liquibase
+          - category: Data4
             timeout: 55
-          - category: IT-Data5
+            test-modules: >
+              mongodb-client
+              mongodb-panache
+              redis-client
+              neo4j
+              hibernate-orm-rest-data-panache
+          - category: Data5
             timeout: 65
-          - category: IT-Data6
+            test-modules: >
+              jpa-postgresql
+              narayana-stm
+              narayana-jta
+              reactive-pg-client
+              hibernate-reactive-postgresql
+          - category: Data6
             timeout: 40
-          - category: IT-Amazon
+            test-modules: >
+              elasticsearch-rest-client
+              elasticsearch-rest-high-level-client
+              hibernate-search-orm-elasticsearch
+          - category: Amazon
             timeout: 45
-          - category: IT-Messaging
+            test-modules: >
+              amazon-services
+              amazon-lambda
+              amazon-lambda-http
+          - category: Messaging
             timeout: 85
-          - category: IT-Security1
+            test-modules: >
+              artemis-core
+              artemis-jms
+              kafka
+              kafka-streams
+              reactive-messaging-amqp
+              reactive-messaging-kafka
+          - category: Security1
             timeout: 50
-          - category: IT-Security2
+            test-modules: >
+              elytron-security-oauth2
+              elytron-security
+              elytron-security-jdbc
+              elytron-undertow
+              elytron-security-ldap
+          - category: Security2
             timeout: 70
-          - category: IT-Security3
+            test-modules: >
+              oidc
+              oidc-code-flow
+              oidc-tenancy
+              keycloak-authorization
+              oidc-wiremock
+          - category: Security3
             timeout: 50
-          - category: IT-Cache
+            test-modules: >
+              vault
+              vault-app
+              vault-agroal
+          - category: Cache
             timeout: 55
-          - category: IT-HTTP
+            test-modules: >
+              infinispan-cache-jpa
+              infinispan-client
+              cache
+          - category: HTTP
             timeout: 60
-          - category: IT-Misc1
+            test-modules: >
+              elytron-resteasy
+              resteasy-jackson
+              resteasy-mutiny
+              vertx
+              vertx-http
+              vertx-web
+              vertx-graphql
+              virtual-http
+              rest-client
+          - category: Misc1
             timeout: 65
-          - category: IT-Misc2
+            test-modules: >
+              maven
+              jackson
+              jsonb
+              jsch
+              jgit
+              quartz
+              qute
+              consul-config
+          - category: Misc2
             timeout: 65
+            test-modules: >
+              tika
+              hibernate-validator
+              test-extension
+              logging-gelf
+              bootstrap-config
+              mailer
           # kubernetes-client alone takes 30mn+
-          - category: IT-Misc3
+          - category: Misc3
             timeout: 65
-          - category: IT-Misc4
+            test-modules: >
+              kubernetes-client
+              openshift-client
+          - category: Misc4
             timeout: 65
-          - category: IT-Spring
+            test-modules: >
+              smallrye-config
+              smallrye-graphql
+              picocli-native
+              gradle
+              micrometer-mp-metrics
+              micrometer-native
+              micrometer-prometheus
+              smallrye-metrics
+              logging-json
+              jaxp
+          - category: Spring
             timeout: 50
-          - category: IT-gRPC
+            test-modules: >
+              spring-di
+              spring-web
+              spring-data-jpa
+              spring-boot-properties
+              spring-cloud-config-client
+          - category: gRPC
             timeout: 65
+            test-modules: >
+              grpc-health
+              grpc-interceptors
+              grpc-mutual-auth
+              grpc-plain-text
+              grpc-plain-text-mutiny
+              grpc-proto-v2
+              grpc-streaming
+              grpc-tls
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
@@ -538,14 +662,17 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         env:
+          TEST_MODULES: ${{matrix.test-modules}}
           CATEGORY: ${{matrix.category}}
         run: |
+          for i in $TEST_MODULES
+          do modules+=("integration-tests/$i"); done
           IFS=,
-          eval mvn -pl integration-tests -amd -P$CATEGORY $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
           # add the 'simple with spaces' project to the run of 'Misc1' by executing it explicitly
           # done because there is no good way to pass strings with empty values to the previous command
           # so this hack is as good as any
-          if [ "$CATEGORY" == "IT-Misc1" ]; then
+          if [ "$CATEGORY" == "Misc1" ]; then
             mvn -Dnative -Dquarkus.native.container-build=true -B --settings .github/mvn-settings.xml -f 'integration-tests/simple with space/' verify
           fi
       - name: Prepare failure archive (if maven failed)

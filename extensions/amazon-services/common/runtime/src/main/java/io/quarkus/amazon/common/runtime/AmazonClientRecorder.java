@@ -72,18 +72,19 @@ public class AmazonClientRecorder {
         config.apiCallAttemptTimeout.ifPresent(overrides::apiCallAttemptTimeout);
 
         buildConfig.interceptors.orElse(Collections.emptyList()).stream()
+                .map(String::trim)
                 .map(this::createInterceptor)
                 .filter(Objects::nonNull)
                 .forEach(overrides::addExecutionInterceptor);
         builder.overrideConfiguration(overrides.build());
     }
 
-    private ExecutionInterceptor createInterceptor(Class<?> interceptorClass) {
+    private ExecutionInterceptor createInterceptor(String interceptorClassName) {
         try {
             return (ExecutionInterceptor) Class
-                    .forName(interceptorClass.getName(), false, Thread.currentThread().getContextClassLoader()).newInstance();
+                    .forName(interceptorClassName, false, Thread.currentThread().getContextClassLoader()).newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            LOG.error("Unable to create interceptor", e);
+            LOG.error("Unable to create interceptor " + interceptorClassName, e);
             return null;
         }
     }

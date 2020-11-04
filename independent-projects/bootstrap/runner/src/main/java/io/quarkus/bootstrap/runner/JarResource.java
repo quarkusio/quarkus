@@ -99,18 +99,23 @@ public class JarResource implements ClassLoadingResource {
     }
 
     private JarFile file() {
-        if (zipFile == null) {
+        JarFile zipFileLocal = this.zipFile;
+        if (zipFileLocal == null) {
             synchronized (this) {
-                if (zipFile == null) {
+                zipFileLocal = this.zipFile;
+                if (zipFileLocal == null) {
                     try {
-                        return zipFile = JarFiles.create(jarPath.toFile());
+                        return this.zipFile = JarFiles.create(jarPath.toFile());
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to open " + jarPath, e);
                     }
+                } else {
+                    return zipFileLocal;
                 }
             }
+        } else {
+            return zipFileLocal;
         }
-        return zipFile;
     }
 
     @Override

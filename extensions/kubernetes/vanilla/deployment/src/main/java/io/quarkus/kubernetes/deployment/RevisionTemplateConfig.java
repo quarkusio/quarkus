@@ -6,42 +6,29 @@ import java.util.Optional;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot
-public class KnativeConfig implements PlatformConfiguration {
+@ConfigGroup
+public class RevisionTemplateConfig {
 
     /**
-     * The name of the group this component belongs too
+     * The name of the group this component belongs to
      */
     @ConfigItem
     Optional<String> partOf;
 
     /**
-     * The name of the application. This value will be used for naming Kubernetes
-     * resources like: - Deployment - Service and so on ...
+     * The name of the revision.
      */
     @ConfigItem(defaultValue = "${quarkus.container-image.name}")
     Optional<String> name;
 
     /**
-     * The version of the application.
+     * The version of the revision.
      */
     @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
     Optional<String> version;
-
-    /**
-     * The namespace the generated resources should belong to.
-     * If not value is set, then the 'namespace' field will not be
-     * added to the 'metadata' section of the generated manifests.
-     * This in turn means that when the manifests are applied to a cluster,
-     * the namespace will be resolved from the current Kubernetes context
-     * (see https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
-     * for more details).
-     */
-    @ConfigItem
-    Optional<String> namespace;
 
     /**
      * Custom labels to add to all resources
@@ -56,12 +43,10 @@ public class KnativeConfig implements PlatformConfiguration {
     Map<String, String> annotations;
 
     /**
-     * Whether or not to add the build timestamp to the Kubernetes annotations
-     * This is a very useful way to have manifests of successive builds of the same
-     * application differ - thus ensuring that Kubernetes will apply the updated resources
+     * Environment variables to add to all containers.
      */
-    @ConfigItem(defaultValue = "true")
-    boolean addBuildTimestamp;
+    @ConfigItem
+    EnvVarsConfig env;
 
     /**
      * Working directory
@@ -215,26 +200,12 @@ public class KnativeConfig implements PlatformConfiguration {
         return version;
     }
 
-    public Optional<String> getNamespace() {
-        return namespace;
-    }
-
     public Map<String, String> getLabels() {
         return labels;
     }
 
     public Map<String, String> getAnnotations() {
         return annotations;
-    }
-
-    @Override
-    public boolean isAddBuildTimestamp() {
-        return addBuildTimestamp;
-    }
-
-    @Override
-    public String getTargetPlatformName() {
-        return Constants.KNATIVE;
     }
 
     public Optional<String> getWorkingDir() {
@@ -329,85 +300,7 @@ public class KnativeConfig implements PlatformConfiguration {
         return resources;
     }
 
-    /**
-     * Environment variables to add to all containers using the old syntax.
-     *
-     * @deprecated Use {@link #env} instead using the new syntax as follows:
-     *             <ul>
-     *             <li>{@code quarkus.kubernetes.env-vars.foo.field=fieldName} becomes
-     *             {@code quarkus.kubernetes.env.fields.foo=fieldName}</li>
-     *             <li>{@code quarkus.kubernetes.env-vars.envvar.value=value} becomes
-     *             {@code quarkus.kubernetes.env.vars.envvar=value}</li>
-     *             <li>{@code quarkus.kubernetes.env-vars.bar.configmap=configName} becomes
-     *             {@code quarkus.kubernetes.env.configmaps=configName}</li>
-     *             <li>{@code quarkus.kubernetes.env-vars.baz.secret=secretName} becomes
-     *             {@code quarkus.kubernetes.env.secrets=secretName}</li>
-     *             </ul>
-     */
-    @ConfigItem
-    @Deprecated
-    Map<String, EnvConfig> envVars;
-
-    /**
-     * Environment variables to add to all containers.
-     */
-    @ConfigItem
-    EnvVarsConfig env;
-
-    @Deprecated
-    public Map<String, EnvConfig> getEnvVars() {
-        return envVars;
-    }
-
     public EnvVarsConfig getEnv() {
         return env;
     }
-
-    /**
-     * Whether or not this service is cluster-local.
-     * Cluster local services are not exposed to the outside world.
-     */
-    @ConfigItem
-    public boolean clusterLocal;
-
-    /**
-     * This value controls the minimum number of replicas each revision should have.
-     * Knative will attempt to never have less than this number of replicas at any one point in time.
-     */
-    @ConfigItem
-    Optional<Integer> minScale;
-
-    /**
-     * This value controls the maximum number of replicas each revision should have.
-     * Knative will attempt to never have more than this number of replicas running, or in the process of being created, at any
-     * one point in time.
-     **/
-    @ConfigItem
-    Optional<Integer> maxScale;
-
-    /**
-     * The scale-to-zero values control whether Knative allows revisions to scale down to zero, or stops at “1”.
-     */
-    @ConfigItem(defaultValue = "true")
-    boolean scaleToZeroEnabled;
-
-    /**
-     * Revision autoscaling configuration.
-     */
-    AutoScalingConfig revisionAutoScaling;
-
-    /**
-     * Global autoscaling configuration.
-     */
-    GlobalAutoScalingConfig globalAutoScaling;
-
-    /**
-     * The name of the revision.
-     */
-    Optional<String> revisionName;
-
-    /**
-     * Traffic configuration.
-     */
-    Map<String, TrafficConfig> traffic;
 }

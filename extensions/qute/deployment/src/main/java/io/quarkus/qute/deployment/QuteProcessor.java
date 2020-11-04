@@ -93,6 +93,7 @@ import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
+import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
@@ -205,6 +206,9 @@ public class QuteProcessor {
             supportedAdaptors = strbuf.append(" are supported").toString();
         }
 
+        // template path -> checked template method
+        Map<String, MethodInfo> checkedTemplateMethods = new HashMap<>();
+
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE)) {
             if (annotation.target().kind() != Kind.CLASS)
                 continue;
@@ -230,14 +234,26 @@ public class QuteProcessor {
                         throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
                                 + " only " + supportedAdaptors);
                 }
-                String methodName = methodInfo.name();
-                String templatePath;
-                if (classInfo.enclosingClass() != null) {
+
+                StringBuilder templatePathBuilder = new StringBuilder();
+                AnnotationValue basePathValue = annotation.value("basePath");
+                if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
+                    templatePathBuilder.append(basePathValue.asString());
+                } else if (classInfo.enclosingClass() != null) {
                     ClassInfo enclosingClass = index.getIndex().getClassByName(classInfo.enclosingClass());
-                    String className = enclosingClass.simpleName();
-                    templatePath = className + "/" + methodName;
-                } else {
-                    templatePath = methodName;
+                    templatePathBuilder.append(enclosingClass.simpleName());
+                }
+                if (templatePathBuilder.length() > 0 && templatePathBuilder.charAt(templatePathBuilder.length() - 1) != '/') {
+                    templatePathBuilder.append('/');
+                }
+                String templatePath = templatePathBuilder.append(methodInfo.name()).toString();
+                MethodInfo checkedTemplateMethod = checkedTemplateMethods.putIfAbsent(templatePath, methodInfo);
+                if (checkedTemplateMethod != null) {
+                    throw new TemplateException(
+                            String.format(
+                                    "Multiple checked template methods exist for the template path %s:\n\t- %s: %s\n\t- %s: %s",
+                                    templatePath, methodInfo.declaringClass().name(), methodInfo,
+                                    checkedTemplateMethod.declaringClass().name(), checkedTemplateMethod));
                 }
                 checkTemplatePath(templatePath, templatePaths, classInfo, methodInfo);
 
@@ -286,7 +302,7 @@ public class QuteProcessor {
 
     @BuildStep
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
-            List<CheckedTemplateBuildItem> dynamicTemplates, List<MessageBundleMethodBuildItem> messageBundleMethods) {
+            List<CheckedTemplateBuildItem> checkedTemplates, List<MessageBundleMethodBuildItem> messageBundleMethods) {
         long start = System.currentTimeMillis();
         List<TemplateAnalysis> analysis = new ArrayList<>();
 
@@ -350,10 +366,10 @@ public class QuteProcessor {
             @Override
             public void beforeParsing(ParserHelper parserHelper, String id) {
                 if (id != null) {
-                    for (CheckedTemplateBuildItem dynamicTemplate : dynamicTemplates) {
+                    for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
                         // FIXME: check for dot/extension?
-                        if (id.startsWith(dynamicTemplate.templateId)) {
-                            for (Entry<String, String> entry : dynamicTemplate.bindings.entrySet()) {
+                        if (id.startsWith(checkedTemplate.templateId)) {
+                            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
                                 parserHelper.addParameter(entry.getKey(), entry.getValue());
                             }
                         }

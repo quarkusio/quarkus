@@ -2,6 +2,7 @@ package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
@@ -27,6 +28,13 @@ public interface ArcContainer {
      * @throws IllegalArgumentException if there is more than one active context for the given scope
      */
     InjectableContext getActiveContext(Class<? extends Annotation> scopeType);
+
+    /**
+     * 
+     * @param scopeType
+     * @return the matching context objects, never null
+     */
+    Collection<InjectableContext> getContexts(Class<? extends Annotation> scopeType);
 
     /**
      * 

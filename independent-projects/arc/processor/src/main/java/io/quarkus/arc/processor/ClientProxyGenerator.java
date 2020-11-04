@@ -8,11 +8,9 @@ import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanGenerator.ProviderType;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
@@ -32,8 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.spi.Contextual;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -278,39 +274,18 @@ public class ClientProxyGenerator extends AbstractGenerator {
         }
 
         ResultHandle beanHandle = creator.readInstanceField(beanField, creator.getThis());
-        ResultHandle contextHandle;
 
         if (BuiltinScope.APPLICATION.is(bean.getScope())) {
-            // Application context stored in a field and is always active
-            contextHandle = creator.readInstanceField(
-                    FieldDescriptor.of(clientProxy.getClassName(), CONTEXT_FIELD, InjectableContext.class), creator.getThis());
+            // Application context is stored in a field and is always active
+            creator.returnValue(creator.invokeStaticMethod(MethodDescriptors.CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE,
+                    creator.readInstanceField(
+                            FieldDescriptor.of(clientProxy.getClassName(), CONTEXT_FIELD, InjectableContext.class),
+                            creator.getThis()),
+                    beanHandle));
         } else {
-            // Arc.container()
-            ResultHandle container = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
-            // bean.getScope()
-            ResultHandle scope = creator
-                    .invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class),
-                            beanHandle);
-            // getContext()
-            contextHandle = creator.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
-                    container, scope);
-
-            BytecodeCreator inactiveBranch = creator.ifNull(contextHandle).trueBranch();
-            ResultHandle exception = inactiveBranch.newInstance(
-                    MethodDescriptor.ofConstructor(ContextNotActiveException.class, String.class),
-                    inactiveBranch.invokeVirtualMethod(MethodDescriptors.OBJECT_TO_STRING, scope));
-            inactiveBranch.throwException(exception);
+            creator.returnValue(creator.invokeStaticMethod(MethodDescriptors.CLIENT_PROXIES_GET_DELEGATE,
+                    beanHandle));
         }
-
-        AssignableResultHandle ret = creator.createVariable(Object.class);
-        creator.assign(ret, creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, contextHandle, beanHandle));
-        BytecodeCreator isNullBranch = creator.ifNull(ret).trueBranch();
-        // Create a new contextual instance - new CreationalContextImpl<>()
-        ResultHandle creationContext = isNullBranch
-                .newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), beanHandle);
-        isNullBranch.assign(ret,
-                isNullBranch.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, contextHandle, beanHandle, creationContext));
-        creator.returnValue(ret);
     }
 
     void implementGetContextualInstance(ClassCreator clientProxy, ProviderType providerType) {

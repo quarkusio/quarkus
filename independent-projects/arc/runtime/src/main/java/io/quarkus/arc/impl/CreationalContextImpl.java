@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
@@ -16,7 +17,7 @@ import javax.enterprise.context.spi.CreationalContext;
  *
  * @param <T>
  */
-public class CreationalContextImpl<T> implements CreationalContext<T> {
+public class CreationalContextImpl<T> implements CreationalContext<T>, Function<Contextual<T>, CreationalContext<T>> {
 
     private final Contextual<T> contextual;
     private final CreationalContextImpl<?> parent;
@@ -84,6 +85,11 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
 
     public <C> CreationalContextImpl<C> child(Contextual<C> contextual) {
         return new CreationalContextImpl<>(contextual, this);
+    }
+
+    @Override
+    public CreationalContext<T> apply(Contextual<T> contextual) {
+        return this;
     }
 
     public static <T> CreationalContextImpl<T> unwrap(CreationalContext<T> ctx) {

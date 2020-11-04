@@ -69,8 +69,9 @@ public class AmazonServicesClientsProcessor {
         for (AmazonClientBuildItem client : amazonClients) {
             SdkBuildTimeConfig clientSdkConfig = client.getBuildTimeSdkConfig();
             if (clientSdkConfig != null) {
-                clientSdkConfig.interceptors.orElse(Collections.emptyList()).forEach(interceptorClass -> {
-                    if (!knownInterceptorImpls.contains(interceptorClass.getName())) {
+                clientSdkConfig.interceptors.orElse(Collections.emptyList()).forEach(interceptorClassName -> {
+                    interceptorClassName = interceptorClassName.trim();
+                    if (!knownInterceptorImpls.contains(interceptorClassName)) {
                         throw new ConfigurationError(
                                 String.format(
                                         "quarkus.%s.interceptors (%s) - must list only existing implementations of software.amazon.awssdk.core.interceptor.ExecutionInterceptor",

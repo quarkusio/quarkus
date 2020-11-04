@@ -2,6 +2,8 @@ package io.quarkus.qute.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Locale;
+
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -14,6 +16,7 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.RawString;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateData;
+import io.quarkus.qute.Variant;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class EscapingTest {
@@ -59,6 +62,13 @@ public class EscapingTest {
     public void testValidation() {
         assertEquals("&lt;div&gt; <div> <div>",
                 engine.getTemplate("validation").data("text", "<div>").render());
+    }
+
+    @Test
+    public void testEngineParse() {
+        assertEquals("&lt;div&gt; <div>",
+                engine.parse("{text} {text.raw}",
+                        new Variant(Locale.ENGLISH, "text/html", "UTF-8")).data("text", "<div>").render());
     }
 
     @TemplateData

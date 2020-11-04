@@ -152,6 +152,12 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             if (pom.exists()) {
                 return pom;
             }
+        } else {
+            // check whether the artifact exists in the project's output dir
+            final Path path = lp.getOutputDir().resolve(getFileName(artifact));
+            if (Files.exists(path)) {
+                return path.toFile();
+            }
         }
         return null;
     }
@@ -171,7 +177,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         return Files.exists(p);
     }
 
-    private static String getFileName(Artifact artifact) {
+    public static String getFileName(Artifact artifact) {
         final StringBuilder fileName = new StringBuilder();
         fileName.append(artifact.getArtifactId()).append('-').append(artifact.getVersion());
         if (!artifact.getClassifier().isEmpty()) {

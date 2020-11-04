@@ -89,7 +89,6 @@ public class BootstrapMavenContext {
     private static final String DEFAULT_REMOTE_REPO_URL = "https://repo.maven.apache.org/maven2";
     private static final String MAVEN_DOT_HOME = "maven.home";
     private static final String MAVEN_HOME = "MAVEN_HOME";
-    private static final String MAVEN_PROJECTBASEDIR = "MAVEN_PROJECTBASEDIR";
     private static final String MAVEN_SETTINGS = "maven.settings";
     private static final String SETTINGS_XML = "settings.xml";
 

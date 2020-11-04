@@ -59,7 +59,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.tools.ToolsConstants;
@@ -85,7 +87,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     @Parameter(property = "overridesFile", defaultValue = "${project.basedir}/src/main/resources/extensions-overrides.json")
     private String overridesFile;
 
-    @Parameter(property = "outputFile", defaultValue = "${project.build.directory}/extensions.json")
+    @Parameter(property = "outputFile", defaultValue = "${project.build.directory}/${project.artifactId}-${project.version}-${project.version}.json")
     private File outputFile;
 
     @Component
@@ -270,7 +272,16 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         }
         info("Extensions file written to %s", outputFile);
 
-        projectHelper.attachArtifact(project, jsonArtifact.getExtension(), jsonArtifact.getClassifier(), outputFile);
+        // this is necessary to sometimes be able to resolve the artifacts from the workspace
+        final File published = new File(project.getBuild().getDirectory(), LocalWorkspace.getFileName(jsonArtifact));
+        if (!outputDir.equals(published)) {
+            try {
+                IoUtils.copy(outputFile.toPath(), published.toPath());
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to copy " + outputFile + " to " + published);
+            }
+        }
+        projectHelper.attachArtifact(project, jsonArtifact.getExtension(), jsonArtifact.getClassifier(), published);
     }
 
     private List<Dependency> dependencyManagementFromDescriptor(Artifact bomArtifact) throws MojoExecutionException {

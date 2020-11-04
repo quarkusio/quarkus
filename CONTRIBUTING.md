@@ -361,8 +361,4 @@ DevMojoIT require a few minutes to run but anything more than that is not expect
 * The native integration test for my extension didn't run in the CI
 
 In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which are run in parallel. 
-This means that each new extension needs to be added explicitly under the appropriate profile/group (e.g. IT-Misc1) in the [integration tests `pom.xml`](integration-tests/pom.xml) to have its integration tests run in native mode.
-Adjustments to [`ci-actions.yml`](.github/workflows/ci-actions.yml) will also be required in any of the following cases:
-1. The profile/group where the new extension was added to times out, so increasing the corresponding `timeout` in `ci-actions.yml` is required.
-2. A new profile/group was added to pom.xml, as a result it needs to be added to `ci-actions.yml` matrix as a new `Category`.
-3. The new integration test depends on some service that the CI needs to explicitly manage (e.g., start/stop a container image).
+This means that each new extension needs to be configured explicitly in [`ci-actions.yml`](.github/workflows/ci-actions.yml) to have its integration tests run in native mode.

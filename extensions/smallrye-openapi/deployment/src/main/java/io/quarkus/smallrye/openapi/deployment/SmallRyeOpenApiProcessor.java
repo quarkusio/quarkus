@@ -64,8 +64,8 @@ import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
-import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
+import io.quarkus.smallrye.openapi.runtime.OpenApiRuntimeConfig;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
@@ -81,6 +81,8 @@ import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
 import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
 import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 import io.smallrye.openapi.vertx.VertxConstants;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * The main OpenAPI Processor. This will scan for JAX-RS, Spring and Vert.x Annotations, and, if any, add supplied schemas.
@@ -112,8 +114,6 @@ public class SmallRyeOpenApiProcessor {
     private static final String SPRING = "Spring";
     private static final String VERT_X = "Vert.x";
 
-    SmallRyeOpenApiConfig openApiConfig;
-
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.SMALLRYE_OPENAPI);
@@ -140,10 +140,13 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     RouteBuildItem handler(LaunchModeBuildItem launch,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints, OpenApiRecorder recorder,
-            ShutdownContextBuildItem shutdownContext) {
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            OpenApiRecorder recorder,
+            OpenApiRuntimeConfig openApiRuntimeConfig,
+            ShutdownContextBuildItem shutdownContext,
+            SmallRyeOpenApiConfig openApiConfig) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -159,7 +162,9 @@ public class SmallRyeOpenApiProcessor {
             recorder.setupClDevMode(shutdownContext);
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openApiConfig.path));
         }
-        return new RouteBuildItem(openApiConfig.path, new OpenApiHandler(), HandlerType.BLOCKING);
+
+        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
+        return new RouteBuildItem(openApiConfig.path, handler, HandlerType.BLOCKING);
     }
 
     @BuildStep
@@ -274,6 +279,7 @@ public class SmallRyeOpenApiProcessor {
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems,
             HttpRootPathBuildItem httpRootPathBuildItem,
             OutputTargetBuildItem out,
+            SmallRyeOpenApiConfig openApiConfig,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
@@ -296,7 +302,7 @@ public class SmallRyeOpenApiProcessor {
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
 
             if (shouldStore) {
-                storeGeneratedSchema(out, schemaDocument, format);
+                storeGeneratedSchema(openApiConfig, out, schemaDocument, format);
             }
         }
     }
@@ -327,7 +333,8 @@ public class SmallRyeOpenApiProcessor {
                 .build());
     }
 
-    private void storeGeneratedSchema(OutputTargetBuildItem out, byte[] schemaDocument, Format format) throws IOException {
+    private void storeGeneratedSchema(SmallRyeOpenApiConfig openApiConfig, OutputTargetBuildItem out, byte[] schemaDocument,
+            Format format) throws IOException {
         Path directory = openApiConfig.storeSchemaDirectory.get();
 
         Path outputDirectory = out.getOutputDirectory();

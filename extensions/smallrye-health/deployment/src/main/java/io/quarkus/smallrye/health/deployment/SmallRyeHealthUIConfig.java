@@ -19,9 +19,4 @@ public class SmallRyeHealthUIConfig {
     @ConfigItem(defaultValue = "false")
     boolean alwaysInclude;
 
-    /**
-     * If Health UI should be enabled. By default, Health UI is enabled.
-     */
-    @ConfigItem(defaultValue = "true")
-    boolean enable;
 }

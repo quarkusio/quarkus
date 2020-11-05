@@ -19,11 +19,8 @@ import io.vertx.ext.web.RoutingContext;
 public class OpenApiHandler implements Handler<RoutingContext> {
 
     private volatile OpenApiDocumentService openApiDocumentService;
-
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
-
     private static final String QUERY_PARAM_FORMAT = "format";
-
     private static final Map<String, String> RESPONSE_HEADERS = new HashMap<>();
 
     static {
@@ -36,13 +33,14 @@ public class OpenApiHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
-        if (event.request().method().equals(HttpMethod.OPTIONS)) {
-            event.response().headers().setAll(RESPONSE_HEADERS);
-            event.response().headers().set("Allow", ALLOWED_METHODS);
+        HttpServerRequest req = event.request();
+        HttpServerResponse resp = event.response();
+
+        if (req.method().equals(HttpMethod.OPTIONS)) {
+            resp.headers().setAll(RESPONSE_HEADERS);
+            resp.headers().set("Allow", ALLOWED_METHODS);
             event.next();
         } else {
-            HttpServerRequest req = event.request();
-            HttpServerResponse resp = event.response();
             String accept = req.headers().get("Accept");
 
             List<String> formatParams = event.queryParam(QUERY_PARAM_FORMAT);

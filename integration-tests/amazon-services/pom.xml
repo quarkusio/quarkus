@@ -264,7 +264,7 @@
             <id>test-amazon-services</id>
             <activation>
                 <property>
-                    <name>test-amazon-services</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -343,7 +343,7 @@
             <id>docker-aws-stack</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <build>

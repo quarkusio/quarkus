@@ -7,13 +7,13 @@ By default, the tests of this module are disabled.
 To run the tests in a standard JVM with DB2 started as a Docker container, you can run the following command:
 
 ```
-mvn verify -Dtest-db2 -Ddocker
+mvn verify -Dtest-containers -Dstart-containers
 ```
 
 Additionally, you can generate a native image and run the tests for this native image by adding `-Dnative`:
 
 ```
-mvn verify -Dtest-db2 -Ddocker -Dnative
+mvn verify -Dtest-containers -Dstart-containers -Dnative
 ```
 
 ## To manually run an equivalent DB2 container instead of through Testcontainers, do the following:
@@ -36,5 +36,5 @@ docker run \
 2. Run the test, specifying the JDBC URL for the container you started in the previous step
 
 ```
-mvn verify -Dtest-db2 -Djdbc-db2.url=jdbc:db2://localhost:50000/hreact
+mvn verify -Dtest-containers -Djdbc-db2.url=jdbc:db2://localhost:50000/hreact
 ```

@@ -7,13 +7,13 @@ By default, the tests of this module are disabled.
 To run the tests in a standard JVM with Neo4j started as a Docker container, you can run the following command:
 
 ```
-mvn clean install -Dtest-neo4j -Ddocker
+mvn clean install -Dtest-containers -Dstart-containers
 ```
 
 To also test as a native image, add `-Dnative`:
 
 ```
-mvn clean install -Dtest-neo4j -Ddocker -Dnative
+mvn clean install -Dtest-containers -Dstart-containers -Dnative
 ```
 
 Alternatively you can connect to your own Neo4j instance or cluster.

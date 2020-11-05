@@ -122,7 +122,7 @@
             <id>test-elasticsearch</id>
             <activation>
                 <property>
-                    <name>test-elasticsearch</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -147,7 +147,7 @@
             <id>docker-elasticsearch</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>

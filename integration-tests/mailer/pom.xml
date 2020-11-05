@@ -148,7 +148,7 @@
             <id>test-mailer</id>
             <activation>
                 <property>
-                    <name>test-mailer</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>

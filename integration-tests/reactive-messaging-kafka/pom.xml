@@ -219,7 +219,7 @@
             <id>test-kafka</id>
             <activation>
                 <property>
-                    <name>test-kafka</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>

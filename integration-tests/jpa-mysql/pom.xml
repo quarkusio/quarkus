@@ -126,7 +126,7 @@
             <id>test-mysql</id>
             <activation>
                 <property>
-                    <name>test-mysql</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -209,7 +209,7 @@
             <id>docker-mysql</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>

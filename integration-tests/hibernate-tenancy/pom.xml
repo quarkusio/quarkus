@@ -178,7 +178,7 @@
             <id>test-mariadb</id>
             <activation>
                 <property>
-                    <name>test-mariadb</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -261,7 +261,7 @@
             <id>docker-mariadb</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>

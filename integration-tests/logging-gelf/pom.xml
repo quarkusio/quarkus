@@ -97,7 +97,7 @@
         <id>test-gelf</id>
             <activation>
                 <property>
-                    <name>test-containers</name>
+                    <name>test-gelf</name>
                 </property>
             </activation>
             <build>

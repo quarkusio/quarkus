@@ -1,9 +1,9 @@
-package io.quarkus.hibernate.search.elasticsearch;
+package io.quarkus.hibernate.search.orm.elasticsearch;
 
-import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.GSON_CLASSES;
-import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.INDEXED;
-import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.PROPERTY_MAPPING_META_ANNOTATION;
-import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.TYPE_MAPPING_META_ANNOTATION;
+import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.GSON_CLASSES;
+import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.INDEXED;
+import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.PROPERTY_MAPPING_META_ANNOTATION;
+import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.TYPE_MAPPING_META_ANNOTATION;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,10 +40,10 @@ import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 
 class HibernateSearchElasticsearchProcessor {
 

@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.elasticsearch.runtime;
+package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.util.Map;
 import java.util.Optional;

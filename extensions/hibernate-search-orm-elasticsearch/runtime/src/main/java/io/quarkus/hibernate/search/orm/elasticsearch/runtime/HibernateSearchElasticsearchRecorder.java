@@ -1,8 +1,8 @@
-package io.quarkus.hibernate.search.elasticsearch.runtime;
+package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
-import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendConfig;
-import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
-import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendConfig;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
+import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -21,10 +21,10 @@ import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmReflectionStrategyNam
 
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchIndexBuildTimeConfig;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchBackendRuntimeConfig;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchIndexRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchIndexBuildTimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchBackendRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder

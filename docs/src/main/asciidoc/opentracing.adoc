@@ -174,7 +174,7 @@ This can be useful to trace incoming requests from non-REST calls (like request 
 
 Here is an example of a `FrancophoneService` which methods are traced.
 
-[code, java]
+[source, java]
 ----
 import javax.enterprise.context.ApplicationScoped;
 

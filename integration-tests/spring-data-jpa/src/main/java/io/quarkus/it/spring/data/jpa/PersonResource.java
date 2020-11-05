@@ -205,21 +205,21 @@ public class PersonResource {
     @Path("/addressZipCode/{zipCode}")
     @Produces("application/json")
     public List<Person> findPeopleByAddressZipCode(@PathParam("zipCode") String zipCode) {
-        return personRepository.findPeopleByAddressZipCode(zipCode);
+        return personRepository.findPeopleBySomeAddressZipCode(zipCode);
     }
 
     @GET
     @Path("/addressId/{id}")
     @Produces("application/json")
     public List<Person> findByAddressId(@PathParam("id") Long id) {
-        return personRepository.findByAddressId(id);
+        return personRepository.findBySomeAddressId(id);
     }
 
     @GET
     @Path("/addressStreetNumber/{streetNumber}")
     @Produces("application/json")
     public List<Person> findByAddressStreetNumber(@PathParam("streetNumber") String streetNumber) {
-        return personRepository.findByAddressStreetNumber(streetNumber);
+        return personRepository.findBySomeAddressStreetNumber(streetNumber);
     }
 
     private Date changeNow(LocalDate now, BiFunction<LocalDate, Long, LocalDate> function, long diff) {

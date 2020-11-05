@@ -72,7 +72,9 @@ public class HttpSecurityRecorder {
                             authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
                                 @Override
                                 public void accept(Boolean aBoolean) {
-                                    event.response().end();
+                                    if (!event.response().ended()) {
+                                        event.response().end();
+                                    }
                                 }
                             }, new Consumer<Throwable>() {
                                 @Override

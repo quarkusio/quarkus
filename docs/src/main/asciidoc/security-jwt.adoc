@@ -638,13 +638,14 @@ SmallRye JWT provides more properties which can be used to customize the token p
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
+|smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
 |smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
 |smallrye.jwt.verify.relax-key-validation|false|Relax the validation of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
 |smallrye.jwt.verify.certificate-thumbprint|false|If this property is enabled then a signed token must contain either 'x5t' or 'x5t#S256' X509Certificate thumbprint headers. Verification keys can only be in JWK or PEM Certificate key formats in this case. JWK keys must have a 'x5c' (Base64-encoded X509Certificate) property set.
 |smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
 |smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if  `smallrye.jwt.token.header` is set to `Cookie`.
-|smallrye.jwt.always-check-authorization|false|Set this property to true for Authorization header be checked even if the smallrye.jwt.token.header is set to Cookie but no cookie with a smallrye.jwt.token.cookie name exists.
+|smallrye.jwt.always-check-authorization|false|Set this property to `true` for `Authorization` header be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no cookie with a `smallrye.jwt.token.cookie` name exists.
 |smallrye.jwt.token.schemes|`Bearer`|Comma-separated list containing an alternative single or multiple schemes, for example, `DPoP`.
 |smallrye.jwt.token.kid|none|Key identifier. If it is set then the verification JWK key as well every JWT token must have a matching `kid` header.
 |smallrye.jwt.time-to-live|none|The maximum number of seconds that a JWT may be issued for use. Effectively, the difference between the expiration date of the JWT and the issued at date must not exceed this value.
@@ -655,7 +656,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.groups-separator|' '|Separator for splitting a string which may contain multiple group values. It will only be used if the `smallrye.jwt.path.groups` property points to a custom claim whose value is a string. The default value is a single space because a standard OAuth2 `scope` claim may contain a space separated sequence.
 |smallrye.jwt.claims.groups|none| This property can be used to set a default groups claim value when the current token has no standard or custom groups claim available.
 |smallrye.jwt.jwks.refresh-interval|60|JWK cache refresh interval in minutes. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTPS URL based JWK set and no HTTP `Cache-Control` response header with a positive `max-age` parameter value is returned from a JWK HTTPS endpoint.
-|smallrye.jwt.jwks.forced-refresh-interval|30|Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which may happen when the token verification fails due to the cache having no JWK key with a kid property matching the current token's kid header. It will be ignored unless the mp.jwt.verify.publickey.location points to the HTTPS URL based JWK set.
+|smallrye.jwt.jwks.forced-refresh-interval|30|Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which may happen when the token verification fails due to the cache having no JWK key with a `kid` property matching the current token's `kid` header. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTPS URL based JWK set.
 |smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
 |smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain.
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
@@ -889,7 +890,7 @@ As mentioned above, `iat`, `exp`, `jti` and `iss` claims will be added if needed
 
 === SmallRye JWT Builder configuration
 
-Smallrye JWT supports the following properties which can be used to customize the way claims are signed and encrypted:
+SmallRye JWT supports the following properties which can be used to customize the way claims are signed and encrypted:
 
 [cols="<m,<m,<2",options="header"]
 |===

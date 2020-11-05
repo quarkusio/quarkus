@@ -39,9 +39,10 @@ public interface PersonRepository extends CrudRepository<Person, Long>, PersonFr
 
     List<Person> findTop3ByActive(boolean active, Sort sort);
 
-    List<Person> findPeopleByAddressZipCode(String zipCode);
+    List<Person> findPeopleBySomeAddressZipCode(String zipCode);
 
-    List<Person> findByAddressId(Long addressId);
+    List<Person> findBySomeAddressId(Long addressId);
 
-    List<Person> findByAddressStreetNumber(String streetName);
+    List<Person> findBySomeAddressStreetNumber(String streetName);
+
 }

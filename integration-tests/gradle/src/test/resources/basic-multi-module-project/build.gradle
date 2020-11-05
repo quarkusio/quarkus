@@ -1,12 +1,16 @@
 buildscript {
-
     repositories {
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
         jcenter()
-        mavenLocal()
         mavenCentral()
         gradlePluginPortal()
     }
-
 }
 
 apply plugin: 'java'
@@ -26,8 +30,14 @@ subprojects {
     }
 
     repositories {
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
         jcenter()
-        mavenLocal()
         mavenCentral()
     }
 

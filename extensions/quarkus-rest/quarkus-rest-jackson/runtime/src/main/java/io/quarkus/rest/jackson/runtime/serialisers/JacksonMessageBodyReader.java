@@ -10,10 +10,11 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.jboss.resteasy.reactive.common.runtime.util.EmptyInputStream;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import io.quarkus.rest.common.runtime.util.EmptyInputStream;
 import io.quarkus.rest.server.runtime.core.LazyMethod;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.spi.QuarkusRestMessageBodyReader;

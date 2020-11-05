@@ -7,7 +7,8 @@ import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestResponseBuilder;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponseBuilder;
+
 import io.quarkus.rest.server.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;

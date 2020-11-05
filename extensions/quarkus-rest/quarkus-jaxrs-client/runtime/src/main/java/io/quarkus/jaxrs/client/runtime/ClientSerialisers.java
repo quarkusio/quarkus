@@ -18,21 +18,22 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.BooleanMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.CharArrayMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.CharacterMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.FileBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.FormUrlEncodedProvider;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.InputStreamMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.NumberMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.ReaderBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.StringMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
+
 import io.quarkus.jaxrs.client.runtime.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import io.quarkus.jaxrs.client.spi.QuarkusRestClientMessageBodyWriter;
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.providers.serialisers.BooleanMessageBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.CharArrayMessageBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.CharacterMessageBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.FileBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.FormUrlEncodedProvider;
-import io.quarkus.rest.common.runtime.providers.serialisers.InputStreamMessageBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.NumberMessageBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.ReaderBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.StringMessageBodyHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
 
 public class ClientSerialisers extends Serialisers {

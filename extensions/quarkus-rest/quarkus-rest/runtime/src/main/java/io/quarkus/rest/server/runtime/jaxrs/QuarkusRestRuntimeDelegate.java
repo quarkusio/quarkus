@@ -15,17 +15,17 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.RuntimeDelegate;
 
-import io.quarkus.rest.common.runtime.headers.CacheControlDelegate;
-import io.quarkus.rest.common.runtime.headers.CookieHeaderDelegate;
-import io.quarkus.rest.common.runtime.headers.DateDelegate;
-import io.quarkus.rest.common.runtime.headers.EntityTagDelegate;
-import io.quarkus.rest.common.runtime.headers.LinkDelegate;
-import io.quarkus.rest.common.runtime.headers.LocaleDelegate;
-import io.quarkus.rest.common.runtime.headers.MediaTypeHeaderDelegate;
-import io.quarkus.rest.common.runtime.headers.NewCookieHeaderDelegate;
-import io.quarkus.rest.common.runtime.headers.ObjectToStringDelegate;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestLinkBuilder;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestUriBuilder;
+import org.jboss.resteasy.reactive.common.runtime.headers.CacheControlDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.CookieHeaderDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.DateDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.EntityTagDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.LinkDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.LocaleDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.MediaTypeHeaderDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.NewCookieHeaderDelegate;
+import org.jboss.resteasy.reactive.common.runtime.headers.ObjectToStringDelegate;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestLinkBuilder;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestUriBuilder;
 
 public class QuarkusRestRuntimeDelegate extends RuntimeDelegate {
 

@@ -4,7 +4,8 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponse;
+
 import io.quarkus.rest.server.runtime.core.EncodedMediaType;
 import io.quarkus.rest.server.runtime.core.LazyResponse;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;

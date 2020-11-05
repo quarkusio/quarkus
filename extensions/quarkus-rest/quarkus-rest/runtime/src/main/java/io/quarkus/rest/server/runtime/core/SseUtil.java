@@ -14,8 +14,9 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.util.CommonSseUtil;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.util.CommonSseUtil;
+
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestOutboundSseEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;

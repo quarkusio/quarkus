@@ -6,7 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 
-import io.quarkus.rest.ContainerResponseFilter;
+import org.jboss.resteasy.reactive.ContainerResponseFilter;
+
 import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 
 public class CustomContainerResponseFilter {

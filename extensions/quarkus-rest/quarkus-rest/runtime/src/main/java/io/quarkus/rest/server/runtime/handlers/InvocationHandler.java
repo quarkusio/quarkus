@@ -1,7 +1,8 @@
 package io.quarkus.rest.server.runtime.handlers;
 
+import org.jboss.resteasy.reactive.spi.EndpointInvoker;
+
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.spi.EndpointInvoker;
 
 public class InvocationHandler implements ServerRestHandler {
     private final EndpointInvoker invoker;

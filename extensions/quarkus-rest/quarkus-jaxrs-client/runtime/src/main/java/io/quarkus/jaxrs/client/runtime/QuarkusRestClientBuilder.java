@@ -13,9 +13,10 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 
 public class QuarkusRestClientBuilder extends ClientBuilder {

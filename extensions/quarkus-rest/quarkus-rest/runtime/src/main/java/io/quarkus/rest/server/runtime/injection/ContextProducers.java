@@ -16,7 +16,8 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 
-import io.quarkus.rest.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestResourceContext;
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestSse;

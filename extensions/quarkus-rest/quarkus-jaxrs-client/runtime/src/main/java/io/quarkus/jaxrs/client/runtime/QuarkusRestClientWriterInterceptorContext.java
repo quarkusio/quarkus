@@ -16,8 +16,9 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+
 import io.vertx.core.buffer.Buffer;
 
 public class QuarkusRestClientWriterInterceptorContext extends QuarkusRestAbstractClientInterceptorContext

@@ -4,7 +4,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
-import io.quarkus.rest.ContainerRequestFilter;
+import org.jboss.resteasy.reactive.ContainerRequestFilter;
 
 public class CustomContainerRequestFilter {
 

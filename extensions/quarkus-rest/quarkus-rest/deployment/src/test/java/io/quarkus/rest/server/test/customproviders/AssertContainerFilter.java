@@ -8,8 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Request;
 
-import io.quarkus.rest.ContainerRequestFilter;
-import io.quarkus.rest.ContainerResponseFilter;
+import org.jboss.resteasy.reactive.ContainerRequestFilter;
+import org.jboss.resteasy.reactive.ContainerResponseFilter;
+
 import io.quarkus.rest.server.runtime.core.LazyMethod;
 import io.quarkus.rest.server.runtime.core.QuarkusRestSimplifiedResourceInfo;
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestRequest;

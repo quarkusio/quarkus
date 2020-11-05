@@ -18,8 +18,8 @@ import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterFilter;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
-import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 

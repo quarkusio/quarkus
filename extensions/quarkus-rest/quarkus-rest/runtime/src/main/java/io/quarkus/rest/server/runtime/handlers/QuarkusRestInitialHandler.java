@@ -4,8 +4,10 @@ import java.util.List;
 
 import javax.ws.rs.NotFoundException;
 
+import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
+
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ManagedContext;
+import io.quarkus.rest.common.ArcThreadSetupAction;
 import io.quarkus.rest.server.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
@@ -25,7 +27,7 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, Serve
     final ServerRestHandler[] initialChain;
 
     final CurrentVertxRequest currentVertxRequest;
-    final ManagedContext requestContext;
+    final ThreadSetupAction requestContext;
 
     public QuarkusRestInitialHandler(RequestMapper<InitialMatch> mappers, QuarkusRestDeployment deployment,
             List<ResourceRequestFilterHandler> preMappingHandlers) {
@@ -43,7 +45,7 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, Serve
             }
             initialChain[initialChain.length - 1] = this;
         }
-        this.requestContext = Arc.container().requestContext();
+        this.requestContext = new ArcThreadSetupAction(Arc.container().requestContext());
         this.currentVertxRequest = Arc.container().instance(CurrentVertxRequest.class).get();
     }
 

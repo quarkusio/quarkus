@@ -9,7 +9,8 @@ import java.util.function.Consumer;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
 
-import io.quarkus.rest.common.runtime.util.CommonSseUtil;
+import org.jboss.resteasy.reactive.common.runtime.util.CommonSseUtil;
+
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientResponse;

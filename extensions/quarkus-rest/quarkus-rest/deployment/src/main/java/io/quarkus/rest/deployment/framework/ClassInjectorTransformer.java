@@ -10,6 +10,8 @@ import javax.ws.rs.WebApplicationException;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.resteasy.reactive.common.deployment.framework.IndexedParameter;
+import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
@@ -18,8 +20,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.deployment.util.AsmUtil;
-import io.quarkus.rest.common.deployment.framework.IndexedParameter;
-import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.server.runtime.core.parameters.converters.DelegatingParameterConverterSupplier;
 import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverter;

@@ -17,7 +17,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.rest.server.runtime.ExceptionMapperRecorder;
 import io.quarkus.rest.server.runtime.NotFoundExceptionMapper;
-import io.quarkus.rest.spi.ExceptionMapperBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;

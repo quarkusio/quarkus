@@ -9,8 +9,9 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import io.quarkus.rest.ExceptionMapper;
-import io.quarkus.rest.RestQuery;
+import org.jboss.resteasy.reactive.ExceptionMapper;
+import org.jboss.resteasy.reactive.RestQuery;
+
 import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 

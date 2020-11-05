@@ -5,7 +5,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import io.quarkus.rest.common.runtime.util.MultiCollectors;
+import org.jboss.resteasy.reactive.common.runtime.util.MultiCollectors;
+
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;

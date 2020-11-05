@@ -1,7 +1,7 @@
 package io.quarkus.rest.deployment.processor;
 
 import static io.quarkus.gizmo.MethodDescriptor.*;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.*;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.*;
 
 import java.lang.reflect.Modifier;
 
@@ -13,6 +13,9 @@ import javax.ws.rs.container.ContainerResponseContext;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.ContainerRequestFilter;
+import org.jboss.resteasy.reactive.ContainerResponseFilter;
+import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -21,7 +24,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.common.runtime.core.QuarkusRestContext;
 import io.quarkus.rest.deployment.framework.QuarkusRestServerDotNames;
 import io.quarkus.rest.server.runtime.core.LazyMethod;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
@@ -36,7 +38,7 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Generates the actual implementation of a provider that allows user code using annotations like
- * {@link io.quarkus.rest.ContainerRequestFilter} and {@link io.quarkus.rest.ContainerResponseFilter} to work seamlessly
+ * {@link ContainerRequestFilter} and {@link ContainerResponseFilter} to work seamlessly
  */
 final class CustomProviderGenerator {
 

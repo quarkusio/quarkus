@@ -1,6 +1,7 @@
 package io.quarkus.rest.server.runtime.core.parameters;
 
-import io.quarkus.rest.common.runtime.util.Encode;
+import org.jboss.resteasy.reactive.common.runtime.util.Encode;
+
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 
 public class PathParamExtractor implements ParameterExtractor {

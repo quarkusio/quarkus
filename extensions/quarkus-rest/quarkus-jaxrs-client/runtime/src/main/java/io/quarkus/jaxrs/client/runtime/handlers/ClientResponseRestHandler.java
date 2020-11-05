@@ -11,13 +11,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.api.WebClientApplicationException;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+
 import io.quarkus.jaxrs.client.runtime.ClientRestHandler;
 import io.quarkus.jaxrs.client.runtime.QuarkusRestClientRequestContext;
 import io.quarkus.jaxrs.client.runtime.QuarkusRestClientResponseBuilder;
 import io.quarkus.jaxrs.client.runtime.QuarkusRestClientResponseContext;
 import io.quarkus.jaxrs.client.runtime.RestClientRequestContext;
-import io.quarkus.rest.api.WebClientApplicationException;
-import io.quarkus.rest.common.runtime.core.Serialisers;
 import io.vertx.core.buffer.Buffer;
 
 public class ClientResponseRestHandler implements ClientRestHandler {

@@ -11,8 +11,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.rest.jsonb.runtime.serialisers.JsonbMessageBodyReader;
 import io.quarkus.rest.jsonb.runtime.serialisers.JsonbMessageBodyWriter;
-import io.quarkus.rest.spi.MessageBodyReaderBuildItem;
-import io.quarkus.rest.spi.MessageBodyWriterBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
+import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 
 public class QuarkusRestJsonbProcessor {
 

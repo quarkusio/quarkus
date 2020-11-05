@@ -11,9 +11,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
-import io.quarkus.rest.common.runtime.headers.HeaderUtil;
-import io.quarkus.rest.common.runtime.util.CaseInsensitiveMap;
-import io.quarkus.rest.common.runtime.util.UnmodifiableMultivaluedMap;
+import org.jboss.resteasy.reactive.common.runtime.headers.HeaderUtil;
+import org.jboss.resteasy.reactive.common.runtime.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.runtime.util.UnmodifiableMultivaluedMap;
+
 import io.vertx.core.MultiMap;
 
 /**

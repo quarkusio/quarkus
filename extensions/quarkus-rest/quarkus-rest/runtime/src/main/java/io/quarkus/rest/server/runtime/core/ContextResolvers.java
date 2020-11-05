@@ -9,8 +9,9 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 
-import io.quarkus.rest.common.runtime.model.ResourceContextResolver;
-import io.quarkus.rest.common.runtime.util.MediaTypeHelper;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceContextResolver;
+import org.jboss.resteasy.reactive.common.runtime.util.MediaTypeHelper;
+
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestContextResolverDelegate;
 
 public class ContextResolvers {

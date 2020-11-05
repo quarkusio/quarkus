@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.jboss.jandex.DotName;
+import org.jboss.resteasy.reactive.ExceptionMapper;
 
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.rest.ExceptionMapper;
 
 final class ClassLevelExceptionMappersBuildItem extends SimpleBuildItem {
 

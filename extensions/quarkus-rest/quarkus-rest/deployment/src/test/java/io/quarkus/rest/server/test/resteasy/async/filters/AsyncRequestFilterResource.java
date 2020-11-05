@@ -13,8 +13,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
-
-import io.quarkus.rest.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
 
 @Path("/")
 public class AsyncRequestFilterResource {

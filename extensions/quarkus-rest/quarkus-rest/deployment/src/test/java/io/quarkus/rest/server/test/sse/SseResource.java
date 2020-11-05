@@ -10,7 +10,8 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
-import io.quarkus.rest.SseElementType;
+import org.jboss.resteasy.reactive.SseElementType;
+
 import io.smallrye.mutiny.Multi;
 
 @Path("sse")

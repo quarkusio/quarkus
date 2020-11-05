@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.metrics.runtime;
 
-import io.quarkus.rest.ContainerResponseFilter;
+import org.jboss.resteasy.reactive.ContainerResponseFilter;
+
 import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 
 /**

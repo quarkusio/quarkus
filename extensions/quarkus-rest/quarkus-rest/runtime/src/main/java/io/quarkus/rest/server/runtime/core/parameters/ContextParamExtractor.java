@@ -14,7 +14,8 @@ import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
-import io.quarkus.rest.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestAsyncResponse;
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestResourceContext;

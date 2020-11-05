@@ -12,9 +12,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
-import io.quarkus.rest.common.runtime.headers.HeaderUtil;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.runtime.headers.HeaderUtil;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.util.CaseInsensitiveMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>

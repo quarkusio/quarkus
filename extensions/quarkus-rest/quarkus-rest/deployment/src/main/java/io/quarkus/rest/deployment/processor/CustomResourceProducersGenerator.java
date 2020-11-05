@@ -18,6 +18,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -30,7 +31,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.core.parameters.CookieParamExtractor;
 import io.quarkus.rest.server.runtime.core.parameters.HeaderParamExtractor;

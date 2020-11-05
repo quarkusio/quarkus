@@ -28,15 +28,16 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.headers.HeaderUtil;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceReader;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceWriter;
+import org.jboss.resteasy.reactive.common.runtime.util.MediaTypeHelper;
+import org.jboss.resteasy.reactive.common.runtime.util.QuarkusMultivaluedHashMap;
+import org.jboss.resteasy.reactive.common.runtime.util.QuarkusMultivaluedMap;
+
 import io.netty.util.AsciiString;
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.headers.HeaderUtil;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.model.ResourceReader;
-import io.quarkus.rest.common.runtime.model.ResourceWriter;
-import io.quarkus.rest.common.runtime.util.MediaTypeHelper;
-import io.quarkus.rest.common.runtime.util.QuarkusMultivaluedHashMap;
-import io.quarkus.rest.common.runtime.util.QuarkusMultivaluedMap;
 import io.quarkus.rest.server.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.server.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestWriterInterceptorContext;
@@ -302,7 +303,7 @@ public class ServerSerialisers extends Serialisers {
         }
         if (selectedMediaTypes != null) {
             for (ResourceWriter selectedResourceWriter : selectedResourceWriters) {
-                result.add(selectedResourceWriter.getInstance(), selectedMediaTypes.getKey());
+                result.add(selectedResourceWriter.instance(), selectedMediaTypes.getKey());
             }
         }
     }
@@ -344,11 +345,11 @@ public class ServerSerialisers extends Serialisers {
         for (ResourceWriter i : constrainedResultsForClass) {
             // this part seems to be needed in order to pass com.sun.ts.tests.jaxrs.ee.resource.java2entity.JAXRSClient
             if (i.mediaTypes().isEmpty()) {
-                finalResult.add(i.getInstance());
+                finalResult.add(i.instance());
             } else {
                 for (MediaType mt : i.mediaTypes()) {
                     if (mt.isCompatible(selected)) {
-                        finalResult.add(i.getInstance());
+                        finalResult.add(i.instance());
                         break;
                     }
                 }

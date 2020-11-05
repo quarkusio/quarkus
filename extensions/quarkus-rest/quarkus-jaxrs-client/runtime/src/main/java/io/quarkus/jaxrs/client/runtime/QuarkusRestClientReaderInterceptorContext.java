@@ -16,9 +16,9 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.ReaderInterceptorContext;
 
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.util.CaseInsensitiveMap;
 
 public class QuarkusRestClientReaderInterceptorContext extends QuarkusRestAbstractClientInterceptorContext
         implements ReaderInterceptorContext {

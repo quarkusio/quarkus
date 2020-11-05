@@ -19,14 +19,15 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 
+import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.jaxrs.client.runtime.handlers.ClientErrorHandler;
 import io.quarkus.jaxrs.client.runtime.handlers.ClientRequestFiltersRestHandler;
 import io.quarkus.jaxrs.client.runtime.handlers.ClientResponseRestHandler;
 import io.quarkus.jaxrs.client.runtime.handlers.ClientSendRequestHandler;
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;

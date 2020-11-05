@@ -16,7 +16,8 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
-import io.quarkus.rest.common.runtime.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.runtime.util.CaseInsensitiveMap;
+
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.core.ServerSerialisers;
 

@@ -26,14 +26,15 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import org.jboss.resteasy.reactive.common.runtime.core.AbstractQuarkusRestContext;
+import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.common.runtime.util.EmptyInputStream;
+import org.jboss.resteasy.reactive.common.runtime.util.Encode;
+import org.jboss.resteasy.reactive.common.runtime.util.PathSegmentImpl;
+
 import io.netty.channel.EventLoop;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.impl.LazyValue;
-import io.quarkus.rest.common.runtime.core.AbstractQuarkusRestContext;
-import io.quarkus.rest.common.runtime.util.EmptyInputStream;
-import io.quarkus.rest.common.runtime.util.Encode;
-import io.quarkus.rest.common.runtime.util.PathSegmentImpl;
 import io.quarkus.rest.server.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.server.runtime.handlers.ServerRestHandler;
 import io.quarkus.rest.server.runtime.injection.QuarkusRestInjectionContext;
@@ -149,7 +150,7 @@ public class QuarkusRestRequestContext extends AbstractQuarkusRestContext<Quarku
     private OutputStream underlyingOutputStream;
 
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
-            ManagedContext requestContext,
+            ThreadSetupAction requestContext,
             CurrentVertxRequest currentVertxRequest, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.deployment = deployment;

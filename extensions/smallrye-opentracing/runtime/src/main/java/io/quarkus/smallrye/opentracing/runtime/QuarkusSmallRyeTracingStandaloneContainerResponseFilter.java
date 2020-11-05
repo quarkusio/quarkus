@@ -4,9 +4,10 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 
+import org.jboss.resteasy.reactive.ContainerResponseFilter;
+
 import io.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.opentracing.tag.Tags;
-import io.quarkus.rest.ContainerResponseFilter;
 
 public class QuarkusSmallRyeTracingStandaloneContainerResponseFilter {
 

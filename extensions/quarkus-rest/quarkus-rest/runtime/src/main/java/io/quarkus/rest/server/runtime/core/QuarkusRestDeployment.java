@@ -12,14 +12,15 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.model.ResourceParamConverterProvider;
-import io.quarkus.rest.common.runtime.util.Types;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceParamConverterProvider;
+import org.jboss.resteasy.reactive.common.runtime.util.Types;
+import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
+
 import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.server.runtime.core.parameters.converters.RuntimeParameterConverter;
 import io.quarkus.rest.server.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.server.runtime.handlers.ServerRestHandler;
-import io.quarkus.rest.spi.BeanFactory.BeanInstance;
 
 public class QuarkusRestDeployment {
     private final ExceptionMapping exceptionMapping;

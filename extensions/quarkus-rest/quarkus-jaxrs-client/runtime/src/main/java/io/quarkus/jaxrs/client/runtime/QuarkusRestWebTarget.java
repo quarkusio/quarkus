@@ -11,11 +11,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 
-import io.quarkus.arc.ManagedContext;
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestUriBuilder;
+import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestUriBuilder;
+
 import io.vertx.core.http.HttpClient;
 
 public class QuarkusRestWebTarget implements WebTarget {
@@ -30,12 +31,12 @@ public class QuarkusRestWebTarget implements WebTarget {
     private final QuarkusRestClient restClient;
     final ClientRestHandler[] handlerChain;
     final ClientRestHandler[] abortHandlerChain;
-    final ManagedContext requestContext;
+    final ThreadSetupAction requestContext;
 
     public QuarkusRestWebTarget(QuarkusRestClient restClient, HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration,
             Serialisers serialisers, ClientProxies clientProxies, GenericTypeMapping genericTypeMapping,
-            ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain, ManagedContext requestContext) {
+            ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.client = client;
         this.uriBuilder = uriBuilder;

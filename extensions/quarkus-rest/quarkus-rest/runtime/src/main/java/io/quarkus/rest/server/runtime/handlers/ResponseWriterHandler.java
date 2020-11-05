@@ -3,7 +3,8 @@ package io.quarkus.rest.server.runtime.handlers;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.rest.common.runtime.util.ServerMediaType;
+import org.jboss.resteasy.reactive.common.runtime.util.ServerMediaType;
+
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.core.ServerSerialisers;
 import io.quarkus.rest.server.runtime.core.serialization.DynamicEntityWriter;

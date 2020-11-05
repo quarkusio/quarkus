@@ -5,7 +5,7 @@ import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.NoContentException;
 import javax.ws.rs.ext.Provider;
 
-import io.quarkus.rest.common.runtime.providers.serialisers.DefaultTextPlainBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.DefaultTextPlainBodyHandler;
 
 @Provider
 @Consumes("text/plain")

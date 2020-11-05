@@ -3,7 +3,7 @@ package io.quarkus.rest.server.runtime.core;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.rest.common.runtime.model.ResourceFeature;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceFeature;
 
 public class Features {
 

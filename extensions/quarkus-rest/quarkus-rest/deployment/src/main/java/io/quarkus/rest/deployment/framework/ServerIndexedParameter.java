@@ -1,6 +1,7 @@
 package io.quarkus.rest.deployment.framework;
 
-import io.quarkus.rest.common.deployment.framework.IndexedParameter;
+import org.jboss.resteasy.reactive.common.deployment.framework.IndexedParameter;
+
 import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverterSupplier;
 
 public class ServerIndexedParameter extends IndexedParameter<ServerIndexedParameter> {

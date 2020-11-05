@@ -32,25 +32,27 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.runtime.core.SingletonBeanFactory;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.model.HasPriority;
+import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceContextResolver;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceDynamicFeature;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceFeature;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptor;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.runtime.util.QuarkusMultivaluedHashMap;
+import org.jboss.resteasy.reactive.common.runtime.util.ServerMediaType;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.rest.common.runtime.QuarkusRestCommonRecorder;
-import io.quarkus.rest.common.runtime.QuarkusRestConfig;
-import io.quarkus.rest.common.runtime.core.SingletonBeanFactory;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.model.HasPriority;
-import io.quarkus.rest.common.runtime.model.MethodParameter;
-import io.quarkus.rest.common.runtime.model.ParameterType;
-import io.quarkus.rest.common.runtime.model.ResourceClass;
-import io.quarkus.rest.common.runtime.model.ResourceContextResolver;
-import io.quarkus.rest.common.runtime.model.ResourceDynamicFeature;
-import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
-import io.quarkus.rest.common.runtime.model.ResourceFeature;
-import io.quarkus.rest.common.runtime.model.ResourceInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
-import io.quarkus.rest.common.runtime.model.ResourceMethod;
-import io.quarkus.rest.common.runtime.util.QuarkusMultivaluedHashMap;
-import io.quarkus.rest.common.runtime.util.ServerMediaType;
+import io.quarkus.rest.common.QuarkusRestCommonRecorder;
+import io.quarkus.rest.common.QuarkusRestConfig;
 import io.quarkus.rest.server.runtime.core.ContextResolvers;
 import io.quarkus.rest.server.runtime.core.DynamicFeatures;
 import io.quarkus.rest.server.runtime.core.ExceptionMapping;
@@ -112,8 +114,6 @@ import io.quarkus.rest.server.runtime.model.ServerMethodParameter;
 import io.quarkus.rest.server.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.server.runtime.util.RuntimeResourceVisitor;
 import io.quarkus.rest.server.runtime.util.ScoreSystem;
-import io.quarkus.rest.spi.BeanFactory;
-import io.quarkus.rest.spi.EndpointInvoker;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -797,7 +797,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
-                pathParameterIndexes, score, sseElementType, clazz.getResourceExceptionMapper());
+                pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());
         return runtimeResource;
     }
 

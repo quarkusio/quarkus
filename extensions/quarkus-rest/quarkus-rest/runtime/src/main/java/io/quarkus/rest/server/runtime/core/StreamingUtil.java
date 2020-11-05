@@ -12,7 +12,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.quarkus.rest.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;

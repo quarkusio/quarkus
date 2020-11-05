@@ -8,8 +8,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceExceptionMapper;
 
-import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.server.runtime.spi.QuarkusRestExceptionMapper;
 
 public class ExceptionMapping {

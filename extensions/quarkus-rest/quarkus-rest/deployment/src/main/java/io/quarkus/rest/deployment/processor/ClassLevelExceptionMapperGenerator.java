@@ -1,15 +1,15 @@
 package io.quarkus.rest.deployment.processor;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.CONTAINER_REQUEST_CONTEXT;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.HTTP_HEADERS;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.HTTP_SERVER_REQUEST;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.REQUEST;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.RESOURCE_INFO;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.URI_INFO;
 import static io.quarkus.rest.deployment.processor.GeneratorUtils.paramHandleFromReqContextMethod;
 import static io.quarkus.rest.deployment.processor.GeneratorUtils.routingContextHandler;
 import static io.quarkus.rest.deployment.processor.GeneratorUtils.runtimeResourceHandle;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.CONTAINER_REQUEST_CONTEXT;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.HTTP_HEADERS;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.HTTP_SERVER_REQUEST;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REQUEST;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.RESOURCE_INFO;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.URI_INFO;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -24,6 +24,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -31,7 +32,6 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.deployment.framework.QuarkusRestServerDotNames;
 import io.quarkus.rest.server.runtime.core.LazyMethod;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;

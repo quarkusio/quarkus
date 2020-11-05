@@ -1,12 +1,12 @@
 package io.quarkus.jaxrs.client.deployment;
 
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_NUMBER;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRING;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
-import static io.quarkus.rest.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_VALUE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_NUMBER;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRING;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
+import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_VALUE;
 
 import java.util.HashSet;
 import java.util.List;
@@ -15,22 +15,22 @@ import java.util.Map;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalReaders;
+import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.deployment.framework.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.deployment.framework.IndexedParameter;
+import org.jboss.resteasy.reactive.common.runtime.model.InjectableBean;
+import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.runtime.model.RestClientInterface;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonArrayHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonObjectHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonStructureHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonValueHandler;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.rest.common.deployment.framework.AdditionalReaders;
-import io.quarkus.rest.common.deployment.framework.AdditionalWriters;
-import io.quarkus.rest.common.deployment.framework.EndpointIndexer;
-import io.quarkus.rest.common.deployment.framework.IndexedParameter;
-import io.quarkus.rest.common.runtime.model.InjectableBean;
-import io.quarkus.rest.common.runtime.model.MethodParameter;
-import io.quarkus.rest.common.runtime.model.ParameterType;
-import io.quarkus.rest.common.runtime.model.ResourceMethod;
-import io.quarkus.rest.common.runtime.model.RestClientInterface;
-import io.quarkus.rest.common.runtime.providers.serialisers.jsonp.JsonArrayHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.jsonp.JsonObjectHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.jsonp.JsonStructureHandler;
-import io.quarkus.rest.common.runtime.providers.serialisers.jsonp.JsonValueHandler;
 
 public class ClientEndpointIndexer extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam> {
     ClientEndpointIndexer(Builder builder) {

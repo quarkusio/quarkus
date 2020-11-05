@@ -16,15 +16,15 @@ import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestHeader;
+import org.jboss.resteasy.reactive.RestMatrix;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.rest.RestCookie;
-import io.quarkus.rest.RestForm;
-import io.quarkus.rest.RestHeader;
-import io.quarkus.rest.RestMatrix;
-import io.quarkus.rest.RestPath;
-import io.quarkus.rest.RestQuery;
-import io.quarkus.rest.common.runtime.core.QuarkusRestContext;
 import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;

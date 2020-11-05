@@ -22,12 +22,13 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
-import io.quarkus.arc.ManagedContext;
-import io.quarkus.rest.common.runtime.core.AbstractQuarkusRestContext;
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestResponse;
-import io.quarkus.rest.common.runtime.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.runtime.core.AbstractQuarkusRestContext;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.runtime.util.CaseInsensitiveMap;
+
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -81,7 +82,7 @@ public class RestClientRequestContext extends AbstractQuarkusRestContext<RestCli
             Entity<?> entity, GenericType<?> responseType, boolean registerBodyHandler, Map<String, Object> properties,
             ClientRestHandler[] handlerChain,
             ClientRestHandler[] abortHandlerChain,
-            ManagedContext requestContext) {
+            ThreadSetupAction requestContext) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.restClient = restClient;
         this.httpClient = httpClient;

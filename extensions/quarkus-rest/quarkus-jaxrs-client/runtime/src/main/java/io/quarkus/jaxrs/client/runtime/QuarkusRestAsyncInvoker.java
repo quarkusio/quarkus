@@ -16,10 +16,11 @@ import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.arc.ManagedContext;
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
-import io.quarkus.rest.common.runtime.core.Serialisers;
-import io.quarkus.rest.common.runtime.util.Types;
+import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.common.runtime.util.Types;
+
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 
@@ -36,12 +37,12 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     final QuarkusRestClient restClient;
     final ClientRestHandler[] handlerChain;
     final ClientRestHandler[] abortHandlerChain;
-    final ManagedContext requestContext;
+    final ThreadSetupAction requestContext;
 
     public QuarkusRestAsyncInvoker(QuarkusRestClient restClient, HttpClient httpClient, URI uri, Serialisers serialisers,
             GenericTypeMapping genericTypeMapping, RequestSpec requestSpec,
             Map<String, Object> properties, ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain,
-            ManagedContext requestContext) {
+            ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.httpClient = httpClient;
         this.uri = uri;

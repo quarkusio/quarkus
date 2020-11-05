@@ -8,7 +8,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.rest.qute.runtime.TemplateResponseFilter;
-import io.quarkus.rest.spi.CustomContainerResponseFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 
 public class QuarkusRestQuteProcessor {
 

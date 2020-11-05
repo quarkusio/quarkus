@@ -4,8 +4,8 @@ import java.lang.reflect.Method;
 
 import javax.ws.rs.container.ResourceInfo;
 
-import io.quarkus.rest.common.runtime.model.ResourceClass;
-import io.quarkus.rest.common.runtime.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
 
 public class QuarkusRestResourceMethod implements ResourceInfo {
 

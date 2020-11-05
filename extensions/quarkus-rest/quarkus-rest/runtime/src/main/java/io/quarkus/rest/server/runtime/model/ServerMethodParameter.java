@@ -1,7 +1,8 @@
 package io.quarkus.rest.server.runtime.model;
 
-import io.quarkus.rest.common.runtime.model.MethodParameter;
-import io.quarkus.rest.common.runtime.model.ParameterType;
+import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
+
 import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverterSupplier;
 
 public class ServerMethodParameter extends MethodParameter {

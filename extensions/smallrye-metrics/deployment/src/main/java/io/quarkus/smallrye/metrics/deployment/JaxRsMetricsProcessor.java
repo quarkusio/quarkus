@@ -12,9 +12,9 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.rest.spi.ContainerRequestFilterBuildItem;
-import io.quarkus.rest.spi.CustomContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 import io.quarkus.undertow.deployment.FilterBuildItem;
 
 /**

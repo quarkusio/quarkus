@@ -10,9 +10,10 @@ import java.util.function.Supplier;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.WebTarget;
 
-import io.quarkus.rest.common.runtime.QuarkusRestCommonRecorder;
-import io.quarkus.rest.common.runtime.core.GenericTypeMapping;
-import io.quarkus.rest.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+
+import io.quarkus.rest.common.QuarkusRestCommonRecorder;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;

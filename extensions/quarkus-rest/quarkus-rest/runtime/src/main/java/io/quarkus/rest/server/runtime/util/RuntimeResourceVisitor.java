@@ -3,7 +3,8 @@ package io.quarkus.rest.server.runtime.util;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.rest.common.runtime.core.RestHandler;
+import org.jboss.resteasy.reactive.common.runtime.core.RestHandler;
+
 import io.quarkus.rest.server.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.rest.server.runtime.handlers.QuarkusRestInitialHandler;
 import io.quarkus.rest.server.runtime.mapping.RequestMapper;

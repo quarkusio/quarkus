@@ -5,9 +5,9 @@ import java.net.URI;
 
 import javax.ws.rs.core.Response;
 
-import io.quarkus.rest.common.runtime.NotImplementedYet;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestResponse;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestResponseBuilder;
+import org.jboss.resteasy.reactive.common.runtime.NotImplementedYet;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponseBuilder;
 
 public class QuarkusRestClientResponseBuilder extends QuarkusRestResponseBuilder { //TODO: should not extend the server version
 

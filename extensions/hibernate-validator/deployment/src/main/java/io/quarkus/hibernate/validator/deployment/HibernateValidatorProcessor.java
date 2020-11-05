@@ -77,9 +77,9 @@ import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterc
 import io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
-import io.quarkus.rest.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 

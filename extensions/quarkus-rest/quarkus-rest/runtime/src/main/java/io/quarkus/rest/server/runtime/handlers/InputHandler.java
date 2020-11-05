@@ -6,9 +6,10 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
+import org.jboss.resteasy.reactive.common.runtime.util.EmptyInputStream;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.quarkus.rest.common.runtime.util.EmptyInputStream;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.vertx.core.Handler;

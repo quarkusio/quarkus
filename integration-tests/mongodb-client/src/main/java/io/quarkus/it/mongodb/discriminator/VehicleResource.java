@@ -13,11 +13,11 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.Blocking;
+
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
-
-import io.quarkus.rest.Blocking;
 
 @Path("/vehicles")
 @Blocking

@@ -6,15 +6,16 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
-import io.quarkus.rest.common.runtime.util.ServerMediaType;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.common.runtime.util.ServerMediaType;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.jboss.resteasy.reactive.spi.EndpointInvoker;
+
 import io.quarkus.rest.server.runtime.core.LazyMethod;
 import io.quarkus.rest.server.runtime.core.QuarkusRestSimplifiedResourceInfo;
 import io.quarkus.rest.server.runtime.handlers.ServerRestHandler;
 import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.quarkus.rest.server.runtime.util.ScoreSystem;
-import io.quarkus.rest.spi.BeanFactory;
-import io.quarkus.rest.spi.EndpointInvoker;
 
 public class RuntimeResource {
 

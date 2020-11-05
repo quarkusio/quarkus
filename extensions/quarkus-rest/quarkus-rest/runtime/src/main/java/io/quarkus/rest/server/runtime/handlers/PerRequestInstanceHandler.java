@@ -1,9 +1,10 @@
 package io.quarkus.rest.server.runtime.handlers;
 
+import org.jboss.resteasy.reactive.spi.BeanFactory;
+
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.injection.QuarkusRestInjectionTarget;
-import io.quarkus.rest.spi.BeanFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 

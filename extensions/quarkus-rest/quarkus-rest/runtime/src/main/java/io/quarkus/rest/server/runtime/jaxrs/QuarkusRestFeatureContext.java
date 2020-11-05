@@ -18,18 +18,19 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import org.jboss.resteasy.reactive.common.runtime.core.UnmanagedBeanFactory;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.model.InterceptorContainer;
+import org.jboss.resteasy.reactive.common.runtime.model.PreMatchInterceptorContainer;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptor;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.runtime.model.SettableResourceInterceptor;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
+
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.rest.common.runtime.core.ArcBeanFactory;
-import io.quarkus.rest.common.runtime.core.UnmanagedBeanFactory;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.model.InterceptorContainer;
-import io.quarkus.rest.common.runtime.model.PreMatchInterceptorContainer;
-import io.quarkus.rest.common.runtime.model.ResourceExceptionMapper;
-import io.quarkus.rest.common.runtime.model.ResourceInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
-import io.quarkus.rest.common.runtime.model.SettableResourceInterceptor;
+import io.quarkus.rest.common.ArcBeanFactory;
 import io.quarkus.rest.server.runtime.core.ExceptionMapping;
-import io.quarkus.rest.spi.BeanFactory;
 
 public class QuarkusRestFeatureContext implements FeatureContext {
 

@@ -1,7 +1,8 @@
 package io.quarkus.rest.server.runtime.handlers;
 
+import org.jboss.resteasy.reactive.spi.BeanFactory;
+
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.spi.BeanFactory;
 
 public class InstanceHandler implements ServerRestHandler {
 

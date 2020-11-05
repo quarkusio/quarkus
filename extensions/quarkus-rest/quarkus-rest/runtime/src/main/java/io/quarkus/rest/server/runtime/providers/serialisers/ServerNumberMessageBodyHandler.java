@@ -7,7 +7,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 
-import io.quarkus.rest.common.runtime.providers.serialisers.NumberMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.NumberMessageBodyHandler;
+
 import io.quarkus.rest.server.runtime.core.LazyMethod;
 import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.server.runtime.spi.QuarkusRestMessageBodyReader;

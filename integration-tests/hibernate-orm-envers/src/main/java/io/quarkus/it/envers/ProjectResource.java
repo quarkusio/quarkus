@@ -12,8 +12,8 @@ import javax.ws.rs.core.MediaType;
 
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.query.AuditEntity;
+import org.jboss.resteasy.reactive.Blocking;
 
-import io.quarkus.rest.Blocking;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/project")

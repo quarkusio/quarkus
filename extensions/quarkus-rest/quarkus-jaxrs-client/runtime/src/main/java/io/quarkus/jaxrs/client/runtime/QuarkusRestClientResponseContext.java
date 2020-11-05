@@ -17,9 +17,9 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response.StatusType;
 
-import io.quarkus.rest.common.runtime.headers.HeaderUtil;
-import io.quarkus.rest.common.runtime.headers.LinkHeaders;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestStatusType;
+import org.jboss.resteasy.reactive.common.runtime.headers.HeaderUtil;
+import org.jboss.resteasy.reactive.common.runtime.headers.LinkHeaders;
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestStatusType;
 
 public class QuarkusRestClientResponseContext implements ClientResponseContext {
 

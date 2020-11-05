@@ -3,12 +3,13 @@ package io.quarkus.rest.server.runtime.jaxrs;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
 
+import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.runtime.model.InterceptorContainer;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptor;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
+
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.rest.common.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.rest.common.runtime.model.InterceptorContainer;
-import io.quarkus.rest.common.runtime.model.ResourceInterceptor;
-import io.quarkus.rest.common.runtime.model.ResourceInterceptors;
-import io.quarkus.rest.spi.BeanFactory;
 
 // TODO: It might not make sense to have this extend from QuarkusRestFeatureContext
 public class QuarkusRestDynamicFeatureContext extends QuarkusRestFeatureContext {

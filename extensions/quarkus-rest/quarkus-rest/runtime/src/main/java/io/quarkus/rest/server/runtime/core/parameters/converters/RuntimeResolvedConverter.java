@@ -6,7 +6,8 @@ import java.lang.reflect.Type;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
-import io.quarkus.rest.common.runtime.model.ResourceParamConverterProvider;
+import org.jboss.resteasy.reactive.common.runtime.model.ResourceParamConverterProvider;
+
 import io.quarkus.rest.server.runtime.core.ParamConverterProviders;
 
 public class RuntimeResolvedConverter implements ParameterConverter {

@@ -33,8 +33,8 @@ import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.runtime.util.ServerMediaType;
 
-import io.quarkus.rest.common.runtime.util.ServerMediaType;
 import io.quarkus.rest.server.runtime.core.request.ServerDrivenNegotiation;
 import io.quarkus.rest.server.runtime.handlers.QuarkusRestInitialHandler;
 import io.quarkus.rest.server.runtime.mapping.RequestMapper;

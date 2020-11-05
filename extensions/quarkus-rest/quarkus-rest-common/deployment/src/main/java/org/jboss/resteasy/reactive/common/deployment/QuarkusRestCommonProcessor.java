@@ -1,12 +1,12 @@
 package org.jboss.resteasy.reactive.common.deployment;
 
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.DELETE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.GET;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.HEAD;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.OPTIONS;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PATCH;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.POST;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PUT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DELETE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEAD;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONS;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATCH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.POST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUT;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -34,8 +34,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.deployment.ApplicationResultBuildItem.KeepProviderResult;
-import org.jboss.resteasy.reactive.common.deployment.framework.NameBindingUtil;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.NameBindingUtil;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -75,7 +75,7 @@ public class QuarkusRestCommonProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<ClassInfo> applications = index
-                .getAllKnownSubclasses(QuarkusRestDotNames.APPLICATION);
+                .getAllKnownSubclasses(ResteasyReactiveDotNames.APPLICATION);
 
         Set<String> allowedClasses = new HashSet<>();
         Set<String> singletonClasses = new HashSet<>();
@@ -114,9 +114,9 @@ public class QuarkusRestCommonProcessor {
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
-            if (applicationClassInfo.classAnnotation(QuarkusRestDotNames.NON_BLOCKING) != null) {
+            if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
                 blocking = false;
-            } else if (applicationClassInfo.classAnnotation(QuarkusRestDotNames.NON_BLOCKING) != null) {
+            } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
                 blocking = true;
             }
         }
@@ -131,9 +131,9 @@ public class QuarkusRestCommonProcessor {
             BuildProducer<ReaderInterceptorBuildItem> readerInterceptorProducer) {
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<ClassInfo> readerInterceptors = index
-                .getAllKnownImplementors(QuarkusRestDotNames.READER_INTERCEPTOR);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.READER_INTERCEPTOR);
         Collection<ClassInfo> writerInterceptors = index
-                .getAllKnownImplementors(QuarkusRestDotNames.WRITER_INTERCEPTOR);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.WRITER_INTERCEPTOR);
 
         for (ClassInfo filterClass : writerInterceptors) {
             handleDiscoveredInterceptor(applicationResultBuildItem, writerInterceptorProducer, index, filterClass,
@@ -152,13 +152,13 @@ public class QuarkusRestCommonProcessor {
         if (keepProviderResult != KeepProviderResult.DISCARD) {
             B builder = builderCreator.apply(filterClass.name().toString());
             builder.setRegisterAsBean(true);
-            if (filterClass.classAnnotation(QuarkusRestDotNames.PRE_MATCHING) != null) {
+            if (filterClass.classAnnotation(ResteasyReactiveDotNames.PRE_MATCHING) != null) {
                 if (builder instanceof ContainerRequestFilterBuildItem.Builder) {
                     ((ContainerRequestFilterBuildItem.Builder) builder).setPreMatching(true);
                 }
             }
             builder.setNameBindingNames(NameBindingUtil.nameBindingNames(index, filterClass));
-            AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+            AnnotationInstance priorityInstance = filterClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
             if (priorityInstance != null) {
                 builder.setPriority(priorityInstance.value().asInt());
             }
@@ -173,7 +173,7 @@ public class QuarkusRestCommonProcessor {
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerBuildItemBuildProducer,
             BuildProducer<ResourceScanningResultBuildItem> resourceScanningResultBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getIndex();
-        Collection<AnnotationInstance> paths = index.getAnnotations(QuarkusRestDotNames.PATH);
+        Collection<AnnotationInstance> paths = index.getAnnotations(ResteasyReactiveDotNames.PATH);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
@@ -190,7 +190,7 @@ public class QuarkusRestCommonProcessor {
         List<MethodInfo> methodExceptionMappers = new ArrayList<>();
         Set<String> beanParams = new HashSet<>();
 
-        for (AnnotationInstance beanParamAnnotation : index.getAnnotations(QuarkusRestDotNames.BEAN_PARAM)) {
+        for (AnnotationInstance beanParamAnnotation : index.getAnnotations(ResteasyReactiveDotNames.BEAN_PARAM)) {
             AnnotationTarget target = beanParamAnnotation.target();
             // FIXME: this isn't right wrt generics
             switch (target.kind()) {
@@ -226,7 +226,7 @@ public class QuarkusRestCommonProcessor {
                     resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
                 }
                 List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotations()
-                        .get(QuarkusRestDotNames.EXCEPTION_MAPPER_ANNOTATION);
+                        .get(ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION);
                 if (exceptionMapperAnnotationInstances != null) {
                     for (AnnotationInstance instance : exceptionMapperAnnotationInstances) {
                         if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
@@ -261,7 +261,7 @@ public class QuarkusRestCommonProcessor {
         }
 
         Map<DotName, String> httpAnnotationToMethod = new HashMap<>(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
-        Collection<AnnotationInstance> httpMethodInstances = index.getAnnotations(QuarkusRestDotNames.HTTP_METHOD);
+        Collection<AnnotationInstance> httpMethodInstances = index.getAnnotations(ResteasyReactiveDotNames.HTTP_METHOD);
         for (AnnotationInstance httpMethodInstance : httpMethodInstances) {
             if (httpMethodInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
                 continue;
@@ -289,9 +289,9 @@ public class QuarkusRestCommonProcessor {
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<ClassInfo> writers = index
-                .getAllKnownImplementors(QuarkusRestDotNames.MESSAGE_BODY_WRITER);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_WRITER);
         Collection<ClassInfo> readers = index
-                .getAllKnownImplementors(QuarkusRestDotNames.MESSAGE_BODY_READER);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_READER);
 
         for (ClassInfo writerClass : writers) {
             KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(writerClass);
@@ -301,15 +301,15 @@ public class QuarkusRestCommonProcessor {
                     runtimeType = RuntimeType.SERVER;
                 }
                 List<String> mediaTypeStrings = Collections.emptyList();
-                AnnotationInstance producesAnnotation = writerClass.classAnnotation(QuarkusRestDotNames.PRODUCES);
+                AnnotationInstance producesAnnotation = writerClass.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
                 if (producesAnnotation != null) {
                     mediaTypeStrings = Arrays.asList(producesAnnotation.value().asStringArray());
                 }
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
-                        QuarkusRestDotNames.MESSAGE_BODY_WRITER,
+                        ResteasyReactiveDotNames.MESSAGE_BODY_WRITER,
                         index);
                 String writerClassName = writerClass.name().toString();
-                AnnotationInstance constrainedToInstance = writerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
+                AnnotationInstance constrainedToInstance = writerClass.classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
                 if (constrainedToInstance != null) {
                     runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
                 }
@@ -322,7 +322,7 @@ public class QuarkusRestCommonProcessor {
             KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(readerClass);
             if (keepProviderResult != KeepProviderResult.DISCARD) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
-                        QuarkusRestDotNames.MESSAGE_BODY_READER,
+                        ResteasyReactiveDotNames.MESSAGE_BODY_READER,
                         index);
                 RuntimeType runtimeType = null;
                 if (keepProviderResult == KeepProviderResult.SERVER_ONLY) {
@@ -330,11 +330,11 @@ public class QuarkusRestCommonProcessor {
                 }
                 List<String> mediaTypeStrings = Collections.emptyList();
                 String readerClassName = readerClass.name().toString();
-                AnnotationInstance consumesAnnotation = readerClass.classAnnotation(QuarkusRestDotNames.CONSUMES);
+                AnnotationInstance consumesAnnotation = readerClass.classAnnotation(ResteasyReactiveDotNames.CONSUMES);
                 if (consumesAnnotation != null) {
                     mediaTypeStrings = Arrays.asList(consumesAnnotation.value().asStringArray());
                 }
-                AnnotationInstance constrainedToInstance = readerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
+                AnnotationInstance constrainedToInstance = readerClass.classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
                 if (constrainedToInstance != null) {
                     runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
                 }
@@ -381,7 +381,7 @@ public class QuarkusRestCommonProcessor {
         }
 
         boolean needsHandling = false;
-        for (DotName dotName : QuarkusRestDotNames.RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING) {
+        for (DotName dotName : ResteasyReactiveDotNames.RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING) {
             if (ctor.hasAnnotation(dotName)) {
                 needsHandling = true;
                 break;

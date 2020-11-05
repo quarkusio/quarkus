@@ -2,13 +2,13 @@ package io.quarkus.rest.deployment.framework;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_NUMBER;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRING;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_VALUE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.STRING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_OBJECT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,9 +24,9 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalReaders;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalWriters;
-import org.jboss.resteasy.reactive.common.deployment.framework.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
+import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.runtime.model.BeanParamInfo;
 import org.jboss.resteasy.reactive.common.runtime.model.InjectableBean;
 import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
@@ -60,10 +60,14 @@ import io.quarkus.rest.server.runtime.providers.serialisers.jsonp.ServerJsonValu
 
 public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter> {
     private final MethodCreator initConverters;
+    private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
+    private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
 
     ServerEndpointIndexer(Builder builder) {
         super(builder);
         this.initConverters = builder.initConverters;
+        this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
+        this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
     }
 
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
@@ -236,7 +240,6 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
 
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             Map<String, String> existingConverters,
             AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans,
@@ -280,7 +283,6 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
                 // FIXME: pretty sure this doesn't work with generics
                 ClassInfo beanParamClassInfo = index.getClassByName(field.type().name());
                 InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo, actualEndpointInfo,
-                        bytecodeTransformerBuildProducer,
                         existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
                 // inherit form param requirement from field
                 if (injectableBean.isFormParamRequired()) {
@@ -300,7 +302,6 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 InjectableBean superInjectableBean = scanInjectableBean(superClass, actualEndpointInfo,
-                        bytecodeTransformerBuildProducer,
                         existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
                 superTypeIsInjectable = superInjectableBean.isInjectionRequired();
                 // inherit form param requirement from supertype
@@ -320,6 +321,8 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
 
     public static final class Builder extends EndpointIndexer.Builder<ServerEndpointIndexer, Builder> {
 
+        private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
+        private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
         private MethodCreator initConverters;
 
         @Override
@@ -329,6 +332,18 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
 
         public MethodCreator getInitConverters() {
             return initConverters;
+        }
+
+        public Builder setBytecodeTransformerBuildProducer(
+                BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer) {
+            this.bytecodeTransformerBuildProducer = bytecodeTransformerBuildProducer;
+            return this;
+        }
+
+        public Builder setGeneratedClassBuildItemBuildProducer(
+                BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
+            this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
+            return this;
         }
 
         public Builder setInitConverters(MethodCreator initConverters) {

@@ -18,7 +18,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -226,7 +226,8 @@ final class CustomResourceProducersGenerator {
                         List<AnnotationInstance> paramAnnotations = paramIndexToAnnotations.get(i);
                         List<AnnotationInstance> jaxRSAnnotationsOfParam = new ArrayList<>(paramAnnotations.size());
                         for (AnnotationInstance paramAnnotation : paramAnnotations) {
-                            if (QuarkusRestDotNames.RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING.contains(paramAnnotation.name())) {
+                            if (ResteasyReactiveDotNames.RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING
+                                    .contains(paramAnnotation.name())) {
                                 jaxRSAnnotationsOfParam.add(paramAnnotation);
                             }
                         }
@@ -238,22 +239,22 @@ final class CustomResourceProducersGenerator {
                                     + resourceDotName + "' contains multiple JAX-RS annotations, which is not valid");
                         } else {
                             AnnotationInstance jaxRSAnnotationOfParam = jaxRSAnnotationsOfParam.iterator().next();
-                            if (!parameterType.name().equals(QuarkusRestDotNames.STRING)) {
+                            if (!parameterType.name().equals(ResteasyReactiveDotNames.STRING)) {
                                 // TODO: do we need to support converters here?
                                 throw new IllegalArgumentException("Parameter: " + i + " of the constructor of class '"
                                         + resourceDotName + "' which is annotated with '" + jaxRSAnnotationOfParam.name()
                                         + "' can only be of type String");
                             }
                             CtorParamData.CustomProducerParameterType customProducerParameterType;
-                            if (jaxRSAnnotationOfParam.name().equals(QuarkusRestDotNames.QUERY_PARAM)) {
+                            if (jaxRSAnnotationOfParam.name().equals(ResteasyReactiveDotNames.QUERY_PARAM)) {
                                 customProducerParameterType = CtorParamData.CustomProducerParameterType.QUERY;
-                            } else if (jaxRSAnnotationOfParam.name().equals(QuarkusRestDotNames.HEADER_PARAM)) {
+                            } else if (jaxRSAnnotationOfParam.name().equals(ResteasyReactiveDotNames.HEADER_PARAM)) {
                                 customProducerParameterType = CtorParamData.CustomProducerParameterType.HEADER;
-                            } else if (jaxRSAnnotationOfParam.name().equals(QuarkusRestDotNames.PATH_PARAM)) {
+                            } else if (jaxRSAnnotationOfParam.name().equals(ResteasyReactiveDotNames.PATH_PARAM)) {
                                 customProducerParameterType = CtorParamData.CustomProducerParameterType.PATH;
-                            } else if (jaxRSAnnotationOfParam.name().equals(QuarkusRestDotNames.MATRIX_PARAM)) {
+                            } else if (jaxRSAnnotationOfParam.name().equals(ResteasyReactiveDotNames.MATRIX_PARAM)) {
                                 customProducerParameterType = CtorParamData.CustomProducerParameterType.MATRIX;
-                            } else if (jaxRSAnnotationOfParam.name().equals(QuarkusRestDotNames.COOKIE_PARAM)) {
+                            } else if (jaxRSAnnotationOfParam.name().equals(ResteasyReactiveDotNames.COOKIE_PARAM)) {
                                 customProducerParameterType = CtorParamData.CustomProducerParameterType.COOKIE;
                             } else {
                                 throw new IllegalStateException("Unsupported type '" + jaxRSAnnotationOfParam.name()

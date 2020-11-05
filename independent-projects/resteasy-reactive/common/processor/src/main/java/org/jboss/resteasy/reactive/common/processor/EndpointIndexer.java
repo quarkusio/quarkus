@@ -1,50 +1,50 @@
-package org.jboss.resteasy.reactive.common.deployment.framework;
+package org.jboss.resteasy.reactive.common.processor;
 
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.BEAN_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.BIG_DECIMAL;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.BIG_INTEGER;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.BLOCKING;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.BOOLEAN;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.CHARACTER;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.COMPLETION_STAGE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.CONSUMES;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.CONTEXT;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.COOKIE_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.DEFAULT_VALUE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.DOUBLE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.FLOAT;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.FORM_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.HEADER_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.INTEGER;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.LIST;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.LONG;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.MATRIX_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.MULTI;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.MULTI_VALUED_MAP;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PATH;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PATH_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PATH_SEGMENT;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRIMITIVE_BOOLEAN;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRIMITIVE_CHAR;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRIMITIVE_DOUBLE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRIMITIVE_FLOAT;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRIMITIVE_INTEGER;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRIMITIVE_LONG;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRODUCES;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REQUIRE_CDI_REQUEST_SCOPE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REST_COOKIE_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REST_FORM_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REST_HEADER_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REST_MATRIX_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REST_PATH_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REST_QUERY_PARAM;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.SET;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.SORTED_SET;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.SSE_ELEMENT_TYPE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.STRING;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.SUSPENDED;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.UNI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BEAN_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BIG_DECIMAL;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BIG_INTEGER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BLOCKING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BOOLEAN;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CHARACTER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DOUBLE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INTEGER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_BOOLEAN;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_CHAR;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_DOUBLE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_FLOAT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_INTEGER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_LONG;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRODUCES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUIRE_CDI_REQUEST_SCOPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -60,11 +60,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.SseEventSink;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -78,28 +76,15 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.runtime.model.InjectableBean;
 import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.runtime.util.URLUtils;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.EndpointInvoker;
-
-import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.util.AsmUtil;
-import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.common.QuarkusRestCommonRecorder;
-import io.quarkus.rest.common.QuarkusRestConfig;
-import io.quarkus.runtime.util.HashUtil;
 
 public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM extends IndexedParameter<PARAM>> {
 
@@ -108,21 +93,21 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     // NOTE: sync with ContextProducer and ContextParamExtractor
     private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             // spec
-            QuarkusRestDotNames.URI_INFO,
-            QuarkusRestDotNames.HTTP_HEADERS,
-            QuarkusRestDotNames.REQUEST,
-            QuarkusRestDotNames.SECURITY_CONTEXT,
-            QuarkusRestDotNames.PROVIDERS,
-            QuarkusRestDotNames.RESOURCE_CONTEXT,
-            QuarkusRestDotNames.CONFIGURATION,
-            QuarkusRestDotNames.SSE,
-            QuarkusRestDotNames.SSE_EVENT_SINK,
+            ResteasyReactiveDotNames.URI_INFO,
+            ResteasyReactiveDotNames.HTTP_HEADERS,
+            ResteasyReactiveDotNames.REQUEST,
+            ResteasyReactiveDotNames.SECURITY_CONTEXT,
+            ResteasyReactiveDotNames.PROVIDERS,
+            ResteasyReactiveDotNames.RESOURCE_CONTEXT,
+            ResteasyReactiveDotNames.CONFIGURATION,
+            ResteasyReactiveDotNames.SSE,
+            ResteasyReactiveDotNames.SSE_EVENT_SINK,
             // extras
-            QuarkusRestDotNames.QUARKUS_REST_CONTEXT,
+            ResteasyReactiveDotNames.QUARKUS_REST_CONTEXT,
             DotName.createSimple("io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo"), //TODO: fixme
-            QuarkusRestDotNames.RESOURCE_INFO,
-            QuarkusRestDotNames.HTTP_SERVER_REQUEST,
-            QuarkusRestDotNames.HTTP_SERVER_RESPONSE)));
+            ResteasyReactiveDotNames.RESOURCE_INFO,
+            ResteasyReactiveDotNames.HTTP_SERVER_REQUEST,
+            ResteasyReactiveDotNames.HTTP_SERVER_RESPONSE)));
 
     protected static final Logger log = Logger.getLogger(EndpointInvoker.class);
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
@@ -167,13 +152,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     }
 
     protected final IndexView index;
-    private final BeanContainer beanContainer;
-    protected final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-    private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer;
-    private final QuarkusRestCommonRecorder recorder;
+    protected final EndpointInvokerFactory endpointInvokerFactory;
     private final Map<String, String> existingConverters;
     private final Map<DotName, String> scannedResourcePaths;
-    private final QuarkusRestConfig config;
+    private final ResteasyReactiveConfig config;
     private final AdditionalReaders additionalReaders;
     private final Map<DotName, String> httpAnnotationToMethod;
     private final Map<String, InjectableBean> injectableBeans;
@@ -181,13 +163,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     private final boolean hasRuntimeConverters;
     private final boolean defaultBlocking;
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
+    private final Function<String, BeanFactory<Object>> factoryCreator;
 
     protected EndpointIndexer(Builder<T, ?> builder) {
         this.index = builder.index;
-        this.beanContainer = builder.beanContainer;
-        this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
-        this.bytecodeTransformerBuildItemBuildProducer = builder.bytecodeTransformerBuildItemBuildProducer;
-        this.recorder = builder.recorder;
+        this.endpointInvokerFactory = builder.endpointInvokerFactory;
         this.existingConverters = builder.existingConverters;
         this.scannedResourcePaths = builder.scannedResourcePaths;
         this.config = builder.config;
@@ -198,6 +178,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         this.hasRuntimeConverters = builder.hasRuntimeConverters;
         this.defaultBlocking = builder.defaultBlocking;
         this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
+        this.factoryCreator = builder.factoryCreator;
     }
 
     public ResourceClass createEndpoints(ClassInfo classInfo) {
@@ -214,7 +195,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                 }
                 clazz.setPath(path);
             }
-            clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
+            clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
             if (classLevelExceptionMappers != null) {
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
@@ -225,7 +206,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
 
             // get an InjectableBean view of our class
             InjectableBean injectableBean = scanInjectableBean(classInfo, classInfo,
-                    bytecodeTransformerBuildItemBuildProducer, existingConverters,
+                    existingConverters,
                     additionalReaders, injectableBeans, hasRuntimeConverters);
 
             // at this point we've scanned the class and its bean infos, which can have form params
@@ -323,7 +304,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         }
 
         DotName superClassName = currentClassInfo.superName();
-        if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
+        if (superClassName != null && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
@@ -380,7 +361,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             boolean hasBodyParam = false;
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
-                boolean encoded = anns.containsKey(QuarkusRestDotNames.ENCODED);
+                boolean encoded = anns.containsKey(ResteasyReactiveDotNames.ENCODED);
                 Type paramType = info.parameters().get(i);
                 String errorLocation = "method " + info + " on class " + info.declaringClass();
 
@@ -411,7 +392,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                     ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
                     InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                             actualEndpointInfo,
-                            bytecodeTransformerBuildItemBuildProducer,
                             existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
                     if (injectableBean.isFormParamRequired()) {
                         formParamRequired = true;
@@ -506,36 +486,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                         }
                     }));
 
-            StringBuilder sigBuilder = new StringBuilder();
-            sigBuilder.append(method.getName())
-                    .append(method.getReturnType());
-            for (MethodParameter t : method.getParameters()) {
-                sigBuilder.append(t);
-            }
-            String baseName = currentClassInfo.name() + "$quarkusrestinvoker$" + method.getName() + "_"
-                    + HashUtil.sha1(sigBuilder.toString());
-            try (ClassCreator classCreator = new ClassCreator(
-                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
-                    Object.class.getName(), EndpointInvoker.class.getName())) {
-                MethodCreator mc = classCreator.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
-                ResultHandle[] args = new ResultHandle[method.getParameters().length];
-                ResultHandle array = mc.getMethodParam(1);
-                for (int i = 0; i < method.getParameters().length; ++i) {
-                    args[i] = mc.readArrayValue(array, i);
-                }
-                ResultHandle res;
-                if (Modifier.isInterface(currentClassInfo.flags())) {
-                    res = mc.invokeInterfaceMethod(info, mc.getMethodParam(0), args);
-                } else {
-                    res = mc.invokeVirtualMethod(info, mc.getMethodParam(0), args);
-                }
-                if (info.returnType().kind() == Type.Kind.VOID) {
-                    mc.returnValue(mc.loadNull());
-                } else {
-                    mc.returnValue(res);
-                }
-            }
-            method.setInvoker(recorder.invoker(baseName));
+            method.setInvoker(endpointInvokerFactory.create(method, currentClassInfo, info));
             return method;
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
@@ -544,7 +495,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
 
     protected abstract InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             Map<String, String> existingConverters,
             AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans,
@@ -936,21 +886,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     }
 
     public static abstract class Builder<T extends EndpointIndexer<T, ?>, B extends Builder<T, B>> {
+        private Function<String, BeanFactory<Object>> factoryCreator;
+        private EndpointInvokerFactory endpointInvokerFactory;
         private boolean defaultBlocking;
         private IndexView index;
-        private BeanContainer beanContainer;
-        private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-        private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer;
-        private QuarkusRestCommonRecorder recorder;
         private Map<String, String> existingConverters;
         private Map<DotName, String> scannedResourcePaths;
-        private QuarkusRestConfig config;
+        private ResteasyReactiveConfig config;
         private AdditionalReaders additionalReaders;
         private Map<DotName, String> httpAnnotationToMethod;
         private Map<String, InjectableBean> injectableBeans;
         private AdditionalWriters additionalWriters;
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
+
+        public B setEndpointInvokerFactory(EndpointInvokerFactory endpointInvokerFactory) {
+            this.endpointInvokerFactory = endpointInvokerFactory;
+            return (B) this;
+        }
 
         public B setDefaultBlocking(boolean defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
@@ -967,28 +920,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             return (B) this;
         }
 
-        public B setBeanContainer(BeanContainer beanContainer) {
-            this.beanContainer = beanContainer;
-            return (B) this;
-        }
-
-        public B setGeneratedClassBuildItemBuildProducer(
-                BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
-            this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
-            return (B) this;
-        }
-
-        public B setBytecodeTransformerBuildItemBuildProducer(
-                BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer) {
-            this.bytecodeTransformerBuildItemBuildProducer = bytecodeTransformerBuildItemBuildProducer;
-            return (B) this;
-        }
-
-        public B setRecorder(QuarkusRestCommonRecorder recorder) {
-            this.recorder = recorder;
-            return (B) this;
-        }
-
         public B setExistingConverters(Map<String, String> existingConverters) {
             this.existingConverters = existingConverters;
             return (B) this;
@@ -999,7 +930,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             return (B) this;
         }
 
-        public B setConfig(QuarkusRestConfig config) {
+        public B setFactoryCreator(Function<String, BeanFactory<Object>> factoryCreator) {
+            this.factoryCreator = factoryCreator;
+            return (B) this;
+        }
+
+        public B setConfig(ResteasyReactiveConfig config) {
             this.config = config;
             return (B) this;
         }

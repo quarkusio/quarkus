@@ -1,16 +1,15 @@
-package org.jboss.resteasy.reactive.common.deployment.framework;
+package org.jboss.resteasy.reactive.common.processor;
 
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.CONSUMES;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.NAME_BINDING;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PATH;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.PRODUCES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NAME_BINDING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRODUCES;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

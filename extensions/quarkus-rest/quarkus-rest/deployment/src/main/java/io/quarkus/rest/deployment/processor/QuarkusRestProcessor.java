@@ -29,11 +29,14 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import org.jboss.resteasy.reactive.common.deployment.FactoryUtils;
+import org.jboss.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
+import org.jboss.resteasy.reactive.common.deployment.QuarkusInvokerFactory;
 import org.jboss.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import org.jboss.resteasy.reactive.common.deployment.SerializersUtil;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalReaders;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalWriters;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
+import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
 import org.jboss.resteasy.reactive.common.runtime.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.runtime.model.InjectableBean;
@@ -242,11 +245,12 @@ public class QuarkusRestProcessor {
 
             serverEndpointIndexer = new ServerEndpointIndexer.Builder()
                     .setIndex(index)
-                    .setBeanContainer(beanContainerBuildItem.getValue())
+                    .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
+                    .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                    .setBytecodeTransformerBuildItemBuildProducer(bytecodeTransformerBuildItemBuildProducer)
-                    .setRecorder(recorder)
-                    .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths).setConfig(config)
+                    .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
+                    .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths)
+                    .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
                     .setAdditionalReaders(additionalReaders)
                     .setHttpAnnotationToMethod(resourceScanningResultBuildItem.get().getHttpAnnotationToMethod())
                     .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters)
@@ -489,7 +493,7 @@ public class QuarkusRestProcessor {
     }
 
     private String determineApplicationPath(IndexView index) {
-        Collection<AnnotationInstance> applicationPaths = index.getAnnotations(QuarkusRestDotNames.APPLICATION_PATH);
+        Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyReactiveDotNames.APPLICATION_PATH);
         if (applicationPaths.isEmpty()) {
             return null;
         }

@@ -4,12 +4,12 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.deployment.processor.GeneratorUtils.paramHandleFromReqContextMethod;
 import static io.quarkus.rest.deployment.processor.GeneratorUtils.routingContextHandler;
 import static io.quarkus.rest.deployment.processor.GeneratorUtils.runtimeResourceHandle;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.CONTAINER_REQUEST_CONTEXT;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.HTTP_HEADERS;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.HTTP_SERVER_REQUEST;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.REQUEST;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.RESOURCE_INFO;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.URI_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_REQUEST_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -81,7 +81,8 @@ final class ClassLevelExceptionMapperGenerator {
         checkModifiers(targetMethod);
 
         ClassInfo targetClass = targetMethod.declaringClass();
-        AnnotationInstance exceptionMapperInstance = targetMethod.annotation(QuarkusRestDotNames.EXCEPTION_MAPPER_ANNOTATION);
+        AnnotationInstance exceptionMapperInstance = targetMethod
+                .annotation(ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION);
         Type[] handledExceptionTypes = exceptionMapperInstance.value().asClassArray();
         Map<String, String> result = new HashMap<>();
         for (Type handledExceptionType : handledExceptionTypes) {
@@ -204,21 +205,23 @@ final class ClassLevelExceptionMapperGenerator {
     }
 
     private static void checkReturnType(MethodInfo targetMethod) {
-        if (!targetMethod.returnType().name().equals(QuarkusRestDotNames.RESPONSE)) {
+        if (!targetMethod.returnType().name().equals(ResteasyReactiveDotNames.RESPONSE)) {
             throw new RuntimeException("Method '" + targetMethod.name() + " of class '" + targetMethod.declaringClass().name()
                     + "' cannot be used as an exception mapper as it does not declare '"
-                    + QuarkusRestDotNames.RESPONSE.toString() + "' as its return type");
+                    + ResteasyReactiveDotNames.RESPONSE.toString() + "' as its return type");
         }
     }
 
     private static void checkModifiers(MethodInfo info) {
         if ((info.flags() & Modifier.PRIVATE) != 0) {
             throw new RuntimeException("Method '" + info.name() + " of class '" + info.declaringClass().name()
-                    + "' cannot be private as it is annotated with '@" + QuarkusRestDotNames.EXCEPTION_MAPPER_ANNOTATION + "'");
+                    + "' cannot be private as it is annotated with '@" + ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION
+                    + "'");
         }
         if ((info.flags() & Modifier.STATIC) != 0) {
             throw new RuntimeException("Method '" + info.name() + " of class '" + info.declaringClass().name()
-                    + "' cannot be static as it is annotated with '@" + QuarkusRestDotNames.EXCEPTION_MAPPER_ANNOTATION + "'");
+                    + "' cannot be static as it is annotated with '@" + ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION
+                    + "'");
         }
     }
 

@@ -19,11 +19,14 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
+import org.jboss.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
+import org.jboss.resteasy.reactive.common.deployment.QuarkusInvokerFactory;
 import org.jboss.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import org.jboss.resteasy.reactive.common.deployment.SerializersUtil;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalReaders;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalWriters;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
+import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
 import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
@@ -91,15 +94,14 @@ public class JaxrsClientProcessor {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         ClientEndpointIndexer clientEndpointIndexer = new ClientEndpointIndexer.Builder()
                 .setIndex(index)
-                .setBeanContainer(beanContainerBuildItem.getValue())
-                .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                .setBytecodeTransformerBuildItemBuildProducer(bytecodeTransformerBuildItemBuildProducer)
-                .setRecorder(recorder)
+                .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                 .setExistingConverters(new HashMap<>())
-                .setScannedResourcePaths(resourceScanningResultBuildItem.getScannedResourcePaths()).setConfig(config)
+                .setScannedResourcePaths(resourceScanningResultBuildItem.getScannedResourcePaths())
+                .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
                 .setAdditionalReaders(additionalReaders)
                 .setHttpAnnotationToMethod(resourceScanningResultBuildItem.getHttpAnnotationToMethod())
                 .setInjectableBeans(new HashMap<>())
+                .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                 .setAdditionalWriters(additionalWriters)
                 .setDefaultBlocking(applicationResultBuildItem.isBlocking())
                 .setHasRuntimeConverters(false).build();
@@ -149,13 +151,13 @@ public class JaxrsClientProcessor {
     public void registerInvocationCallbacks(CombinedIndexBuildItem index, JaxrsClientRecorder recorder) {
 
         Collection<ClassInfo> invocationCallbacks = index.getComputingIndex()
-                .getAllKnownImplementors(QuarkusRestDotNames.INVOCATION_CALLBACK);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.INVOCATION_CALLBACK);
 
         GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
         for (ClassInfo invocationCallback : invocationCallbacks) {
             try {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
-                        QuarkusRestDotNames.INVOCATION_CALLBACK, index.getComputingIndex());
+                        ResteasyReactiveDotNames.INVOCATION_CALLBACK, index.getComputingIndex());
                 recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
                         typeParameters.get(0).name().toString());
             } catch (Exception ignored) {

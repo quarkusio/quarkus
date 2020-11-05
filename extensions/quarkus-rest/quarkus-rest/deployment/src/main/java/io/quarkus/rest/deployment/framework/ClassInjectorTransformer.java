@@ -10,8 +10,8 @@ import javax.ws.rs.WebApplicationException;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.resteasy.reactive.common.deployment.framework.IndexedParameter;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.IndexedParameter;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
@@ -145,14 +145,14 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         break;
                     case FORM:
                         injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
                         break;
                     case HEADER:
                         injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true, false, false);
                         break;
                     case MATRIX:
                         injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
                         break;
                     case COOKIE:
                         injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false, false,
@@ -160,11 +160,11 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         break;
                     case PATH:
                         injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false, true,
-                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
                         break;
                     case QUERY:
                         injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true, true,
-                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
+                                fieldInfo.hasAnnotation(ResteasyReactiveDotNames.ENCODED));
                         break;
                     default:
                         break;

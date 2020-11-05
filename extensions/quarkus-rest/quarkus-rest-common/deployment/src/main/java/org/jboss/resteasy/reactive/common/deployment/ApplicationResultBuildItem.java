@@ -5,7 +5,7 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
@@ -36,7 +36,7 @@ public final class ApplicationResultBuildItem extends SimpleBuildItem {
             return allowedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.SERVER_ONLY
                     : KeepProviderResult.DISCARD;
         }
-        return providerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
+        return providerClass.classAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
                 : KeepProviderResult.DISCARD;
     }
 

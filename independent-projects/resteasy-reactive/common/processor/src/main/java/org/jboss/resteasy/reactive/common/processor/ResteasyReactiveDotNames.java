@@ -1,5 +1,9 @@
-package org.jboss.resteasy.reactive.common.deployment.framework;
+package org.jboss.resteasy.reactive.common.processor;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -10,8 +14,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Predicate;
-
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
@@ -65,7 +67,6 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
-
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.Blocking;
 import org.jboss.resteasy.reactive.NonBlocking;
@@ -79,13 +80,7 @@ import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.SseElementType;
 import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
 
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-
-public final class QuarkusRestDotNames {
+public final class ResteasyReactiveDotNames {
 
     // injectable @Context types
     public static final DotName URI_INFO = DotName.createSimple(UriInfo.class.getName());
@@ -213,22 +208,13 @@ public final class QuarkusRestDotNames {
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(
             Arrays.asList(QUERY_PARAM, HEADER_PARAM, PATH_PARAM, MATRIX_PARAM, COOKIE_PARAM));
 
-    public static final IgnoreForReflectionPredicate IGNORE_FOR_REFLECTION_PREDICATE = new IgnoreForReflectionPredicate();
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
     public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_FILTER = DotName
             .createSimple("io.quarkus.rest.server.runtime.spi.QuarkusRestContainerResponseFilter");
     public static final DotName QUARKUS_REST_CONTAINER_REQUEST_FILTER = DotName
             .createSimple("io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestFilter");
-
-    private static class IgnoreForReflectionPredicate implements Predicate<DotName> {
-
-        @Override
-        public boolean test(DotName name) {
-            return QuarkusRestDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(name)
-                    || ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(name);
-        }
-    }
+    public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(

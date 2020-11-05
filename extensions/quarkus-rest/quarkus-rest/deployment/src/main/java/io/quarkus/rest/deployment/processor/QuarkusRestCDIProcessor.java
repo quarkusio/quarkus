@@ -6,7 +6,7 @@ import javax.ws.rs.BeanParam;
 import javax.ws.rs.core.Context;
 
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
@@ -39,12 +39,12 @@ public class QuarkusRestCDIProcessor {
     @BuildStep
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PATH, BuiltinScope.SINGLETON.getName()));
+                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.PATH, BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.APPLICATION_PATH,
+                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.APPLICATION_PATH,
                         BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(QuarkusRestDotNames.PROVIDER,
+                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.PROVIDER,
                         BuiltinScope.SINGLETON.getName()));
     }
 

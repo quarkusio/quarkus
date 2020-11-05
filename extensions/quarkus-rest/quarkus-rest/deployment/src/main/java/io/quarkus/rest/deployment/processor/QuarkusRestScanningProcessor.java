@@ -21,7 +21,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import org.jboss.resteasy.reactive.common.deployment.QuarkusRestCommonProcessor;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -66,13 +66,13 @@ public class QuarkusRestScanningProcessor {
         //the quarkus version of these filters will not be in the index
         //so you need an explicit check for both
         Collection<ClassInfo> containerResponseFilters = new HashSet<>(index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_RESPONSE_FILTER));
+                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER));
         containerResponseFilters.addAll(index
-                .getAllKnownImplementors(QuarkusRestDotNames.QUARKUS_REST_CONTAINER_RESPONSE_FILTER));
+                .getAllKnownImplementors(ResteasyReactiveDotNames.QUARKUS_REST_CONTAINER_RESPONSE_FILTER));
         Collection<ClassInfo> containerRequestFilters = new HashSet<>(index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_REQUEST_FILTER));
+                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER));
         containerRequestFilters.addAll(index
-                .getAllKnownImplementors(QuarkusRestDotNames.QUARKUS_REST_CONTAINER_REQUEST_FILTER));
+                .getAllKnownImplementors(ResteasyReactiveDotNames.QUARKUS_REST_CONTAINER_REQUEST_FILTER));
         for (ClassInfo filterClass : containerRequestFilters) {
             QuarkusRestCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
                     requestFilterBuildItemBuildProducer, index, filterClass,
@@ -92,16 +92,16 @@ public class QuarkusRestScanningProcessor {
 
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Collection<ClassInfo> exceptionMappers = index
-                .getAllKnownImplementors(QuarkusRestDotNames.EXCEPTION_MAPPER);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.EXCEPTION_MAPPER);
         for (ClassInfo mapperClass : exceptionMappers) {
             ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
                     .keepProvider(mapperClass);
             if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
-                        QuarkusRestDotNames.EXCEPTION_MAPPER,
+                        ResteasyReactiveDotNames.EXCEPTION_MAPPER,
                         index);
                 DotName handledExceptionDotName = typeParameters.get(0).name();
-                AnnotationInstance priorityInstance = mapperClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = mapperClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 int priority = Priorities.USER;
                 if (priorityInstance != null) {
                     priority = priorityInstance.value().asInt();
@@ -140,7 +140,7 @@ public class QuarkusRestScanningProcessor {
             BuildProducer<DynamicFeatureBuildItem> dynamicFeatureBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Collection<ClassInfo> dynamicFeatures = index
-                .getAllKnownImplementors(QuarkusRestDotNames.DYNAMIC_FEATURE);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.DYNAMIC_FEATURE);
 
         for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
             ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
@@ -158,7 +158,7 @@ public class QuarkusRestScanningProcessor {
             BuildProducer<JaxrsFeatureBuildItem> featureBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Collection<ClassInfo> dynamicFeatures = index
-                .getAllKnownImplementors(QuarkusRestDotNames.FEATURE);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.FEATURE);
 
         for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
             ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
@@ -176,14 +176,14 @@ public class QuarkusRestScanningProcessor {
             BuildProducer<ContextResolverBuildItem> contextResolverBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Collection<ClassInfo> contextResolvers = index
-                .getAllKnownImplementors(QuarkusRestDotNames.CONTEXT_RESOLVER);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTEXT_RESOLVER);
 
         for (ClassInfo resolverClass : contextResolvers) {
             ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
                     .keepProvider(resolverClass);
             if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
-                        QuarkusRestDotNames.CONTEXT_RESOLVER,
+                        ResteasyReactiveDotNames.CONTEXT_RESOLVER,
                         index);
                 contextResolverBuildItemBuildProducer.produce(new ContextResolverBuildItem(resolverClass.name().toString(),
                         typeParameters.get(0).name().toString(), getProducesMediaTypes(resolverClass), true));
@@ -197,13 +197,13 @@ public class QuarkusRestScanningProcessor {
             BuildProducer<ParamConverterBuildItem> paramConverterBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Collection<ClassInfo> paramConverterProviders = index
-                .getAllKnownImplementors(QuarkusRestDotNames.PARAM_CONVERTER_PROVIDER);
+                .getAllKnownImplementors(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
 
         for (ClassInfo converterClass : paramConverterProviders) {
             ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
                     .keepProvider(converterClass);
             if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
-                AnnotationInstance priorityInstance = converterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = converterClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 paramConverterBuildItemBuildProducer.produce(new ParamConverterBuildItem(converterClass.name().toString(),
                         priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER, true));
             }
@@ -241,7 +241,7 @@ public class QuarkusRestScanningProcessor {
         }
 
         for (AnnotationInstance instance : index
-                .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_REQUEST_FILTER)) {
+                .getAnnotations(ResteasyReactiveDotNames.CUSTOM_CONTAINER_REQUEST_FILTER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
@@ -264,7 +264,7 @@ public class QuarkusRestScanningProcessor {
             additionalContainerRequestFilters.produce(builder.build());
         }
         for (AnnotationInstance instance : index
-                .getAnnotations(QuarkusRestDotNames.CUSTOM_CONTAINER_RESPONSE_FILTER)) {
+                .getAnnotations(ResteasyReactiveDotNames.CUSTOM_CONTAINER_RESPONSE_FILTER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
@@ -286,7 +286,7 @@ public class QuarkusRestScanningProcessor {
     }
 
     private List<String> getProducesMediaTypes(ClassInfo classInfo) {
-        AnnotationInstance produces = classInfo.classAnnotation(QuarkusRestDotNames.PRODUCES);
+        AnnotationInstance produces = classInfo.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
         if (produces == null) {
             return Collections.emptyList();
         }

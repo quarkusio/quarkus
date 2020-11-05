@@ -1,7 +1,7 @@
 package io.quarkus.rest.deployment.processor;
 
 import static io.quarkus.gizmo.MethodDescriptor.*;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.*;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.*;
 
 import java.lang.reflect.Modifier;
 

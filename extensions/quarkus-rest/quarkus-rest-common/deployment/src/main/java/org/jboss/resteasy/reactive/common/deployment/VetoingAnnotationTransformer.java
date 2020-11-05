@@ -4,7 +4,7 @@ import java.util.Set;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
 
@@ -31,7 +31,7 @@ public class VetoingAnnotationTransformer implements AnnotationsTransformer {
     @Override
     public void transform(TransformationContext context) {
         if (resourcesThatNeedCustomProducer.contains(context.getTarget().asClass().name())) {
-            context.transform().add(QuarkusRestDotNames.VETOED).done();
+            context.transform().add(ResteasyReactiveDotNames.VETOED).done();
         }
     }
 }

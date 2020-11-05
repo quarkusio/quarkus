@@ -1,12 +1,12 @@
 package io.quarkus.jaxrs.client.deployment;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_NUMBER;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRING;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
-import static org.jboss.resteasy.reactive.common.deployment.framework.QuarkusRestDotNames.JSONP_JSON_VALUE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_OBJECT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
 
 import java.util.HashSet;
 import java.util.List;
@@ -15,10 +15,10 @@ import java.util.Map;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalReaders;
-import org.jboss.resteasy.reactive.common.deployment.framework.AdditionalWriters;
-import org.jboss.resteasy.reactive.common.deployment.framework.EndpointIndexer;
-import org.jboss.resteasy.reactive.common.deployment.framework.IndexedParameter;
+import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
+import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.IndexedParameter;
 import org.jboss.resteasy.reactive.common.runtime.model.InjectableBean;
 import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
@@ -28,9 +28,6 @@ import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.Js
 import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonObjectHandler;
 import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonStructureHandler;
 import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonValueHandler;
-
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 
 public class ClientEndpointIndexer extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam> {
     ClientEndpointIndexer(Builder builder) {
@@ -66,7 +63,6 @@ public class ClientEndpointIndexer extends EndpointIndexer<ClientEndpointIndexer
     @Override
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             Map<String, String> existingConverters,
             AdditionalReaders additionalReaders,
             Map<String, InjectableBean> injectableBeans,

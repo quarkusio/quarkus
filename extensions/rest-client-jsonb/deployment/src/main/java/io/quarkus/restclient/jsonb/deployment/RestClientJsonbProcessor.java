@@ -15,5 +15,6 @@ public class RestClientJsonbProcessor {
         feature.produce(new FeatureBuildItem(Feature.REST_CLIENT_JSONB));
 
         capability.produce(new CapabilityBuildItem(Capability.REST_JSONB));
+        capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSON));
     }
 }

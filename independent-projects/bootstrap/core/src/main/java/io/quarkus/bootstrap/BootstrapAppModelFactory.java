@@ -242,9 +242,9 @@ public class BootstrapAppModelFactory {
             return createAppModelForJar(projectRoot);
         }
 
+        AppArtifact appArtifact = this.appArtifact;
         try {
             LocalProject localProject = null;
-            AppArtifact appArtifact = this.appArtifact;
             if (appArtifact == null) {
                 if (projectRoot == null) {
                     throw new IllegalArgumentException(

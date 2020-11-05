@@ -15,5 +15,6 @@ public class RestClientJacksonProcessor {
         feature.produce(new FeatureBuildItem(Feature.REST_CLIENT_JACKSON));
 
         capability.produce(new CapabilityBuildItem(Capability.REST_JACKSON));
+        capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSON));
     }
 }

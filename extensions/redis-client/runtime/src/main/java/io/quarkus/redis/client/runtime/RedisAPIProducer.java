@@ -52,6 +52,8 @@ class RedisAPIProducer {
         for (RedisAPIContainer container : REDIS_APIS.values()) {
             container.close();
         }
+
+        REDIS_APIS.clear();
     }
 
 }

@@ -400,4 +400,14 @@ public class KnativeConfig implements PlatformConfiguration {
      * Global autoscaling configuration.
      */
     GlobalAutoScalingConfig globalAutoScaling;
+
+    /**
+     * The name of the revision.
+     */
+    Optional<String> revisionName;
+
+    /**
+     * Traffic configuration.
+     */
+    Map<String, TrafficConfig> traffic;
 }

@@ -945,7 +945,19 @@ The generated service can be customized using the following properties:
 | quarkus.knative.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.knative.readiness-probe                 | Probe                                     |             | ( see Probe )
 | quarkus.knative.sidecars                        | Map<String, Container>                    |             |
+| quarkus.knative.revision-name                   | String                                    |             | 
+| quarkus.knative.traffic                         | Traffic[]                                 |             | ( see Traffic)
 |====
+
+.Traffic
+|====
+| Property        | Type    | Description | Default Value
+| revision-name   | String  | A specific revision to which to send this portion of traffic                                    |
+| tag             | String  | Expose a dedicated url for referncing this target                                               |
+| latest-revision | Boolean | Optionally provided to indicate that the latest revision should be used for this traffic target | false 
+| percent         | Logn    | Indicates the percent of traffic that is be routed to this revision                             | 100
+|====
+
 
 === Deployment targets
 

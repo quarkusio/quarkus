@@ -3566,6 +3566,26 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-common-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.wildfly.common</groupId>
                 <artifactId>wildfly-common</artifactId>
                 <version>${wildfly-common.version}</version>

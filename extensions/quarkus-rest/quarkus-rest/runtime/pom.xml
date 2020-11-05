@@ -20,6 +20,10 @@
             <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-common</artifactId>
         </dependency>

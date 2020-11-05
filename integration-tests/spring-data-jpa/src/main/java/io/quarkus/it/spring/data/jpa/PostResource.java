@@ -106,6 +106,20 @@ public class PostResource {
 
     @GET
     @Produces("application/json")
+    @Path("/mandatory/{id}")
+    public Post findMandatoryByPostId(@PathParam("id") Long id) {
+        return postRepository.findMandatoryById(id);
+    }
+
+    @GET
+    @Produces("application/json")
+    @Path("/doNothing")
+    public void doNothing() {
+        postRepository.doNothing();
+    }
+
+    @GET
+    @Produces("application/json")
     @Path("/postComment/all")
     public List<PostComment> findAll() {
         return postCommentRepository.findAll();

@@ -79,9 +79,19 @@ public class PostResourceTest {
                 .body("size()", is(2));
     }
 
-    //    Pay attention to the order, this test must be executed always the last one
     @Test
     @Order(7)
+    void testFindPostByTitleContainingText() {
+        Post post = when().get("/post/mandatory/1").then()
+                .statusCode(200)
+                .extract().body().as(Post.class);
+
+        assertThat(post).isNotNull();
+        assertThat(post.getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @Order(8)
     public void testDeleteAllPosts() {
         //We create a post with metadata
         when().post("/post/postId/1/key/key1/value/value1").then()
@@ -104,7 +114,7 @@ public class PostResourceTest {
     }
 
     @Test
-    @Order(8)
+    @Order(9)
     public void testDeletePostByOrganization() {
         Post postHow = when().get("/post/new/title/howTo/organization/stackOverflow").then()
                 .statusCode(200)
@@ -128,4 +138,13 @@ public class PostResourceTest {
         assertThat(posts).isEmpty();
 
     }
+
+    @Test
+    @Order(10)
+    void testDoNothing() {
+        when().get("/post/doNothing").then()
+                .statusCode(204);
+
+    }
+
 }

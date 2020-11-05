@@ -37,7 +37,15 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
             String generatedClassName, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo) {
         MethodNameParser methodNameParser = new MethodNameParser(entityClassInfo, index);
-        for (MethodInfo method : repositoryClassInfo.methods()) {
+        List<MethodInfo> repoMethods = new ArrayList<>(repositoryClassInfo.methods());
+        //As intermediate interfaces are supported for spring data repositories, we need to search the methods declared in such interfaced and add them to the methods to implement list
+        for (DotName extendedInterface : repositoryClassInfo.interfaceNames()) {
+            if (GenerationUtil.isIntermediateRepository(extendedInterface, index)) {
+                List<MethodInfo> methods = index.getClassByName(extendedInterface).methods();
+                repoMethods.addAll(methods);
+            }
+        }
+        for (MethodInfo method : repoMethods) {
             if (method.annotation(DotNames.SPRING_DATA_QUERY) != null) { // handled by CustomQueryMethodsAdder
                 continue;
             }

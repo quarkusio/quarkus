@@ -8,4 +8,8 @@ public interface PersonFragment {
     List<Person> findAll();
 
     void makeNameUpperCase(Person person);
+
+    default void doNothingMore() {
+
+    }
 }

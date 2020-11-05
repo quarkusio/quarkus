@@ -191,6 +191,11 @@ public class IfSectionHelper implements SectionHelper {
             return operator;
         }
 
+        @Override
+        public String toString() {
+            return "OperandCondition [operator=" + operator + ", expression=" + expression.toOriginalString() + "]";
+        }
+
     }
 
     static class CompositeCondition implements Condition {
@@ -270,6 +275,11 @@ public class IfSectionHelper implements SectionHelper {
         @Override
         public boolean isEmpty() {
             return conditions.isEmpty();
+        }
+
+        @Override
+        public String toString() {
+            return "CompositeCondition [conditions=" + conditions.size() + ", operator=" + operator + "]";
         }
 
     }

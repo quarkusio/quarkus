@@ -486,7 +486,11 @@ class Parser implements Function<String, Expression>, ParserHelper {
         List<String> paramValues = new ArrayList<>();
 
         while (iter.hasNext()) {
-            paramValues.add(iter.next());
+            // Ignore whitespace strings
+            String val = iter.next().trim();
+            if (!val.isEmpty()) {
+                paramValues.add(val);
+            }
         }
         if (paramValues.size() > factoryParams.size()) {
             LOGGER.debugf("Too many params [label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams);
@@ -549,9 +553,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
      *
      * @param part
      * @return the index of an equals char outside of any string literal,
-     *         <code>-1</code> if no such char is found
+     *         <code>-1</code> if no such char is found or if the part represents a composite param
      */
     static int getFirstDeterminingEqualsCharPosition(String part) {
+        if (!part.isEmpty() && part.charAt(0) == START_COMPOSITE_PARAM) {
+            return -1;
+        }
         boolean stringLiteral = false;
         for (int i = 0; i < part.length(); i++) {
             if (LiteralSupport.isStringLiteralSeparator(part.charAt(i))) {

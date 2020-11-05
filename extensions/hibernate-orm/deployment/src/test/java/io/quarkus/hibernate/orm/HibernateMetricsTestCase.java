@@ -57,10 +57,13 @@ public class HibernateMetricsTestCase {
     @Test
     @Transactional
     public void testMetrics() {
-        assertEquals(0L, getCounterValueOrNull("hibernate-orm.queries.executed",
+        assertEquals(0L, getCounterValueOrNull("hibernate.query.executions",
                 new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
-        assertEquals(0L, getCounterValueOrNull("hibernate-orm.entities.inserted",
+        assertEquals(0L, getCounterValueOrNull("hibernate.entities.inserts",
                 new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
+        assertEquals(0L, getCounterValueOrNull("hibernate.cache.query.requests",
+                new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
+                new Tag("result", "miss")));
         Arc.container().requestContext().activate();
         try {
             DummyEntity entity = new DummyEntity();
@@ -68,9 +71,9 @@ public class HibernateMetricsTestCase {
             em.persist(entity);
             em.flush();
             em.createQuery("from DummyEntity e").getResultList();
-            assertEquals(1L, getCounterValueOrNull("hibernate-orm.queries.executed",
+            assertEquals(1L, getCounterValueOrNull("hibernate.query.executions",
                     new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
-            assertEquals(1L, getCounterValueOrNull("hibernate-orm.entities.inserted",
+            assertEquals(1L, getCounterValueOrNull("hibernate.entities.inserts",
                     new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
         } finally {
             Arc.container().requestContext().terminate();

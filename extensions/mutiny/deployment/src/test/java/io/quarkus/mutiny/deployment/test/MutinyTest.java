@@ -91,7 +91,7 @@ public class MutinyTest {
                 throwable.set(err);
             }
             latch.countDown();
-        }, "vertx-eventloop-thread-0").start();
+        }, "vert.x-eventloop-thread-0").start();
 
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assertions.assertNull(item.get());

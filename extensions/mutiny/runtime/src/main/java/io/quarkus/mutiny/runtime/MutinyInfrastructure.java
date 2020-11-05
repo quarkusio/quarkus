@@ -36,7 +36,7 @@ public class MutinyInfrastructure {
                  * calling from a Vert.x event-loop context / thread.
                  */
                 String threadName = Thread.currentThread().getName();
-                return !threadName.contains("vertx-eventloop-thread-");
+                return !threadName.startsWith("vert.x-eventloop-thread-");
             }
         });
     }

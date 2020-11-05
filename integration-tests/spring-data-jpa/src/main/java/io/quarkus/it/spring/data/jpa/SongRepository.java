@@ -14,4 +14,8 @@ public interface SongRepository extends PagingAndSortingRepository<Song, Long> {
 
     Optional<Song> findSongByTitleAndAuthor(String title, String author);
 
+    default void doNothing() {
+
+    }
+
 }

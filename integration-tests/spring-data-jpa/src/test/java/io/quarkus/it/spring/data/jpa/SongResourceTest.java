@@ -94,4 +94,11 @@ public class SongResourceTest {
         assertThat(all).isEmpty();
     }
 
+    @Test
+    @Order(5)
+    public void testDefaultMethod() {
+        when().get("/song/doNothing").then()
+                .statusCode(204);
+    }
+
 }

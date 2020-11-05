@@ -1,5 +1,6 @@
 package io.quarkus.spring.data.deployment.generate;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +43,10 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             }
 
             if (classCreator.getExistingMethods().contains(GenerationUtil.toMethodDescriptor(generatedClassName, method))) {
+                continue;
+            }
+
+            if (!Modifier.isAbstract(method.flags())) { // skip defaults methods
                 continue;
             }
 

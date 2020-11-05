@@ -18,6 +18,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.util.IoUtils;
 
 @Mojo(name = "platform-properties", threadSafe = true)
 public class PlatformPropertiesMojo extends AbstractMojo {
@@ -83,7 +84,16 @@ public class PlatformPropertiesMojo extends AbstractMojo {
             assertPlatformPropertiesInBom();
         }
 
-        projectHelper.attachArtifact(project, "properties", propsFile);
+        // this is necessary to sometimes be able to resolve the artifacts from the workspace
+        final File published = new File(project.getBuild().getDirectory(),
+                project.getArtifactId() + "-" + project.getVersion() + ".properties");
+        try {
+            IoUtils.copy(propsFile.toPath(), published.toPath());
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to copy " + propsFile + " to " + published, e);
+        }
+
+        projectHelper.attachArtifact(project, "properties", published);
     }
 
     private void assertPlatformPropertiesInBom() throws MojoExecutionException {

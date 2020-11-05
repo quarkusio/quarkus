@@ -226,8 +226,6 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             managedDeps = mergedManagedDeps;
         }
 
-        collectPlatformProperties(appBuilder, managedDeps);
-
         final List<RemoteRepository> repos = mvn.aggregateRepositories(managedRepos,
                 mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
 
@@ -275,6 +273,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             }
         }
 
+        collectPlatformProperties(appBuilder, managedDeps);
+
         List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps.size() + deploymentDeps.size());
         fullDeploymentDeps.addAll(userDeps);
         fullDeploymentDeps.addAll(deploymentDeps);
@@ -307,7 +307,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         artifact.getVersion()));
             } else if ("properties".equals(artifact.getExtension())
                     && artifactId.endsWith(BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX)) {
-                final Path propsPath = resolve(toAppArtifact(artifact));
+                final Path propsPath = mvn.resolve(artifact).getArtifact().getFile().toPath();
                 final Properties props = new Properties();
                 try (InputStream is = Files.newInputStream(propsPath)) {
                     props.load(is);

@@ -680,6 +680,33 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testRedirectUriWithForwardedPrefix() throws IOException, InterruptedException {
+        //doTestRedirectUriWithForwardedPrefix("/service");
+        doTestRedirectUriWithForwardedPrefix("/service/");
+        //doTestRedirectUriWithForwardedPrefix("");
+        //doTestRedirectUriWithForwardedPrefix("/");
+        //doTestRedirectUriWithForwardedPrefix("//");
+    }
+
+    private void doTestRedirectUriWithForwardedPrefix(String prefix) throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+            webClient.addRequestHeader("X-Forwarded-Prefix", prefix);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
+            String loc = webResponse.getResponseHeaderValue("location");
+            String encodedPrefix;
+            if (prefix.isEmpty() || prefix.equals("/") || prefix.equals("//")) {
+                encodedPrefix = "%2F";
+            } else {
+                encodedPrefix = prefix.replaceAll("\\/", "%2F");
+            }
+            assertTrue(loc.contains("redirect_uri=http%3A%2F%2Flocalhost%3A8081" + encodedPrefix + "web-app"));
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testJavaScriptRequest() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
             try {

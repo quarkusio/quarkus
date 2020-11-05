@@ -459,8 +459,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
         final String scheme = forceHttps ? "https" : context.request().scheme();
+        String forwardedPrefix = "";
+        if (resolver.isEnableHttpForwardedPrefix()) {
+            String forwardedPrefixHeader = context.request().getHeader("X-Forwarded-Prefix");
+            if (forwardedPrefixHeader != null && !forwardedPrefixHeader.equals("/") && !forwardedPrefixHeader.equals("//")) {
+                forwardedPrefix = forwardedPrefixHeader;
+                if (forwardedPrefix.endsWith("/")) {
+                    forwardedPrefix = forwardedPrefix.substring(0, forwardedPrefix.length() - 1);
+                }
+            }
+        }
         return new StringBuilder(scheme).append("://")
                 .append(URI.create(context.request().absoluteURI()).getAuthority())
+                .append(forwardedPrefix)
                 .append(path)
                 .toString();
     }

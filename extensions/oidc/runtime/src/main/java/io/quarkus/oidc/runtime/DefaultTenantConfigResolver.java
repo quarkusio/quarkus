@@ -9,6 +9,7 @@ import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OIDCException;
@@ -41,6 +42,10 @@ public class DefaultTenantConfigResolver {
 
     @Inject
     Event<SecurityEvent> securityEvent;
+
+    @Inject
+    @ConfigProperty(name = "quarkus.http.proxy.enable-forwarded-prefix")
+    boolean enableHttpForwardedPrefix;
 
     private volatile boolean securityEventObserved;
 
@@ -153,5 +158,9 @@ public class DefaultTenantConfigResolver {
         }
 
         return null;
+    }
+
+    boolean isEnableHttpForwardedPrefix() {
+        return enableHttpForwardedPrefix;
     }
 }

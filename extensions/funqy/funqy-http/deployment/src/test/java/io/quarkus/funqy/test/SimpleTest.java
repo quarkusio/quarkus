@@ -6,7 +6,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -18,13 +17,9 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class SimpleTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.funqy.export=toLowerCase\n";
-
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(PrimitiveFunctions.class, GreetingFunctions.class, Greeting.class, GreetingService.class,
                             GreetingTemplate.class));
 
@@ -32,12 +27,6 @@ public class SimpleTest {
     @ValueSource(strings = { "/toLowerCase", "/toLowerCaseAsync" })
     public void testString(String path) {
         RestAssured.given().contentType("application/json").body("\"Hello\"").post(path)
-                .then().statusCode(200).body(equalTo("\"hello\""));
-    }
-
-    @Test
-    public void testRoot() {
-        RestAssured.given().contentType("application/json").body("\"Hello\"").post("/")
                 .then().statusCode(200).body(equalTo("\"hello\""));
     }
 

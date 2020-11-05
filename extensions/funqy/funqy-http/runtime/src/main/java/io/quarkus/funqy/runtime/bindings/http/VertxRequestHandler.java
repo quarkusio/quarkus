@@ -39,15 +39,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final CurrentIdentityAssociation association;
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
-    protected final FunctionInvoker defaultInvoker;
 
     public VertxRequestHandler(Vertx vertx,
-            FunctionInvoker defaultInvoker,
             BeanContainer beanContainer,
             String rootPath,
             Executor executor) {
         this.vertx = vertx;
-        this.defaultInvoker = defaultInvoker;
         this.beanContainer = beanContainer;
         // make sure rootPath ends with "/" for easy parsing
         if (rootPath == null) {
@@ -79,12 +76,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
         path = path.substring(rootPath.length());
 
-        final FunctionInvoker invoker;
-        if (!path.isEmpty()) {
-            invoker = FunctionRecorder.registry.matchInvoker(path);
-        } else {
-            invoker = defaultInvoker;
-        }
+        FunctionInvoker invoker = FunctionRecorder.registry.matchInvoker(path);
 
         if (invoker == null) {
             routingContext.fail(404);

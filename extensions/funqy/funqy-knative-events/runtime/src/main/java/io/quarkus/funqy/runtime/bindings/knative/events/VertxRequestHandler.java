@@ -52,17 +52,14 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final Executor executor;
     protected final FunctionInvoker defaultInvoker;
     protected final Map<String, FunctionInvoker> typeTriggers;
-    protected final String rootPath;
 
     public VertxRequestHandler(Vertx vertx,
-            String rootPath,
             BeanContainer beanContainer,
             ObjectMapper mapper,
             FunqyKnativeEventsConfig config,
             FunctionInvoker defaultInvoker,
             Map<String, FunctionInvoker> typeTriggers,
             Executor executor) {
-        this.rootPath = rootPath;
         this.defaultInvoker = defaultInvoker;
         this.vertx = vertx;
         this.beanContainer = beanContainer;
@@ -97,30 +94,21 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         }
     }
 
-    private static final ResponseProcessing NOOP = () -> {
-    };
-
     private void regularFunqyHttp(RoutingContext routingContext) {
-        String path = routingContext.request().path();
-        if (path == null) {
-            routingContext.fail(404);
-            return;
-        }
-        // expects rootPath to end with '/'
-        if (!path.startsWith(rootPath)) {
-            routingContext.fail(404);
-            return;
-        }
-
-        path = path.substring(rootPath.length());
-
-        final FunctionInvoker invoker;
-        if (!path.isEmpty()) {
+        FunctionInvoker invoker = defaultInvoker;
+        if (invoker == null) {
+            String path = routingContext.request().path();
+            if (path.startsWith("/"))
+                path = path.substring(1);
             invoker = FunctionRecorder.registry.matchInvoker(path);
-        } else {
-            invoker = defaultInvoker;
+            if (invoker == null) {
+                routingContext.fail(404);
+                log.error("Could not vanilla http request to function: " + path);
+                return;
+            }
         }
-        processHttpRequest(null, routingContext, NOOP, invoker);
+        processHttpRequest(null, routingContext, () -> {
+        }, invoker);
     }
 
     private void binaryContentMode(RoutingContext routingContext) {

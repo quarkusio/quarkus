@@ -93,7 +93,6 @@ public class KnativeEventsBindingRecorder {
     }
 
     public Handler<RoutingContext> start(
-            String rootPath,
             FunqyConfig funqyConfig,
             FunqyKnativeEventsConfig eventsConfig,
             Supplier<Vertx> vertx,
@@ -146,8 +145,7 @@ public class KnativeEventsBindingRecorder {
 
         }
 
-        Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), rootPath, beanContainer, objectMapper,
-                eventsConfig,
+        Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), beanContainer, objectMapper, eventsConfig,
                 defaultInvoker, typeTriggers, executor);
 
         return handler;

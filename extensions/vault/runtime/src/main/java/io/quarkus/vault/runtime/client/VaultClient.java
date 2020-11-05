@@ -31,10 +31,15 @@ import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPListKeysResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPReadKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPValidateCodeResult;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncrypt;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncryptBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitKeyConfigBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitKeyExport;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitListKeysResult;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitReadKeyResult;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRewrapBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSign;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
@@ -86,6 +91,18 @@ public interface VaultClient {
 
     VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole);
 
+    void updateTransitKeyConfiguration(String token, String keyName, VaultTransitKeyConfigBody body);
+
+    void createTransitKey(String token, String keyName, VaultTransitCreateKeyBody body);
+
+    void deleteTransitKey(String token, String keyName);
+
+    VaultTransitKeyExport exportTransitKey(String token, String keyType, String keyName, String version);
+
+    VaultTransitReadKeyResult readTransitKey(String token, String keyName);
+
+    VaultTransitListKeysResult listTransitKeys(String token);
+
     VaultTransitEncrypt encrypt(String token, String keyName, VaultTransitEncryptBody body);
 
     VaultTransitDecrypt decrypt(String token, String keyName, VaultTransitDecryptBody body);
@@ -129,5 +146,4 @@ public interface VaultClient {
     VaultListPolicyResult listPolicies(String token);
 
     void deletePolicy(String token, String name);
-
 }

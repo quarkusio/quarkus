@@ -133,12 +133,4 @@ public final class BuildChainBuilder {
             throw new ChainBuildException(e);
         }
     }
-
-    void addProvider(final BuildProvider provider) throws ChainBuildException {
-        provider.installInto(this);
-    }
-
-    List<BuildProvider> getProviders() {
-        return providers;
-    }
 }

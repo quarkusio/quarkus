@@ -382,6 +382,7 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/new-params/myklass/myregex/context")
                 .then()
                 .log().ifError()
+                .statusCode(200)
                 .body(Matchers.equalTo("OK"));
         RestAssured.get("/new-params/myklass/myregex/sse")
                 .then()

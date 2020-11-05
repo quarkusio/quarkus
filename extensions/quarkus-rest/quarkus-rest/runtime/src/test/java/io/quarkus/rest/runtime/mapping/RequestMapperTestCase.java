@@ -3,11 +3,10 @@ package io.quarkus.rest.runtime.mapping;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
+import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.rest.server.runtime.mapping.RequestMapper;
-import io.quarkus.rest.server.runtime.mapping.URITemplate;
 
 public class RequestMapperTestCase {
 

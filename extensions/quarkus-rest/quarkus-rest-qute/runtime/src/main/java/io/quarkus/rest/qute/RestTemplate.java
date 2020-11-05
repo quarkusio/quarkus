@@ -1,12 +1,13 @@
 package io.quarkus.rest.qute;
 
+import org.jboss.resteasy.reactive.server.core.CurrentRequest;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
 // TODO: We probably want to share this with quarkus-resteasy-qute somehow...
 public final class RestTemplate {
@@ -15,8 +16,7 @@ public final class RestTemplate {
     }
 
     private static String getActionName() {
-        QuarkusRestRequestContext otherHttpContextObject = (QuarkusRestRequestContext) Arc.container()
-                .select(CurrentVertxRequest.class).get().getOtherHttpContextObject();
+        ResteasyReactiveRequestContext otherHttpContextObject = CurrentRequest.get();
         SimplifiedResourceInfo resourceMethod = otherHttpContextObject.getTarget().getSimplifiedResourceInfo();
         return resourceMethod.getResourceClass().getSimpleName() + "/" + resourceMethod.getMethodName();
     }

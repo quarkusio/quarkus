@@ -7,6 +7,7 @@ import javax.ws.rs.core.Context;
 
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.server.injection.ContextProducers;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
@@ -15,7 +16,6 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.rest.server.runtime.injection.ContextProducers;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;

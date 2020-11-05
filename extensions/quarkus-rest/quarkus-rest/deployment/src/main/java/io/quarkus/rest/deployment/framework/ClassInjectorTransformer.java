@@ -12,6 +12,13 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.resteasy.reactive.common.processor.IndexedParameter;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.DelegatingParameterConverterSupplier;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
+import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionContext;
+import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionTarget;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
@@ -20,13 +27,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.deployment.util.AsmUtil;
-import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
-import io.quarkus.rest.server.runtime.core.parameters.converters.DelegatingParameterConverterSupplier;
-import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverterSupplier;
-import io.quarkus.rest.server.runtime.core.parameters.converters.RuntimeResolvedConverter;
-import io.quarkus.rest.server.runtime.injection.QuarkusRestInjectionContext;
-import io.quarkus.rest.server.runtime.injection.QuarkusRestInjectionTarget;
 
 public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 

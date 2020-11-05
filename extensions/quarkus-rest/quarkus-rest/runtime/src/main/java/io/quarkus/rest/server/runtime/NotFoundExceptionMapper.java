@@ -34,12 +34,12 @@ import javax.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.runtime.util.ServerMediaType;
+import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
+import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
+import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 
-import io.quarkus.rest.server.runtime.core.request.ServerDrivenNegotiation;
-import io.quarkus.rest.server.runtime.handlers.QuarkusRestInitialHandler;
-import io.quarkus.rest.server.runtime.mapping.RequestMapper;
-import io.quarkus.rest.server.runtime.mapping.RuntimeResource;
-import io.quarkus.rest.server.runtime.util.RuntimeResourceVisitor;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;

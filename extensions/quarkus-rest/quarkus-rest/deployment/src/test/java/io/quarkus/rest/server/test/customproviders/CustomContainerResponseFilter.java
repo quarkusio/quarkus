@@ -7,8 +7,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 
 import org.jboss.resteasy.reactive.ContainerResponseFilter;
-
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 public class CustomContainerResponseFilter {
 

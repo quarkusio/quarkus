@@ -11,9 +11,9 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
-import io.quarkus.rest.server.runtime.core.LazyMethod;
-import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
 
 public class JsonbMessageBodyWriter implements QuarkusRestMessageBodyWriter<Object> {
 
@@ -45,7 +45,7 @@ public class JsonbMessageBodyWriter implements QuarkusRestMessageBodyWriter<Obje
     }
 
     @Override
-    public void writeResponse(Object o, QuarkusRestRequestContext context) throws WebApplicationException, IOException {
+    public void writeResponse(Object o, ResteasyReactiveRequestContext context) throws WebApplicationException, IOException {
         try (OutputStream stream = context.getOrCreateOutputStream()) {
             if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
                 stream.write(((String) o).getBytes());

@@ -23,9 +23,9 @@ import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 

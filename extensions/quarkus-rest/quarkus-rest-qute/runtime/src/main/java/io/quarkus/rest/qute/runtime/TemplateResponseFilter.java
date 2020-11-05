@@ -6,11 +6,11 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.ContainerResponseFilter;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContext;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestContext;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerResponseContext;
 
 public class TemplateResponseFilter {
 

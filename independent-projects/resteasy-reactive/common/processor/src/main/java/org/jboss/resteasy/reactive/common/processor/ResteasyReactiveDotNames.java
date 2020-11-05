@@ -211,9 +211,9 @@ public final class ResteasyReactiveDotNames {
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
     public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_FILTER = DotName
-            .createSimple("io.quarkus.rest.server.runtime.spi.QuarkusRestContainerResponseFilter");
+            .createSimple("org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseFilter");
     public static final DotName QUARKUS_REST_CONTAINER_REQUEST_FILTER = DotName
-            .createSimple("io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestFilter");
+            .createSimple("org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestFilter");
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.

@@ -1,6 +1,6 @@
 package io.quarkus.rest.server.runtime;
 
-import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 
 public interface QuarkusRestInitialiser {
     /**

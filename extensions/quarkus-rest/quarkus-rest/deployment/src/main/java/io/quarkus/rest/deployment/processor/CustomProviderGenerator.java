@@ -16,6 +16,13 @@ import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.ContainerRequestFilter;
 import org.jboss.resteasy.reactive.ContainerResponseFilter;
 import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContext;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -25,13 +32,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.deployment.framework.QuarkusRestServerDotNames;
-import io.quarkus.rest.server.runtime.core.LazyMethod;
-import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestHttpHeaders;
-import io.quarkus.rest.server.runtime.mapping.RuntimeResource;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestContext;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerResponseContext;
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
@@ -275,7 +275,7 @@ final class CustomProviderGenerator {
         ResultHandle qrCtxHandle = filter.invokeInterfaceMethod(
                 ofMethod(QuarkusRestContainerRequestContext.class, "getQuarkusRestContext", QuarkusRestContext.class),
                 qrContainerReqCtxHandle);
-        return filter.checkCast(qrCtxHandle, QuarkusRestRequestContext.class);
+        return filter.checkCast(qrCtxHandle, ResteasyReactiveRequestContext.class);
     }
 
     private static String getGeneratedClassName(MethodInfo targetMethod, DotName annotationDotName) {

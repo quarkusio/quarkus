@@ -1,1 +1,1 @@
-io.quarkus.rest.server.runtime.jaxrs.QuarkusRestRuntimeDelegate
+org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestRuntimeDelegate

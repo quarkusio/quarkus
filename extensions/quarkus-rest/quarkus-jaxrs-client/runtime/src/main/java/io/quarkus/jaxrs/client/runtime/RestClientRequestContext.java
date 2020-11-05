@@ -22,7 +22,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
-import org.jboss.resteasy.reactive.common.runtime.core.AbstractQuarkusRestContext;
+import org.jboss.resteasy.reactive.common.runtime.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
 import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
@@ -38,7 +38,7 @@ import io.vertx.core.http.HttpClientResponse;
 /**
  * This is a stateful invocation, you can't invoke it twice.
  */
-public class RestClientRequestContext extends AbstractQuarkusRestContext<RestClientRequestContext, ClientRestHandler> {
+public class RestClientRequestContext extends AbstractResteasyReactiveContext<RestClientRequestContext, ClientRestHandler> {
 
     private final HttpClient httpClient;
     // Changeable by the request filter

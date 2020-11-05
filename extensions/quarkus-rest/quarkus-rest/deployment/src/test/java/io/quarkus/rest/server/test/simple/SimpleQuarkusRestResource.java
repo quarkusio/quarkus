@@ -33,8 +33,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.Blocking;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;

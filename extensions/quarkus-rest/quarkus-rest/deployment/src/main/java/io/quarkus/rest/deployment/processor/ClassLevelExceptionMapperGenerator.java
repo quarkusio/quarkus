@@ -25,6 +25,13 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestContainerRequestContextImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -33,13 +40,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.deployment.framework.QuarkusRestServerDotNames;
-import io.quarkus.rest.server.runtime.core.LazyMethod;
-import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestContainerRequestContextImpl;
-import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestHttpHeaders;
-import io.quarkus.rest.server.runtime.mapping.RuntimeResource;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestExceptionMapper;
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
@@ -115,11 +115,11 @@ final class ClassLevelExceptionMapperGenerator {
 
                 MethodDescriptor qrToResponseDescriptor = MethodDescriptor.ofMethod(generatedClassName, "toResponse",
                         Response.class.getName(),
-                        handledExceptionType.name().toString(), QuarkusRestRequestContext.class.getName());
+                        handledExceptionType.name().toString(), ResteasyReactiveRequestContext.class.getName());
 
                 // bridge toResponse(Throwable, QuarkusRestRequestContext) method
                 MethodCreator bridgeQRToResponse = cc.getMethodCreator("toResponse", Response.class, Throwable.class,
-                        QuarkusRestRequestContext.class);
+                        ResteasyReactiveRequestContext.class);
                 ResultHandle bridgeQRExceptionParam = bridgeQRToResponse.getMethodParam(0);
                 ResultHandle bridgeQRContextParam = bridgeQRToResponse.getMethodParam(1);
                 ResultHandle castedBridgeQRMethodParam = bridgeQRToResponse.checkCast(bridgeQRExceptionParam,
@@ -132,7 +132,7 @@ final class ClassLevelExceptionMapperGenerator {
                 ResultHandle exceptionHandle = qrToResponse.getMethodParam(0);
                 ResultHandle contextHandle = qrToResponse.getMethodParam(1);
                 ResultHandle endpointInstanceHandle = qrToResponse.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(QuarkusRestRequestContext.class, "getEndpointInstance", Object.class),
+                        MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
                         contextHandle);
                 ResultHandle targetInstanceHandle = qrToResponse.checkCast(endpointInstanceHandle,
                         targetClass.name().toString());
@@ -156,7 +156,7 @@ final class ClassLevelExceptionMapperGenerator {
                         } else if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)
                                 || QuarkusRestServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                             targetMethodParamHandles[i] = qrToResponse.invokeVirtualMethod(
-                                    ofMethod(QuarkusRestRequestContext.class.getName(), "getContainerRequestContext",
+                                    ofMethod(ResteasyReactiveRequestContext.class.getName(), "getContainerRequestContext",
                                             QuarkusRestContainerRequestContextImpl.class),
                                     contextHandle);
                         } else if (URI_INFO.equals(paramDotName)) {

@@ -53,6 +53,13 @@ import org.jboss.resteasy.reactive.common.runtime.model.ResourceParamConverterPr
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.runtime.util.Encode;
+import org.jboss.resteasy.reactive.server.core.ContextResolvers;
+import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
+import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.core.Features;
+import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -80,13 +87,6 @@ import io.quarkus.rest.common.QuarkusRestConfig;
 import io.quarkus.rest.deployment.framework.ServerEndpointIndexer;
 import io.quarkus.rest.server.runtime.QuarkusRestInitialiser;
 import io.quarkus.rest.server.runtime.QuarkusRestRecorder;
-import io.quarkus.rest.server.runtime.core.ContextResolvers;
-import io.quarkus.rest.server.runtime.core.DynamicFeatures;
-import io.quarkus.rest.server.runtime.core.ExceptionMapping;
-import io.quarkus.rest.server.runtime.core.Features;
-import io.quarkus.rest.server.runtime.core.ParamConverterProviders;
-import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
-import io.quarkus.rest.server.runtime.core.ServerSerialisers;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;

@@ -8,9 +8,8 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
-
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestContext;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestFilter;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestFilter;
 
 public abstract class AsyncRequestFilter implements QuarkusRestContainerRequestFilter {
 

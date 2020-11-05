@@ -10,13 +10,13 @@ import javax.ws.rs.core.Request;
 
 import org.jboss.resteasy.reactive.ContainerRequestFilter;
 import org.jboss.resteasy.reactive.ContainerResponseFilter;
+import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestSimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestRequest;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContext;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
-import io.quarkus.rest.server.runtime.core.LazyMethod;
-import io.quarkus.rest.server.runtime.core.QuarkusRestSimplifiedResourceInfo;
-import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestRequest;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerRequestContext;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestContainerResponseContext;
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 
 /**

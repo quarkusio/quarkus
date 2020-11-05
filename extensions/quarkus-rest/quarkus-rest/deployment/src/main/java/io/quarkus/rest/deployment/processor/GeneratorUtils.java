@@ -3,11 +3,11 @@ package io.quarkus.rest.deployment.processor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import org.jboss.jandex.DotName;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.server.runtime.mapping.RuntimeResource;
 import io.vertx.ext.web.RoutingContext;
 
 final class GeneratorUtils {
@@ -28,16 +28,16 @@ final class GeneratorUtils {
     private static void paramHandleFromReqContextMethod(MethodCreator m, ResultHandle qrReqCtxHandle,
             ResultHandle[] targetMethodParamHandles, int i, String methodName, String returnType) {
         targetMethodParamHandles[i] = m.invokeVirtualMethod(
-                ofMethod(QuarkusRestRequestContext.class.getName(), methodName, returnType), qrReqCtxHandle);
+                ofMethod(ResteasyReactiveRequestContext.class.getName(), methodName, returnType), qrReqCtxHandle);
     }
 
     static ResultHandle routingContextHandler(MethodCreator m, ResultHandle qrReqCtxHandle) {
         return m.invokeVirtualMethod(
-                ofMethod(QuarkusRestRequestContext.class, "getContext", RoutingContext.class), qrReqCtxHandle);
+                ofMethod(ResteasyReactiveRequestContext.class, "getContext", RoutingContext.class), qrReqCtxHandle);
     }
 
     static ResultHandle runtimeResourceHandle(MethodCreator filterMethod, ResultHandle qrReqCtxHandle) {
         return filterMethod.invokeVirtualMethod(
-                ofMethod(QuarkusRestRequestContext.class, "getTarget", RuntimeResource.class), qrReqCtxHandle);
+                ofMethod(ResteasyReactiveRequestContext.class, "getTarget", RuntimeResource.class), qrReqCtxHandle);
     }
 }

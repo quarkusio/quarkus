@@ -19,6 +19,13 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.server.core.CurrentRequest;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.parameters.CookieParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.MatrixParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.PathParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.QueryParamExtractor;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -26,17 +33,9 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.server.runtime.core.parameters.CookieParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.HeaderParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.MatrixParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.PathParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.QueryParamExtractor;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
@@ -105,13 +104,7 @@ final class CustomResourceProducersGenerator {
                 Object.class.getName())) {
             c.addAnnotation(Singleton.class);
 
-            FieldCreator currentVertxRequestFieldCreator = c
-                    .getFieldCreator("currentVertxRequest", CurrentVertxRequest.class.getName())
-                    .setModifiers(Modifier.PROTECTED);
-            currentVertxRequestFieldCreator.addAnnotation(Inject.class);
-            FieldDescriptor currentVertxRequest = currentVertxRequestFieldCreator.getFieldDescriptor();
-
-            MethodCreator getContextMethodCreator = c.getMethodCreator("getContext", QuarkusRestRequestContext.class);
+            MethodCreator getContextMethodCreator = c.getMethodCreator("getContext", ResteasyReactiveRequestContext.class);
             MethodCreator getHeaderParamMethodCreator = c.getMethodCreator("getHeaderParam", String.class, String.class);
             MethodCreator getQueryParamMethodCreator = c.getMethodCreator("getQueryParam", String.class, String.class);
             MethodCreator getPathParamMethodCreator = c.getMethodCreator("getPathParam", String.class, int.class);
@@ -121,11 +114,9 @@ final class CustomResourceProducersGenerator {
             try (MethodCreator m = getContextMethodCreator) {
                 m.setModifiers(Modifier.PRIVATE);
 
-                ResultHandle currentVertObjectHandle = m.readInstanceField(currentVertxRequest, m.getThis());
-                ResultHandle otherHttpContextObjectHandle = m.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(CurrentVertxRequest.class, "getOtherHttpContextObject", Object.class),
-                        currentVertObjectHandle);
-                ResultHandle result = m.checkCast(otherHttpContextObjectHandle, QuarkusRestRequestContext.class);
+                ResultHandle otherHttpContextObjectHandle = m.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(CurrentRequest.class, "get", ResteasyReactiveRequestContext.class));
+                ResultHandle result = m.checkCast(otherHttpContextObjectHandle, ResteasyReactiveRequestContext.class);
                 m.returnValue(result);
             }
 
@@ -137,7 +128,7 @@ final class CustomResourceProducersGenerator {
                         MethodDescriptor.ofConstructor(HeaderParamExtractor.class, String.class, boolean.class),
                         m.getMethodParam(0), m.load(true));
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(HeaderParamExtractor.class,
-                        "extractParameter", Object.class, QuarkusRestRequestContext.class), extractorHandle,
+                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
@@ -150,7 +141,7 @@ final class CustomResourceProducersGenerator {
                         MethodDescriptor.ofConstructor(QueryParamExtractor.class, String.class, boolean.class, boolean.class),
                         m.getMethodParam(0), m.load(true), m.load(false));
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(QueryParamExtractor.class,
-                        "extractParameter", Object.class, QuarkusRestRequestContext.class), extractorHandle,
+                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
@@ -163,7 +154,7 @@ final class CustomResourceProducersGenerator {
                         MethodDescriptor.ofConstructor(PathParamExtractor.class, int.class, boolean.class),
                         m.getMethodParam(0), m.load(false));
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(PathParamExtractor.class,
-                        "extractParameter", Object.class, QuarkusRestRequestContext.class), extractorHandle,
+                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
@@ -176,7 +167,7 @@ final class CustomResourceProducersGenerator {
                         MethodDescriptor.ofConstructor(MatrixParamExtractor.class, String.class, boolean.class, boolean.class),
                         m.getMethodParam(0), m.load(true), m.load(false));
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(MatrixParamExtractor.class,
-                        "extractParameter", Object.class, QuarkusRestRequestContext.class), extractorHandle,
+                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
@@ -189,7 +180,7 @@ final class CustomResourceProducersGenerator {
                         MethodDescriptor.ofConstructor(CookieParamExtractor.class, String.class),
                         m.getMethodParam(0));
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(CookieParamExtractor.class,
-                        "extractParameter", Object.class, QuarkusRestRequestContext.class), extractorHandle,
+                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }

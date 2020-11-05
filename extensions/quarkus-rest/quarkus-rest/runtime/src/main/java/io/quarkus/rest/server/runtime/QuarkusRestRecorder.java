@@ -16,6 +16,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.ws.rs.RuntimeType;
@@ -33,6 +34,7 @@ import javax.ws.rs.ext.WriterInterceptor;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.runtime.core.SingletonBeanFactory;
+import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.runtime.model.HasPriority;
 import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
@@ -47,73 +49,80 @@ import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.runtime.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.runtime.util.ServerMediaType;
+import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+import org.jboss.resteasy.reactive.server.core.ContextResolvers;
+import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
+import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.core.Features;
+import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.core.parameters.AsyncResponseExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.BeanParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.BodyParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.CookieParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.FormParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.MatrixParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.PathParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.QueryParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
+import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
+import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriter;
+import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
+import org.jboss.resteasy.reactive.server.handlers.AbortChainHandler;
+import org.jboss.resteasy.reactive.server.handlers.BlockingHandler;
+import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
+import org.jboss.resteasy.reactive.server.handlers.CompletionStageResponseHandler;
+import org.jboss.resteasy.reactive.server.handlers.ExceptionHandler;
+import org.jboss.resteasy.reactive.server.handlers.FixedProducesHandler;
+import org.jboss.resteasy.reactive.server.handlers.InputHandler;
+import org.jboss.resteasy.reactive.server.handlers.InstanceHandler;
+import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
+import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
+import org.jboss.resteasy.reactive.server.handlers.MediaTypeMapper;
+import org.jboss.resteasy.reactive.server.handlers.MultiResponseHandler;
+import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
+import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
+import org.jboss.resteasy.reactive.server.handlers.ReadBodyHandler;
+import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
+import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
+import org.jboss.resteasy.reactive.server.handlers.SseResponseWriterHandler;
+import org.jboss.resteasy.reactive.server.handlers.UniResponseHandler;
+import org.jboss.resteasy.reactive.server.handlers.VariableProducesHandler;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestDynamicFeatureContext;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestFeatureContext;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceMethod;
+import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.mapping.URITemplate;
+import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
+import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.rest.common.ArcBeanFactory;
+import io.quarkus.rest.common.ArcThreadSetupAction;
 import io.quarkus.rest.common.QuarkusRestCommonRecorder;
 import io.quarkus.rest.common.QuarkusRestConfig;
-import io.quarkus.rest.server.runtime.core.ContextResolvers;
-import io.quarkus.rest.server.runtime.core.DynamicFeatures;
-import io.quarkus.rest.server.runtime.core.ExceptionMapping;
-import io.quarkus.rest.server.runtime.core.Features;
-import io.quarkus.rest.server.runtime.core.LazyMethod;
-import io.quarkus.rest.server.runtime.core.ParamConverterProviders;
-import io.quarkus.rest.server.runtime.core.QuarkusRestDeployment;
-import io.quarkus.rest.server.runtime.core.ServerSerialisers;
-import io.quarkus.rest.server.runtime.core.parameters.AsyncResponseExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.BeanParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.BodyParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.ContextParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.CookieParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.FormParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.HeaderParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.MatrixParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.NullParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.ParameterExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.PathParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.QueryParamExtractor;
-import io.quarkus.rest.server.runtime.core.parameters.converters.ParameterConverter;
-import io.quarkus.rest.server.runtime.core.parameters.converters.RuntimeResolvedConverter;
-import io.quarkus.rest.server.runtime.core.serialization.DynamicEntityWriter;
-import io.quarkus.rest.server.runtime.core.serialization.FixedEntityWriter;
-import io.quarkus.rest.server.runtime.core.serialization.FixedEntityWriterArray;
-import io.quarkus.rest.server.runtime.handlers.AbortChainHandler;
-import io.quarkus.rest.server.runtime.handlers.BlockingHandler;
-import io.quarkus.rest.server.runtime.handlers.ClassRoutingHandler;
-import io.quarkus.rest.server.runtime.handlers.CompletionStageResponseHandler;
-import io.quarkus.rest.server.runtime.handlers.ExceptionHandler;
-import io.quarkus.rest.server.runtime.handlers.FixedProducesHandler;
-import io.quarkus.rest.server.runtime.handlers.InputHandler;
-import io.quarkus.rest.server.runtime.handlers.InstanceHandler;
-import io.quarkus.rest.server.runtime.handlers.InterceptorHandler;
-import io.quarkus.rest.server.runtime.handlers.InvocationHandler;
-import io.quarkus.rest.server.runtime.handlers.MediaTypeMapper;
-import io.quarkus.rest.server.runtime.handlers.MultiResponseHandler;
-import io.quarkus.rest.server.runtime.handlers.ParameterHandler;
-import io.quarkus.rest.server.runtime.handlers.PerRequestInstanceHandler;
-import io.quarkus.rest.server.runtime.handlers.QuarkusRestInitialHandler;
-import io.quarkus.rest.server.runtime.handlers.ReadBodyHandler;
-import io.quarkus.rest.server.runtime.handlers.RequestDeserializeHandler;
-import io.quarkus.rest.server.runtime.handlers.ResourceLocatorHandler;
-import io.quarkus.rest.server.runtime.handlers.ResourceRequestFilterHandler;
-import io.quarkus.rest.server.runtime.handlers.ResourceResponseFilterHandler;
-import io.quarkus.rest.server.runtime.handlers.ResponseHandler;
-import io.quarkus.rest.server.runtime.handlers.ResponseWriterHandler;
-import io.quarkus.rest.server.runtime.handlers.ServerRestHandler;
-import io.quarkus.rest.server.runtime.handlers.SseResponseWriterHandler;
-import io.quarkus.rest.server.runtime.handlers.UniResponseHandler;
-import io.quarkus.rest.server.runtime.handlers.VariableProducesHandler;
-import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestDynamicFeatureContext;
-import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestFeatureContext;
-import io.quarkus.rest.server.runtime.jaxrs.QuarkusRestResourceMethod;
-import io.quarkus.rest.server.runtime.mapping.RequestMapper;
-import io.quarkus.rest.server.runtime.mapping.RuntimeResource;
-import io.quarkus.rest.server.runtime.mapping.URITemplate;
-import io.quarkus.rest.server.runtime.model.ServerMethodParameter;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestMessageBodyWriter;
-import io.quarkus.rest.server.runtime.util.RuntimeResourceVisitor;
-import io.quarkus.rest.server.runtime.util.ScoreSystem;
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -153,6 +162,13 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             String applicationPath,
             ParamConverterProviders paramConverterProviders, BeanFactory<QuarkusRestInitialiser> initClassFactory,
             Class<? extends Application> applicationClass, boolean applicationSingletonClassesEmpty) {
+
+        BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
+            @Override
+            public boolean isBlockingAllowed() {
+                return BlockingOperationControl.isBlockingAllowed();
+            }
+        });
 
         Supplier<Application> applicationSupplier = handleApplication(applicationClass, applicationSingletonClassesEmpty);
 
@@ -220,7 +236,17 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
 
         }
 
-        ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler();
+        ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler(new Function<Class<?>, Object>() {
+            @Override
+            public Object apply(Class<?> aClass) {
+                try {
+                    return beanContainer.instance(aClass);
+                } catch (Exception e) {
+                    throw new RuntimeException("Could not instantiate resource bean " + aClass
+                            + " make sure it has a bean defining annotation", e);
+                }
+            }
+        });
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
         possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
         for (ResourceClass clazz : possibleSubResource) {
@@ -276,7 +302,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
 
                     QuarkusRestResourceMethod quarkusRestResourceMethod = new QuarkusRestResourceMethod(clazz, method); // TODO: look into using LazyMethod
                     QuarkusRestDynamicFeatureContext context = new QuarkusRestDynamicFeatureContext(
-                            dynamicallyConfiguredInterceptors, quarkusRestConfiguration, beanContainer);
+                            dynamicallyConfiguredInterceptors, quarkusRestConfiguration, new Function<Class, BeanFactory<?>>() {
+                                @Override
+                                public BeanFactory<?> apply(Class aClass) {
+                                    return new ArcBeanFactory<>(aClass, beanContainer);
+                                }
+                            });
                     for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {
                         DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
                         feature.configure(quarkusRestResourceMethod, context);
@@ -370,7 +401,17 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
-                prefix, paramConverterProviders, quarkusRestConfiguration, applicationSupplier);
+                prefix, paramConverterProviders, quarkusRestConfiguration, applicationSupplier,
+                new ArcThreadSetupAction(Arc.container().requestContext()),
+                new RequestContextFactory() {
+                    @Override
+                    public ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment,
+                            QuarkusRestProviders providers, RoutingContext context, ThreadSetupAction requestContext,
+                            ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+                        return new QuarkusRequestContext(deployment, providers, context, requestContext, handlerChain,
+                                abortHandlerChain);
+                    }
+                });
 
         initClassFactory.createInstance().getInstance().init(deployment);
 
@@ -453,7 +494,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
 
         QuarkusRestFeatureContext featureContext = new QuarkusRestFeatureContext(interceptors, exceptionMapping,
-                configuration, beanContainer);
+                configuration, new Function<Class, BeanFactory<?>>() {
+                    @Override
+                    public BeanFactory<?> apply(Class aClass) {
+                        return new ArcBeanFactory<>(aClass, beanContainer);
+                    }
+                });
         List<ResourceFeature> resourceFeatures = features.getResourceFeatures();
         for (ResourceFeature resourceFeature : resourceFeatures) {
             Feature feature = resourceFeature.getFactory().createInstance().getInstance();

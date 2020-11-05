@@ -104,7 +104,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             ResteasyReactiveDotNames.SSE_EVENT_SINK,
             // extras
             ResteasyReactiveDotNames.QUARKUS_REST_CONTEXT,
-            DotName.createSimple("io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo"), //TODO: fixme
+            DotName.createSimple("org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo"), //TODO: fixme
             ResteasyReactiveDotNames.RESOURCE_INFO,
             ResteasyReactiveDotNames.HTTP_SERVER_REQUEST,
             ResteasyReactiveDotNames.HTTP_SERVER_RESPONSE)));

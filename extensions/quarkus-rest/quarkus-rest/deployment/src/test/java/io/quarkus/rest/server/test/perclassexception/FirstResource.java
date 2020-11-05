@@ -11,8 +11,8 @@ import javax.ws.rs.core.UriInfo;
 
 import org.jboss.resteasy.reactive.ExceptionMapper;
 import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
-import io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo;
 import io.vertx.core.http.HttpServerRequest;
 
 @Path("first")

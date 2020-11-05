@@ -11,13 +11,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.runtime.util.EmptyInputStream;
+import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-
-import io.quarkus.rest.server.runtime.core.LazyMethod;
-import io.quarkus.rest.server.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.server.runtime.spi.QuarkusRestMessageBodyReader;
 
 public class JacksonMessageBodyReader implements QuarkusRestMessageBodyReader<Object> {
 
@@ -45,7 +44,7 @@ public class JacksonMessageBodyReader implements QuarkusRestMessageBodyReader<Ob
     }
 
     @Override
-    public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, QuarkusRestRequestContext context)
+    public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
             throws WebApplicationException, IOException {
         return doReadFrom(type, genericType, context.getInputStream());
     }

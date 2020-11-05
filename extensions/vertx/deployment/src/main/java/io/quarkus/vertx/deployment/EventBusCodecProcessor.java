@@ -15,8 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -39,13 +37,11 @@ public class EventBusCodecProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(EventBusCodecProcessor.class.getName());
 
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-
     @BuildStep
     public void registerCodecs(
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            BuildProducer<MessageCodecBuildItem> messageCodecs) {
+            BuildProducer<MessageCodecBuildItem> messageCodecs,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<AnnotationInstance> consumeEventAnnotationInstances = index.getAnnotations(CONSUME_EVENT);

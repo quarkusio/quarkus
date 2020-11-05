@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -98,8 +99,7 @@ class JaxbProcessor {
             XmlJavaTypeAdapter.class,
             XmlJavaTypeAdapters.class);
 
-    private static final List<Class<?>> JAXB_REFLECTIVE_CLASSES = Arrays.asList(
-            XmlAccessOrder.class);
+    private static final List<Class<?>> JAXB_REFLECTIVE_CLASSES = Collections.singletonList(XmlAccessOrder.class);
 
     private static final DotName XML_ROOT_ELEMENT = DotName.createSimple(XmlRootElement.class.getName());
     private static final DotName XML_TYPE = DotName.createSimple(XmlType.class.getName());
@@ -111,14 +111,6 @@ class JaxbProcessor {
     private static final List<DotName> JAXB_ROOT_ANNOTATIONS = Arrays.asList(XML_ROOT_ELEMENT, XML_TYPE, XML_REGISTRY);
 
     @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-    @Inject
-    BuildProducer<NativeImageResourceBuildItem> resource;
-    @Inject
-    BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle;
-    @Inject
-    BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses;
-    @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
 
     @BuildStep
@@ -127,7 +119,11 @@ class JaxbProcessor {
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            List<JaxbFileRootBuildItem> fileRoots) {
+            List<JaxbFileRootBuildItem> fileRoots,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses) {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -138,7 +134,7 @@ class JaxbProcessor {
             for (AnnotationInstance jaxbRootAnnotationInstance : index
                     .getAnnotations(jaxbRootAnnotation)) {
                 if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS) {
-                    addReflectiveClass(true, true,
+                    addReflectiveClass(reflectiveClass, true, true,
                             jaxbRootAnnotationInstance.target().asClass().name().toString());
                     jaxbRootAnnotationsDetected = true;
                 }
@@ -164,20 +160,20 @@ class JaxbProcessor {
         }
 
         if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
-            addReflectiveClass(false, false, "javax.xml.bind.annotation.W3CDomHandler");
+            addReflectiveClass(reflectiveClass, false, false, "javax.xml.bind.annotation.W3CDomHandler");
         }
 
         JAXB_ANNOTATIONS.stream()
                 .map(Class::getName)
                 .forEach(className -> {
                     proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(className, Locatable.class.getName()));
-                    addReflectiveClass(true, false, className);
+                    addReflectiveClass(reflectiveClass, true, false, className);
                 });
 
         for (JaxbFileRootBuildItem i : fileRoots) {
             try (Stream<Path> stream = iterateResources(i.getFileRoot())) {
                 stream.filter(p -> p.getFileName().toString().equals("jaxb.index"))
-                        .forEach(this::handleJaxbFile);
+                        .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass));
             }
         }
     }
@@ -185,36 +181,38 @@ class JaxbProcessor {
     @BuildStep
     void registerClasses(
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
-            BuildProducer<ServiceProviderBuildItem> providerItem) {
+            BuildProducer<ServiceProviderBuildItem> providerItem, final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            final BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
 
-        addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory");
-        addReflectiveClass(true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
+        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.bind.v2.ContextFactory");
+        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
 
-        addReflectiveClass(true, false, "com.sun.xml.internal.stream.XMLInputFactoryImpl");
-        addReflectiveClass(true, false, "com.sun.xml.internal.stream.XMLOutputFactoryImpl");
-        addReflectiveClass(true, false, "com.sun.org.apache.xpath.internal.functions.FuncNot");
-        addReflectiveClass(true, false, "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl");
+        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.stream.XMLInputFactoryImpl");
+        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.stream.XMLOutputFactoryImpl");
+        addReflectiveClass(reflectiveClass, true, false, "com.sun.org.apache.xpath.internal.functions.FuncNot");
+        addReflectiveClass(reflectiveClass, true, false, "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl");
 
-        addResourceBundle("javax.xml.bind.Messages");
-        addResourceBundle("javax.xml.bind.helpers.Messages");
+        addResourceBundle(resourceBundle, "javax.xml.bind.Messages");
+        addResourceBundle(resourceBundle, "javax.xml.bind.helpers.Messages");
 
         nativeImageProps
                 .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
 
         JAXB_REFLECTIVE_CLASSES.stream()
                 .map(Class::getName)
-                .forEach(className -> addReflectiveClass(true, false, className));
+                .forEach(className -> addReflectiveClass(reflectiveClass, true, false, className));
 
         providerItem
                 .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(), "com.sun.xml.bind.v2.ContextFactory"));
     }
 
-    private void handleJaxbFile(Path p) {
+    private void handleJaxbFile(Path p, BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         try {
             String path = p.toAbsolutePath().toString().substring(1);
             String pkg = p.toAbsolutePath().getParent().toString().substring(1).replace("/", ".") + ".";
 
-            addResource(path);
+            resource.produce(new NativeImageResourceBuildItem(path));
 
             for (String line : Files.readAllLines(p)) {
                 line = line.trim();
@@ -223,7 +221,7 @@ class JaxbProcessor {
                     Class<?> cl = Class.forName(clazz, false, Thread.currentThread().getContextClassLoader());
 
                     while (cl != Object.class) {
-                        addReflectiveClass(true, true, cl.getName());
+                        addReflectiveClass(reflectiveClass, true, true, cl.getName());
                         cl = cl.getSuperclass();
                     }
                 }
@@ -249,15 +247,12 @@ class JaxbProcessor {
         }
     }
 
-    private void addResource(String r) {
-        resource.produce(new NativeImageResourceBuildItem(r));
-    }
-
-    private void addReflectiveClass(boolean methods, boolean fields, String... className) {
+    private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,
+            String... className) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields, className));
     }
 
-    private void addResourceBundle(String bundle) {
+    private void addResourceBundle(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle, String bundle) {
         resourceBundle.produce(new NativeImageResourceBundleBuildItem(bundle));
     }
 }

@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
@@ -40,25 +38,15 @@ public class KubernetesClientProcessor {
 
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
 
-    @Inject
-    BuildProducer<FeatureBuildItem> featureProducer;
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
-
-    @Inject
-    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies;
-
-    @Inject
-    BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses;
-
-    @Inject
-    BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer;
-
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
+            BuildProducer<FeatureBuildItem> featureProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
+            BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
         roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));

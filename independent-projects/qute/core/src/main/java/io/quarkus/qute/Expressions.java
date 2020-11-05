@@ -71,7 +71,7 @@ public final class Expressions {
         char separator = 0;
         byte infix = 0;
         byte brackets = 0;
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        ImmutableList.Builder<String> parts = ImmutableList.builder();
         StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
@@ -82,9 +82,7 @@ public final class Expressions {
                         if (splitConfig.shouldPrependSeparator(c)) {
                             buffer.append(c);
                         }
-                        if (buffer.length() > 0) {
-                            // Flush the part
-                            builder.add(buffer.toString());
+                        if (addPart(buffer, parts)) {
                             buffer = new StringBuilder();
                         }
                         if (splitConfig.shouldAppendSeparator(c)) {
@@ -110,13 +108,13 @@ public final class Expressions {
                             // Next infix method
                             infix = 1;
                             buffer.append(RIGHT_BRACKET);
-                            builder.add(buffer.toString());
-                            buffer = new StringBuilder();
+                            if (addPart(buffer, parts)) {
+                                buffer = new StringBuilder();
+                            }
                         } else {
                             // First space - start infix method
                             infix++;
-                            if (buffer.length() > 0) {
-                                builder.add(buffer.toString());
+                            if (addPart(buffer, parts)) {
                                 buffer = new StringBuilder();
                             }
                         }
@@ -138,10 +136,25 @@ public final class Expressions {
         if (infix > 0) {
             buffer.append(RIGHT_BRACKET);
         }
-        if (buffer.length() > 0) {
-            builder.add(buffer.toString());
+        addPart(buffer, parts);
+        return parts.build();
+    }
+
+    /**
+     * 
+     * @param buffer
+     * @param parts
+     * @return true if a new buffer should be created
+     */
+    private static boolean addPart(StringBuilder buffer, ImmutableList.Builder<String> parts) {
+        if (buffer.length() == 0) {
+            return false;
         }
-        return builder.build();
+        String val = buffer.toString().trim();
+        if (!val.isEmpty()) {
+            parts.add(val);
+        }
+        return true;
     }
 
     private static final SplitConfig DEFAULT_SPLIT_CONFIG = new DefaultSplitConfig();

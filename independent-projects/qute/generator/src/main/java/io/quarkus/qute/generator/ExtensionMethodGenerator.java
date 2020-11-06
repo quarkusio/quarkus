@@ -22,6 +22,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.ValueResolver;
 import java.lang.reflect.Modifier;
@@ -40,6 +41,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -66,8 +68,10 @@ public class ExtensionMethodGenerator {
 
     private final Set<String> generatedTypes;
     private final ClassOutput classOutput;
+    private final IndexView index;
 
-    public ExtensionMethodGenerator(ClassOutput classOutput) {
+    public ExtensionMethodGenerator(IndexView index, ClassOutput classOutput) {
+        this.index = index;
         this.classOutput = classOutput;
         this.generatedTypes = new HashSet<>();
     }
@@ -107,14 +111,6 @@ public class ExtensionMethodGenerator {
         if (matchName == null || matchName.equals(TemplateExtension.METHOD_NAME)) {
             matchName = method.name();
         }
-        if (matchName.equals(TemplateExtension.ANY)) {
-            // The second parameter must be a string
-            if (parameters.size() < 2 || !parameters.get(1).name().equals(STRING)) {
-                throw new IllegalStateException(
-                        "Template extension method matching multiple names must declare at least two parameters and the second parameter must be string: "
-                                + method);
-            }
-        }
 
         if (priority == null && extensionAnnotation != null) {
             // No explicit priority set, try annotation
@@ -131,6 +127,15 @@ public class ExtensionMethodGenerator {
             AnnotationValue matchRegexValue = extensionAnnotation.value(MATCH_REGEX);
             if (matchRegexValue != null) {
                 matchRegex = matchRegexValue.asString();
+            }
+        }
+
+        if (matchRegex != null || matchName.equals(TemplateExtension.ANY)) {
+            // The second parameter must be a string
+            if (parameters.size() < 2 || !parameters.get(1).name().equals(STRING)) {
+                throw new TemplateException(
+                        "A template extension method matching multiple names or a regular expression must declare at least two parameters and the second parameter must be string: "
+                                + method);
             }
         }
 
@@ -195,6 +200,8 @@ public class ExtensionMethodGenerator {
         ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
         boolean matchAnyOrRegex = patternField != null || matchName.equals(TemplateExtension.ANY);
         List<Type> parameters = method.parameters();
+        boolean hasCompletionStage = ValueResolverGenerator
+                .hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
 
         ResultHandle ret;
         int paramSize = parameters.size();
@@ -205,11 +212,17 @@ public class ExtensionMethodGenerator {
             if (matchAnyOrRegex) {
                 args[1] = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
             }
-            ret = resolve.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, resolve
+            // Invoke the extension method
+            ResultHandle result = resolve
                     .invokeStaticMethod(MethodDescriptor.ofMethod(declaringClass.name().toString(), method.name(),
                             method.returnType().name().toString(),
                             parameters.stream().map(p -> p.name().toString()).collect(Collectors.toList()).toArray()),
-                            args));
+                            args);
+            if (hasCompletionStage) {
+                ret = result;
+            } else {
+                ret = resolve.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, result);
+            }
         } else {
             ret = resolve
                     .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
@@ -305,6 +318,7 @@ public class ExtensionMethodGenerator {
                 }
             }
 
+            // Invoke the extension method
             ResultHandle invokeRet = tryCatch
                     .invokeStaticMethod(MethodDescriptor.ofMethod(declaringClass.name().toString(), method.name(),
                             method.returnType().name().toString(),

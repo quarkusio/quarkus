@@ -64,6 +64,12 @@ public class TemplateExtensionMethodsTest {
     }
 
     @Test
+    public void testMatchRegex() {
+        assertEquals("BRAVO=BAR",
+                engine.parse("{foo.bravo}={foo.bar}").data("foo", new Foo("pong", 10l)).render());
+    }
+
+    @Test
     public void testBuiltinExtensions() {
         Map<String, String> map = new HashMap<String, String>();
         map.put("alpha", "1");
@@ -118,6 +124,11 @@ public class TemplateExtensionMethodsTest {
 
         static int defaultScale(BigDecimal val) {
             return 2;
+        }
+
+        @TemplateExtension(matchRegex = "(bar|bravo)")
+        static String fooRegex(Foo foo, String name) {
+            return name.toUpperCase();
         }
     }
 

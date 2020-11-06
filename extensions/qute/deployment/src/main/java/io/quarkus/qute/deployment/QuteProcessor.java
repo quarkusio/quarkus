@@ -802,7 +802,7 @@ public class QuteProcessor {
         Set<String> generatedTypes = new HashSet<>();
         generatedTypes.addAll(generator.getGeneratedTypes());
 
-        ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(classOutput);
+        ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(index, classOutput);
         Map<DotName, List<TemplateExtensionMethodBuildItem>> classToNamespaceExtensions = new HashMap<>();
         Map<String, DotName> namespaceToClass = new HashMap<>();
 

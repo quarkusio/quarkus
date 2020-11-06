@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,11 +17,13 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
     private static final String GRADLE_WRAPPER_UNIX = "./gradlew";
     private static final String GRADLE_NO_DAEMON = "--no-daemon";
+    private static final String MAVEN_REPO_LOCAL = "maven.repo.local";
 
     public BuildResult runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
         List<String> command = new LinkedList<>();
         command.add(getGradleWrapperCommand());
         command.add(GRADLE_NO_DAEMON);
+        command.addAll(getSytemProperties());
         command.add("--stacktrace");
         command.addAll(Arrays.asList(args));
 
@@ -50,5 +53,13 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
             return GRADLE_WRAPPER_WINDOWS;
         }
         return GRADLE_WRAPPER_UNIX;
+    }
+
+    private List<String> getSytemProperties() {
+        List<String> systemProperties = new ArrayList<>();
+        if (System.getProperties().containsKey(MAVEN_REPO_LOCAL)) {
+            systemProperties.add(String.format("-D%s=%s", MAVEN_REPO_LOCAL, System.getProperty(MAVEN_REPO_LOCAL)));
+        }
+        return systemProperties;
     }
 }

@@ -274,6 +274,12 @@ The following sections will show you everything there is to know about it.
 
 Quarkus offers a set of annotations that can be used in a CDI managed bean to enable caching abilities.
 
+[WARNING]
+====
+Caching annotations are not allowed on private methods.
+They will work fine with any other access modifier including package-private (no explicit modifier).
+====
+
 === @CacheResult
 
 Loads a method result from the cache without executing the method body whenever possible.

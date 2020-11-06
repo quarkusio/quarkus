@@ -10,7 +10,7 @@ import javax.ws.rs.QueryParam;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.api.CheckedTemplate;
-import io.quarkus.rest.qute.RestTemplate;
+import io.quarkus.resteasy.reactive.qute.RestTemplate;
 
 @Path("hello")
 public class HelloResource {

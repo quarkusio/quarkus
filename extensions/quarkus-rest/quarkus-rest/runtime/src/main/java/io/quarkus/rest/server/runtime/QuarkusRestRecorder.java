@@ -118,10 +118,10 @@ import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.rest.common.ArcBeanFactory;
-import io.quarkus.rest.common.ArcThreadSetupAction;
-import io.quarkus.rest.common.QuarkusRestCommonRecorder;
-import io.quarkus.rest.common.QuarkusRestConfig;
+import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
+import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
+import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestConfig;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;

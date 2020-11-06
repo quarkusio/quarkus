@@ -1,1 +1,1 @@
-io.quarkus.jaxrs.client.runtime.QuarkusRestSseEventSourceBuilder
+io.quarkus.resteasy.reactive.client.runtime.QuarkusRestSseEventSourceBuilder

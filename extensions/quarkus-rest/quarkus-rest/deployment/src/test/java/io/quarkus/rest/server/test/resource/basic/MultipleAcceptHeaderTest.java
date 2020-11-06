@@ -16,9 +16,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.jaxrs.client.runtime.QuarkusRestClient;
-import io.quarkus.jaxrs.client.runtime.QuarkusRestWebTarget;
 import io.quarkus.rest.server.test.simple.PortProviderUtil;
+import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestClient;
+import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestWebTarget;
 import io.quarkus.test.QuarkusUnitTest;
 
 @DisplayName("Multiple Accept Header Test")

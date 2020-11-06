@@ -15,9 +15,9 @@ import javax.ws.rs.sse.SseEvent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.jaxrs.client.runtime.QuarkusRestInboundSseEvent;
-import io.quarkus.jaxrs.client.runtime.QuarkusRestSseEventSource;
-import io.quarkus.jaxrs.client.runtime.SseParser;
+import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestInboundSseEvent;
+import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestSseEventSource;
+import io.quarkus.resteasy.reactive.client.runtime.SseParser;
 import io.vertx.core.buffer.Buffer;
 
 public class SseParserTest {

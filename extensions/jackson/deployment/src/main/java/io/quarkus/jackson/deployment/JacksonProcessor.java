@@ -64,29 +64,21 @@ public class JacksonProcessor {
             PARAMETER_NAMES_MODULE);
 
     @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-
-    @Inject
-    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass;
-
-    @Inject
-    BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod;
-
-    @Inject
-    BuildProducer<AdditionalBeanBuildItem> additionalBeans;
-
-    @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
     @Inject
     List<IgnoreJsonDeserializeClassBuildItem> ignoreJsonDeserializeClassBuildItems;
 
     @BuildStep
-    CapabilityBuildItem register() {
-        addReflectiveClass(true, false,
-                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
-                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
-                "com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer");
+    CapabilityBuildItem register(
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        reflectiveClass.produce(
+                new ReflectiveClassBuildItem(true, false, "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
+                        "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
+                        "com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer"));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -103,14 +95,14 @@ public class JacksonProcessor {
             if (CLASS.equals(annotationTarget.kind())) {
                 DotName dotName = annotationTarget.asClass().name();
                 if (!ignoredDotNames.contains(dotName)) {
-                    addReflectiveHierarchyClass(dotName);
+                    addReflectiveHierarchyClass(dotName, reflectiveHierarchyClass);
                 }
 
                 AnnotationValue annotationValue = deserializeInstance.value("builder");
                 if (null != annotationValue && AnnotationValue.Kind.CLASS.equals(annotationValue.kind())) {
                     DotName builderClassName = annotationValue.asClass().name();
                     if (!BUILDER_VOID.equals(builderClassName)) {
-                        addReflectiveHierarchyClass(builderClassName);
+                        addReflectiveHierarchyClass(builderClassName, reflectiveHierarchyClass);
                     }
                 }
             }
@@ -151,16 +143,13 @@ public class JacksonProcessor {
         return new CapabilityBuildItem(Capability.JACKSON);
     }
 
-    private void addReflectiveHierarchyClass(DotName className) {
+    private void addReflectiveHierarchyClass(DotName className,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass) {
         Type jandexType = Type.create(className, Type.Kind.CLASS);
         reflectiveHierarchyClass.produce(new ReflectiveHierarchyBuildItem.Builder()
                 .type(jandexType)
                 .source(getClass().getSimpleName() + " > " + jandexType.name().toString())
                 .build());
-    }
-
-    private void addReflectiveClass(boolean methods, boolean fields, String... className) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields, className));
     }
 
     @BuildStep

@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -52,9 +50,6 @@ class VertxProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(VertxProcessor.class.getName());
 
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-
     @BuildStep
     void featureAndCapability(BuildProducer<FeatureBuildItem> feature, BuildProducer<CapabilityBuildItem> capability) {
         feature.produce(new FeatureBuildItem(Feature.VERTX));
@@ -72,7 +67,7 @@ class VertxProcessor {
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            BuildProducer<ServiceStartBuildItem> serviceStart,
+            BuildProducer<ServiceStartBuildItem> serviceStart, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<MessageCodecBuildItem> codecs, RecorderContext recorderContext) {
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);

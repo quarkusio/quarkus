@@ -103,6 +103,7 @@ public final class ExtensionLoader {
     private ExtensionLoader() {
     }
 
+    private static final Logger loadLog = Logger.getLogger("io.quarkus.deployment");
     private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
@@ -325,6 +326,7 @@ public final class ExtensionLoader {
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                     ctorParamFns.add(bc -> bc.consumeMulti(buildItemClass));
                 } else if (isConsumerOf(parameterType, BuildItem.class)) {
+                    deprecatedProducer(parameter);
                     final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(BuildItem.class);
                     if (overridable) {
@@ -343,6 +345,7 @@ public final class ExtensionLoader {
                     }
                     ctorParamFns.add(bc -> (Consumer<? extends BuildItem>) bc::produce);
                 } else if (isBuildProducerOf(parameterType, BuildItem.class)) {
+                    deprecatedProducer(parameter);
                     final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(BuildItem.class);
                     if (overridable) {
@@ -434,6 +437,7 @@ public final class ExtensionLoader {
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consumeMulti(buildItemClass)));
             } else if (isConsumerOf(fieldType, BuildItem.class)) {
+                deprecatedProducer(field);
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
                 if (overridable) {
                     if (weak) {
@@ -452,6 +456,7 @@ public final class ExtensionLoader {
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Consumer<? extends BuildItem>) bc::produce));
             } else if (isBuildProducerOf(fieldType, BuildItem.class)) {
+                deprecatedProducer(field);
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
                 if (overridable) {
                     if (weak) {
@@ -996,6 +1001,12 @@ public final class ExtensionLoader {
                     });
         }
         return chainConfig;
+    }
+
+    private static void deprecatedProducer(final Object element) {
+        loadLog.warnf(
+                "Producing values from constructors and fields is no longer supported and will be removed in a future release: %s",
+                element);
     }
 
     protected static List<Method> getMethods(Class<?> clazz) {

@@ -38,12 +38,6 @@ class NarayanaSTMProcessor {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
-    @Inject
-    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass;
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-
     // register classes in need of reflection
     @BuildStep
     ReflectiveClassBuildItem registerFeature(BuildProducer<FeatureBuildItem> feature) {
@@ -72,7 +66,9 @@ class NarayanaSTMProcessor {
 
     // register STM dynamic proxies
     @BuildStep
-    NativeImageProxyDefinitionBuildItem stmProxies() {
+    NativeImageProxyDefinitionBuildItem stmProxies(
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         final DotName TRANSACTIONAL = DotName.createSimple(Transactional.class.getName());
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<String> proxies = new ArrayList<>();

@@ -190,6 +190,7 @@
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>
         <module>grpc-common</module>
+        <module>minio</module>
     </modules>
 
     <build>

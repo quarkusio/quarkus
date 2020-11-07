@@ -1,0 +1,149 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Platform
+
+include::./attributes.adoc[]
+
+The Quarkus extension ecosystem consists of the Quarkus extensions developed and maintained by the community, including the Quarkus core development team. While the Quarkus ecosystem (sometimes also referred to as the "Quarkus universe") includes all the Quarkus extensions ever developed, there is also a concept of a Quarkus platform.
+
+== Quarkus Platform
+
+The fundamental promise of a Quarkus platform is any combination of the Quarkus extensions the platform consists of can be used in the same application without causing any conflict for each other.
+Each organization creating their Quarkus platform may establish their own criterions for the extensions to be accepted into the platform and the means to guarantee the compatibility between the accepted extensions.
+
+=== Quarkus Platform Artifacts
+
+Each Quarkus platform is defined with a few artifacts.
+
+=== Quarkus Platform BOM
+
+Each Quarkus Platform is expected to provide a Maven BOM artifact that
+
+* imports a chosen version of `io.quarkus:quarkus-bom` (the platform BOM may be flattened at the end but it has to be based on some version of `io.quarkus:quarkus-bom`)
+* includes all the Quarkus extension artifacts (the runtime and the deployment ones) the platform consists of
+* includes all the necessary third-party artifacts that align the transitive dependency versions of the platform extensions to guarantee compatibility between them
+* includes the <<platform-descriptor,platform JSON descriptor>> artifact
+* possibly includes the <<platform-properties,platform configuration properties>> artifacts
+
+Quarkus applications that want to include extensions from a Quarkus platform will be importing the Quarkus platform BOM.
+
+[[platform-descriptor]]
+=== Quarkus Platform Descriptor
+
+Quarkus platform descriptor is a JSON artifact that provides information about the platform and its extensions to the Quarkus tools. E.g. http://code.quarkus.io and the Quarkus command line tools consult this descriptor to list, add and remove extensions to/from the project on user's request.
+This artifact is also used as a Quarkus platform identifier. When Quarkus tools need to identify the Quarkus platform(s) used in the project, they will analyze the dependency version constraints of the project (the effective list of the managed dependencies from the `dependencyManagement` section in Maven terms) looking for the platform descriptor artifact(s) among them. Given that the platform descriptors are included into the Quarkus platform BOMs, every Quarkus application will inherit the platform descriptor artifact from the imported platform BOM(s) as a dependency version constraint (managed dependency in Maven terms).
+
+To be able to easily identify Quarkus platform descriptors among the project's dependency constraints, the platform descriptor Maven artifact coordinates should follow the following naming convention:
+
+* the `groupId` of the descriptor artifact should match the `groupId` of the corresponding Quarkus Platform BOM;
+* the `artifactId` of the descriptor artifact should be the `artifactId` of the corresponding Quarkus Platform BOM with the `-quarkus-platform-descriptor` suffix;
+* the `classifier` of the descriptor artifact should match the `version` of the corresponding Quarkus Platform BOM;
+* the `type` of the descriptor artifact should be `json`;
+* the `version` of the descriptor artifact should match the `version` of the  corresponding Quarkus Platform BOM.
+
+As a string it will look like `<platform-bom-groupId>:<platform-bom-artifactId>-quarkus-platform-descriptor:<platform-version>:json:<platform-version>`
+
+E.g. the coordinates of the descriptor for Quarkus BOM `io.quarkus:quarkus-bom::pom:1.2.3` will be `io.quarkus:quarkus-bom-quarkus-platform-descriptor:1.2.3:json:1.2.3`.
+And for a custom Quarkus platform defined with BOM `org.acme:acme-bom::pom:555` it will be `org.acme:acme-bom-quarkus-platform-descriptor:555:json:555`.
+
+The classifier matching the version of the platform may look confusing at first. But this is what turns the descriptor into a true "fingerprint" of the platform. In both Maven and Gradle, the effective set of the dependency version constraints (or the managed dependencies) is obtained by merging all the imported BOMs and version constraints specified individually in the current project and also its parent(s). The artifact `classifier` is a part of the dependency ID, which could be expressed as `groupId:artifactId:classifier:type`. Which means that if a project is based on a couple of Quarkus platforms (by importing their BOMs), e.g. `io.quarkus:quarkus-universe-bom::pom:1.2.3` and `org.acme:acme-bom::pom:555`, and these two platforms are based on different `io.quarkus:quarkus-bom::pom` versions (which is technically a Quarkus platform in its turn as well), the Quarkus tools will be able to detect this fact and make the user aware of it, since it *might* not be a safe combination. If the descriptor artifact didn't include the classifer containing the version of the platform then the tools wouldn't be able to detect a potentially incompatible mix of different versions of the same platform in the same project.
+
+The platform descriptor will normally be generated using a Maven plugin, e.g.
+
+[source,xml]
+----
+<plugin>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
+  <version>${quarkus.version}</version> <1>
+  <executions>
+    <execution>
+      <phase>process-resources</phase>
+      <goals>
+        <goal>generate-extensions-json</goal> <2>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <bomGroupId>${quarkus.platform.group-id}</bomGroupId> <3>
+    <bomArtifactId>${quarkus.platform.artifact-id}</bomArtifactId> <4>
+    <bomVersion>${quarkus.platform.version}</bomVersion> <5>
+    <overridesFile>${overridesfile}</overridesFile> <6>
+    <resolveDependencyManagement>true</resolveDependencyManagement> <7>
+  </configuration>
+</plugin>
+----
+
+<1> the version of the `quarkus-platform-descriptor-json-plugin`
+<2> `generate-extensions-json` is the goal generating the platform descriptor
+<3> the `groupId` of the platform BOM
+<4> the `artifactId` of the platform BOM
+<5> the `version` of the platform BOM
+<6> this parameter is optional, it allows to override some metadata from the Quarkus extension descriptors found in every runtime extension artifact from which the platform descriptor is generated
+<7> this parameter is also optional and defaults to false. It has to be set to true in case the platform BOM *is not generated* and *is not flattened*. Which for example is the case for `io.quarkus:quarkus-bom`.
+
+[[platform-properties]]
+=== Quarkus Platform Properties
+
+A Quarkus platform may provide its own default values for some of the configuration options.
+
+Quarkus is using https://github.com/eclipse/microprofile-config[Eclipse MicroProfile Config] for wiring application configuration. A Quarkus platform may be used as another source of configuration in the hierarchy of the configuration sources dominated by the application's `application.properties`.
+
+To provide platform-specific defaults, the platform needs to include a dependency version constraint in its BOM for a properties artifact whose coordinates follow the following naming convention:
+
+* the `groupId` of the properties artifact should match the `groupId` of the corresponding Quarkus Platform BOM;
+* the `artifactId` of the properties artifact should be the `artifactId` of the corresponding Quarkus Platform BOM with the `-quarkus-platform-properties` suffix;
+* the `classifier` of the descriptor artifact should be left empty/null;
+* the `type` of the descriptor artifact should be `properties`;
+* the `version` of the descriptor artifact should match the `version` of the  corresponding Quarkus Platform BOM.
+
+The properties artifact itself is expected to be a traditional `properties` file that will be loaded into an instance of `java.util.Properties` class.
+
+IMPORTANT: At this point, platform properties are only allowed to provide the default values for a restricted set of configuration options. The property names in the platform properties file must be prefixed with the `platform.` suffix.
+
+Extension developers that want to make their configuration options platform-specific should set their default values to properties that start with the `platform.` suffix. Here is an example:
+
+[source,java]
+----
+package io.quarkus.deployment.pkg;
+
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public class NativeConfig {
+
+    /**
+     * The docker image to use to do the image build
+     */
+    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
+    public String builderImage;
+}
+----
+
+In this case the default value for `quarkus.native.builder-image` will be provided by the platform. The user will still be able to set the desired value for `quarkus.native.builder-image` in its `application.properties`, of course. But in case it's not customized by the user, the default value will be coming from the platform properties.
+A platform properties file for the example above would contain (the actual value is provided as an example):
+
+[source,text]
+----
+platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java11
+----
+
+There is also a Maven plugin goal that validates the platform properties content and its artifact coordinates and also checks whether the platform properties artifact is present in the platform's BOM. Here is a sample plugin configuration:
+
+[source,xml]
+----
+<plugin>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
+  <version>${quarkus.version}</version>
+  <executions>
+    <execution>
+      <phase>process-resources</phase>
+      <goals>
+        <goal>platform-properties</goal>
+      </goals>
+    </execution>
+  </executions>
+</plugin>
+----

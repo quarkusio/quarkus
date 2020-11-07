@@ -13,18 +13,18 @@ public class PemKeyCertConfiguration {
      * PEM Key/cert config is disabled by default.
      */
     @ConfigItem(name = ConfigItem.PARENT, defaultValue = "false")
-    public boolean enabled;
+    public boolean enabled = false;
 
     /**
      * Comma-separated list of the path to the key files (Pem format).
      */
     @ConfigItem
-    public Optional<List<String>> keys;
+    public Optional<List<String>> keys = Optional.empty();
 
     /**
      * Comma-separated list of the path to the certificate files (Pem format).
      */
     @ConfigItem
-    public Optional<List<String>> certs;
+    public Optional<List<String>> certs = Optional.empty();
 
 }

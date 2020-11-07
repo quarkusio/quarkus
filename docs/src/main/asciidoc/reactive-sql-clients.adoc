@@ -529,6 +529,51 @@ return SqlClientHelper.inTransactionUni(client, tx -> tx
         .onItem().ignore().andContinueWithNull());
 ----
 
+== Multiple Datasources
+
+The reactive SQL clients support defining several datasources.
+
+A typical configuration with several datasources would look like:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql <1>
+quarkus.datasource.username=user-default
+quarkus.datasource.password=password-default
+quarkus.datasource.reactive.url=postgresql://localhost:5432/default
+
+quarkus.datasource."additional1".db-kind=postgresql <2>
+quarkus.datasource."additional1".username=user-additional1
+quarkus.datasource."additional1".password=password-additional1
+quarkus.datasource."additional1".reactive.url=postgresql://localhost:5432/additional1
+
+quarkus.datasource."additional2".db-kind=mysql <3>
+quarkus.datasource."additional2".username=user-additional2
+quarkus.datasource."additional2".password=password-additional2
+quarkus.datasource."additional2".reactive.url=mysql://localhost:3306/additional2
+----
+<1> The default datasource - using PostgreSQL.
+<2> A named datasource called `additional1` - using PostgreSQL.
+<3> A named datasource called `additional2` - using MySQL.
+
+You can then inject the clients as follows:
+
+[source,java]
+----
+@Inject <1>
+PgPool defaultClient;
+
+@Inject
+@ReactiveDataSource("additional1") <2>
+PgPool additional1Client;
+
+@Inject
+@ReactiveDataSource("additional2")
+MySQLPool additional2Client;
+----
+<1> Injecting the client for the default datasource does not require anything special.
+<2> For a named datasource, you use the `@ReactiveDataSource` CDI qualifier with the datasource name as its value.
+
 == UNIX Domain Socket connections
 
 The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.

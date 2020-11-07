@@ -19,6 +19,6 @@ public class HealthCheckTest {
                 .header("Content-Type", containsString("charset=UTF-8"))
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
-                        "checks.name", containsInAnyOrder("Reactive PostgreSQL connection health check"));
+                        "checks.name", containsInAnyOrder("Reactive PostgreSQL connections health check"));
     }
 }

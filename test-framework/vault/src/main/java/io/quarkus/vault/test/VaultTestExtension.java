@@ -40,7 +40,6 @@ import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
 import org.jboss.logging.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -444,7 +443,6 @@ public class VaultTestExtension {
         return execResult;
     }
 
-    @NotNull
     private String[] createVaultCommand(String command) {
         String cmd = (rootToken != null ? "export VAULT_TOKEN=" + rootToken + " && " : "") + command;
         return new String[] { "/bin/sh", "-c", cmd };

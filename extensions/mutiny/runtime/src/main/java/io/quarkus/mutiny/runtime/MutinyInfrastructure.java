@@ -12,6 +12,8 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 @Recorder
 public class MutinyInfrastructure {
 
+    public static final String VERTX_EVENT_LOOP_THREAD_PREFIX = "vert.x-eventloop-thread-";
+
     public void configureMutinyInfrastructure(ExecutorService exec) {
         Infrastructure.setDefaultExecutor(exec);
     }
@@ -36,7 +38,7 @@ public class MutinyInfrastructure {
                  * calling from a Vert.x event-loop context / thread.
                  */
                 String threadName = Thread.currentThread().getName();
-                return !threadName.contains("vertx-eventloop-thread-");
+                return !threadName.startsWith(VERTX_EVENT_LOOP_THREAD_PREFIX);
             }
         });
     }

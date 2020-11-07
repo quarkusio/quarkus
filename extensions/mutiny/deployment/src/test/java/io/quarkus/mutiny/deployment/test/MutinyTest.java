@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.mutiny.runtime.MutinyInfrastructure;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -91,7 +92,7 @@ public class MutinyTest {
                 throwable.set(err);
             }
             latch.countDown();
-        }, "vertx-eventloop-thread-0").start();
+        }, MutinyInfrastructure.VERTX_EVENT_LOOP_THREAD_PREFIX + "0").start();
 
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assertions.assertNull(item.get());

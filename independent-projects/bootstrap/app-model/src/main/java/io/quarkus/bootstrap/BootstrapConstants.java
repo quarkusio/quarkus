@@ -17,6 +17,8 @@ public interface BootstrapConstants {
      */
     String TEST_TO_MAIN_MAPPINGS = "TEST_TO_MAIN_MAPPINGS";
 
+    String OUTPUT_SOURCES_DIR = "OUTPUT_SOURCES_DIR";
+
     @Deprecated
     String EXTENSION_PROPS_JSON_FILE_NAME = "quarkus-extension.json";
 

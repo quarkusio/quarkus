@@ -508,18 +508,20 @@ public class NativeImageBuildStep {
         final Path javaSourcesPath = outputTargetBuildItem.getOutputDirectory().resolve(
                 Paths.get("..", "src", "main", "java"));
 
-        try (Stream<Path> paths = Files.walk(javaSourcesPath)) {
-            paths.forEach(path -> {
-                Path targetPath = Paths.get(targetSrc.toString(),
-                        path.toString().substring(javaSourcesPath.toString().length()));
-                try {
-                    Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Unable to copy from " + path + " to " + targetPath, e);
-                }
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException("Unable to walk path " + javaSourcesPath, e);
+        if (Files.exists(javaSourcesPath)) {
+            try (Stream<Path> paths = Files.walk(javaSourcesPath)) {
+                paths.forEach(path -> {
+                    Path targetPath = Paths.get(targetSrc.toString(),
+                            path.toString().substring(javaSourcesPath.toString().length()));
+                    try {
+                        Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Unable to copy from " + path + " to " + targetPath, e);
+                    }
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException("Unable to walk path " + javaSourcesPath, e);
+            }
         }
     }
 

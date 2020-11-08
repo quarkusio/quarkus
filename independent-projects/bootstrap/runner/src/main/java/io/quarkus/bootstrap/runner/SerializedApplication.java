@@ -67,7 +67,7 @@ public class SerializedApplication {
             Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new HashMap<>();
             for (int i = 0; i < classPath.size(); i++) {
                 Path jar = classPath.get(i);
-                String relativePath = applicationRoot.relativize(jar).toString().replace("\\", "/");
+                String relativePath = applicationRoot.relativize(jar).toString().replace('\\', '/');
                 data.writeUTF(relativePath);
                 Collection<String> resources = writeJar(data, jar);
                 for (String resource : resources) {
@@ -81,7 +81,7 @@ public class SerializedApplication {
             }
             data.writeShort(parentFirstPackages.size());
             for (String p : parentFirstPackages) {
-                data.writeUTF(p.replace("/", ".").replace("\\", "."));
+                data.writeUTF(p.replace('/', '.').replace('\\', '.'));
             }
             data.writeShort(nonExistentResources.size());
             for (String nonExistentResource : nonExistentResources) {

@@ -73,15 +73,15 @@ public class RunnerClassLoader extends ClassLoader {
             if (loaded != null) {
                 return loaded;
             }
-            ClassLoadingResource[] resources;
+            final ClassLoadingResource[] resources;
             if (packageName == null) {
                 resources = resourceDirectoryMap.get("");
             } else {
-                String dirName = packageName.replace(".", "/");
+                String dirName = packageName.replace('.', '/');
                 resources = resourceDirectoryMap.get(dirName);
             }
             if (resources != null) {
-                String classResource = name.replace(".", "/") + ".class";
+                String classResource = name.replace('.', '/') + ".class";
                 for (ClassLoadingResource resource : resources) {
                     byte[] data = resource.getResourceData(classResource);
                     if (data == null) {

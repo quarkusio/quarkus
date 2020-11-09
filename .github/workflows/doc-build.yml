@@ -26,7 +26,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Compute cache restore key

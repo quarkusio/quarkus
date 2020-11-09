@@ -120,6 +120,8 @@ public class JarResource implements ClassLoadingResource {
                 zipFile.close();
             } catch (IOException e) {
                 //ignore
+            } finally {
+                zipFile = null;
             }
         }
     }

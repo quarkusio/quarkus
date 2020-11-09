@@ -20,7 +20,7 @@ public class VertxMeterFilter implements Handler<RoutingContext> {
         if (requestMetric != null) {
             requestMetric.routingContext = routingContext;
 
-            // remember if we can skip path munging --> @see VertxMeterBinderContainerFilter
+            // remember if we can skip path munging --> @see VertxMeterBinderRestEasyContainerFilter
             if (requestMetric.pathMatched) {
                 routingContext.put(RequestMetric.HTTP_REQUEST_PATH_MATCHED, true);
             }

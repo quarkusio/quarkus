@@ -13,13 +13,13 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
-import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderContainerFilter;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterFilter;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
@@ -43,26 +43,29 @@ public class VertxBinderProcessor {
     }
 
     // avoid imports due to related deps not being there
-    static final String VERTX_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderContainerFilter";
+    static final String RESTEASY_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRestEasyContainerFilter";
+    static final String QUARKUS_REST_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderQuarkusRestContainerFilter";
 
     @BuildStep(onlyIf = { VertxBinderEnabled.class })
     void enableJaxRsSupport(Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviders,
             BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilter,
+            BuildProducer<CustomContainerRequestFilterBuildItem> customContainerRequestFilter,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         if (capabilities.isPresent(Capability.RESTEASY)) {
-            resteasyJaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(VERTX_CONTAINER_FILTER_CLASS_NAME));
-            turnVertxBinderFilterIntoBean(additionalBeans);
+            resteasyJaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(RESTEASY_CONTAINER_FILTER_CLASS_NAME));
+            turnVertxBinderFilterIntoBean(additionalBeans, RESTEASY_CONTAINER_FILTER_CLASS_NAME);
         } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
-            containerRequestFilter.produce(new ContainerRequestFilterBuildItem(VERTX_CONTAINER_FILTER_CLASS_NAME));
-            turnVertxBinderFilterIntoBean(additionalBeans);
+            customContainerRequestFilter
+                    .produce(new CustomContainerRequestFilterBuildItem(QUARKUS_REST_CONTAINER_FILTER_CLASS_NAME));
+            turnVertxBinderFilterIntoBean(additionalBeans, QUARKUS_REST_CONTAINER_FILTER_CLASS_NAME);
         }
     }
 
-    private void turnVertxBinderFilterIntoBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    private void turnVertxBinderFilterIntoBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans, String className) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(VertxMeterBinderContainerFilter.class)
+                .addBeanClass(className)
                 .setUnremovable().build());
     }
 

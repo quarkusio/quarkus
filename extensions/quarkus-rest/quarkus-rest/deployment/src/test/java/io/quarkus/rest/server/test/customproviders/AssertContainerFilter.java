@@ -18,6 +18,7 @@ import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContex
 import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Used only to ensure that the proper types are passed to the method and that CDI integrations work properly
@@ -34,13 +35,15 @@ public class AssertContainerFilter {
 
     @ContainerRequestFilter
     public void whatever(Request request, HttpServerRequest httpServerRequest, SimplifiedResourceInfo simplifiedResourceInfo,
-            ResourceInfo resourceInfo, QuarkusRestContainerRequestContext quarkusRestContainerRequestContext) {
+            ResourceInfo resourceInfo, QuarkusRestContainerRequestContext quarkusRestContainerRequestContext,
+            RoutingContext routingContext) {
         assertNotNull(someBean);
         assertTrue(QuarkusRestRequest.class.isAssignableFrom(request.getClass()));
         assertNotNull(httpServerRequest);
         assertTrue(QuarkusRestSimplifiedResourceInfo.class.isAssignableFrom(simplifiedResourceInfo.getClass()));
         assertTrue(LazyMethod.class.isAssignableFrom(resourceInfo.getClass()));
         assertNotNull(quarkusRestContainerRequestContext);
+        assertNotNull(routingContext);
         COUNT.incrementAndGet();
     }
 

@@ -3,30 +3,26 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.ext.web.RoutingContext;
 
-public class VertxMeterBinderContainerFilter implements ContainerRequestFilter {
-    private static final Logger log = Logger.getLogger(VertxMeterBinderContainerFilter.class);
+final class VertxMeterBinderContainerFilterUtil {
 
-    @Override
-    public void filter(final ContainerRequestContext requestContext) {
-        RoutingContext routingContext = CDI.current().select(CurrentVertxRequest.class).get().getCurrent();
+    private VertxMeterBinderContainerFilterUtil() {
+    }
 
+    private static final Logger log = Logger.getLogger(VertxMeterBinderRestEasyContainerFilter.class);
+
+    static void doFilter(RoutingContext routingContext, UriInfo info) {
         // bail early if we have no routing context, or if path munging isn't necessary
         if (routingContext == null || routingContext.get(RequestMetric.HTTP_REQUEST_PATH_MATCHED) != null) {
             return;
         }
 
-        UriInfo info = requestContext.getUriInfo();
         String path = info.getPath();
 
         MultivaluedMap<String, String> pathParameters = info.getPathParameters();

@@ -34,7 +34,7 @@
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>20.2.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>20.1</mandrel.version-for-documentation>
-        <rest-assured.version>4.1.1</rest-assured.version>
+        <rest-assured.version>4.3.2</rest-assured.version>
         <axle-client.version>1.1.0</axle-client.version>
         <mutiny-client.version>1.1.0</mutiny-client.version>
         <vertx.version>3.9.2</vertx.version>

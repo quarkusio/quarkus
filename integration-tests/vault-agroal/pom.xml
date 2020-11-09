@@ -73,7 +73,7 @@
             <id>test-vault</id>
             <activation>
                 <property>
-                    <name>test-vault</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>

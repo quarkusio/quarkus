@@ -122,7 +122,7 @@
             <id>test-redis</id>
             <activation>
                 <property>
-                    <name>test-redis</name>
+                    <name>test-containers</name>
                 </property>
             </activation>
             <build>
@@ -146,7 +146,7 @@
             <id>docker-redis</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>start-containers</name>
                 </property>
             </activation>
             <properties>

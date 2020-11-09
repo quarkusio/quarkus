@@ -30,8 +30,8 @@ on:
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-keycloak -Dtest-amazon-services -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-redis -Dtest-mailer -Dnative-image.xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
-  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-mailer -Dtest-keycloak -Dtest-redis -Dformat.skip -DskipDocs -Ddocker"
+  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dtest-containers -Dstart-containers -Dnative-image.xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
@@ -479,42 +479,27 @@ jobs:
         category: [IT-Main, IT-Data1, IT-Data2, IT-Data3, IT-Data4, IT-Data5, IT-Data6, IT-Security1, IT-Security2, IT-Security3, IT-Amazon, IT-Messaging, IT-Cache, IT-HTTP, IT-Misc1, IT-Misc2, IT-Misc3, IT-Misc4, IT-Spring, IT-gRPC]
         include:
           - category: IT-Main
-            postgres: "true"
             timeout: 40
           - category: IT-Data1
-            mariadb: "true"
-            mssql: "true"
             timeout: 65
           - category: IT-Data2
-            db2: "true"
-            mysql: "true"
-            mariadb: "true"
             timeout: 65
           - category: IT-Data3
-            postgres: "true"
             timeout: 70
           - category: IT-Data4
-            neo4j: "true"
-            redis: "true"
             timeout: 55
           - category: IT-Data5
-            postgres: "true"
             timeout: 65
           - category: IT-Data6
-            postgres: "true"
-            elasticsearch: "true"
             timeout: 40
           - category: IT-Amazon
-            amazonServices: "true"
             timeout: 45
           - category: IT-Messaging
             timeout: 85
           - category: IT-Security1
             timeout: 50
-            keycloak: "true"
           - category: IT-Security2
             timeout: 70
-            keycloak: "true"
           - category: IT-Security3
             timeout: 50
           - category: IT-Cache
@@ -535,67 +520,6 @@ jobs:
           - category: IT-gRPC
             timeout: 65
     steps:
-      # These should be services, but services do not (yet) allow conditional execution
-      - name: Postgres Service
-        run: |
-          docker run --rm --publish 5432:5432 --name build-postgres \
-          -e POSTGRES_USER=$DB_USER -e POSTGRES_PASSWORD=$DB_PASSWORD -e POSTGRES_DB=$DB_NAME \
-          -d postgres:10.5
-        if: matrix.postgres
-      - name: MySQL Service
-        run: |
-          sudo service mysql stop || true
-          docker run --rm --publish 3306:3306 --name build-mysql  \
-            -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true \
-            -d mysql:5 --skip-ssl
-        if: matrix.mysql
-      - name: DB2 Service
-        run: |
-          docker run --rm --publish 50000:50000 --name build-db2 --privileged=true \
-            -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact -e DBNAME=hreact -e LICENSE=accept -e AUTOCONFIG=false -e ARCHIVE_LOGS=false \
-            -d ibmcom/db2:11.5.0.0a
-        if: matrix.db2
-      - name: Maria DB Service
-        run: |
-          docker run --rm --publish 3308:3306 --name build-mariadb \
-            -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_ROOT_PASSWORD=secret \
-            -d mariadb:10.4
-        if: matrix.mariadb
-      - name: MS-SQL Service
-        run: |
-          docker run --rm --publish 1433:1433 --name build-mssql \
-            -e ACCEPT_EULA=Y -e SA_PASSWORD=ActuallyRequired11Complexity \
-            -d microsoft/mssql-server-linux:2017-CU13
-        if: matrix.mssql
-      - name: Amazon Services
-        run: |
-          docker run --rm --publish 8000:4569 --publish 8008:4572 --publish 8009:4575 --publish 8010:4576 --publish 8011:4599 --publish 8012:4566 --name build-amazon-service-clients -e SERVICES=s3,dynamodb,sns,sqs,kms,ses -e START_WEB=0 \
-            -d localstack/localstack:0.11.1
-        if: matrix.amazonServices
-      - name: Neo4j Service
-        run: |
-          docker run --rm --publish 7687:7687 --name build-neo4j \
-            -e NEO4J_AUTH=neo4j/secret -e NEO4J_dbms_memory_pagecache_size=10M -e NEO4J_dbms_memory_heap_initial__size=10M \
-            -d neo4j/neo4j-experimental:4.0.0-rc01
-        if: matrix.neo4j
-      - name: Redis Service
-        run: docker run --rm --publish 6379:6379 --name build-redis -d redis:5.0.8-alpine
-        if: matrix.redis
-      - name: Keycloak Service
-        run: |
-          docker run --rm --publish 8180:8080 --publish 8543:8443 --name build-keycloak \
-            -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS=" \
-              -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M \
-              -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true \
-              -Dkeycloak.profile.feature.upload_scripts=enabled" \
-            -d quay.io/keycloak/keycloak:11.0.2
-        if: matrix.keycloak
-      - name: Elasticsearch Service
-        run: |
-          docker run --rm --publish 9200:9200 --name build-elasticsearch \
-          -e discovery.type=single-node \
-          -d docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.2
-        if: matrix.elasticsearch
       - uses: actions/checkout@v2
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated

@@ -7,13 +7,13 @@ By default, the tests of this module are disabled.
 To run the tests in a standard JVM with SQL Server started as a Docker container, you can run the following command:
 
 ```
-mvn clean install -Ddocker -Dtest-mssql
+mvn clean install -Dstart-containers -Dtest-containers
 ```
 
 To also test as a native image, add `-Dnative`:
 
 ```
-mvn clean install -Ddocker -Dtest-mssql -Dnative
+mvn clean install -Dstart-containers -Dtest-containers -Dnative
 ```
 
 Alternatively you can connect to your own SQL Server.

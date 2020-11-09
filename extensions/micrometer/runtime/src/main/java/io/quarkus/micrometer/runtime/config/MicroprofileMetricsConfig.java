@@ -10,23 +10,28 @@ import io.quarkus.runtime.annotations.ConfigItem;
  */
 @ConfigGroup
 public class MicroprofileMetricsConfig implements MicrometerConfig.CapabilityEnabled {
+    // @formatter:off
     /**
-     * Microprofile Metrics support.
-     * <p>
-     * Support for Microprofile metrics will be enabled if micrometer
+     * Eclipse MicroProfile Metrics support.
+     *
+     * Support for MicroProfile Metrics will be enabled if Micrometer
      * support is enabled and the MicroProfile Metrics dependency is present:
      *
-     * <pre>
-     * &lt;dependency&gt;
-     *   &lt;groupId&gt;org.eclipse.microprofile.metrics&lt;/groupId&gt;
-     *   &lt;artifactId&gt;microprofile-metrics-api&lt;/artifactId&gt;
-     * &lt;/dependency&gt;
-     * </pre>
-     * <p>
-     * The micrometer extension currently provides a compatibility layer that supports the MP Metrics API,
+     * [source,xml]
+     * ----
+     * <dependency>
+     *   <groupId>org.eclipse.microprofile.metrics</groupId>
+     *   <artifactId>microprofile-metrics-api</artifactId>
+     * </dependency>
+     * ----
+     *
+     * The Micrometer extension currently provides a compatibility layer that supports the MP Metrics API,
      * but metric names and recorded values will be different.
      * Note that the MP Metrics compatibility layer will move to a different extension in the future.
+     *
+     * @asciidoclet
      */
+    // @formatter:on
     @ConfigItem
     public Optional<Boolean> enabled;
 

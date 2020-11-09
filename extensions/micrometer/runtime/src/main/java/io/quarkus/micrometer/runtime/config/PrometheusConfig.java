@@ -10,7 +10,7 @@ public class PrometheusConfig implements MicrometerConfig.CapabilityEnabled {
     /**
      * Support for export to Prometheus.
      * <p>
-     * Support for Prometheus will be enabled if micrometer
+     * Support for Prometheus will be enabled if Micrometer
      * support is enabled, the PrometheusMeterRegistry is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.registry-enabled-default} is true.

@@ -10,7 +10,7 @@ public class JmxConfig implements MicrometerConfig.CapabilityEnabled {
     /**
      * Support for export to JMX
      * <p>
-     * Support for JMX will be enabled if micrometer
+     * Support for JMX will be enabled if Micrometer
      * support is enabled, the JmxMeterRegistry is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.registry-enabled-default} is true.

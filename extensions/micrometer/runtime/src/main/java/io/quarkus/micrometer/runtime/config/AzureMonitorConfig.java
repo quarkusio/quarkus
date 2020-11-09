@@ -10,7 +10,7 @@ public class AzureMonitorConfig implements MicrometerConfig.CapabilityEnabled {
     /**
      * Support for export to AzureMonitor.
      * <p>
-     * Support for AzureMonitor will be enabled if micrometer
+     * Support for AzureMonitor will be enabled if Micrometer
      * support is enabled, the AzureMonitorMeterRegistry is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.registry-enabled-default} is true.

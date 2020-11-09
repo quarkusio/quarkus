@@ -13,7 +13,7 @@ public class VertxConfig implements MicrometerConfig.CapabilityEnabled {
     /**
      * Vert.x metrics support.
      * <p>
-     * Support for Vert.x metrics will be enabled if micrometer
+     * Support for Vert.x metrics will be enabled if Micrometer
      * support is enabled, Vert.x MetricsOptions is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.binder-enabled-default} is true.

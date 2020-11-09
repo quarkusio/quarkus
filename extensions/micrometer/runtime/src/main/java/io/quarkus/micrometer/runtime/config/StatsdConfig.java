@@ -10,7 +10,7 @@ public class StatsdConfig implements MicrometerConfig.CapabilityEnabled {
     /**
      * Support for export to StatsD.
      * <p>
-     * Support for StatsD will be enabled if micrometer
+     * Support for StatsD will be enabled if Micrometer
      * support is enabled, the StatsFxMeterRegistry is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.registry-enabled-default} is true.

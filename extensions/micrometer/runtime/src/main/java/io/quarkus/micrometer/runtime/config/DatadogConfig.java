@@ -10,7 +10,7 @@ public class DatadogConfig implements MicrometerConfig.CapabilityEnabled {
     /**
      * Support for export to Datadog
      * <p>
-     * Support for Datadog will be enabled if micrometer
+     * Support for Datadog will be enabled if Micrometer
      * support is enabled, the DatadogMeterRegistry is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.registry-enabled-default} is true.

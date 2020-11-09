@@ -15,7 +15,7 @@ public class ExportConfig {
     // @formatter:off
     /**
      * Azure Monitor registry configuration properties.
-     * <p>
+     *
      * A property source for configuration of the AzureMonitor MeterRegistry.
      *
      * Available values:
@@ -30,7 +30,7 @@ public class ExportConfig {
      *
      * !===
      *
-     * Other micrometer configuration attributes can also be specified.
+     * Other Micrometer configuration attributes can also be specified.
      *
      * @asciidoclet
      */
@@ -41,7 +41,7 @@ public class ExportConfig {
     // @formatter:off
     /**
      * Datadog MeterRegistry configuration properties.
-     * <p>
+     *
      * A property source for configuration of the Datadog MeterRegistry to push
      * metrics using the Datadog API, see https://micrometer.io/docs/registry/datadog.
      *
@@ -63,7 +63,7 @@ public class ExportConfig {
      * !The interval at which metrics are sent to Datadog. The default is 1 minute.
      * !===
      *
-     * Other micrometer configuration attributes can also be specified.
+     * Other Micrometer configuration attributes can also be specified.
      *
      * @asciidoclet
      */
@@ -74,7 +74,7 @@ public class ExportConfig {
     // @formatter:off
     /**
      * JMX registry configuration properties.
-     * <p>
+     *
      * A property source for configuration of the JMX MeterRegistry,
      * see https://micrometer.io/docs/registry/jmx.
      *
@@ -87,7 +87,7 @@ public class ExportConfig {
     // @formatter:off
     /**
      * Prometheus registry configuration properties.
-     * <p>
+     *
      * A property source for configuration of the Prometheus MeterRegistry,
      * see https://micrometer.io/docs/registry/prometheus.
      *
@@ -100,7 +100,7 @@ public class ExportConfig {
     // @formatter:off
     /**
      * SignalFx registry configuration properties.
-     * <p>
+     *
      * A property source for configuration of the SignalFx MeterRegistry,
      * see https://micrometer.io/docs/registry/signalFx.
      *
@@ -126,7 +126,7 @@ public class ExportConfig {
      * !The interval at which metrics are sent to SignalFx Monitoring. The default is 1 minute.
      * !===
      *
-     * Other micrometer configuration attributes can also be specified.
+     * Other Micrometer configuration attributes can also be specified.
      *
      * @asciidoclet
      */
@@ -137,7 +137,7 @@ public class ExportConfig {
     // @formatter:off
     /**
      * Stackdriver registry configuration properties.
-     * <p>
+     *
      * A property source for configuration of the Stackdriver MeterRegistry,
      * see https://micrometer.io/docs/registry/stackdriver.
      *
@@ -159,7 +159,7 @@ public class ExportConfig {
      * !The interval at which metrics are sent to Stackdriver Monitoring. The default is 1 minute.
      * !===
      *
-     * Other micrometer configuration attributes can also be specified.
+     * Other Micrometer configuration attributes can also be specified.
      *
      * @asciidoclet
      */
@@ -170,7 +170,7 @@ public class ExportConfig {
     // @formatter:off
     /**
      * StatsD registry configuration properties.
-     * <p>
+     * 
      * A property source for configuration of the StatsD MeterRegistry,
      * see https://micrometer.io/docs/registry/statsD.
      *
@@ -205,7 +205,7 @@ public class ExportConfig {
      * !The interval at which metrics are sent to StatsD Monitoring. The default is 1 minute.
      * !===
      *
-     * Other micrometer configuration attributes can also be specified.
+     * Other Micrometer configuration attributes can also be specified.
      *
      * As mentioned in the Micrometer StatsD documentation, if you want to customize the metrics
      * sink, do so by providing your own `StatsDMeterRegistry` instance using a CDI `@Produces`

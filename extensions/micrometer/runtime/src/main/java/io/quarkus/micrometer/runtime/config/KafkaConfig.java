@@ -13,7 +13,7 @@ public class KafkaConfig implements MicrometerConfig.CapabilityEnabled {
     /**
      * Kafka metrics support.
      * <p>
-     * Support for Kafka metrics will be enabled if micrometer support is enabled,
+     * Support for Kafka metrics will be enabled if Micrometer support is enabled,
      * the Kafka Consumer or Producer interface is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.binder-enabled-default} is true.

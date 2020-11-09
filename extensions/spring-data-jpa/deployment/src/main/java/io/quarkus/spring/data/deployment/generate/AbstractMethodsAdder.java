@@ -16,6 +16,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.SliceImpl;
@@ -31,6 +33,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 import io.quarkus.spring.data.runtime.RepositorySupport;
 import io.quarkus.spring.data.runtime.TypesConverter;
@@ -66,7 +69,7 @@ public abstract class AbstractMethodsAdder {
 
     protected void generateFindQueryResultHandling(MethodCreator methodCreator, ResultHandle panacheQuery,
             Integer pageableParameterIndex, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo,
-            DotName returnType, Integer limit, String methodName, DotName customResultType) {
+            DotName returnType, Integer limit, String methodName, DotName customResultType, String originalResultType) {
 
         ResultHandle page = null;
         if (limit != null) {
@@ -128,7 +131,7 @@ public abstract class AbstractMethodsAdder {
                 ResultHandle customResult = tryBlock.invokeStaticMethod(
                         MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
                                 customResultType.toString(),
-                                Object[].class.getName()),
+                                originalResultType),
                         singleResult);
                 ResultHandle optional = tryBlock.invokeStaticMethod(
                         MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
@@ -153,13 +156,14 @@ public abstract class AbstractMethodsAdder {
                         MethodDescriptor.ofMethod(PanacheQuery.class, "stream", Stream.class),
                         panacheQuery);
 
-                // Function to convert Object[] to the custom type (using the generated static convert method)
+                // Function to convert `originResultType` (Object[] or entity class)
+                // to the custom type (using the generated static convert method)
                 FunctionCreator customResultMappingFunction = methodCreator.createFunction(Function.class);
                 BytecodeCreator funcBytecode = customResultMappingFunction.getBytecode();
                 ResultHandle obj = funcBytecode.invokeStaticMethod(
                         MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
                                 customResultType.toString(),
-                                Object[].class.getName()),
+                                originalResultType),
                         funcBytecode.getMethodParam(0));
                 funcBytecode.returnValue(obj);
 
@@ -245,7 +249,7 @@ public abstract class AbstractMethodsAdder {
             ResultHandle customResult = tryBlock.invokeStaticMethod(
                     MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
                             customResultType.toString(),
-                            Object[].class.getName()),
+                            originalResultType),
                     singleResult);
 
             tryBlock.returnValue(customResult);
@@ -293,5 +297,57 @@ public abstract class AbstractMethodsAdder {
 
     protected boolean isHibernateSupportedReturnType(DotName dotName) {
         return dotName.equals(DotNames.OBJECT) || DotNames.HIBERNATE_PROVIDED_BASIC_TYPES.contains(dotName);
+    }
+
+    protected Type verifyQueryResultType(Type t, IndexView index) {
+        if (isHibernateSupportedReturnType(t.name())) {
+            return t;
+        }
+        if (t.kind() == Type.Kind.ARRAY) {
+            return verifyQueryResultType(t.asArrayType().component(), index);
+        } else if (t.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            final List<Type> types = t.asParameterizedType().arguments();
+            if (types.size() == 1) {
+                return verifyQueryResultType(types.get(0), index);
+            } else {
+                for (Type type : types) {
+                    verifyQueryResultType(type, index);
+                }
+            }
+        } else {
+            final ClassInfo typeClass = index.getClassByName(t.name());
+            if (typeClass == null) {
+                throw new IllegalStateException(t.name() + " was not part of the Quarkus index");
+            }
+        }
+        return t;
+    }
+
+    protected DotName createSimpleInterfaceImpl(DotName ifaceName) {
+        String fullName = ifaceName.toString();
+
+        // package name: must be in the same package as the interface
+        final int index = fullName.lastIndexOf('.');
+        String packageName = "";
+        if (index > 0 && index < fullName.length() - 1) {
+            packageName = fullName.substring(0, index) + ".";
+        }
+
+        return DotName.createSimple(packageName
+                + (ifaceName.isInner() ? ifaceName.local() : ifaceName.withoutPackagePrefix()) + "_"
+                + HashUtil.sha1(ifaceName.toString()));
+    }
+
+    protected DotName getPrimitiveTypeName(DotName returnTypeName) {
+        if (DotNames.LONG.equals(returnTypeName)) {
+            return DotNames.PRIMITIVE_LONG;
+        }
+        if (DotNames.INTEGER.equals(returnTypeName)) {
+            return DotNames.PRIMITIVE_INTEGER;
+        }
+        if (DotNames.BOOLEAN.equals(returnTypeName)) {
+            return DotNames.PRIMITIVE_BOOLEAN;
+        }
+        return returnTypeName;
     }
 }

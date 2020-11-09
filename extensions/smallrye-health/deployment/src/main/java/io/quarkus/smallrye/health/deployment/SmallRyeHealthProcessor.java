@@ -402,7 +402,7 @@ class SmallRyeHealthProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void registerGraphQLUiHandler(
+    void registerHealthUiHandler(
             BuildProducer<RouteBuildItem> routeProducer,
             SmallRyeHealthRecorder recorder,
             SmallRyeHealthRuntimeConfig runtimeConfig,

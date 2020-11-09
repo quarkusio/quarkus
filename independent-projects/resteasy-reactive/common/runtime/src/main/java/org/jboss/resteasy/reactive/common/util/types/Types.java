@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.common.util;
+package org.jboss.resteasy.reactive.common.util.types;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;

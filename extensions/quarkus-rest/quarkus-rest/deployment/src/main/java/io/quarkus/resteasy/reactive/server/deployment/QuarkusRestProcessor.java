@@ -63,6 +63,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -423,6 +424,7 @@ public class QuarkusRestProcessor {
                     .setExceptionMapping(exceptionMapping)
                     .setCtxResolvers(ctxResolvers)
                     .setFeatures(feats)
+                    .setClientProxyUnwrapper(new ClientProxyUnwrapper())
                     .setApplicationSupplier(recorder.handleApplication(applicationClass, singletonClasses.isEmpty()))
                     .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
                     .setDynamicFeatures(dynamicFeats)

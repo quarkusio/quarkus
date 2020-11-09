@@ -1,14 +1,15 @@
-package org.jboss.resteasy.reactive.common.core;
+package org.jboss.resteasy.reactive.common.util;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
-public abstract class AbstractQuarkusRestDeployer {
+public abstract class DeploymentUtils {
     private static final Map<String, Class<?>> primitiveTypes;
 
     static {
@@ -24,7 +25,7 @@ public abstract class AbstractQuarkusRestDeployer {
         primitiveTypes = Collections.unmodifiableMap(prims);
     }
 
-    public Supplier<EndpointInvoker> invoker(String baseName) {
+    public static Supplier<EndpointInvoker> invoker(String baseName) {
         return new Supplier<EndpointInvoker>() {
             @Override
             public EndpointInvoker get() {
@@ -38,17 +39,17 @@ public abstract class AbstractQuarkusRestDeployer {
         };
     }
 
-    public void registerWriter(Serialisers serialisers, String entityClassName,
+    public static void registerWriter(Serialisers serialisers, String entityClassName,
             ResourceWriter writer) {
         serialisers.addWriter(loadClass(entityClassName), writer);
     }
 
-    public void registerReader(Serialisers serialisers, String entityClassName,
+    public static void registerReader(Serialisers serialisers, String entityClassName,
             ResourceReader reader) {
         serialisers.addReader(loadClass(entityClassName), reader);
     }
 
-    protected static <T> Class<T> loadClass(String name) {
+    public static <T> Class<T> loadClass(String name) {
         if (primitiveTypes.containsKey(name)) {
             return (Class<T>) primitiveTypes.get(name);
         }

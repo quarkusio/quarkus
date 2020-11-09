@@ -7,10 +7,9 @@ import java.util.Map;
 
 import javax.enterprise.util.TypeLiteral;
 
+import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.rest.server.runtime.TypeSignatureParser;
 
 public class TypeSignatureParserTest {
 

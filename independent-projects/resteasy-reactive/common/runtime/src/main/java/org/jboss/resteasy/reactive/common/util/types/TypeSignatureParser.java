@@ -1,13 +1,9 @@
-package io.quarkus.rest.server.runtime;
+package org.jboss.resteasy.reactive.common.util.types;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.quarkus.arc.impl.GenericArrayTypeImpl;
-import io.quarkus.arc.impl.ParameterizedTypeImpl;
-import io.quarkus.arc.impl.WildcardTypeImpl;
 
 // FIXME: move to quarkus-core?
 public class TypeSignatureParser {

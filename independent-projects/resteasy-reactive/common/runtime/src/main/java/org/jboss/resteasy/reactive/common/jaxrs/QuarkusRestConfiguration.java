@@ -33,7 +33,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
-import org.jboss.resteasy.reactive.common.util.Types;
+import org.jboss.resteasy.reactive.common.util.types.Types;
 
 public class QuarkusRestConfiguration implements Configuration {
 

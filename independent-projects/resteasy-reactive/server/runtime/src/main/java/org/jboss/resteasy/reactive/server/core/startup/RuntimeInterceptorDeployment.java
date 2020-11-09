@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.core;
+package org.jboss.resteasy.reactive.server.core.startup;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -21,6 +21,8 @@ import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;

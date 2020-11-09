@@ -23,6 +23,7 @@ public class QuarkusRestDeploymentInfo {
     private Supplier<Application> applicationSupplier;
     private Function<Class<?>, BeanFactory<?>> factoryCreator;
     private ResteasyReactiveConfig config;
+    private Function<Object, Object> clientProxyUnwrapper;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -120,6 +121,15 @@ public class QuarkusRestDeploymentInfo {
 
     public QuarkusRestDeploymentInfo setApplicationSupplier(Supplier<Application> applicationSupplier) {
         this.applicationSupplier = applicationSupplier;
+        return this;
+    }
+
+    public Function<Object, Object> getClientProxyUnwrapper() {
+        return clientProxyUnwrapper;
+    }
+
+    public QuarkusRestDeploymentInfo setClientProxyUnwrapper(Function<Object, Object> clientProxyUnwrapper) {
+        this.clientProxyUnwrapper = clientProxyUnwrapper;
         return this;
     }
 

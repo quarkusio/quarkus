@@ -13,7 +13,7 @@ import javax.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
-import org.jboss.resteasy.reactive.common.util.Types;
+import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeParameterConverter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;

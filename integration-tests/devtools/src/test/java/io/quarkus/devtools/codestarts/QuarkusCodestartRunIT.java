@@ -26,7 +26,6 @@ import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.codestarts.QuarkusCodestartCatalog.Tag;
 import io.quarkus.devtools.codestarts.QuarkusCodestartData.DataKey;
-import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -149,7 +148,6 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
                 .addCodestart(language)
                 .addData(data)
                 .putData(DataKey.JAVA_VERSION.getKey(), System.getProperty("java.specification.version"))
-                .messageWriter(MessageWriter.debug())
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         Path projectDir = testDirPath.resolve(name);

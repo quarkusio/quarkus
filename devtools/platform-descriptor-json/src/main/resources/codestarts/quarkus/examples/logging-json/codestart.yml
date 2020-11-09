@@ -4,8 +4,16 @@ type: code
 tags: example
 language:
   base:
+    data:
+      title: Logging JSON
+      description: |
+        <p>This example let you go faster with your jet aircraft, your speed is logged when you send a new request.</p>
+        <p>When you reach the speed of sound, a "Sonic Boom" error is going to be thrown and logged.</p>
+        <p><b>Boom!</b></p>
+      paths:
+        - method: GET
+          path: /logging-json/faster
+      guide: https://quarkus.io/guides/logging#json-logging
     dependencies:
       - io.quarkus:quarkus-resteasy
       - io.quarkus:quarkus-logging-json
-    test-dependencies:
-      - io.rest-assured:rest-assured

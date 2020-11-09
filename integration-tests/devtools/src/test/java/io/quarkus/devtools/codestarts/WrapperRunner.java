@@ -14,7 +14,7 @@ import io.quarkus.deployment.util.ProcessUtil;
 public final class WrapperRunner {
 
     enum Wrapper {
-        GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build" }),
+        GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build", "-i" }),
         MAVEN("mvnw", "mvnw.cmd", new String[] { "package" });
 
         private final String execUnix;

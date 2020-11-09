@@ -1,4 +1,0 @@
-# Your configuration properties
-greeting:
-  message: hello
-  name: quarkus

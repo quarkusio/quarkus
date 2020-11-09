@@ -1,0 +1,14 @@
+name: config-example
+ref: config-yaml
+type: code
+tags: example
+language:
+  base:
+    data:
+      title: Config example
+      paths:
+        - method: GET
+          path: /config/supersonic
+      guide: https://quarkus.io/guides/config
+    dependencies:
+      - io.quarkus:quarkus-resteasy

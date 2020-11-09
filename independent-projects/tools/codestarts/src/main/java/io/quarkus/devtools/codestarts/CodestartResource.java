@@ -104,7 +104,7 @@ public interface CodestartResource {
             final Path dir = codestartDir.resolve(languageDir);
             try (final Stream<Path> pathStream = Files.walk(dir)) {
                 return pathStream
-                        .filter(path -> Files.isRegularFile(path))
+                        .filter(Files::isRegularFile)
                         .map(path -> dir.relativize(path).toString())
                         .map(n -> new Source(this, languageDir, n))
                         .collect(Collectors.toList());

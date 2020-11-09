@@ -5,11 +5,15 @@ tags: example
 language:
   base:
     data:
+      title: RESTEasy JAX-RS
+      description: |
+        <p>A Hello World RESTEasy resource</p>
       resource:
         class-name: ExampleResource
         path: "/resteasy/hello"
         response: "hello"
       package-name: org.acme.resteasy
+      guide: https://quarkus.io/guides/rest-json
     dependencies:
       - io.quarkus:quarkus-resteasy
     test-dependencies:

@@ -6,3 +6,5 @@ language:
       language:
         dir:
           code: src/main/scala
+    dependencies:
+      io.quarkus:quarkus-scala

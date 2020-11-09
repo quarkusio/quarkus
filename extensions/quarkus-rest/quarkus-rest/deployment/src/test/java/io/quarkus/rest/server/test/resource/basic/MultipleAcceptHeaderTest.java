@@ -7,6 +7,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.client.ClientBuilder;
 
+import org.jboss.resteasy.reactive.client.QuarkusRestClient;
+import org.jboss.resteasy.reactive.client.QuarkusRestWebTarget;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
@@ -17,8 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.server.test.simple.PortProviderUtil;
-import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestClient;
-import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestWebTarget;
 import io.quarkus.test.QuarkusUnitTest;
 
 @DisplayName("Multiple Accept Header Test")

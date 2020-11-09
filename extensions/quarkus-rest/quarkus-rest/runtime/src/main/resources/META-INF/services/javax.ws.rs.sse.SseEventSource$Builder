@@ -1,1 +1,1 @@
-io.quarkus.resteasy.reactive.client.runtime.QuarkusRestSseEventSourceBuilder
+org.jboss.resteasy.reactive.client.QuarkusRestSseEventSourceBuilder

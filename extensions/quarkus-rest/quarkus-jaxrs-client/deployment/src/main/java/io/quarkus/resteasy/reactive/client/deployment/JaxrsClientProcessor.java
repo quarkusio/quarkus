@@ -49,7 +49,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.client.runtime.JaxrsClientRecorder;
+import io.quarkus.resteasy.reactive.client.runtime.ResteasyReactiveClientRecorder;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusInvokerFactory;
@@ -64,7 +64,7 @@ public class JaxrsClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupClientProxies(JaxrsClientRecorder recorder,
+    void setupClientProxies(ResteasyReactiveClientRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
@@ -148,7 +148,7 @@ public class JaxrsClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void registerInvocationCallbacks(CombinedIndexBuildItem index, JaxrsClientRecorder recorder) {
+    public void registerInvocationCallbacks(CombinedIndexBuildItem index, ResteasyReactiveClientRecorder recorder) {
 
         Collection<ClassInfo> invocationCallbacks = index.getComputingIndex()
                 .getAllKnownImplementors(ResteasyReactiveDotNames.INVOCATION_CALLBACK);

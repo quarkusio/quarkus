@@ -1,1 +1,1 @@
-io.quarkus.resteasy.reactive.client.runtime.QuarkusRestClientBuilder
+org.jboss.resteasy.reactive.client.QuarkusRestClientBuilder

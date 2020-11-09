@@ -56,6 +56,7 @@
     <modules>
         <module>server</module>
         <module>common</module>
+        <module>client</module>
     </modules>
 
     <dependencyManagement>
@@ -86,6 +87,17 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-client-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>jakarta.enterprise</groupId>
                 <artifactId>jakarta.enterprise.cdi-api</artifactId>

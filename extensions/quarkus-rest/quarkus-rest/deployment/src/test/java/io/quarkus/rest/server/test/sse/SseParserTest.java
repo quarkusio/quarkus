@@ -12,12 +12,12 @@ import java.util.stream.Collectors;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 
+import org.jboss.resteasy.reactive.client.QuarkusRestInboundSseEvent;
+import org.jboss.resteasy.reactive.client.QuarkusRestSseEventSource;
+import org.jboss.resteasy.reactive.client.SseParser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestInboundSseEvent;
-import io.quarkus.resteasy.reactive.client.runtime.QuarkusRestSseEventSource;
-import io.quarkus.resteasy.reactive.client.runtime.SseParser;
 import io.vertx.core.buffer.Buffer;
 
 public class SseParserTest {

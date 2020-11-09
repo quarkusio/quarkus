@@ -67,6 +67,13 @@ public class SongResource {
         return songRepository.findById(id);
     }
 
+    @Path("/doNothing")
+    @GET
+    @Produces("application/json")
+    public void doNothing() {
+        songRepository.doNothing();
+    }
+
     @Transactional
     @Path("/delete/all")
     @GET

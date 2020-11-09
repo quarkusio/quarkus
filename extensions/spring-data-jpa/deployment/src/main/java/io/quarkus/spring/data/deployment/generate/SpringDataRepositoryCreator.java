@@ -51,8 +51,8 @@ public class SpringDataRepositoryCreator {
         this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput, customClassCreatedCallback);
     }
 
-    public void implementCrudRepository(ClassInfo repositoryToImplement) {
-        Map.Entry<DotName, DotName> extraTypesResult = extractIdAndEntityTypes(repositoryToImplement);
+    public void implementCrudRepository(ClassInfo repositoryToImplement, IndexView indexView) {
+        Map.Entry<DotName, DotName> extraTypesResult = extractIdAndEntityTypes(repositoryToImplement, indexView);
 
         String idTypeStr = extraTypesResult.getKey().toString();
         DotName entityDotName = extraTypesResult.getValue();
@@ -71,7 +71,8 @@ public class SpringDataRepositoryCreator {
         List<DotName> interfaceNames = repositoryToImplement.interfaceNames();
         List<DotName> fragmentNamesToImplement = new ArrayList<>(interfaceNames.size());
         for (DotName interfaceName : interfaceNames) {
-            if (!DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
+            if (!DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)
+                    && !GenerationUtil.isIntermediateRepository(interfaceName, indexView)) {
                 fragmentNamesToImplement.add(interfaceName);
             }
         }
@@ -116,7 +117,7 @@ public class SpringDataRepositoryCreator {
         }
     }
 
-    private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement) {
+    private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement, IndexView indexView) {
         AnnotationInstance repositoryDefinitionInstance = repositoryToImplement
                 .classAnnotation(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
         if (repositoryDefinitionInstance != null) {
@@ -130,7 +131,7 @@ public class SpringDataRepositoryCreator {
         // we need to pull the entity and ID types for the Spring Data generic types
         // we also need to make sure that the user didn't try to specify multiple different types
         // in the same interface (which is possible if only Repository is used)
-        for (DotName extendedSpringDataRepo : GenerationUtil.extendedSpringDataRepos(repositoryToImplement)) {
+        for (DotName extendedSpringDataRepo : GenerationUtil.extendedSpringDataRepos(repositoryToImplement, indexView)) {
             List<Type> types = JandexUtil.resolveTypeParameters(repositoryToImplement.name(), extendedSpringDataRepo, index);
             if (!(types.get(0) instanceof ClassType)) {
                 throw new IllegalArgumentException(

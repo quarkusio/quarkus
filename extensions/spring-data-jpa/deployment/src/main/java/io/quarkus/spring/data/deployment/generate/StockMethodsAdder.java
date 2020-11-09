@@ -916,7 +916,7 @@ public class StockMethodsAdder {
     }
 
     private Set<MethodInfo> methodsOfExtendedSpringDataRepositories(ClassInfo repositoryToImplement) {
-        return GenerationUtil.interfaceMethods(GenerationUtil.extendedSpringDataRepos(repositoryToImplement), index);
+        return GenerationUtil.interfaceMethods(GenerationUtil.extendedSpringDataRepos(repositoryToImplement, index), index);
     }
 
     // Spring Data allows users to add any of the methods of CrudRepository, PagingAndSortingRepository, JpaRepository

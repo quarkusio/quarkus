@@ -53,10 +53,11 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
                 }
                 effectiveWriter = newWriters.get(0);
             }
-            effectiveWriter.writeTo(entity, type, genericType,
-                    annotations, mediaType, response.getHeaders(), context.getOrCreateOutputStream());
             context.setResult(Response.fromResponse(response).replaceAll(headers).build());
             ServerSerialisers.encodeResponseHeaders(context);
+            // this must be done AFTER encoding the headers, otherwise the HTTP response gets all messed up
+            effectiveWriter.writeTo(entity, type, genericType,
+                    annotations, mediaType, response.getHeaders(), context.getOrCreateOutputStream());
             context.getOutputStream().close();
             done = true;
         } else {

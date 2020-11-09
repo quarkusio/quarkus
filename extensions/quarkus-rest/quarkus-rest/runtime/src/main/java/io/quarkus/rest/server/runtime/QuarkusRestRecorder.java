@@ -1,42 +1,38 @@
 package io.quarkus.rest.server.runtime;
 
+import java.io.Closeable;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.runtime.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
-import org.jboss.resteasy.reactive.common.runtime.model.HasPriority;
 import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceClass;
@@ -44,7 +40,6 @@ import org.jboss.resteasy.reactive.common.runtime.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceFeature;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.runtime.util.QuarkusMultivaluedHashMap;
@@ -57,8 +52,10 @@ import org.jboss.resteasy.reactive.server.core.Features;
 import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.RuntimeInterceptorDeployment;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.parameters.AsyncResponseExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.BeanParamExtractor;
@@ -85,7 +82,6 @@ import org.jboss.resteasy.reactive.server.handlers.ExceptionHandler;
 import org.jboss.resteasy.reactive.server.handlers.FixedProducesHandler;
 import org.jboss.resteasy.reactive.server.handlers.InputHandler;
 import org.jboss.resteasy.reactive.server.handlers.InstanceHandler;
-import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
 import org.jboss.resteasy.reactive.server.handlers.MediaTypeMapper;
 import org.jboss.resteasy.reactive.server.handlers.MultiResponseHandler;
@@ -95,17 +91,14 @@ import org.jboss.resteasy.reactive.server.handlers.ReadBodyHandler;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
-import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.handlers.SseResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.UniResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.VariableProducesHandler;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestDynamicFeatureContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestFeatureContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceMethod;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -121,7 +114,6 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
 import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
 import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestConfig;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -145,7 +137,6 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
     };
 
-    private static final LinkedHashMap<ResourceInterceptor, ReaderInterceptor> EMPTY_INTERCEPTOR_MAP = new LinkedHashMap<>();
     public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
 
     private static volatile QuarkusRestDeployment currentDeployment;
@@ -154,15 +145,20 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         return currentDeployment;
     }
 
-    public Handler<RoutingContext> handler(ResourceInterceptors interceptors,
-            ExceptionMapping exceptionMapping,
-            ContextResolvers ctxResolvers, Features features, DynamicFeatures dynamicFeatures, ServerSerialisers serialisers,
-            List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
-            ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
-            String applicationPath,
-            ParamConverterProviders paramConverterProviders, BeanFactory<QuarkusRestInitialiser> initClassFactory,
-            Class<? extends Application> applicationClass, boolean applicationSingletonClassesEmpty) {
+    public Handler<RoutingContext> handler(QuarkusRestDeploymentInfo info,
+            BeanContainer beanContainer,
+            ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
+            String applicationPath, BeanFactory<QuarkusRestInitialiser> initClassFactory,
+            boolean applicationSingletonClassesEmpty) {
 
+        ResourceInterceptors interceptors = info.getInterceptors();
+        ServerSerialisers serialisers = info.getSerialisers();
+        Features features = info.getFeatures();
+        ExceptionMapping exceptionMapping = info.getExceptionMapping();
+        List<ResourceClass> resourceClasses = info.getResourceClasses();
+        List<ResourceClass> locatableResourceClasses = info.getLocatableResourceClasses();
+        Class<? extends Application> applicationClass = info.getApplicationClass();
+        ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override
             public boolean isBlockingAllowed() {
@@ -170,71 +166,23 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             }
         });
 
-        Supplier<Application> applicationSupplier = handleApplication(applicationClass, applicationSingletonClassesEmpty);
+        Supplier<Application> applicationSupplier = info.getApplicationSupplier();
 
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
         QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping,
                 beanContainer);
+        DynamicFeatures dynamicFeatures = info.getDynamicFeatures();
         boolean dynamicFeaturesExist = !dynamicFeatures.getResourceDynamicFeatures().isEmpty();
 
-        Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> globalRequestInterceptorsMap = createInterceptorInstances(
-                interceptors.getContainerRequestFilters().getGlobalResourceInterceptors(), shutdownContext);
-
-        Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> globalResponseInterceptorsMap = createInterceptorInstances(
-                interceptors.getContainerResponseFilters().getGlobalResourceInterceptors(), shutdownContext);
-
-        Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> nameRequestInterceptorsMap = createInterceptorInstances(
-                interceptors.getContainerRequestFilters().getNameResourceInterceptors(), shutdownContext);
-
-        Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> nameResponseInterceptorsMap = createInterceptorInstances(
-                interceptors.getContainerResponseFilters().getNameResourceInterceptors(), shutdownContext);
-
-        Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> globalReaderInterceptorsMap = createInterceptorInstances(
-                interceptors.getReaderInterceptors().getGlobalResourceInterceptors(), shutdownContext);
-
-        Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> globalWriterInterceptorsMap = createInterceptorInstances(
-                interceptors.getWriterInterceptors().getGlobalResourceInterceptors(), shutdownContext);
-
-        Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> nameReaderInterceptorsMap = createInterceptorInstances(
-                interceptors.getReaderInterceptors().getNameResourceInterceptors(), shutdownContext);
-
-        Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> nameWriterInterceptorsMap = createInterceptorInstances(
-                interceptors.getWriterInterceptors().getNameResourceInterceptors(), shutdownContext);
-
-        Collection<ContainerResponseFilter> responseFilters = globalResponseInterceptorsMap.values();
-        List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers = new ArrayList<>(responseFilters.size());
-        for (ContainerResponseFilter responseFilter : responseFilters) {
-            globalResponseInterceptorHandlers.add(new ResourceResponseFilterHandler(responseFilter));
-        }
-        Collection<ContainerRequestFilter> requestFilters = globalRequestInterceptorsMap.values();
-        List<ResourceRequestFilterHandler> globalRequestInterceptorHandlers = new ArrayList<>(requestFilters.size());
-        for (ContainerRequestFilter requestFilter : requestFilters) {
-            globalRequestInterceptorHandlers.add(new ResourceRequestFilterHandler(requestFilter, false));
-        }
-
-        InterceptorHandler globalInterceptorHandler = null;
-        if (!globalReaderInterceptorsMap.isEmpty() ||
-                !globalWriterInterceptorsMap.isEmpty()) {
-            WriterInterceptor[] writers = null;
-            ReaderInterceptor[] readers = null;
-            if (!globalReaderInterceptorsMap.isEmpty()) {
-                readers = new ReaderInterceptor[globalReaderInterceptorsMap.size()];
-                int idx = 0;
-                for (ReaderInterceptor i : globalReaderInterceptorsMap.values()) {
-                    readers[idx++] = i;
-                }
+        Consumer<Closeable> closeTaskHandler = new Consumer<Closeable>() {
+            @Override
+            public void accept(Closeable closeable) {
+                shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(closeable));
             }
-            if (!globalWriterInterceptorsMap.isEmpty()) {
-                writers = new WriterInterceptor[globalWriterInterceptorsMap.size()];
-                int idx = 0;
-                for (WriterInterceptor i : globalWriterInterceptorsMap.values()) {
-                    writers[idx++] = i;
-                }
-            }
-            globalInterceptorHandler = new InterceptorHandler(writers, readers);
-
-        }
+        };
+        RuntimeInterceptorDeployment interceptorDeployment = new RuntimeInterceptorDeployment(info, quarkusRestConfiguration,
+                closeTaskHandler);
 
         ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler(new Function<Class<?>, Object>() {
             @Override
@@ -254,16 +202,8 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (ResourceMethod method : clazz.getMethods()) {
                 //TODO: add DynamicFeature for these
-                RuntimeResource runtimeResource = buildResourceMethod(serialisers, quarkusRestConfig,
-                        globalRequestInterceptorsMap,
-                        globalResponseInterceptorsMap,
-                        globalRequestInterceptorHandlers, globalResponseInterceptorHandlers,
-                        nameRequestInterceptorsMap, nameResponseInterceptorsMap,
-                        Collections.emptyMap(), Collections.emptyMap(),
-                        globalReaderInterceptorsMap,
-                        globalWriterInterceptorsMap,
-                        nameReaderInterceptorsMap,
-                        nameWriterInterceptorsMap, globalInterceptorHandler, Collections.emptyMap(), Collections.emptyMap(),
+                RuntimeResource runtimeResource = buildResourceMethod(serialisers, info.getConfig(),
+                        interceptorDeployment.forMethod(clazz, method),
                         clazz,
                         resourceLocatorHandler, method,
                         true, classPathTemplate, dynamicEntityWriter, beanContainer, paramConverterProviders);
@@ -286,69 +226,9 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 mappers.put(classTemplate, perClassMappers = new HashMap<>());
             }
             for (ResourceMethod method : clazz.getMethods()) {
-                Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> methodSpecificRequestInterceptorsMap = Collections
-                        .emptyMap();
-                Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> methodSpecificResponseInterceptorsMap = Collections
-                        .emptyMap();
-                Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> methodSpecificReaderInterceptorsMap = Collections
-                        .emptyMap();
-                Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> methodSpecificWriterInterceptorsMap = Collections
-                        .emptyMap();
 
-                if (dynamicFeaturesExist) {
-                    // we'll basically just use this as a way to capture the registering of filters
-                    // in the global fields
-                    ResourceInterceptors dynamicallyConfiguredInterceptors = new ResourceInterceptors();
-
-                    QuarkusRestResourceMethod quarkusRestResourceMethod = new QuarkusRestResourceMethod(clazz, method); // TODO: look into using LazyMethod
-                    QuarkusRestDynamicFeatureContext context = new QuarkusRestDynamicFeatureContext(
-                            dynamicallyConfiguredInterceptors, quarkusRestConfiguration, new Function<Class, BeanFactory<?>>() {
-                                @Override
-                                public BeanFactory<?> apply(Class aClass) {
-                                    return new ArcBeanFactory<>(aClass, beanContainer);
-                                }
-                            });
-                    for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {
-                        DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
-                        feature.configure(quarkusRestResourceMethod, context);
-                    }
-                    dynamicallyConfiguredInterceptors.sort();
-
-                    if (!dynamicallyConfiguredInterceptors.getContainerRequestFilters().getGlobalResourceInterceptors()
-                            .isEmpty()) {
-                        methodSpecificRequestInterceptorsMap = createInterceptorInstances(
-                                dynamicallyConfiguredInterceptors.getContainerRequestFilters().getGlobalResourceInterceptors(),
-                                shutdownContext);
-                    }
-                    if (!dynamicallyConfiguredInterceptors.getContainerResponseFilters().getGlobalResourceInterceptors()
-                            .isEmpty()) {
-                        methodSpecificResponseInterceptorsMap = createInterceptorInstances(
-                                dynamicallyConfiguredInterceptors.getContainerResponseFilters().getGlobalResourceInterceptors(),
-                                shutdownContext);
-                    }
-                    if (!dynamicallyConfiguredInterceptors.getReaderInterceptors().getGlobalResourceInterceptors().isEmpty()) {
-                        methodSpecificReaderInterceptorsMap = createInterceptorInstances(
-                                dynamicallyConfiguredInterceptors.getReaderInterceptors().getGlobalResourceInterceptors(),
-                                shutdownContext);
-                    }
-                    if (!dynamicallyConfiguredInterceptors.getWriterInterceptors().getGlobalResourceInterceptors().isEmpty()) {
-                        methodSpecificWriterInterceptorsMap = createInterceptorInstances(
-                                dynamicallyConfiguredInterceptors.getWriterInterceptors().getGlobalResourceInterceptors(),
-                                shutdownContext);
-                    }
-                }
-
-                RuntimeResource runtimeResource = buildResourceMethod(serialisers, quarkusRestConfig,
-                        globalRequestInterceptorsMap,
-                        globalResponseInterceptorsMap,
-                        globalRequestInterceptorHandlers, globalResponseInterceptorHandlers, nameRequestInterceptorsMap,
-                        nameResponseInterceptorsMap, methodSpecificRequestInterceptorsMap,
-                        methodSpecificResponseInterceptorsMap,
-                        globalReaderInterceptorsMap,
-                        globalWriterInterceptorsMap,
-                        nameReaderInterceptorsMap,
-                        nameWriterInterceptorsMap, globalInterceptorHandler,
-                        methodSpecificReaderInterceptorsMap, methodSpecificWriterInterceptorsMap,
+                RuntimeResource runtimeResource = buildResourceMethod(serialisers, info.getConfig(),
+                        interceptorDeployment.forMethod(clazz, method),
                         clazz, resourceLocatorHandler, method,
                         false, classTemplate, dynamicEntityWriter, beanContainer, paramConverterProviders);
 
@@ -379,12 +259,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
 
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>();
 
-        if (globalInterceptorHandler != null) {
-            abortHandlingChain.add(globalInterceptorHandler);
+        if (interceptorDeployment.getGlobalInterceptorHandler() != null) {
+            abortHandlingChain.add(interceptorDeployment.getGlobalInterceptorHandler());
         }
         abortHandlingChain.add(new ExceptionHandler());
         if (!interceptors.getContainerResponseFilters().getGlobalResourceInterceptors().isEmpty()) {
-            abortHandlingChain.addAll(globalResponseInterceptorHandlers);
+            abortHandlingChain.addAll(interceptorDeployment.getGlobalResponseInterceptorHandlers());
         }
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
@@ -399,7 +279,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         if ((applicationPath != null) && !applicationPath.isEmpty()) {
             prefix = prefix + sanitizePathPrefix(applicationPath);
         }
-        QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
+        QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, info.getCtxResolvers(), serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, quarkusRestConfiguration, applicationSupplier,
                 new ArcThreadSetupAction(Arc.container().requestContext()),
@@ -420,10 +300,9 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         //pre matching interceptors are run first
         List<ResourceRequestFilterHandler> preMatchHandlers = null;
         if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
-            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> preMatchContainerRequestFilters = createInterceptorInstances(
-                    interceptors.getContainerRequestFilters().getPreMatchInterceptors(), shutdownContext);
-            preMatchHandlers = new ArrayList<>(preMatchContainerRequestFilters.size());
-            for (ContainerRequestFilter containerRequestFilter : preMatchContainerRequestFilters.values()) {
+            preMatchHandlers = new ArrayList<>(interceptorDeployment.getPreMatchContainerRequestFilters().size());
+            for (ContainerRequestFilter containerRequestFilter : interceptorDeployment.getPreMatchContainerRequestFilters()
+                    .values()) {
                 preMatchHandlers.add(new ResourceRequestFilterHandler(containerRequestFilter, true));
             }
         }
@@ -437,7 +316,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
     }
 
     // TODO: don't use reflection to instantiate Application
-    private Supplier<Application> handleApplication(final Class<? extends Application> applicationClass,
+    public Supplier<Application> handleApplication(final Class<? extends Application> applicationClass,
             final boolean singletonClassesEmpty) {
         Supplier<Application> applicationSupplier;
         if (singletonClassesEmpty) {
@@ -494,7 +373,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
 
         QuarkusRestFeatureContext featureContext = new QuarkusRestFeatureContext(interceptors, exceptionMapping,
-                configuration, new Function<Class, BeanFactory<?>>() {
+                configuration, new Function<Class<?>, BeanFactory<?>>() {
                     @Override
                     public BeanFactory<?> apply(Class aClass) {
                         return new ArcBeanFactory<>(aClass, beanContainer);
@@ -512,27 +391,6 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             interceptors.sort();
         }
         return configuration;
-    }
-
-    private <T> LinkedHashMap<ResourceInterceptor<T>, T> createInterceptorInstances(
-            List<ResourceInterceptor<T>> interceptors, ShutdownContext shutdownContext) {
-
-        if (interceptors.isEmpty()) {
-            return (LinkedHashMap) EMPTY_INTERCEPTOR_MAP;
-        }
-
-        LinkedHashMap<ResourceInterceptor<T>, T> result = new LinkedHashMap<>();
-        List<BeanFactory.BeanInstance<T>> responseBeanInstances = new ArrayList<>(interceptors.size());
-        Collections.sort(interceptors);
-        for (ResourceInterceptor<T> interceptor : interceptors) {
-            BeanFactory.BeanInstance<T> beanInstance = interceptor.getFactory().createInstance();
-            responseBeanInstances.add(beanInstance);
-            T containerResponseFilter = beanInstance.getInstance();
-            result.put(interceptor, containerResponseFilter);
-        }
-        shutdownContext.addShutdownTask(
-                new ShutdownContext.CloseRunnable(new BeanFactory.BeanInstance.ClosingTask<>(responseBeanInstances)));
-        return result;
     }
 
     public void buildMethodMapper(
@@ -597,22 +455,8 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
     }
 
     public RuntimeResource buildResourceMethod(ServerSerialisers serialisers,
-            QuarkusRestConfig quarkusRestConfig,
-            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> globalRequestInterceptorsMap,
-            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> globalResponseInterceptorsMap,
-            List<ResourceRequestFilterHandler> globalRequestInterceptorHandlers,
-            List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers,
-            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> nameRequestInterceptorsMap,
-            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> nameResponseInterceptorsMap,
-            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> methodSpecificRequestInterceptorsMap,
-            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
-            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> globalReaderInterceptorsMap,
-            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> globalWriterInterceptorsMap,
-            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> nameReaderInterceptorsMap,
-            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> nameWriterInterceptorsMap,
-            InterceptorHandler globalInterceptorHandler,
-            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
-            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> methodSpecificWriterInterceptorsMap,
+            ResteasyReactiveConfig quarkusRestConfig,
+            RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment,
             ResourceClass clazz,
             ResourceLocatorHandler resourceLocatorHandler,
             ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
@@ -639,15 +483,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         }
 
         //setup reader and writer interceptors first
-        setupInterceptorHandler(globalReaderInterceptorsMap, globalWriterInterceptorsMap, nameReaderInterceptorsMap,
-                nameWriterInterceptorsMap, globalInterceptorHandler, methodSpecificReaderInterceptorsMap,
-                methodSpecificWriterInterceptorsMap, method, handlers);
+        handlers.addAll(interceptorDeployment.setupInterceptorHandler());
         //at this point the handler chain only has interceptors
         //which we also want in the abort handler chain
         abortHandlingChain.addAll(handlers);
 
-        setupRequestFilterHandler(globalRequestInterceptorsMap, globalRequestInterceptorHandlers, nameRequestInterceptorsMap,
-                methodSpecificRequestInterceptorsMap, method, handlers);
+        handlers.addAll(interceptorDeployment.setupRequestFilterHandler());
 
         Class<?>[] parameterTypes = new Class[method.getParameters().length];
         for (int i = 0; i < method.getParameters().length; ++i) {
@@ -672,7 +513,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             handlers.add(new ReadBodyHandler(bodyParameter != null));
         } else if (bodyParameter != null) {
             // allow the body to be read by chunks
-            handlers.add(new InputHandler(quarkusRestConfig.inputBufferSize.asLongValue(), EXECUTOR_SUPPLIER));
+            handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), EXECUTOR_SUPPLIER));
         }
         // if we need the body, let's deserialise it
         if (bodyParameter != null) {
@@ -824,8 +665,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         } else {
             handlers.add(new ResponseHandler());
 
-            setupResponseFilterHandler(globalResponseInterceptorsMap, globalResponseInterceptorHandlers,
-                    nameResponseInterceptorsMap, methodSpecificResponseInterceptorsMap, method, responseFilterHandlers);
+            responseFilterHandlers.addAll(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
         }
@@ -845,125 +685,6 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 lazyMethod,
                 pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());
         return runtimeResource;
-    }
-
-    private void setupInterceptorHandler(
-            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> globalReaderInterceptorsMap,
-            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> globalWriterInterceptorsMap,
-            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> nameReaderInterceptorsMap,
-            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> nameWriterInterceptorsMap,
-            InterceptorHandler globalInterceptorHandler,
-            Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
-            Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> methodSpecificWriterInterceptorsMap,
-            ResourceMethod method,
-            List<ServerRestHandler> handlers) {
-        if (method.getNameBindingNames().isEmpty() && methodSpecificReaderInterceptorsMap.isEmpty()
-                && methodSpecificWriterInterceptorsMap.isEmpty()) {
-            if (globalInterceptorHandler != null) {
-                handlers.add(globalInterceptorHandler);
-            }
-        } else if (nameReaderInterceptorsMap.isEmpty() && nameWriterInterceptorsMap.isEmpty()
-                && methodSpecificReaderInterceptorsMap.isEmpty() && methodSpecificWriterInterceptorsMap.isEmpty()) {
-            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            if (globalInterceptorHandler != null) {
-                handlers.add(globalInterceptorHandler);
-            }
-        } else {
-            TreeMap<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> readerInterceptorsToUse = buildInterceptorMap(
-                    globalReaderInterceptorsMap, nameReaderInterceptorsMap, methodSpecificReaderInterceptorsMap, method, false);
-            TreeMap<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> writerInterceptorsToUse = buildInterceptorMap(
-                    globalWriterInterceptorsMap, nameWriterInterceptorsMap, methodSpecificWriterInterceptorsMap, method, false);
-            WriterInterceptor[] writers = null;
-            ReaderInterceptor[] readers = null;
-            if (!readerInterceptorsToUse.isEmpty()) {
-                readers = new ReaderInterceptor[readerInterceptorsToUse.size()];
-                int idx = 0;
-                for (ReaderInterceptor i : readerInterceptorsToUse.values()) {
-                    readers[idx++] = i;
-                }
-            }
-            if (!writerInterceptorsToUse.isEmpty()) {
-                writers = new WriterInterceptor[writerInterceptorsToUse.size()];
-                int idx = 0;
-                for (WriterInterceptor i : writerInterceptorsToUse.values()) {
-                    writers[idx++] = i;
-                }
-            }
-            handlers.add(new InterceptorHandler(writers, readers));
-        }
-    }
-
-    private <T> TreeMap<ResourceInterceptor<T>, T> buildInterceptorMap(
-            Map<ResourceInterceptor<T>, T> globalInterceptorsMap,
-            Map<ResourceInterceptor<T>, T> nameInterceptorsMap,
-            Map<ResourceInterceptor<T>, T> methodSpecificInterceptorsMap, ResourceMethod method, boolean reversed) {
-        TreeMap<ResourceInterceptor<T>, T> interceptorsToUse = new TreeMap<>(HasPriority.TreeMapComparator.INSTANCE);
-        interceptorsToUse.putAll(globalInterceptorsMap);
-        interceptorsToUse.putAll(methodSpecificInterceptorsMap);
-        for (ResourceInterceptor<T> nameInterceptor : nameInterceptorsMap.keySet()) {
-            // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-            if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                interceptorsToUse.put(nameInterceptor, nameInterceptorsMap.get(nameInterceptor));
-            }
-        }
-        return interceptorsToUse;
-    }
-
-    private void setupRequestFilterHandler(
-            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> globalRequestInterceptorsMap,
-            List<ResourceRequestFilterHandler> globalRequestInterceptorsHandlers,
-            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> nameRequestInterceptorsMap,
-            Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> methodSpecificRequestInterceptorsMap,
-            ResourceMethod method,
-            List<ServerRestHandler> handlers) {
-        // according to the spec, global request filters apply everywhere
-        // and named request filters only apply to methods with exactly matching "qualifiers"
-        if (method.getNameBindingNames().isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
-            if (!globalRequestInterceptorsHandlers.isEmpty()) {
-                handlers.addAll(globalRequestInterceptorsHandlers);
-            }
-        } else if (nameRequestInterceptorsMap.isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
-            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            if (!globalRequestInterceptorsHandlers.isEmpty()) {
-                handlers.addAll(globalRequestInterceptorsHandlers);
-            }
-        } else {
-            TreeMap<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> interceptorsToUse = buildInterceptorMap(
-                    globalRequestInterceptorsMap, nameRequestInterceptorsMap, methodSpecificRequestInterceptorsMap, method,
-                    false);
-            for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorsToUse
-                    .entrySet()) {
-                handlers.add(new ResourceRequestFilterHandler(entry.getValue(), false));
-            }
-        }
-    }
-
-    private void setupResponseFilterHandler(
-            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> globalResponseInterceptorsMap,
-            List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers,
-            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> nameResponseInterceptorsMap,
-            Map<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
-            ResourceMethod method, List<ServerRestHandler> responseFilterHandlers) {
-        // according to the spec, global request filters apply everywhere
-        // and named request filters only apply to methods with exactly matching "qualifiers"
-        if (method.getNameBindingNames().isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
-            if (!globalResponseInterceptorHandlers.isEmpty()) {
-                responseFilterHandlers.addAll(globalResponseInterceptorHandlers);
-            }
-        } else if (nameResponseInterceptorsMap.isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
-            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            if (!globalResponseInterceptorHandlers.isEmpty()) {
-                responseFilterHandlers.addAll(globalResponseInterceptorHandlers);
-            }
-        } else {
-            TreeMap<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> interceptorsToUse = buildInterceptorMap(
-                    globalResponseInterceptorsMap, nameResponseInterceptorsMap, methodSpecificResponseInterceptorsMap, method,
-                    true);
-            for (Map.Entry<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> entry : interceptorsToUse
-                    .entrySet()) {
-                responseFilterHandlers.add(new ResourceResponseFilterHandler(entry.getValue()));
-            }
-        }
     }
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, ParameterType type, String javaType,
@@ -1079,4 +800,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         dynamicFeatures.addFeature(dynamicFeature);
     }
 
+    public Function<Class<?>, BeanFactory<?>> factoryCreator(BeanContainer container) {
+        return new Function<Class<?>, BeanFactory<?>>() {
+            @Override
+            public BeanFactory<?> apply(Class<?> aClass) {
+                return new ArcBeanFactory<>(aClass, container);
+            }
+        };
+    }
 }

@@ -9,7 +9,7 @@ import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
 
 public class DefaultClientContext implements ClientContext {
 
-    private static DefaultClientContext INSTANCE = new DefaultClientContext();
+    public static DefaultClientContext INSTANCE = new DefaultClientContext();
     public static final ClientContextResolver RESOLVER = new ClientContextResolver() {
         @Override
         public ClientContext resolve(ClassLoader classLoader) {

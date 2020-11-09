@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 import org.jboss.resteasy.reactive.client.ClientContext;
 import org.jboss.resteasy.reactive.client.ClientContextResolver;
 import org.jboss.resteasy.reactive.client.ClientProxies;
+import org.jboss.resteasy.reactive.client.DefaultClientContext;
 import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
 
@@ -17,22 +18,38 @@ public class ResteasyReactiveClientContextResolver implements ClientContextResol
         return new ClientContext() {
             @Override
             public Serialisers getSerialisers() {
-                return ResteasyReactiveClientRecorder.getSerialisers();
+                Serialisers serialisers = ResteasyReactiveClientRecorder.getSerialisers();
+                if (serialisers == null) {
+                    return DefaultClientContext.INSTANCE.getSerialisers();
+                }
+                return serialisers;
             }
 
             @Override
             public GenericTypeMapping getGenericTypeMapping() {
-                return ResteasyReactiveClientRecorder.getGenericTypeMapping();
+                GenericTypeMapping genericTypeMapping = ResteasyReactiveClientRecorder.getGenericTypeMapping();
+                if (genericTypeMapping == null) {
+                    return DefaultClientContext.INSTANCE.getGenericTypeMapping();
+                }
+                return genericTypeMapping;
             }
 
             @Override
             public Supplier<Vertx> getVertx() {
-                return VertxCoreRecorder.getVertx();
+                Supplier<Vertx> vertx = VertxCoreRecorder.getVertx();
+                if (vertx == null) {
+                    return DefaultClientContext.INSTANCE.getVertx();
+                }
+                return vertx;
             }
 
             @Override
             public ClientProxies getClientProxies() {
-                return ResteasyReactiveClientRecorder.getClientProxies();
+                ClientProxies clientProxies = ResteasyReactiveClientRecorder.getClientProxies();
+                if (clientProxies == null) {
+                    return DefaultClientContext.INSTANCE.getClientProxies();
+                }
+                return clientProxies;
             }
         };
     }

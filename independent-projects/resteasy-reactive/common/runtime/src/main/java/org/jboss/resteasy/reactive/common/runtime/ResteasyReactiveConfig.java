@@ -6,7 +6,7 @@ public class ResteasyReactiveConfig {
      * The amount of memory that can be used to buffer input before switching to
      * blocking IO.
      */
-    public final long inputBufferSize;
+    private long inputBufferSize;
 
     /**
      * By default we assume a default produced media type of "text/plain"
@@ -14,7 +14,10 @@ public class ResteasyReactiveConfig {
      * produced media type will be "[text/plain, *&sol;*]" which is more
      * expensive due to negotiation.
      */
-    public final boolean singleDefaultProduces;
+    private boolean singleDefaultProduces;
+
+    public ResteasyReactiveConfig() {
+    }
 
     public ResteasyReactiveConfig(long inputBufferSize, boolean singleDefaultProduces) {
         this.inputBufferSize = inputBufferSize;
@@ -27,5 +30,15 @@ public class ResteasyReactiveConfig {
 
     public boolean isSingleDefaultProduces() {
         return singleDefaultProduces;
+    }
+
+    public ResteasyReactiveConfig setInputBufferSize(long inputBufferSize) {
+        this.inputBufferSize = inputBufferSize;
+        return this;
+    }
+
+    public ResteasyReactiveConfig setSingleDefaultProduces(boolean singleDefaultProduces) {
+        this.singleDefaultProduces = singleDefaultProduces;
+        return this;
     }
 }

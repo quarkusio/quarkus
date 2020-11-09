@@ -32,13 +32,13 @@ public class QuarkusRestFeatureContext implements FeatureContext {
 
     protected final ResourceInterceptors interceptors;
     private final ExceptionMapping exceptionMapping;
-    private final Function<Class, BeanFactory<?>> beanFactoryCreator;
+    private final Function<Class<?>, BeanFactory<?>> beanFactoryCreator;
     private final QuarkusRestConfiguration configuration;
 
     private boolean filtersNeedSorting = false;
 
     public QuarkusRestFeatureContext(ResourceInterceptors interceptors, ExceptionMapping exceptionMapping,
-            QuarkusRestConfiguration configuration, Function<Class, BeanFactory<?>> beanFactoryCreator) {
+            QuarkusRestConfiguration configuration, Function<Class<?>, BeanFactory<?>> beanFactoryCreator) {
         this.interceptors = interceptors;
         this.exceptionMapping = exceptionMapping;
         this.configuration = configuration;

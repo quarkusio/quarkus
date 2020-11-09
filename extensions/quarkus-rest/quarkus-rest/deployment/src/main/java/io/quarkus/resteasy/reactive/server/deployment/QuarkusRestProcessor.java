@@ -53,6 +53,7 @@ import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.Features;
 import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -414,12 +415,23 @@ public class QuarkusRestProcessor {
 
             // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
             // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
-            Handler<RoutingContext> handler = recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats,
-                    dynamicFeats,
-                    serialisers, resourceClasses, subResourceClasses,
-                    beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, applicationPath,
-                    converterProviders, initClassFactory,
-                    application == null ? Application.class : application.getClass(), singletonClasses.isEmpty());
+            Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
+            Handler<RoutingContext> handler = recorder.handler(new QuarkusRestDeploymentInfo()
+                    .setInterceptors(interceptors.sort())
+                    .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
+                    .setExceptionMapping(exceptionMapping)
+                    .setCtxResolvers(ctxResolvers)
+                    .setFeatures(feats)
+                    .setApplicationSupplier(recorder.handleApplication(applicationClass, singletonClasses.isEmpty()))
+                    .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
+                    .setDynamicFeatures(dynamicFeats)
+                    .setSerialisers(serialisers)
+                    .setResourceClasses(resourceClasses)
+                    .setLocatableResourceClasses(subResourceClasses)
+                    .setParamConverterProviders(converterProviders)
+                    .setApplicationClass(applicationClass),
+                    beanContainerBuildItem.getValue(), shutdownContext, vertxConfig, applicationPath,
+                    initClassFactory, singletonClasses.isEmpty());
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);
             // Exact match for resources matched to the root path

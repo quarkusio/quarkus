@@ -13,7 +13,7 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 public class QuarkusRestDynamicFeatureContext extends QuarkusRestFeatureContext {
 
     public QuarkusRestDynamicFeatureContext(ResourceInterceptors interceptors, QuarkusRestConfiguration configuration,
-            Function<Class, BeanFactory<?>> beanContainer) {
+            Function<Class<?>, BeanFactory<?>> beanContainer) {
         super(interceptors, null, configuration, beanContainer);
     }
 

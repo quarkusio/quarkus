@@ -509,7 +509,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             return produces;
         // FIXME: primitives
         if (STRING.equals(nonAsyncReturnType.name()))
-            return config.singleDefaultProduces ? PRODUCES_PLAIN_TEXT : PRODUCES_PLAIN_TEXT_NEGOTIATED;
+            return config.isSingleDefaultProduces() ? PRODUCES_PLAIN_TEXT : PRODUCES_PLAIN_TEXT_NEGOTIATED;
         // FIXME: JSON
         return produces;
     }

@@ -14,7 +14,7 @@
 # docker run -i --rm -p 8080:8080 quarkus/${project_artifactId}
 #
 ###
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

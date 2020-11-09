@@ -66,7 +66,7 @@ jobs:
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Get Date
@@ -140,7 +140,7 @@ jobs:
 
       - name: Set up JDK ${{ matrix.java.name }}
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
           release: ${{ matrix.java.release }}
@@ -178,7 +178,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Download Maven Repo
@@ -230,7 +230,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.name }}
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
       - name: Run Maven integration tests
@@ -265,7 +265,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Run Maven integration tests
@@ -307,7 +307,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.name }}
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
       - name: Build with Gradle
@@ -329,7 +329,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Download Maven Repo
@@ -376,7 +376,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.name }}
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: ${{ matrix.java.java-version }}
       - name: Run Devtools integration tests
@@ -411,7 +411,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Run Devtools integration tests
@@ -440,7 +440,7 @@ jobs:
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Download Maven Repo
@@ -523,7 +523,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
       - name: Reclaim Disk Space

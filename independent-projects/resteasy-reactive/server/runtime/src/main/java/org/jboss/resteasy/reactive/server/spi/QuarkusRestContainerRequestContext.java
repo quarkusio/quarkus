@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.spi;
 
 import javax.ws.rs.container.ContainerRequestContext;
-import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 
 public interface QuarkusRestContainerRequestContext extends ContainerRequestContext {
 

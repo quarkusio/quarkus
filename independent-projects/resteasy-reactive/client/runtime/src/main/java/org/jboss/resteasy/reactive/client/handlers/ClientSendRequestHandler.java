@@ -20,7 +20,7 @@ import javax.ws.rs.core.Variant;
 import org.jboss.resteasy.reactive.client.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.QuarkusRestAsyncInvoker;
 import org.jboss.resteasy.reactive.client.RestClientRequestContext;
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     @Override

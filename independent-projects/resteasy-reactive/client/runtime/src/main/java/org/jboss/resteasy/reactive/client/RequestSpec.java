@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.client;
 
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
 public class RequestSpec {
     final QuarkusRestConfiguration configuration;

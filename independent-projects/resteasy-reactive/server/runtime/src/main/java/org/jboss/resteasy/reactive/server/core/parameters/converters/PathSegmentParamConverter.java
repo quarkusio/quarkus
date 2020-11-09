@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.core.parameters.converters;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import org.jboss.resteasy.reactive.common.runtime.util.PathSegmentImpl;
+import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
 
 public class PathSegmentParamConverter implements ParameterConverter {

@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
-import org.jboss.resteasy.reactive.common.runtime.util.CommonSseUtil;
+import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
 
 public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> {
 

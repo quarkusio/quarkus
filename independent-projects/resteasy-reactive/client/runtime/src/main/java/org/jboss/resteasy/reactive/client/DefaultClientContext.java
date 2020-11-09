@@ -4,8 +4,8 @@ import io.vertx.core.Vertx;
 import java.util.Collections;
 import java.util.function.Supplier;
 import javax.ws.rs.RuntimeType;
-import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class DefaultClientContext implements ClientContext {
 

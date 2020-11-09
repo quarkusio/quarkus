@@ -33,7 +33,7 @@ import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.common.runtime.util.ServerMediaType;
+import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;

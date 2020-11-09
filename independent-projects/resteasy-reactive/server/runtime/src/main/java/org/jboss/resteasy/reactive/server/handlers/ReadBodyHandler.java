@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 
 import io.vertx.core.http.HttpServerRequest;
 import java.io.ByteArrayInputStream;
-import org.jboss.resteasy.reactive.common.runtime.util.EmptyInputStream;
+import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class ReadBodyHandler implements ServerRestHandler {

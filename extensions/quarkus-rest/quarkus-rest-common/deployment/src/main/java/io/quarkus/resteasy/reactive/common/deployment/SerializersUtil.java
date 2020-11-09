@@ -4,9 +4,9 @@ import java.util.List;
 
 import javax.ws.rs.RuntimeType;
 
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceReader;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceWriter;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.model.ResourceReader;
+import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;

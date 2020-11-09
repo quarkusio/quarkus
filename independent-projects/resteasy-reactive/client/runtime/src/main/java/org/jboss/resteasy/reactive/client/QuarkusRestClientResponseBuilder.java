@@ -3,9 +3,9 @@ package org.jboss.resteasy.reactive.client;
 import java.io.InputStream;
 import java.net.URI;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.runtime.NotImplementedYet;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponse;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponseBuilder;
+import org.jboss.resteasy.reactive.common.NotImplementedYet;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
 
 public class QuarkusRestClientResponseBuilder extends QuarkusRestResponseBuilder { //TODO: should not extend the server version
 

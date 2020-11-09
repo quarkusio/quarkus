@@ -14,7 +14,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 // FIXME: we need to refactor the serialisation of entities to bytes between here and Sse and Serialisers
 // and figure out where interceptors come into play

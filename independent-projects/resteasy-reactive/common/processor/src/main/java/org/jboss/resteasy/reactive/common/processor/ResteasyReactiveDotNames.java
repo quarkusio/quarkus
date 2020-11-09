@@ -78,7 +78,7 @@ import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.SseElementType;
-import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 
 public final class ResteasyReactiveDotNames {
 

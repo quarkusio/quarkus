@@ -7,7 +7,7 @@ import java.util.concurrent.Executors;
 import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestFilter;
 

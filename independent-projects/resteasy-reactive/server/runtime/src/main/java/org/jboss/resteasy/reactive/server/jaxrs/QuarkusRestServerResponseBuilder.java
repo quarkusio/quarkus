@@ -6,7 +6,7 @@ import java.net.URISyntaxException;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponseBuilder;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.CurrentRequest;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;

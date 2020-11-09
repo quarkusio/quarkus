@@ -12,7 +12,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.FileBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
 import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;

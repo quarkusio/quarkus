@@ -9,8 +9,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponseBuilder;
-import org.jboss.resteasy.reactive.common.runtime.util.DateUtil;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
+import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
 

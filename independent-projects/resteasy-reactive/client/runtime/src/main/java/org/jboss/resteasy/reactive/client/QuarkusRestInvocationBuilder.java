@@ -20,8 +20,8 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 

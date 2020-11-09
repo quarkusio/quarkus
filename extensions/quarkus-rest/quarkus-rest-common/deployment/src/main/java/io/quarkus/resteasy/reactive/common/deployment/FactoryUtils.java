@@ -3,7 +3,7 @@ package io.quarkus.resteasy.reactive.common.deployment;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.resteasy.reactive.common.runtime.core.SingletonBeanFactory;
+import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;

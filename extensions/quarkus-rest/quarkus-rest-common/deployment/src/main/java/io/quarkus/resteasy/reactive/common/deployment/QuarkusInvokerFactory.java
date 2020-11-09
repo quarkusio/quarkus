@@ -6,10 +6,10 @@ import java.util.function.Supplier;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.EndpointInvokerFactory;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
-import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
 import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;

@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
-import org.jboss.resteasy.reactive.common.runtime.util.Encode;
+import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class PathParamExtractor implements ParameterExtractor {

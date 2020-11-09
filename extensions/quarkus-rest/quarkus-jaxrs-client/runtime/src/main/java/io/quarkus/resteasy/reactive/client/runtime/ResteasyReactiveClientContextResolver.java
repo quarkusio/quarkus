@@ -6,8 +6,8 @@ import org.jboss.resteasy.reactive.client.ClientContext;
 import org.jboss.resteasy.reactive.client.ClientContextResolver;
 import org.jboss.resteasy.reactive.client.ClientProxies;
 import org.jboss.resteasy.reactive.client.DefaultClientContext;
-import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Vertx;

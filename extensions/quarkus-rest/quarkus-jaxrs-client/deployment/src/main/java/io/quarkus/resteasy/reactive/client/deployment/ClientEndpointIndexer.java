@@ -15,19 +15,19 @@ import java.util.Map;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.model.InjectableBean;
+import org.jboss.resteasy.reactive.common.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.model.ParameterType;
+import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.model.RestClientInterface;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.IndexedParameter;
-import org.jboss.resteasy.reactive.common.runtime.model.InjectableBean;
-import org.jboss.resteasy.reactive.common.runtime.model.MethodParameter;
-import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
-import org.jboss.resteasy.reactive.common.runtime.model.RestClientInterface;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonArrayHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonObjectHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonStructureHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.jsonp.JsonValueHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonArrayHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObjectHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStructureHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueHandler;
 
 public class ClientEndpointIndexer extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam> {
     ClientEndpointIndexer(Builder builder) {

@@ -15,7 +15,7 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
-import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestAsyncResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceContext;

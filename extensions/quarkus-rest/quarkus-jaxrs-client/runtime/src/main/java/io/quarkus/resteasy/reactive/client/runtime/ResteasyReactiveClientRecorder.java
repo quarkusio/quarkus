@@ -12,8 +12,8 @@ import javax.ws.rs.client.WebTarget;
 
 import org.jboss.resteasy.reactive.client.ClientProxies;
 import org.jboss.resteasy.reactive.client.ClientSerialisers;
-import org.jboss.resteasy.reactive.common.runtime.core.GenericTypeMapping;
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
+import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
 import io.quarkus.runtime.ExecutorRecorder;

@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceReader;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceWriter;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.model.ResourceReader;
+import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 

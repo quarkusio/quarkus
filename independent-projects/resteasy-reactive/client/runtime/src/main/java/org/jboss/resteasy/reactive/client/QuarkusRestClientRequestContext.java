@@ -19,9 +19,9 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.runtime.NotImplementedYet;
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.NotImplementedYet;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestClientRequestContext implements ClientRequestContext {
 

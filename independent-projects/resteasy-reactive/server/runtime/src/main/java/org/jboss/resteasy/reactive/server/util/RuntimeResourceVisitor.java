@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.util;
 
 import java.util.List;
 import java.util.Map;
-import org.jboss.resteasy.reactive.common.runtime.core.RestHandler;
+import org.jboss.resteasy.reactive.common.core.RestHandler;
 import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;

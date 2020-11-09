@@ -4,7 +4,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import java.util.List;
 import javax.ws.rs.NotFoundException;
-import org.jboss.resteasy.reactive.common.runtime.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;

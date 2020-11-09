@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceFeature;
+import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 
 public class Features {
 

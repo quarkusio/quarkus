@@ -6,7 +6,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.runtime.model.ParameterType;
+import org.jboss.resteasy.reactive.common.model.ParameterType;
 
 public class IndexedParameter<T extends IndexedParameter<T>> {
     protected ClassInfo currentClassInfo;

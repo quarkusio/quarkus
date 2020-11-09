@@ -6,8 +6,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponse;
-import org.jboss.resteasy.reactive.common.runtime.util.EmptyInputStream;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
 /**
  * This is the Response class client response

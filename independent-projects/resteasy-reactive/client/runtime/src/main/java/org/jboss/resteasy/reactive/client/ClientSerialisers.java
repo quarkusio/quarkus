@@ -19,19 +19,19 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.client.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import org.jboss.resteasy.reactive.client.spi.QuarkusRestClientMessageBodyWriter;
-import org.jboss.resteasy.reactive.common.runtime.core.Serialisers;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.BooleanMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.CharArrayMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.CharacterMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.FileBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.FormUrlEncodedProvider;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.InputStreamMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.NumberMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.ReaderBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.StringMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.providers.serialisers.BooleanMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.ByteArrayMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.CharArrayMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.CharacterMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.FormUrlEncodedProvider;
+import org.jboss.resteasy.reactive.common.providers.serialisers.InputStreamMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.NumberMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.ReaderBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.StringMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.VertxBufferMessageBodyWriter;
 
 public class ClientSerialisers extends Serialisers {
 

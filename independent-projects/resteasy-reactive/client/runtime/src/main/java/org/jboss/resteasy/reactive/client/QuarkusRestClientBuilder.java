@@ -10,7 +10,7 @@ import javax.net.ssl.SSLContext;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestClientBuilder extends ClientBuilder {
 

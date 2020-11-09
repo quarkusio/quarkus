@@ -4,7 +4,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.NoContentException;
 import javax.ws.rs.ext.Provider;
-import org.jboss.resteasy.reactive.common.runtime.providers.serialisers.DefaultTextPlainBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.DefaultTextPlainBodyHandler;
 
 @Provider
 @Consumes("text/plain")

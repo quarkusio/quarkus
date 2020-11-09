@@ -15,7 +15,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.ContainerRequestFilter;
 import org.jboss.resteasy.reactive.ContainerResponseFilter;
-import org.jboss.resteasy.reactive.common.runtime.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;

@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.ws.rs.core.Application;
-import org.jboss.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceClass;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
+import org.jboss.resteasy.reactive.common.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class QuarkusRestDeploymentInfo {

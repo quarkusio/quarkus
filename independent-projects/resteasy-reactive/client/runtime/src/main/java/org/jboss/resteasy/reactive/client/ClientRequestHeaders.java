@@ -10,9 +10,9 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import org.jboss.resteasy.reactive.common.runtime.headers.HeaderUtil;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestConfiguration;
-import org.jboss.resteasy.reactive.common.runtime.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>

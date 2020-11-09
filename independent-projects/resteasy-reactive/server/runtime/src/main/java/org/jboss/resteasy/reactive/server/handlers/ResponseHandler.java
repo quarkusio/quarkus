@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.runtime.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;

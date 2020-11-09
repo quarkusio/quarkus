@@ -2,8 +2,8 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 
 import java.lang.reflect.Method;
 import javax.ws.rs.container.ResourceInfo;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceClass;
-import org.jboss.resteasy.reactive.common.runtime.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 
 public class QuarkusRestResourceMethod implements ResourceInfo {
 

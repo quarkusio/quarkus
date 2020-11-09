@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class MinioConfiguration {
 
     /**
-     * The minio server URL. 
+     * The minio server URL.
      * 
      * [NOTE]
      * ====

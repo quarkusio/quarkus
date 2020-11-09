@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.minio.MinioProducer;
@@ -22,12 +22,13 @@ class MinioProcessor {
     private static final String CAPABILITY = "minio-client";
 
     @BuildStep
-    void build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<CapabilityBuildItem> capability,
-            BuildProducer<ReflectiveClassBuildItem> reflectionClasses,
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.MINIO);
+    }
+
+    @BuildStep
+    void build(BuildProducer<ReflectiveClassBuildItem> reflectionClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        feature.produce(new FeatureBuildItem(FEATURE));
-        capability.produce(new CapabilityBuildItem(CAPABILITY));
 
         List<Class> classes = getClasses("io.minio.messages");
         reflectionClasses.produce(new ReflectiveClassBuildItem(true, true, classes.toArray(new Class[classes.size()])));

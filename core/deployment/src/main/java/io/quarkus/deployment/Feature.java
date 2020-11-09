@@ -60,6 +60,7 @@ public enum Feature {
     LOGGING_GELF,
     MAILER,
     MICROMETER,
+    MINIO,
     MONGODB_CLIENT,
     MONGODB_PANACHE,
     MONGODB_PANACHE_KOTLIN,

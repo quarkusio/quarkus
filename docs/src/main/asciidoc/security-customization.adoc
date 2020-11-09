@@ -277,6 +277,30 @@ and add the latest BouncyCastle TLS dependency:
 </dependency>
 ----
 
+=== BouncyCastle FIPS
+
+If you need to register an `org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider` JCE provider then please set a `BCFIPS` provider name:
+
+.Example Security Providers BouncyCastle FIPS Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BCFIPS
+----
+
+and add the latest BouncyCastle FIPS provider dependency:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bc-fips</artifactId>
+  <version>${bouncycastle.fips.version}</version>
+</dependency>
+----
+
+At the moment this provider can only be used for performing the cryptographic operations directly in Quarkus service endpoints.
+Securing mutual TLS connections with this provider will be supported as soon as possible.
+
 == Reactive Security
 
 If you are going to use security in a reactive environment, you will likely need SmallRye Context Propagation:

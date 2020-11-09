@@ -2,9 +2,7 @@ package io.quarkus.platform.descriptor.loader.json;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.function.Function;
-import org.apache.maven.model.Dependency;
 
 public interface ArtifactResolver {
 
@@ -15,6 +13,4 @@ public interface ArtifactResolver {
 
     <T> T process(String groupId, String artifactId, String classifier, String type, String version,
             Function<Path, T> processor) throws AppModelResolverException;
-
-    List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier, String type, String version);
 }

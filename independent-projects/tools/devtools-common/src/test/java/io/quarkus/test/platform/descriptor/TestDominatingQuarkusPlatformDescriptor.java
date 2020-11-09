@@ -12,13 +12,11 @@ import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.maven.model.Dependency;
 
 public class TestDominatingQuarkusPlatformDescriptor implements QuarkusPlatformDescriptor {
 
     private final List<Category> categories = new ArrayList<>();
     private final List<Extension> extensions = new ArrayList<>();
-    private final List<Dependency> bomDeps = new ArrayList<>();
 
     public TestDominatingQuarkusPlatformDescriptor() {
 
@@ -26,8 +24,7 @@ public class TestDominatingQuarkusPlatformDescriptor implements QuarkusPlatformD
         addCategory("web", "Dominating Web", categories);
 
         addExtension(new AppArtifactCoords("io.quarkus", "quarkus-resteasy", "dominating-version"), "Dominating RESTEasy",
-                "dominating/guide",
-                "reasteasy", extensions, bomDeps);
+                "dominating/guide", "reasteasy", extensions);
     }
 
     @Override
@@ -48,11 +45,6 @@ public class TestDominatingQuarkusPlatformDescriptor implements QuarkusPlatformD
     @Override
     public String getQuarkusVersion() {
         return "dominating.quarkus.version";
-    }
-
-    @Override
-    public List<Dependency> getManagedDependencies() {
-        return bomDeps;
     }
 
     @Override

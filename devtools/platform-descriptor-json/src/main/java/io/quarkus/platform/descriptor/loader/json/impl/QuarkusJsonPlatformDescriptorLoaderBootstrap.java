@@ -6,11 +6,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
-
-import org.apache.maven.model.Dependency;
 
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -59,19 +56,6 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
                     Function<Path, T> processor) {
                 throw new UnsupportedOperationException();
             }
-
-            @Override
-            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier, String type,
-                    String version) {
-                if (Files.isDirectory(resourceRoot)) {
-                    return readManagedDeps(resourceRoot.resolve("quarkus-bom/pom.xml"));
-                }
-                try (FileSystem fs = FileSystems.newFileSystem(resourceRoot, null)) {
-                    return readManagedDeps(fs.getPath("/quarkus-bom/pom.xml"));
-                } catch (Exception e) {
-                    throw new IllegalStateException("Failed to open " + resourceRoot, e);
-                }
-            }
         };
 
         return new QuarkusJsonPlatformDescriptorLoaderImpl()
@@ -88,17 +72,6 @@ public class QuarkusJsonPlatformDescriptorLoaderBootstrap
                         }
                     }
                 });
-    }
-
-    private static List<Dependency> readManagedDeps(Path pom) {
-        if (!Files.exists(pom)) {
-            throw new IllegalStateException("Failed to locate " + pom);
-        }
-        try (InputStream is = Files.newInputStream(pom)) {
-            return MojoUtils.readPom(is).getDependencyManagement().getDependencies();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to read model of " + pom, e);
-        }
     }
 
     private static <T> T doParse(Path p, Function<InputStream, T> parser) {

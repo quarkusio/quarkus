@@ -18,7 +18,13 @@ public interface QuarkusPlatformDescriptor {
 
     String getQuarkusVersion();
 
-    List<Dependency> getManagedDependencies();
+    /**
+     *
+     * @return platform's dependencyManagement
+     */
+    default List<Dependency> getManagedDependencies() {
+        throw new UnsupportedOperationException();
+    }
 
     List<Extension> getExtensions();
 

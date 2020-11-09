@@ -14,7 +14,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import org.apache.maven.model.Dependency;
 
 public class TestJsonPlatformDescriptorLoader implements QuarkusJsonPlatformDescriptorLoader<QuarkusPlatformDescriptor> {
 
@@ -51,11 +50,6 @@ public class TestJsonPlatformDescriptorLoader implements QuarkusJsonPlatformDesc
             @Override
             public String getQuarkusVersion() {
                 return quarkusVersion;
-            }
-
-            @Override
-            public List<Dependency> getManagedDependencies() {
-                return Collections.emptyList();
             }
 
             @Override

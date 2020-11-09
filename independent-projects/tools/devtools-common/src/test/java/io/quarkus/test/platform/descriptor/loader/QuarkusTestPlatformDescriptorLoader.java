@@ -24,13 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-import org.apache.maven.model.Dependency;
 
 public class QuarkusTestPlatformDescriptorLoader
         implements QuarkusPlatformDescriptorLoader<QuarkusPlatformDescriptor, QuarkusPlatformDescriptorLoaderContext> {
 
     private static final List<Extension> extensions = new ArrayList<>();
-    private static final List<Dependency> bomDeps = new ArrayList<>();
     private static final Properties quarkusProps;
 
     private static final String quarkusVersion;
@@ -91,11 +89,11 @@ public class QuarkusTestPlatformDescriptorLoader
     }
 
     private static void addExtension(AppArtifactCoords coords, String name, String guide, String codestart) {
-        addExtension(coords, name, guide, codestart, extensions, bomDeps);
+        addExtension(coords, name, guide, codestart, extensions);
     }
 
     public static void addExtension(AppArtifactCoords coords, String name, String guide, String codestart,
-            List<Extension> extensions, List<Dependency> bomDeps) {
+            List<Extension> extensions) {
         final Extension e = new Extension(coords.getGroupId(), coords.getArtifactId(), coords.getVersion())
                 .setName(name)
                 .setGuide(guide);
@@ -103,12 +101,6 @@ public class QuarkusTestPlatformDescriptorLoader
             e.setCodestart(codestart);
         }
         extensions.add(e);
-
-        final Dependency d = new Dependency();
-        d.setGroupId(coords.getGroupId());
-        d.setArtifactId(coords.getArtifactId());
-        d.setVersion(coords.getVersion());
-        bomDeps.add(d);
     }
 
     private static void addCategory(String id, String name) {
@@ -176,11 +168,6 @@ public class QuarkusTestPlatformDescriptorLoader
             @Override
             public String getQuarkusVersion() {
                 return Objects.toString(version, quarkusVersion);
-            }
-
-            @Override
-            public List<Dependency> getManagedDependencies() {
-                return bomDeps;
             }
 
             @Override

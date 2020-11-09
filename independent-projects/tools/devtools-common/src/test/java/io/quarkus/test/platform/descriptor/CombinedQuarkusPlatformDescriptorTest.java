@@ -11,7 +11,6 @@ import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,8 +45,6 @@ public class CombinedQuarkusPlatformDescriptorTest extends PlatformAwareTestBase
         assertCategories(combined);
 
         assertExtensions(expectedExtensions, combined);
-
-        assertManagedDeps(combined);
 
         assertEquals("dominating pom.xml template", combined.getTemplate("dir/some-other-file.template"));
         assertEquals(defaultPlatform.getTemplate("dir/some-file.template"),
@@ -88,29 +85,11 @@ public class CombinedQuarkusPlatformDescriptorTest extends PlatformAwareTestBase
         assertEquals(DOMINATING_VERSION, ext.getVersion());
     }
 
-    private void assertManagedDeps(QuarkusPlatformDescriptor descriptor) {
-        final List<Dependency> deps = descriptor.getManagedDependencies();
-        assertFalse(deps.isEmpty());
-        final Map<String, Dependency> actualMap = deps.stream().collect(Collectors.toMap(d -> getGa(d), d -> d));
-
-        Dependency dep = actualMap.get("io.quarkus:quarkus-jdbc-h2");
-        assertNotNull(dep);
-        assertEquals(defaultPlatform.getQuarkusVersion(), dep.getVersion());
-
-        dep = actualMap.get("io.quarkus:quarkus-resteasy");
-        assertNotNull(dep);
-        assertEquals(DOMINATING_VERSION, dep.getVersion());
-    }
-
     private static Map<String, Extension> toMap(final List<Extension> extensions) {
         return extensions.stream().collect(Collectors.toMap(e -> getGa(e), e -> e));
     }
 
     private static String getGa(Extension e) {
         return e.getGroupId() + ":" + e.getArtifactId();
-    }
-
-    private static String getGa(Dependency d) {
-        return d.getGroupId() + ":" + d.getArtifactId();
     }
 }

@@ -20,8 +20,11 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -64,6 +67,10 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     @Component
     RemoteRepositoryManager remoteRepositoryManager;
 
+    private Artifact projectArtifact;
+    private ArtifactDescriptorResult projectDescr;
+    private MavenArtifactResolver artifactResolver;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -77,9 +84,43 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             // it's not Gradle and the pom.xml not found, so we assume there is not project at all
             buildTool = BuildTool.MAVEN;
         }
-        final QuarkusPlatformDescriptor platformDescriptor = resolvePlatformDescriptor(log);
 
-        doExecute(QuarkusProject.of(baseDir(), platformDescriptor, buildTool), log);
+        final QuarkusPlatformDescriptor platformDescriptor = resolvePlatformDescriptor(log);
+        final QuarkusProject quarkusProject;
+        if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
+            quarkusProject = QuarkusProject.of(baseDir(), platformDescriptor,
+                    new MavenProjectBuildFile(baseDir(), platformDescriptor, () -> project.getOriginalModel(),
+                            () -> {
+                                try {
+                                    return projectDependencies();
+                                } catch (MojoExecutionException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            },
+                            () -> {
+                                try {
+                                    return projectDescriptor().getManagedDependencies();
+                                } catch (MojoExecutionException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            },
+                            project.getModel().getProperties()));
+        } else {
+            quarkusProject = QuarkusProject.of(baseDir(), platformDescriptor, buildTool);
+        }
+
+        doExecute(quarkusProject, log);
+    }
+
+    private ArtifactDescriptorResult projectDescriptor() throws MojoExecutionException {
+        if (this.projectDescr == null) {
+            try {
+                projectDescr = artifactResolver.resolveDescriptor(projectArtifact());
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to read the artifact desriptor for the project", e);
+            }
+        }
+        return projectDescr;
     }
 
     protected Path baseDir() {
@@ -90,12 +131,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     private QuarkusPlatformDescriptor resolvePlatformDescriptor(final MessageWriter log) throws MojoExecutionException {
         // Resolve and setup the platform descriptor
         try {
-            final MavenArtifactResolver mvn = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(repoSession)
-                    .setRemoteRepositories(repos)
-                    .setRemoteRepositoryManager(remoteRepositoryManager)
-                    .build();
+            final MavenArtifactResolver mvn = artifactResolver();
             if (project.getFile() != null) {
                 List<Artifact> descrArtifactList = collectQuarkusPlatformDescriptors(log, mvn);
                 if (descrArtifactList.isEmpty()) {
@@ -146,6 +182,18 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to initialize maven artifact resolver", e);
         }
+    }
+
+    private MavenArtifactResolver artifactResolver() throws BootstrapMavenException {
+        if (artifactResolver == null) {
+            artifactResolver = MavenArtifactResolver.builder()
+                    .setRepositorySystem(repoSystem)
+                    .setRepositorySystemSession(repoSession)
+                    .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepositoryManager)
+                    .build();
+        }
+        return artifactResolver;
     }
 
     private List<Artifact> resolveLegacyQuarkusPlatformDescriptors(MessageWriter log, MavenArtifactResolver mvn)
@@ -273,5 +321,36 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             }
         }
         return managedDependencies;
+    }
+
+    private List<org.eclipse.aether.graph.Dependency> projectDependencies() throws MojoExecutionException {
+        final List<org.eclipse.aether.graph.Dependency> deps = new ArrayList<>();
+        try {
+            artifactResolver().collectDependencies(projectArtifact(), Collections.emptyList())
+                    .getRoot().accept(new DependencyVisitor() {
+                        @Override
+                        public boolean visitEnter(DependencyNode node) {
+                            if (node.getDependency() != null) {
+                                deps.add(node.getDependency());
+                            }
+                            return true;
+                        }
+
+                        @Override
+                        public boolean visitLeave(DependencyNode node) {
+                            return true;
+                        }
+                    });
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to collect dependencies for the project", e);
+        }
+        return deps;
+    }
+
+    private Artifact projectArtifact() {
+        return projectArtifact == null
+                ? projectArtifact = new DefaultArtifact(project.getGroupId(), project.getArtifactId(), null, "pom",
+                        project.getVersion())
+                : projectArtifact;
     }
 }

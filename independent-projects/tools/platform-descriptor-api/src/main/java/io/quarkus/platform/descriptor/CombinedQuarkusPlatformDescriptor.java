@@ -53,7 +53,6 @@ public class CombinedQuarkusPlatformDescriptor implements QuarkusPlatformDescrip
 
     private final QuarkusPlatformDescriptor master;
     private final List<QuarkusPlatformDescriptor> platforms;
-    private List<Dependency> managedDeps;
     private List<Extension> extensions;
     private List<Category> categories;
     private Map<String, Object> metadata;
@@ -96,23 +95,6 @@ public class CombinedQuarkusPlatformDescriptor implements QuarkusPlatformDescrip
             metadata.putAll(platforms.get(i).getMetadata());
         }
         return this.metadata = metadata;
-    }
-
-    @Override
-    public List<Dependency> getManagedDependencies() {
-        if (managedDeps != null) {
-            return managedDeps;
-        }
-        final List<Dependency> deps = new ArrayList<>();
-        final Set<DepKey> depKeys = new HashSet<>();
-        for (QuarkusPlatformDescriptor platform : platforms) {
-            for (Dependency dep : platform.getManagedDependencies()) {
-                if (depKeys.add(new DepKey(dep))) {
-                    deps.add(dep);
-                }
-            }
-        }
-        return managedDeps = deps;
     }
 
     @Override

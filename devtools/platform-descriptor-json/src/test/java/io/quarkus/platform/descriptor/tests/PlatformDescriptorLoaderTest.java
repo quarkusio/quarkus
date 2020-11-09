@@ -7,11 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Function;
 
-import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
@@ -33,12 +30,6 @@ class PlatformDescriptorLoaderTest {
             public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
                     Function<Path, T> processor) {
                 throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
-                    String type, String version) {
-                return Collections.emptyList();
             }
         };
 

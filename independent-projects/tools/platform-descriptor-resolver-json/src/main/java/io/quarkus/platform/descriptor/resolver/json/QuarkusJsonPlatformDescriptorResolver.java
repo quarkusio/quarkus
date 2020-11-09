@@ -10,7 +10,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -31,12 +30,10 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 
@@ -688,26 +685,6 @@ public class QuarkusJsonPlatformDescriptorResolver {
                 final AppArtifact artifact = new AppArtifact(groupId, artifactId, classifier, type, version);
                 return processor.apply(mvn.resolve(artifact));
             }
-
-            @Override
-            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
-                    String type, String version) {
-                if (!"pom".equals(type)) {
-                    throw new IllegalStateException("This implementation expects artifacts of type pom");
-                }
-                final Path pom;
-                final AppArtifact pomArtifact = new AppArtifact(groupId, artifactId, classifier, type, version);
-                try {
-                    pom = mvn.resolve(pomArtifact);
-                } catch (AppModelResolverException e) {
-                    throw new IllegalStateException("Failed to resolve " + pomArtifact, e);
-                }
-                try {
-                    return ModelUtils.readModel(pom).getDependencyManagement().getDependencies();
-                } catch (IOException e) {
-                    throw new IllegalStateException("Failed to read model of " + pom, e);
-                }
-            }
         };
     }
 
@@ -735,22 +712,6 @@ public class QuarkusJsonPlatformDescriptorResolver {
                 }
                 throw new IllegalArgumentException("Unexpected artifact coordinates " + groupId + ":" + artifactId + ":"
                         + classifier + ":" + type + ":" + version);
-            }
-
-            @Override
-            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
-                    String type, String version) {
-                if (getArtifactId(model).equals(artifactId)
-                        && "pom".equals(type)
-                        && getVersion(model).equals(version)
-                        && StringUtils.isEmpty(classifier)
-                        && getGroupId(model).equals(groupId)) {
-                    return model.getDependencyManagement().getDependencies();
-                }
-                throw new IllegalArgumentException(
-                        "Expected " + getGroupId(model) + ":" + getArtifactId(model) + "::pom:" + getVersion(model)
-                                + " but received "
-                                + groupId + ":" + artifactId + ":" + classifier + ":" + type + ":" + version);
             }
         };
         return bundledResolver;

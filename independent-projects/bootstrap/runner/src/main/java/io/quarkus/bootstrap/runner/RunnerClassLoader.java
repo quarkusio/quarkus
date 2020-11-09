@@ -214,4 +214,12 @@ public class RunnerClassLoader extends ClassLoader {
             }
         }
     }
+
+    public void resetInternalCaches() {
+        for (Map.Entry<String, ClassLoadingResource[]> entry : resourceDirectoryMap.entrySet()) {
+            for (ClassLoadingResource i : entry.getValue()) {
+                i.resetInternalCaches();
+            }
+        }
+    }
 }

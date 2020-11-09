@@ -27,6 +27,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.model.RestClientInterface;
+import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -122,8 +123,8 @@ public class JaxrsClientProcessor {
 
         recorder.setupClientProxies(clientImplementations);
 
-        for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
-            Class readerClass = additionalReader.getReaderClass();
+        for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
+            Class readerClass = additionalReader.getHandlerClass();
             ResourceReader reader = new ResourceReader();
             reader.setBuiltin(true);
             reader.setFactory(recorder.factory(readerClass.getName(), beanContainerBuildItem.getValue()));
@@ -133,8 +134,8 @@ public class JaxrsClientProcessor {
                     .produce(new ReflectiveClassBuildItem(true, false, false, readerClass.getName()));
         }
 
-        for (AdditionalWriters.Entry<?> entry : additionalWriters.get()) {
-            Class writerClass = entry.getWriterClass();
+        for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
+            Class writerClass = entry.getHandlerClass();
             ResourceWriter writer = new ResourceWriter();
             writer.setBuiltin(true);
             writer.setFactory(recorder.factory(writerClass.getName(), beanContainerBuildItem.getValue()));

@@ -8,19 +8,30 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class MinioConfiguration {
 
     /**
-     * The minio server URL
+     * The minio server URL. 
+     * 
+     * [NOTE]
+     * ====
+     * Value must start with `http://` or `https://`
+     * ====
+     * 
+     * @asciidoclet
      */
     @ConfigItem
     String url;
 
     /**
      * The minio server access key
+     * 
+     * @asciidoclet
      */
     @ConfigItem
     String accessKey;
 
     /**
      * The minio server secret key
+     * 
+     * @asciidoclet
      */
     @ConfigItem
     String secretKey;

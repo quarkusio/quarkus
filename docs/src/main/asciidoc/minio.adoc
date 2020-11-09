@@ -1,0 +1,100 @@
+= Quarkus - Using Minio
+
+include::./attributes.adoc[]
+
+Quarkus includes the `minio` extension which enables the use of https://min.io/[Minio Client]
+
+This guide demonstrates how your Quarkus application can utilize Minio client.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* A running minio instance on a Kubernetes cluster, or Docker Compose to start a development instance.
+* GraalVM installed if you want to run in native mode.
+
+== Configuration
+
+Once you have your Quarkus project configured you can add the `picocli` extension
+to your project by running the following command in your project base directory.
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="minio"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-minio</artifactId>
+</dependency>
+----
+
+== Usage
+
+An `io.minio.MinioClient` is made available to your application as a CDI bean.
+
+[source,java]
+----
+package com.acme.minio;
+
+import io.minio.MinioClient;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import javax.inject.Inject;
+
+@ApplicationScoped
+public class SampleService {
+
+    @Inject<1>
+    MinioClient minioClient;
+
+    @ConfigProperty(name = "minio.bucket-name")
+    String bucketName;
+
+    public String getObject(String name) {
+        try (InputStream is = minio.getObject(
+                GetObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .build());
+        ) {
+           // Do whatever you want...
+        } catch (MinioException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+}
+----
+<1> Inject the `minio-client`
+<2> All classes annotated with `picocli.CommandLine.Command` are registered as CDI beans.
+
+IMPORTANT: Beans with `@CommandLine.Command` should not use proxied scopes (e.g. do not use `@ApplicationScope`)
+because Picocli will not be able set field values in such beans. This extension will register classes with `@CommandLine.Command` annotation
+using `@Depended` scope. If you need to use proxied scope, then annotate setter and not field, for example:
+[source,java]
+----
+@CommandLine.Command
+@ApplicationScoped
+public class EntryCommand {
+    private String name;
+
+    @CommandLine.Option(names = "-n")
+    public void setName(String name) {
+        this.name = name;
+    }
+
+}
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-minio.adoc[opts=optional, leveloffset=+1]

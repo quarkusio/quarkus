@@ -76,24 +76,6 @@ public class SampleService {
 }
 ----
 <1> Inject the `minio-client`
-<2> All classes annotated with `picocli.CommandLine.Command` are registered as CDI beans.
-
-IMPORTANT: Beans with `@CommandLine.Command` should not use proxied scopes (e.g. do not use `@ApplicationScope`)
-because Picocli will not be able set field values in such beans. This extension will register classes with `@CommandLine.Command` annotation
-using `@Depended` scope. If you need to use proxied scope, then annotate setter and not field, for example:
-[source,java]
-----
-@CommandLine.Command
-@ApplicationScoped
-public class EntryCommand {
-    private String name;
-
-    @CommandLine.Option(names = "-n")
-    public void setName(String name) {
-        this.name = name;
-    }
-
-}
 
 == Configuration Reference
 

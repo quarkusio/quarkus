@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.core;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.ws.rs.WebApplicationException;
@@ -37,7 +38,13 @@ public class ExceptionMapping {
             // FIXME: can response be null?
             return response;
         }
-        log.error("Request failed ", throwable);
+        if (throwable instanceof IOException) {
+            log.debugf(throwable,
+                    "IOError processing HTTP request to %s failed, the client likely terminated the connection.",
+                    context.context.request().uri());
+        } else {
+            log.error("Request failed ", throwable);
+        }
         // FIXME: configurable? stack trace?
         return Response.serverError().build();
     }

@@ -75,6 +75,12 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("callback-before-wrong-redirect")
+    public String getNameCallbackBeforeWrongRedirect() {
+        throw new InternalServerErrorException("This method must not be invoked");
+    }
+
+    @GET
     @Path("callback-before-redirect")
     public String getNameCallbackBeforeRedirect() {
         throw new InternalServerErrorException("This method must not be invoked");

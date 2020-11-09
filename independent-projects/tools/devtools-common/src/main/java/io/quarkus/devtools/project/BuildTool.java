@@ -13,12 +13,12 @@ import java.nio.file.Path;
 public enum BuildTool {
 
     /** Maven build tool */
-    MAVEN("\n# Maven\ntarget/\npom.xml.tag\npom.xml.releaseBackup\npom.xml.versionsBackup\nrelease.properties",
+    MAVEN("\n# Maven\ntarget/\n!.mvn/wrapper/maven-wrapper.jar\npom.xml.tag\npom.xml.releaseBackup\npom.xml.versionsBackup\nrelease.properties",
             "target",
             new String[] { "pom.xml" }),
 
     /** Gradle build tool */
-    GRADLE("\n# Gradle\n.gradle/\nbuild/",
+    GRADLE("\n# Gradle\n.gradle/\nbuild/\n!gradle/wrapper/gradle-wrapper.jar",
             "build",
             new String[] { "build.gradle", "settings.gradle", "gradle.properties" }),
 

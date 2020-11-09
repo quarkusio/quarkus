@@ -590,7 +590,11 @@ public class ResteasyReactiveRequestContext
 
     protected void handleUnrecoverableError(Throwable throwable) {
         ResteasyReactiveRequestContext.log.error("Request failed", throwable);
-        context.response().setStatusCode(500).end();
+        if (context.response().headWritten()) {
+            context.request().connection().close();
+        } else {
+            context.response().setStatusCode(500).end();
+        }
         close();
     }
 

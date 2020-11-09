@@ -433,7 +433,7 @@ public class FruitProcessor {
     @Incoming("fruit-in")
     @Outgoing("fruit-out")
     @Broadcast
-    public double process(Fruit fruit) {
+    public Fruit process(Fruit fruit) {
         fruit.price = fruit.price * CONVERSION_RATE;
         return fruit;
     }
@@ -564,7 +564,7 @@ import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.annotations.SseElementType;
 
 @Path("/fruits")
-public class PriceResource {
+public class FruitResource {
 
     @Inject
     @Channel("fruit-out") Publisher<Fruit> fruits;

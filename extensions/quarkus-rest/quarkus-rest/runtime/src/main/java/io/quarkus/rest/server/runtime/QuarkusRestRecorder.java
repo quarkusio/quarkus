@@ -148,8 +148,7 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
     public Handler<RoutingContext> handler(QuarkusRestDeploymentInfo info,
             BeanContainer beanContainer,
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
-            String applicationPath, BeanFactory<QuarkusRestInitialiser> initClassFactory,
-            boolean applicationSingletonClassesEmpty) {
+            String applicationPath, BeanFactory<QuarkusRestInitialiser> initClassFactory) {
 
         ResourceInterceptors interceptors = info.getInterceptors();
         ServerSerialisers serialisers = info.getSerialisers();
@@ -157,7 +156,6 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         ExceptionMapping exceptionMapping = info.getExceptionMapping();
         List<ResourceClass> resourceClasses = info.getResourceClasses();
         List<ResourceClass> locatableResourceClasses = info.getLocatableResourceClasses();
-        Class<? extends Application> applicationClass = info.getApplicationClass();
         ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override
@@ -172,8 +170,6 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
 
         QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping,
                 beanContainer);
-        DynamicFeatures dynamicFeatures = info.getDynamicFeatures();
-        boolean dynamicFeaturesExist = !dynamicFeatures.getResourceDynamicFeatures().isEmpty();
 
         Consumer<Closeable> closeTaskHandler = new Consumer<Closeable>() {
             @Override

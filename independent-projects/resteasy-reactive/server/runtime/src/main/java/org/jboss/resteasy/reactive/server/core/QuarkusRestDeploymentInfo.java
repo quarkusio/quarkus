@@ -17,11 +17,9 @@ public class QuarkusRestDeploymentInfo {
     private Features features;
     private DynamicFeatures dynamicFeatures;
     private ServerSerialisers serialisers;
-    private java.util.List<ResourceClass> resourceClasses;
+    private List<ResourceClass> resourceClasses;
     private List<ResourceClass> locatableResourceClasses;
-    private String applicationPath;
     private ParamConverterProviders paramConverterProviders;
-    private Class<? extends Application> applicationClass;
     private Supplier<Application> applicationSupplier;
     private Function<Class<?>, BeanFactory<?>> factoryCreator;
     private ResteasyReactiveConfig config;
@@ -98,30 +96,12 @@ public class QuarkusRestDeploymentInfo {
         return this;
     }
 
-    public String getApplicationPath() {
-        return applicationPath;
-    }
-
-    public QuarkusRestDeploymentInfo setApplicationPath(String applicationPath) {
-        this.applicationPath = applicationPath;
-        return this;
-    }
-
     public ParamConverterProviders getParamConverterProviders() {
         return paramConverterProviders;
     }
 
     public QuarkusRestDeploymentInfo setParamConverterProviders(ParamConverterProviders paramConverterProviders) {
         this.paramConverterProviders = paramConverterProviders;
-        return this;
-    }
-
-    public Class<? extends Application> getApplicationClass() {
-        return applicationClass;
-    }
-
-    public QuarkusRestDeploymentInfo setApplicationClass(Class<? extends Application> applicationClass) {
-        this.applicationClass = applicationClass;
         return this;
     }
 

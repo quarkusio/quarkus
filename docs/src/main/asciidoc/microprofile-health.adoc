@@ -330,6 +330,66 @@ that will validate each datasources: link:datasource#datasource-health-check[Dat
 
 You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
 
+== Built-in health checks
+
+Quarkus offers a number of built-in health checks that you can activate using configuration properties.
+The difference to "extension health checks" is that these are provided by the SmallRye Health extension itself and are very general checks
+related to basic JVM features, not specific to any application framework.
+These checks are listed in the following table.
+
+All config properties in the table must be prepended with `quarkus.smallrye-health.provided-checks.`
+(which was omitted to keep the table more legible).
+
+.List of provided health checks
+|===
+|Health check name|Related config properties|Description
+
+|`ThreadHealthCheck`
+|`thread.enabled`
+
+`thread.max`
+|Reports `DOWN` if the number of threads in the process exceeds `max`
+
+|`HeapMemoryHealthCheck`
+|`heap-memory.enabled`
+
+`heap-memory.max-percentage`
+|Reports `DOWN` if the heap memory usage percentage exceeds `max-percentage` (which must be a number between 0 and 1, default is 0.9)
+
+|`NonHeapMemoryHealthCheck`
+|`non-heap-memory.enabled`
+
+`non-heap-memory.max-percentage`
+|Reports `DOWN` if the non-heap memory usage percentage exceeds `max-percentage` (which must be a number between 0 and 1, default is 0.9)
+
+|`SocketHealthCheck`
+|`socket.enabled`
+
+`socket.host`
+
+`socket.port`
+|Reports `DOWN` if it is not possible to create a socket connection to the target denoted by `host` and `port`.
+
+|`InetAddressHealthCheck`
+|`inet-address.enabled`
+
+`inet-address.host`
+|Reports `DOWN` if it is not possible to create a socket connection to the target denoted by `host` name.
+
+|`SystemLoadHealthCheck`
+|`system-load.enabled`
+
+`system-load.max`
+|Reports `DOWN` if the system load percentage exceeds `max` (which must be a number between 0 and 1, default is 0.7)
+
+|`UrlHealthCheck`
+|`url.enabled`
+
+`url.address`
+|Reports `DOWN` if it is not possible to create a HTTP connection to the specified `address`.
+|===
+
+
 == Health UI 
 
 NOTE: Experimental - not included in the MicroProfile specification

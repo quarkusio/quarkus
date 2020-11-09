@@ -33,6 +33,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -65,6 +66,14 @@ import io.quarkus.smallrye.health.runtime.SmallRyeIndividualHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeWellnessHandler;
+import io.quarkus.smallrye.health.runtime.providedchecks.HeapMemoryHealthCheckProducer;
+import io.quarkus.smallrye.health.runtime.providedchecks.InetAddressHealthCheckProducer;
+import io.quarkus.smallrye.health.runtime.providedchecks.NonHeapMemoryHealthCheckProducer;
+import io.quarkus.smallrye.health.runtime.providedchecks.ProvidedHealthChecksSupport;
+import io.quarkus.smallrye.health.runtime.providedchecks.SocketHealthCheckProducer;
+import io.quarkus.smallrye.health.runtime.providedchecks.SystemLoadHealthCheckProducer;
+import io.quarkus.smallrye.health.runtime.providedchecks.ThreadHealthCheckProducer;
+import io.quarkus.smallrye.health.runtime.providedchecks.UrlHealthCheckProducer;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -415,6 +424,80 @@ class SmallRyeHealthProcessor {
                     smallRyeHealthBuildItem.getHealthUiPath(), runtimeConfig);
             routeProducer.produce(new RouteBuildItem(healthConfig.ui.rootPath, handler));
             routeProducer.produce(new RouteBuildItem(healthConfig.ui.rootPath + "/*", handler));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerProvidedChecks(SmallRyeHealthConfig config,
+            BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            SmallRyeHealthRecorder recorder) {
+        ProvidedHealthChecksSupport support = new ProvidedHealthChecksSupport();
+        boolean atLeastOneIsEnabled = false;
+        if (config.providedChecks.heapMemory.enabled) {
+            beans.produce(new AdditionalBeanBuildItem(HeapMemoryHealthCheckProducer.class));
+            support.setHeapMemoryMaxPercentage(config.providedChecks.heapMemory.maxPercentage);
+            atLeastOneIsEnabled = true;
+        }
+        if (config.providedChecks.nonHeapMemory.enabled) {
+            beans.produce(new AdditionalBeanBuildItem(NonHeapMemoryHealthCheckProducer.class));
+            support.setNonHeapMemoryMaxPercentage(config.providedChecks.nonHeapMemory.maxPercentage);
+            atLeastOneIsEnabled = true;
+        }
+        if (config.providedChecks.inetAddress.enabled) {
+            if (config.providedChecks.inetAddress.host.orElse("").isEmpty()) {
+                throw new IllegalArgumentException("If quarkus.smallrye-health.provided-checks.inet-address " +
+                        "check is enabled, then the quarkus.smallrye-health.provided-checks.inet-address.host property is required");
+            }
+            support.setInetAddressHost(config.providedChecks.inetAddress.host.get());
+            beans.produce(new AdditionalBeanBuildItem(InetAddressHealthCheckProducer.class));
+            atLeastOneIsEnabled = true;
+        }
+        if (config.providedChecks.socket.enabled) {
+            if (config.providedChecks.socket.host.orElse("").isEmpty()) {
+                throw new IllegalArgumentException("If quarkus.smallrye-health.provided-checks.socket" +
+                        " check is enabled, then the quarkus.smallrye-health.provided-checks.socket.host property is required");
+            }
+            if (config.providedChecks.socket.port.orElse(0) == 0) {
+                throw new IllegalArgumentException("If quarkus.smallrye-health.provided-checks.socket" +
+                        " check is enabled, then the quarkus.smallrye-health.provided-checks.socket.port property is required");
+            }
+            support.setSocketHost(config.providedChecks.socket.host.get());
+            support.setSocketPort(config.providedChecks.socket.port.get());
+            beans.produce(new AdditionalBeanBuildItem(SocketHealthCheckProducer.class));
+            atLeastOneIsEnabled = true;
+        }
+        if (config.providedChecks.systemLoad.enabled) {
+            support.setSystemLoadMax(config.providedChecks.systemLoad.max);
+            beans.produce(new AdditionalBeanBuildItem(SystemLoadHealthCheckProducer.class));
+            atLeastOneIsEnabled = true;
+        }
+        if (config.providedChecks.thread.enabled) {
+            if (config.providedChecks.thread.max.orElse(0) <= 0) {
+                throw new IllegalArgumentException("If quarkus.smallrye-health.provided-checks.thread" +
+                        " check is enabled, then the quarkus.smallrye-health.provided-checks.thread.max property" +
+                        " is required and must be greater than zero");
+            }
+            support.setThreadMax(config.providedChecks.thread.max.get());
+            beans.produce(new AdditionalBeanBuildItem(ThreadHealthCheckProducer.class));
+            atLeastOneIsEnabled = true;
+        }
+        if (config.providedChecks.url.enabled) {
+            if (config.providedChecks.url.address.orElse("").isEmpty()) {
+                throw new IllegalArgumentException("If quarkus.smallrye-health.provided-checks.url" +
+                        " check is enabled, then the quarkus.smallrye-health.provided-checks.url.address property" +
+                        " is required");
+            }
+            support.setUrlAddress(config.providedChecks.url.address.get());
+            beans.produce(new AdditionalBeanBuildItem(UrlHealthCheckProducer.class));
+            atLeastOneIsEnabled = true;
+        }
+        if (atLeastOneIsEnabled) {
+            syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(ProvidedHealthChecksSupport.class)
+                    .supplier(recorder.healthChecksSupportSupplier(support))
+                    .unremovable()
+                    .done());
         }
     }
 

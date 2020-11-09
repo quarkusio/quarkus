@@ -1,9 +1,12 @@
 package io.quarkus.smallrye.health.runtime;
 
+import java.util.function.Supplier;
+
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.smallrye.health.runtime.providedchecks.ProvidedHealthChecksSupport;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -28,4 +31,14 @@ public class SmallRyeHealthRecorder {
             return new SmallRyeHealthNotFoundHandler();
         }
     }
+
+    public Supplier<ProvidedHealthChecksSupport> healthChecksSupportSupplier(ProvidedHealthChecksSupport support) {
+        return new Supplier<ProvidedHealthChecksSupport>() {
+            @Override
+            public ProvidedHealthChecksSupport get() {
+                return support;
+            }
+        };
+    }
+
 }

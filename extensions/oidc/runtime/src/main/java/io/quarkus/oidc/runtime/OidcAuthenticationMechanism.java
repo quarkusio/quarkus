@@ -37,37 +37,37 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-        TenantConfigContext tenantContext = resolve(context);
-        if (tenantContext.oidcConfig.tenantEnabled == false) {
+        OidcTenantConfig oidcConfig = resolve(context);
+        if (oidcConfig.tenantEnabled == false) {
             return Uni.createFrom().nullItem();
         }
-        return isWebApp(context, tenantContext) ? codeAuth.authenticate(context, identityProviderManager)
+        return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager)
                 : bearerAuth.authenticate(context, identityProviderManager);
     }
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        TenantConfigContext tenantContext = resolve(context);
-        if (tenantContext.oidcConfig.tenantEnabled == false) {
+        OidcTenantConfig oidcConfig = resolve(context);
+        if (oidcConfig.tenantEnabled == false) {
             return Uni.createFrom().nullItem();
         }
-        return isWebApp(context, tenantContext) ? codeAuth.getChallenge(context)
+        return isWebApp(context, oidcConfig) ? codeAuth.getChallenge(context)
                 : bearerAuth.getChallenge(context);
     }
 
-    private TenantConfigContext resolve(RoutingContext context) {
-        TenantConfigContext tenantContext = resolver.resolve(context, false);
-        if (tenantContext == null) {
-            throw new OIDCException("Tenant configuration context has not been resolved");
+    private OidcTenantConfig resolve(RoutingContext context) {
+        OidcTenantConfig oidcConfig = resolver.resolveConfig(context);
+        if (oidcConfig == null) {
+            throw new OIDCException("Tenant configuration has not been resolved");
         }
-        return tenantContext;
+        return oidcConfig;
     }
 
-    private boolean isWebApp(RoutingContext context, TenantConfigContext tenantContext) {
-        if (OidcTenantConfig.ApplicationType.HYBRID == tenantContext.oidcConfig.applicationType) {
+    private boolean isWebApp(RoutingContext context, OidcTenantConfig oidcConfig) {
+        if (OidcTenantConfig.ApplicationType.HYBRID == oidcConfig.applicationType) {
             return context.request().getHeader("Authorization") == null;
         }
-        return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.applicationType;
+        return OidcTenantConfig.ApplicationType.WEB_APP == oidcConfig.applicationType;
     }
 
     @Override

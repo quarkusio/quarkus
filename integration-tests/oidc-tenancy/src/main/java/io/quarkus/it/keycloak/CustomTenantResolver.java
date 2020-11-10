@@ -10,6 +10,12 @@ public class CustomTenantResolver implements TenantResolver {
 
     @Override
     public String resolve(RoutingContext context) {
+        // Make sure this resolver is called only once during a given request
+        if (context.get("static_config_resolved") != null) {
+            throw new RuntimeException();
+        }
+        context.put("static_config_resolved", "true");
+
         if (context.request().path().endsWith("/tenant-public-key")) {
             return "tenant-public-key";
         }

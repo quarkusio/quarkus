@@ -19,7 +19,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-        String token = extractBearerToken(context, resolver.resolve(context, false).oidcConfig);
+        String token = extractBearerToken(context, resolver.resolveConfig(context));
 
         // if a bearer token is provided try to authenticate
         if (token != null) {

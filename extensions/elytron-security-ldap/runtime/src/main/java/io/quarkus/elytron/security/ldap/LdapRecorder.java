@@ -55,7 +55,7 @@ public class LdapRecorder {
                 dirContext.url,
                 dirContext.principal.orElse(null),
                 dirContext.password.orElse(null));
-        return () -> dirContextFactory.obtainDirContext(DirContextFactory.ReferralMode.IGNORE);
+        return () -> dirContextFactory.obtainDirContext(dirContext.referralMode);
     }
 
     private AttributeMapping[] createAttributeMappings(IdentityMappingConfig identityMappingConfig) {

@@ -17,18 +17,19 @@ public class AddExtensionToSingleModuleKtsProjectTest extends QuarkusGradleWrapp
 
         final File projectDir = getProjectDir("add-remove-extension-single-module-kts");
 
-        runGradleWrapper(projectDir, ":addExtension", "--extensions=hibernate-orm");
+        runGradleWrapper(projectDir, ":addExtension", "--extensions=openshift");
 
         final Path buildKts = projectDir.toPath().resolve("build.gradle.kts");
         assertThat(buildKts).exists();
         assertThat(new String(Files.readAllBytes(buildKts)))
-                .contains("implementation(\"io.quarkus:quarkus-hibernate-orm\")")
+                .contains("implementation(\"io.quarkus:quarkus-openshift\")")
                 .doesNotContain("implementation(enforcedPlatform(\"io.quarkus:quarkus-bom:")
                 .doesNotContain("implementation(\"io.quarkus:quarkus-bom:");
 
-        runGradleWrapper(projectDir, ":removeExtension", "--extensions=hibernate-orm");
+        runGradleWrapper(projectDir, ":removeExtension", "--extensions=openshift");
+
         assertThat(new String(Files.readAllBytes(buildKts)))
-                .doesNotContain("implementation(\"io.quarkus:quarkus-hibernate-orm\")");
+                .doesNotContain("implementation(\"io.quarkus:quarkus-openshift\")");
 
         assertThat(projectDir.toPath().resolve("build.gradle")).doesNotExist();
     }

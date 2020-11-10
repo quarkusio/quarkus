@@ -273,6 +273,9 @@ class VertxWebProcessor {
                 String[] produces = producesValue.asStringArray();
                 String[] consumes = consumesValue.asStringArray();
 
+                AnnotationValue typeValue = route.value(VALUE_TYPE);
+                Route.HandlerType routeHandlerType = typeValue == null ? Route.HandlerType.NORMAL
+                        : Route.HandlerType.from(typeValue.asEnum());
                 HttpMethod[] methods = Arrays.stream(methodsValue.asEnumArray()).map(HttpMethod::valueOf)
                         .toArray(HttpMethod[]::new);
                 Integer order = orderValue.asInt();
@@ -292,9 +295,12 @@ class VertxWebProcessor {
                         }
                         path = prefixedPath.toString();
                     } else {
-                        path = pathValue != null ? pathValue.asString() : dashify(businessMethod.getMethod().name());
+                        if (routeHandlerType != Route.HandlerType.FAILURE) {
+                            // De-camel-case the name and then join the segments with hyphens
+                            path = pathValue != null ? pathValue.asString() : dashify(businessMethod.getMethod().name());
+                        }
                     }
-                    if (!path.startsWith(SLASH)) {
+                    if (path != null && !path.startsWith(SLASH)) {
                         path = SLASH + path;
                     }
                 } else {
@@ -308,22 +314,20 @@ class VertxWebProcessor {
                     consumes = baseConsumes;
                 }
 
-                AnnotationValue typeValue = route.value(VALUE_TYPE);
                 HandlerType handlerType = HandlerType.NORMAL;
                 if (typeValue != null) {
-                    String typeString = typeValue.asEnum();
-                    switch (typeString) {
-                        case "NORMAL":
+                    switch (routeHandlerType) {
+                        case NORMAL:
                             handlerType = HandlerType.NORMAL;
                             break;
-                        case "BLOCKING":
+                        case BLOCKING:
                             handlerType = HandlerType.BLOCKING;
                             break;
-                        case "FAILURE":
+                        case FAILURE:
                             handlerType = HandlerType.FAILURE;
                             break;
                         default:
-                            throw new IllegalStateException("Unknown type " + typeString);
+                            throw new IllegalStateException("Unknown type " + routeHandlerType);
                     }
                 }
 

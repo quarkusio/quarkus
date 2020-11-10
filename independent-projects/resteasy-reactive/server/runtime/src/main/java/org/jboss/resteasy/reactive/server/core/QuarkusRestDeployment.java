@@ -17,7 +17,10 @@ import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeParameterConverter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
+import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
+import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
 
 public class QuarkusRestDeployment {
@@ -32,13 +35,17 @@ public class QuarkusRestDeployment {
     private final Supplier<Application> applicationSupplier;
     private final ThreadSetupAction threadSetupAction;
     private final RequestContextFactory requestContextFactory;
+    private final List<ResourceRequestFilterHandler> preMatchHandlers;
+    private final List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers;
 
     public QuarkusRestDeployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
             ServerRestHandler[] abortHandlerChain,
             EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,
             QuarkusRestConfiguration configuration, Supplier<Application> applicationSupplier,
-            ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory) {
+            ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
+            List<ResourceRequestFilterHandler> preMatchHandlers,
+            List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -50,6 +57,8 @@ public class QuarkusRestDeployment {
         this.applicationSupplier = applicationSupplier;
         this.threadSetupAction = threadSetupAction;
         this.requestContextFactory = requestContextFactory;
+        this.preMatchHandlers = preMatchHandlers;
+        this.classMappers = classMappers;
     }
 
     public Supplier<Application> getApplicationSupplier() {
@@ -91,6 +100,14 @@ public class QuarkusRestDeployment {
 
     public ParamConverterProviders getParamConverterProviders() {
         return paramConverterProviders;
+    }
+
+    public List<ResourceRequestFilterHandler> getPreMatchHandlers() {
+        return preMatchHandlers;
+    }
+
+    public List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> getClassMappers() {
+        return classMappers;
     }
 
     public ParameterConverter getRuntimeParamConverter(Class<?> fieldOwnerClass, String fieldName, boolean single) {

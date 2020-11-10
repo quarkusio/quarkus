@@ -52,7 +52,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private final static Variant JSON_VARIANT = new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null);
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
-    static List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers;
+    static volatile List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers;
 
     private volatile static String httpRoot = "";
     private volatile static List<String> servletMappings = Collections.emptyList();

@@ -22,12 +22,11 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, Serve
     final ThreadSetupAction requestContext;
     final RequestContextFactory requestContextFactory;
 
-    public QuarkusRestInitialHandler(RequestMapper<InitialMatch> mappers, QuarkusRestDeployment deployment,
-            List<ResourceRequestFilterHandler> preMappingHandlers) {
+    public QuarkusRestInitialHandler(RequestMapper<InitialMatch> mappers, QuarkusRestDeployment deployment) {
         this.mappers = mappers;
         this.deployment = deployment;
         this.providers = new QuarkusRestProviders(deployment);
-        this.preMappingHandlers = preMappingHandlers;
+        this.preMappingHandlers = deployment.getPreMatchHandlers();
         if (preMappingHandlers == null) {
             initialChain = new ServerRestHandler[] { new MatrixParamHandler(), this };
         } else {
@@ -51,7 +50,6 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, Serve
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        RoutingContext event = requestContext.getContext();
         RequestMapper.RequestMatch<InitialMatch> target = mappers.map(requestContext.getPathWithoutPrefix());
         if (target == null) {
             // the NotFoundExceptionMapper needs access to the headers so we need to activate the scope

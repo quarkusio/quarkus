@@ -10,17 +10,19 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.CompletionCallback;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceLocatorHandler implements ServerRestHandler {
 
     private final Map<Class<?>, Map<String, RequestMapper<RuntimeResource>>> resourceLocatorHandlers = new ConcurrentHashMap<>();
-    private final Function<Class<?>, Object> instantiator;
+    private final Function<Class<?>, BeanFactory.BeanInstance<?>> instantiator;
 
-    public ResourceLocatorHandler(Function<Class<?>, Object> instantiator) {
+    public ResourceLocatorHandler(Function<Class<?>, BeanFactory.BeanInstance<?>> instantiator) {
         this.instantiator = instantiator;
     }
 
@@ -33,7 +35,14 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         Class<?> locatorClass;
         if (locator instanceof Class) {
             locatorClass = (Class<?>) locator;
-            locator = instantiator.apply(locatorClass);
+            BeanFactory.BeanInstance<?> instance = instantiator.apply(locatorClass);
+            requestContext.registerCompletionCallback(new CompletionCallback() {
+                @Override
+                public void onComplete(Throwable throwable) {
+                    instance.close();
+                }
+            });
+            locator = instance.getInstance();
             if (locator == null) {
                 //TODO: we should make sure ArC always picks up these classes and makes them beans
                 //but until we get a bug report about it lets not worry for now, as I don't think anyone

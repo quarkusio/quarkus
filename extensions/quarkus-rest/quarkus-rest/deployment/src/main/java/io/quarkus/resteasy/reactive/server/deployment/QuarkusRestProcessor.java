@@ -429,10 +429,11 @@ public class QuarkusRestProcessor {
                     .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
                     .setDynamicFeatures(dynamicFeats)
                     .setSerialisers(serialisers)
+                    .setApplicationPath(applicationPath)
                     .setResourceClasses(resourceClasses)
                     .setLocatableResourceClasses(subResourceClasses)
                     .setParamConverterProviders(converterProviders),
-                    beanContainerBuildItem.getValue(), shutdownContext, vertxConfig, applicationPath,
+                    beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                     initClassFactory);
 
             String deploymentPath = sanitizeApplicationPath(applicationPath);

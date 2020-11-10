@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.server.handlers.MediaTypeMapper;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
@@ -60,4 +61,19 @@ public class RuntimeMappingDeployment {
         return mappersByMethod;
     }
 
+    public static void buildMethodMapper(
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers,
+            ResourceMethod method, RuntimeResource runtimeResource) {
+        TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> templateMap = perClassMappers
+                .get(method.getHttpMethod());
+        if (templateMap == null) {
+            perClassMappers.put(method.getHttpMethod(), templateMap = new TreeMap<>());
+        }
+        List<RequestMapper.RequestPath<RuntimeResource>> list = templateMap.get(runtimeResource.getPath());
+        if (list == null) {
+            templateMap.put(runtimeResource.getPath(), list = new ArrayList<>());
+        }
+        list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
+                runtimeResource));
+    }
 }

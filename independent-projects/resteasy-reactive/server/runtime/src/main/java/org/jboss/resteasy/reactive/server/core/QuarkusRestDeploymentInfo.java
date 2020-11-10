@@ -24,6 +24,7 @@ public class QuarkusRestDeploymentInfo {
     private Function<Class<?>, BeanFactory<?>> factoryCreator;
     private ResteasyReactiveConfig config;
     private Function<Object, Object> clientProxyUnwrapper;
+    private String applicationPath;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -139,6 +140,15 @@ public class QuarkusRestDeploymentInfo {
 
     public QuarkusRestDeploymentInfo setConfig(ResteasyReactiveConfig config) {
         this.config = config;
+        return this;
+    }
+
+    public String getApplicationPath() {
+        return applicationPath;
+    }
+
+    public QuarkusRestDeploymentInfo setApplicationPath(String applicationPath) {
+        this.applicationPath = applicationPath;
         return this;
     }
 }

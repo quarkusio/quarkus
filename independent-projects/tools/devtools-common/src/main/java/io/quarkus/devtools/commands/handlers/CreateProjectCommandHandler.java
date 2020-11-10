@@ -13,9 +13,9 @@ import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_VERSI
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.QuarkusCodestartCatalog;
-import io.quarkus.devtools.codestarts.QuarkusCodestartData.LegacySupport;
-import io.quarkus.devtools.codestarts.QuarkusCodestartProjectInput;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.LegacySupport;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;

@@ -1,8 +1,5 @@
 name: gradle-kotlin-dsl
 type: buildtool
-output-strategy:
-  "gradlew": "executable"
-  "gradlew.bat": "executable"
 language:
   base:
     data:

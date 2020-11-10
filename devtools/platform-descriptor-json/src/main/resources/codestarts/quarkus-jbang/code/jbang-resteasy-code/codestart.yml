@@ -1,0 +1,13 @@
+name: jbang-resteasy-code
+ref: resteasy
+type: code
+language:
+  base:
+    data:
+      resource:
+        class-name: ExampleResource
+        path: "/resteasy/hello"
+        response: "hello"
+    dependencies:
+      - io.quarkus:quarkus-resteasy
+

@@ -1,8 +1,9 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.codestarts.quarkus;
 
 import static java.util.Objects.requireNonNull;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.devtools.codestarts.CodestartProjectInput;
 import io.quarkus.devtools.project.BuildTool;
 import java.util.Collection;
 

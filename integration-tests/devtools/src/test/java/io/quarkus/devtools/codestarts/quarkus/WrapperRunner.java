@@ -1,4 +1,4 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.codestarts.quarkus;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

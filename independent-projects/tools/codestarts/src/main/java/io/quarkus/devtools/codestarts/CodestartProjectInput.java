@@ -13,7 +13,7 @@ public class CodestartProjectInput {
     private final CodestartsSelection selection;
     private final MessageWriter messageWriter;
 
-    CodestartProjectInput(final CodestartProjectInputBuilder builder) {
+    protected CodestartProjectInput(final CodestartProjectInputBuilder builder) {
         this.dependencies = requireNonNull(builder.dependencies, "dependencies is required");
         this.selection = requireNonNull(builder.selection, "selection is required");
         this.data = NestedMaps.unflatten(requireNonNull(builder.data, "data is required"));

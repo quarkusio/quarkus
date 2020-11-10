@@ -1,4 +1,4 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.codestarts.quarkus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,14 +25,16 @@ import com.google.common.collect.Sets;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
-import io.quarkus.devtools.codestarts.QuarkusCodestartCatalog.Tag;
-import io.quarkus.devtools.codestarts.QuarkusCodestartData.DataKey;
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Tag;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.DataKey;
 import io.quarkus.devtools.project.BuildTool;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QuarkusCodestartRunIT extends PlatformAwareTestBase {
 
-    private static final Path testDirPath = Paths.get("target/codestarts-run-test");
+    private static final Path testDirPath = Paths.get("target/quarkus-codestart-run-test");
 
     private static final Set<String> EXCLUDED = Sets.newHashSet(
             "azure-functions-http-example", "commandmode-example");
@@ -161,7 +164,9 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     private String genName(String buildtool, String language, List<String> codestarts) {
         String name = "project-" + buildtool + "-" + language;
         if (codestarts.isEmpty()) {
-            name += "-commandmode";
+            name += "-default";
+        } else if (codestarts.size() > 2) {
+            name += "-" + UUID.randomUUID().toString();
         } else {
             name += "-" + String.join("-", codestarts);
         }

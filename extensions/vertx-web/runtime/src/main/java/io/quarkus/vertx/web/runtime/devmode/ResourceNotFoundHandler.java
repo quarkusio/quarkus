@@ -31,7 +31,8 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
         builder.resourcesStart("Reactive Routes");
         builder.resourceStart();
         for (RouteDescription route : routes) {
-            builder.method(route.getHttpMethod(), TemplateHtmlBuilder.adjustRoot(httpRoot, route.getPath()));
+            builder.method(route.getHttpMethod(),
+                    route.getPath() != null ? TemplateHtmlBuilder.adjustRoot(httpRoot, route.getPath()) : "/*");
             builder.listItem(route.getJavaMethod());
             if (route.getConsumes() != null) {
                 builder.consumes(route.getConsumes());

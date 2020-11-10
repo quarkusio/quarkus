@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import io.quarkus.qlue.Result;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
@@ -15,6 +14,7 @@ import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qlue.ExecutionBuilder;
+import io.quarkus.qlue.Result;
 
 /**
  * A builder for a deployer execution.

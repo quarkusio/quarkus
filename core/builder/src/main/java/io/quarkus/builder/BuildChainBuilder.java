@@ -121,6 +121,15 @@ public final class BuildChainBuilder {
     }
 
     /**
+     * Get the underlying chain builder.
+     *
+     * @return the underlying chain builder
+     */
+    public ChainBuilder getChainBuilder() {
+        return chainBuilder;
+    }
+
+    /**
      * Build the build step chain from the current builder configuration.
      *
      * @return the constructed build chain

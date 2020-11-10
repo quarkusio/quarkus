@@ -206,7 +206,7 @@
         <log4j2-jboss-logmanager.version>1.0.0.Beta1</log4j2-jboss-logmanager.version>
         <log4j-jboss-logmanager.version>1.2.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.10.0</avro.version>
-        <qlue.version>0.9.0</qlue.version>
+        <qlue.version>0.9.1</qlue.version>
     </properties>
 
     <dependencyManagement>

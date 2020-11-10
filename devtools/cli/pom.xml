@@ -13,6 +13,11 @@
     <artifactId>quarkus-cli</artifactId>
     <name>Quarkus - Command Line Interface</name>
     <description>Quarkus command line utility</description>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

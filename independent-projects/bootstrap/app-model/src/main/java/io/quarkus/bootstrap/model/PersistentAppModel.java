@@ -24,6 +24,7 @@ public class PersistentAppModel implements Serializable {
     private List<SerializedDep> fullDeploymentDeps;
     private List<SerializedDep> runtimeDeps;
     private Set<AppArtifactKey> parentFirstArtifacts;
+    private Set<AppArtifactKey> runnerParentFirstArtifacts;
     private Set<AppArtifactKey> lesserPriorityArtifacts;
     private Set<AppArtifactKey> localProjectArtifacts;
     private Map<String, String> platformProperties;
@@ -50,6 +51,7 @@ public class PersistentAppModel implements Serializable {
         platformProperties = new HashMap<>(appModel.getPlatformProperties());
         localProjectArtifacts = new HashSet<>(appModel.getLocalProjectArtifacts());
         parentFirstArtifacts = new HashSet<>(appModel.getParentFirstArtifacts());
+        runnerParentFirstArtifacts = new HashSet<>(appModel.getRunnerParentFirstArtifacts());
         lesserPriorityArtifacts = new HashSet<>(appModel.getLesserPriorityArtifacts());
     }
 
@@ -72,6 +74,9 @@ public class PersistentAppModel implements Serializable {
         }
         for (AppArtifactKey i : parentFirstArtifacts) {
             model.addParentFirstArtifact(i);
+        }
+        for (AppArtifactKey i : runnerParentFirstArtifacts) {
+            model.addRunnerParentFirstArtifact(i);
         }
         for (AppArtifactKey i : lesserPriorityArtifacts) {
             model.addLesserPriorityArtifact(i);

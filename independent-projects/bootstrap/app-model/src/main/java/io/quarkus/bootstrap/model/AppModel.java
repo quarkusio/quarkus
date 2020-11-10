@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 public class AppModel implements Serializable {
 
     public static final String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
+    public static final String RUNNER_PARENT_FIRST_ARTIFACTS = "runner-parent-first-artifacts";
     public static final String EXCLUDED_ARTIFACTS = "excluded-artifacts";
     public static final String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
 
@@ -45,6 +46,11 @@ public class AppModel implements Serializable {
 
     private final Set<AppArtifactKey> parentFirstArtifacts;
 
+    /**
+     * These artifacts have effect on the RunnerClassLoader
+     */
+    private final Set<AppArtifactKey> runnerParentFirstArtifacts;
+
     private final Set<AppArtifactKey> lesserPriorityArtifacts;
 
     /**
@@ -58,20 +64,24 @@ public class AppModel implements Serializable {
 
     private AppModel(AppArtifact appArtifact, List<AppDependency> runtimeDeps, List<AppDependency> deploymentDeps,
             List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts,
-            Set<AppArtifactKey> lesserPriorityArtifacts, Set<AppArtifactKey> localProjectArtifacts) {
-        this(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps, parentFirstArtifacts, lesserPriorityArtifacts,
+            Set<AppArtifactKey> runnerParentFirstArtifacts, Set<AppArtifactKey> lesserPriorityArtifacts,
+            Set<AppArtifactKey> localProjectArtifacts) {
+        this(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps, parentFirstArtifacts, runnerParentFirstArtifacts,
+                lesserPriorityArtifacts,
                 localProjectArtifacts, Collections.emptyMap());
     }
 
     private AppModel(AppArtifact appArtifact, List<AppDependency> runtimeDeps, List<AppDependency> deploymentDeps,
             List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts,
-            Set<AppArtifactKey> lesserPriorityArtifacts, Set<AppArtifactKey> localProjectArtifacts,
+            Set<AppArtifactKey> runnerParentFirstArtifacts, Set<AppArtifactKey> lesserPriorityArtifacts,
+            Set<AppArtifactKey> localProjectArtifacts,
             Map<String, String> platformProperties) {
         this.appArtifact = appArtifact;
         this.runtimeDeps = runtimeDeps;
         this.deploymentDeps = deploymentDeps;
         this.fullDeploymentDeps = fullDeploymentDeps;
         this.parentFirstArtifacts = parentFirstArtifacts;
+        this.runnerParentFirstArtifacts = runnerParentFirstArtifacts;
         this.lesserPriorityArtifacts = lesserPriorityArtifacts;
         this.localProjectArtifacts = localProjectArtifacts;
         this.platformProperties = platformProperties;
@@ -109,6 +119,10 @@ public class AppModel implements Serializable {
         return parentFirstArtifacts;
     }
 
+    public Set<AppArtifactKey> getRunnerParentFirstArtifacts() {
+        return runnerParentFirstArtifacts;
+    }
+
     public Set<AppArtifactKey> getLesserPriorityArtifacts() {
         return lesserPriorityArtifacts;
     }
@@ -125,6 +139,7 @@ public class AppModel implements Serializable {
                 ", fullDeploymentDeps=" + fullDeploymentDeps +
                 ", runtimeDeps=" + runtimeDeps +
                 ", parentFirstArtifacts=" + parentFirstArtifacts +
+                ", runnerParentFirstArtifacts=" + runnerParentFirstArtifacts +
                 '}';
     }
 
@@ -136,6 +151,7 @@ public class AppModel implements Serializable {
         private final List<AppDependency> fullDeploymentDeps = new ArrayList<>();
         private final List<AppDependency> runtimeDeps = new ArrayList<>();
         private final Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
+        private final Set<AppArtifactKey> runnerParentFirstArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> localProjectArtifacts = new HashSet<>();
@@ -195,6 +211,16 @@ public class AppModel implements Serializable {
             return this;
         }
 
+        public Builder addRunnerParentFirstArtifact(AppArtifactKey deps) {
+            this.runnerParentFirstArtifacts.add(deps);
+            return this;
+        }
+
+        public Builder addRunnerParentFirstArtifacts(List<AppArtifactKey> deps) {
+            this.runnerParentFirstArtifacts.addAll(deps);
+            return this;
+        }
+
         public Builder addExcludedArtifact(AppArtifactKey deps) {
             this.excludedArtifacts.add(deps);
             return this;
@@ -238,6 +264,13 @@ public class AppModel implements Serializable {
                     parentFirstArtifacts.add(new AppArtifactKey(artifact.split(":")));
                 }
             }
+            String runnerParentFirst = props.getProperty(RUNNER_PARENT_FIRST_ARTIFACTS);
+            if (runnerParentFirst != null) {
+                String[] artifacts = runnerParentFirst.split(",");
+                for (String artifact : artifacts) {
+                    runnerParentFirstArtifacts.add(new AppArtifactKey(artifact.split(":")));
+                }
+            }
             String excluded = props.getProperty(EXCLUDED_ARTIFACTS);
             if (excluded != null) {
                 String[] artifacts = excluded.split(",");
@@ -271,7 +304,8 @@ public class AppModel implements Serializable {
             List<AppDependency> fullDeploymentDeps = this.fullDeploymentDeps.stream().filter(includePredicate)
                     .collect(Collectors.toList());
             AppModel appModel = new AppModel(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps,
-                    parentFirstArtifacts, lesserPriorityArtifacts, localProjectArtifacts, platformProperties);
+                    parentFirstArtifacts, runnerParentFirstArtifacts, lesserPriorityArtifacts, localProjectArtifacts,
+                    platformProperties);
             log.debugf("Created AppModel %s", appModel);
             return appModel;
 

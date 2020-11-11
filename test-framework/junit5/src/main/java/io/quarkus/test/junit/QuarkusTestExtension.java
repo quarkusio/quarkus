@@ -65,6 +65,7 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.PathTestHelper;
@@ -906,27 +907,23 @@ public class QuarkusTestExtension
 
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(new TestClassPredicateBuildItem(new Predicate<String>() {
+                    buildChainBuilder.getChainBuilder().addStepObject(new Object() {
+                        @Step
+                        TestClassPredicateBuildItem step1() {
+                            return new TestClassPredicateBuildItem(new Predicate<String>() {
                                 @Override
                                 public boolean test(String className) {
                                     return PathTestHelper.isTestClass(className,
                                             Thread.currentThread().getContextClassLoader(), testLocation);
                                 }
-                            }));
+                            });
                         }
-                    }).produces(TestClassPredicateBuildItem.class)
-                            .build();
 
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
+                        @Step
+                        TestAnnotationBuildItem step2() {
+                            return new TestAnnotationBuildItem(QuarkusTest.class.getName());
                         }
-                    }).produces(TestAnnotationBuildItem.class)
-                            .build();
+                    });
 
                     List<String> testClassBeans = new ArrayList<>();
 

@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -13,7 +12,6 @@ import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.inject.Singleton;
 
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -23,9 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.runtime.Startup;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -37,37 +33,26 @@ public class StartupAnnotationTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(StartMe.class, SingletonStartMe.class, DependentStartMe.class, ProducerStartMe.class))
-            .addBuildChainCustomizer(buildCustomizer());
+            .addBuildStepObject(new Object() {
+                @Step
+                AnnotationsTransformerBuildItem run() {
+                    return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
-    static Consumer<BuildChainBuilder> buildCustomizer() {
-        return new Consumer<BuildChainBuilder>() {
+                        @Override
+                        public boolean appliesTo(Kind kind) {
+                            return Kind.CLASS.equals(kind);
+                        }
 
-            @Override
-            public void accept(BuildChainBuilder builder) {
-                builder.addBuildStep(new BuildStep() {
-
-                    @Override
-                    public void execute(BuildContext context) {
-                        context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-                            @Override
-                            public boolean appliesTo(Kind kind) {
-                                return AnnotationTarget.Kind.CLASS.equals(kind);
+                        @Override
+                        public void transform(TransformationContext context) {
+                            if (context.getTarget().asClass().name().toString().endsWith("SingletonStartMe")) {
+                                context.transform().add(Startup.class).done();
                             }
+                        }
 
-                            @Override
-                            public void transform(TransformationContext context) {
-                                if (context.getTarget().asClass().name().toString().endsWith("SingletonStartMe")) {
-                                    context.transform().add(Startup.class).done();
-                                }
-                            }
-
-                        }));
-                    }
-                }).produces(AnnotationsTransformerBuildItem.class).build();
-            }
-        };
-    }
+                    });
+                }
+            });
 
     @Test
     public void testStartup() {

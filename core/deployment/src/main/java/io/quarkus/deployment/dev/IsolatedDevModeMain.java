@@ -36,14 +36,13 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.codegen.CodeGenData;
 import io.quarkus.deployment.util.FSWatchUtil;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
@@ -319,11 +318,10 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     Collections.singletonList(new Consumer<BuildChainBuilder>() {
                         @Override
                         public void accept(BuildChainBuilder buildChainBuilder) {
-                            buildChainBuilder.addBuildStep(new BuildStep() {
-                                @Override
-                                public void execute(BuildContext context) {
-                                    //we need to make sure all hot reloadable classes are application classes
-                                    context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
+                            buildChainBuilder.getChainBuilder().addStepObject(new Object() {
+                                @Step
+                                ApplicationClassPredicateBuildItem run() {
+                                    return new ApplicationClassPredicateBuildItem(new Predicate<String>() {
                                         @Override
                                         public boolean test(String s) {
                                             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
@@ -333,9 +331,9 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                                     .getElementsWithResource(s.replace(".", "/") + ".class", true);
                                             return !res.isEmpty();
                                         }
-                                    }));
+                                    });
                                 }
-                            }).produces(ApplicationClassPredicateBuildItem.class).build();
+                            });
                         }
                     }));
             List<CodeGenData> codeGens = new ArrayList<>();

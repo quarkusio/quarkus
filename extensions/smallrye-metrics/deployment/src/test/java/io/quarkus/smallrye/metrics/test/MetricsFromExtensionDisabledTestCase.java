@@ -28,7 +28,7 @@ public class MetricsFromExtensionDisabledTestCase extends MetricsFromExtensionTe
                     .addClasses(MetricResource.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-metrics.extensions.enabled=false"),
                             "application.properties"))
-            .addBuildChainCustomizer(buildCustomizer());
+            .addBuildStepObject(STEP_OBJECT);
 
     @Test
     public void testBaseRegistryType() {

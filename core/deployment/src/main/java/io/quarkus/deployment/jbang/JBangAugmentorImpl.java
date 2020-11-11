@@ -2,7 +2,13 @@ package io.quarkus.deployment.jbang;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -19,7 +25,6 @@ import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildResult;
-import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -32,6 +37,7 @@ import io.quarkus.deployment.dev.IDEDevModeMain;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.runtime.LaunchMode;
 
 public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<String, Object>> {
@@ -70,10 +76,12 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         builder.addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
             @Override
             public void accept(BuildChainBuilder builder) {
-                final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
-                    ctx.produce(new ProcessInheritIODisabled());
+                builder.getChainBuilder().addStepObject(new Object() {
+                    @Step
+                    ProcessInheritIODisabled run() {
+                        return new ProcessInheritIODisabled();
+                    }
                 });
-                stepBuilder.produces(ProcessInheritIODisabled.class).build();
             }
         });
         builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());

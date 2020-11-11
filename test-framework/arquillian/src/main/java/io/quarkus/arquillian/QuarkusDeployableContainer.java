@@ -47,8 +47,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.test.common.TestInstantiator;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -165,13 +164,12 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             customizers.add(new Consumer<BuildChainBuilder>() {
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(AdditionalBeanBuildItem.unremovableOf(testJavaClass));
+                    buildChainBuilder.getChainBuilder().addStepObject(new Object() {
+                        @Step
+                        AdditionalBeanBuildItem run() {
+                            return AdditionalBeanBuildItem.unremovableOf(testJavaClass);
                         }
-                    }).produces(AdditionalBeanBuildItem.class)
-                            .build();
+                    });
                 }
             });
 

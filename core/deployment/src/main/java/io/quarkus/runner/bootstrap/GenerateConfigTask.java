@@ -17,10 +17,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildExecutionBuilder;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
+import io.quarkus.qlue.annotation.Step;
 
 /**
  * This phase generates an example configuration file
@@ -45,14 +45,15 @@ public class GenerateConfigTask implements BiConsumer<CuratedApplication, Map<St
                 BuildResult buildResult = augmentAction.runCustomAction(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder chainBuilder) {
+                        chainBuilder.getChainBuilder().addStepObject(new Object() {
+                            @Step
+                            ArchiveRootBuildItem run() {
+                                return new ArchiveRootBuildItem(temp);
+                            }
+                        });
                         chainBuilder.addFinal(ConfigDescriptionBuildItem.class);
-                        chainBuilder.addInitial(ArchiveRootBuildItem.class);
                     }
-                }, new Consumer<BuildExecutionBuilder>() {
-                    @Override
-                    public void accept(BuildExecutionBuilder buildExecutionBuilder) {
-                        buildExecutionBuilder.produce(new ArchiveRootBuildItem(temp));
-                    }
+                }, ignored -> {
                 });
 
                 List<ConfigDescriptionBuildItem> descriptions = buildResult.consumeMulti(ConfigDescriptionBuildItem.class);

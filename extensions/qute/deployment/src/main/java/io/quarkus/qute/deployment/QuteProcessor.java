@@ -1141,11 +1141,15 @@ public class QuteProcessor {
                 // Name does not match
                 continue;
             }
+            List<Type> parameters = extensionMethod.getMethod().parameters();
+            if (parameters.size() > 1 && !info.isVirtualMethod()) {
+                // If method accepts additional params the info must be a virtual method
+                continue;
+            }
             if (info.isVirtualMethod()) {
                 // For virtual method validate the number of params and attempt to validate the parameter types if available
                 VirtualMethodPart virtualMethod = info.part.asVirtualMethod();
                 boolean isVarArgs = ValueResolverGenerator.isVarArgs(extensionMethod.getMethod());
-                List<Type> parameters = extensionMethod.getMethod().parameters();
                 int lastParamIdx = parameters.size() - 1;
                 int realParamSize = parameters.size() - (TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1);
 

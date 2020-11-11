@@ -32,7 +32,9 @@ public class ValidationFailuresTest {
                             + "{movie.findServices(age,name)}"
                             // Name and number of params ok for extension method; the parameter type does not match
                             + "{movie.toNumber(age)}"
-                            + "{#each movie.mainCharacters}{it.boom(1)}{/}"),
+                            + "{#each movie.mainCharacters}{it.boom(1)}{/}"
+                            // Template extension method must accept one param
+                            + "{movie.toNumber}"),
                             "templates/movie.html"))
             .assertException(t -> {
                 Throwable e = t;
@@ -45,7 +47,7 @@ public class ValidationFailuresTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (7)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found template problems (8)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.foo"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.getName('foo')"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.findService(age)"), te.getMessage());
@@ -53,6 +55,7 @@ public class ValidationFailuresTest {
                 assertTrue(te.getMessage().contains("movie.findServices(age,name)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.toNumber(age)"), te.getMessage());
                 assertTrue(te.getMessage().contains("it.boom(1)"), te.getMessage());
+                assertTrue(te.getMessage().contains("movie.toNumber"), te.getMessage());
             });
 
     @Test

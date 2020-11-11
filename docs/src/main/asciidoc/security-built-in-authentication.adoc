@@ -17,6 +17,8 @@ that provides a username/password based `IdentityProvider`, such as link:securit
 
 Please see link:security#identity-providers[Security Identity Providers] for more information.
 
+Please also see link:security-testing#configuring-user-information[Configuring User Information in application.properties] section.
+
 [[form-auth]]
 == Form Based Authentication
 

@@ -2,18 +2,20 @@ package io.quarkus.builder;
 
 import java.util.function.BooleanSupplier;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qlue.StepBuilder;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A builder for build step instances within a chain. A build step can consume and produce items. It may also register
  * a destructor for items it produces, which will be run (in indeterminate order) at the end of processing.
+ *
+ * @deprecated For raw steps, prefer {@link StepBuilder} instead.
  */
+@Deprecated
 public final class BuildStepBuilder {
     private final BuildChainBuilder buildChainBuilder;
     private final StepBuilder stepBuilder;

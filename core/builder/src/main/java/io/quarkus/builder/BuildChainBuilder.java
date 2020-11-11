@@ -3,14 +3,14 @@ package io.quarkus.builder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-
-import org.wildfly.common.Assert;
+import java.util.function.Consumer;
 
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qlue.ChainBuilder;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A build chain builder.
@@ -46,7 +46,10 @@ public final class BuildChainBuilder {
      *
      * @param buildStep the build step instance
      * @return the builder for the build step
+     *
+     * @deprecated For raw steps, prefer {@link ChainBuilder#addRawStep(Consumer) getChainBuilder().addRawStep()} instead.
      */
+    @Deprecated
     public BuildStepBuilder addBuildStep(BuildStep buildStep) {
         return new BuildStepBuilder(this, chainBuilder.addRawStep(sc -> buildStep.execute(new BuildContext(sc))));
     }
@@ -56,7 +59,10 @@ public final class BuildChainBuilder {
      *
      * @return nothing
      * @throws UnsupportedOperationException always
+     *
+     * @deprecated For raw steps, prefer {@link ChainBuilder#addRawStep(Consumer) getChainBuilder().addRawStep()} instead.
      */
+    @Deprecated
     public BuildStepBuilder addBuildStep() {
         throw Assert.unsupported();
     }

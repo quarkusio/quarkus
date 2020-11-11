@@ -3,9 +3,8 @@ package io.quarkus.builder;
 import java.util.Collections;
 import java.util.List;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.diag.Diagnostic;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>

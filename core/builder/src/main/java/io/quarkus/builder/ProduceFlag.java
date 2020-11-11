@@ -5,7 +5,9 @@ import java.util.EnumMap;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
+ * @deprecated For raw steps, prefer {@link io.quarkus.qlue.ProduceFlag} instead.
  */
+@Deprecated
 public enum ProduceFlag {
     /**
      * Only produce this item weakly: if only weak items produced by a build step are consumed, the step will not be included.

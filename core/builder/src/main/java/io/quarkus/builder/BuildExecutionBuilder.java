@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
-import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.EmptyBuildItem;
@@ -15,6 +14,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qlue.ExecutionBuilder;
 import io.quarkus.qlue.Result;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A builder for a deployer execution.

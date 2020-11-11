@@ -7,12 +7,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qlue.Success;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The final result of a successful deployment operation.

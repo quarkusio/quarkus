@@ -5,14 +5,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.builder.location.Location;
 import io.quarkus.qlue.StepContext;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The context passed to a deployer's operation.

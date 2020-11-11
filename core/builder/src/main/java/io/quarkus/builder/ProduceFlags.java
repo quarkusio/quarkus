@@ -1,11 +1,15 @@
 package io.quarkus.builder;
 
-import org.wildfly.common.Assert;
 import org.wildfly.common.flags.Flags;
+
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Flags which can be set on consume declarations.
+ *
+ * @deprecated For raw steps, prefer {@link io.quarkus.qlue.ProduceFlags} instead.
  */
+@Deprecated
 public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
     final io.quarkus.qlue.ProduceFlags realFlags;
 

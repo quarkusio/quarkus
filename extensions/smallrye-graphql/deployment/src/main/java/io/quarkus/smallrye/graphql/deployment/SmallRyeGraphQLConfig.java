@@ -47,7 +47,7 @@ public class SmallRyeGraphQLConfig {
     TypeAutoNameStrategy autoNameStrategy;
 
     /**
-     * UI configuration
+     * SmallRye GraphQL UI configuration
      */
     @ConfigItem
     @ConfigDocSection

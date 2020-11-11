@@ -1,5 +1,35 @@
 package io.quarkus.mongodb.runtime;
 
+import static com.mongodb.AuthenticationMechanism.GSSAPI;
+import static com.mongodb.AuthenticationMechanism.MONGODB_X509;
+import static com.mongodb.AuthenticationMechanism.PLAIN;
+import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
+
+import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.ClassModel;
+import org.bson.codecs.pojo.Conventions;
+import org.bson.codecs.pojo.PojoCodecProvider;
+import org.bson.codecs.pojo.PropertyCodecProvider;
+import org.jboss.logging.Logger;
+
 import com.mongodb.AuthenticationMechanism;
 import com.mongodb.Block;
 import com.mongodb.ConnectionString;
@@ -18,36 +48,9 @@ import com.mongodb.connection.SocketSettings;
 import com.mongodb.connection.SslSettings;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
+
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
-import org.bson.codecs.configuration.CodecProvider;
-import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.codecs.pojo.ClassModel;
-import org.bson.codecs.pojo.Conventions;
-import org.bson.codecs.pojo.PojoCodecProvider;
-import org.bson.codecs.pojo.PropertyCodecProvider;
-import org.jboss.logging.Logger;
-
-import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static com.mongodb.AuthenticationMechanism.GSSAPI;
-import static com.mongodb.AuthenticationMechanism.MONGODB_X509;
-import static com.mongodb.AuthenticationMechanism.PLAIN;
-import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
-import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
-import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 /**
  * This class is sort of a producer for {@link MongoClient} and {@link ReactiveMongoClient}.
@@ -295,10 +298,9 @@ public class MongoClients {
             pojoCodecProviderBuilder.register(getPropertyCodecProviders(mongoClientSupport.getPropertyCodecProviders())
                     .toArray(new PropertyCodecProvider[0]));
         }
-        CodecRegistry registry = !providers.isEmpty() ?
-                fromRegistries(fromProviders(providers), defaultCodecRegistry,
-                        fromProviders(pojoCodecProviderBuilder.build())) :
-                fromRegistries(defaultCodecRegistry, fromProviders(pojoCodecProviderBuilder.build()));
+        CodecRegistry registry = !providers.isEmpty() ? fromRegistries(fromProviders(providers), defaultCodecRegistry,
+                fromProviders(pojoCodecProviderBuilder.build()))
+                : fromRegistries(defaultCodecRegistry, fromProviders(pojoCodecProviderBuilder.build()));
         settings.codecRegistry(registry);
     }
 

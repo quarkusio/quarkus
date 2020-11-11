@@ -80,6 +80,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo.WhileLoop;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
@@ -91,7 +92,6 @@ import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteFilter;
@@ -1202,90 +1202,22 @@ class VertxWebProcessor {
                             }
                         }).build());
 
-        injectors.add(ParameterInjector.builder().matchType(io.quarkus.arc.processor.DotNames.STRING)
-                .matchType(ParameterizedType.create(io.quarkus.arc.processor.DotNames.OPTIONAL,
-                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
-                .matchType(ParameterizedType.create(DotNames.LIST,
-                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+        injectors.add(ParameterInjector.builder().matchPrimitiveWrappers()
+                .matchType(io.quarkus.arc.processor.DotNames.STRING)
+                .matchOptionalOf(io.quarkus.arc.processor.DotNames.STRING)
+                .matchListOf(io.quarkus.arc.processor.DotNames.STRING)
                 .requireAnnotations(PARAM)
-                .resultHandleProvider(new ResultHandleProvider() {
-                    @Override
-                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext, MethodCreator invoke, int position,
-                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                        AnnotationValue paramAnnotationValue = Annotations
-                                .find(annotations, PARAM).value();
-                        String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
-                        if (paramName == null || paramName.equals(Param.ELEMENT_NAME)) {
-                            paramName = method.parameterName(position);
-                        }
-                        if (paramName == null) {
-                            throw parameterNameNotAvailable(position, method);
-                        }
-                        ResultHandle paramHandle;
-                        if (paramType.name().equals(DotNames.LIST)) {
-                            // routingContext.request().params().getAll(paramName)
-                            paramHandle = invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
-                                    invoke.invokeInterfaceMethod(Methods.REQUEST_PARAMS, invoke
-                                            .invokeInterfaceMethod(Methods.REQUEST,
-                                                    routingContext)),
-                                    invoke.load(paramName));
-                        } else {
-                            // routingContext.request().getParam(paramName)
-                            paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_PARAM, invoke
-                                    .invokeInterfaceMethod(Methods.REQUEST,
-                                            routingContext),
-                                    invoke.load(paramName));
-                            if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
-                                paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
-                            }
-                        }
-                        return paramHandle;
-                    }
-                }).build());
+                .resultHandleProvider(new ParamAndHeaderProvider(PARAM, Methods.REQUEST_PARAMS, Methods.REQUEST_GET_PARAM))
+                .build());
 
-        injectors.add(ParameterInjector.builder().matchType(io.quarkus.arc.processor.DotNames.STRING)
-                .matchType(ParameterizedType.create(io.quarkus.arc.processor.DotNames.OPTIONAL,
-                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
-                .matchType(ParameterizedType.create(DotNames.LIST,
-                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+        injectors.add(ParameterInjector.builder().matchPrimitiveWrappers()
+                .matchType(io.quarkus.arc.processor.DotNames.STRING)
+                .matchOptionalOf(io.quarkus.arc.processor.DotNames.STRING)
+                .matchListOf(io.quarkus.arc.processor.DotNames.STRING)
                 .requireAnnotations(DotNames.HEADER)
-                .resultHandleProvider(new ResultHandleProvider() {
-                    @Override
-                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext, MethodCreator invoke, int position,
-                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                        AnnotationValue paramAnnotationValue = Annotations
-                                .find(annotations, DotNames.HEADER).value();
-                        String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
-                        if (paramName == null || paramName.equals(Header.ELEMENT_NAME)) {
-                            paramName = method.parameterName(position);
-                        }
-                        if (paramName == null) {
-                            throw parameterNameNotAvailable(position, method);
-                        }
-                        ResultHandle paramHandle;
-                        if (paramType.name().equals(DotNames.LIST)) {
-                            // routingContext.request().headers().getAll(paramName)
-                            paramHandle = invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
-                                    invoke.invokeInterfaceMethod(Methods.REQUEST_HEADERS, invoke
-                                            .invokeInterfaceMethod(Methods.REQUEST,
-                                                    routingContext)),
-                                    invoke.load(paramName));
-                        } else {
-                            // routingContext.request().getHeader(paramName)
-                            paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_HEADER, invoke
-                                    .invokeInterfaceMethod(Methods.REQUEST,
-                                            routingContext),
-                                    invoke.load(paramName));
-                            if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
-                                paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
-                            }
-
-                        }
-                        return paramHandle;
-                    }
-                }).build());
+                .resultHandleProvider(
+                        new ParamAndHeaderProvider(DotNames.HEADER, Methods.REQUEST_HEADERS, Methods.REQUEST_GET_HEADER))
+                .build());
 
         injectors
                 .add(ParameterInjector.builder()
@@ -1367,6 +1299,87 @@ class VertxWebProcessor {
                 "Unable to determine the name of the parameter at position " + position + " in method "
                         + method.declaringClass().name() + "#" + method.name()
                         + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or specify the appropriate annotation value");
+
+    }
+
+    private static class ParamAndHeaderProvider implements ResultHandleProvider {
+
+        private final DotName annotationName;
+        private final MethodDescriptor multiMapAccessor;
+        private final MethodDescriptor valueAccessor;
+
+        public ParamAndHeaderProvider(DotName annotationName, MethodDescriptor multiMapAccessor,
+                MethodDescriptor valueAccessor) {
+            this.annotationName = annotationName;
+            this.multiMapAccessor = multiMapAccessor;
+            this.valueAccessor = valueAccessor;
+        }
+
+        @Override
+        public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                ResultHandle routingContext, MethodCreator invoke, int position,
+                BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+            AnnotationValue paramAnnotationValue = Annotations
+                    .find(annotations, annotationName).value();
+            String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
+            if (paramName == null || paramName.equals(Param.ELEMENT_NAME)) {
+                paramName = method.parameterName(position);
+            }
+            if (paramName == null) {
+                throw parameterNameNotAvailable(position, method);
+            }
+            AssignableResultHandle paramHandle = invoke.createVariable(Object.class);
+            if (paramType.name().equals(DotNames.LIST)) {
+                Type wrappedType = paramType.asParameterizedType().arguments().get(0);
+                // List<String> params = routingContext.request().params().getAll(paramName)
+                invoke.assign(paramHandle, invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
+                        invoke.invokeInterfaceMethod(multiMapAccessor, invoke
+                                .invokeInterfaceMethod(Methods.REQUEST,
+                                        routingContext)),
+                        invoke.load(paramName)));
+                if (!wrappedType.name()
+                        .equals(io.quarkus.arc.processor.DotNames.STRING)) {
+                    // Iterate over the list and convert wrapped values
+                    ResultHandle results = invoke.newInstance(
+                            MethodDescriptor.ofConstructor(ArrayList.class, int.class),
+                            invoke.invokeInterfaceMethod(Methods.COLLECTION_SIZE, paramHandle));
+                    ResultHandle iterator = invoke.invokeInterfaceMethod(Methods.COLLECTION_ITERATOR, paramHandle);
+                    WhileLoop loop = invoke.whileLoop(new Function<BytecodeCreator, BranchResult>() {
+                        @Override
+                        public BranchResult apply(BytecodeCreator bc) {
+                            return bc.ifTrue(bc.invokeInterfaceMethod(Methods.ITERATOR_HAS_NEXT, iterator));
+                        }
+                    });
+                    BytecodeCreator block = loop.block();
+                    AssignableResultHandle element = block.createVariable(Object.class);
+                    block.assign(element, block.invokeInterfaceMethod(Methods.ITERATOR_NEXT, iterator));
+                    convertPrimitiveAndSet(element, wrappedType, block, method, position);
+                    block.invokeInterfaceMethod(Methods.COLLECTION_ADD, results, element);
+                    invoke.assign(paramHandle, results);
+                }
+            } else {
+                // Object param = routingContext.request().getParam(paramName)
+                invoke.assign(paramHandle, invoke.invokeInterfaceMethod(valueAccessor, invoke
+                        .invokeInterfaceMethod(Methods.REQUEST,
+                                routingContext),
+                        invoke.load(paramName)));
+                if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
+                    Type wrappedType = paramType.asParameterizedType().arguments().get(0);
+                    if (!wrappedType.name()
+                            .equals(io.quarkus.arc.processor.DotNames.STRING)) {
+                        convertPrimitiveAndSet(paramHandle, wrappedType, invoke, method,
+                                position);
+                    }
+                    invoke.assign(paramHandle,
+                            invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle));
+                } else {
+                    if (!paramType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
+                        convertPrimitiveAndSet(paramHandle, paramType, invoke, method, position);
+                    }
+                }
+            }
+            return paramHandle;
+        }
 
     }
 
@@ -1481,6 +1494,38 @@ class VertxWebProcessor {
                 return this;
             }
 
+            Builder matchPrimitiveWrappers() {
+                List<DotName> primitiveNames = Arrays.asList(io.quarkus.arc.processor.DotNames.INTEGER,
+                        io.quarkus.arc.processor.DotNames.LONG, io.quarkus.arc.processor.DotNames.SHORT,
+                        io.quarkus.arc.processor.DotNames.BOOLEAN, io.quarkus.arc.processor.DotNames.BYTE,
+                        io.quarkus.arc.processor.DotNames.CHARACTER, io.quarkus.arc.processor.DotNames.DOUBLE,
+                        io.quarkus.arc.processor.DotNames.FLOAT);
+                for (DotName name : primitiveNames) {
+                    matchType(name);
+                    matchOptionalOf(name);
+                    matchListOf(name);
+                }
+                return this;
+            }
+
+            Builder matchOptionalOf(DotName className) {
+                return matchOptionalOf(Type.create(className, Kind.CLASS));
+            }
+
+            Builder matchListOf(DotName className) {
+                return matchListOf(Type.create(className, Kind.CLASS));
+            }
+
+            Builder matchOptionalOf(Type type) {
+                return matchType(ParameterizedType.create(io.quarkus.arc.processor.DotNames.OPTIONAL,
+                        new Type[] { type }, null));
+            }
+
+            Builder matchListOf(Type type) {
+                return matchType(ParameterizedType.create(DotNames.LIST,
+                        new Type[] { type }, null));
+            }
+
             Builder skipType(DotName className) {
                 return skipType(Type.create(className, Kind.CLASS));
             }
@@ -1519,6 +1564,53 @@ class VertxWebProcessor {
 
         }
 
+    }
+
+    static void convertPrimitiveAndSet(AssignableResultHandle paramHandle, Type paramType, BytecodeCreator invoke,
+            MethodInfo method, int position) {
+        // For example: 
+        // if(param != null) { 
+        //    try {
+        //       param = Long.valueOf(param);
+        //    } catch(Throwable e) {
+        //       ...
+        //    }
+        // }
+        BytecodeCreator notNull = invoke.ifNotNull(paramHandle).trueBranch();
+        TryBlock tryBlock = notNull.tryBlock();
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+        catchBlock.throwException(IllegalArgumentException.class,
+                "Error converting parameter at position " + position + " of method " + method,
+                catchBlock.getCaughtException());
+
+        if (paramType.name().equals(io.quarkus.arc.processor.DotNames.INTEGER)) {
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.INTEGER_VALUE_OF,
+                    paramHandle));
+        } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.LONG)) {
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.LONG_VALUE_OF,
+                    paramHandle));
+        } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.BOOLEAN)) {
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.BOOLEAN_VALUE_OF,
+                    paramHandle));
+        } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.CHARACTER)) {
+            ResultHandle firstChar = tryBlock.invokeVirtualMethod(Methods.STRING_CHAR_AT, paramHandle, tryBlock.load(0));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.CHARACTER_VALUE_OF,
+                    firstChar));
+        } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.FLOAT)) {
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.FLOAT_VALUE_OF,
+                    paramHandle));
+        } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.DOUBLE)) {
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.DOUBLE_VALUE_OF,
+                    paramHandle));
+        } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.BYTE)) {
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.BYTE_VALUE_OF,
+                    paramHandle));
+        } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.SHORT)) {
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.SHORT_VALUE_OF,
+                    paramHandle));
+        } else {
+            throw new IllegalArgumentException("Unsupported param type: " + paramType);
+        }
     }
 
     interface ResultHandleProvider {

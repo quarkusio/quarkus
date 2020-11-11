@@ -1,5 +1,7 @@
 package io.quarkus.vertx.web.deployment;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -196,6 +198,27 @@ class Methods {
     static final MethodDescriptor IS_ASSIGNABLE_FROM = MethodDescriptor.ofMethod(Class.class, "isAssignableFrom",
             boolean.class, Class.class);
     static final MethodDescriptor GET_CLASS = MethodDescriptor.ofMethod(Object.class, "getClass", Class.class);
+
+    static final MethodDescriptor STRING_CHAR_AT = MethodDescriptor.ofMethod(String.class, "charAt", int.class);
+    static final MethodDescriptor INTEGER_VALUE_OF = MethodDescriptor.ofMethod(Integer.class, "valueOf", Integer.class,
+            String.class);
+    static final MethodDescriptor LONG_VALUE_OF = MethodDescriptor.ofMethod(Long.class, "valueOf", Long.class, String.class);
+    static final MethodDescriptor BOOLEAN_VALUE_OF = MethodDescriptor.ofMethod(Boolean.class, "valueOf", Boolean.class,
+            String.class);
+    static final MethodDescriptor CHARACTER_VALUE_OF = MethodDescriptor.ofMethod(Character.class, "valueOf", Character.class,
+            char.class);
+    static final MethodDescriptor FLOAT_VALUE_OF = MethodDescriptor.ofMethod(Float.class, "valueOf", Float.class, String.class);
+    static final MethodDescriptor DOUBLE_VALUE_OF = MethodDescriptor.ofMethod(Double.class, "valueOf", Double.class,
+            String.class);
+    static final MethodDescriptor SHORT_VALUE_OF = MethodDescriptor.ofMethod(Short.class, "valueOf", Short.class, String.class);
+    static final MethodDescriptor BYTE_VALUE_OF = MethodDescriptor.ofMethod(Byte.class, "valueOf", Byte.class, String.class);
+
+    static final MethodDescriptor COLLECTION_SIZE = MethodDescriptor.ofMethod(Collection.class, "size", int.class);
+    static final MethodDescriptor COLLECTION_ITERATOR = MethodDescriptor.ofMethod(Collection.class, "iterator", Iterator.class);
+    static final MethodDescriptor COLLECTION_ADD = MethodDescriptor.ofMethod(Collection.class, "add", boolean.class,
+            Object.class);
+    static final MethodDescriptor ITERATOR_NEXT = MethodDescriptor.ofMethod(Iterator.class, "next", Object.class);
+    static final MethodDescriptor ITERATOR_HAS_NEXT = MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class);
 
     private Methods() {
         // Avoid direct instantiation

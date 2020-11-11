@@ -362,7 +362,7 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 
 |Logical OR 
 |Outputs `true` if any of the parts is not `falsy` as described in the <<if_section>>. The parameter is only evaluated if needed.
-|`{person.isActive || person.hasStyle}`
+|`{person.isActive \|\| person.hasStyle}`
 |===
 
 TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the <<if_section>>.

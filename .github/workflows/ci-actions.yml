@@ -90,7 +90,7 @@ jobs:
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
-          mvn -e -B -DskipTests -DskipITs -Dno-format clean install
+          mvn -e -B -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dincremental -Dgib.disable clean install
       - name: Tar Maven Repo
         shell: bash
         run: tar -czf maven-repo.tgz -C ~ .m2/repository
@@ -102,6 +102,33 @@ jobs:
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
+      - name: Get GIB arguments
+        id: get-gib-args
+        env:
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # See also: https://github.com/vackosar/gitflow-incremental-builder#configuration
+          # Common GIB_ARGS for all CI cases (hint: see also pom.xml):
+          # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
+          # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
+          # - forces build of quarkus-core.* (see https://github.com/quarkusio/quarkus/pull/13543#issuecomment-735955489)
+          # - forces build of resteasy-reactive (see https://github.com/quarkusio/quarkus/pull/13243#issuecomment-735433991)
+          GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false -Dgib.forceBuildModules='quarkus-core.*|resteasy-reactive'"
+          if [ -n "$PULL_REQUEST_BASE" ]
+          then
+              # The PR defines a clear merge target so just use that branch for reference, *unless*
+              # - the current branch is a backport branch
+              GIB_ARGS+=" -Dgib.referenceBranch=$PULL_REQUEST_BASE -Dgib.disableIfBranchRegex='.*backport.*'"
+          else
+              # No PR means the merge target is uncertain so fetch & use master of quarkusio/quarkus, *unless*:
+              # - the current branch is master or some released branch like 1.10 (TODO: introduce tags to use as reference)
+              # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not master)
+              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/master -Dgib.fetchReferenceBranch -Dgib.disableIfBranchRegex='master|\d+\.\d+|.*backport.*'"
+          fi
+          echo "GIB_ARGS: $GIB_ARGS"
+          echo "::set-output name=gib_args::${GIB_ARGS}"
+    outputs:
+      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
 
   linux-jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
@@ -139,6 +166,11 @@ jobs:
           sudo service mysql stop || true
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
         shell: bash
@@ -163,7 +195,8 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
-        run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args}}
+        shell: bash
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -187,6 +220,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
@@ -202,7 +240,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         shell: bash
-        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dno-native -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install
+        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dno-native -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -233,6 +271,11 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -247,7 +290,7 @@ jobs:
         with:
           java-version: ${{ matrix.java.java-version }}
       - name: Run Maven integration tests
-        run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven'
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -270,6 +313,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -285,7 +333,7 @@ jobs:
           java-version: 11
       - name: Run Maven integration tests
         shell: bash
-        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven'
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -387,6 +435,11 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -401,7 +454,7 @@ jobs:
         with:
           java-version: ${{ matrix.java.java-version }}
       - name: Run Devtools integration tests
-        run: eval mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -424,6 +477,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -439,7 +497,7 @@ jobs:
           java-version: 11
       - name: Run Devtools integration tests
         shell: bash
-        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools'
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -462,7 +520,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+          fetch-depth: 0
           path: tcks
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+        working-directory: ./tcks
       - name: Download Quarkus REST Testsuite
         uses: actions/checkout@v2
         with:
@@ -485,13 +548,14 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Run Quarkus REST TCK
+        # Note: No gib_args here because quarkus-rest-testsuite is a different repo
         run: mvn -B --settings ../tcks/.github/mvn-settings.xml install
         working-directory: ./quarkus-rest-testsuite
       - name: Build with Maven
-        run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks install
+        run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks install ${{ needs.build-jdk11.outputs.gib_args }}
         working-directory: ./tcks
       - name: Verify with Maven
-        run: mvn -B --settings .github/mvn-settings.xml -f tcks/pom.xml verify
+        run: mvn -B --settings .github/mvn-settings.xml -Dtcks -pl tcks -amd verify ${{ needs.build-jdk11.outputs.gib_args }}
         working-directory: ./tcks
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -533,6 +597,11 @@ jobs:
       matrix: ${{ fromJson(needs.native-tests-read-json-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
@@ -554,14 +623,13 @@ jobs:
           CATEGORY: ${{matrix.category}}
         run: |
           for i in $TEST_MODULES
-          do modules+=("integration-tests/$i"); done
-          IFS=,
-          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          do modules+="integration-tests/$i,"; done
+          mvn -pl "${modules}" $NATIVE_TEST_MAVEN_OPTS ${{ needs.build-jdk11.outputs.gib_args }}
           # add the 'simple with spaces' project to the run of 'Misc1' by executing it explicitly
           # done because there is no good way to pass strings with empty values to the previous command
           # so this hack is as good as any
           if [ "$CATEGORY" == "Misc1" ]; then
-            mvn -Dnative -Dquarkus.native.container-build=true -B --settings .github/mvn-settings.xml -f 'integration-tests/simple with space/' verify
+            mvn -Dnative -Dquarkus.native.container-build=true -B --settings .github/mvn-settings.xml -pl 'integration-tests/simple with space/' verify ${{ needs.build-jdk11.outputs.gib_args }}
           fi
       - name: Prepare failure archive (if maven failed)
         if: failure()

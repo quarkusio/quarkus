@@ -20,7 +20,7 @@ public class AddExtensionToModuleInMultiModuleKtsProjectTest extends QuarkusGrad
 
         final File projectDir = getProjectDir("add-extension-multi-module-kts");
 
-        runGradleWrapper(projectDir, ":application:addExtension", "--extensions=hibernate-orm");
+        runGradleWrapper(projectDir, ":application:addExtension", "--extensions=openshift");
 
         final Path applicationLib = projectDir.toPath().resolve("application").resolve("settings.gradle");
         assertThat(applicationLib).doesNotExist();
@@ -32,10 +32,10 @@ public class AddExtensionToModuleInMultiModuleKtsProjectTest extends QuarkusGrad
 
         final Path appBuildKts = projectDir.toPath().resolve("application").resolve("build.gradle.kts");
         assertThat(appBuildKts).exists();
-        assertThat(readFile(appBuildKts)).contains("implementation(\"io.quarkus:quarkus-hibernate-orm\")");
+        assertThat(readFile(appBuildKts)).contains("implementation(\"io.quarkus:quarkus-openshift\")");
 
-        runGradleWrapper(projectDir, ":application:removeExtension", "--extensions=hibernate-orm");
-        assertThat(readFile(appBuildKts)).doesNotContain("implementation(\"io.quarkus:quarkus-hibernate-orm\")");
+        runGradleWrapper(projectDir, ":application:removeExtension", "--extensions=openshift");
+        assertThat(readFile(appBuildKts)).doesNotContain("implementation(\"io.quarkus:quarkus-openshift\")");
     }
 
     private static String readFile(Path file) throws IOException {

@@ -43,7 +43,7 @@ public class NativeImageLauncher implements Closeable {
     private final Class<?> testClass;
     private final String profile;
     private Process quarkusProcess;
-    private final int port;
+    private int port;
     private final int httpsPort;
     private final long imageWaitTime;
     private final Map<String, String> systemProps = new HashMap<>();
@@ -142,6 +142,7 @@ public class NativeImageLauncher implements Closeable {
 
             System.setProperty("quarkus.http.port", portCapturingProcessReader.port.toString()); //set the port as a system property in order to have it applied to Config
             System.setProperty("quarkus.http.test-port", portCapturingProcessReader.port.toString()); // needed for RestAssuredManager
+            port = portCapturingProcessReader.port;
             installAndGetSomeConfig(); // reinitialize the configuration to make sure the actual port is used
             System.setProperty("test.url", TestHTTPResourceManager.getUri());
         } else {
@@ -365,7 +366,9 @@ public class NativeImageLauncher implements Closeable {
 
         @Override
         protected void handleError(IOException e) {
-            portDetermined(null);
+            if (!portDetermined) {
+                portDetermined(null);
+            }
         }
 
         public void awaitForPort() throws InterruptedException {

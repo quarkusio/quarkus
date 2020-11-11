@@ -58,6 +58,8 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -338,6 +340,8 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        //set the right launch mode in the outer CL, used by the HTTP host config source
+        ProfileManager.setLaunchMode(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }

@@ -187,10 +187,15 @@ public class VertxHttpRecorder {
             ConfigInstantiator.handleObject(buildConfig);
             HttpConfiguration config = new HttpConfiguration();
             ConfigInstantiator.handleObject(config);
+            if (config.host == null) {
+                //HttpHostConfigSource does not come into play here
+                config.host = "localhost";
+            }
             Router router = Router.router(vertx);
             if (hotReplacementHandler != null) {
                 router.route().order(Integer.MIN_VALUE).blockingHandler(hotReplacementHandler);
             }
+
             Handler<HttpServerRequest> root = router;
             LiveReloadConfig liveReloadConfig = new LiveReloadConfig();
             ConfigInstantiator.handleObject(liveReloadConfig);

@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
+import java.util.Set;
+
 import org.gradle.api.Project;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
@@ -52,5 +55,21 @@ public class QuarkusPluginTest {
                 .contains(tasks.getByName(JavaPlugin.CLASSES_TASK_NAME));
         assertThat(tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME).getDependsOn())
                 .contains(tasks.getByName(JavaPlugin.CLASSES_TASK_NAME));
+    }
+
+    @Test
+    public void shouldReturnMutlipleOutputSourceDirectories() {
+        Project project = ProjectBuilder.builder().build();
+        project.getPluginManager().apply(QuarkusPlugin.ID);
+        project.getPluginManager().apply("java");
+        project.getPluginManager().apply("scala");
+
+        final QuarkusPluginExtension extension = project.getExtensions().getByType(QuarkusPluginExtension.class);
+
+        final Set<File> outputSourceDirs = extension.outputSourcesDir();
+        assertThat(outputSourceDirs).hasSize(2);
+        assertThat(outputSourceDirs).contains(new File(project.getBuildDir(), "classes/java/main"),
+                new File(project.getBuildDir(), "classes/scala/main"));
+
     }
 }

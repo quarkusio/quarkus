@@ -785,7 +785,7 @@ public class ValueResolverGenerator {
                         && !method.name().equals("<clinit>");
             case FIELD:
                 FieldInfo field = target.asField();
-                return Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags());
+                return Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags()) && !isSynthetic(field.flags());
             default:
                 throw new IllegalArgumentException("Unsupported annotation target");
         }

@@ -200,7 +200,7 @@ public class ExtensionMethodGenerator {
         ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
         boolean matchAnyOrRegex = patternField != null || matchName.equals(TemplateExtension.ANY);
         List<Type> parameters = method.parameters();
-        boolean hasCompletionStage = ValueResolverGenerator
+        boolean hasCompletionStage = method.returnType().kind() != Kind.PRIMITIVE && ValueResolverGenerator
                 .hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
 
         ResultHandle ret;

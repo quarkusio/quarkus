@@ -1,6 +1,7 @@
 package io.quarkus.qute.deployment;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -34,6 +35,26 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
             this.generatedId = generatedId;
             this.expressions = expressions;
             this.path = path;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((generatedId == null) ? 0 : generatedId.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            TemplateAnalysis other = (TemplateAnalysis) obj;
+            return Objects.equals(generatedId, other.generatedId);
         }
 
     }

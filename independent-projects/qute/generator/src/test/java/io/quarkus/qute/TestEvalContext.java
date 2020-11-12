@@ -17,7 +17,7 @@ public class TestEvalContext implements EvalContext {
             Function<Expression, CompletionStage<Object>> evaluate, String... params) {
         this.base = base;
         this.name = name;
-        this.params = Arrays.stream(params).map(p -> Parser.parseExpression(p, Scope.EMPTY, null))
+        this.params = Arrays.stream(params).map(p -> Parser.parseExpression(() -> -1, p, Scope.EMPTY, null))
                 .collect(Collectors.toList());
         this.evaluate = evaluate;
     }
@@ -39,7 +39,7 @@ public class TestEvalContext implements EvalContext {
 
     @Override
     public CompletionStage<Object> evaluate(String expression) {
-        return evaluate(Parser.parseExpression(expression, Scope.EMPTY, null));
+        return evaluate(Parser.parseExpression(() -> -1, expression, Scope.EMPTY, null));
     }
 
     @Override

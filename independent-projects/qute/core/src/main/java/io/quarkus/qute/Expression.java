@@ -65,6 +65,13 @@ public interface Expression {
     }
 
     /**
+     * The id must be unique for the template.
+     * 
+     * @return the generated id or {@code -1} for an expression that was not created by a parser
+     */
+    int getGeneratedId();
+
+    /**
      * 
      * @see Expression#getParts()
      */

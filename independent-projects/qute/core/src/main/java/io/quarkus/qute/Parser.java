@@ -19,7 +19,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
@@ -42,6 +44,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     private static final char CDATA_END_DELIMITER_OLD = ']';
     private static final char UNDERSCORE = '_';
     private static final char ESCAPE_CHAR = '\\';
+    private static final char NAMESPACE_SEPARATOR = ':';
 
     // Linux, BDS, etc.
     private static final char LINE_SEPARATOR_LF = '\n';
@@ -66,6 +69,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     private String id;
     private String generatedId;
     private Optional<Variant> variant;
+    private AtomicInteger expressionIdGenerator;
 
     public Parser(EngineImpl engine) {
         this.engine = engine;
@@ -85,6 +89,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         this.scopeStack.addFirst(new Scope(null));
         this.line = 1;
         this.lineCharacter = 1;
+        this.expressionIdGenerator = new AtomicInteger();
     }
 
     static class RootSectionHelperFactory implements SectionHelperFactory<SectionHelper> {
@@ -668,12 +673,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     }
 
-    static ExpressionImpl parseExpression(String value, Scope scope, Origin origin) {
+    static ExpressionImpl parseExpression(Supplier<Integer> idGenerator, String value, Scope scope, Origin origin) {
         if (value == null || value.isEmpty()) {
             return ExpressionImpl.EMPTY;
         }
         String namespace = null;
-        int namespaceIdx = value.indexOf(':');
+        int namespaceIdx = value.indexOf(NAMESPACE_SEPARATOR);
         int spaceIdx = value.indexOf(' ');
         int bracketIdx = value.indexOf('(');
 
@@ -694,14 +699,14 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 String literal = strParts.get(0);
                 Object literalValue = LiteralSupport.getLiteralValue(literal);
                 if (!Result.NOT_FOUND.equals(literalValue)) {
-                    return ExpressionImpl.literal(literal, literalValue, origin);
+                    return ExpressionImpl.literal(idGenerator.get(), literal, literalValue, origin);
                 }
             }
         }
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
         for (String strPart : strParts) {
-            Part part = createPart(namespace, first, strPart, scope, origin);
+            Part part = createPart(idGenerator, namespace, first, strPart, scope, origin);
             if (!isValidIdentifier(part.getName())) {
                 StringBuilder builder = new StringBuilder("Invalid identifier found [");
                 builder.append(value).append("]");
@@ -716,16 +721,17 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
             parts.add(part);
         }
-        return new ExpressionImpl(namespace, parts, Result.NOT_FOUND, origin);
+        return new ExpressionImpl(idGenerator.get(), namespace, parts, Result.NOT_FOUND, origin);
     }
 
-    private static Part createPart(String namespace, Part first, String value, Scope scope, Origin origin) {
+    private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first, String value, Scope scope,
+            Origin origin) {
         if (Expressions.isVirtualMethod(value)) {
             String name = Expressions.parseVirtualMethodName(value);
             List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value));
             List<Expression> params = new ArrayList<>(strParams.size());
             for (String strParam : strParams) {
-                params.add(parseExpression(strParam.trim(), scope, origin));
+                params.add(parseExpression(idGenerator, strParam.trim(), scope, origin));
             }
             return new ExpressionImpl.VirtualMethodPartImpl(name, params);
         }
@@ -748,7 +754,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         String typeInfo = null;
         if (namespace != null) {
-            typeInfo = value;
+            typeInfo = first != null ? value : namespace + NAMESPACE_SEPARATOR + value;
         } else if (first == null) {
             typeInfo = scope.getBindingType(value);
         } else if (first.getTypeInfo() != null) {
@@ -767,7 +773,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     @Override
     public ExpressionImpl apply(String value) {
-        return parseExpression(value, scopeStack.peek(), origin(value.length() + 1));
+        return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), origin(value.length() + 1));
     }
 
     Origin origin(int lineCharacterOffset) {

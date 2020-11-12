@@ -28,7 +28,7 @@ public final class SectionBlock {
      */
     public final String label;
     /**
-     * Map of parsed parameters.
+     * An ordered map of parsed parameters.
      */
     public final Map<String, String> parameters;
 

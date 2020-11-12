@@ -11,21 +11,21 @@ import java.util.concurrent.ExecutionException;
 
 final class ExpressionImpl implements Expression {
 
-    static final ExpressionImpl EMPTY = new ExpressionImpl(null, Collections.emptyList(), null, null);
+    static final ExpressionImpl EMPTY = new ExpressionImpl(0, null, Collections.emptyList(), null, null);
 
     /**
      * 
      * @param value
-     * @return a "non-contextual" expression
+     * @return a new expression
      */
     static ExpressionImpl from(String value) {
         if (value == null || value.isEmpty()) {
             return EMPTY;
         }
-        return Parser.parseExpression(value, Scope.EMPTY, Parser.SYNTHETIC_ORIGIN);
+        return Parser.parseExpression(ExpressionImpl::syntheticId, value, Scope.EMPTY, Parser.SYNTHETIC_ORIGIN);
     }
 
-    static ExpressionImpl literalFrom(String literal) {
+    static ExpressionImpl literalFrom(int id, String literal) {
         if (literal == null || literal.isEmpty()) {
             return EMPTY;
         }
@@ -33,14 +33,14 @@ final class ExpressionImpl implements Expression {
         if (literalValue == null) {
             throw new IllegalArgumentException("Not a literal value: " + literal);
         }
-        return literal(literal, literalValue, Parser.SYNTHETIC_ORIGIN);
+        return literal(id, literal, literalValue, Parser.SYNTHETIC_ORIGIN);
     }
 
-    static ExpressionImpl literal(String literal, Object value, Origin origin) {
+    static ExpressionImpl literal(int id, String literal, Object value, Origin origin) {
         if (literal == null) {
             throw new IllegalArgumentException("Literal must not be null");
         }
-        return new ExpressionImpl(null,
+        return new ExpressionImpl(id, null,
                 Collections.singletonList(new PartImpl(literal,
                         value != null
                                 ? Expressions.TYPE_INFO_SEPARATOR + value.getClass().getName() + Expressions.TYPE_INFO_SEPARATOR
@@ -48,12 +48,18 @@ final class ExpressionImpl implements Expression {
                 value, origin);
     }
 
+    static Integer syntheticId() {
+        return -1;
+    }
+
+    private final int id;
     private final String namespace;
     private final List<Part> parts;
     private final CompletableFuture<Object> literal;
     private final Origin origin;
 
-    ExpressionImpl(String namespace, List<Part> parts, Object literal, Origin origin) {
+    ExpressionImpl(int id, String namespace, List<Part> parts, Object literal, Origin origin) {
+        this.id = id;
         this.namespace = namespace;
         this.parts = parts;
         this.literal = literal != Result.NOT_FOUND ? CompletableFuture.completedFuture(literal) : null;
@@ -79,6 +85,11 @@ final class ExpressionImpl implements Expression {
 
     public Origin getOrigin() {
         return origin;
+    }
+
+    @Override
+    public int getGeneratedId() {
+        return id;
     }
 
     @Override

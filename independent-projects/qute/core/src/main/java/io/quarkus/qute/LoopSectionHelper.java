@@ -132,7 +132,7 @@ public class LoopSectionHelper implements SectionHelper {
                 }
                 Expression iterableExpr = block.addExpression(ITERABLE, iterable);
                 String alias = block.getParameters().get(ALIAS);
-                if (iterableExpr.getParts().get(0).getTypeInfo() != null) {
+                if (iterableExpr.hasTypeInfo()) {
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
                     Scope newScope = new Scope(previousScope);
                     newScope.put(alias, iterableExpr.collectTypeInfo() + HINT);

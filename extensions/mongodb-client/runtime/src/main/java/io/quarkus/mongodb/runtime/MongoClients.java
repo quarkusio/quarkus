@@ -4,6 +4,8 @@ import static com.mongodb.AuthenticationMechanism.GSSAPI;
 import static com.mongodb.AuthenticationMechanism.MONGODB_X509;
 import static com.mongodb.AuthenticationMechanism.PLAIN;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -21,7 +23,6 @@ import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
-import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.ClassModel;
 import org.bson.codecs.pojo.Conventions;
@@ -226,35 +227,7 @@ public class MongoClients {
             settings.applyConnectionString(connectionString);
         }
 
-        List<CodecProvider> providers = new ArrayList<>();
-        if (!mongoClientSupport.getCodecProviders().isEmpty()) {
-            providers.addAll(getCodecProviders(mongoClientSupport.getCodecProviders()));
-        }
-        // add pojo codec provider with automatic capabilities
-        // it always needs to be the last codec provided
-        PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder()
-                .automatic(true)
-                .conventions(Conventions.DEFAULT_CONVENTIONS);
-        // register bson discriminators
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (String bsonDiscriminator : mongoClientSupport.getBsonDiscriminators()) {
-            try {
-                pojoCodecProviderBuilder
-                        .register(ClassModel.builder(Class.forName(bsonDiscriminator, true, classLoader))
-                                .enableDiscriminator(true).build());
-            } catch (ClassNotFoundException e) {
-                // Ignore
-            }
-        }
-        // register property codec provider
-        if (!mongoClientSupport.getPropertyCodecProviders().isEmpty()) {
-            pojoCodecProviderBuilder.register(getPropertyCodecProviders(mongoClientSupport.getPropertyCodecProviders())
-                    .toArray(new PropertyCodecProvider[0]));
-        }
-        providers.add(pojoCodecProviderBuilder.build());
-        CodecRegistry registry = CodecRegistries.fromRegistries(defaultCodecRegistry,
-                CodecRegistries.fromProviders(providers));
-        settings.codecRegistry(registry);
+        configureCodecRegistry(defaultCodecRegistry, settings);
 
         settings.commandListenerList(getCommandListeners(mongoClientSupport.getCommandListeners()));
 
@@ -297,6 +270,38 @@ public class MongoClients {
         }
 
         return settings.build();
+    }
+
+    private void configureCodecRegistry(CodecRegistry defaultCodecRegistry, MongoClientSettings.Builder settings) {
+        List<CodecProvider> providers = new ArrayList<>();
+        if (!mongoClientSupport.getCodecProviders().isEmpty()) {
+            providers.addAll(getCodecProviders(mongoClientSupport.getCodecProviders()));
+        }
+        // add pojo codec provider with automatic capabilities
+        // it always needs to be the last codec provided
+        PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder()
+                .automatic(true)
+                .conventions(Conventions.DEFAULT_CONVENTIONS);
+        // register bson discriminators
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        for (String bsonDiscriminator : mongoClientSupport.getBsonDiscriminators()) {
+            try {
+                pojoCodecProviderBuilder
+                        .register(ClassModel.builder(Class.forName(bsonDiscriminator, true, classLoader))
+                                .enableDiscriminator(true).build());
+            } catch (ClassNotFoundException e) {
+                // Ignore
+            }
+        }
+        // register property codec provider
+        if (!mongoClientSupport.getPropertyCodecProviders().isEmpty()) {
+            pojoCodecProviderBuilder.register(getPropertyCodecProviders(mongoClientSupport.getPropertyCodecProviders())
+                    .toArray(new PropertyCodecProvider[0]));
+        }
+        CodecRegistry registry = !providers.isEmpty() ? fromRegistries(fromProviders(providers), defaultCodecRegistry,
+                fromProviders(pojoCodecProviderBuilder.build()))
+                : fromRegistries(defaultCodecRegistry, fromProviders(pojoCodecProviderBuilder.build()));
+        settings.codecRegistry(registry);
     }
 
     private static List<ServerAddress> parseHosts(List<String> addresses) {

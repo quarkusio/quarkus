@@ -1,5 +1,7 @@
 package io.quarkus.it.kafka.streams;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -136,9 +138,18 @@ public class KafkaStreamsTest {
         testKafkaStreamsAliveAndReady();
         RestAssured.when().get("/kafkastreams/state").then().body(CoreMatchers.is("RUNNING"));
 
+        testMetricsPresent();
+
         // explicitly stopping the pipeline *before* the broker is shut down, as it
         // otherwise will time out
         RestAssured.post("/kafkastreams/stop");
+    }
+
+    private void testMetricsPresent() {
+        // Look for kafka consumer metrics (add .log().all() to examine what they are
+        RestAssured.when().get("/metrics").then()
+                .statusCode(200)
+                .body(containsString("kafka_stream_"));
     }
 
     public void testKafkaStreamsNotAliveAndNotReady() throws Exception {

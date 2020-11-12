@@ -54,6 +54,9 @@
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
                         </goals>
+                        <configuration>
+                            <skipOriginalJarRename>true</skipOriginalJarRename>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

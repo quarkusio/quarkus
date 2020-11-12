@@ -76,6 +76,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.RunnerJarLocationBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 
 /**
@@ -150,6 +151,12 @@ public class JarResultBuildStep {
         return new OutputTargetBuildItem(path, name, bst.isRebuild(), bst.getBuildSystemProps());
     }
 
+    @BuildStep
+    RunnerJarLocationBuildItem runnerJarLocation(OutputTargetBuildItem outputTarget, PackageConfig packageConfig) {
+        return new RunnerJarLocationBuildItem(outputTarget.getOutputDirectory(), outputTarget.getBaseName(),
+                packageConfig.runnerSuffix.trim());
+    }
+
     @BuildStep(onlyIf = JarRequired.class)
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {
         if (jarBuildItem.getLibraryDir() != null) {
@@ -163,6 +170,7 @@ public class JarResultBuildStep {
     @BuildStep
     public JarBuildItem buildRunnerJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
+            RunnerJarLocationBuildItem runnerJarLocationBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
@@ -186,12 +194,12 @@ public class JarResultBuildStep {
 
         if (!uberJarRequired.isEmpty() || packageConfig.uberJar
                 || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
-            return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources, closeablesBuildItem,
-                    mainClassBuildItem);
+            return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, runnerJarLocationBuildItem, transformedClasses,
+                    applicationArchivesBuildItem, packageConfig, applicationInfo, generatedClasses, generatedResources,
+                    closeablesBuildItem, mainClassBuildItem);
         } else if (packageConfig.isLegacyJar()) {
-            return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
-                    applicationArchivesBuildItem,
+            return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, runnerJarLocationBuildItem,
+                    transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
@@ -228,6 +236,7 @@ public class JarResultBuildStep {
 
     private JarBuildItem buildUberJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
+            RunnerJarLocationBuildItem runnerJarLocationBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
@@ -237,9 +246,7 @@ public class JarResultBuildStep {
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             MainClassBuildItem mainClassBuildItem) throws Exception {
 
-        //we use the -runner jar name, unless we are building both types
-        Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+        Path runnerJar = runnerJarLocationBuildItem.getFullPath();
         Files.deleteIfExists(runnerJar);
 
         buildUberJar0(curateOutcomeBuildItem,
@@ -265,11 +272,7 @@ public class JarResultBuildStep {
         }
 
         return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.UBER_JAR,
-                suffixToClassifier(packageConfig.runnerSuffix));
-    }
-
-    private String suffixToClassifier(String suffix) {
-        return suffix.startsWith("-") ? suffix.substring(1) : suffix;
+                runnerJarLocationBuildItem.getClassifier());
     }
 
     private void buildUberJar0(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -403,6 +406,7 @@ public class JarResultBuildStep {
 
     private JarBuildItem buildLegacyThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
+            RunnerJarLocationBuildItem runnerJarLocationBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
@@ -411,8 +415,7 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem) throws Exception {
 
-        Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+        Path runnerJar = runnerJarLocationBuildItem.getFullPath();
         Path libDir = outputTargetBuildItem.getOutputDirectory().resolve("lib");
         Files.deleteIfExists(runnerJar);
         IoUtils.createOrEmptyDir(libDir);
@@ -426,7 +429,7 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
 
-        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY, suffixToClassifier(packageConfig.runnerSuffix));
+        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY, runnerJarLocationBuildItem.getClassifier());
     }
 
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -703,6 +706,7 @@ public class JarResultBuildStep {
     @BuildStep
     public NativeImageSourceJarBuildItem buildNativeImageJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
+            RunnerJarLocationBuildItem runnerJarLocationBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
@@ -728,7 +732,7 @@ public class JarResultBuildStep {
             // Native image source jar generation with the uber jar strategy is provided as a workaround for Windows and
             // will be removed once https://github.com/oracle/graal/issues/2387 is fixed.
             final NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem = buildNativeImageUberJar(curateOutcomeBuildItem,
-                    outputTargetBuildItem, transformedClasses,
+                    outputTargetBuildItem, runnerJarLocationBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, allClasses, generatedResources, mainClassBuildItem, targetDirectory);
             // additionally copy any json config files to a location accessible by native-image tool during
@@ -736,14 +740,15 @@ public class JarResultBuildStep {
             copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
             return nativeImageSourceJarBuildItem;
         } else {
-            return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
-                    applicationArchivesBuildItem,
+            return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, runnerJarLocationBuildItem,
+                    transformedClasses, applicationArchivesBuildItem,
                     applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory);
         }
     }
 
     private NativeImageSourceJarBuildItem buildNativeImageThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
+            RunnerJarLocationBuildItem runnerJarLocationBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
@@ -754,8 +759,7 @@ public class JarResultBuildStep {
             Path targetDirectory) throws Exception {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
 
-        Path runnerJar = targetDirectory
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+        Path runnerJar = runnerJarLocationBuildItem.getFullPath();
         Path libDir = targetDirectory.resolve(LIB);
         Files.createDirectories(libDir);
 
@@ -772,6 +776,7 @@ public class JarResultBuildStep {
 
     private NativeImageSourceJarBuildItem buildNativeImageUberJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
+            RunnerJarLocationBuildItem runnerJarLocationBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             PackageConfig packageConfig,
@@ -780,9 +785,7 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
             Path targetDirectory) throws Exception {
-        //we use the -runner jar name, unless we are building both types
-        Path runnerJar = targetDirectory
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+        Path runnerJar = runnerJarLocationBuildItem.getFullPath();
 
         buildUberJar0(curateOutcomeBuildItem,
                 transformedClasses,

@@ -52,8 +52,7 @@ import io.dekorate.project.ScmInfo;
 import io.dekorate.utils.Annotations;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.RunnerJarLocationBuildItem;
 import io.quarkus.kubernetes.deployment.Annotations.Prometheus;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
@@ -68,12 +67,8 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class KubernetesCommonHelper {
 
-    private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
-
-    public static Optional<Project> createProject(ApplicationInfoBuildItem app, OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig) {
-        return createProject(app, outputTarget.getOutputDirectory()
-                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix)));
+    public static Optional<Project> createProject(ApplicationInfoBuildItem app, RunnerJarLocationBuildItem runnerJarLocation) {
+        return createProject(app, runnerJarLocation.getFullPath());
     }
 
     public static Optional<Project> createProject(ApplicationInfoBuildItem app, Path artifactPath) {

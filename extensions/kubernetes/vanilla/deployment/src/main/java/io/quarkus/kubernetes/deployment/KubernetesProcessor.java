@@ -38,8 +38,8 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.RunnerJarLocationBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
@@ -51,7 +51,6 @@ class KubernetesProcessor {
 
     private static final Logger log = Logger.getLogger(KubernetesProcessor.class);
 
-    private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
     public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
     @BuildStep
@@ -78,7 +77,7 @@ class KubernetesProcessor {
     @BuildStep
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig,
+            RunnerJarLocationBuildItem runnerJarLocationBuildItem,
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
@@ -113,8 +112,7 @@ class KubernetesProcessor {
                 .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 
-        Path artifactPath = outputTarget.getOutputDirectory()
-                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix));
+        Path artifactPath = runnerJarLocationBuildItem.getFullPath();
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase

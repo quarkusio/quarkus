@@ -1,19 +1,16 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
-import io.netty.buffer.Unpooled;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEventSink;
+import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.SseUtil;
 
 public class QuarkusRestSseEventSink implements SseEventSink {
 
-    private static final Buffer EMPTY_BUFFER = Buffer.buffer(Unpooled.EMPTY_BUFFER);
+    private static final byte[] EMPTY_BUFFER = new byte[0];
     private ResteasyReactiveRequestContext context;
     private QuarkusRestSseBroadcasterImpl broadcaster;
 
@@ -23,7 +20,7 @@ public class QuarkusRestSseEventSink implements SseEventSink {
 
     @Override
     public boolean isClosed() {
-        return context.getHttpServerResponse().closed();
+        return context.serverResponse().closed();
     }
 
     @Override
@@ -47,34 +44,33 @@ public class QuarkusRestSseEventSink implements SseEventSink {
         if (isClosed())
             return;
         // FIXME: do we need a state flag?
-        HttpServerResponse response = context.getHttpServerResponse();
+        ServerHttpResponse response = context.serverResponse();
         response.end();
-        response.close();
         context.close();
         if (broadcaster != null)
             broadcaster.fireClose(this);
     }
 
-    public void sendInitialResponse(HttpServerResponse response) {
+    public void sendInitialResponse(ServerHttpResponse response) {
         if (!response.headWritten()) {
             SseUtil.setHeaders(context, response);
             // send the headers over the wire
             context.suspend();
-            response.write(EMPTY_BUFFER, new Handler<AsyncResult<Void>>() {
+            response.write(EMPTY_BUFFER, new Consumer<Throwable>() {
                 @Override
-                public void handle(AsyncResult<Void> event) {
-                    if (event.succeeded())
+                public void accept(Throwable throwable) {
+                    if (throwable == null) {
                         context.resume();
-                    else
-                        context.resume(event.cause());
+                    } else {
+                        context.resume(throwable);
+                    }
                     // I don't think we should be firing the exception on the broadcaster here
                 }
             });
-
-            response.closeHandler(v -> {
-                // FIXME: notify of client closing
-                System.err.println("Server connection closed");
-            });
+            //            response.closeHandler(v -> {
+            //                // FIXME: notify of client closing
+            //                System.err.println("Server connection closed");
+            //            });
         }
     }
 

@@ -85,9 +85,10 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 closeTaskHandler, new RequestContextFactory() {
                     @Override
                     public ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment,
-                            QuarkusRestProviders providers, RoutingContext context, ThreadSetupAction requestContext,
+                            QuarkusRestProviders providers, Object context, ThreadSetupAction requestContext,
                             ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
-                        return new QuarkusRequestContext(deployment, providers, context, requestContext, handlerChain,
+                        return new QuarkusRequestContext(deployment, providers, (RoutingContext) context, requestContext,
+                                handlerChain,
                                 abortHandlerChain);
                     }
                 }, new ArcThreadSetupAction(beanContainer.requestContext()), vertxConfig.rootPath);
@@ -99,8 +100,14 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             classMappers = deployment.getClassMappers();
             RuntimeResourceVisitor.visitRuntimeResources(classMappers, ScoreSystem.ScoreVisitor);
         }
-
-        return new QuarkusRestInitialHandler(new RequestMapper<>(deployment.getClassMappers()), deployment);
+        QuarkusRestInitialHandler initialHandler = new QuarkusRestInitialHandler(
+                new RequestMapper<>(deployment.getClassMappers()), deployment);
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                initialHandler.beginProcessing(event);
+            }
+        };
     }
 
     /**

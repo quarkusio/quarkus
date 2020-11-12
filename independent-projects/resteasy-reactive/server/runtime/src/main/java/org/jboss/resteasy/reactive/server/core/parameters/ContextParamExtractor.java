@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.ResourceContext;
@@ -59,12 +57,12 @@ public class ContextParamExtractor implements ParameterExtractor {
         if (type.equals(Request.class.getName())) {
             return context.getRequest();
         }
-        if (type.equals(HttpServerResponse.class.getName())) {
-            return context.getHttpServerResponse();
-        }
-        if (type.equals(HttpServerRequest.class.getName())) {
-            return context.getContext().request();
-        }
+        //        if (type.equals(HttpServerResponse.class.getName())) {
+        //            return context.getHttpServerResponse();
+        //        }
+        //        if (type.equals(HttpServerRequest.class.getName())) {
+        //            return context.getContext().request();
+        //        }
         if (type.equals(Providers.class.getName())) {
             return context.getProviders();
         }

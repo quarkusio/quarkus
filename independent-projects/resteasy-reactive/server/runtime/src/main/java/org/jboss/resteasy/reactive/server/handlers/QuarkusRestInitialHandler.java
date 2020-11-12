@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.vertx.core.Handler;
-import io.vertx.ext.web.RoutingContext;
 import java.util.List;
 import javax.ws.rs.NotFoundException;
 import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
@@ -11,7 +9,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 
-public class QuarkusRestInitialHandler implements Handler<RoutingContext>, ServerRestHandler {
+public class QuarkusRestInitialHandler implements ServerRestHandler {
 
     final RequestMapper<InitialMatch> mappers;
     final QuarkusRestDeployment deployment;
@@ -41,9 +39,9 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, Serve
         this.requestContextFactory = deployment.getRequestContextFactory();
     }
 
-    @Override
-    public void handle(RoutingContext event) {
-        ResteasyReactiveRequestContext rq = requestContextFactory.createContext(deployment, providers, event, requestContext,
+    public void beginProcessing(Object extenalHttpContext) {
+        ResteasyReactiveRequestContext rq = requestContextFactory.createContext(deployment, providers, extenalHttpContext,
+                requestContext,
                 initialChain, deployment.getAbortHandlerChain());
         rq.run();
     }

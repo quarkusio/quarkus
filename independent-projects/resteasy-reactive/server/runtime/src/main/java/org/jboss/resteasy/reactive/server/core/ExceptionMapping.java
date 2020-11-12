@@ -41,7 +41,7 @@ public class ExceptionMapping {
         if (throwable instanceof IOException) {
             log.debugf(throwable,
                     "IOError processing HTTP request to %s failed, the client likely terminated the connection.",
-                    context.context.request().uri());
+                    context.serverRequest().getRequestAbsoluteUri());
         } else {
             log.error("Request failed ", throwable);
         }

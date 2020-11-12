@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.injection;
 
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
@@ -67,17 +65,17 @@ public class ContextProducers {
     // HttpServerRequest, HttpServerRequest are Vert.x types so it's not necessary to have it injectable via @Context,
     // however we do use it in the Quickstarts so let's make it work
 
-    @RequestScoped
-    @Produces
-    HttpServerRequest httpServerRequest() {
-        return CurrentRequest.get().getContext().request();
-    }
+    //    @RequestScoped
+    //    @Produces
+    //    HttpServerRequest httpServerRequest() {
+    //        return CurrentRequest.get().getContext().request();
+    //    }
 
-    @RequestScoped
-    @Produces
-    HttpServerResponse httpServerResponse() {
-        return CurrentRequest.get().getContext().response();
-    }
+    //    @RequestScoped
+    //    @Produces
+    //    HttpServerResponse httpServerResponse() {
+    //        return CurrentRequest.get().getContext().response();
+    //    }
 
     @ApplicationScoped
     @Produces

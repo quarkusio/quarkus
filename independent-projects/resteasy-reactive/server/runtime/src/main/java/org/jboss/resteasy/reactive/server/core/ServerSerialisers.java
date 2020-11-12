@@ -1,10 +1,7 @@
 package org.jboss.resteasy.reactive.server.core;
 
 import io.netty.util.AsciiString;
-import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +30,8 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
+import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
@@ -227,7 +226,7 @@ public class ServerSerialisers extends Serialisers {
      * is influenced by the provider's weight of the media types
      */
     public BestMatchingServerWriterResult findBestMatchingServerWriter(QuarkusRestConfiguration configuration,
-            Class<?> entityType, HttpServerRequest request) {
+            Class<?> entityType, ServerHttpRequest request) {
         // TODO: refactor to have use common code from findWriters
         Class<?> klass = entityType;
         Deque<Class<?>> toProcess = new LinkedList<>();
@@ -267,7 +266,7 @@ public class ServerSerialisers extends Serialisers {
         return result;
     }
 
-    private void serverResourceWriterLookup(HttpServerRequest request,
+    private void serverResourceWriterLookup(ServerHttpRequest request,
             List<ResourceWriter> candidates, BestMatchingServerWriterResult result) {
         if (candidates == null) {
             return;
@@ -317,7 +316,7 @@ public class ServerSerialisers extends Serialisers {
         }
         MediaType selected = null;
         for (ResourceWriter writer : constrainedResultsForClass) {
-            selected = writer.serverMediaType().negotiateProduces(requestContext.getContext().request()).getKey();
+            selected = writer.serverMediaType().negotiateProduces(requestContext.serverRequest()).getKey();
             if (selected != null) {
                 break;
             }
@@ -431,7 +430,7 @@ public class ServerSerialisers extends Serialisers {
     }
 
     public static void encodeResponseHeaders(ResteasyReactiveRequestContext requestContext) {
-        HttpServerResponse vertxResponse = requestContext.getHttpServerResponse();
+        ServerHttpResponse vertxResponse = requestContext.serverResponse();
         if (!requestContext.getResponse().isCreated()) {
             //fast path
             //there is no response, so we just set the content type
@@ -440,13 +439,12 @@ public class ServerSerialisers extends Serialisers {
             }
             EncodedMediaType contentType = requestContext.getResponseContentType();
             if (contentType != null) {
-                vertxResponse.headers().set(CONTENT_TYPE, contentType.toString());
+                vertxResponse.setResponseHeader(CONTENT_TYPE, contentType.toString());
             }
             return;
         }
         Response response = requestContext.getResponse().get();
         vertxResponse.setStatusCode(response.getStatus());
-        MultiMap vertxHeaders = vertxResponse.headers();
 
         // avoid using getStringHeaders() which does similar things but copies into yet another map
         MultivaluedMap<String, Object> headers = response.getHeaders();
@@ -454,16 +452,16 @@ public class ServerSerialisers extends Serialisers {
             if (entry.getValue().size() == 1) {
                 Object o = entry.getValue().get(0);
                 if (o instanceof CharSequence) {
-                    vertxHeaders.set(entry.getKey(), (CharSequence) o);
+                    vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) o);
                 } else {
-                    vertxHeaders.set(entry.getKey(), (CharSequence) HeaderUtil.headerToString(o));
+                    vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) HeaderUtil.headerToString(o));
                 }
             } else {
                 List<CharSequence> strValues = new ArrayList<>(entry.getValue().size());
                 for (Object o : entry.getValue()) {
                     strValues.add(HeaderUtil.headerToString(o));
                 }
-                vertxHeaders.set(entry.getKey(), strValues);
+                vertxResponse.setResponseHeader(entry.getKey(), strValues);
             }
         }
     }

@@ -1,9 +1,6 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -15,37 +12,28 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 
 // FIXME: we need to refactor the serialisation of entities to bytes between here and Sse and Serialisers
 // and figure out where interceptors come into play
 public class StreamingUtil {
 
     public static CompletionStage<?> send(ResteasyReactiveRequestContext context, Object entity) {
-        HttpServerResponse response = context.getContext().response();
+        ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
             return CompletableFuture.completedFuture(null);
         }
-        CompletableFuture<?> ret = new CompletableFuture<>();
         Buffer data;
         try {
             data = serialiseEntity(context, entity);
         } catch (Exception e) {
+            CompletableFuture<?> ret = new CompletableFuture<>();
             ret.completeExceptionally(e);
             return ret;
         }
         setHeaders(context, response);
-        response.write(data, new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                if (event.failed()) {
-                    ret.completeExceptionally(event.cause());
-                } else {
-                    ret.complete(null);
-                }
-            }
-        });
-        return ret;
+        return response.write(data.getBytes());
     }
 
     private static Buffer serialiseEntity(ResteasyReactiveRequestContext context, Object entity) throws IOException {
@@ -77,12 +65,12 @@ public class StreamingUtil {
         return Buffer.buffer(baos.toByteArray());
     }
 
-    public static void setHeaders(ResteasyReactiveRequestContext context, HttpServerResponse response) {
+    public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response) {
         // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
         // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
-            response.putHeader(HttpHeaders.CONTENT_TYPE, context.getResponseContentType().toString());
+            response.setResponseHeader(HttpHeaders.CONTENT_TYPE, context.getResponseContentType().toString());
             response.setChunked(true);
             // FIXME: other headers?
         }

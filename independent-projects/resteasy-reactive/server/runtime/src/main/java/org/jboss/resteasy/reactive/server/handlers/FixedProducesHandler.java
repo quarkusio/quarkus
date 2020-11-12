@@ -29,7 +29,7 @@ public class FixedProducesHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        String accept = requestContext.getContext().request().getHeader(HttpHeaderNames.ACCEPT);
+        String accept = requestContext.serverRequest().getRequestHeader(HttpHeaderNames.ACCEPT);
         if (accept == null) {
             requestContext.setResponseContentType(mediaType);
             requestContext.setEntityWriter(writer);

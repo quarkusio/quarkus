@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +10,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
+import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
 import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -36,13 +35,13 @@ public class ServerFileBodyHandler extends FileBodyHandler implements QuarkusRes
 
     @Override
     public void writeResponse(File o, ResteasyReactiveRequestContext context) throws WebApplicationException {
-        HttpServerResponse vertxResponse = context.getHttpServerResponse();
+        ServerHttpResponse vertxResponse = context.serverResponse();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             doWrite(o, baos);
         } catch (IOException e) {
             throw new WebApplicationException(e);
         }
-        vertxResponse.end(Buffer.buffer(baos.toByteArray()));
+        vertxResponse.end(baos.toByteArray());
     }
 }

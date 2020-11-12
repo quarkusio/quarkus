@@ -20,6 +20,6 @@ public class ServerVertxBufferMessageBodyWriter extends VertxBufferMessageBodyWr
 
     @Override
     public void writeResponse(Buffer buffer, ResteasyReactiveRequestContext context) throws WebApplicationException {
-        context.getHttpServerResponse().end(buffer);
+        context.serverResponse().end(buffer.getBytes());
     }
 }

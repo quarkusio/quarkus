@@ -139,9 +139,11 @@ final class CustomProviderGenerator {
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
                             runtimeResourceHandle);
-                } else if (QuarkusRestServerDotNames.ROUTING_CONTEXT.equals(paramDotName)) {
-                    targetMethodParamHandles[i] = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
-                } else {
+                } /*
+                   * else if (QuarkusRestServerDotNames.ROUTING_CONTEXT.equals(paramDotName)) {
+                   * targetMethodParamHandles[i] = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
+                   * }
+                   */else {
                     String parameterName = targetMethod.parameterName(i);
                     throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
                             + " of class '" + declaringClassName

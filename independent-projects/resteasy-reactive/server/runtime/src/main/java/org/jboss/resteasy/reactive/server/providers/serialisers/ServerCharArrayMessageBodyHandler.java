@@ -24,7 +24,7 @@ public class ServerCharArrayMessageBodyHandler extends CharArrayMessageBodyHandl
     @Override
     public void writeResponse(char[] o, ResteasyReactiveRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
-        context.getHttpServerResponse().end(new String(o));
+        context.serverResponse().end(new String(o));
     }
 
     @Override

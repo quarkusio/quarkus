@@ -50,7 +50,7 @@ public class ServerFormUrlEncodedProvider extends FormUrlEncodedProvider
     public void writeResponse(MultivaluedMap o, ResteasyReactiveRequestContext context) throws WebApplicationException {
         try {
             // FIXME: use response encoding
-            context.getHttpServerResponse().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));
+            context.serverResponse().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));
         } catch (UnsupportedEncodingException e) {
             throw new WebApplicationException(e);
         }

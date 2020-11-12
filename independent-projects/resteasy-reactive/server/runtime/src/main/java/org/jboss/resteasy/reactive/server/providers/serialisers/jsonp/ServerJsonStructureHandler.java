@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers.jsonp;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.ByteArrayOutputStream;
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
@@ -26,7 +25,7 @@ public class ServerJsonStructureHandler extends JsonStructureHandler implements 
         try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseContentMediaType())) {
             writer.write(o);
         }
-        context.getHttpServerResponse().end(Buffer.buffer(out.toByteArray()));
+        context.serverResponse().end(out.toByteArray());
     }
 
 }

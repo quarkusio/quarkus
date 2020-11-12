@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
-import io.vertx.core.MultiMap;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -24,9 +23,9 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
     private final MultivaluedMap<String, String> unmodifiableRequestHeaders;
     private Map<String, Cookie> cookies;
 
-    public QuarkusRestHttpHeaders(MultiMap vertxHeaders) {
+    public QuarkusRestHttpHeaders(Iterable<Map.Entry<String, String>> vertxHeaders) {
         requestHeaders = new CaseInsensitiveMap<>();
-        for (Map.Entry<String, String> entry : vertxHeaders.entries()) {
+        for (Map.Entry<String, String> entry : vertxHeaders) {
             requestHeaders.add(entry.getKey(), entry.getValue());
         }
         this.unmodifiableRequestHeaders = new UnmodifiableMultivaluedMap<>(requestHeaders, false);

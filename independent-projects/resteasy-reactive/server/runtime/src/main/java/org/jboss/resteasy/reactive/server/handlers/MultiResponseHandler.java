@@ -82,11 +82,11 @@ public class MultiResponseHandler implements ServerRestHandler {
         public void onComplete() {
             // no need to cancel on complete
             // FIXME: are we interested in async completion?
-            requestContext.getContext().response().end();
+            requestContext.serverResponse().end();
             // so, if I don't also close the connection, the client isn't notified that the request is over
             // I guess that's true of chunked responses, but not clear why I need to close the connection
             // because it means it can't get reused, right?
-            requestContext.getContext().response().close();
+            requestContext.serverRequest().closeConnection();
             requestContext.close();
         }
 
@@ -147,7 +147,7 @@ public class MultiResponseHandler implements ServerRestHandler {
     private void handleException(ResteasyReactiveRequestContext requestContext, Throwable t) {
         // in truth we can only send an exception if we haven't sent the headers yet, otherwise
         // it will appear to be an SSE value, which is incorrect, so we should only log it and close the connection
-        if (requestContext.getHttpServerResponse().headWritten()) {
+        if (requestContext.serverResponse().headWritten()) {
             log.error("Exception in SSE server handling, impossible to send it to client", t);
         } else {
             // we can go through the abort chain

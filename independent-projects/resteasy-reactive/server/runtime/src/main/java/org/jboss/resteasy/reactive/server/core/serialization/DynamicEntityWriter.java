@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.core.serialization;
 
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import java.io.IOException;
 import java.util.List;
 import javax.ws.rs.InternalServerErrorException;
@@ -10,6 +8,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
+import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -33,7 +33,7 @@ public class DynamicEntityWriter implements EntityWriter {
         if (producesMediaType == null) {
             MediaType selectedMediaType = null;
             boolean mediaTypeComesFromClient = false;
-            HttpServerRequest vertxRequest = context.getContext().request();
+            ServerHttpRequest vertxRequest = context.serverRequest();
             // first check and see if the resource method defined a media type and try to use it
             if ((context.getTarget() != null) && (context.getTarget().getProduces() != null)) {
                 MediaType res = context.getTarget().getProduces().negotiateProduces(vertxRequest).getKey();
@@ -43,8 +43,8 @@ public class DynamicEntityWriter implements EntityWriter {
                     writers = writersList.toArray(new MessageBodyWriter[0]);
                     selectedMediaType = res;
                 }
-            } else if (vertxRequest.headers().contains(HttpHeaders.ACCEPT)
-                    && !MediaType.WILDCARD.equals(vertxRequest.getHeader(HttpHeaders.ACCEPT))) {
+            } else if (vertxRequest.getRequestHeader(HttpHeaders.ACCEPT) != null
+                    && !MediaType.WILDCARD.equals(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT))) {
                 // try and find a writer based on the 'Accept' header match
 
                 ServerSerialisers.BestMatchingServerWriterResult bestMatchingServerWriterResult = serialisers
@@ -66,7 +66,7 @@ public class DynamicEntityWriter implements EntityWriter {
                 if (MediaTypeHelper.isUnsupportedWildcardSubtype(selectedMediaType) && !mediaTypeComesFromClient) { // spec says the acceptable wildcard subtypes are */* or application/*
                     ServerSerialisers.encodeResponseHeaders(context);
                     // set the response header AFTER encodeResponseHeaders in order to override what Response has as we want this to be the final result
-                    HttpServerResponse httpServerResponse = context.getHttpServerResponse();
+                    ServerHttpResponse httpServerResponse = context.serverResponse();
                     httpServerResponse.setStatusCode(Response.Status.NOT_ACCEPTABLE.getStatusCode());
                     // spec says the response doesn't have a body so we just end the response here and return
                     httpServerResponse.end();
@@ -74,7 +74,7 @@ public class DynamicEntityWriter implements EntityWriter {
                 } else {
                     context.setResponseContentType(selectedMediaType);
                     // this will be used as the fallback if Response does NOT contain a type
-                    context.getHttpServerResponse().headers().add(HttpHeaders.CONTENT_TYPE, selectedMediaType.toString());
+                    context.serverResponse().addResponseHeader(HttpHeaders.CONTENT_TYPE, selectedMediaType.toString());
                 }
             }
         } else {

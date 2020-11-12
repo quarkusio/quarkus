@@ -22,12 +22,12 @@ public class QuarkusRestRequest implements Request {
 
     public QuarkusRestRequest(ResteasyReactiveRequestContext requestContext) {
         this.requestContext = requestContext;
-        this.httpMethod = requestContext.getContext().request().method().name();
+        this.httpMethod = requestContext.serverRequest().getRequestMethod();
     }
 
     @Override
     public String getMethod() {
-        return requestContext.getContext().request().method().name();
+        return requestContext.serverRequest().getRequestMethod();
     }
 
     private boolean isRfc7232preconditions() {
@@ -46,7 +46,7 @@ public class QuarkusRestRequest implements Request {
         negotiation.setAcceptLanguageHeaders(requestHeaders.get(HttpHeaders.ACCEPT_LANGUAGE));
 
         varyHeader = QuarkusRestResponseBuilder.createVaryHeader(variants);
-        requestContext.getHttpServerResponse().headers().set(HttpHeaders.VARY, varyHeader);
+        requestContext.serverResponse().setResponseHeader(HttpHeaders.VARY, varyHeader);
         //response.getOutputHeaders().add(VARY, varyHeader);
         return negotiation.getBestMatch(variants);
     }

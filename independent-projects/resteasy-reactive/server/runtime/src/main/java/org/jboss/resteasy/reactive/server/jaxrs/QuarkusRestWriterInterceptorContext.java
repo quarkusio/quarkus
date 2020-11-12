@@ -66,7 +66,7 @@ public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInte
                 //TODO: how to handle
                 context.setResult(Response.fromResponse(response).replaceAll(headers).build());
                 ServerSerialisers.encodeResponseHeaders(context);
-                context.getHttpServerResponse().end();
+                context.serverResponse().end();
             }
         }
 

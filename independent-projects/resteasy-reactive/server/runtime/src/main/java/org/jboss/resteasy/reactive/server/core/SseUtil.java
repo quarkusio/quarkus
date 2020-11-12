@@ -1,9 +1,6 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -17,6 +14,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestOutboundSseEvent;
 
@@ -25,31 +23,21 @@ public class SseUtil extends CommonSseUtil {
     private static final String NL = "\n";
 
     public static CompletionStage<?> send(ResteasyReactiveRequestContext context, OutboundSseEvent event) {
-        HttpServerResponse response = context.getHttpServerResponse();
+        ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
             return CompletableFuture.completedFuture(null);
         }
-        CompletableFuture<?> ret = new CompletableFuture<>();
         Buffer data;
         try {
             data = serialiseEvent(context, event);
         } catch (IOException e) {
+            CompletableFuture<Void> ret = new CompletableFuture<>();
             ret.completeExceptionally(e);
             return ret;
         }
         setHeaders(context, response);
-        response.write(data, new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                if (event.failed()) {
-                    ret.completeExceptionally(event.cause());
-                } else {
-                    ret.complete(null);
-                }
-            }
-        });
-        return ret;
+        return response.write(data.getBytes());
     }
 
     private static Buffer serialiseEvent(ResteasyReactiveRequestContext context, OutboundSseEvent event)
@@ -154,14 +142,14 @@ public class SseUtil extends CommonSseUtil {
         return baos.toString(StandardCharsets.UTF_8.name());
     }
 
-    public static void setHeaders(ResteasyReactiveRequestContext context, HttpServerResponse response) {
+    public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response) {
         // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
         // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
-            response.putHeader(HttpHeaders.CONTENT_TYPE, MediaType.SERVER_SENT_EVENTS);
+            response.setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.SERVER_SENT_EVENTS);
             if (context.getTarget().getSseElementType() != null) {
-                response.putHeader(SSE_CONTENT_TYPE, context.getTarget().getSseElementType().toString());
+                response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getSseElementType().toString());
             }
             response.setChunked(true);
             // FIXME: other headers?

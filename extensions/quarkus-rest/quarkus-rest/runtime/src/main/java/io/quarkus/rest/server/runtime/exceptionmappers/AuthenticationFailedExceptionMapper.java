@@ -6,6 +6,7 @@ import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
 
+import io.quarkus.rest.server.runtime.QuarkusRequestContext;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -25,7 +26,7 @@ public class AuthenticationFailedExceptionMapper implements QuarkusRestException
 
     @Override
     public Response toResponse(AuthenticationFailedException exception, ResteasyReactiveRequestContext ctx) {
-        return doToResponse(ctx.getContext());
+        return doToResponse(((QuarkusRequestContext) ctx).getContext());
     }
 
     private Response doToResponse(RoutingContext routingContext) {

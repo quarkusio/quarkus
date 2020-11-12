@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
@@ -25,7 +24,7 @@ public class ServerByteArrayMessageBodyHandler extends ByteArrayMessageBodyHandl
     @Override
     public void writeResponse(byte[] o, ResteasyReactiveRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
-        context.getHttpServerResponse().end(Buffer.buffer(o));
+        context.serverResponse().end(o);
     }
 
     @Override

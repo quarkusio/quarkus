@@ -1,11 +1,10 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
-import io.vertx.core.MultiMap;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.impl.URIDecoder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
@@ -13,6 +12,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
@@ -68,7 +68,7 @@ public class QuarkusRestUriInfo implements UriInfo {
     @Override
     public URI getRequestUri() {
         if (requestUri == null) {
-            HttpServerRequest request = currentRequest.getContext().request();
+            ServerHttpRequest request = currentRequest.serverRequest();
             try {
                 // TCK says normalized
                 requestUri = new URI(currentRequest.getAbsoluteURI() + (request.query() == null ? "" : "?" + request.query()))
@@ -160,9 +160,9 @@ public class QuarkusRestUriInfo implements UriInfo {
             throw encodedNotSupported();
         if (queryParams == null) {
             queryParams = new QuarkusMultivaluedHashMap<>();
-            MultiMap entries = currentRequest.getContext().queryParams();
-            for (String i : entries.names()) {
-                queryParams.addAll(i, entries.getAll(i));
+            Collection<String> entries = currentRequest.serverRequest().queryParamNames();
+            for (String i : entries) {
+                queryParams.addAll(i, currentRequest.serverRequest().getAllQueryParams(i));
             }
         }
         return new UnmodifiableMultivaluedMap<>(queryParams);

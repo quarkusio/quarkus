@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.vertx.core.http.HttpServerRequest;
 import java.io.ByteArrayInputStream;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
@@ -27,23 +27,24 @@ public class ReadBodyHandler implements ServerRestHandler {
             // let's not set it twice
             return;
         }
-        HttpServerRequest vertxRequest = requestContext.getContext().request();
-        if (vertxRequest.isEnded()) {
+        ServerHttpRequest vertxRequest = requestContext.serverRequest();
+        if (vertxRequest.isRequestEnded()) {
             if (alsoSetInputStream) {
                 // do not use the EmptyInputStream.INSTANCE marker
                 requestContext.setInputStream(new ByteArrayInputStream(NO_BYTES));
             }
         } else {
-            requestContext.suspend();
             vertxRequest.setExpectMultipart(true);
-            vertxRequest.bodyHandler(buf -> {
-                // the TCK allows the body to be read as a form param and also as a body param
-                // the spec is silent about this
-                if (alsoSetInputStream) {
-                    requestContext.setInputStream(new ByteArrayInputStream(buf.getBytes()));
-                }
-                requestContext.resume();
-            });
+            //TODO: fix this
+            //            requestContext.suspend();
+            //            vertxRequest.bodyHandler(buf -> {
+            //                // the TCK allows the body to be read as a form param and also as a body param
+            //                // the spec is silent about this
+            //                if (alsoSetInputStream) {
+            //                    requestContext.setInputStream(new ByteArrayInputStream(buf.getBytes()));
+            //                }
+            //                requestContext.resume();
+            //            });
         }
     }
 

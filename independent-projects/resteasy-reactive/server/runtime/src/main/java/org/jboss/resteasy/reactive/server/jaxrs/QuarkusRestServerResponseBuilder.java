@@ -1,11 +1,11 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
-import io.vertx.core.http.HttpServerRequest;
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.CurrentRequest;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
@@ -29,9 +29,9 @@ public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder
             if (cdi != null) {
                 // FIXME: this leaks server stuff onto the client
                 ResteasyReactiveRequestContext request = CurrentRequest.get();
-                HttpServerRequest req = request.getContext().request();
+                ServerHttpRequest req = request.serverRequest();
                 try {
-                    String host = req.host();
+                    String host = req.getRequestHost();
                     int port = -1;
                     int index = host.indexOf(":");
                     if (index > -1) {
@@ -45,7 +45,7 @@ public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder
                         prefix = deployment.getPrefix();
                     }
                     // Spec says relative to request, but TCK tests relative to Base URI, so we do that
-                    location = new URI(req.scheme(), null, host, port,
+                    location = new URI(req.getRequestScheme(), null, host, port,
                             prefix +
                                     (location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath()),
                             location.getQuery(), null);
@@ -74,16 +74,16 @@ public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder
             if (cdi != null) {
                 // FIXME: this leaks server stuff onto the client
                 ResteasyReactiveRequestContext request = CurrentRequest.get();
-                HttpServerRequest req = request.getContext().request();
+                ServerHttpRequest req = request.serverRequest();
                 try {
-                    String host = req.host();
+                    String host = req.getRequestHost();
                     int port = -1;
                     int index = host.indexOf(":");
                     if (index > -1) {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);
                     }
-                    location = new URI(req.scheme(), null, host, port,
+                    location = new URI(req.getRequestScheme(), null, host, port,
                             location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
                             location.getQuery(), null);
                 } catch (URISyntaxException e) {

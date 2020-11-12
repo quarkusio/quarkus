@@ -35,7 +35,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         MediaType requestType = mediaType;
-        String requestTypeString = requestContext.getContext().request().getHeader(HttpHeaders.CONTENT_TYPE);
+        String requestTypeString = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (requestTypeString != null) {
             try {
                 requestType = MediaType.valueOf(requestTypeString);

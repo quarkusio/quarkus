@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.common.util;
 
-import io.vertx.core.http.HttpServerRequest;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -10,6 +9,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 
 /**
  * A representation of a server side media type.
@@ -92,7 +92,7 @@ public class ServerMediaType {
      * @return An entry containing the negotiated desired media type as a key and the negotiated
      *         provided media type as a value
      */
-    public Map.Entry<MediaType, MediaType> negotiateProduces(HttpServerRequest request) {
+    public Map.Entry<MediaType, MediaType> negotiateProduces(ServerHttpRequest request) {
         return negotiateProduces(request, this.hardCoded);
     }
 
@@ -101,13 +101,13 @@ public class ServerMediaType {
      * @return An entry containing the negotiated desired media type as a key and the negotiated
      *         provided media type as a value
      */
-    public Map.Entry<MediaType, MediaType> negotiateProduces(HttpServerRequest request, MediaType hardCoded) {
+    public Map.Entry<MediaType, MediaType> negotiateProduces(ServerHttpRequest request, MediaType hardCoded) {
         if (hardCoded != null) {
             //technically we should negotiate here, and check if we need to return a 416
             //but for performance reasons we ignore this
             return new AbstractMap.SimpleEntry<>(hardCoded, null);
         }
-        String acceptStr = request.getHeader(HttpHeaders.ACCEPT);
+        String acceptStr = request.getRequestHeader(HttpHeaders.ACCEPT);
         MediaType selectedDesired = null;
         MediaType selectedProvided = null;
         List<MediaType> parsedAccepted;

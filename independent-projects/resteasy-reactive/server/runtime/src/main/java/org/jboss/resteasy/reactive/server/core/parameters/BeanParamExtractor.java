@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import javax.ws.rs.container.CompletionCallback;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionTarget;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -17,9 +16,9 @@ public class BeanParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
         BeanFactory.BeanInstance<Object> instance = factory.createInstance();
-        context.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
+        context.registerCompletionCallback(new CompletionCallback() {
             @Override
-            public void handle(AsyncResult<Void> event) {
+            public void onComplete(Throwable throwable) {
                 instance.close();
             }
         });

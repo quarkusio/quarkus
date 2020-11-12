@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.vertx.core.http.HttpServerRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +11,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -56,7 +56,7 @@ public class MediaTypeMapper implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        String contentType = requestContext.getContext().request().headers().get(HttpHeaders.CONTENT_TYPE);
+        String contentType = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         // if there's no Content-Type it's */*
         MediaType contentMediaType = contentType != null ? MediaType.valueOf(contentType) : MediaType.WILDCARD_TYPE;
         // find the best matching consumes type. Note that the arguments are reversed from their definition
@@ -97,10 +97,10 @@ public class MediaTypeMapper implements ServerRestHandler {
 
     public MediaType selectMediaType(ResteasyReactiveRequestContext requestContext, Holder holder) {
         MediaType selected = null;
-        HttpServerRequest httpServerRequest = requestContext.getContext().request();
-        if (httpServerRequest.headers().contains(HttpHeaderNames.ACCEPT)) {
+        ServerHttpRequest httpServerRequest = requestContext.serverRequest();
+        if (httpServerRequest.containsRequestHeader(HttpHeaderNames.ACCEPT)) {
             Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
-                    .negotiateProduces(requestContext.getContext().request(), null);
+                    .negotiateProduces(requestContext.serverRequest(), null);
             if (entry.getValue() != null) {
                 selected = entry.getValue();
             }

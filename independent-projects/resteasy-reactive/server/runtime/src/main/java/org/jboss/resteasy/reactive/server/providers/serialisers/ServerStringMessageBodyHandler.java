@@ -23,7 +23,7 @@ public class ServerStringMessageBodyHandler extends StringMessageBodyHandler
     @Override
     public void writeResponse(Object o, ResteasyReactiveRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
-        context.getHttpServerResponse().end(o.toString());
+        context.serverResponse().end(o.toString());
     }
 
     @Override

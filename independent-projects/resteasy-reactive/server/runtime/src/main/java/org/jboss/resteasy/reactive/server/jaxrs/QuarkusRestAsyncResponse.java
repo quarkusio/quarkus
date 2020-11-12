@@ -98,7 +98,7 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
     // CALL WITH LOCK
     private void cancelTimer() {
         if (timerId != -1) {
-            context.getContext().vertx().cancelTimer(timerId);
+            context.vertx().cancelTimer(timerId);
             timerId = -1;
         }
     }
@@ -124,7 +124,7 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
     public synchronized boolean setTimeout(long time, TimeUnit unit) {
         if (!suspended)
             return false;
-        Vertx vertx = context.getContext().vertx();
+        Vertx vertx = context.vertx();
         if (timerId != -1)
             vertx.cancelTimer(timerId);
         timerId = vertx.setTimer(TimeUnit.MILLISECONDS.convert(time, unit), this);

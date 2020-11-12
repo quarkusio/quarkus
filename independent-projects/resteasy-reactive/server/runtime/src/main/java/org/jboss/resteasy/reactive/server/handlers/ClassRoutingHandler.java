@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +16,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
+import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestServerResponseBuilder;
@@ -40,7 +40,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
             if (requestMethod.equals(HttpMethod.HEAD.name())) {
                 mapper = mappers.get(HttpMethod.GET.name());
             } else if (requestMethod.equals(HttpMethod.OPTIONS.name())) {
-                Set<String> allowedMethods = new HashSet<>();
+                Set<CharSequence> allowedMethods = new HashSet<>();
                 for (String method : mappers.keySet()) {
                     if (method == null) {
                         continue;
@@ -49,7 +49,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 }
                 allowedMethods.add(HttpMethod.OPTIONS.name());
                 allowedMethods.add(HttpMethod.HEAD.name());
-                requestContext.getHttpServerResponse().putHeader(HttpHeaders.ALLOW, allowedMethods).end();
+                requestContext.serverResponse().setResponseHeader(HttpHeaders.ALLOW, allowedMethods).end();
                 return;
             }
             if (mapper == null) {
@@ -99,12 +99,12 @@ public class ClassRoutingHandler implements ServerRestHandler {
 
         // use vert.x headers wherever we need header checking because we really don't want to
         // copy headers as it's a performance killer
-        MultiMap vertxHeaders = requestContext.getContext().request().headers();
+        ServerHttpRequest serverRequest = requestContext.serverRequest();
 
         // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
 
         if (!target.value.getConsumes().isEmpty()) {
-            String contentType = vertxHeaders.get(HttpHeaders.CONTENT_TYPE);
+            String contentType = serverRequest.getRequestHeader(HttpHeaders.CONTENT_TYPE);
             if (contentType != null) {
                 if (MediaTypeHelper.getFirstMatch(
                         target.value.getConsumes(),
@@ -115,7 +115,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
         }
         // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in @Produces
         if (target.value.getProduces() != null) {
-            String accepts = vertxHeaders.get(HttpHeaders.ACCEPT);
+            String accepts = serverRequest.getRequestHeader(HttpHeaders.ACCEPT);
             if ((accepts != null) && !accepts.equals(MediaType.WILDCARD)) {
                 if (!accepts.contains(",") && target.value.getProduces().getSortedMediaTypes().length == 1) { // the point of this branch is to eliminate the list creation and sorting
                     MediaType acceptsMediaType = MediaType.valueOf(accepts.trim());

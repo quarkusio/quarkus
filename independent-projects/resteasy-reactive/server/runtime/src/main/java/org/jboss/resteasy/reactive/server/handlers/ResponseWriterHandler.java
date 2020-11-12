@@ -33,7 +33,7 @@ public class ResponseWriterHandler implements ServerRestHandler {
         } else {
             setContentTypeIfNecessary(requestContext);
             ServerSerialisers.encodeResponseHeaders(requestContext);
-            requestContext.getHttpServerResponse().end();
+            requestContext.serverResponse().end();
         }
     }
 
@@ -45,7 +45,7 @@ public class ResponseWriterHandler implements ServerRestHandler {
                 && requestContext.getResponseContentType() == null) {
             ServerMediaType serverMediaType = requestContext.getTarget().getProduces();
             if (serverMediaType.getSortedOriginalMediaTypes().length > 0) {
-                requestContext.getHttpServerResponse().headers().add(HttpHeaders.CONTENT_TYPE,
+                requestContext.serverResponse().setResponseHeader(HttpHeaders.CONTENT_TYPE,
                         serverMediaType.getSortedOriginalMediaTypes()[0].toString());
             }
         }

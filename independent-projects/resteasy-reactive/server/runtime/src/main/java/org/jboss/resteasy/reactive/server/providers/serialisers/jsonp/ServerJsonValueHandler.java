@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers.jsonp;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.ByteArrayOutputStream;
 import javax.json.JsonValue;
 import javax.json.JsonWriter;
@@ -25,7 +24,7 @@ public class ServerJsonValueHandler extends JsonValueHandler implements QuarkusR
         try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseContentMediaType())) {
             writer.write(o);
         }
-        context.getHttpServerResponse().end(Buffer.buffer(out.toByteArray()));
+        context.serverResponse().end(out.toByteArray());
     }
 
 }

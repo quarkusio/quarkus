@@ -1,4 +1,13 @@
-package org.jboss.resteasy.reactive.server.core;
+package io.quarkus.rest.server.runtime;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.VertxBufferImpl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -8,11 +17,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
-import org.jboss.logging.Logger;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 
@@ -31,7 +35,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     protected Throwable throwable;
     private ByteArrayOutputStream overflow;
 
-    public ResteasyReactiveOutputStream(ResteasyReactiveRequestContext context) {
+    public ResteasyReactiveOutputStream(QuarkusRequestContext context) {
         this.context = context;
         this.request = context.getContext().request();
         request.response().exceptionHandler(new Handler<Throwable>() {
@@ -227,9 +231,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             committed = true;
             if (finished) {
                 if (buffer == null) {
-                    context.getHttpServerResponse().headers().set(HttpHeaderNames.CONTENT_LENGTH, "0");
+                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "0");
                 } else {
-                    context.getHttpServerResponse().headers().set(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
+                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
                 }
             } else if (!request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
                 request.response().setChunked(true);

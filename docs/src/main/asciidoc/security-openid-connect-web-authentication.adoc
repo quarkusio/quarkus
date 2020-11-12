@@ -257,7 +257,10 @@ See <<oidc-cookies, Dealing with Cookies>> for more information.
 
 == Accessing ID and Access Tokens
 
-ID Token is always a JWT token. One can access ID Token claims by injecting `JsonWebToken` with an `IdToken` qualifier:
+OIDC Code Authentication Mechanism acquires three tokens during the authorization code flow: https://openid.net/specs/openid-connect-core-1_0.html#IDToken[IDToken], Access Token and Refresh Token.
+
+ID Token is always a JWT token and is used to represent a user authentication with the JWT claims.
+One can access ID Token claims by injecting `JsonWebToken` with an `IdToken` qualifier:
 
 [source, java]
 ----
@@ -317,12 +320,14 @@ Note that `AccessTokenCredential` will have to be used if the Access Token issue
 
 Injection of the `JsonWebToken` and `AccessTokenCredential` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
 
+RefreshToken is only used to refresh the current ID and access tokens as part of its link:#session_management[session management] process.
+
 [[user-info]]
 == User Info
 
-Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
-A request will be sent to the OpenId Provider UserInfo endpont and  an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created.
-`io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
+If IdToken does not provide enough information about the currently authenticated user then you can set a `quarkus.oidc.user-info-required=true` property for a https://openid.net/specs/openid-connect-core-1_0.html#UserInfo[UserInfo] JSON object from the OIDC userinfo endpoint to be requested.
+
+A request will be sent to the OpenId Provider UserInfo endpoint using the access token returned with the authorization code grant response and an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created. `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
 
 == Token Claims And SecurityIdentity Roles
 
@@ -335,6 +340,27 @@ If only the access token contains the roles and this access token is not meant t
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
+
+[[session-management]]
+== Session Management
+
+If you have a link:security-openid-connect#single-page-applications[Single Page Application for Service Applications] where your OpenId Connect Provider script such as `keycloak.js` is managing an authoriization code flow then that script will also control the SPA authentication session lifespan.
+
+If your work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
+
+The session age is calculated by adding the lifespan value of the current IDToken and the values of the `quarkus.oidc.authentication.session-age-extension` and `quarkus.oidc.token.lifespan-grace` properties. Of the last two properties only `quarkus.oidc.authentication.session-age-extension` should be used to significantly extend the session lifespan if required since `quarkus.oidc.token.lifespan-grace` is only meant for taking some small clock skews into consideration.
+
+When the currently authenticated user returns to the protected Quarkus endpoint and the ID token associated with the session cookie has expired then, by default, the user will be auto-redirected to the OIDC Authorization endpoint to re-authenticate. Most likely the OIDC provider will challenge the user again though not necessarily if the session between the user and this OIDC provider is still active which may happen if it is configured to last longer than the ID token.
+
+If the `quarkus.oidc.token.refresh-expired` then the expired ID token (as well as the access token) will be refreshed using the refresh token returned with the authorization code grant response. This refresh token may also be recycled (refreshed) itself as part of this process. As a result the new session cookie will be created and the session will be extended.
+
+Note, `quarkus.oidc.authentication.session-age-extension` can be important when dealing with expired ID tokens, when the user is not very active. In such cases, if the ID token expires, then the session cookie may not be returned back to the Quarkus endpoint during the next user request and Quarkus will assume it is the first authentication request. Therefore using `quarkus.oidc.authentication.session-age-extension` is important if you need to have even the expired ID tokens refreshed.
+
+You can also complement refreshing the expired ID tokens by proactively refreshing the valid ID tokens which are about to be expired within the `quarkus.oidc.token.auto-refresh-interval` value. If, during the current user request, it is calculated that the current ID token will expire within this `quarkus.oidc.token.auto-refresh-interval` then it will be refreshed and the new session cookie will be created. This property should be set to a value which is less than the ID token lifespan; the closer it is to this lifespan value the more often the ID token will be refreshed.
+
+You can have this process further optimized by having a simple JavaScript function periodically emulating the user activity by pinging your Quarkus endpoint thus minimizing the window during which the user may have to be re-authenticated.
+
+Note this user session can not be extended forever - the returning user with the expired ID token will have to re-authenticate at the OIDC provider endpoint once the refresh token has expired.
 
 == Listening to important authentication events
 

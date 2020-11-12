@@ -7,6 +7,11 @@
       <password>${env.SERVER_PASSWORD}</password>
     </server>
     <!-- END OF Quarkus-->
+  <server>
+    <id>github</id>
+    <username>${env.MVN_REPO_USER}</username>
+    <password>${env.MVN_REPO_PASS}</password>
+  </server>
   </servers>
   <profiles>
     <profile>

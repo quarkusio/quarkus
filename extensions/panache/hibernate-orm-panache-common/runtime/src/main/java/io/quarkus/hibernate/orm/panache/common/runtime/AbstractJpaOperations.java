@@ -16,6 +16,7 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
@@ -48,13 +49,22 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public static EntityManager getEntityManager(String persistentUnitName) {
+        InstanceHandle<EntityManager> entityManagerInstanceHandle;
+
         if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
-            return Arc.container().instance(EntityManager.class).get();
+            entityManagerInstanceHandle = Arc.container().instance(EntityManager.class);
+        } else {
+            entityManagerInstanceHandle = Arc.container().instance(EntityManager.class,
+                    new PersistenceUnit.PersistenceUnitLiteral(
+                            persistentUnitName));
         }
 
-        PersistenceUnit.PersistenceUnitLiteral persistenceUnitLiteral = new PersistenceUnit.PersistenceUnitLiteral(
-                persistentUnitName);
-        return Arc.container().instance(EntityManager.class, persistenceUnitLiteral).get();
+        if (!entityManagerInstanceHandle.isAvailable()) {
+            throw new IllegalStateException("Unable to find an EntityManager for persistence unit " + persistentUnitName
+                    + ". Your configuration is probably incorrect.");
+        }
+
+        return entityManagerInstanceHandle.get();
     }
 
     public static EntityManager getEntityManager() {

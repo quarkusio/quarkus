@@ -210,12 +210,12 @@ If you have a good reason to disable the authorization (for example, when testin
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
 @ApplicationScoped
 public class DisabledAuthController extends AuthorizationController {
-    @ConfigProperty(name = "disable.authorization")
+    @ConfigProperty(name = "disable.authorization", defaultValue = "false")
     boolean disableAuthorization;
 
     @Override
     public boolean isAuthorizationEnabled() {
-        return disableAuthorization;
+        return !disableAuthorization;
     }
 }
 ----

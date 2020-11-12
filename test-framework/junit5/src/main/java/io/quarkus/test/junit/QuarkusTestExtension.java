@@ -218,7 +218,6 @@ public class QuarkusTestExtension
                     }
                 }
             }
-
             runnerBuilder.setApplicationRoot(rootBuilder.build());
 
             CuratedApplication curatedApplication = runnerBuilder

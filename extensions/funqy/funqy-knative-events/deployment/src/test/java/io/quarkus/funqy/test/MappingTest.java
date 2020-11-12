@@ -28,12 +28,14 @@ public class MappingTest {
                 .header("ce-id", UUID.randomUUID().toString())
                 .header("ce-type", "tolower")
                 .header("ce-source", "test")
+                .header("ce-specversion", "1.0")
                 .body("\"HELLO\"")
                 .post("/")
                 .then().statusCode(200)
                 .header("ce-id", notNullValue())
                 .header("ce-type", "lowercase")
                 .header("ce-source", "to.lowercase")
+                .header("ce-specversion", "1.0")
                 .body(equalTo("\"hello\""));
     }
 
@@ -43,12 +45,14 @@ public class MappingTest {
                 .header("ce-id", UUID.randomUUID().toString())
                 .header("ce-type", "echo")
                 .header("ce-source", "test")
+                .header("ce-specversion", "1.0")
                 .body("\"HELLO\"")
                 .post("/")
                 .then().statusCode(200)
                 .header("ce-id", notNullValue())
                 .header("ce-type", "echo.output")
                 .header("ce-source", "echo")
+                .header("ce-specversion", "1.0")
                 .body(equalTo("\"HELLO\""));
     }
 
@@ -61,11 +65,13 @@ public class MappingTest {
                 .header("ce-id", UUID.randomUUID().toString())
                 .header("ce-type", "noop")
                 .header("ce-source", "test")
+                .header("ce-specversion", "1.0")
                 .post("/")
                 .then().statusCode(204)
                 .header("ce-id", nullValue())
                 .header("ce-type", nullValue())
-                .header("ce-source", nullValue());
+                .header("ce-source", nullValue())
+                .header("ce-specversion", nullValue());
     }
 
     @Test
@@ -77,11 +83,13 @@ public class MappingTest {
                 .header("ce-id", UUID.randomUUID().toString())
                 .header("ce-type", "noop")
                 .header("ce-source", "test")
+                .header("ce-specversion", "1.0")
                 .get("/")
                 .then().statusCode(204)
                 .header("ce-id", nullValue())
                 .header("ce-type", nullValue())
-                .header("ce-source", nullValue());
+                .header("ce-source", nullValue())
+                .header("ce-specversion", nullValue());
     }
 
     @Test
@@ -94,7 +102,8 @@ public class MappingTest {
                 .then().statusCode(204)
                 .header("ce-id", nullValue())
                 .header("ce-type", nullValue())
-                .header("ce-source", nullValue());
+                .header("ce-source", nullValue())
+                .header("ce-specversion", nullValue());
     }
 
     @Test
@@ -103,12 +112,14 @@ public class MappingTest {
                 .header("ce-id", UUID.randomUUID().toString())
                 .header("ce-type", "doubleIt")
                 .header("ce-source", "test")
+                .header("ce-specversion", "1.0")
                 .body("2")
                 .post("/")
                 .then().statusCode(200)
                 .header("ce-id", notNullValue())
                 .header("ce-type", "doubleIt.output")
                 .header("ce-source", "doubleIt")
+                .header("ce-specversion", "1.0")
                 .body(equalTo("4"));
     }
 
@@ -121,6 +132,7 @@ public class MappingTest {
                 .header("ce-id", nullValue())
                 .header("ce-type", nullValue())
                 .header("ce-source", nullValue())
+                .header("ce-specversion", nullValue())
                 .body(equalTo("\"hello\""));
     }
 
@@ -130,6 +142,7 @@ public class MappingTest {
                 .header("ce-id", UUID.randomUUID().toString())
                 .header("ce-type", "foo")
                 .header("ce-source", "test")
+                .header("ce-specversion", "1.0")
                 .body("2")
                 .post("/")
                 .then().statusCode(404);

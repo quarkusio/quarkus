@@ -37,6 +37,8 @@ public abstract class GreetTestBase {
         RestAssured.given().contentType("application/json")
                 .body("{\"name\": \"Bill\"}")
                 .header("ce-id", "1234")
+                .header("ce-source", "/unitTest")
+                .header("ce-type", "unitTestType")
                 .header("ce-specversion", "1.0")
                 .post("/")
                 .then().statusCode(200)
@@ -54,6 +56,8 @@ public abstract class GreetTestBase {
                 .body("null")
                 .header("ce-id", "1234")
                 .header("ce-specversion", "1.0")
+                .header("ce-source", "/unitTest")
+                .header("ce-type", "unitTestType")
                 .post("/")
                 .then().statusCode(500);
     }

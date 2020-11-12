@@ -4,10 +4,11 @@ import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBind
 import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder.RESPONSE_TYPE;
 
 import java.io.InputStream;
-import java.util.HashMap;
+import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.enterprise.inject.Instance;
@@ -16,15 +17,22 @@ import javax.enterprise.inject.spi.CDI;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.SpecVersion;
+import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.core.impl.CloudEventUtils;
+import io.cloudevents.core.message.MessageReader;
+import io.cloudevents.core.message.MessageWriter;
+import io.cloudevents.http.HttpMessageFactory;
+import io.cloudevents.jackson.PojoCloudEventData;
+import io.cloudevents.jackson.PojoCloudEventDataMapper;
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.funqy.knative.events.CloudEvent;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
@@ -37,7 +45,9 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
@@ -74,18 +84,57 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
     }
 
+    private static Uni<MessageReader> messageReader(RoutingContext routingContext) {
+        return Uni.createFrom().emitter(uniEmitter -> {
+            try {
+                final HttpServerRequest request = routingContext.request();
+                final Consumer<BiConsumer<String, String>> forEachHeader = processHeader -> {
+                    request.headers().forEach(kvp -> processHeader.accept(kvp.getKey(), kvp.getValue()));
+                };
+
+                request.bodyHandler(body -> {
+                    uniEmitter.complete(HttpMessageFactory.createReader(forEachHeader, body.getBytes()));
+                });
+            } catch (Throwable t) {
+                uniEmitter.fail(t);
+            }
+        });
+    }
+
+    private static MessageWriter messageWriter(RoutingContext routingContext) {
+        final HttpServerResponse response = routingContext.response();
+        final BiConsumer<String, String> putHeader = (k, v) -> response.putHeader(k, v);
+
+        return HttpMessageFactory.createWriter(putHeader, body -> {
+            if (body != null && body.length > 0) {
+                response.end(Buffer.buffer(body));
+            } else {
+                response.setStatusCode(204);
+                response.end();
+            }
+        });
+    }
+
     @Override
     public void handle(RoutingContext routingContext) {
-        String mediaType = routingContext.request().getHeader("Content-Type");
-        if (mediaType == null || mediaType.startsWith("application/json") || mediaType.trim().equals("")) {
-            if (routingContext.request().getHeader("ce-id") != null) {
-                binaryContentMode(routingContext);
-            } else {
-                regularFunqyHttp(routingContext);
+        final HttpServerRequest request = routingContext.request();
+        final String mediaType = request.getHeader("Content-Type");
+        boolean binaryCE = request.headers().contains("Ce-Id");
+        boolean structuredCE = false;
+        if (mediaType != null) {
+            structuredCE = mediaType.startsWith("application/cloudevents+");
+        }
+
+        if (structuredCE || binaryCE) {
+            try {
+                processCloudEvent(routingContext);
+            } catch (Throwable t) {
+                routingContext.fail(t);
             }
-        } else if (mediaType.startsWith("application/cloudevents+json")) {
-            structuredMode(routingContext);
-        } else if (mediaType.startsWith("application/cloudevents-batch+json")) {
+        } else if ((mediaType != null && mediaType.startsWith("application/json") && request.method() == HttpMethod.POST) ||
+                request.method() == HttpMethod.GET) {
+            regularFunqyHttp(routingContext);
+        } else if (mediaType != null && mediaType.startsWith("application/cloudevents-batch+json")) {
             routingContext.fail(406);
             log.error("Batch mode not supported yet");
             return;
@@ -95,10 +144,83 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             log.error("Illegal media type:" + mediaType);
             return;
         }
+
     }
 
-    private static final ResponseProcessing NOOP = () -> {
-    };
+    private void processCloudEvent(RoutingContext routingContext) {
+        final HttpServerRequest request = routingContext.request();
+        final String mediaType = request.getHeader("Content-Type");
+        final boolean binaryCE = request.headers().contains("Ce-Id");
+        final Consumer<Throwable> fail = t -> routingContext.fail(t);
+
+        messageReader(routingContext)
+                .emitOn(executor)
+                .subscribe()
+                .with(messageReader -> {
+                    try {
+                        CloudEvent inputCE = messageReader.toEvent();
+
+                        final String ceType = inputCE.getType();
+                        final FunctionInvoker invoker;
+                        if (defaultInvoker != null) {
+                            invoker = defaultInvoker;
+                        } else {
+                            invoker = typeTriggers.get(ceType);
+                            if (invoker == null) {
+                                routingContext.fail(404);
+                                log.error("Could CloudEvent type: " + ceType + " to a function");
+                                return;
+                            }
+                        }
+
+                        Object inputData = null;
+                        if (invoker.hasInput()) {
+                            PojoCloudEventDataMapper<?> ceDataMapper = PojoCloudEventDataMapper.from(mapper,
+                                    invoker.getInputType());
+                            PojoCloudEventData<?> cloudEventData = CloudEventUtils.mapData(inputCE, ceDataMapper);
+                            inputData = cloudEventData.getValue();
+                        }
+
+                        Consumer<Object> sendData = outputData -> {
+                            try {
+
+                                if (!invoker.hasOutput()) {
+                                    routingContext.response().setStatusCode(204);
+                                    routingContext.response().end();
+                                    return;
+                                }
+
+                                String type = (String) invoker.getBindingContext().get(RESPONSE_TYPE);
+                                String source = (String) invoker.getBindingContext().get(RESPONSE_SOURCE);
+                                CloudEventBuilder builder = inputCE.getSpecVersion() == SpecVersion.V03
+                                        ? CloudEventBuilder.v03()
+                                        : CloudEventBuilder.v1();
+                                final CloudEvent outputCE = builder
+                                        .withId(getResponseId())
+                                        .withSource(URI.create(source))
+                                        .withType(type)
+                                        .withData("application/json", mapper.writeValueAsBytes(outputData))
+                                        .build();
+                                MessageWriter mw = messageWriter(routingContext);
+                                if (binaryCE) {
+                                    mw.writeBinary(outputCE);
+                                } else {
+                                    mw.writeStructured(outputCE, mediaType);
+                                }
+                            } catch (Throwable t) {
+                                routingContext.fail(t);
+                            }
+                        };
+
+                        dispatch(inputCE, routingContext, invoker, inputData)
+                                .getOutput()
+                                .subscribe()
+                                .with(sendData, fail);
+                    } catch (Throwable t) {
+                        routingContext.fail(t);
+                    }
+                }, fail);
+    }
 
     private void regularFunqyHttp(RoutingContext routingContext) {
         String path = routingContext.request().path();
@@ -120,31 +242,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         } else {
             invoker = defaultInvoker;
         }
-        processHttpRequest(null, routingContext, NOOP, invoker);
-    }
-
-    private void binaryContentMode(RoutingContext routingContext) {
-        String ceType = routingContext.request().getHeader("ce-type");
-        FunctionInvoker invoker = defaultInvoker;
-        if (invoker == null) {
-            // map by type trigger
-            invoker = typeTriggers.get(ceType);
-            if (invoker == null) {
-                routingContext.fail(404);
-                log.error("Could not map ce-type header: " + ceType + " to a function");
-                return;
-            }
-
-        }
-        final FunctionInvoker targetInvoker = invoker;
-        processHttpRequest(new HeaderCloudEventImpl(routingContext.request()), routingContext, () -> {
-            routingContext.response().putHeader("ce-id", getResponseId());
-            routingContext.response().putHeader("ce-specversion", "1.0");
-            routingContext.response().putHeader("ce-source",
-                    (String) targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
-            routingContext.response().putHeader("ce-type",
-                    (String) targetInvoker.getBindingContext().get(RESPONSE_TYPE));
-        }, invoker);
+        processHttpRequest(null, routingContext, invoker);
     }
 
     @FunctionalInterface
@@ -152,8 +250,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         void handle();
     }
 
-    private void processHttpRequest(CloudEvent event, RoutingContext routingContext, ResponseProcessing handler,
-            FunctionInvoker invoker) {
+    private void processHttpRequest(CloudEvent event, RoutingContext routingContext, FunctionInvoker invoker) {
         if (routingContext.request().method() == HttpMethod.GET) {
             Object input = null;
             if (invoker.hasInput()) {
@@ -167,7 +264,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 }
             }
             try {
-                execute(event, routingContext, handler, invoker, input);
+                execute(event, routingContext, invoker, input);
             } catch (Throwable t) {
                 log.error(t);
                 routingContext.fail(500, t);
@@ -187,7 +284,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             return;
                         }
                     }
-                    execute(event, routingContext, handler, invoker, input);
+                    execute(event, routingContext, invoker, input);
                 } catch (Throwable t) {
                     log.error(t);
                     routingContext.fail(500, t);
@@ -200,7 +297,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
     }
 
-    private void execute(CloudEvent event, RoutingContext routingContext, ResponseProcessing handler, FunctionInvoker invoker,
+    private void execute(CloudEvent event, RoutingContext routingContext,
+            FunctionInvoker invoker,
             Object finalInput) {
         executor.execute(() -> {
             try {
@@ -212,7 +310,6 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             if (invoker.hasOutput()) {
                                 try {
                                     httpResponse.setStatusCode(200);
-                                    handler.handle();
                                     ObjectWriter writer = (ObjectWriter) invoker.getBindingContext()
                                             .get(ObjectWriter.class.getName());
                                     httpResponse.putHeader("Content-Type", "application/json");
@@ -237,115 +334,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         });
     }
 
-    private void structuredMode(RoutingContext routingContext) {
-        if (routingContext.request().method() != HttpMethod.POST) {
-            routingContext.fail(405);
-            log.error("Must be POST method");
-            return;
-        }
-        routingContext.request().bodyHandler(buff -> {
-            try {
-                ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
-                Object input = null;
-                JsonNode event;
-                try {
-                    event = mapper.reader().readTree((InputStream) in);
-                } catch (JsonProcessingException e) {
-                    log.error("Failed to unmarshal input", e);
-                    routingContext.fail(400);
-                    return;
-                }
-                FunctionInvoker invoker = defaultInvoker;
-                if (invoker == null) {
-                    String eventType = event.get("type").asText();
-                    invoker = typeTriggers.get(eventType);
-                    if (invoker == null) {
-                        routingContext.fail(404);
-                        log.error("Could not map json cloud event to function: " + eventType);
-                        return;
-                    }
-
-                }
-                final FunctionInvoker targetInvoker = invoker;
-                if (invoker.hasInput()) {
-
-                    JsonNode dct = event.get("datacontenttype");
-                    if (dct == null) {
-                        routingContext.fail(400);
-                        return;
-                    }
-                    String type = dct.asText();
-                    if (type != null) {
-                        if (!type.equals("application/json")) {
-                            routingContext.fail(406);
-                            log.error("Illegal datacontenttype");
-                            return;
-                        }
-                        JsonNode data = event.get("data");
-                        if (data != null) {
-                            ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
-                            try {
-                                input = reader.readValue(data);
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to unmarshal input", e);
-                                routingContext.fail(400);
-                                return;
-                            }
-                        }
-                    }
-                }
-                Object finalInput = input;
-
-                executor.execute(() -> {
-                    try {
-                        final HttpServerResponse httpResponse = routingContext.response();
-                        final FunqyServerResponse response = dispatch(new JsonCloudEventImpl(event), routingContext,
-                                targetInvoker, finalInput);
-
-                        response.getOutput().emitOn(executor).subscribe().with(
-                                obj -> {
-                                    if (targetInvoker.hasOutput()) {
-                                        httpResponse.setStatusCode(200);
-                                        final Map<String, Object> responseEvent = new HashMap<>();
-
-                                        responseEvent.put("id", getResponseId());
-                                        responseEvent.put("specversion", "1.0");
-                                        responseEvent.put("source",
-                                                targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
-                                        responseEvent.put("type",
-                                                targetInvoker.getBindingContext().get(RESPONSE_TYPE));
-                                        responseEvent.put("datacontenttype", "application/json");
-                                        responseEvent.put("data", obj);
-                                        try {
-                                            httpResponse.end(mapper.writer().writeValueAsString(responseEvent));
-                                        } catch (JsonProcessingException e) {
-                                            log.error("Failed to marshal", e);
-                                            routingContext.fail(400);
-                                        }
-                                    } else {
-                                        httpResponse.setStatusCode(204);
-                                        httpResponse.end();
-                                    }
-                                },
-                                t -> routingContext.fail(t));
-
-                    } catch (Throwable t) {
-                        log.error(t);
-                        routingContext.fail(500, t);
-                    }
-                });
-            } catch (Throwable t) {
-                log.error(t);
-                routingContext.fail(500, t);
-            }
-        });
-    }
-
     private String getResponseId() {
         return UUID.randomUUID().toString();
     }
 
-    private FunqyServerResponse dispatch(CloudEvent event, RoutingContext routingContext, FunctionInvoker invoker,
+    private FunqyServerResponse dispatch(CloudEvent event, RoutingContext routingContext,
+            FunctionInvoker invoker,
             Object input) {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();

@@ -2,23 +2,22 @@ package io.quarkus.funqy.test;
 
 import io.quarkus.funqy.Context;
 import io.quarkus.funqy.Funq;
-import io.quarkus.funqy.knative.events.CloudEvent;
 
 public class ContextFunction {
 
     @Funq
-    public void context(String body, @Context CloudEvent event) {
+    public void context(String body, @Context io.cloudevents.CloudEvent event) {
         if (event == null)
             throw new RuntimeException();
-        if (!event.specVersion().equals("1.0"))
+        if (!event.getSpecVersion().toString().equals("1.0"))
             throw new RuntimeException();
-        if (!event.id().equals("1234"))
+        if (!event.getId().equals("1234"))
             throw new RuntimeException();
-        if (!event.subject().equals("bb"))
+        if (!event.getSubject().equals("bb"))
             throw new RuntimeException();
-        if (!event.source().equals("test"))
+        if (!event.getSource().toString().equals("test"))
             throw new RuntimeException();
-        if (event.time() == null)
+        if (event.getTime() == null)
             throw new RuntimeException();
     }
 }

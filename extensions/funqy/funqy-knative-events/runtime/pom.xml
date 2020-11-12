@@ -14,6 +14,10 @@
     <name>Quarkus - Funqy Knative Events - Runtime</name>
     <description>Knative Events Binding for Quarkus Funqy framework</description>
 
+    <properties>
+        <ce-sdk-version>2.0.0-SNAPSHOT</ce-sdk-version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -26,6 +30,26 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.cloudevents</groupId>
+            <artifactId>cloudevents-json-jackson</artifactId>
+            <version>${ce-sdk-version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.cloudevents</groupId>
+            <artifactId>cloudevents-http-basic</artifactId>
+            <version>${ce-sdk-version}</version>
         </dependency>
     </dependencies>
 

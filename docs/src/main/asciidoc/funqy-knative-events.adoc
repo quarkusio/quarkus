@@ -163,6 +163,7 @@ public class SimpleFunctionChain {
 There are two things to notice about this function.  One, it has no output.  Your functions are not
 required to return output.  Second, there is an additional `event` parameter to the function.
 
+// TODO update info below
 If you want to know additional information about the incoming Cloud Event, you can inject the
 `CloudEvent` interface using the Funqy `@Context` annotation.  The `CloudEvent` interface exposes information
 about the triggering event.

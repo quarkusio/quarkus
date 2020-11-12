@@ -80,7 +80,7 @@ class ReactiveBookEntityResource {
 
     @GET
     @Path("/{id}")
-    fun getBook(@PathParam("id") id: String?): Uni<ReactiveBookEntity> = ReactiveBookEntity.findById(ObjectId(id))
+    fun getBook(@PathParam("id") id: String?): Uni<ReactiveBookEntity?> = ReactiveBookEntity.findById(ObjectId(id))
 
     @GET
     @Path("/search/{author}")

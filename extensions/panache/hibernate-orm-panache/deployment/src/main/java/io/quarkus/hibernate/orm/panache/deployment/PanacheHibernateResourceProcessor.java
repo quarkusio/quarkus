@@ -47,6 +47,8 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
+import io.quarkus.panache.common.deployment.PanacheJpaEntityEnhancer;
+import io.quarkus.panache.common.deployment.PanacheJpaRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 
@@ -124,7 +126,8 @@ public final class PanacheHibernateResourceProcessor {
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
 
-        PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
+        PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex(),
+                JavaJpaTypeBundle.BUNDLE);
         Set<String> panacheEntities = new HashSet<>();
         Set<String> daoClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
@@ -150,7 +153,8 @@ public final class PanacheHibernateResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
-        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers);
+        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers,
+                JavaJpaTypeBundle.BUNDLE);
         Set<String> modelClasses = new HashSet<>();
         Set<String> modelClassNamesInternal = new HashSet<>();
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {

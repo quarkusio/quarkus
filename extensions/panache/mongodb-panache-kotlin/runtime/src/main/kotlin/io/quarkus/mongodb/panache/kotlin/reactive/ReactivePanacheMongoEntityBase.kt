@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin.reactive
 
-import io.quarkus.mongodb.panache.kotlin.reactive.runtime.KotlinReactiveMongoOperations
+import io.quarkus.mongodb.panache.kotlin.reactive.runtime.KotlinReactiveMongoOperations.Companion.INSTANCE
 import io.smallrye.mutiny.Uni
 
 /**
@@ -13,18 +13,6 @@ import io.smallrye.mutiny.Uni
  */
 abstract class ReactivePanacheMongoEntityBase {
     /**
-     * Defines internal implementation details for use by quarkus.  Use of these members is highly discouraged as the
-     * implementation may change without warning.
-     */
-    companion object {
-        /**
-         * Provides the default implementations for quarkus to wire up.  Should not be used by third party developers.
-         */
-        @JvmStatic
-        val operations = KotlinReactiveMongoOperations()
-    }
-
-    /**
      * Persist this entity in the database.
      * This will set it's ID field if not already set.
      *
@@ -32,7 +20,7 @@ abstract class ReactivePanacheMongoEntityBase {
      * @see .persist
      * @see .persist
      */
-    fun persist(): Uni<Void> = operations.persist(this)
+    fun persist(): Uni<Void> = INSTANCE.persist(this)
 
     /**
      * Update this entity in the database.
@@ -41,7 +29,7 @@ abstract class ReactivePanacheMongoEntityBase {
      * @see .update
      * @see .update
      */
-    fun update(): Uni<Void> = operations.update(this)
+    fun update(): Uni<Void> = INSTANCE.update(this)
 
     /**
      * Persist this entity in the database or update it if it already exist.
@@ -50,7 +38,7 @@ abstract class ReactivePanacheMongoEntityBase {
      * @see .persistOrUpdate
      * @see .persistOrUpdate
      */
-    fun persistOrUpdate(): Uni<Void> = operations.persistOrUpdate(this)
+    fun persistOrUpdate(): Uni<Void> = INSTANCE.persistOrUpdate(this)
 
     /**
      * Delete this entity from the database, if it is already persisted.
@@ -60,5 +48,5 @@ abstract class ReactivePanacheMongoEntityBase {
      * @see .delete
      * @see .deleteAll
      */
-    fun delete(): Uni<Void> = operations.delete(this)
+    fun delete(): Uni<Void> = INSTANCE.delete(this)
 }

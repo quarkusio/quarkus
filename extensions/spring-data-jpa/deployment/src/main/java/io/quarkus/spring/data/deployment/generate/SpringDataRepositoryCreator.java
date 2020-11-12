@@ -27,6 +27,7 @@ import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 
@@ -40,15 +41,17 @@ public class SpringDataRepositoryCreator {
     private final CustomQueryMethodsAdder customQueryMethodsAdder;
 
     public SpringDataRepositoryCreator(ClassOutput classOutput, ClassOutput otherClassOutput, IndexView index,
-            Consumer<String> fragmentImplClassResolvedCallback, Consumer<String> customClassCreatedCallback) {
+            Consumer<String> fragmentImplClassResolvedCallback,
+            Consumer<String> customClassCreatedCallback, TypeBundle typeBundle) {
         this.classOutput = classOutput;
         this.index = index;
         this.fragmentMethodsAdder = new FragmentMethodsAdder(fragmentImplClassResolvedCallback, index);
-        this.stockMethodsAdder = new StockMethodsAdder(index);
-        this.derivedMethodsAdder = new DerivedMethodsAdder(index);
+        this.stockMethodsAdder = new StockMethodsAdder(index, typeBundle);
+        this.derivedMethodsAdder = new DerivedMethodsAdder(index, typeBundle);
 
         // custom queries may generate non-bean classes
-        this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput, customClassCreatedCallback);
+        this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput, customClassCreatedCallback,
+                typeBundle);
     }
 
     public void implementCrudRepository(ClassInfo repositoryToImplement, IndexView indexView) {

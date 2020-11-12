@@ -31,10 +31,10 @@ public class MongodbPanacheMockingTest {
 
         Assertions.assertEquals(0, PersonEntity.count());
 
-        Mockito.when(PersonEntity.count()).thenReturn(23l);
+        Mockito.when(PersonEntity.count()).thenReturn(23L);
         Assertions.assertEquals(23, PersonEntity.count());
 
-        Mockito.when(PersonEntity.count()).thenReturn(42l);
+        Mockito.when(PersonEntity.count()).thenReturn(42L);
         Assertions.assertEquals(42, PersonEntity.count());
 
         Mockito.when(PersonEntity.count()).thenCallRealMethod();
@@ -44,13 +44,13 @@ public class MongodbPanacheMockingTest {
 
         PersonEntity p = new PersonEntity();
 
-        Mockito.when(PersonEntity.findById(12l)).thenReturn(p);
-        Assertions.assertSame(p, PersonEntity.findById(12l));
-        Assertions.assertNull(PersonEntity.findById(42l));
+        Mockito.when(PersonEntity.findById(12L)).thenReturn(p);
+        Assertions.assertSame(p, PersonEntity.findById(12L));
+        Assertions.assertNull(PersonEntity.findById(42L));
 
-        Mockito.when(PersonEntity.findById(12l)).thenThrow(new WebApplicationException());
+        Mockito.when(PersonEntity.findById(12L)).thenThrow(new WebApplicationException());
         try {
-            PersonEntity.findById(12l);
+            PersonEntity.findById(12L);
             Assertions.fail();
         } catch (WebApplicationException x) {
         }
@@ -76,10 +76,10 @@ public class MongodbPanacheMockingTest {
     public void testPanacheRepositoryMocking() throws Throwable {
         Assertions.assertEquals(0, mockablePersonRepository.count());
 
-        Mockito.when(mockablePersonRepository.count()).thenReturn(23l);
+        Mockito.when(mockablePersonRepository.count()).thenReturn(23L);
         Assertions.assertEquals(23, mockablePersonRepository.count());
 
-        Mockito.when(mockablePersonRepository.count()).thenReturn(42l);
+        Mockito.when(mockablePersonRepository.count()).thenReturn(42L);
         Assertions.assertEquals(42, mockablePersonRepository.count());
 
         Mockito.when(mockablePersonRepository.count()).thenCallRealMethod();
@@ -88,13 +88,13 @@ public class MongodbPanacheMockingTest {
         Mockito.verify(mockablePersonRepository, Mockito.times(4)).count();
 
         PersonEntity p = new PersonEntity();
-        Mockito.when(mockablePersonRepository.findById(12l)).thenReturn(p);
-        Assertions.assertSame(p, mockablePersonRepository.findById(12l));
-        Assertions.assertNull(mockablePersonRepository.findById(42l));
+        Mockito.when(mockablePersonRepository.findById(12L)).thenReturn(p);
+        Assertions.assertSame(p, mockablePersonRepository.findById(12L));
+        Assertions.assertNull(mockablePersonRepository.findById(42L));
 
-        Mockito.when(mockablePersonRepository.findById(12l)).thenThrow(new WebApplicationException());
+        Mockito.when(mockablePersonRepository.findById(12L)).thenThrow(new WebApplicationException());
         try {
-            mockablePersonRepository.findById(12l);
+            mockablePersonRepository.findById(12L);
             Assertions.fail();
         } catch (WebApplicationException x) {
         }
@@ -113,19 +113,19 @@ public class MongodbPanacheMockingTest {
     @Test
     public void testPanacheRepositoryBridges() {
         // normal method call
-        Assertions.assertNull(realPersonRepository.findById(0l));
+        Assertions.assertNull(realPersonRepository.findById(0L));
         // bridge call
-        Assertions.assertNull(((PanacheMongoRepositoryBase) realPersonRepository).findById(0l));
+        Assertions.assertNull(((PanacheMongoRepositoryBase) realPersonRepository).findById(0L));
 
         // normal method call
-        Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIdOptional(0l));
+        Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIdOptional(0L));
         // bridge call
-        Assertions.assertEquals(Optional.empty(), ((PanacheMongoRepositoryBase) realPersonRepository).findByIdOptional(0l));
+        Assertions.assertEquals(Optional.empty(), ((PanacheMongoRepositoryBase) realPersonRepository).findByIdOptional(0L));
 
         // normal method call
-        Assertions.assertEquals(false, realPersonRepository.deleteById(0l));
+        Assertions.assertEquals(false, realPersonRepository.deleteById(0L));
         // bridge call
-        Assertions.assertEquals(false, ((PanacheMongoRepositoryBase) realPersonRepository).deleteById(0l));
+        Assertions.assertEquals(false, ((PanacheMongoRepositoryBase) realPersonRepository).deleteById(0L));
     }
 
 }

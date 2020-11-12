@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 
+import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinJpaTypeBundle.BUNDLE;
+
 import java.lang.reflect.Modifier;
 import java.util.List;
 
@@ -17,6 +19,7 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
 
 public class KotlinPanacheCompanionEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
 
@@ -29,8 +32,9 @@ public class KotlinPanacheCompanionEnhancer extends PanacheEntityEnhancer<Metamo
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new KotlinPanacheCompanionClassVisitor(outputClassVisitor,
-                indexView.getClassByName(DotName.createSimple(className)));
+        return new KotlinPanacheClassVisitor(outputClassVisitor,
+                indexView.getClassByName(DotName.createSimple(className)), indexView, BUNDLE,
+                BUNDLE.entityCompanionBase(), methodCustomizers);
     }
 
     @Override

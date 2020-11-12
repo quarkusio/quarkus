@@ -1,12 +1,12 @@
 package io.quarkus.mongodb.panache.deployment;
 
 import static io.quarkus.mongodb.panache.deployment.BasePanacheMongoResourceProcessor.BSON_IGNORE;
+import static org.jboss.jandex.DotName.createSimple;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
@@ -18,6 +18,7 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.TypeBundle;
 
 public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
 
@@ -32,10 +33,8 @@ public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelI
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheMongoEntityClassVisitor(className, outputClassVisitor, modelInfo,
-                indexView.getClassByName(typeBundle.entityBase().dotName()),
-                indexView.getClassByName(DotName.createSimple(className)), methodCustomizers,
-                typeBundle);
+        return new PanacheMongoEntityClassVisitor(outputClassVisitor, modelInfo,
+                indexView.getClassByName(createSimple(className)), methodCustomizers, typeBundle, indexView);
     }
 
     @Override

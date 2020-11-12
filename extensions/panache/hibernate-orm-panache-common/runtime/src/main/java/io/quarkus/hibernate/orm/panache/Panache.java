@@ -5,7 +5,7 @@ import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.transaction.TransactionManager;
 
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.panache.common.Parameters;
 
 /**
@@ -17,11 +17,11 @@ public class Panache {
 
     /**
      * Returns the default {@link EntityManager}
-     * 
+     *
      * @return {@link EntityManager}
      */
     public static EntityManager getEntityManager() {
-        return JpaOperations.getEntityManager();
+        return AbstractJpaOperations.getEntityManager();
     }
 
     /**
@@ -30,49 +30,49 @@ public class Panache {
      * @return {@link EntityManager}
      */
     public static EntityManager getEntityManager(Class<?> clazz) {
-        return JpaOperations.getEntityManager(clazz);
+        return AbstractJpaOperations.getEntityManager(clazz);
     }
 
     /**
      * Returns the current {@link TransactionManager}
-     * 
+     *
      * @return the current {@link TransactionManager}
      */
     public static TransactionManager getTransactionManager() {
-        return JpaOperations.getTransactionManager();
+        return AbstractJpaOperations.getTransactionManager();
     }
 
     /**
      * Executes a database update operation and return the number of rows operated on.
-     * 
+     *
      * @param query a normal HQL query
      * @param params optional list of indexed parameters
      * @return the number of rows operated on.
      */
     public static int executeUpdate(String query, Object... params) {
-        return JpaOperations.executeUpdate(query, params);
+        return AbstractJpaOperations.executeUpdate(query, params);
     }
 
     /**
      * Executes a database update operation and return the number of rows operated on.
-     * 
+     *
      * @param query a normal HQL query
      * @param params {@link Map} of named parameters
      * @return the number of rows operated on.
      */
     public static int executeUpdate(String query, Map<String, Object> params) {
-        return JpaOperations.executeUpdate(query, params);
+        return AbstractJpaOperations.executeUpdate(query, params);
     }
 
     /**
      * Executes a database update operation and return the number of rows operated on.
-     * 
+     *
      * @param query a normal HQL query
      * @param params {@link Parameters} of named parameters
      * @return the number of rows operated on.
      */
     public static int executeUpdate(String query, Parameters params) {
-        return JpaOperations.executeUpdate(query, params.map());
+        return AbstractJpaOperations.executeUpdate(query, params.map());
     }
 
     /**
@@ -80,7 +80,7 @@ public class Panache {
      * committed: it will be rolled back at the end of this transaction lifecycle.
      */
     public static void setRollbackOnly() {
-        JpaOperations.setRollbackOnly();
+        AbstractJpaOperations.setRollbackOnly();
     }
 
 }

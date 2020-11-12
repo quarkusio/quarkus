@@ -18,8 +18,13 @@ open class AccessorEntity : GenericEntity<Int>() {
             setICalls++
             field = value
         }
-    @JvmField
-    var l: Long = 0
+    var l: Long
+        get() {
+            throw UnsupportedOperationException("just checking")
+        }
+        set(value) {
+            throw UnsupportedOperationException("just checking")
+        }
     var f = 0f
     var d = 0.0
     @javax.persistence.Transient
@@ -37,10 +42,6 @@ open class AccessorEntity : GenericEntity<Int>() {
     @Transient
     var setTransCalls = 0
 
-    fun getL(): Long = throw UnsupportedOperationException("just checking")
-    fun setL(value: Long) {
-        throw UnsupportedOperationException("just checking")
-    }
 
     fun method() { // touch some fields
         val b2 = b

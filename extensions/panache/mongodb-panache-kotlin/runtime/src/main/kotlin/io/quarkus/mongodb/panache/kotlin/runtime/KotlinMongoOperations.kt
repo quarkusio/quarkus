@@ -12,6 +12,14 @@ import java.util.stream.Stream
  * Defines kotlin specific implementations of methods needed by [MongoOperations].
  */
 class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() {
+    /**
+     * Defines internal implementation details for use by quarkus.  Use of these members is highly discouraged as the
+     * implementation may change without warning.
+     */
+    companion object {
+        @JvmField
+        val INSTANCE = KotlinMongoOperations()
+    }
 
     /**
      * Creates the query implementation

@@ -41,6 +41,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
+import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 
 public class SpringDataJPAProcessor {
@@ -266,7 +267,7 @@ public class SpringDataJPAProcessor {
                     // the generated classes that implement interfaces for holding custom query results need
                     // to be registered for reflection here since this is the only point where the generated class is known
                     reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));
-                }));
+                }), JavaJpaTypeBundle.BUNDLE);
 
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {
             repositoryCreator.implementCrudRepository(crudRepositoryToImplement, index);

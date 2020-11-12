@@ -858,17 +858,9 @@ class TestEndpoint {
         Assertions.assertEquals(2, entity.getBCalls)
         Assertions.assertEquals(2, entity.setICalls)
 
-        try {
-            entity.l
-            fail("This call should have invoked getL() which throws an exception")
-        } catch(_ : UnsupportedOperationException) {
-        }
+        Assertions.assertThrows(UnsupportedOperationException::class.java) { entity.l }
+        Assertions.assertThrows(UnsupportedOperationException::class.java) { entity.l = 42 }
 
-        try {
-            entity.l = 42
-            fail("This call should have invoked setL() which throws an exception")
-        } catch(_ : UnsupportedOperationException) {
-        }
         return "OK"
     }
 

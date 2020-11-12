@@ -4,17 +4,24 @@ import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate
 import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations
 import io.quarkus.mongodb.panache.reactive.runtime.ReactivePanacheUpdateImpl
-import io.quarkus.mongodb.panache.runtime.MongoOperations
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
 import org.bson.Document
-import java.util.stream.Stream
 
 /**
  * Defines kotlin specific implementations of methods needed by [ReactiveMongoOperations].
  */
 class KotlinReactiveMongoOperations : ReactiveMongoOperations<ReactivePanacheQuery<*>, ReactivePanacheUpdate>() {
+    /**
+     * Defines internal implementation details for use by quarkus.  Use of these members is highly discouraged as the
+     * implementation may change without warning.
+     */
+    companion object {
+        @JvmField
+        val INSTANCE = KotlinReactiveMongoOperations()
+    }
+
     /**
      * Creates the query implementation
      *

@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin
 
-import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations
+import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE
 
 /**
  * Represents an entity. If your Mongo entities extend this class they gain auto-generated accessors
@@ -11,17 +11,6 @@ import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations
  */
 @Suppress("unused")
 abstract class PanacheMongoEntityBase {
-    /**
-     * Defines internal implementation details for use by quarkus.  Use of these members is highly discouraged as the
-     * implementation may change without warning.
-     */
-    companion object {
-        /**
-         * Provides the default implementations for quarkus to wire up.  Should not be used by third party developers.
-         */
-        @JvmStatic
-        val operations = KotlinMongoOperations()
-    }
 
     /**
      * Persist this entity in the database.  This will set its ID field if not already set.
@@ -29,7 +18,7 @@ abstract class PanacheMongoEntityBase {
      * @see [persist]
      */
     fun persist() {
-        operations.persist(this)
+        INSTANCE.persist(this)
     }
 
     /**
@@ -38,7 +27,7 @@ abstract class PanacheMongoEntityBase {
      * @see [update]
      */
     fun update() {
-        operations.update(this)
+        INSTANCE.update(this)
     }
 
     /**
@@ -47,7 +36,7 @@ abstract class PanacheMongoEntityBase {
      * @see [persistOrUpdate]
      */
     fun persistOrUpdate() {
-        operations.persistOrUpdate(this)
+        INSTANCE.persistOrUpdate(this)
     }
 
     /**
@@ -57,6 +46,6 @@ abstract class PanacheMongoEntityBase {
      * @see [PanacheMongoCompanionBase.deleteAll]
      */
     fun delete() {
-        operations.delete(this)
+        INSTANCE.delete(this)
     }
 }

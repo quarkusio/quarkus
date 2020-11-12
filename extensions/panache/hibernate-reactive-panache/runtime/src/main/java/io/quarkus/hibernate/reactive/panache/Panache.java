@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
@@ -40,34 +41,34 @@ public class Panache {
 
     /**
      * Executes a database update operation and return the number of rows operated on.
-     * 
+     *
      * @param query a normal HQL query
      * @param params optional list of indexed parameters
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Object... params) {
-        return JpaOperations.executeUpdate(query, params);
+        return AbstractJpaOperations.executeUpdate(query, params);
     }
 
     /**
      * Executes a database update operation and return the number of rows operated on.
-     * 
+     *
      * @param query a normal HQL query
      * @param params {@link Map} of named parameters
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
-        return JpaOperations.executeUpdate(query, params);
+        return AbstractJpaOperations.executeUpdate(query, params);
     }
 
     /**
      * Executes a database update operation and return the number of rows operated on.
-     * 
+     *
      * @param query a normal HQL query
      * @param params {@link Parameters} of named parameters
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
-        return JpaOperations.executeUpdate(query, params.map());
+        return AbstractJpaOperations.executeUpdate(query, params.map());
     }
 }

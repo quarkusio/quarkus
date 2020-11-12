@@ -12,6 +12,8 @@ import io.smallrye.mutiny.Uni;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class JavaReactiveMongoOperations extends ReactiveMongoOperations<ReactivePanacheQuery<?>, ReactivePanacheUpdate> {
+    public static final JavaReactiveMongoOperations INSTANCE = new JavaReactiveMongoOperations();
+
     @Override
     protected ReactivePanacheQuery<?> createQuery(ReactiveMongoCollection collection, Document query, Document sortDoc) {
         return new ReactivePanacheQueryImpl(collection, query, sortDoc);

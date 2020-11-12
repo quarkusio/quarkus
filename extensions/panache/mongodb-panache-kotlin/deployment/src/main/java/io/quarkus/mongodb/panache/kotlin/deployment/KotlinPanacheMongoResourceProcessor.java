@@ -19,11 +19,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.mongodb.panache.deployment.BasePanacheMongoResourceProcessor;
 import io.quarkus.mongodb.panache.deployment.PropertyMappingClassBuildStep;
-import io.quarkus.mongodb.panache.deployment.TypeBundle;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
+import io.quarkus.panache.common.deployment.TypeBundle;
 
 public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourceProcessor {
     public static final KotlinImperativeTypeBundle IMPERATIVE_TYPE_BUNDLE = new KotlinImperativeTypeBundle();
@@ -100,12 +100,14 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
     }
 
     @Override
-    public PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index) {
+    public PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index,
+            List<PanacheMethodCustomizer> methodCustomizers) {
         return new KotlinPanacheMongoRepositoryEnhancer(index.getIndex(), getImperativeTypeBundle());
     }
 
     @Override
-    public PanacheRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index) {
+    public PanacheRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index,
+            List<PanacheMethodCustomizer> methodCustomizers) {
         return new KotlinPanacheMongoRepositoryEnhancer(index.getIndex(), getReactiveTypeBundle());
     }
 

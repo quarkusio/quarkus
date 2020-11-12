@@ -30,7 +30,7 @@ import javax.persistence.EnumType
     Filter(name = "Person.hasName")
 )
 open class Person : PanacheEntity() {
-    companion object : PanacheCompanion<Person, Long> {
+    companion object : PanacheCompanion<Person> {
         fun findOrdered(): List<Address>  = AddressDao.shouldBeOverridden()
     }
 

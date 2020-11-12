@@ -11,6 +11,11 @@ import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.mongodb.panache.PanacheUpdate;
 
 public class JavaMongoOperations extends MongoOperations<PanacheQuery<?>, PanacheUpdate> {
+    /**
+     * Provides the default implementations for quarkus to wire up. Should not be used by third party developers.
+     */
+    public static final JavaMongoOperations INSTANCE = new JavaMongoOperations();
+
     @Override
     protected PanacheQuery<?> createQuery(MongoCollection collection, Document query, Document sortDoc) {
         return new PanacheQueryImpl(collection, query, sortDoc);

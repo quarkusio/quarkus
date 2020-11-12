@@ -61,7 +61,7 @@ public class Person extends PanacheEntity {
 
     // For https://github.com/quarkusio/quarkus/issues/9635
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Object... params) {
-        return (PanacheQuery<T>) JpaOperations.find(Person.class, query, params);
+        return (PanacheQuery<T>) JpaOperations.INSTANCE.find(Person.class, query, params);
     }
 
     // For JAXB: both getter and setter are required

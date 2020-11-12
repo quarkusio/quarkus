@@ -10,7 +10,6 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 
@@ -60,8 +59,8 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
-        ResultHandle entityManager = creator.invokeStaticMethod(
-                ofMethod(JpaOperations.class, "getEntityManager", EntityManager.class));
+        ResultHandle entityManager = creator.invokeVirtualMethod(
+                ofMethod(entityClassName, "getEntityManager", EntityManager.class), entity);
         return creator.invokeInterfaceMethod(
                 ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);
     }

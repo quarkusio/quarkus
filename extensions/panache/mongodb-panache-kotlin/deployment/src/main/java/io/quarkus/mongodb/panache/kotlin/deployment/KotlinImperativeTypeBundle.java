@@ -1,8 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin.deployment;
 
 import io.quarkus.mongodb.panache.PanacheUpdate;
-import io.quarkus.mongodb.panache.deployment.ByteCodeType;
-import io.quarkus.mongodb.panache.deployment.TypeBundle;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanion;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanionBase;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoEntity;
@@ -11,6 +9,8 @@ import io.quarkus.mongodb.panache.kotlin.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.kotlin.PanacheQuery;
 import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations;
+import io.quarkus.panache.common.deployment.ByteCodeType;
+import io.quarkus.panache.common.deployment.TypeBundle;
 
 class KotlinImperativeTypeBundle implements TypeBundle {
 
@@ -22,11 +22,6 @@ class KotlinImperativeTypeBundle implements TypeBundle {
     @Override
     public ByteCodeType entityBase() {
         return new ByteCodeType(PanacheMongoEntityBase.class);
-    }
-
-    @Override
-    public ByteCodeType entityBaseCompanion() {
-        return new ByteCodeType(PanacheMongoEntityBase.Companion.class);
     }
 
     @Override

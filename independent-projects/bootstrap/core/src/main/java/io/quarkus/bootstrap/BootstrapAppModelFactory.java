@@ -217,22 +217,20 @@ public class BootstrapAppModelFactory {
     }
 
     public CurationResult resolveAppModel() throws BootstrapException {
-        if (test || devMode) {
-            //gradle tests and dev encode the result on the class path
-            final String serializedModel = System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
-            if (serializedModel != null) {
-                final Path p = Paths.get(serializedModel);
-                if (Files.exists(p)) {
-                    try (InputStream existing = Files.newInputStream(Paths.get(serializedModel))) {
-                        final AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
-                        return new CurationResult(appModel);
-                    } catch (IOException | ClassNotFoundException e) {
-                        log.error("Failed to load serialized app mode", e);
-                    }
-                    IoUtils.recursiveDelete(p);
-                } else {
-                    log.error("Failed to locate serialized application model at " + serializedModel);
+        // gradle tests and dev encode the result on the class path
+        final String serializedModel = System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
+        if (serializedModel != null) {
+            final Path p = Paths.get(serializedModel);
+            if (Files.exists(p)) {
+                try (InputStream existing = Files.newInputStream(Paths.get(serializedModel))) {
+                    final AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
+                    return new CurationResult(appModel);
+                } catch (IOException | ClassNotFoundException e) {
+                    log.error("Failed to load serialized app mode", e);
                 }
+                IoUtils.recursiveDelete(p);
+            } else {
+                log.error("Failed to locate serialized application model at " + serializedModel);
             }
         }
 

@@ -10,9 +10,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-bouncycastle</artifactId>
-    <name>Quarkus - Integration Tests - Bouncy Castle</name>
-    <description>Bouncy Castle integration tests module</description>
+    <artifactId>quarkus-integration-test-bouncycastle-fips</artifactId>
+    <name>Quarkus - Integration Tests - Bouncy Castle FIPS</name>
+    <description>Bouncy Castle FIPS integration tests module</description>
 
     <properties>
         <maven.compiler.parameters>true</maven.compiler.parameters>
@@ -32,7 +32,7 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
+            <artifactId>bc-fips</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -120,6 +120,10 @@ updates:
       # Micrometer
       - dependency-name: io.micrometer:micrometer-bom
       - dependency-name: io.micrometer:micrometer-registry-stackdriver
+      # BouncyCastle
+      - dependency-name: org.bouncycastle:bcprov-jdk15on
+      - dependency-name: org.bouncycastle:bctls-jdk15on
+      - dependency-name: org.bouncycastle:bc-fips
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

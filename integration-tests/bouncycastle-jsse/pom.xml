@@ -35,7 +35,7 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bctls-jdk15on </artifactId>
+            <artifactId>bctls-jdk15on</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

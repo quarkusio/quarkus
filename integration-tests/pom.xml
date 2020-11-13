@@ -23,6 +23,7 @@
     </properties>
     <modules>
         <module>bouncycastle</module>
+        <module>bouncycastle-fips</module>
         <module>bouncycastle-jsse</module>
         <module>funqy-amazon-lambda</module>
         <module>funqy-google-cloud-functions</module>
@@ -250,3 +251,4 @@
         </dependencies>
     </dependencyManagement>
 </project>
+

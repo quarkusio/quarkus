@@ -79,14 +79,18 @@ public class SecurityProcessor {
      */
     @BuildStep
     void produceJcaSecurityProviders(BuildProducer<JCAProviderBuildItem> jcaProviders,
-            BuildProducer<BouncyCastleJCAProviderBuildItem> bouncyCastleProvider,
+            BuildProducer<BouncyCastleProviderBuildItem> bouncyCastleProvider,
             BuildProducer<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
         Set<String> providers = new HashSet<>(security.securityProviders.orElse(Collections.emptyList()));
         for (String providerName : providers) {
             if (SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_NAME.equals(providerName)) {
-                bouncyCastleProvider.produce(new BouncyCastleJCAProviderBuildItem());
+                bouncyCastleProvider.produce(new BouncyCastleProviderBuildItem());
             } else if (SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_NAME.equals(providerName)) {
                 bouncyCastleJsseProvider.produce(new BouncyCastleJsseProviderBuildItem());
+            } else if (SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_NAME.equals(providerName)) {
+                bouncyCastleProvider.produce(new BouncyCastleProviderBuildItem(true));
+            } else if (SecurityProviderUtils.BOUNCYCASTLE_FIPS_JSSE_PROVIDER_NAME.equals(providerName)) {
+                bouncyCastleJsseProvider.produce(new BouncyCastleJsseProviderBuildItem(true));
             } else {
                 jcaProviders.produce(new JCAProviderBuildItem(providerName));
             }
@@ -117,42 +121,51 @@ public class SecurityProcessor {
     @BuildStep
     void prepareBouncyCastleProviders(BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
-            Optional<BouncyCastleJCAProviderBuildItem> bouncyCastleProvider,
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
             Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) throws Exception {
         if (bouncyCastleJsseProvider.isPresent()) {
             reflection.produce(
                     new ReflectiveClassBuildItem(true, true, SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME));
-            prepareBouncyCastleProvider(reflection, runtimeReInitialized);
+            prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleJsseProvider.get().isInFipsMode());
         } else if (bouncyCastleProvider.isPresent()) {
-            prepareBouncyCastleProvider(reflection, runtimeReInitialized);
+            prepareBouncyCastleProvider(reflection, runtimeReInitialized, bouncyCastleProvider.get().isInFipsMode());
         }
     }
 
     private static void prepareBouncyCastleProvider(BuildProducer<ReflectiveClassBuildItem> reflection,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized) {
-        reflection
-                .produce(new ReflectiveClassBuildItem(true, true, SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
+            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
+            boolean inFipsMode) {
+        reflection.produce(new ReflectiveClassBuildItem(true, true,
+                inFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
+                        : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME));
         reflection.produce(new ReflectiveClassBuildItem(true, true,
                 "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi"));
         reflection.produce(new ReflectiveClassBuildItem(true, true,
                 "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA"));
         runtimeReInitialized
-                .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
-        runtimeReInitialized
-                .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
-        runtimeReInitialized
                 .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.crypto.CryptoServicesRegistrar"));
+        if (!inFipsMode) {
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$Default"));
+            runtimeReInitialized
+                    .produce(new RuntimeReinitializedClassBuildItem("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV"));
+        }
+
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void recordBouncyCastleProviders(SecurityProviderRecorder recorder,
-            Optional<BouncyCastleJCAProviderBuildItem> bouncyCastleProvider,
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider,
             Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
         if (bouncyCastleJsseProvider.isPresent()) {
-            recorder.addBouncyCastleJsseProvider();
+            if (bouncyCastleJsseProvider.get().isInFipsMode()) {
+                recorder.addBouncyCastleFipsJsseProvider();
+            } else {
+                recorder.addBouncyCastleJsseProvider();
+            }
         } else if (bouncyCastleProvider.isPresent()) {
-            recorder.addBouncyCastleProvider();
+            recorder.addBouncyCastleProvider(bouncyCastleProvider.get().isInFipsMode());
         }
     }
 

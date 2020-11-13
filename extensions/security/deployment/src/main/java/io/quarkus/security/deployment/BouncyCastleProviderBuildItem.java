@@ -2,19 +2,18 @@ package io.quarkus.security.deployment;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public final class BouncyCastleJsseProviderBuildItem extends SimpleBuildItem {
+public final class BouncyCastleProviderBuildItem extends SimpleBuildItem {
     private final boolean inFipsMode;
 
-    public BouncyCastleJsseProviderBuildItem() {
+    public BouncyCastleProviderBuildItem() {
         this(false);
     }
 
-    public BouncyCastleJsseProviderBuildItem(boolean inFipsMode) {
+    public BouncyCastleProviderBuildItem(boolean inFipsMode) {
         this.inFipsMode = inFipsMode;
     }
 
     public boolean isInFipsMode() {
         return inFipsMode;
     }
-
 }

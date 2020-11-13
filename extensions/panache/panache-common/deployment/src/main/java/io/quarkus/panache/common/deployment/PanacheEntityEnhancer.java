@@ -23,6 +23,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
     public static final String JSON_PROPERTY_SIGNATURE = "L" + JSON_PROPERTY_BINARY_NAME + ";";
 
     public static final DotName JSON_IGNORE_DOT_NAME = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
+    public static final DotName JSON_PROPERTY_DOT_NAME = DotName.createSimple("com.fasterxml.jackson.annotation.JsonProperty");
 
     protected MetamodelType modelInfo;
     protected final IndexView indexView;

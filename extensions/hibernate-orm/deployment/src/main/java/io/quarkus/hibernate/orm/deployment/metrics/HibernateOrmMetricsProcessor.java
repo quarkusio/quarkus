@@ -13,7 +13,6 @@ import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.PersistenceProviderSetUpBuildItem;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateMetricsRecorder;
-import io.quarkus.runtime.metrics.MetricsFactory;
 
 /**
  * Produce metrics for Hibernate ORM
@@ -32,13 +31,7 @@ public final class HibernateOrmMetricsProcessor {
         // IF Hibernate metrics and Hibernate statistics are enabled
         // then define a consumer. It will only be invoked if metrics is enabled
         if (config.metricsEnabled && config.statistics.orElse(true) && metricsConfiguration.isPresent()) {
-            MetricsFactoryConsumerBuildItem buildItem;
-            if (metricsConfiguration.get().metricsSupported(MetricsFactory.MICROMETER)) {
-                buildItem = new MetricsFactoryConsumerBuildItem(metricsRecorder.registerMicrometerMetrics());
-            } else {
-                buildItem = new MetricsFactoryConsumerBuildItem(metricsRecorder.registerMPMetrics());
-            }
-            datasourceMetrics.produce(buildItem);
+            datasourceMetrics.produce(new MetricsFactoryConsumerBuildItem(metricsRecorder.consumeMetricsFactory()));
         }
     }
 }

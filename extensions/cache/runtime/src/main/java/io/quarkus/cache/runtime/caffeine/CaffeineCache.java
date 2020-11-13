@@ -2,8 +2,6 @@ package io.quarkus.cache.runtime.caffeine;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
@@ -31,12 +29,9 @@ public class CaffeineCache {
 
     private Object defaultKey;
 
-    public CaffeineCache(CaffeineCacheInfo cacheInfo, Executor executor) {
+    public CaffeineCache(CaffeineCacheInfo cacheInfo) {
         this.name = cacheInfo.name;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
-        if (executor != null) {
-            builder.executor(executor);
-        }
         if (cacheInfo.initialCapacity != null) {
             this.initialCapacity = cacheInfo.initialCapacity;
             builder.initialCapacity(cacheInfo.initialCapacity);
@@ -56,47 +51,36 @@ public class CaffeineCache {
         cache = builder.buildAsync();
     }
 
-    public CompletableFuture<Object> get(Object key, BiFunction<Object, Executor, CompletableFuture<Object>> valueLoader) {
+    /**
+     * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, obtaining that value from
+     * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the
+     * {@link CompletableFuture} is immediately completed before being returned.
+     * 
+     * @param key cache key
+     * @param valueLoader function used to compute the cache value if {@code key} is not already associated with a value
+     * @return a {@link CompletableFuture} holding the cache value
+     * @throws CacheException if an exception is thrown during the cache value computation
+     */
+    public CompletableFuture<Object> get(Object key, Function<Object, Object> valueLoader) {
         if (key == null) {
             throw new NullPointerException(NULL_KEYS_NOT_SUPPORTED_MSG);
         }
-        CompletableFuture<Object> cacheValue = cache.get(key, new BiFunction<Object, Executor, CompletableFuture<Object>>() {
-            @Override
-            public CompletableFuture<Object> apply(Object k, Executor executor) {
-                return valueLoader.apply(k, executor).exceptionally(new Function<Throwable, Object>() {
-                    @Override
-                    public Object apply(Throwable cause) {
-                        // This is required to prevent Caffeine from logging unwanted warnings.
-                        return new CaffeineComputationThrowable(cause);
-                    }
-                }).thenApply(new Function<Object, Object>() {
-                    @Override
-                    public Object apply(Object value) {
-                        return NullValueConverter.toCacheValue(value);
-                    }
-                });
-            }
-        });
+        CompletableFuture<Object> newCacheValue = new CompletableFuture<Object>();
+        CompletableFuture<Object> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
+        if (existingCacheValue == null) {
+            Object value = valueLoader.apply(key);
+            newCacheValue.complete(NullValueConverter.toCacheValue(value));
+            return unwrapCacheValue(newCacheValue);
+        } else {
+            return unwrapCacheValue(existingCacheValue);
+        }
+    }
+
+    private CompletableFuture<Object> unwrapCacheValue(CompletableFuture<Object> cacheValue) {
         return cacheValue.thenApply(new Function<Object, Object>() {
             @Override
-            @SuppressWarnings("finally")
             public Object apply(Object value) {
-                // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
-                if (value instanceof CaffeineComputationThrowable) {
-                    try {
-                        // The cache entry needs to be removed from Caffeine explicitly (this would usually happen automatically).
-                        cache.asMap().remove(key, cacheValue);
-                    } finally {
-                        Throwable cause = ((CaffeineComputationThrowable) value).getCause();
-                        if (cause instanceof RuntimeException) {
-                            throw (RuntimeException) cause;
-                        } else {
-                            throw new CacheException(cause);
-                        }
-                    }
-                } else {
-                    return NullValueConverter.fromCacheValue(value);
-                }
+                return NullValueConverter.fromCacheValue(value);
             }
         });
     }

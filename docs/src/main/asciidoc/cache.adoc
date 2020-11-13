@@ -49,10 +49,10 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=cache-quickstart \
     -DclassName="org.acme.cache.WeatherForecastResource" \
     -Dpath="/weather" \
-    -Dextensions="cache,resteasy-jsonb"
+    -Dextensions="cache,resteasy-jackson"
 ----
 
-This command generates the Maven project with a REST endpoint and imports the `cache` and `resteasy-jsonb` extensions.
+This command generates the Maven project with a REST endpoint and imports the `cache` and `resteasy-jackson` extensions.
 
 If you already have your Quarkus project configured, you can add the `cache` extension
 to your project by running the following command in your project base directory:

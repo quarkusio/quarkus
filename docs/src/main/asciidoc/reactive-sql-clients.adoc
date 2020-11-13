@@ -106,11 +106,11 @@ If you're not familiar with Mutiny reactive types, read the link:getting-started
 === JSON Binding
 
 We will expose `Fruit` instances over HTTP in the JSON format.
-Consequently, you also need to add the `quarkus-resteasy-jsonb` extension:
+Consequently, you also need to add the `quarkus-resteasy-jackson` extension:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="resteasy-jsonb"
+./mvnw quarkus:add-extension -Dextensions="resteasy-jackson"
 ----
 
 If you prefer not to use the command line, manually add this to the dependencies section of your `pom.xml` file:
@@ -119,7 +119,7 @@ If you prefer not to use the command line, manually add this to the dependencies
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jsonb</artifactId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
 </dependency>
 ----
 

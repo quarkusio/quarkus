@@ -158,7 +158,7 @@ $ date +"%T.%3N" &&  ./target/quarkus-timing-runner
 10:57:32.508
 10:57:32.512
 2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.002s. Listening on: http://127.0.0.1:8080
-2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb]
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson]
 10:57:32.537
 ----
 

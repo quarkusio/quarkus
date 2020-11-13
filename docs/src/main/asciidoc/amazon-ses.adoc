@@ -106,7 +106,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=amazon-ses-quickstart \
     -DclassName="org.acme.ses.QuarkusSesSyncResource" \
     -Dpath="/sync" \
-    -Dextensions="resteasy-jsonb,amazon-ses,resteasy-mutiny"
+    -Dextensions="resteasy-jackson,amazon-ses,resteasy-mutiny"
 cd amazon-ses-quickstart
 ----
 

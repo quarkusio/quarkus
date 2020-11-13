@@ -36,13 +36,13 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-kotlin-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="kotlin,resteasy-jsonb"
+    -Dextensions="kotlin,resteasy-jackson"
 cd rest-kotlin-quickstart
 ----
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
 configured to work with Kotlin. Furthermore  the `org.acme.rest.GreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
-The addition of `resteasy-jsonb` in the extension list results in importing the RESTEasy/JAX-RS and JSON-B extensions.
+The addition of `resteasy-jackson` in the extension list results in importing the RESTEasy/JAX-RS and Jackson extensions.
 
 `GreetingResource.kt` looks like this:
 
@@ -209,7 +209,7 @@ dependencies {
     // <3>
     implementation enforcedPlatform('io.quarkus:quarkus-bom:{quarkus-version}')
     implementation 'io.quarkus:quarkus-resteasy'
-    implementation 'io.quarkus:quarkus-resteasy-jsonb'
+    implementation 'io.quarkus:quarkus-resteasy-jackson'
     implementation 'io.quarkus:quarkus-kotlin'
 
     testImplementation 'io.quarkus:quarkus-junit5'
@@ -269,7 +269,7 @@ dependencies {
     implementation(enforcedPlatform("io.quarkus:quarkus-bom:${quarkusVersion}"))
     implementation("io.quarkus:quarkus-kotlin")
     implementation("io.quarkus:quarkus-resteasy")
-    implementation("io.quarkus:quarkus-resteasy-jsonb")
+    implementation("io.quarkus:quarkus-resteasy-jackson")
 
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")

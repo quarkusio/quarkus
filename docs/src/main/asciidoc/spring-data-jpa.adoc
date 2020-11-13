@@ -42,7 +42,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=spring-data-jpa-quickstart \
     -DclassName="org.acme.spring.data.jpa.FruitResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-data-jpa,resteasy-jsonb,quarkus-jdbc-postgresql"
+    -Dextensions="spring-data-jpa,resteasy-jackson,quarkus-jdbc-postgresql"
 cd spring-data-jpa-quickstart
 ----
 

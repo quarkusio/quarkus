@@ -193,7 +193,9 @@ public class NativeImageBuildStep {
                 }
             }
             if (nativeConfig.debugBuildProcess) {
-                command.add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
+                String debugBuildAddress = nativeConfig.debugBuildProcessAddress
+                        .map(address -> address + ":" + DEBUG_BUILD_PROCESS_PORT).orElse(DEBUG_BUILD_PROCESS_PORT);
+                command.add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildAddress + ",server=y,suspend=y");
             }
             if (nativeConfig.enableReports) {
                 command.add("-H:+PrintAnalysisCallTree");

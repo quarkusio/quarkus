@@ -75,6 +75,13 @@ public class NativeConfig {
     public boolean debugBuildProcess;
 
     /**
+     * When native image build debugger is enabled, this option configures the host or IP address to which the debugger binds.
+     * This is useful for debugging the native image building process that executes in a remote node.
+     */
+    @ConfigItem
+    public Optional<String> debugBuildProcessAddress;
+
+    /**
      * If the debug port should be published when building with docker and debug-build-process is true
      */
     @ConfigItem(defaultValue = "true")

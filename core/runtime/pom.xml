@@ -150,6 +150,17 @@
                         <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
                     </parentFirstArtifacts>
+                    <runnerParentFirstArtifacts>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>
+                        <!-- logging dependencies always need to be loaded by the JDK ClassLoader -->
+                        <runnerParentFirstArtifact>org.jboss.logging:jboss-logging</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</runnerParentFirstArtifact>
+                        <!-- This is needed as it's a dependency of the JBoss Logging so it too needs to be loaded by the JDK ClassLoader -->
+                        <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
+                        <!-- This is needed because it contains some jar handling classes -->
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
+                    </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>
                         <excludedArtifact>javax.enterprise:cdi-api</excludedArtifact>

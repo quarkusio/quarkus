@@ -536,7 +536,7 @@ public class JarResultBuildStep {
             } else {
                 copyDependency(curateOutcomeBuildItem, copiedArtifacts, mainLib, baseLib, jars, true, classPath, appDep);
             }
-            if (curateOutcomeBuildItem.getEffectiveModel().getParentFirstArtifacts()
+            if (curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts()
                     .contains(appDep.getArtifact().getKey())) {
                 bootJars.addAll(appDep.getArtifact().getPaths().toList());
             }
@@ -645,7 +645,7 @@ public class JarResultBuildStep {
         }
         for (Path resolvedDep : depArtifact.getPaths()) {
             if (!Files.isDirectory(resolvedDep)) {
-                if (allowParentFirst && curateOutcomeBuildItem.getEffectiveModel().getParentFirstArtifacts()
+                if (allowParentFirst && curateOutcomeBuildItem.getEffectiveModel().getRunnerParentFirstArtifacts()
                         .contains(depArtifact.getKey())) {
                     final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
                     final Path targetPath = baseLib.resolve(fileName);

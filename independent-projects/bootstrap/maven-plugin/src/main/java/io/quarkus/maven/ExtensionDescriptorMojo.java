@@ -131,6 +131,15 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     List<String> parentFirstArtifacts;
 
     /**
+     * Artifacts that are always loaded parent when the fast-jar is used. This is an advanced option
+     * and should only be used if you are sure that this is the correct solution for the use case.
+     *
+     * A possible example of this would be logging libraries, as these need to be loaded by the system class loader.
+     */
+    @Parameter
+    List<String> runnerParentFirstArtifacts;
+
+    /**
      * Artifacts that will only be used to load a class or resource if no other normal element exists.
      * This is an advanced option that should only be used when there is a case of multiple jars
      * containing the same classes and we need to control which jars is actually used to load the classes.
@@ -155,6 +164,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
             props.put(AppModel.PARENT_FIRST_ARTIFACTS, val);
+        }
+
+        if (runnerParentFirstArtifacts != null && !runnerParentFirstArtifacts.isEmpty()) {
+            String val = String.join(",", runnerParentFirstArtifacts);
+            props.put(AppModel.RUNNER_PARENT_FIRST_ARTIFACTS, val);
         }
 
         if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {

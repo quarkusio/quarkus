@@ -4,7 +4,7 @@
 triage:
   rules:
     - labels: [area/amazon-lambda]
-      titleBody: "lambda"
+      title: "lambda"
       notify: [patriot1burke, matejvasek]
       directories:
         - extensions/amazon-lambda
@@ -114,12 +114,12 @@ triage:
         - integration-tests/mongodb-panache/
         - extensions/panache/mongodb-panache/
     - labels: [area/openapi, area/smallrye]
-      titleBody: openapi
+      title: openapi
       notify: [EricWittmann, MikeEdgar, phillip-kruger]
       directories:
         - extensions/smallrye-openapi
     - labels: [area/graphql, area/smallrye]
-      titleBody: graphql
+      title: graphql
       notify: [phillip-kruger, jmartisk]
       directories:
         - extensions/smallrye-graphql/
@@ -137,27 +137,27 @@ triage:
       titleBody: "security"
       notify: [sberyozkin]
     - labels: [area/metrics, area/smallrye]
-      titleBody: "metrics"
+      title: "metrics"
       notify: [jmartisk]
       directories:
         - extensions/smallrye-metrics
     - labels: [area/metrics]
-      titleBody: "micrometer"
+      title: "micrometer"
       notify: [ebullient]
       directories:
         - extensions/micrometer
     - labels: [area/health, area/smallrye]
-      titleBody: "health"
+      title: "health"
       notify: [jmartisk, xstefank]
       directories:
         - extensions/smallrye-health/
     - labels: [area/fault-tolerance, area/smallrye]
-      titleBody: "fault.tolerance"
+      title: "fault.tolerance"
       notify: [Ladicek]
       directories:
         - extensions/smallrye-fault-tolerance/
     - labels: [area/mutiny, area/smallrye]
-      titleBody: "mutiny"
+      title: "mutiny"
       notify: [cescoffier, jponge]
       directories:
         - extensions/mutiny/
@@ -187,7 +187,7 @@ triage:
       directories:
         - extensions/rest-client/
     - labels: [area/smallrye]
-      titleBody: "smallrye"
+      title: "smallrye"
       notify: [kenfinnigan, phillip-kruger, jmartisk, radcortez, Ladicek]
       directories:
         - extensions/smallrye-
@@ -261,7 +261,7 @@ triage:
         - extensions/redis-client/
         - integration-tests/redis-client/
     - labels: [area/arc]
-      titleBody: "\\b(arc|cdi|injection)\\b"
+      title: "\\b(arc|cdi|injection)\\b"
       notify: [mkouba, manovotn]
       directories:
         - extensions/arc/
@@ -393,7 +393,7 @@ triage:
       directories:
         - extensions/undertow-websockets/
     - labels: [area/swagger-ui]
-      titleBody: swagger
+      title: swagger
       notify: [phillip-kruger]
       directories:
         - extensions/swagger-ui/

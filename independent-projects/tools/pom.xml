@@ -37,7 +37,7 @@
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
         <!-- Versions -->
-        <assertj.version>3.18.0</assertj.version>
+        <assertj.version>3.18.1</assertj.version>
         <jackson.version>2.11.3</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>

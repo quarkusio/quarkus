@@ -93,7 +93,7 @@
                     <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
                     <arguments>
                         <argument>${project.version}</argument>
-                        <argument>${project.basedir}/../devtools/bom-descriptor-json/target/extensions.json</argument>
+                        <argument>${project.basedir}/../devtools/platform-descriptor-json/target/classes/quarkus-bom-descriptor/extensions.json</argument>
                     </arguments>
                     <environmentVariables>
                         <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>

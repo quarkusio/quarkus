@@ -1,7 +1,9 @@
 package io.quarkus.bootstrap.runner;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +27,8 @@ public class RunnerClassLoader extends ClassLoader {
 
     private final Set<String> parentFirstPackages;
 
+    private final Map<String, List<Path>> fsResourcesMap;
+
     private final ConcurrentMap<ClassLoadingResource, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
 
     static {
@@ -32,10 +36,11 @@ public class RunnerClassLoader extends ClassLoader {
     }
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
-            Set<String> parentFirstPackages) {
+            Set<String> parentFirstPackages, Map<String, List<Path>> fsResourcesMap) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
+        this.fsResourcesMap = fsResourcesMap;
     }
 
     @Override
@@ -96,6 +101,14 @@ public class RunnerClassLoader extends ClassLoader {
     @Override
     protected URL findResource(String name) {
         name = sanitizeName(name);
+        List<Path> relativeResources = fsResourcesMap.get(name);
+        if ((relativeResources != null) && !fsResourcesMap.isEmpty()) {
+            try {
+                return relativeResources.get(0).toUri().toURL();
+            } catch (MalformedURLException ignored) {
+
+            }
+        }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
             return null;
@@ -133,6 +146,18 @@ public class RunnerClassLoader extends ClassLoader {
     @Override
     protected Enumeration<URL> findResources(String name) throws IOException {
         name = sanitizeName(name);
+        List<Path> relativeResources = fsResourcesMap.get(name);
+        if ((relativeResources != null) && !fsResourcesMap.isEmpty()) {
+            List<URL> urls = new ArrayList<>(relativeResources.size());
+            try {
+                for (Path path : relativeResources) {
+                    urls.add(path.toUri().toURL());
+                }
+                return Collections.enumeration(urls);
+            } catch (MalformedURLException ignored) {
+
+            }
+        }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
             return null;

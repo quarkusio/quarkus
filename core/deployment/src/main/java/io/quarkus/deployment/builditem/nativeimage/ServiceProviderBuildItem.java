@@ -103,4 +103,8 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
     public String serviceDescriptorFile() {
         return SPI_ROOT + serviceInterface;
     }
+
+    public String serviceInterface() {
+        return serviceInterface;
+    }
 }

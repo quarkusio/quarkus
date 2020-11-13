@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.URL;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitOption;
@@ -68,6 +69,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -135,6 +137,7 @@ public class JarResultBuildStep {
     public static final String BOOT_LIB = "boot";
     public static final String LIB = "lib";
     public static final String MAIN = "main";
+    public static final String RESOURCES = "resources";
     public static final String GENERATED_BYTECODE_JAR = "generated-bytecode.jar";
     public static final String TRANSFORMED_BYTECODE_JAR = "transformed-bytecode.jar";
     public static final String APP = "app";
@@ -171,6 +174,7 @@ public class JarResultBuildStep {
             List<UberJarRequiredBuildItem> uberJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
+            List<ServiceProviderBuildItem> serviceProviderBuildItems,
             MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
 
         if (appCDS.isPresent()) {
@@ -195,7 +199,7 @@ public class JarResultBuildStep {
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources,
-                    additionalApplicationArchiveBuildItems, mainClassBuildItem);
+                    additionalApplicationArchiveBuildItems, mainClassBuildItem, serviceProviderBuildItems);
         }
     }
 
@@ -431,7 +435,7 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
+            MainClassBuildItem mainClassBuildItem, List<ServiceProviderBuildItem> serviceProviderBuildItems) throws Exception {
 
         boolean rebuild = outputTargetBuildItem.isRebuild();
 
@@ -446,6 +450,7 @@ public class JarResultBuildStep {
         //unmodified 3rd party dependencies
         Path libDir = buildDir.resolve(LIB);
         Path mainLib = libDir.resolve(MAIN);
+        Path resourcesDir = libDir.resolve(RESOURCES);
         //parent first entries
         Path baseLib = libDir.resolve(BOOT_LIB);
         Files.createDirectories(baseLib);
@@ -460,6 +465,7 @@ public class JarResultBuildStep {
             IoUtils.createOrEmptyDir(buildDir);
             Files.createDirectories(mainLib);
             Files.createDirectories(baseLib);
+            Files.createDirectories(resourcesDir);
             Files.createDirectories(appDir);
             Files.createDirectories(quarkus);
             if (userProviders != null) {
@@ -551,9 +557,35 @@ public class JarResultBuildStep {
                 jars.add(path);
             }
         }
+        Map<String, List<Path>> fsResourcePaths = new HashMap<>();
+        for (ServiceProviderBuildItem spbi : serviceProviderBuildItems) {
+            Enumeration<URL> serviceFileURLs = Thread.currentThread().getContextClassLoader()
+                    .getResources(spbi.serviceDescriptorFile());
+            if (!fsResourcePaths.containsKey(spbi.serviceDescriptorFile())) {
+                fsResourcePaths.put(spbi.serviceDescriptorFile(), new ArrayList<>(1));
+            }
+            while (serviceFileURLs.hasMoreElements()) {
+                URL url = serviceFileURLs.nextElement();
+                if ("jar".equals(url.getProtocol())) {
+                    int exclIndex = url.toString().indexOf('!');
+                    int dotIndex = url.toString().substring(0, exclIndex).lastIndexOf('.');
+                    int slashIndex = url.toString().substring(0, dotIndex).lastIndexOf('/');
+                    Path serviceFileDir = Files
+                            .createDirectories(resourcesDir.resolve(url.toString().substring(slashIndex + 1, dotIndex))
+                                    .resolve(ServiceProviderBuildItem.SPI_ROOT));
+                    if (!Files.exists(serviceFileDir)) {
+                        Files.createDirectories(serviceFileDir);
+                    }
+                    Path serviceFilePath = serviceFileDir.resolve(spbi.serviceInterface());
+                    Files.copy(url.openStream(), serviceFilePath);
+                    fsResourcePaths.get(spbi.serviceDescriptorFile()).add(serviceFilePath);
+                }
+            }
+
+        }
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
         try (OutputStream out = Files.newOutputStream(appInfo)) {
-            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars);
+            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars, fsResourcePaths);
         }
 
         runnerJar.toFile().setReadable(true, false);

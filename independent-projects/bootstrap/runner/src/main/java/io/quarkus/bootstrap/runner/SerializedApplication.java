@@ -10,6 +10,7 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,7 +52,7 @@ public class SerializedApplication {
     }
 
     public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath,
-            List<Path> parentFirst)
+            List<Path> parentFirst, Map<String, List<Path>> fsResourcesPaths)
             throws IOException {
         try (DataOutputStream data = new DataOutputStream(outputStream)) {
             data.writeInt(MAGIC);
@@ -59,7 +60,7 @@ public class SerializedApplication {
             data.writeUTF(mainClass);
             data.writeInt(classPath.size());
             for (Path jar : classPath) {
-                String relativePath = applicationRoot.relativize(jar).toString().replace("\\", "/");
+                String relativePath = relativize(applicationRoot, jar);
                 data.writeUTF(relativePath);
                 writeJar(data, jar);
             }
@@ -72,8 +73,23 @@ public class SerializedApplication {
             for (String p : parentFirstPackages) {
                 data.writeUTF(p.replace("/", ".").replace("\\", "."));
             }
+            data.writeInt(fsResourcesPaths.size());
+            for (Map.Entry<String, List<Path>> entry : fsResourcesPaths.entrySet()) {
+                if (entry.getValue().isEmpty()) {
+                    continue;
+                }
+                data.writeUTF(entry.getKey());
+                data.writeInt(entry.getValue().size());
+                for (Path path : entry.getValue()) {
+                    data.writeUTF(relativize(applicationRoot, path));
+                }
+            }
             data.flush();
         }
+    }
+
+    private static String relativize(Path applicationRoot, Path jar) {
+        return applicationRoot.relativize(jar).toString().replace("\\", "/");
     }
 
     public static SerializedApplication read(InputStream inputStream, Path appRoot) throws IOException {
@@ -115,8 +131,20 @@ public class SerializedApplication {
             for (int i = 0; i < packages; ++i) {
                 parentFirstPackages.add(in.readUTF());
             }
+            int fsResourcesSize = in.readInt();
+            Map<String, List<Path>> fsResourcesMap = new HashMap<>();
+            for (int i = 0; i < fsResourcesSize; i++) {
+                String resourceName = in.readUTF();
+                int pathsSize = in.readInt();
+                List<Path> paths = new ArrayList<>(pathsSize);
+                for (int j = 0; j < pathsSize; j++) {
+                    paths.add(appRoot.resolve(in.readUTF()));
+                }
+                fsResourcesMap.put(resourceName, paths);
+            }
             return new SerializedApplication(
-                    new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages),
+                    new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages,
+                            fsResourcesMap),
                     mainClass);
         }
     }

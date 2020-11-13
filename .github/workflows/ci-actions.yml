@@ -466,8 +466,8 @@ jobs:
           name: test-reports-tcks
           path: 'test-reports.tgz'
 
-  read-native-tests-json:
-    name: Read json file with native-tests matrix
+  native-tests-read-json-matrix:
+    name: Native Tests - Read JSON matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.read.outputs.matrix }}
@@ -481,14 +481,14 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: [build-jdk11, read-native-tests-json]
+    needs: [build-jdk11, native-tests-read-json-matrix]
     runs-on: ubuntu-latest
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
       max-parallel: 8
       fail-fast: false
-      matrix: ${{ fromJson(needs.read-native-tests-json.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.native-tests-read-json-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11

@@ -49,7 +49,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=quartz-quickstart \
     -DclassName="org.acme.quartz.TaskResource" \
     -Dpath="/tasks" \
-    -Dextensions="quartz,hibernate-orm-panache,flyway,resteasy-jsonb,jdbc-postgresql"
+    -Dextensions="quartz,hibernate-orm-panache,flyway,resteasy-jackson,jdbc-postgresql"
 cd quartz-quickstart
 ----
 

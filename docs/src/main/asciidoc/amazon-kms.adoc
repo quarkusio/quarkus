@@ -97,7 +97,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=amazon-kms-quickstart \
     -DclassName="org.acme.kms.QuarkusKmsSyncResource" \
     -Dpath="/sync" \
-    -Dextensions="resteasy-jsonb,amazon-kms,resteasy-mutiny"
+    -Dextensions="resteasy-jackson,amazon-kms,resteasy-mutiny"
 cd amazon-kms-quickstart
 ----
 

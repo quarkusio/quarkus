@@ -86,7 +86,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=amazon-s3-quickstart \
     -DclassName="org.acme.s3.S3SyncClientResource" \
     -Dpath="/s3" \
-    -Dextensions="resteasy-jsonb,amazon-s3"
+    -Dextensions="resteasy-jackson,amazon-s3"
 cd amazon-s3-quickstart
 ----
 

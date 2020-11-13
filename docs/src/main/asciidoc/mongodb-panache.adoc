@@ -70,11 +70,11 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=mongodb-panache-quickstart \
     -DclassName="org.acme.mongodb.panache.PersonResource" \
     -Dpath="/persons" \
-    -Dextensions="resteasy-jsonb,mongodb-panache"
+    -Dextensions="resteasy-jackson,mongodb-panache"
 cd mongodb-panache-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and MongoDB with Panache extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson and MongoDB with Panache extensions.
 After this, the `quarkus-mongodb-panache` extension has been added to your `pom.xml`.
 
 If you don't want to generate a new project, add the dependency in your `pom.xml`:
@@ -151,6 +151,8 @@ If you need to write accessors, you can:
 [source,java]
 ----
 public class Person extends PanacheMongoEntity {
+
+    @JsonProperty
     public String name;
     public LocalDate birth;
     public Status status;
@@ -691,7 +693,7 @@ you need to provide the value by yourself.
 ====
 
 `ObjectId` can be difficult to use if you want to expose its value in your REST service.
-So we created JSON-B and Jackson providers to serialize/deserialize them as a `String` which are automatically registered if your project depends on either the RESTEasy JSON-B extension or the RESTEasy Jackson extension.
+So we created Jackson and JSON-B providers to serialize/deserialize them as a `String` which are automatically registered if your project depends on either the RESTEasy Jackson extension or the RESTEasy JSON-B extension.
 
 [IMPORTANT]
 ====

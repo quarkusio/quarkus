@@ -42,7 +42,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=security-oauth2-quickstart \
     -DclassName="org.acme.security.oauth2.TokenSecuredResource" \
     -Dpath="/secured" \
-    -Dextensions="resteasy-jsonb, security-oauth2"
+    -Dextensions="resteasy-jackson, security-oauth2"
 cd security-oauth2-quickstart
 ----
 
@@ -289,7 +289,7 @@ $ ./mvnw clean package
 ...
 $ java -jar target/security-oauth2-quickstart-runner.jar
 2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, security-oauth2]
 ----
 
 You can also generate the native executable with `./mvnw clean package -Pnative`.
@@ -316,7 +316,7 @@ $ ./mvnw clean package -Pnative
 
 $ ./target/security-oauth2-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, security-oauth2]
 ----
 
 [[integration-testing]]

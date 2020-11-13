@@ -241,12 +241,12 @@ Create another project like so:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-aggregator \
-    -Dextensions="kafka-streams,resteasy-jsonb" \
+    -Dextensions="kafka-streams,resteasy-jackson" \
     -DnoExamples \
     && mv kafka-streams-quickstart-aggregator aggregator
 ----
 
-This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for JSON-B.
+This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for Jackson.
 
 If you already have your Quarkus project configured, you can add the `kafka-streams` extension
 to your project by running the following command in your project base directory:
@@ -381,7 +381,7 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
 import org.apache.kafka.streams.state.Stores;
 
-import io.quarkus.kafka.client.serialization.JsonbSerde;
+import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
 
 @ApplicationScoped
 public class TopologyProducer {
@@ -396,9 +396,9 @@ public class TopologyProducer {
     public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
-        JsonbSerde<WeatherStation> weatherStationSerde = new JsonbSerde<>(
+        ObjectMapperSerde<WeatherStation> weatherStationSerde = new ObjectMapperSerde<>(
                 WeatherStation.class);
-        JsonbSerde<Aggregation> aggregationSerde = new JsonbSerde<>(Aggregation.class);
+        ObjectMapperSerde<Aggregation> aggregationSerde = new ObjectMapperSerde<>(Aggregation.class);
 
         KeyValueBytesStoreSupplier storeSupplier = Stores.persistentKeyValueStore(
                 WEATHER_STATIONS_STORE);

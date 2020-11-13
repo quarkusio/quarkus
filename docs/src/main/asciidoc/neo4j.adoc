@@ -128,7 +128,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=neo4j-quickstart \
     -DclassName="org.acme.datasource.GreetingResource" \
-    -Dextensions="neo4j,resteasy-jsonb"
+    -Dextensions="neo4j,resteasy-jackson"
 cd neo4j-quickstart
 ----
 
@@ -142,7 +142,7 @@ It generates:
 * an associated test
 
 The Neo4j extension has been added already to your `pom.xml`.
-In addition, we added `resteasy-jsonb`, which allows us to expose `Fruit` instances over HTTP in the JSON format via JAX-RS resources.
+In addition, we added `resteasy-jackson`, which allows us to expose `Fruit` instances over HTTP in the JSON format via JAX-RS resources.
 If you have an already created project, the `neo4j` extension can be added to an existing Quarkus project with the `add-extension` command:
 
 [source,bash]

@@ -20,6 +20,8 @@ public class Timing {
 
     private static volatile String httpServerInfo = "";
 
+    private static volatile String applicationLinkInfo = "";
+
     private static final String UNSET_VALUE = "<<unset>>";
 
     public static void staticInitStarted() {
@@ -51,6 +53,10 @@ public class Timing {
      */
     public static void setHttpServer(String info) {
         httpServerInfo = info;
+    }
+
+    public static void setApplicationLink(String info) {
+        applicationLinkInfo = info;
     }
 
     /**
@@ -90,6 +96,9 @@ public class Timing {
         }
         logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");
         logger.infof("Installed features: [%s]", features);
+        if (!applicationLinkInfo.isEmpty()) {
+            logger.infof("Your application is ready: %s", applicationLinkInfo);
+        }
         bootStartTime = -1;
     }
 

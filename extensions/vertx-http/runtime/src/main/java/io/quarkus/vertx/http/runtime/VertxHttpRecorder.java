@@ -515,29 +515,41 @@ public class VertxHttpRecorder {
             HttpServerOptions sslConfig,
             HttpServerOptions domainSocketOptions) {
         String serverListeningMessage = "Listening on: ";
+        String applicationLinkMessage = "";
         int socketCount = 0;
 
         if (httpServerOptions != null && !InsecureRequests.DISABLED.equals(insecureRequests)) {
             serverListeningMessage += String.format(
                     "http://%s:%s", httpServerOptions.getHost(), actualHttpPort);
             socketCount++;
+
+            if (isWildCard(httpServerOptions.getHost())) {
+                applicationLinkMessage += String.format("http://127.0.0.1:%s", actualHttpPort);
+            }
         }
 
         if (sslConfig != null) {
             if (socketCount > 0) {
                 serverListeningMessage += " and ";
+                applicationLinkMessage += " and ";
             }
             serverListeningMessage += String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort);
             socketCount++;
+
+            if (isWildCard(sslConfig.getHost())) {
+                applicationLinkMessage += String.format("https://127.0.0.1:%s", actualHttpsPort);
+            }
         }
 
         if (domainSocketOptions != null) {
             if (socketCount > 0) {
                 serverListeningMessage += " and ";
+                applicationLinkMessage += " and ";
             }
             serverListeningMessage += String.format("unix:%s", domainSocketOptions.getHost());
         }
         Timing.setHttpServer(serverListeningMessage);
+        Timing.setApplicationLink(applicationLinkMessage);
     }
 
     /**
@@ -782,6 +794,10 @@ public class VertxHttpRecorder {
 
     public GracefulShutdownFilter createGracefulShutdownHandler() {
         return new GracefulShutdownFilter();
+    }
+
+    private static boolean isWildCard(String host) {
+        return "0.0.0.0".equals(host) || "::".equals(host);
     }
 
     private static class WebDeploymentVerticle extends AbstractVerticle {

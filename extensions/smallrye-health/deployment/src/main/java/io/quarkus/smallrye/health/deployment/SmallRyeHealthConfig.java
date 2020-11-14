@@ -38,7 +38,7 @@ public class SmallRyeHealthConfig {
     String wellnessPath;
 
     /**
-     * UI configuration
+     * SmallRye Health UI configuration
      */
     @ConfigItem
     @ConfigDocSection

@@ -72,8 +72,10 @@ import io.vertx.ext.web.RoutingContext;
  * <p>
  * If both {@link #path()} and {@link #regex()} are set the regular expression is used for matching.
  * <p>
- * If neither {@link #path()} nor {@link #regex()} is set the route will match a path derived from the name of the
- * method. This is done by de-camel-casing the name and then joining the segments with hyphens.
+ * If neither {@link #path()} nor {@link #regex()} is specified and the handler type is not {@link HandlerType#FAILURE} then the
+ * route will match a path derived from the name of the method. This is done by de-camel-casing the name and then joining the
+ * segments
+ * with hyphens.
  */
 @Repeatable(Routes.class)
 @Retention(RetentionPolicy.RUNTIME)
@@ -139,7 +141,7 @@ public @interface Route {
     enum HandlerType {
 
         /**
-         * A request handler.
+         * A non-blocking request handler.
          *
          * @see io.vertx.ext.web.Route#handler(Handler)
          */
@@ -164,6 +166,9 @@ public @interface Route {
          *  }
          *  </code>
          * </pre>
+         * 
+         * <p>
+         * If a failure handler declares neither a path nor a regex then the route matches all requests.
          * 
          * @see io.vertx.ext.web.Route#failureHandler(Handler)
          */

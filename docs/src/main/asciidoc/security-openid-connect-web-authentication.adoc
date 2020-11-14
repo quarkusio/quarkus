@@ -392,6 +392,35 @@ In such cases configuring Quarkus to recognize the original headers forwarded by
 
 `quarkus.oidc.authentication.force-redirect-https-scheme` property may also be used when the Quarkus application is running behind a SSL terminating reverse proxy.
 
+== Cloud Services
+
+=== Google Cloud
+
+You can have Quarkus OIDC `web-app` applications access **Google Cloud services** such as **BigQuery** on behalf of the currently authenticated users who have enabled OpendId Connect (Authorization Code Flow) permissions to such services in their Google Developer Consoles.
+
+It is super easy to do with https://github.com/quarkiverse[Quarkiverse] https://github.com/quarkiverse/quarkiverse-google-cloud-services[Google Cloud Services], only add
+the https://github.com/quarkiverse/quarkiverse-google-cloud-services/releases/latest[latest tag] service dependency, for example:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkiverse.googlecloudservices</groupId>
+  <artifactId>quarkus-google-cloud-bigquery</artifactId>
+  <version>${quarkiverse.googlecloudservices.version}</version>
+</dependency>
+----
+
+and configure Google OIDC properties:
+
+[source, properties]
+----
+quarkus.oidc.auth-server-url=https://accounts.google.com
+quarkus.oidc.application-type=web-app
+quarkus.oidc.client-id={GOOGLE_CLIENT_ID}
+quarkus.oidc.credentials.secret={GOOGLE_CLIENT_SECRET}
+quarkus.oidc.token.issuer=https://accounts.google.com
+----
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]

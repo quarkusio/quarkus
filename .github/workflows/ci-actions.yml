@@ -466,59 +466,29 @@ jobs:
           name: test-reports-tcks
           path: 'test-reports.tgz'
 
+  read-native-tests-json:
+    name: Read json file with native-tests matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.read.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: read
+        run: |
+          json=$(tr -d '\n' < .github/native-tests.json )
+          echo $json
+          echo "::set-output name=matrix::${json}"
+
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: build-jdk11
+    needs: [build-jdk11, read-native-tests-json]
     runs-on: ubuntu-latest
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
       max-parallel: 8
       fail-fast: false
-      matrix:
-        category: [IT-Main, IT-Data1, IT-Data2, IT-Data3, IT-Data4, IT-Data5, IT-Data6, IT-Security1, IT-Security2, IT-Security3, IT-Amazon, IT-Messaging, IT-Cache, IT-HTTP, IT-Misc1, IT-Misc2, IT-Misc3, IT-Misc4, IT-Spring, IT-gRPC]
-        include:
-          - category: IT-Main
-            timeout: 40
-          - category: IT-Data1
-            timeout: 65
-          - category: IT-Data2
-            timeout: 65
-          - category: IT-Data3
-            timeout: 70
-          - category: IT-Data4
-            timeout: 55
-          - category: IT-Data5
-            timeout: 65
-          - category: IT-Data6
-            timeout: 40
-          - category: IT-Amazon
-            timeout: 45
-          - category: IT-Messaging
-            timeout: 85
-          - category: IT-Security1
-            timeout: 50
-          - category: IT-Security2
-            timeout: 70
-          - category: IT-Security3
-            timeout: 50
-          - category: IT-Cache
-            timeout: 55
-          - category: IT-HTTP
-            timeout: 60
-          - category: IT-Misc1
-            timeout: 65
-          - category: IT-Misc2
-            timeout: 65
-          # kubernetes-client alone takes 30mn+
-          - category: IT-Misc3
-            timeout: 65
-          - category: IT-Misc4
-            timeout: 65
-          - category: IT-Spring
-            timeout: 50
-          - category: IT-gRPC
-            timeout: 65
+      matrix: ${{ fromJson(needs.read-native-tests-json.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
@@ -538,14 +508,17 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         env:
+          TEST_MODULES: ${{matrix.test-modules}}
           CATEGORY: ${{matrix.category}}
         run: |
+          for i in $TEST_MODULES
+          do modules+=("integration-tests/$i"); done
           IFS=,
-          eval mvn -pl integration-tests -amd -P$CATEGORY $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
           # add the 'simple with spaces' project to the run of 'Misc1' by executing it explicitly
           # done because there is no good way to pass strings with empty values to the previous command
           # so this hack is as good as any
-          if [ "$CATEGORY" == "IT-Misc1" ]; then
+          if [ "$CATEGORY" == "Misc1" ]; then
             mvn -Dnative -Dquarkus.native.container-build=true -B --settings .github/mvn-settings.xml -f 'integration-tests/simple with space/' verify
           fi
       - name: Prepare failure archive (if maven failed)

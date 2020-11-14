@@ -43,7 +43,7 @@ public class FailureHandlerTest {
             response.setStatusCode(501).end(e.getMessage());
         }
 
-        @Route(path = "/*", type = FAILURE, order = 2)
+        @Route(type = FAILURE, order = 2)
         void re(RuntimeException e, HttpServerResponse response) {
             response.setStatusCode(500).end(e.getMessage());
         }

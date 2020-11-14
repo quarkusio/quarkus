@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
@@ -57,6 +58,12 @@ public class QuarkusPluginExtension {
                     .resolveModel(getAppArtifact());
             final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, task);
             props.put(BootstrapConstants.SERIALIZED_APP_MODEL, serializedModel.toString());
+
+            StringJoiner outputSourcesDir = new StringJoiner(",");
+            for (File outputSourceDir : outputSourcesDir()) {
+                outputSourcesDir.add(outputSourceDir.getAbsolutePath());
+            }
+            props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
 
             // Identify the folder containing the sources associated with this test task
             String fileList = getSourceSets().stream()
@@ -171,6 +178,10 @@ public class QuarkusPluginExtension {
 
     public Set<File> resourcesDir() {
         return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
+    }
+
+    public Set<File> outputSourcesDir() {
+        return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles();
     }
 
     public AppArtifact getAppArtifact() {

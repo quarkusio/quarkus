@@ -274,7 +274,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 sb.resourcesStart("Reactive Routes");
                 sb.resourceStart();
                 for (RouteDescription route : reactiveRoutes) {
-                    sb.method(route.getHttpMethod(), route.getPath());
+                    sb.method(route.getHttpMethod(), route.getPath() != null ? route.getPath() : "/*");
                     sb.listItem(route.getJavaMethod());
                     if (route.getConsumes() != null) {
                         sb.consumes(route.getConsumes());

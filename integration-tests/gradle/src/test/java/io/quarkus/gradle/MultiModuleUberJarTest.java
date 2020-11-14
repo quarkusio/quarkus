@@ -57,7 +57,6 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
 
     private void assertThatOutputWorksCorrectly(String logs) {
         assertThat(logs.isEmpty()).isFalse();
-        //String infoLogLevel = "INFO";
         assertThat(logs.contains("INFO")).isTrue();
         assertThat(logs.contains("cdi, resteasy")).isTrue();
     }

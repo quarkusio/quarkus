@@ -48,7 +48,8 @@ public class RouteMethodParametersTest {
                 .body(is("Hello 42! Your name is foo and id is 10"));
         when().get("/hello-multiple-params?id=foo&id=10").then().statusCode(200)
                 .body(is("foo,10"));
-        given().header("My-Header", "fooooo").get("/hello-header").then().statusCode(200).body(is("fooooo"));
+        given().header("My-Header", "fooooo").header("My-Number-Header", "10000").get("/hello-header").then().statusCode(200)
+                .body(is("fooooo=10000"));
         given().header("My-Header", "fooooo").header("My-Header", "baaar").get("/hello-multiple-headers").then().statusCode(200)
                 .body(is("fooooo,baaar"));
         given().contentType("application/json").body("{\"name\":\"Eleven\"}")
@@ -67,6 +68,12 @@ public class RouteMethodParametersTest {
         given().contentType("application/json").body("{\"name\":\"Eleven\"}")
                 .post("/hello-body-pojo?id=13").then().statusCode(200).body("name", is("Eleven"))
                 .body("id", is(13));
+        when().get("/hello-params-conversion?id=22&size=100&valid=false&doubles=2").then().statusCode(200)
+                .body(is("id=22,size=100,valid=false,doubles=[2.0]"));
+        when().get("/hello-param-conversion-optional").then().statusCode(200)
+                .body(is("hello 42"));
+        when().get("/hello-param-conversion-optional?id=1").then().statusCode(200)
+                .body(is("hello 1"));
     }
 
     static class SimpleBean {
@@ -121,9 +128,10 @@ public class RouteMethodParametersTest {
         }
 
         @Route
-        String helloHeader(@Header("My-Header") String myHeader, @Header Optional<String> missingHeader) {
+        String helloHeader(@Header("My-Header") String myHeader, @Header Optional<String> missingHeader,
+                @Header("My-Number-Header") Long numberHeader) {
             assertFalse(missingHeader.isPresent());
-            return myHeader;
+            return myHeader + "=" + numberHeader;
         }
 
         @Route
@@ -155,6 +163,21 @@ public class RouteMethodParametersTest {
         Person helloBodyPojo(@Body Person person, @Param("id") Optional<String> primaryKey) {
             person.setId(primaryKey.map(Integer::valueOf).orElse(11));
             return person;
+        }
+
+        @Route
+        String helloParamsConversion(@Param Integer id, @Param Long size, @Param Boolean valid, @Param List<Double> doubles) {
+            return String.format("id=%s,size=%s,valid=%s,doubles=%s", id, size, valid, doubles);
+        }
+
+        @Route
+        String helloParamConversionOptional(@Param Optional<Integer> id) {
+            return "hello " + id.orElse(42);
+        }
+
+        @Route
+        String helloParamConversionFailure(@Param Integer id) {
+            return "hello " + id;
         }
 
     }

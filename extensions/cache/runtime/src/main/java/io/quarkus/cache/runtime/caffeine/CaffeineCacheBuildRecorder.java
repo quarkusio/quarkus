@@ -7,7 +7,8 @@ import java.util.Set;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.cache.runtime.CacheRepository;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.runtime.CacheManagerImpl;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -17,7 +18,7 @@ public class CaffeineCacheBuildRecorder {
 
     public void buildCaches(BeanContainer beanContainer, Set<CaffeineCacheInfo> cacheInfos) {
         // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor for the caches map.
-        Map<String, CaffeineCache> caches = new HashMap<>(cacheInfos.size() + 1, 1.0F);
+        Map<String, Cache> caches = new HashMap<>(cacheInfos.size() + 1, 1.0F);
 
         for (CaffeineCacheInfo cacheInfo : cacheInfos) {
             if (LOGGER.isDebugEnabled()) {
@@ -30,6 +31,6 @@ public class CaffeineCacheBuildRecorder {
             caches.put(cacheInfo.name, cache);
         }
 
-        beanContainer.instance(CacheRepository.class).setCaches(caches);
+        beanContainer.instance(CacheManagerImpl.class).setCaches(caches);
     }
 }

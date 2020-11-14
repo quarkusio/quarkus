@@ -3,24 +3,24 @@ package io.quarkus.cache.test.deployment;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class UnknownCacheTypeTest {
+public class UnknownConstructorParameterCacheNameTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("quarkus.cache.type=i_am_an_unknown_cache_type"), "application.properties")
-                    .addClass(CachedService.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(CachedService.class, TestBean.class))
             .setExpectedException(DeploymentException.class);
 
     @Test
@@ -32,8 +32,15 @@ public class UnknownCacheTypeTest {
     static class CachedService {
 
         @CacheResult(cacheName = "test-cache")
-        public Object cachedMethod(String key) {
+        public Object getObject(Object key) {
             return new Object();
+        }
+    }
+
+    @Dependent
+    static class TestBean {
+
+        public TestBean(@CacheName("unknown-cache") Cache cache) {
         }
     }
 }

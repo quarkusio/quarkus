@@ -15,8 +15,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class CacheConfig {
 
     /**
-     * Whether or not the cache extension is enabled. If the extension is disabled, the caching annotations will have no effect
-     * at run time.
+     * Whether or not the cache extension is enabled.
      */
     @ConfigItem(defaultValue = "true")
     public boolean enabled;

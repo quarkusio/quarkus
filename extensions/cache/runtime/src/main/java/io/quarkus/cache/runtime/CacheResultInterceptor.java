@@ -13,8 +13,6 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.cache.runtime.caffeine.CaffeineCache;
-
 @CacheResultInterceptorBinding
 @Interceptor
 @Priority(CacheInterceptor.BASE_PRIORITY + 2)
@@ -26,11 +24,11 @@ public class CacheResultInterceptor extends CacheInterceptor {
     public Object intercept(InvocationContext context) throws Exception {
         CacheResultInterceptorBinding binding = getInterceptorBinding(context, CacheResultInterceptorBinding.class);
 
-        CaffeineCache cache = cacheRepository.getCache(binding.cacheName());
+        AbstractCache cache = (AbstractCache) cacheManager.getCache(binding.cacheName()).get();
         short[] cacheKeyParameterPositions = getCacheKeyParameterPositions(context);
         Object key = getCacheKey(cache, cacheKeyParameterPositions, context.getParameters());
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, cache.getName());
+            LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, binding.cacheName());
         }
 
         try {

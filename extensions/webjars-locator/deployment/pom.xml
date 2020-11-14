@@ -57,6 +57,12 @@
           <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.webjars.bowergithub.dc-js</groupId>
+            <artifactId>dc.js</artifactId>
+            <version>3.0.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
           <groupId>io.quarkus</groupId>
           <artifactId>quarkus-resteasy-deployment</artifactId>
           <scope>test</scope>

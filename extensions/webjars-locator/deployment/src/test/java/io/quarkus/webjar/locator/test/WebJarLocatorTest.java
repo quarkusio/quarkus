@@ -59,5 +59,9 @@ public class WebJarLocatorTest {
                 .statusCode(404);
         RestAssured.get("/webjars/momentjs/2.25.0/min/moment.min.js").then()
                 .statusCode(404);
+
+        // Test webjar that does not have a version in the jar path
+        RestAssured.get("/webjars/dcjs/dc.min.js").then()
+                .statusCode(200);
     }
 }

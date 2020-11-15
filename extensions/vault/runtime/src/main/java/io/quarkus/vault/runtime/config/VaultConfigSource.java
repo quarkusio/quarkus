@@ -16,6 +16,7 @@ import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.util.Collections.emptyMap;
 import static java.util.Optional.empty;
+import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -52,12 +53,13 @@ public class VaultConfigSource implements ConfigSource {
 
     private static final Logger log = Logger.getLogger(VaultConfigSource.class);
 
-    private static final String PROPERTY_PREFIX = "quarkus.vault.";
-    public static final Pattern CREDENTIALS_PATTERN = Pattern.compile("^quarkus\\.vault\\.credentials-provider\\.([^.]+)\\.");
-    public static final Pattern TRANSIT_KEY_PATTERN = Pattern.compile("^quarkus\\.vault\\.transit.key\\.([^.]+)\\.");
-    public static final Pattern SECRET_CONFIG_KV_PATH_PATTERN = Pattern
-            .compile("^quarkus\\.vault\\.secret-config-kv-path\\.(?:([^.]+)|(?:\"([^\"]+)\"))$");
-    public static final Pattern EXPANSION_PATTERN = Pattern.compile("\\$\\{([^}]+)\\}");
+    static final String PROPERTY_PREFIX = "quarkus.vault.";
+    public static final Pattern CREDENTIALS_PATTERN = compile("^quarkus\\.vault\\.credentials-provider\\.([^.]+)\\.");
+    public static final Pattern TRANSIT_KEY_PATTERN = compile("^quarkus\\.vault\\.transit.key\\.([^.]+)\\.");
+    public static final String SECRET_CONFIG_KV_PREFIX_PATHS = "secret-config-kv-path";
+    public static final Pattern SECRET_CONFIG_KV_PREFIX_PATH_PATTERN = compile(
+            "^quarkus\\.vault\\." + SECRET_CONFIG_KV_PREFIX_PATHS + "\\.(?:([^.]+)|(?:\"([^\"]+)\"))$");
+    public static final Pattern EXPANSION_PATTERN = compile("\\$\\{([^}]+)\\}");
 
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
     private AtomicReference<VaultRuntimeConfig> serverConfig = new AtomicReference<>(null);
@@ -117,13 +119,10 @@ public class VaultConfigSource implements ConfigSource {
 
         try {
             // default kv paths
-            if (serverConfig.secretConfigKvPath.isPresent()) {
-                fetchSecrets(serverConfig.secretConfigKvPath.get(), null, properties);
-            }
+            serverConfig.secretConfigKvPath.ifPresent(strings -> fetchSecrets(strings, null, properties));
 
             // prefixed kv paths
-            serverConfig.secretConfigKvPrefixPath.entrySet()
-                    .forEach(entry -> fetchSecrets(entry.getValue(), entry.getKey(), properties));
+            serverConfig.secretConfigKvPathPrefix.forEach((key, value) -> fetchSecrets(value.paths, key, properties));
 
             log.debug("loaded " + properties.size() + " properties from vault");
         } catch (RuntimeException e) {
@@ -252,7 +251,7 @@ public class VaultConfigSource implements ConfigSource {
 
         serverConfig.credentialsProvider = createCredentialProviderConfigParser().getConfig();
         serverConfig.transit.key = createTransitKeyConfigParser().getConfig();
-        serverConfig.secretConfigKvPrefixPath = getSecretConfigKvPrefixPaths();
+        serverConfig.secretConfigKvPathPrefix = getSecretConfigKvPrefixPaths();
 
         return serverConfig;
     }
@@ -362,7 +361,7 @@ public class VaultConfigSource implements ConfigSource {
                 .orElse(defaultValue);
     }
 
-    private Map<String, List<String>> getSecretConfigKvPrefixPaths() {
+    private Map<String, VaultRuntimeConfig.KvPathConfig> getSecretConfigKvPrefixPaths() {
 
         return getConfigSourceStream()
                 .flatMap(configSource -> configSource.getPropertyNames().stream())
@@ -370,7 +369,8 @@ public class VaultConfigSource implements ConfigSource {
                 .filter(Objects::nonNull)
                 .distinct()
                 .map(this::createNameSecretConfigKvPrefixPathPair)
-                .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
+                .collect(toMap(SimpleEntry::getKey,
+                        kvStore -> new VaultRuntimeConfig.KvPathConfig(kvStore.getValue())));
     }
 
     private Stream<ConfigSource> getConfigSourceStream() {
@@ -394,12 +394,12 @@ public class VaultConfigSource implements ConfigSource {
     }
 
     private String getSecretConfigKvPrefixPathName(String propertyName) {
-        Matcher matcher = SECRET_CONFIG_KV_PATH_PATTERN.matcher(propertyName);
+        Matcher matcher = SECRET_CONFIG_KV_PREFIX_PATH_PATTERN.matcher(propertyName);
         return matcher.matches() ? (matcher.group(1) != null ? matcher.group(1) : matcher.group(2)) : null;
     }
 
     private List<String> getSecretConfigKvPrefixPath(String prefixName) {
-        return getOptionalListProperty("secret-config-kv-path." + prefixName).get();
+        return getOptionalListProperty(SECRET_CONFIG_KV_PREFIX_PATHS + "." + prefixName).get();
     }
 
 }

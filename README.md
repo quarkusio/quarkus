@@ -32,7 +32,7 @@ _All under ONE framework._
 
 ## Release Planning
 
-Interested on when the next release is coming? Check our [release planning](https://github.com/quarkusio/quarkus/wiki/Release-Planning) document for details.
+Interested in when the next release is coming? Check our [release planning](https://github.com/quarkusio/quarkus/wiki/Release-Planning) document for details.
 
 ## How to build Quarkus
 

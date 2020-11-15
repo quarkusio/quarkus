@@ -34,6 +34,7 @@ import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -89,8 +90,8 @@ public class OpenshiftProcessor {
         result.addAll(KubernetesCommonHelper.createPlatformConfigurators(config));
         result.addAll(KubernetesCommonHelper.createGlobalConfigurators(ports));
 
-        if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)
-                && !capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_OPENSHIFT)) {
+        if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
+                && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
             result.add(new ConfiguratorBuildItem(new DisableS2iConfigurator()));
 
             image.flatMap(ContainerImageInfoBuildItem::getRegistry).ifPresent(r -> {
@@ -190,8 +191,8 @@ public class OpenshiftProcessor {
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(port)));
 
         // Hanlde non-s2i
-        if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)
-                && !capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_OPENSHIFT)) {
+        if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
+                && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
             result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
         }
 

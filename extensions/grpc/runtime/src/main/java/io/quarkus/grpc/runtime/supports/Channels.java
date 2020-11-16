@@ -4,6 +4,10 @@ import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_HEADER_LIST_SIZE;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -62,11 +66,20 @@ public class Channels {
             Path keyPath = config.ssl.key.orElse(null);
             SslContextBuilder sslContextBuilder = GrpcSslContexts.forClient();
             if (trustStorePath != null) {
-                sslContextBuilder.trustManager(trustStorePath.toFile());
+                try (InputStream stream = streamFor(trustStorePath, "trust store")) {
+                    sslContextBuilder.trustManager(stream);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Configuring gRPC client trust store failed", e);
+                }
             }
 
             if (certificatePath != null && keyPath != null) {
-                sslContextBuilder.keyManager(certificatePath.toFile(), keyPath.toFile());
+                try (InputStream certificate = streamFor(certificatePath, "certificate");
+                        InputStream key = streamFor(keyPath, "key")) {
+                    sslContextBuilder.keyManager(certificate, key);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Configuring gRPC client certificate failed", e);
+                }
             }
 
             context = sslContextBuilder.build();
@@ -132,6 +145,20 @@ public class Channels {
         }
 
         return builder.build();
+    }
+
+    private static InputStream streamFor(Path path, String resourceName) {
+        final InputStream resource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(path.toString());
+        if (resource != null) {
+            return resource;
+        } else {
+            try {
+                return Files.newInputStream(path);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Unable to read " + resourceName + " from " + path, e);
+            }
+        }
     }
 
     public static Channel retrieveChannel(String name) {

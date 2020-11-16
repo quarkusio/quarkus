@@ -16,19 +16,20 @@ import io.vertx.core.http.ClientAuth;
 @ConfigGroup
 public class SslServerConfig {
     /**
-     * The file path to a server certificate or certificate chain in PEM format.
+     * The classpath path or file path to a server certificate or certificate chain in PEM format.
      */
     @ConfigItem
     public Optional<Path> certificate;
 
     /**
-     * The file path to the corresponding certificate private key file in PEM format.
+     * The classpath path or file path to the corresponding certificate private key file in PEM format.
      */
     @ConfigItem
     public Optional<Path> key;
 
     /**
      * An optional key store which holds the certificate information instead of specifying separate files.
+     * The key store can be either on classpath or an external file.
      */
     @ConfigItem
     public Optional<Path> keyStore;
@@ -48,6 +49,8 @@ public class SslServerConfig {
 
     /**
      * An optional trust store which holds the certificate information of the certificates to trust
+     *
+     * The trust store can be either on classpath or an external file.
      */
     @ConfigItem
     public Optional<Path> trustStore;

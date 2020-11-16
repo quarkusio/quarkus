@@ -48,30 +48,6 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-json-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb"
-cd rest-json-quickstart
-----
-
-This command generates a Maven structure importing the RESTEasy/JAX-RS and http://json-b.net/[JSON-B] extensions,
-and in particular adds the following dependency:
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jsonb</artifactId>
-</dependency>
-----
-
-Quarkus also supports https://github.com/FasterXML/jackson[Jackson] so, if you prefer Jackson over JSON-B, you can create a project relying on the RESTEasy Jackson extension instead:
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-json-quickstart \
-    -DclassName="org.acme.rest.json.FruitResource" \
-    -Dpath="/fruits" \
     -Dextensions="resteasy-jackson"
 cd rest-json-quickstart
 ----
@@ -87,7 +63,34 @@ and in particular adds the following dependency:
 </dependency>
 ----
 
+[NOTE]
+====
 To improve user experience, Quarkus registers the three Jackson https://github.com/FasterXML/jackson-modules-java8[Java 8 modules] so you don't need to do it manually.
+====
+
+Quarkus also supports http://json-b.net/[JSON-B] so, if you prefer JSON-B over Jackson, you can create a project relying on the RESTEasy JSON-B extension instead:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-json-quickstart \
+    -DclassName="org.acme.rest.json.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy-jsonb"
+cd rest-json-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS and http://json-b.net/[JSON-B] extensions,
+and in particular adds the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jsonb</artifactId>
+</dependency>
+----
 
 == Creating your first JSON REST service
 
@@ -167,7 +170,7 @@ depending on the extension you chose when initializing the project.
 
 [NOTE]
 ====
-When a JSON extension is installed such as `quarkus-resteasy-jsonb` or `quarkus-resteasy-jackson`, Quarkus will use the `application/json` media type
+When a JSON extension is installed such as `quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`, Quarkus will use the `application/json` media type
 by default for most return values, unless the media type is explicitly set via
 `@Produces` or `@Consumes` annotations (there are some exceptions for well known types, such as `String` and `File`, which default to `text/plain` and `application/octet-stream`
 respectively).
@@ -181,10 +184,37 @@ It will allow to narrow down the number of JAX-RS providers (which can be seen a
 
 === Configuring JSON support
 
+==== Jackson
+
+Quarkus makes it very easy to configure various Jackson settings via CDI beans. The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jackson.ObjectMapperCustomizer`
+inside of which any Jackson configuration can be applied.
+
+An example where a custom module needs to be registered would look like so:
+
+[source,java]
+----
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.jackson.ObjectMapperCustomizer;
+import javax.inject.Singleton;
+
+@Singleton
+public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
+
+    public void customize(ObjectMapper mapper) {
+        mapper.registerModule(new CustomModule());
+    }
+}
+----
+
+Users can even provide their own `ObjectMapper` bean if they so choose.
+If this is done, it is very important to manually inject and apply all `io.quarkus.jackson.ObjectMapperCustomizer` beans in the CDI producer that produces `ObjectMapper`.
+Failure to do so will prevent Jackson specific customizations provided by various extensions from being applied.
+
 ==== JSON-B
 
-Quarkus makes it very easy to configure various JSON-B settings via CDI beans. The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jsonb.JsonbConfigCustomizer`
-inside of which any JSON-B configuration can be applied.
+As stated above, Quarkus provides the option of using JSON-B instead of Jackson via the use of the `quarkus-resteasy-jsonb` extension.
+
+Following the same approach as described in the previous section, JSON-B can be configured using a `io.quarkus.jsonb.JsonbConfigCustomizer` bean.
 
 If for example a custom serializer named `FooSerializer` for type `com.example.Foo` needs to be registered with JSON-B, the addition of a bean like the following would suffice:
 
@@ -207,32 +237,6 @@ public class FooSerializerRegistrationCustomizer implements JsonbConfigCustomize
 A more advanced option would be to directly provide a bean of `javax.json.bind.JsonbConfig` (with a `Dependent` scope) or in the extreme case to provide a bean of type `javax.json.bind.Jsonb` (with a `Singleton` scope).
 If the latter approach is leveraged it is very important to manually inject and apply all `io.quarkus.jsonb.JsonbConfigCustomizer` beans in the CDI producer that produces `javax.json.bind.Jsonb`.
 Failure to do so will prevent JSON-B specific customizations provided by various extensions from being applied.
-
-==== Jackson
-
-As stated above, Quarkus provides the option of using https://github.com/FasterXML/jackson[Jackson] instead of JSON-B via the use of the `quarkus-resteasy-jackson` extension.
-
-Following the same approach as described in the previous section, Jackson's `ObjectMapper` can be configured using a `io.quarkus.jackson.ObjectMapperCustomizer` bean.
-An example where a custom module needs to be registered would like so:
-
-[source,java]
-----
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.jackson.ObjectMapperCustomizer;
-import javax.inject.Singleton;
-
-@Singleton
-public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
-
-    public void customize(ObjectMapper mapper) {
-        mapper.registerModule(new CustomModule());
-    }
-}
-----
-
-Users can even provide their own `ObjectMapper` bean if they so choose.
-If this is done, it is very important to manually inject and apply all `io.quarkus.jackson.ObjectMapperCustomizer` beans in the CDI producer that produces `ObjectMapper`.
-Failure to do so will prevent Jackson specific customizations provided by various extensions from being applied.
 
 == Creating a frontend
 

@@ -101,7 +101,7 @@ you need manual context propagation. You can do that by injecting a `ThreadConte
 or `ManagedExecutor` that will propagate every context. For example, here we use the link:vertx[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using
 link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
-them to the client as JSON using link:rest-json[JSON-B or Jackson]:
+them to the client as JSON using link:rest-json[Jackson or JSON-B]:
 
 [source,java]
 ----

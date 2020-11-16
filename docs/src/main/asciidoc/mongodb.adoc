@@ -48,11 +48,11 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=mongodb-quickstart \
     -DclassName="org.acme.mongodb.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb,mongodb-client,resteasy-mutiny,context-propagation"
+    -Dextensions="resteasy-jackson,mongodb-client,resteasy-mutiny,context-propagation"
 cd mongodb-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B, Mutiny, Context Propagation and MongoDB Client extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson, Mutiny, Context Propagation and MongoDB Client extensions.
 After this, the quarkus-mongodb-client extension has been added to your `pom.xml`.
 
 If you already have your Quarkus project configured, you can add the `mongodb-client` extension

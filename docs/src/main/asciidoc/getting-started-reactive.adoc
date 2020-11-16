@@ -171,7 +171,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=getting-started-reactive \
     -DclassName="org.acme.quickstart.ReactiveGreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="resteasy-mutiny, resteasy-jsonb"
+    -Dextensions="resteasy-mutiny, resteasy-jackson"
 cd getting-started-reactive
 ----
 
@@ -181,14 +181,14 @@ For Windows users
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-mutiny,resteasy-jsonb"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-mutiny,resteasy-jackson"
 ----
 
 - If using Powershell, wrap `-D` parameters in double quotes
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-mutiny,resteasy-jsonb"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-mutiny,resteasy-jackson"
 ----
 
 It generates the following in  `./getting-started-reactive`:
@@ -200,7 +200,7 @@ It generates the following in  `./getting-started-reactive`:
 * example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
 * the application configuration file
 
-The generated `pom.xml` also declares the RESTEasy Mutiny support and RESTEasy JSON-B to serialize payloads.
+The generated `pom.xml` also declares the RESTEasy Mutiny support and RESTEasy Jackson to serialize payloads.
 
 === Reactive JAX-RS resources
 
@@ -408,7 +408,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=getting-started-reactive-crud \
     -DclassName="org.acme.reactive.crud.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-mutiny, resteasy-jsonb, reactive-pg-client"
+    -Dextensions="resteasy-mutiny, resteasy-jackson, reactive-pg-client"
 cd getting-started-reactive-crud
 ----
 

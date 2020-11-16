@@ -160,9 +160,22 @@ public class SerializedApplication {
             }
             return new SerializedApplication(
                     new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages,
-                            nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap),
+                            nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap,
+                            new RunnerClassLoader.CleanerConfig(
+                                    !"true".equals(System.getProperty("quarkus.runner.cleaner.prevent")),
+                                    getCleanerSystemProperty("quarkus.runner.cleaner.period", 30_000),
+                                    getCleanerSystemProperty("quarkus.runner.cleaner.unaccessed", 20_000))),
                     mainClass);
         }
+    }
+
+    private static long getCleanerSystemProperty(String name, int defaultVal) {
+        long result = defaultVal;
+        String strValue = System.getProperty(name);
+        if ((strValue != null) && !strValue.isEmpty()) {
+            result = Long.parseLong(strValue);
+        }
+        return result;
     }
 
     private static String readNullableString(DataInputStream in) throws IOException {

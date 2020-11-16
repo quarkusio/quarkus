@@ -39,6 +39,9 @@ public class JarResource implements ClassLoadingResource {
     //Likewise, opening a JarFile requires the exclusive lock.
     private volatile JarFile zipFile;
 
+    // use this value as a guard to ensure that a resource never accessed won't be a candidate for closing
+    private long lastAccessed = Long.MAX_VALUE;
+
     public JarResource(ManifestInfo manifestInfo, Path jarPath) {
         this.manifestInfo = manifestInfo;
         this.jarPath = jarPath;
@@ -127,6 +130,7 @@ public class JarResource implements ClassLoadingResource {
             readLock.lock();
             final JarFile zipFileLocal = this.zipFile;
             if (zipFileLocal != null) {
+                lastAccessed = System.nanoTime();
                 //Expected fast path: returns a reference to the open JarFile while owning the readLock
                 return zipFileLocal;
             } else {
@@ -169,6 +173,8 @@ public class JarResource implements ClassLoadingResource {
             if (zipFileLocal != null) {
                 try {
                     zipFileLocal.close();
+                    // prevents any new attempts of closing the resource unless it really gets accessed
+                    lastAccessed = Long.MAX_VALUE;
                 } catch (IOException e) {
                     //ignore
                 }
@@ -185,4 +191,8 @@ public class JarResource implements ClassLoadingResource {
         close();
     }
 
+    @Override
+    public long lastAccessed() {
+        return lastAccessed;
+    }
 }

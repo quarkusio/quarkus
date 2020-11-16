@@ -27,4 +27,11 @@ public interface ClassLoadingResource {
     default void resetInternalCaches() {
         //no-op
     }
+
+    /**
+     * Returns the value of {@code System.nanoTime()} when the resource was last accessed
+     */
+    default long lastAccessed() {
+        return Long.MAX_VALUE;
+    }
 }

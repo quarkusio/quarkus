@@ -9,6 +9,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -18,6 +20,7 @@ import java.util.function.Function;
  */
 public class RunnerClassLoader extends ClassLoader {
 
+    public static final int CLEANER_TIMER_PERIOD = 10_000;
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
      */
@@ -38,13 +41,31 @@ public class RunnerClassLoader extends ClassLoader {
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
-            Set<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
+            Set<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap,
+            CleanerConfig cleanerConfig) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
         this.nonExistentResources = nonExistentResources;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
+        if (cleanerConfig.enabled) {
+            Timer timer = new Timer("runnerclassloader-cleaner", true);
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    long now = System.nanoTime();
+                    for (ClassLoadingResource[] resources : resourceDirectoryMap.values()) {
+                        for (ClassLoadingResource resource : resources) {
+                            long dur = now - resource.lastAccessed();
+                            if ((dur / 1_000_000) >= cleanerConfig.minUnaccessedMillis) {
+                                resource.resetInternalCaches();
+                            }
+                        }
+                    }
+                }
+            }, cleanerConfig.periodMillis, cleanerConfig.periodMillis);
+        }
     }
 
     @Override
@@ -242,6 +263,18 @@ public class RunnerClassLoader extends ClassLoader {
             for (ClassLoadingResource i : entry.getValue()) {
                 i.resetInternalCaches();
             }
+        }
+    }
+
+    static class CleanerConfig {
+        final boolean enabled;
+        final long periodMillis;
+        final long minUnaccessedMillis;
+
+        public CleanerConfig(boolean enabled, long periodMillis, long minUnaccessedMillis) {
+            this.enabled = enabled;
+            this.periodMillis = periodMillis;
+            this.minUnaccessedMillis = minUnaccessedMillis;
         }
     }
 }

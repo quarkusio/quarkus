@@ -75,6 +75,16 @@ public final class DotNames {
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());
     public static final DotName INTEGER = DotName.createSimple(Integer.class.getName());
     public static final DotName PRIMITIVE_INTEGER = DotName.createSimple(int.class.getName());
+    public static final DotName SHORT = DotName.createSimple(Short.class.getName());
+    public static final DotName PRIMITIVE_SHORT = DotName.createSimple(short.class.getName());
+    public static final DotName CHARACTER = DotName.createSimple(Character.class.getName());
+    public static final DotName PRIMITIVE_CHAR = DotName.createSimple(char.class.getName());
+    public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
+    public static final DotName PRIMITIVE_BYTE = DotName.createSimple(byte.class.getName());
+    public static final DotName DOUBLE = DotName.createSimple(Double.class.getName());
+    public static final DotName PRIMITIVE_DOUBLE = DotName.createSimple(double.class.getName());
+    public static final DotName FLOAT = DotName.createSimple(Float.class.getName());
+    public static final DotName PRIMITIVE_FLOAT = DotName.createSimple(float.class.getName());
     public static final DotName BOOLEAN = DotName.createSimple(Boolean.class.getName());
     public static final DotName PRIMITIVE_BOOLEAN = DotName.createSimple(boolean.class.getName());
     public static final DotName STRING = DotName.createSimple(String.class.getName());

@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
@@ -15,17 +16,22 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CountryResourceTest {
 
     private static final Set<String> NOT_ADDED_OR_REMOVED = new HashSet<>(
             Arrays.asList("Greece", "France", "Czechia"));
 
     @Test
+    @Order(1)
     void testAll() {
         List<Country> countries = when().get("/country/all").then()
                 .statusCode(200)
@@ -37,6 +43,7 @@ public class CountryResourceTest {
     }
 
     @Test
+    @Order(2)
     void testPage() {
         when().get("/country/page/1/0").then()
                 .statusCode(200)
@@ -56,6 +63,7 @@ public class CountryResourceTest {
     }
 
     @Test
+    @Order(3)
     void testPageSorted() {
         String response = when().get("/country/page-sorted/2/0").then()
                 .statusCode(200)
@@ -65,6 +73,7 @@ public class CountryResourceTest {
     }
 
     @Test
+    @Order(4)
     void testGetOne() {
         when().get("/country/getOne/1").then()
                 .statusCode(200)
@@ -75,6 +84,7 @@ public class CountryResourceTest {
     }
 
     @Test
+    @Order(5)
     void testNewAndEditIso() {
         when().get("/country/all").then()
                 .statusCode(200)
@@ -101,5 +111,16 @@ public class CountryResourceTest {
 
         when().get("/country/editIso3/100/ZZZ").then()
                 .statusCode(500);
+    }
+
+    @Test
+    @Order(6)
+    void testDeleteAllInBatch() {
+        when().delete("/country").then()
+                .statusCode(204);
+
+        when().get("/country/all").then()
+                .statusCode(200)
+                .body("size()", equalTo(0));
     }
 }

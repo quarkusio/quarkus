@@ -12,35 +12,90 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+
 class AddExtensionMojoTest {
 
-    private static final File MIN_POM = new File("src/test/resources/projects/simple-pom-it/pom.xml");
+    private static final File MIN_POM = new File("target/test-classes/projects/simple-pom-it/pom.xml");
     private static final File OUTPUT_POM = new File("target/test-classes/add-extension/pom.xml");
     private static final String DEP_GAV = "org.apache.commons:commons-lang3:3.8.1";
     private AddExtensionMojo mojo;
 
     @BeforeEach
-    void init() throws IOException {
+    void init() throws Exception {
         mojo = getMojo();
         mojo.project = new MavenProject();
         mojo.project.setPomFile(OUTPUT_POM);
         mojo.project.setFile(OUTPUT_POM);
-        Model model = new Model();
-        mojo.project.setModel(model);
-        mojo.project.setOriginalModel(model);
         FileUtils.copyFile(MIN_POM, OUTPUT_POM);
+
+        Model model = ModelUtils.readModel(OUTPUT_POM.toPath());
         model.setPomFile(OUTPUT_POM);
+        mojo.project.setOriginalModel(model);
+
+        final MavenArtifactResolver mvn = new MavenArtifactResolver(
+                new BootstrapMavenContext(BootstrapMavenContext.config()
+                        .setCurrentProject(OUTPUT_POM.getAbsolutePath())
+                        .setOffline(true)));
+        mojo.repoSystem = mvn.getSystem();
+        mojo.repoSession = mvn.getSession();
+        mojo.repos = mvn.getRepositories();
+        mojo.remoteRepositoryManager = mvn.getRemoteRepositoryManager();
+
+        final Model effectiveModel = model.clone();
+        final DependencyManagement dm = new DependencyManagement();
+        effectiveModel.setDependencyManagement(dm);
+        final Artifact projectPom = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), null, "pom",
+                ModelUtils.getVersion(model));
+        final ArtifactDescriptorResult descriptor = mvn.resolveDescriptor(projectPom);
+        descriptor.getManagedDependencies().forEach(d -> {
+            final Dependency dep = new Dependency();
+            Artifact a = d.getArtifact();
+            dep.setGroupId(a.getGroupId());
+            dep.setArtifactId(a.getArtifactId());
+            dep.setClassifier(a.getClassifier());
+            dep.setType(a.getExtension());
+            dep.setVersion(a.getVersion());
+            if (d.getOptional() != null) {
+                dep.setOptional(d.getOptional());
+            }
+            dep.setScope(d.getScope());
+            dm.addDependency(dep);
+        });
+        descriptor.getDependencies().forEach(d -> {
+            final Dependency dep = new Dependency();
+            Artifact a = d.getArtifact();
+            dep.setGroupId(a.getGroupId());
+            dep.setArtifactId(a.getArtifactId());
+            dep.setClassifier(a.getClassifier());
+            dep.setType(a.getExtension());
+            dep.setVersion(a.getVersion());
+            if (d.getOptional() != null) {
+                dep.setOptional(d.getOptional());
+            }
+            dep.setScope(d.getScope());
+            effectiveModel.addDependency(dep);
+        });
+        descriptor.getProperties().entrySet().forEach(p -> effectiveModel.getProperties().setProperty(p.getKey(),
+                p.getValue() == null ? "" : p.getValue().toString()));
+        mojo.project.setModel(effectiveModel);
     }
 
-    protected AddExtensionMojo getMojo() {
+    protected AddExtensionMojo getMojo() throws Exception {
         return new AddExtensionMojo();
     }
 

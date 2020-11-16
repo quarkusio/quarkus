@@ -375,7 +375,8 @@ public class QuarkusJsonPlatformDescriptorResolver {
                 throw new IllegalStateException("Failed to resolve the platform BOM using the provided coordinates", e);
             }
             log.debug(
-                    "Failed to resolve Quarkus platform BOM using the default coordinates, falling back to the bundled Quarkus platform artifacts");
+                    "Failed to resolve Quarkus platform BOM using the default coordinates %s:%s:%s, falling back to the bundled Quarkus platform artifacts",
+                    bomGroupId, bomArtifactId, bomVersion);
         }
 
         Model bundledBom = loadBundledPom();

@@ -24,6 +24,7 @@ public class RunnerClassLoader extends ClassLoader {
     private final Map<String, ClassLoadingResource[]> resourceDirectoryMap;
 
     private final Set<String> parentFirstPackages;
+    private final Set<String> nonExistentResources;
 
     private final ConcurrentMap<ClassLoadingResource, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
 
@@ -32,10 +33,11 @@ public class RunnerClassLoader extends ClassLoader {
     }
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
-            Set<String> parentFirstPackages) {
+            Set<String> parentFirstPackages, Set<String> nonExistentResources) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
+        this.nonExistentResources = nonExistentResources;
     }
 
     @Override
@@ -96,6 +98,9 @@ public class RunnerClassLoader extends ClassLoader {
     @Override
     protected URL findResource(String name) {
         name = sanitizeName(name);
+        if (nonExistentResources.contains(name)) {
+            return null;
+        }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
             return null;
@@ -133,6 +138,9 @@ public class RunnerClassLoader extends ClassLoader {
     @Override
     protected Enumeration<URL> findResources(String name) throws IOException {
         name = sanitizeName(name);
+        if (nonExistentResources.contains(name)) {
+            return Collections.emptyEnumeration();
+        }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
             return null;

@@ -122,7 +122,7 @@ public class KafkaStreamsProducer {
             kafkaStreams.close();
         }
         if (kafkaAdminClient != null) {
-            kafkaAdminClient.close();
+            kafkaAdminClient.close(Duration.ZERO);
         }
     }
 

@@ -51,7 +51,7 @@ public class SerializedApplication {
     }
 
     public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath,
-            List<Path> parentFirst)
+            List<Path> parentFirst, List<String> nonExistentResources)
             throws IOException {
         try (DataOutputStream data = new DataOutputStream(outputStream)) {
             data.writeInt(MAGIC);
@@ -71,6 +71,10 @@ public class SerializedApplication {
             data.writeInt(parentFirstPackages.size());
             for (String p : parentFirstPackages) {
                 data.writeUTF(p.replace("/", ".").replace("\\", "."));
+            }
+            data.writeInt(nonExistentResources.size());
+            for (String nonExistentResource : nonExistentResources) {
+                data.writeUTF(nonExistentResource);
             }
             data.flush();
         }
@@ -115,8 +119,14 @@ public class SerializedApplication {
             for (int i = 0; i < packages; ++i) {
                 parentFirstPackages.add(in.readUTF());
             }
+            Set<String> nonExistentResources = new HashSet<>();
+            int nonExistentResourcesSize = in.readInt();
+            for (int i = 0; i < nonExistentResourcesSize; i++) {
+                nonExistentResources.add(in.readUTF());
+            }
             return new SerializedApplication(
-                    new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages),
+                    new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages,
+                            nonExistentResources),
                     mainClass);
         }
     }

@@ -77,6 +77,12 @@ public class VertxConfiguration {
     public ClusterConfiguration cluster;
 
     /**
+     * The address resolver configuration.
+     */
+    @ConfigItem
+    public AddressResolverConfiguration resolver;
+
+    /**
      * Enable or disable native transport
      */
     @ConfigItem

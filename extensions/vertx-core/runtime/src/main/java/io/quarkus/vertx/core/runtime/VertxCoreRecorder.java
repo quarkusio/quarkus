@@ -29,6 +29,7 @@ import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
 import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
@@ -38,6 +39,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
@@ -216,6 +218,8 @@ public class VertxCoreRecorder {
             System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
         }
 
+        setAddressResolverOptions(conf, options);
+
         if (allowClustering) {
             // Order matters, as the cluster options modifies the event bus options.
             setEventBusOptions(conf, options);
@@ -339,6 +343,16 @@ public class VertxCoreRecorder {
         configurePfxTrustOptions(opts, eb.trustCertificatePfx);
 
         options.setEventBusOptions(opts);
+    }
+
+    private static void setAddressResolverOptions(VertxConfiguration conf, VertxOptions options) {
+        AddressResolverConfiguration ar = conf.resolver;
+        AddressResolverOptions opts = new AddressResolverOptions();
+        opts.setCacheMaxTimeToLive(ar.cacheMaxTimeToLive);
+        opts.setCacheMinTimeToLive(ar.cacheMinTimeToLive);
+        opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive);
+
+        options.setAddressResolverOptions(opts);
     }
 
     public Supplier<EventLoopGroup> bossSupplier() {

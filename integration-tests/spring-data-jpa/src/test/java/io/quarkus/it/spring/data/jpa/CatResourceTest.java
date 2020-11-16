@@ -234,4 +234,14 @@ public class CatResourceTest {
                 .statusCode(200)
                 .body(Is.is("true"));
     }
+
+    @Test
+    void testCustomQueryCatColors() {
+        List<String> catColors = when().get("/cat/customQueryCatColors").then()
+                .statusCode(200)
+                .extract().body().jsonPath().getList(".", String.class);
+        assertThat(catColors)
+                .containsOnlyOnce("Grey", "White", "Black")
+                .hasSize(3);
+    }
 }

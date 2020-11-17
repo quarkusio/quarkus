@@ -1,6 +1,8 @@
 package io.quarkus.spring.data.deployment.generate;
 
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -119,7 +121,7 @@ public abstract class AbstractMethodsAdder {
                     MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class));
             catchBlock.returnValue(emptyOptional);
         } else if (DotNames.LIST.equals(returnType) || DotNames.COLLECTION.equals(returnType)
-                || DotNames.ITERATOR.equals(returnType)) {
+                || DotNames.SET.equals(returnType) || DotNames.ITERATOR.equals(returnType)) {
             ResultHandle list;
 
             if (customResultType == null) {
@@ -158,6 +160,10 @@ public abstract class AbstractMethodsAdder {
                         MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class),
                         list);
                 methodCreator.returnValue(iterator);
+            } else if (DotNames.SET.equals(returnType)) {
+                ResultHandle set = methodCreator.newInstance(
+                        MethodDescriptor.ofConstructor(LinkedHashSet.class, Collection.class), list);
+                methodCreator.returnValue(set);
             }
             methodCreator.returnValue(list);
 

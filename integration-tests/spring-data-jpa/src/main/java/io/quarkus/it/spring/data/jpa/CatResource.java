@@ -3,6 +3,7 @@ package io.quarkus.it.spring.data.jpa;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.GET;
@@ -125,5 +126,12 @@ public class CatResource {
     @Produces("text/plain")
     public Boolean customFindDistinctive(@PathParam("id") Long id) {
         return catRepository.customFindDistinctive(id);
+    }
+
+    @GET
+    @Path("/customQueryCatColors")
+    @Produces("application/json")
+    public Set<String> customQueryCatColors() {
+        return catRepository.customQueryCatColors();
     }
 }

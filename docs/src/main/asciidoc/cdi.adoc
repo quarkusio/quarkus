@@ -287,7 +287,7 @@ No scope annotation is declared and so it's defaulted to `@Dependent`.
 
 There's more about producers. 
 You can declare qualifiers, inject dependencies into the producer methods parameters, etc. 
-You can read more about producers for example in the https://docs.jboss.org/weld/reference/latest/en-US/html_single/#_producer_methods[Weld docs, window="_blank"].
+You can read more about producers for example in the https://docs.jboss.org/weld/reference/latest/en-US/html/producermethods.html[Weld docs, window="_blank"].
 
 == _Q: OK, injection looks cool. What other services are provided?_
 
@@ -399,7 +399,7 @@ class Logger {
 <2> Fire the event synchronously.
 <3> This method is notified when a `TaskCompleted` event is fired.
 
-TIP: For more info about events/observers visit https://docs.jboss.org/weld/reference/latest/en-US/html/#events[Weld docs, window="_blank"].
+TIP: For more info about events/observers visit https://docs.jboss.org/weld/reference/latest/en-US/html/events.html[Weld docs, window="_blank"].
 
 == Conclusion
 

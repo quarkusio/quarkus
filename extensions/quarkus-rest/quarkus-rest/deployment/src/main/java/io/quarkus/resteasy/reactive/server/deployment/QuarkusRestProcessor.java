@@ -83,6 +83,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.rest.server.runtime.QuarkusRestInitialiser;
 import io.quarkus.rest.server.runtime.QuarkusRestRecorder;
+import io.quarkus.rest.server.runtime.ServerVertxBufferMessageBodyWriter;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
@@ -107,6 +108,7 @@ import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusRestProcessor {
@@ -121,6 +123,12 @@ public class QuarkusRestProcessor {
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.QUARKUS_REST);
+    }
+
+    @BuildStep
+    void vertxIntegration(BuildProducer<MessageBodyWriterBuildItem> writerBuildItemBuildProducer) {
+        writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerVertxBufferMessageBodyWriter.class.getName(),
+                Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER, true));
     }
 
     @BuildStep

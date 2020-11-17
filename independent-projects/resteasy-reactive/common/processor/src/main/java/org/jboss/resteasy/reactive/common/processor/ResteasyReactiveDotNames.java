@@ -4,8 +4,6 @@ import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -94,8 +92,6 @@ public final class ResteasyReactiveDotNames {
     public static final DotName SSE = DotName.createSimple(Sse.class.getName());
     public static final DotName SSE_EVENT_SINK = DotName.createSimple(SseEventSink.class.getName());
     public static final DotName RESOURCE_INFO = DotName.createSimple(ResourceInfo.class.getName());
-    public static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
-    public static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
     public static final DotName QUARKUS_REST_CONTEXT = DotName.createSimple(QuarkusRestContext.class.getName());
 
     public static final DotName SSE_ELEMENT_TYPE = DotName.createSimple(SseElementType.class.getName());

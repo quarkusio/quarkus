@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -20,14 +18,14 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
-public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
+public class QuarkusRestAsyncResponse implements AsyncResponse, Runnable {
 
     private final ResteasyReactiveRequestContext context;
     private volatile boolean suspended;
     private volatile boolean cancelled;
     private volatile TimeoutHandler timeoutHandler;
     // only used with lock, no need for volatile
-    private long timerId = -1;
+    private Runnable timerCancelTask = null;
 
     public QuarkusRestAsyncResponse(ResteasyReactiveRequestContext context) {
         this.context = context;
@@ -97,9 +95,9 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
 
     // CALL WITH LOCK
     private void cancelTimer() {
-        if (timerId != -1) {
-            context.vertx().cancelTimer(timerId);
-            timerId = -1;
+        if (timerCancelTask != null) {
+            timerCancelTask.run();
+            timerCancelTask = null;
         }
     }
 
@@ -124,10 +122,10 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
     public synchronized boolean setTimeout(long time, TimeUnit unit) {
         if (!suspended)
             return false;
-        Vertx vertx = context.vertx();
-        if (timerId != -1)
-            vertx.cancelTimer(timerId);
-        timerId = vertx.setTimer(TimeUnit.MILLISECONDS.convert(time, unit), this);
+        if (timerCancelTask != null) {
+            timerCancelTask.run();
+        }
+        timerCancelTask = context.registerTimer(TimeUnit.MILLISECONDS.convert(time, unit), this);
         return true;
     }
 
@@ -187,13 +185,9 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
     }
 
     @Override
-    public synchronized void handle(Long event) {
-        // perhaps it's possible that we updated a timer and we're getting notified with the
-        // previous timer we registered, in which case let's wait for the latest timer registered
-        if (event.longValue() != timerId)
-            return;
+    public synchronized void run() {
         // make sure we're not marked as waiting for a timer anymore
-        timerId = -1;
+        timerCancelTask = null;
         // if we're not suspended anymore, or we were cancelled, drop it
         if (!suspended || cancelled)
             return;
@@ -203,7 +197,7 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Handler<Long> {
             // In case the time-out handler does not take any of the actions mentioned above [resume/new timeout], 
             // a default time-out strategy is executed by the runtime.
             // Stef picked to do this if the handler did not resume or set a new timeout:
-            if (suspended && timerId == -1)
+            if (suspended && timerCancelTask == null)
                 resume(new ServiceUnavailableException());
         } else {
             resume(new ServiceUnavailableException());

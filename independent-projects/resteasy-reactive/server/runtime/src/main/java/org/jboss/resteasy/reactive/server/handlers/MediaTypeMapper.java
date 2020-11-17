@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -98,7 +97,7 @@ public class MediaTypeMapper implements ServerRestHandler {
     public MediaType selectMediaType(ResteasyReactiveRequestContext requestContext, Holder holder) {
         MediaType selected = null;
         ServerHttpRequest httpServerRequest = requestContext.serverRequest();
-        if (httpServerRequest.containsRequestHeader(HttpHeaderNames.ACCEPT)) {
+        if (httpServerRequest.containsRequestHeader(HttpHeaders.ACCEPT)) {
             Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
                     .negotiateProduces(requestContext.serverRequest(), null);
             if (entry.getValue() != null) {

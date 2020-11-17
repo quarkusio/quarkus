@@ -1,8 +1,5 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.netty.channel.EventLoop;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServerResponse;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericEntity;
@@ -96,7 +94,6 @@ public abstract class ResteasyReactiveRequestContext
     private EntityWriter entityWriter;
     private QuarkusRestContainerRequestContextImpl containerRequestContext;
     private QuarkusRestContainerResponseContextImpl containerResponseContext;
-    private HttpServerResponse httpServerResponse; // store it as obtaining it from Vert.x isn't dirt cheap and it's done in a lot of places
     private String method; // used to hold the explicitly set method performed by a ContainerRequestFilter
     private String originalMethod; // store the original method as obtaining it from Vert.x isn't dirt cheap
     // this is only set if we override the requestUri
@@ -822,6 +819,10 @@ public abstract class ResteasyReactiveRequestContext
         return value;
     }
 
+    public <T> T unwrap(Class<T> type) {
+        return serverRequest().unwrap(type);
+    }
+
     public SecurityContext getSecurityContext() {
         if (securityContext == null) {
             securityContext = createSecurityContext();
@@ -854,7 +855,7 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     @Override
-    protected abstract EventLoop getEventLoop();
+    protected abstract Executor getEventLoop();
 
-    public abstract Vertx vertx();
+    public abstract Runnable registerTimer(long millis, Runnable task);
 }

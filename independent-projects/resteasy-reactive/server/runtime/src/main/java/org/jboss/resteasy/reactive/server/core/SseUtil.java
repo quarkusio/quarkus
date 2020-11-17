@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -28,7 +27,7 @@ public class SseUtil extends CommonSseUtil {
             // FIXME: check spec
             return CompletableFuture.completedFuture(null);
         }
-        Buffer data;
+        String data;
         try {
             data = serialiseEvent(context, event);
         } catch (IOException e) {
@@ -37,10 +36,10 @@ public class SseUtil extends CommonSseUtil {
             return ret;
         }
         setHeaders(context, response);
-        return response.write(data.getBytes());
+        return response.write(data.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static Buffer serialiseEvent(ResteasyReactiveRequestContext context, OutboundSseEvent event)
+    private static String serialiseEvent(ResteasyReactiveRequestContext context, OutboundSseEvent event)
             throws IOException {
         StringBuilder sb = new StringBuilder();
         MediaType eventMediaType = null;
@@ -68,7 +67,7 @@ public class SseUtil extends CommonSseUtil {
         serialiseField(context, sb, "data", data, true);
         sb.append(NL);
         // return a UTF8 buffer
-        return Buffer.buffer(sb.toString());
+        return sb.toString();
     }
 
     private static void serialiseField(ResteasyReactiveRequestContext context, StringBuilder sb, String field, String value,

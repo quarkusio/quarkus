@@ -1,14 +1,12 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpMethod;
 import java.io.ByteArrayInputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
+import javax.ws.rs.HttpMethod;
 import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -41,8 +39,8 @@ public class InputHandler implements ServerRestHandler {
             // let's not set it twice
             return;
         }
-        if (context.serverRequest().getRequestMethod().equals(HttpMethod.GET.name()) ||
-                context.serverRequest().getRequestMethod().equals(HttpMethod.HEAD.name())) {
+        if (context.serverRequest().getRequestMethod().equals(HttpMethod.GET) ||
+                context.serverRequest().getRequestMethod().equals(HttpMethod.HEAD)) {
             return;
         }
         InputListener h = new InputListener(context);
@@ -60,7 +58,7 @@ public class InputHandler implements ServerRestHandler {
     class InputListener implements ServerHttpRequest.ReadCallback {
         final ResteasyReactiveRequestContext context;
         int dataCount;
-        final List<Buffer> data = new ArrayList<>();
+        final List<ByteBuffer> data = new ArrayList<>();
 
         InputListener(ResteasyReactiveRequestContext context) {
             this.context = context;
@@ -72,18 +70,19 @@ public class InputHandler implements ServerRestHandler {
             //TODO: write a stream that just uses the existing vert.x buffers
             byte[] ar = new byte[dataCount];
             int count = 0;
-            for (Buffer i : data) {
-                i.getBytes(count, i.length(), ar);
-                count += i.length();
+            for (ByteBuffer i : data) {
+                int remaining = i.remaining();
+                i.get(ar, count, remaining);
+                count += remaining;
             }
             context.setInputStream(new ByteArrayInputStream(ar));
             context.resume();
         }
 
         @Override
-        public void data(Buffer event) {
+        public void data(ByteBuffer event) {
 
-            dataCount += event.length();
+            dataCount += event.remaining();
             data.add(event);
             if (dataCount > maxBufferSize) {
                 context.serverRequest().pauseRequestInput();
@@ -92,15 +91,15 @@ public class InputHandler implements ServerRestHandler {
                 }
                 //super inefficient
                 //TODO: write a stream that just uses the existing vert.x buffers
-                ByteBuf buf = PooledByteBufAllocator.DEFAULT.heapBuffer(dataCount);
                 int count = 0;
-                for (Buffer i : data) {
-                    i.getBytes(0, i.length(), buf.array(), count);
-                    count += i.length();
+                byte[] ar = new byte[dataCount];
+                for (ByteBuffer i : data) {
+                    int remaining = i.remaining();
+                    i.get(ar, count, remaining);
+                    count += remaining;
                 }
-                buf.writerIndex(count);
                 //todo timeout
-                context.setInputStream(context.serverRequest().createInputStream(buf));
+                context.setInputStream(context.serverRequest().createInputStream(ByteBuffer.wrap(ar)));
                 context.resume(executor);
             }
         }

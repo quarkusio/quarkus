@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -24,7 +23,7 @@ public class StreamingUtil {
             // FIXME: check spec
             return CompletableFuture.completedFuture(null);
         }
-        Buffer data;
+        byte[] data;
         try {
             data = serialiseEntity(context, entity);
         } catch (Exception e) {
@@ -33,10 +32,10 @@ public class StreamingUtil {
             return ret;
         }
         setHeaders(context, response);
-        return response.write(data.getBytes());
+        return response.write(data);
     }
 
-    private static Buffer serialiseEntity(ResteasyReactiveRequestContext context, Object entity) throws IOException {
+    private static byte[] serialiseEntity(ResteasyReactiveRequestContext context, Object entity) throws IOException {
         ServerSerialisers serialisers = context.getDeployment().getSerialisers();
         Class<?> entityClass = entity.getClass();
         Type entityType = context.getGenericReturnType();
@@ -62,7 +61,7 @@ public class StreamingUtil {
             throw new IllegalStateException(
                     "Could not find MessageBodyWriter for " + entityClass + " / " + entityType + " as " + mediaType);
         }
-        return Buffer.buffer(baos.toByteArray());
+        return baos.toByteArray();
     }
 
     public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response) {

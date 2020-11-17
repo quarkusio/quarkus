@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
@@ -29,7 +29,7 @@ public class FixedProducesHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        String accept = requestContext.serverRequest().getRequestHeader(HttpHeaderNames.ACCEPT);
+        String accept = requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT);
         if (accept == null) {
             requestContext.setResponseContentType(mediaType);
             requestContext.setEntityWriter(writer);

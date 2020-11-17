@@ -56,13 +56,6 @@ public class StreamResource {
         return Multi.createFrom().items("foo".toCharArray(), "bar".toCharArray());
     }
 
-    @Path("buffer/collect")
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public Uni<Buffer> getCollectedBuffers() {
-        return MultiCollectors.concatenateBuffers(getStreamedBuffers());
-    }
-
     @Path("buffer/stream")
     @GET
     @Produces(MediaType.TEXT_PLAIN)

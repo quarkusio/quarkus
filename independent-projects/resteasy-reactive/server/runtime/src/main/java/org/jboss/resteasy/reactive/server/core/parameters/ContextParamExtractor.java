@@ -23,66 +23,68 @@ import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 public class ContextParamExtractor implements ParameterExtractor {
 
-    private final String type;
+    private final Class<?> type;
 
     public ContextParamExtractor(String type) {
-        this.type = type;
+        try {
+            this.type = Class.forName(type, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
         // NOTE: Same list for CDI at ContextProducers and in EndpointIndexer.CONTEXT_TYPES
-        if (type.equals(QuarkusRestContext.class.getName())) {
+        if (type.equals(QuarkusRestContext.class)) {
             return context;
         }
-        if (type.equals(HttpHeaders.class.getName())) {
+        if (type.equals(HttpHeaders.class)) {
             return context.getHttpHeaders();
         }
-        if (type.equals(UriInfo.class.getName())) {
+        if (type.equals(UriInfo.class)) {
             return context.getUriInfo();
         }
-        if (type.equals(Configuration.class.getName())) {
+        if (type.equals(Configuration.class)) {
             return context.getDeployment().getConfiguration();
         }
-        if (type.equals(AsyncResponse.class.getName())) {
+        if (type.equals(AsyncResponse.class)) {
             QuarkusRestAsyncResponse response = new QuarkusRestAsyncResponse(context);
             context.setAsyncResponse(response);
             return response;
         }
-        if (type.equals(SseEventSink.class.getName())) {
+        if (type.equals(SseEventSink.class)) {
             QuarkusRestSseEventSink sink = new QuarkusRestSseEventSink(context);
             context.setSseEventSink(sink);
             return sink;
         }
-        if (type.equals(Request.class.getName())) {
+        if (type.equals(Request.class)) {
             return context.getRequest();
         }
-        //        if (type.equals(HttpServerResponse.class.getName())) {
-        //            return context.getHttpServerResponse();
-        //        }
-        //        if (type.equals(HttpServerRequest.class.getName())) {
-        //            return context.getContext().request();
-        //        }
-        if (type.equals(Providers.class.getName())) {
+        if (type.equals(Providers.class)) {
             return context.getProviders();
         }
-        if (type.equals(Sse.class.getName())) {
+        if (type.equals(Sse.class)) {
             return QuarkusRestSse.INSTANCE;
         }
-        if (type.equals(ResourceInfo.class.getName())) {
+        if (type.equals(ResourceInfo.class)) {
             return context.getTarget().getLazyMethod();
         }
-        if (type.equals(SimplifiedResourceInfo.class.getName())) {
+        if (type.equals(SimplifiedResourceInfo.class)) {
             return context.getTarget().getSimplifiedResourceInfo();
         }
-        if (type.equals(Application.class.getName())) {
+        if (type.equals(Application.class)) {
             return CDI.current().select(Application.class).get();
         }
-        if (type.equals(SecurityContext.class.getName())) {
+        if (type.equals(SecurityContext.class)) {
             return context.getSecurityContext();
         }
-        if (type.equals(ResourceContext.class.getName())) {
+        if (type.equals(ResourceContext.class)) {
             return QuarkusRestResourceContext.INSTANCE;
+        }
+        Object instance = context.unwrap(type);
+        if (instance != null) {
+            return instance;
         }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);

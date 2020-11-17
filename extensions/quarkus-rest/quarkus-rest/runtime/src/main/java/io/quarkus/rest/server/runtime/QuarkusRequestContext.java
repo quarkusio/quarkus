@@ -2,11 +2,13 @@ package io.quarkus.rest.server.runtime;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import javax.enterprise.event.Event;
@@ -20,16 +22,15 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
+import io.netty.util.concurrent.ScheduledFuture;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -92,12 +93,18 @@ public class QuarkusRequestContext extends ResteasyReactiveRequestContext implem
 
     @Override
     protected EventLoop getEventLoop() {
-        return ((ConnectionBase) context.request()).channel().eventLoop();
+        return ((ConnectionBase) context.request().connection()).channel().eventLoop();
     }
 
     @Override
-    public Vertx vertx() {
-        return VertxCoreRecorder.getVertx().get();
+    public Runnable registerTimer(long millis, Runnable task) {
+        ScheduledFuture<?> handle = getEventLoop().schedule(task, millis, TimeUnit.MILLISECONDS);
+        return new Runnable() {
+            @Override
+            public void run() {
+                handle.cancel(false);
+            }
+        };
     }
 
     @Override
@@ -152,7 +159,7 @@ public class QuarkusRequestContext extends ResteasyReactiveRequestContext implem
 
     @Override
     public void closeConnection() {
-        request.connection().close();
+        response.close();
     }
 
     @Override
@@ -196,8 +203,8 @@ public class QuarkusRequestContext extends ResteasyReactiveRequestContext implem
     }
 
     @Override
-    public InputStream createInputStream(ByteBuf existingData) {
-        return new VertxInputStream(context, 10000, existingData);
+    public InputStream createInputStream(ByteBuffer existingData) {
+        return new VertxInputStream(context, 10000, Unpooled.wrappedBuffer(existingData));
     }
 
     @Override
@@ -217,7 +224,7 @@ public class QuarkusRequestContext extends ResteasyReactiveRequestContext implem
         request.handler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer event) {
-                callback.data(event);
+                callback.data(ByteBuffer.wrap(event.getBytes()));
             }
         });
         request.endHandler(new Handler<Void>() {
@@ -227,6 +234,18 @@ public class QuarkusRequestContext extends ResteasyReactiveRequestContext implem
             }
         });
         return this;
+    }
+
+    @Override
+    public <T> T unwrap(Class<T> theType) {
+        if (theType == RoutingContext.class) {
+            return (T) context;
+        } else if (theType == HttpServerRequest.class) {
+            return (T) request;
+        } else if (theType == HttpServerResponse.class) {
+            return (T) response;
+        }
+        return null;
     }
 
     @Override

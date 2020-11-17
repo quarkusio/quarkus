@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.netty.handler.codec.http.HttpResponseStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,15 +65,15 @@ public class ResourceLocatorHandler implements ServerRestHandler {
             hadNullMethodMapper = true;
         }
         if (mapper == null) {
-            throw new WebApplicationException(Response.status(HttpResponseStatus.METHOD_NOT_ALLOWED.code()).build());
+            throw new WebApplicationException(Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
         }
         RequestMapper.RequestMatch<RuntimeResource> res = mapper
                 .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (res == null) {
             // the TCK checks for both these return statuses
             if (hadNullMethodMapper)
-                throw new WebApplicationException(Response.status(HttpResponseStatus.METHOD_NOT_ALLOWED.code()).build());
-            throw new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build());
+                throw new WebApplicationException(Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
+            throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND.getStatusCode()).build());
         }
         requestContext.saveUriMatchState();
         requestContext.setRemaining(res.remaining);

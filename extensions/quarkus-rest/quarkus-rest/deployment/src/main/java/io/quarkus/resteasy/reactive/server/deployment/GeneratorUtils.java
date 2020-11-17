@@ -32,8 +32,8 @@ final class GeneratorUtils {
     }
 
     static ResultHandle routingContextHandler(MethodCreator m, ResultHandle qrReqCtxHandle) {
-        return m.invokeVirtualMethod(
-                ofMethod(ResteasyReactiveRequestContext.class, "getContext", RoutingContext.class), qrReqCtxHandle);
+        return m.invokeVirtualMethod(ofMethod(ResteasyReactiveRequestContext.class, "unwrap", Object.class, Class.class),
+                qrReqCtxHandle, m.loadClass(RoutingContext.class));
     }
 
     static ResultHandle runtimeResourceHandle(MethodCreator filterMethod, ResultHandle qrReqCtxHandle) {

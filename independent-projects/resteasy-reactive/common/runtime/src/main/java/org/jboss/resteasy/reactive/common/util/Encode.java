@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.common.util;
 
-import io.vertx.core.net.impl.URIDecoder;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -106,7 +105,7 @@ public class Encode {
 
         /*
          * query = *( pchar / "/" / "?" )
-         * 
+         *
          */
         for (int i = 0; i < 128; i++) {
             if (i >= 'a' && i <= 'z')
@@ -146,7 +145,7 @@ public class Encode {
 
     /**
      * Keep encoded values "%..." and template parameters intact.
-     * 
+     *
      * @param value query string
      * @return encoded query string
      */
@@ -156,7 +155,7 @@ public class Encode {
 
     /**
      * Keep encoded values "%...", matrix parameters, template parameters, and '/' characters intact.
-     * 
+     *
      * @param value path
      * @return encoded path
      */
@@ -166,7 +165,7 @@ public class Encode {
 
     /**
      * Keep encoded values "%...", matrix parameters and template parameters intact.
-     * 
+     *
      * @param value path segment
      * @return encoded path segment
      */
@@ -176,7 +175,7 @@ public class Encode {
 
     /**
      * Keep encoded values "%..." and template parameters intact.
-     * 
+     *
      * @param value uri fragment
      * @return encoded uri fragment
      */
@@ -186,7 +185,7 @@ public class Encode {
 
     /**
      * Keep encoded values "%..." and template parameters intact.
-     * 
+     *
      * @param value matrix parameter
      * @return encoded matrix parameter
      */
@@ -196,7 +195,7 @@ public class Encode {
 
     /**
      * Keep encoded values "%..." and template parameters intact.
-     * 
+     *
      * @param value query parameter
      * @return encoded query parameter
      */
@@ -308,7 +307,7 @@ public class Encode {
      * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"
      * / "*" / "+" / "," / ";" / "="
      * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
-     * 
+     *
      * @param segment value to encode
      * @return encoded value
      */
@@ -335,7 +334,7 @@ public class Encode {
      * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"
      * / "*" / "+" / "," / ";" / "="
      * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
-     * 
+     *
      * @param segment value to encode
      * @return encoded value
      */
@@ -416,7 +415,7 @@ public class Encode {
 
     /**
      * Calls URLEncoder.encode(s, "UTF-8") on given input.
-     * 
+     *
      * @param s string to encode
      * @return encoded string returned by URLEncoder.encode(s, "UTF-8")
      */

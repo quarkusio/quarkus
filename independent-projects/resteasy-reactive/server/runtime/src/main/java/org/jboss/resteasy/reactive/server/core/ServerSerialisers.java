@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.netty.util.AsciiString;
-import io.vertx.core.buffer.Buffer;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,7 +51,6 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerInputStrea
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
 
 public class ServerSerialisers extends Serialisers {
@@ -89,8 +86,6 @@ public class ServerSerialisers extends Serialisers {
                     MediaType.TEXT_PLAIN),
             new BuiltinWriter(byte[].class, ServerByteArrayMessageBodyHandler.class,
                     MediaType.WILDCARD),
-            new BuiltinWriter(Buffer.class, ServerVertxBufferMessageBodyWriter.class,
-                    MediaType.WILDCARD),
             new BuiltinWriter(MultivaluedMap.class, ServerFormUrlEncodedProvider.class,
                     MediaType.APPLICATION_FORM_URLENCODED),
             new BuiltinWriter(InputStream.class, ServerInputStreamMessageBodyHandler.class,
@@ -100,7 +95,7 @@ public class ServerSerialisers extends Serialisers {
             new BuiltinWriter(File.class, ServerFileBodyHandler.class,
                     MediaType.WILDCARD),
     };
-    private static final AsciiString CONTENT_TYPE = AsciiString.cached("Content-Type"); // use this instead of the Vert.x constant because the TCK expects upper case
+    private static final String CONTENT_TYPE = "Content-Type"; // use this instead of the Vert.x constant because the TCK expects upper case
 
     static {
         primitivesToWrappers.put(boolean.class, Boolean.class);

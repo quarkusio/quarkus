@@ -105,9 +105,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             // extras
             ResteasyReactiveDotNames.QUARKUS_REST_CONTEXT,
             DotName.createSimple("org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo"), //TODO: fixme
-            ResteasyReactiveDotNames.RESOURCE_INFO,
-            ResteasyReactiveDotNames.HTTP_SERVER_REQUEST,
-            ResteasyReactiveDotNames.HTTP_SERVER_RESPONSE)));
+            ResteasyReactiveDotNames.RESOURCE_INFO)));
 
     protected static final Logger log = Logger.getLogger(EndpointInvoker.class);
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
@@ -866,7 +864,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             PARAM builder, String elementType) {
     }
 
-    private boolean isContextType(ClassType klass) {
+    protected boolean isContextType(ClassType klass) {
         return CONTEXT_TYPES.contains(klass.name());
     }
 

@@ -1,13 +1,15 @@
-package org.jboss.resteasy.reactive.server.providers.serialisers;
+package io.quarkus.rest.server.runtime;
 
-import io.vertx.core.buffer.Buffer;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-import org.jboss.resteasy.reactive.common.providers.serialisers.VertxBufferMessageBodyWriter;
+
 import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+
+import io.quarkus.resteasy.reactive.common.runtime.VertxBufferMessageBodyWriter;
+import io.vertx.core.buffer.Buffer;
 
 @Provider
 public class ServerVertxBufferMessageBodyWriter extends VertxBufferMessageBodyWriter

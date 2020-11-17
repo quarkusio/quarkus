@@ -16,6 +16,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.rest.server.runtime.QuarkusContextProducers;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
@@ -29,7 +30,7 @@ public class QuarkusRestCDIProcessor {
     AutoInjectAnnotationBuildItem contextInjection(
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         additionalBeanBuildItemBuildProducer
-                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class)
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
                         .build());
         return new AutoInjectAnnotationBuildItem(DotName.createSimple(Context.class.getName()),
                 DotName.createSimple(BeanParam.class.getName()));

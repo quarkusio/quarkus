@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.common.util;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.buffer.Buffer;
 import java.util.stream.Collectors;
 
 /**
@@ -52,10 +51,5 @@ public class MultiCollectors {
                     }
                     return ret;
                 });
-    }
-
-    public static Uni<Buffer> concatenateBuffers(Multi<Buffer> multi) {
-        return multi.collectItems().in(() -> Buffer.buffer(INITIAL_BUFFER_SIZE),
-                (accumulatingBuffer, receivedBuffer) -> accumulatingBuffer.appendBuffer(receivedBuffer));
     }
 }

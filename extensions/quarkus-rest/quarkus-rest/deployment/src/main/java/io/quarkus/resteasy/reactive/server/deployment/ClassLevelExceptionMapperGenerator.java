@@ -1,12 +1,12 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.paramHandleFromReqContextMethod;
 import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.routingContextHandler;
 import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.runtimeResourceHandle;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
@@ -30,7 +30,6 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestContainerRequestContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.server.processor.QuarkusRestServerDotNames;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 

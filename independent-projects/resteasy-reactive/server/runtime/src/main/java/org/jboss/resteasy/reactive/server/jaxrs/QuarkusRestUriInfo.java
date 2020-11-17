@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
-import io.vertx.core.net.impl.URIDecoder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -15,6 +14,7 @@ import javax.ws.rs.core.UriInfo;
 import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
+import org.jboss.resteasy.reactive.common.util.URIDecoder;
 import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;

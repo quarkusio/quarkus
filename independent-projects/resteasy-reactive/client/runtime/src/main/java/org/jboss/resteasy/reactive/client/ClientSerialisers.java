@@ -31,7 +31,6 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.InputStreamMessa
 import org.jboss.resteasy.reactive.common.providers.serialisers.NumberMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.ReaderBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.StringMessageBodyHandler;
-import org.jboss.resteasy.reactive.common.providers.serialisers.VertxBufferMessageBodyWriter;
 
 public class ClientSerialisers extends Serialisers {
 
@@ -68,8 +67,8 @@ public class ClientSerialisers extends Serialisers {
                     MediaType.TEXT_PLAIN),
             new BuiltinWriter(byte[].class, ByteArrayMessageBodyHandler.class,
                     MediaType.WILDCARD),
-            new BuiltinWriter(Buffer.class, VertxBufferMessageBodyWriter.class,
-                    MediaType.WILDCARD),
+            //            new BuiltinWriter(Buffer.class, VertxBufferMessageBodyWriter.class,
+            //                    MediaType.WILDCARD),
             new BuiltinWriter(MultivaluedMap.class, FormUrlEncodedProvider.class,
                     MediaType.APPLICATION_FORM_URLENCODED),
             new BuiltinWriter(InputStream.class, InputStreamMessageBodyHandler.class,

@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.vertx.core.http.HttpMethod;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.NotFoundException;
@@ -37,9 +37,9 @@ public class ClassRoutingHandler implements ServerRestHandler {
         RequestMapper<RuntimeResource> mapper = mappers.get(requestContext.getMethod());
         if (mapper == null) {
             String requestMethod = requestContext.getMethod();
-            if (requestMethod.equals(HttpMethod.HEAD.name())) {
-                mapper = mappers.get(HttpMethod.GET.name());
-            } else if (requestMethod.equals(HttpMethod.OPTIONS.name())) {
+            if (requestMethod.equals(HttpMethod.HEAD)) {
+                mapper = mappers.get(HttpMethod.GET);
+            } else if (requestMethod.equals(HttpMethod.OPTIONS)) {
                 Set<CharSequence> allowedMethods = new HashSet<>();
                 for (String method : mappers.keySet()) {
                     if (method == null) {
@@ -47,8 +47,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
                     }
                     allowedMethods.add(method);
                 }
-                allowedMethods.add(HttpMethod.OPTIONS.name());
-                allowedMethods.add(HttpMethod.HEAD.name());
+                allowedMethods.add(HttpMethod.OPTIONS);
+                allowedMethods.add(HttpMethod.HEAD);
                 requestContext.serverResponse().setResponseHeader(HttpHeaders.ALLOW, allowedMethods).end();
                 return;
             }
@@ -71,8 +71,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
         String remaining = getRemaining(requestContext);
         RequestMapper.RequestMatch<RuntimeResource> target = mapper.map(remaining);
         if (target == null) {
-            if (requestContext.getMethod().equals(HttpMethod.HEAD.name())) {
-                mapper = mappers.get(HttpMethod.GET.name());
+            if (requestContext.getMethod().equals(HttpMethod.HEAD)) {
+                mapper = mappers.get(HttpMethod.GET);
                 if (mapper != null) {
                     target = mapper.map(remaining);
                 }

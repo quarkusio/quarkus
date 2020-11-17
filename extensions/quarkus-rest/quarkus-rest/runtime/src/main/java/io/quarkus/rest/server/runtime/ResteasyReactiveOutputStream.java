@@ -7,11 +7,11 @@ import java.io.OutputStream;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.core.VertxBufferImpl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;

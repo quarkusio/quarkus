@@ -10,15 +10,19 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -58,11 +62,18 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 
 public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter> {
     private final MethodCreator initConverters;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
+    private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            DotName.createSimple(HttpServerRequest.class.getName()),
+            DotName.createSimple(HttpServerResponse.class.getName()),
+            DotName.createSimple(RoutingContext.class.getName()))));
 
     ServerEndpointIndexer(Builder builder) {
         super(builder);
@@ -84,6 +95,10 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
         } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
             additionalWriters.add(ServerJsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
         }
+    }
+
+    protected boolean isContextType(ClassType klass) {
+        return super.isContextType(klass) || CONTEXT_TYPES.contains(klass.name());
     }
 
     protected void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {

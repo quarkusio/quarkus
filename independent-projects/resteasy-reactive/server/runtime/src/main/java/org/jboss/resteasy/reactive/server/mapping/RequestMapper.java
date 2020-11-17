@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.mapping;
 
-import io.vertx.core.net.impl.URIDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -8,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
+import org.jboss.resteasy.reactive.common.util.URIDecoder;
 
 public class RequestMapper<T> {
 
@@ -154,7 +154,7 @@ public class RequestMapper<T> {
         public final T value;
         /**
          * The matched parameters in order.
-         *
+         * <p>
          * Note that this array may be larger than required, and padded with null values at the end
          */
         public final String[] pathParamValues;

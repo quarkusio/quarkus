@@ -1,8 +1,7 @@
 package org.jboss.resteasy.reactive.common.http;
 
-import io.netty.buffer.ByteBuf;
-import io.vertx.core.buffer.Buffer;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,7 @@ public interface ServerHttpRequest {
 
     void setExpectMultipart(boolean expectMultipart);
 
-    InputStream createInputStream(ByteBuf existingData);
+    InputStream createInputStream(ByteBuffer existingData);
 
     ServerHttpResponse pauseRequestInput();
 
@@ -55,11 +54,20 @@ public interface ServerHttpRequest {
 
     ServerHttpResponse setReadListener(ReadCallback callback);
 
+    /**
+     * Unwraps a backing object
+     * 
+     * @param theType
+     * @param <T>
+     * @return
+     */
+    <T> T unwrap(Class<T> theType);
+
     interface ReadCallback {
 
         void done();
 
-        void data(Buffer data);
+        void data(ByteBuffer data);
 
     }
 

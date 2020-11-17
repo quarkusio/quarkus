@@ -101,6 +101,7 @@ public final class QuarkusCodestartData {
         }
     }
 
+    // TODO remove the class_name convertion when its removed
     private static String convertClassName(final Map<String, Object> legacyData) {
         Optional<String> classNameValue = NestedMaps.getValue(legacyData, "class_name");
         if (classNameValue.isPresent()) {
@@ -119,6 +120,7 @@ public final class QuarkusCodestartData {
         if (packageNameValue.isPresent()) {
             return packageNameValue.get();
         }
+        // TODO remove this block when class_name is removed
         Optional<String> classNameValue = NestedMaps.getValue(legacyData, "class_name");
         if (classNameValue.isPresent()) {
             final String className = classNameValue.get();
@@ -126,6 +128,12 @@ public final class QuarkusCodestartData {
             if (idx >= 0) {
                 return className.substring(0, idx);
             }
+        }
+
+        // Default to cleaned groupId if packageName not set
+        Optional<String> groupIdValue = NestedMaps.getValue(legacyData, "project_groupId");
+        if (groupIdValue.isPresent()) {
+            return groupIdValue.get().replace("-", ".").replace("_", ".");
         }
         return null;
     }

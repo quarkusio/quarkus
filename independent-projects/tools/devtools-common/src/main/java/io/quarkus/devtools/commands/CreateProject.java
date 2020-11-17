@@ -95,6 +95,10 @@ public class CreateProject {
         return this;
     }
 
+    /**
+     * Use packageName instead as this one is only working with RESTEasy and SpringWeb
+     */
+    @Deprecated
     public CreateProject className(String className) {
         if (className == null) {
             return this;
@@ -103,6 +107,17 @@ public class CreateProject {
             throw new IllegalArgumentException(className + " is not a valid class name");
         }
         setValue(CLASS_NAME, className);
+        return this;
+    }
+
+    public CreateProject packageName(String packageName) {
+        if (packageName == null) {
+            return this;
+        }
+        if (!(SourceVersion.isName(packageName) && !SourceVersion.isKeyword(packageName))) {
+            throw new IllegalArgumentException(packageName + " is not a  package name");
+        }
+        setValue(PACKAGE_NAME, packageName);
         return this;
     }
 
@@ -219,7 +234,6 @@ public class CreateProject {
             setValue(IS_SPRING, true);
             if (containsRESTEasy(extensions)) {
                 values.remove(CLASS_NAME);
-                values.remove(PACKAGE_NAME);
                 values.remove(RESOURCE_PATH);
             }
         }

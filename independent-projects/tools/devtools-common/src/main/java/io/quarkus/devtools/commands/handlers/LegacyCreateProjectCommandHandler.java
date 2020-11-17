@@ -67,6 +67,13 @@ public class LegacyCreateProjectCommandHandler implements QuarkusCommandHandler 
                 invocation.setValue(CLASS_NAME, className);
             }
 
+            // Default to cleaned groupId if packageName not set
+            final String pkgName = invocation.getStringValue(PACKAGE_NAME);
+            final String groupId = invocation.getStringValue(PROJECT_GROUP_ID);
+            if (pkgName == null && groupId != null) {
+                invocation.setValue(PACKAGE_NAME, groupId.replace("-", ".").replace("_", "."));
+            }
+
             final List<AppArtifactCoords> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery);
 
             // extensionsToAdd is null when an error occurred while matching extensions

@@ -34,15 +34,6 @@ public final class LogConfig {
     public Level level;
 
     /**
-     * The default minimum log level
-     * 
-     * @deprecated this functionality was never implemented, it may be deleted or implemented in a future release.
-     */
-    @ConfigItem(defaultValue = "INFO")
-    @Deprecated
-    public Level minLevel;
-
-    /**
      * Console logging.
      * <p>
      * Console logging is enabled by default.

@@ -95,7 +95,7 @@
         {
             "category": "Misc1",
             "timeout": 65,
-            "test-modules": "maven jackson jsonb jsch jgit quartz qute consul-config"
+            "test-modules": "maven jackson jsonb jsch jgit quartz qute consul-config logging-min-level-unset logging-min-level-set"
         },
         {
             "category": "Misc2",

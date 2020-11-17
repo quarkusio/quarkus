@@ -128,8 +128,18 @@ for example, to set the default log level to `INFO` logging and include Hibernat
 [source, properties]
 ----
 quarkus.log.level=INFO
+quarkus.log.category."org.hibernate".min-level=DEBUG
 quarkus.log.category."org.hibernate".level=DEBUG
 ----
+
+Setting a log level below `INFO` requires the minimum log level to be adjusted,
+either globally via the `quarkus.log.min-level` property or per-category as shown in the example above,
+as well as adjusting the log level itself.
+
+Minimum logging level sets a floor level that Quarkus will be needed to potentially generate,
+opening the door to optimization opportunities.
+As an example, in native execution the minimum level enables lower level checks (e.g. `isTraceEnabled`) to be folded to `false`,
+resulting in dead code elimination for code that will never to be executed.
 
 All possible properties are listed in <<loggingConfigurationReference, the logging configuration reference>>.
 
@@ -148,6 +158,7 @@ These can also be overridden by attaching a one or more named handlers to a cate
 |===
 |Property Name|Default|Description
 |quarkus.log.category."<category-name>".level|INFO footnote:[Some extensions may define customized default log levels for certain categories, in order to reduce log noise by default.  Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.  The quotes are necessary.
+|quarkus.log.category."<category-name>".min-level|INFO |The minimum logging level to use to configure the category named `<category-name>`.  The quotes are necessary.
 |quarkus.log.category."<category-name>".use-parent-handlers|true|Specify whether or not this logger should send its output to its parent logger.
 |quarkus.log.category."<category-name>".handlers=[<handler>]|empty footnote:[By default the configured category gets the same handlers attached as the one on the root logger.]|The names of the handlers that you want to attach to a specific category.
 |===
@@ -162,7 +173,8 @@ The root logger category is handled separately, and is configured via the follow
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.log.level|INFO|The default minimum log level for every log category.
+|quarkus.log.level|INFO|The default log level for every log category.
+|quarkus.log.min-level|INFO|The default minimum log level for every log category.
 |===
 
 If no level configuration exists for a given logger category, the enclosing (parent) category is examined. If no categories are configured which enclose the category in question, then the root logger configuration is used.
@@ -307,6 +319,7 @@ quarkus.log.file.path=/tmp/trace.log
 quarkus.log.file.level=TRACE
 quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 # Set 2 categories (io.quarkus.smallrye.jwt, io.undertow.request.security) to TRACE level
+quarkus.log.min-level=TRACE
 quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
 quarkus.log.category."io.undertow.request.security".level=TRACE
 ----

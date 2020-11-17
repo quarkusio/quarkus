@@ -829,13 +829,17 @@ public final class HibernateOrmProcessor {
             if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                 // enlist resource if present
                 nativeImageResources.produce(new NativeImageResourceBuildItem(importFile.get()));
-                hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile.get()));
                 descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
             } else if (persistenceUnitConfig.sqlLoadScript.isPresent()) {
                 //raise exception if explicit file is not present (i.e. not the default)
                 throw new ConfigurationError(
                         "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX + "sql-load-script="
                                 + persistenceUnitConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
+            }
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
+                // as a user could still add it after performing the initial configuration
+                hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile.get()));
             }
         } else {
             //Disable implicit loading of the default import script (import.sql)

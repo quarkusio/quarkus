@@ -6,9 +6,8 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.resteasy.reactive.Blocking;
-
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.smallrye.common.annotation.Blocking;
 
 @Path("/fruit")
 @Blocking

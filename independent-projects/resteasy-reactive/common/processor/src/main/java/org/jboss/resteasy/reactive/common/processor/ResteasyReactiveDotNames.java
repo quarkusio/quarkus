@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.common.processor;
 
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -68,8 +70,6 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.Blocking;
-import org.jboss.resteasy.reactive.NonBlocking;
 import org.jboss.resteasy.reactive.RequireCDIRequestScope;
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;

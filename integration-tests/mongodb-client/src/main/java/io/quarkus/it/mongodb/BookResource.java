@@ -9,11 +9,11 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.Blocking;
-
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
+
+import io.smallrye.common.annotation.Blocking;
 
 @Path("/books")
 @Blocking

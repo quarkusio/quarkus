@@ -94,7 +94,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/commandmode/HelloCommando.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/HelloCommando.java")).exists();
     }
 
     @Test
@@ -169,18 +169,18 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/ExampleResourceTest.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/NativeExampleResourceIT.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/GreetingResource.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/GreetingResourceTest.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/NativeGreetingResourceIT.java")).exists();
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/spring/web/ExampleController.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/spring/web/ExampleControllerTest.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/spring/web/NativeExampleControllerIT.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/SpringGreetingController.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/SpringGreetingControllerTest.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/NativeSpringGreetingControllerIT.java")).exists();
 
         assertThat(projectDir.resolve("src/main/resources/META-INF/resources/index.html")).exists()
-                .satisfies(checkContains("\"/resteasy/hello\""))
+                .satisfies(checkContains("\"/hello-resteasy\""))
                 .satisfies(checkContains("quarkus.io/guides/rest-json"))
-                .satisfies(checkContains("\"/springweb/hello\""))
+                .satisfies(checkContains("\"/hello-spring\""))
                 .satisfies(checkContains("quarkus.io/guides/spring-web"));
     }
 
@@ -287,9 +287,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/ExampleResourceTest.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/NativeExampleResourceIT.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/GreetingResource.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/GreetingResourceTest.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/NativeGreetingResourceIT.java")).exists();
     }
 
     @Test
@@ -306,9 +306,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/ExampleResourceTest.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/NativeExampleResourceIT.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/GreetingResource.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/GreetingResourceTest.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/NativeGreetingResourceIT.java")).exists();
     }
 
     @Test
@@ -343,9 +343,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/kotlin/org/acme/resteasy/ExampleResource.kt")).exists();
-        assertThat(projectDir.resolve("src/test/kotlin/org/acme/resteasy/ExampleResourceTest.kt")).exists();
-        assertThat(projectDir.resolve("src/test/kotlin/org/acme/resteasy/NativeExampleResourceIT.kt")).exists();
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/GreetingResource.kt")).exists();
+        assertThat(projectDir.resolve("src/test/kotlin/org/acme/GreetingResourceTest.kt")).exists();
+        assertThat(projectDir.resolve("src/test/kotlin/org/acme/NativeGreetingResourceIT.kt")).exists();
     }
 
     @Test
@@ -363,9 +363,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/scala/org/acme/resteasy/ExampleResource.scala")).exists();
-        assertThat(projectDir.resolve("src/test/scala/org/acme/resteasy/ExampleResourceTest.scala")).exists();
-        assertThat(projectDir.resolve("src/test/scala/org/acme/resteasy/NativeExampleResourceIT.scala")).exists();
+        assertThat(projectDir.resolve("src/main/scala/org/acme/GreetingResource.scala")).exists();
+        assertThat(projectDir.resolve("src/test/scala/org/acme/GreetingResourceTest.scala")).exists();
+        assertThat(projectDir.resolve("src/test/scala/org/acme/NativeGreetingResourceIT.scala")).exists();
     }
 
     @Test
@@ -384,9 +384,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.GRADLE);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
-        assertThat(projectDir.resolve("src/test/java/org/acme/resteasy/ExampleResourceTest.java")).exists();
-        assertThat(projectDir.resolve("src/native-test/java/org/acme/resteasy/NativeExampleResourceIT.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/GreetingResource.java")).exists();
+        assertThat(projectDir.resolve("src/test/java/org/acme/GreetingResourceTest.java")).exists();
+        assertThat(projectDir.resolve("src/native-test/java/org/acme/NativeGreetingResourceIT.java")).exists();
     }
 
     @Test
@@ -406,9 +406,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.GRADLE);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/kotlin/org/acme/resteasy/ExampleResource.kt")).exists();
-        assertThat(projectDir.resolve("src/test/kotlin/org/acme/resteasy/ExampleResourceTest.kt")).exists();
-        assertThat(projectDir.resolve("src/native-test/kotlin/org/acme/resteasy/NativeExampleResourceIT.kt")).exists();
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/GreetingResource.kt")).exists();
+        assertThat(projectDir.resolve("src/test/kotlin/org/acme/GreetingResourceTest.kt")).exists();
+        assertThat(projectDir.resolve("src/native-test/kotlin/org/acme/NativeGreetingResourceIT.kt")).exists();
     }
 
     @Test
@@ -427,9 +427,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.GRADLE);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/scala/org/acme/resteasy/ExampleResource.scala")).exists();
-        assertThat(projectDir.resolve("src/test/scala/org/acme/resteasy/ExampleResourceTest.scala")).exists();
-        assertThat(projectDir.resolve("src/native-test/scala/org/acme/resteasy/NativeExampleResourceIT.scala")).exists();
+        assertThat(projectDir.resolve("src/main/scala/org/acme/GreetingResource.scala")).exists();
+        assertThat(projectDir.resolve("src/test/scala/org/acme/GreetingResourceTest.scala")).exists();
+        assertThat(projectDir.resolve("src/native-test/scala/org/acme/NativeGreetingResourceIT.scala")).exists();
     }
 
     @Test
@@ -447,7 +447,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.GRADLE_KOTLIN_DSL);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/GreetingResource.java")).exists();
     }
 
     @Test
@@ -466,7 +466,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.GRADLE_KOTLIN_DSL);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/kotlin/org/acme/resteasy/ExampleResource.kt")).exists();
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/GreetingResource.kt")).exists();
     }
 
     @Test
@@ -485,7 +485,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.GRADLE_KOTLIN_DSL);
         checkConfigProperties(projectDir);
 
-        assertThat(projectDir.resolve("src/main/scala/org/acme/resteasy/ExampleResource.scala")).exists();
+        assertThat(projectDir.resolve("src/main/scala/org/acme/GreetingResource.scala")).exists();
     }
 
     @Test

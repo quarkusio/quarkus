@@ -30,7 +30,7 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
         getCatalog().createProject(input).generate(projectDir);
 
         assertThat(projectDir.resolve("jbang")).exists();
-        assertThat(projectDir.resolve("src/ExampleResource.java")).exists();
+        assertThat(projectDir.resolve("src/GreetingResource.java")).exists();
 
     }
 

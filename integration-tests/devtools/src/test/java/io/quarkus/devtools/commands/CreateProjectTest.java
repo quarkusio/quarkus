@@ -109,16 +109,16 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("<artifactId>quarkus-spring-web</artifactId>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/spring/web/ExampleController.java"))
+        assertThat(projectDir.resolve("src/main/java/org/acme/SpringGreetingController.java"))
                 .exists()
                 .satisfies(checkContains("@RestController"))
-                .satisfies(checkContains("class ExampleController"))
-                .satisfies(checkContains("@RequestMapping(\"/springweb/hello\")"));
+                .satisfies(checkContains("class SpringGreetingController"))
+                .satisfies(checkContains("@RequestMapping(\"/hello-spring\")"));
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java"))
+        assertThat(projectDir.resolve("src/main/java/org/acme/GreetingResource.java"))
                 .exists()
-                .satisfies(checkContains("class ExampleResource"))
-                .satisfies(checkContains("@Path(\"/resteasy/hello\")"));
+                .satisfies(checkContains("class GreetingResource"))
+                .satisfies(checkContains("@Path(\"/hello-resteasy\")"));
     }
 
     @Test

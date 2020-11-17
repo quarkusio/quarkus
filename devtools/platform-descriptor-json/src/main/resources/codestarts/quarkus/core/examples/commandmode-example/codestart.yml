@@ -7,9 +7,9 @@ language:
     data:
       main:
         class-name: HelloCommando
-      package-name: org.acme.commandmode
+      package-name: org.acme
       greeting:
-        message: "hello"
-        default-name: "commando"
+        message: "Hello"
+        default-name: "Commando"
     dependencies:
       - io.quarkus:quarkus-arc

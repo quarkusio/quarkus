@@ -9,10 +9,10 @@ language:
       description: |
         <p>A Hello World Spring Web Controller</p>
       resource:
-        class-name: ExampleController
-        path: "/springweb/hello"
-        response: "hello"
-      package-name: org.acme.spring.web
+        class-name: SpringGreetingController
+        path: "/hello-spring"
+        response: "Hello Spring"
+      package-name: org.acme
       guide: https://quarkus.io/guides/spring-web
     dependencies:
       - io.quarkus:quarkus-spring-web

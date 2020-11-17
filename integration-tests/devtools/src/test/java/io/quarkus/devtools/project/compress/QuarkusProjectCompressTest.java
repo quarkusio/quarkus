@@ -19,10 +19,10 @@ import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusProjectCompressTest extends PlatformAwareTestBase {
 
@@ -30,7 +30,7 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
     public void createZip() throws Exception {
         // Given a Quarkus project
         final Path testDir = Paths.get("target/zip");
-        ProjectTestUtil.delete(testDir.toFile());
+        SnapshotTesting.deleteTestDirectory(testDir.toFile());
         testDir.toFile().mkdirs();
         Path zip = testDir.resolve("project.zip");
 
@@ -51,7 +51,7 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
     public void createZipWithParentFolder() throws Exception {
         // Given a Quarkus project
         final Path testDir = Paths.get("target/zip");
-        ProjectTestUtil.delete(testDir.toFile());
+        SnapshotTesting.deleteTestDirectory(testDir.toFile());
         testDir.toFile().mkdirs();
         Path zip = testDir.resolve("project.zip");
 

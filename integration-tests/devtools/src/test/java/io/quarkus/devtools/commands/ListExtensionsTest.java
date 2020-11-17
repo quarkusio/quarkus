@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
@@ -192,7 +192,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     }
 
     private QuarkusProject createNewProject(final File pom) throws IOException, QuarkusCommandException {
-        ProjectTestUtil.delete(pom.getParentFile());
+        SnapshotTesting.deleteTestDirectory(pom.getParentFile());
         final Path projectDirPath = pom.getParentFile().toPath();
         new CreateProject(projectDirPath, getPlatformDescriptor())
                 .groupId("org.acme")

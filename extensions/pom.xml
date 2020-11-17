@@ -230,26 +230,6 @@
                     </dependency>
                 </dependencies>
             </plugin>
-            <!-- Unfortunately the config below introduces a build dependency on the maven plugin
-                 which leads to an ordering that prevents the tooling to include the generated
-                 JSON platform descriptor.
-                 Hopefully, this can be re-enabled once we refactor the tools.
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
-                <inherited>false</inherited>
-                < ! - - Settings for stubbing new extensions via
-                     mvn quarkus:create-extension -N -Dquarkus.artifactIdBase=my-ext -Dquarkus.nameBase="My Extension"
-                - - >
-                <configuration>
-                    <artifactIdPrefix>quarkus-</artifactIdPrefix>
-                    <namePrefix xml:space="preserve">Quarkus - </namePrefix>
-                    <quarkusVersion>@{project.version}</quarkusVersion>
-                    <bomPath>../bom/application/pom.xml</bomPath>
-                    <itestParentPath>../integration-tests/pom.xml</itestParentPath>
-                </configuration>
-            </plugin> -->
         </plugins>
     </build>
 </project>

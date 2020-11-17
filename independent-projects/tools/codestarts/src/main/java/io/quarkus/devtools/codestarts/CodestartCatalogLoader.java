@@ -41,9 +41,9 @@ public final class CodestartCatalogLoader {
         return new GenericCodestartCatalog<>(codestarts);
     }
 
-    public static Collection<Codestart> loadUserDirectoryCodestarts(Path directory)
+    public static Collection<Codestart> loadCodestartsFromDir(Path directory)
             throws IOException {
-        return loadCodestarts(new UserDirectoryCodestartPathLoader(directory), "");
+        return loadCodestarts(new DirectoryCodestartPathLoader(directory), "");
     }
 
     public static List<Codestart> loadCodestarts(CodestartPathLoader pathLoader, String first, String... more)
@@ -139,17 +139,17 @@ public final class CodestartCatalogLoader {
         }
     }
 
-    private static class UserDirectoryCodestartPathLoader implements CodestartPathLoader {
+    private static class DirectoryCodestartPathLoader implements CodestartPathLoader {
 
-        private final Path userDir;
+        private final Path dir;
 
-        public UserDirectoryCodestartPathLoader(Path userDir) {
-            this.userDir = userDir;
+        public DirectoryCodestartPathLoader(Path dir) {
+            this.dir = dir;
         }
 
         @Override
         public <T> T loadResourceAsPath(String name, PathConsumer<T> consumer) throws IOException {
-            return consumer.consume(userDir.resolve(name));
+            return consumer.consume(dir.resolve(name));
         }
     }
 }

@@ -8,10 +8,10 @@ import java.util.Objects;
 
 import org.apache.maven.model.Model;
 
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
 
 class RemoveMavenExtensionsTest extends AbstractRemoveExtensionsTest<Model> {
@@ -19,7 +19,7 @@ class RemoveMavenExtensionsTest extends AbstractRemoveExtensionsTest<Model> {
     @Override
     protected Model createProject() throws IOException, QuarkusCommandException {
         final File pom = getProjectPath().resolve("pom.xml").toFile();
-        ProjectTestUtil.delete(getProjectPath().toFile());
+        SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
         new CreateProject(getProjectPath(), getPlatformDescriptor())
                 .groupId("org.acme")
                 .artifactId("add-maven-extension-test")

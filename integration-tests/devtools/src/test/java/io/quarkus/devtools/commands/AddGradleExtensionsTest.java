@@ -10,19 +10,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.AbstractGroovyGradleBuildFile;
+import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
 
     @Override
     protected List<String> createProject() throws IOException, QuarkusCommandException {
-        ProjectTestUtil.delete(getProjectPath().toFile());
+        SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
         new CreateProject(getProjectPath(), getPlatformDescriptor())
                 .buildTool(BuildTool.GRADLE)
                 .groupId("org.acme")

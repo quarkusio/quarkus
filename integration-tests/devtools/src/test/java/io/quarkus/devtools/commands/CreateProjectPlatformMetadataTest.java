@@ -20,10 +20,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
@@ -34,7 +34,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     @ValueSource(booleans = { false, true })
     public void create(boolean legacyCodegen) throws Exception {
         final File file = new File("target/meta-rest");
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         createProject(BuildTool.MAVEN, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", legacyCodegen);
         assertThat(file.toPath().resolve("pom.xml"))
                 .exists()
@@ -50,7 +50,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     @ValueSource(booleans = { false, true })
     public void createGradle(boolean legacyCodegen) throws Exception {
         final File file = new File("target/meta-rest-gradle");
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         createProject(BuildTool.GRADLE, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", legacyCodegen);
         assertThat(file.toPath().resolve("build.gradle"))
                 .exists()
@@ -60,7 +60,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     @Test
     public void createGradleKotlin() throws Exception {
         final File file = new File("target/meta-rest-gradle-kts");
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         createProject(BuildTool.GRADLE_KOTLIN_DSL, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", false);
         assertThat(file.toPath().resolve("build.gradle.kts"))
                 .exists()

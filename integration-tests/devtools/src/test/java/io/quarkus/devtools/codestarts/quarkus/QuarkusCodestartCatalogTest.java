@@ -11,11 +11,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
 
@@ -23,7 +23,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
 
     @BeforeEach
     void setUp() throws IOException {
-        ProjectTestUtil.delete(projectPath.toFile());
+        SnapshotTesting.deleteTestDirectory(projectPath.toFile());
     }
 
     @Test

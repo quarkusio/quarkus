@@ -52,7 +52,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
                 .build();
         try {
             return engine.parse(content).render(data);
-        } catch (TemplateException e) {
+        } catch (Exception e) {
             throw new CodestartException("Error while rendering template: " + source.absolutePath(), e);
         }
     }

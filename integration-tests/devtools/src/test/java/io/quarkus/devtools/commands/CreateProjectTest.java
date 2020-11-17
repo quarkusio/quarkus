@@ -1,7 +1,7 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.ProjectTestUtil.checkContains;
-import static io.quarkus.devtools.ProjectTestUtil.checkMatches;
+import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
+import static io.quarkus.devtools.testing.SnapshotTesting.checkMatches;
 import static io.quarkus.platform.tools.ToolsConstants.PROP_COMPILER_PLUGIN_VERSION;
 import static io.quarkus.platform.tools.ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION;
 import static io.quarkus.platform.tools.ToolsUtils.readQuarkusProperties;
@@ -31,11 +31,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.codegen.writer.FileProjectWriter;
+import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public class CreateProjectTest extends PlatformAwareTestBase {
@@ -43,7 +43,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     public void createRESTEasy() throws Exception {
         final File file = new File("target/basic-resteasy");
         final Path projectDir = file.toPath();
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         assertCreateProject(newCreateProject(projectDir)
                 .groupId("org.acme.foo")
                 .artifactId("resteasy-app")
@@ -82,7 +82,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     public void createSpringWeb() throws Exception {
         final File file = new File("target/create-spring");
         final Path projectDir = file.toPath();
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         assertCreateProject(newCreateProject(projectDir)
                 .groupId("org.acme.bar")
                 .packageName("org.acme.bar.spr")
@@ -110,7 +110,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     public void createRESTEasyAndSpringWeb() throws Exception {
         final File file = new File("target/create-spring-resteasy");
         final Path projectDir = file.toPath();
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         assertCreateProject(newCreateProject(projectDir)
                 .artifactId("spring-web-resteasy-app")
                 .className("BarController")
@@ -141,7 +141,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     public void createGradle() throws Exception {
         final File file = new File("target/create-resteasy-gradle");
         final Path projectDir = file.toPath();
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         assertCreateProject(newCreateProject(projectDir)
                 .buildTool(BuildTool.GRADLE)
                 .groupId("io.foo")
@@ -181,7 +181,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     @Test
     public void createOnTopOfExisting() throws Exception {
         final File testDir = new File("target/create-existing");
-        ProjectTestUtil.delete(testDir);
+        SnapshotTesting.deleteTestDirectory(testDir);
         testDir.mkdirs();
 
         Model model = new Model();

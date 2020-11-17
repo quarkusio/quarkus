@@ -10,6 +10,7 @@ import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.CodestartPathLoader;
 import io.quarkus.devtools.codestarts.CodestartStructureException;
 import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -29,25 +30,25 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public static final String QUARKUS_CODESTARTS_DIR = "codestarts/quarkus";
     private final Map<String, String> extensionCodestartMapping;
 
-    public enum Tag implements KeySupplier {
+    public enum Tag implements DataKey {
         EXAMPLE,
         SINGLETON_EXAMPLE,
         MAVEN_ONLY;
     }
 
-    public enum Language implements KeySupplier {
+    public enum Language implements DataKey {
         JAVA,
         KOTLIN,
         SCALA
     }
 
-    public enum Tooling implements KeySupplier {
+    public enum Tooling implements DataKey {
         GRADLE_WRAPPER,
         MAVEN_WRAPPER,
         DOCKERFILES
     }
 
-    public enum Example implements KeySupplier {
+    public enum Example implements DataKey {
         RESTEASY_EXAMPLE,
         COMMANDMODE_EXAMPLE
     }
@@ -74,7 +75,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .stream()
                 .collect(Collectors.toMap(Codestart::getName, Function.identity()));
         for (Path directory : directories) {
-            final Map<String, Codestart> dirCodestarts = CodestartCatalogLoader.loadUserDirectoryCodestarts(directory).stream()
+            final Map<String, Codestart> dirCodestarts = CodestartCatalogLoader.loadCodestartsFromDir(directory).stream()
                     .collect(Collectors.toMap(Codestart::getName, Function.identity()));
             // On duplicates, directories override platform codestarts
             codestarts.putAll(dirCodestarts);
@@ -99,9 +100,9 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 && projectCodestarts.stream()
                         .noneMatch(c -> isExample(c) && !c.getSpec().isPreselected())) {
             final Codestart defaultCodestart = codestarts.stream()
-                    .filter(c -> c.isSelected(Collections.singleton(Example.RESTEASY_EXAMPLE.getKey())))
+                    .filter(c -> c.isSelected(Collections.singleton(Example.RESTEASY_EXAMPLE.key())))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
-                            Example.RESTEASY_EXAMPLE.getKey() + " codestart not found"));
+                            Example.RESTEASY_EXAMPLE.key() + " codestart not found"));
             final String languageName = findLanguageName(projectCodestarts);
             if (defaultCodestart.implementsLanguage(languageName)) {
                 projectCodestarts.add(defaultCodestart);
@@ -116,12 +117,12 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         // check compatibility issues
         final long examplesWithCompatIssues = projectCodestarts.stream()
                 .filter(QuarkusCodestartCatalog::isExample)
-                .filter(c -> c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()))
+                .filter(c -> c.containsTag(Tag.SINGLETON_EXAMPLE.key()))
                 .count();
 
         if (examplesWithCompatIssues == 1) {
             // remove other examples
-            projectCodestarts.removeIf(c -> isExample(c) && !c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()));
+            projectCodestarts.removeIf(c -> isExample(c) && !c.containsTag(Tag.SINGLETON_EXAMPLE.key()));
         } else if (examplesWithCompatIssues > 1) {
             throw new CodestartException(
                     "Only one extension with singleton example can be selected at a time (you can always use 'noExamples' if needed)");
@@ -145,30 +146,24 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             switch (projectInput.getBuildTool()) {
                 case GRADLE:
                 case GRADLE_KOTLIN_DSL:
-                    codestarts.add(QuarkusCodestartCatalog.Tooling.GRADLE_WRAPPER.getKey());
+                    codestarts.add(QuarkusCodestartCatalog.Tooling.GRADLE_WRAPPER.key());
                     break;
                 case MAVEN:
-                    codestarts.add(QuarkusCodestartCatalog.Tooling.MAVEN_WRAPPER.getKey());
+                    codestarts.add(QuarkusCodestartCatalog.Tooling.MAVEN_WRAPPER.key());
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported build tool wrapper: " + projectInput.getBuildTool());
             }
         }
         if (!projectInput.noDockerfiles()) {
-            codestarts.add(QuarkusCodestartCatalog.Tooling.DOCKERFILES.getKey());
+            codestarts.add(QuarkusCodestartCatalog.Tooling.DOCKERFILES.key());
         }
         return codestarts;
     }
 
     public static boolean isExample(Codestart codestart) {
-        return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.getKey());
-    }
-
-    interface KeySupplier {
-        default String getKey() {
-            return this.toString().toLowerCase().replace("_", "-");
-        }
-    }
+        return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.key());
+    };
 
     private static Map<String, String> buildCodestartMapping(Collection<Extension> extensions) {
         return extensions.stream()

@@ -28,10 +28,10 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.utilities.MojoUtils;
 
-public class CreateExtensionMojoTest {
+public class CreateExtensionLegacyMojoTest {
 
-    private static CreateExtensionMojo initMojo(final Path projectDir) throws IOException {
-        final CreateExtensionMojo mojo = new CreateExtensionMojo();
+    private static CreateExtensionLegacyMojo initMojo(final Path projectDir) throws IOException {
+        final CreateExtensionLegacyMojo mojo = new CreateExtensionLegacyMojo();
         mojo.project = new MavenProject();
         mojo.basedir = projectDir.toFile();
         mojo.generateDevModeTest = true;
@@ -54,7 +54,7 @@ public class CreateExtensionMojoTest {
                     }
                     if (deploymentBom != null) {
                         String version = deploymentBom.getVersion();
-                        if (CreateExtensionMojo.QUARKUS_VERSION_POM_EXPR.equals(version)) {
+                        if (CreateExtensionLegacyMojo.QUARKUS_VERSION_POM_EXPR.equals(version)) {
                             version = rawModel.getProperties().getProperty(version.substring(2, version.length() - 1));
                             if (version == null) {
                                 throw new IllegalStateException(
@@ -78,15 +78,15 @@ public class CreateExtensionMojoTest {
             build.setPluginManagement(new PluginManagement());
         }
 
-        mojo.encoding = CreateExtensionMojo.DEFAULT_ENCODING;
-        mojo.templatesUriBase = CreateExtensionMojo.DEFAULT_TEMPLATES_URI_BASE;
-        mojo.quarkusVersion = CreateExtensionMojo.DEFAULT_QUARKUS_VERSION;
-        mojo.bomEntryVersion = CreateExtensionMojo.DEFAULT_BOM_ENTRY_VERSION;
+        mojo.encoding = CreateExtensionLegacyMojo.DEFAULT_ENCODING;
+        mojo.templatesUriBase = CreateExtensionLegacyMojo.DEFAULT_TEMPLATES_URI_BASE;
+        mojo.quarkusVersion = CreateExtensionLegacyMojo.DEFAULT_QUARKUS_VERSION;
+        mojo.bomEntryVersion = CreateExtensionLegacyMojo.DEFAULT_BOM_ENTRY_VERSION;
         mojo.assumeManaged = true;
-        mojo.nameSegmentDelimiter = CreateExtensionMojo.DEFAULT_NAME_SEGMENT_DELIMITER;
-        mojo.platformGroupId = CreateExtensionMojo.PLATFORM_DEFAULT_GROUP_ID;
-        mojo.platformArtifactId = CreateExtensionMojo.PLATFORM_DEFAULT_ARTIFACT_ID;
-        mojo.compilerPluginVersion = CreateExtensionMojo.COMPILER_PLUGIN_DEFAULT_VERSION;
+        mojo.nameSegmentDelimiter = CreateExtensionLegacyMojo.DEFAULT_NAME_SEGMENT_DELIMITER;
+        mojo.platformGroupId = CreateExtensionLegacyMojo.PLATFORM_DEFAULT_GROUP_ID;
+        mojo.platformArtifactId = CreateExtensionLegacyMojo.PLATFORM_DEFAULT_ARTIFACT_ID;
+        mojo.compilerPluginVersion = CreateExtensionLegacyMojo.COMPILER_PLUGIN_DEFAULT_VERSION;
         return mojo;
     }
 
@@ -128,7 +128,7 @@ public class CreateExtensionMojoTest {
     @Test
     void createExtensionUnderExistingPomMinimal() throws MojoExecutionException, MojoFailureException,
             IllegalArgumentException, SecurityException, IOException {
-        final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
+        final CreateExtensionLegacyMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(minimal-extension)";
         mojo.assumeManaged = false;
         mojo.execute();
@@ -140,7 +140,7 @@ public class CreateExtensionMojoTest {
     @Test
     void createExtensionUnderExistingPomWithAdditionalRuntimeDependencies() throws MojoExecutionException, MojoFailureException,
             IllegalArgumentException, SecurityException, IOException {
-        final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
+        final CreateExtensionLegacyMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(add-to-bom)";
         mojo.assumeManaged = false;
         mojo.bomPath = Paths.get("bom/pom.xml");
@@ -155,7 +155,7 @@ public class CreateExtensionMojoTest {
     @Test
     void createExtensionUnderExistingPomWithItest() throws MojoExecutionException, MojoFailureException,
             IllegalArgumentException, SecurityException, IOException {
-        final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
+        final CreateExtensionLegacyMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(itest)";
         mojo.assumeManaged = false;
         mojo.itestParentPath = Paths.get("integration-tests/pom.xml");
@@ -168,7 +168,7 @@ public class CreateExtensionMojoTest {
     @Test
     void createExtensionUnderExistingPomCustomGrandParent() throws MojoExecutionException, MojoFailureException,
             IllegalArgumentException, SecurityException, IOException {
-        final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
+        final CreateExtensionLegacyMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "myproject-(with-grand-parent)";
         mojo.parentArtifactId = "grand-parent";
         mojo.parentRelativePath = "../pom.xml";
@@ -183,7 +183,7 @@ public class CreateExtensionMojoTest {
 
     @Test
     void createNewExtensionProject() throws Exception {
-        final CreateExtensionMojo mojo = initMojo(newProjectDir("new-ext-project"));
+        final CreateExtensionLegacyMojo mojo = initMojo(newProjectDir("new-ext-project"));
         mojo.groupId = "org.acme";
         mojo.artifactId = "my-ext";
         mojo.version = "1.0-SNAPSHOT";
@@ -196,7 +196,7 @@ public class CreateExtensionMojoTest {
 
     @Test
     void createNewExtensionOnCurrentDirectory() throws Exception {
-        final CreateExtensionMojo mojo = initMojo(newProjectDir("new-extension-current-directory-project"));
+        final CreateExtensionLegacyMojo mojo = initMojo(newProjectDir("new-extension-current-directory-project"));
         mojo.groupId = "org.acme";
         mojo.artifactId = "my-ext";
         mojo.version = "1.0-SNAPSHOT";
@@ -210,7 +210,7 @@ public class CreateExtensionMojoTest {
 
     @Test
     void createNewExtensionProjectWithJBossParent() throws Exception {
-        final CreateExtensionMojo mojo = initMojo(newProjectDir("new-ext-project-with-jboss-parent"));
+        final CreateExtensionLegacyMojo mojo = initMojo(newProjectDir("new-ext-project-with-jboss-parent"));
         mojo.parentGroupId = "org.jboss";
         mojo.parentArtifactId = "jboss-parent";
         mojo.parentVersion = "37";
@@ -258,15 +258,15 @@ public class CreateExtensionMojoTest {
 
     @Test
     void getPackage() {
-        assertEquals("org.apache.camel.quarkus.aws.sns.deployment", CreateExtensionMojo
+        assertEquals("org.apache.camel.quarkus.aws.sns.deployment", CreateExtensionLegacyMojo
                 .getJavaPackage("org.apache.camel.quarkus", null, "camel-quarkus-aws-sns-deployment"));
-        assertEquals("org.apache.camel.quarkus.component.aws.sns.deployment", CreateExtensionMojo
+        assertEquals("org.apache.camel.quarkus.component.aws.sns.deployment", CreateExtensionLegacyMojo
                 .getJavaPackage("org.apache.camel.quarkus", "component", "camel-quarkus-aws-sns-deployment"));
     }
 
     @Test
     void toCapCamelCase() {
-        assertEquals("FooBarBaz", CreateExtensionMojo.toCapCamelCase("foo-bar-baz"));
+        assertEquals("FooBarBaz", CreateExtensionLegacyMojo.toCapCamelCase("foo-bar-baz"));
     }
 
 }

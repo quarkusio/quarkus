@@ -1054,7 +1054,7 @@ public class TestEndpoint {
     public String testModel1() {
         Assertions.assertEquals(0, Person.count());
 
-        Person person = makeSavedPerson();
+        Person person = makeSavedPerson("");
         SelfDirtinessTracker trackingPerson = (SelfDirtinessTracker) person;
 
         String[] dirtyAttributes = trackingPerson.$$_hibernate_getDirtyAttributes();

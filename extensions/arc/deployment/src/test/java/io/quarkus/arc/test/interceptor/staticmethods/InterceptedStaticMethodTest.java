@@ -10,7 +10,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
@@ -29,9 +28,7 @@ import org.opentest4j.AssertionFailedError;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class InterceptedStaticMethodTest {
@@ -40,39 +37,26 @@ public class InterceptedStaticMethodTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(InterceptMe.class, Simple.class, AnotherSimple.class, SimpleInterceptor.class))
-            .addBuildChainCustomizer(buildCustomizer());
+            .addBuildStepObject(new Object() {
+                @Step
+                AnnotationsTransformerBuildItem run() {
+                    return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+                        @Override
+                        public boolean appliesTo(Kind kind) {
+                            return AnnotationTarget.Kind.METHOD == kind;
+                        }
 
-    static Consumer<BuildChainBuilder> buildCustomizer() {
-        return new Consumer<BuildChainBuilder>() {
-
-            @Override
-            public void accept(BuildChainBuilder builder) {
-                builder.addBuildStep(new BuildStep() {
-
-                    @Override
-                    public void execute(BuildContext context) {
-                        context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-                            @Override
-                            public boolean appliesTo(Kind kind) {
-                                return AnnotationTarget.Kind.METHOD == kind;
+                        @Override
+                        public void transform(TransformationContext context) {
+                            MethodInfo method = context.getTarget().asMethod();
+                            if (method.declaringClass().name().toString()
+                                    .endsWith("AnotherSimple")) {
+                                context.transform().add(InterceptMe.class).done();
                             }
-
-                            @Override
-                            public void transform(TransformationContext context) {
-                                MethodInfo method = context.getTarget().asMethod();
-                                if (method.declaringClass().name().toString()
-                                        .endsWith("AnotherSimple")) {
-                                    context.transform().add(InterceptMe.class).done();
-                                }
-                            }
-
-                        }));
-                    }
-                }).produces(AnnotationsTransformerBuildItem.class).build();
-            }
-        };
-    }
+                        }
+                    });
+                }
+            });
 
     @Test
     public void testInterceptor() {

@@ -1,12 +1,17 @@
 package io.quarkus.builder;
 
-import org.wildfly.common.Assert;
 import org.wildfly.common.flags.Flags;
+
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Flags which can be set on consume declarations.
+ *
+ * @deprecated For raw steps, prefer {@link io.quarkus.qlue.ConsumeFlags} instead.
  */
+@Deprecated
 public final class ConsumeFlags extends Flags<ConsumeFlag, ConsumeFlags> {
+    final io.quarkus.qlue.ConsumeFlags realFlags;
 
     @Override
     protected ConsumeFlags value(final int bits) {
@@ -33,8 +38,13 @@ public final class ConsumeFlags extends Flags<ConsumeFlag, ConsumeFlags> {
         return (ConsumeFlags) obj;
     }
 
+    public io.quarkus.qlue.ConsumeFlags getRealFlags() {
+        return realFlags;
+    }
+
     private ConsumeFlags(int val) {
         super(val);
+        realFlags = io.quarkus.qlue.ConsumeFlags.value(val);
     }
 
     private static final ConsumeFlag[] enumValues = ConsumeFlag.values();

@@ -163,6 +163,16 @@ public class QuarkusUnitTest
         return this;
     }
 
+    public QuarkusUnitTest addBuildStepObject(Object stepObject) {
+        this.buildChainCustomizers.add(bcb -> bcb.getChainBuilder().addStepObject(stepObject));
+        return this;
+    }
+
+    public QuarkusUnitTest addBuildStepClass(Class<?> stepClass) {
+        this.buildChainCustomizers.add(bcb -> bcb.getChainBuilder().addStepClass(stepClass));
+        return this;
+    }
+
     public QuarkusUnitTest setLogFileName(String logFileName) {
         this.logFileName = logFileName;
         return this;

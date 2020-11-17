@@ -13,7 +13,6 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
@@ -32,9 +31,7 @@ import com.google.inject.Inject;
 
 import io.quarkus.arc.deployment.ObserverTransformerBuildItem;
 import io.quarkus.arc.processor.ObserverTransformer;
-import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ObserverTransformerTest {
@@ -43,37 +40,26 @@ public class ObserverTransformerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyObserver.class, AlphaQualifier.class, BravoQualifier.class))
-            .addBuildChainCustomizer(buildCustomizer());
+            .addBuildStepObject(new Object() {
+                @Step
+                ObserverTransformerBuildItem run() {
+                    return new ObserverTransformerBuildItem(new ObserverTransformer() {
 
-    static Consumer<BuildChainBuilder> buildCustomizer() {
-        return new Consumer<BuildChainBuilder>() {
+                        @Override
+                        public boolean appliesTo(Type observedType, Set<AnnotationInstance> qualifiers) {
+                            return observedType.name().equals(DotName.createSimple(MyEvent.class.getName()));
+                        }
 
-            @Override
-            public void accept(BuildChainBuilder builder) {
-                builder.addBuildStep(new BuildStep() {
-
-                    @Override
-                    public void execute(BuildContext context) {
-                        context.produce(new ObserverTransformerBuildItem(new ObserverTransformer() {
-
-                            @Override
-                            public boolean appliesTo(Type observedType, Set<AnnotationInstance> qualifiers) {
-                                return observedType.name().equals(DotName.createSimple(MyEvent.class.getName()));
+                        @Override
+                        public void transform(TransformationContext context) {
+                            if (context.getMethod().name().equals("")) {
+                                context.transform().removeAll().done();
                             }
+                        }
 
-                            @Override
-                            public void transform(TransformationContext context) {
-                                if (context.getMethod().name().equals("")) {
-                                    context.transform().removeAll().done();
-                                }
-                            }
-
-                        }));
-                    }
-                }).produces(ObserverTransformerBuildItem.class).build();
-            }
-        };
-    }
+                    });
+                }
+            });
 
     @BravoQualifier
     @Inject

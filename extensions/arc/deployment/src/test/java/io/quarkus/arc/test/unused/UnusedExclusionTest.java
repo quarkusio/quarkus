@@ -1,7 +1,6 @@
 package io.quarkus.arc.test.unused;
 
 import java.lang.reflect.Method;
-import java.util.function.Consumer;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
@@ -21,11 +20,9 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.test.unused.subpackage.Beta;
-import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.qlue.annotation.Step;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -39,37 +36,26 @@ public class UnusedExclusionTest {
                     .addAsResource(new StringAsset(
                             "quarkus.arc.unremovable-types=io.quarkus.arc.test.unused.UnusedExclusionTest$Alpha,io.quarkus.arc.test.unused.subpackage.**,io.quarkus.arc.test.unused.Charlie,Delta"),
                             "application.properties"))
-            .addBuildChainCustomizer(buildCustomizer());
-
-    static Consumer<BuildChainBuilder> buildCustomizer() {
-        return new Consumer<BuildChainBuilder>() {
-
-            @Override
-            public void accept(BuildChainBuilder builder) {
-                builder.addBuildStep(new BuildStep() {
-
-                    @Override
-                    public void execute(BuildContext context) {
-                        BeanContainer beanContainer = context.consume(BeanContainerBuildItem.class).getValue();
-                        BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
-                                TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode());
-                        // We need to use reflection due to some class loading problems
-                        Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
-                        try {
-                            Method test = recorderProxy.getClass().getDeclaredMethod("test", BeanContainer.class);
-                            Object[] args = new Object[1];
-                            args[0] = beanContainer;
-                            test.invoke(recorderProxy, args);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                        context.produce(new StaticBytecodeRecorderBuildItem(bytecodeRecorder));
+            .addBuildStepObject(new Object() {
+                @Step
+                StaticBytecodeRecorderBuildItem run(BeanContainerBuildItem beanContainerItem) {
+                    BeanContainer beanContainer = beanContainerItem.getValue();
+                    BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
+                            TestRecorder.class.getSimpleName(),
+                            "test", "" + TestRecorder.class.hashCode());
+                    // We need to use reflection due to some class loading problems
+                    Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
+                    try {
+                        Method test = recorderProxy.getClass().getDeclaredMethod("test", BeanContainer.class);
+                        Object[] args = new Object[1];
+                        args[0] = beanContainer;
+                        test.invoke(recorderProxy, args);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
-                }).consumes(BeanContainerBuildItem.class).produces(StaticBytecodeRecorderBuildItem.class).build();
-            }
-        };
-    }
+                    return new StaticBytecodeRecorderBuildItem(bytecodeRecorder);
+                }
+            });
 
     @Recorder
     public static class TestRecorder {

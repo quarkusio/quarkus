@@ -64,29 +64,13 @@ import io.quarkus.runtime.annotations.Recorder;
 public @interface BuildStep {
 
     /**
-     *
-     * A list of capabilities that are provided by this build step.
-     *
-     * This should not be used, {@link io.quarkus.deployment.builditem.CapabilityBuildItem} should just be produced
-     * directly instead.
-     *
-     * This method will be removed at some point post Quarkus 1.1.
-     *
-     * @return The capabilities provided by this build step
+     * This no longer has any effect, and will be removed in future.
      */
     @Deprecated
     String[] providesCapabilities() default {};
 
     /**
-     * Indicates that the provided file names should be considered to be application index markers.
-     *
-     * If these are present in library on the class path then the library will be indexed, and this index will be
-     * used when evaluating application components.
-     *
-     * This should not be used, {@link io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem}
-     * should just be produced directly instead.
-     *
-     * This method will be removed at some point post Quarkus 1.1.
+     * This no longer has any effect, and will be removed in future.
      */
     @Deprecated
     String[] applicationArchiveMarkers() default {};

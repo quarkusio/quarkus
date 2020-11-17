@@ -4,6 +4,7 @@ import java.util.Objects;
 
 /**
  */
+@Deprecated
 public abstract class Location {
     private final Location parent;
 

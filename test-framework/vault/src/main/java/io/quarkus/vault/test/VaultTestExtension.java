@@ -69,7 +69,7 @@ public class VaultTestExtension {
     static final String DB_USERNAME = "postgres";
     public static final String DB_PASSWORD = "bar";
     public static final String SECRET_VALUE = "s\u20accr\u20act";
-    static final String DEFAULT_VAULT_VERSION = "1.2.2";
+    static final String DEFAULT_VAULT_VERSION = "1.6.0";
     static final int VAULT_PORT = 8200;
     static final int MAPPED_POSTGRESQL_PORT = 6543;
     public static final String VAULT_AUTH_USERPASS_USER = "bob";

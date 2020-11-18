@@ -2,19 +2,20 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.2
+    # Graylog 3 only works with Elasticsearch 6
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.9
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     networks:
       - graylog
 
   mongo:
-    image: mongo:4.0
+    image: mongo:4.2
     networks:
       - graylog
 
   graylog:
-    image: graylog/graylog:3.1
+    image: graylog/graylog:3.3.8
     ports:
       - "9000:9000"
       - "12201:12201/udp"

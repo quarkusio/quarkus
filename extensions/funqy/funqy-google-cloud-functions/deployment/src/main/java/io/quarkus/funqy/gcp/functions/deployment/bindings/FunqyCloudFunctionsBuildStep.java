@@ -19,7 +19,7 @@ import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.gcp.functions.FunqyCloudFunctionsBindingRecorder;
 import io.quarkus.funqy.runtime.FunqyConfig;
-import io.quarkus.jackson.ObjectMapperProducer;
+import io.quarkus.jackson.runtime.ObjectMapperProducer;
 
 public class FunqyCloudFunctionsBuildStep {
     private static final String FEATURE_NAME = "funqy-google-cloud-functions";

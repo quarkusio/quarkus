@@ -43,7 +43,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jackson.ObjectMapperCustomizer;
-import io.quarkus.jackson.ObjectMapperProducer;
+import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 

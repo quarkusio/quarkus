@@ -1,4 +1,4 @@
-package io.quarkus.jackson;
+package io.quarkus.jackson.runtime;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +12,7 @@ import javax.inject.Singleton;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.jackson.ObjectMapperCustomizer;
 
 @ApplicationScoped
 public class ObjectMapperProducer {

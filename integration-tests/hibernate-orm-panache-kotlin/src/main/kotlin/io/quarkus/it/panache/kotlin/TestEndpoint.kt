@@ -876,7 +876,7 @@ class TestEndpoint {
         Person.deleteAll()
         Assertions.assertEquals(0, Person.count())
 
-        val person: Person = makeSavedPerson()
+        val person: Person = makeSavedPerson("")
         val trackingPerson = person as SelfDirtinessTracker
 
         var dirtyAttributes = trackingPerson.`$$_hibernate_getDirtyAttributes`()

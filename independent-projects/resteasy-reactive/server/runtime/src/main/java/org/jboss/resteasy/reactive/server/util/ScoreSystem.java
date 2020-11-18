@@ -82,6 +82,10 @@ public class ScoreSystem {
                 System.err.println(" Consumes: " + consumes);
             }
             System.err.println(" Diagnostics:");
+            if (runtimeResource.getScore() == null) {
+                System.err.println(" Unable to determine score");
+                return;
+            }
             int score = 0;
             int total = 0;
             for (Entry<Category, List<Diagnostic>> scoreEntry : runtimeResource.getScore().entrySet()) {
@@ -100,6 +104,10 @@ public class ScoreSystem {
 
         @Override
         public void visitEnd() {
+            if (overallScore == 0) {
+                // we were most likely not able to determine the score, so don't print anything as it will be misleading
+                return;
+            }
             // let's bring it to 100
             overallScore = (int) Math.floor(((float) overallScore / (float) overallTotal) * 100f);
             System.err.println("Overall Score: " + overallScore + "/100");

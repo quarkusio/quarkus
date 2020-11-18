@@ -1365,7 +1365,7 @@ public class TestEndpoint {
                 .flatMap(count -> {
                     Assertions.assertEquals(0, count);
 
-                    return makeSavedPerson();
+                    return makeSavedPerson("");
                 }).flatMap(person -> {
                     SelfDirtinessTracker trackingPerson = (SelfDirtinessTracker) person;
 

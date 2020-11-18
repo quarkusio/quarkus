@@ -59,6 +59,7 @@ import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -70,6 +71,7 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.AddPreventRuntimeInitBlockBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -158,6 +160,13 @@ public class JarResultBuildStep {
                     Collections.singletonMap("library-dir", jarBuildItem.getLibraryDir()));
         } else {
             return new ArtifactResultBuildItem(jarBuildItem.getPath(), PackageConfig.JAR, Collections.emptyMap());
+        }
+    }
+
+    @BuildStep
+    void addPreventRuntimeInitBlock(PackageConfig packageConfig, BuildProducer<AddPreventRuntimeInitBlockBuildItem> producer) {
+        if (packageConfig.isFastJar()) {
+            producer.produce(new AddPreventRuntimeInitBlockBuildItem());
         }
     }
 

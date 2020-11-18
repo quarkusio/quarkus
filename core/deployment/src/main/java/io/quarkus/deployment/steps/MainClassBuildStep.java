@@ -28,6 +28,7 @@ import org.jboss.logging.Logger;
 import org.jboss.logmanager.handlers.DelayedHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -52,6 +53,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.AddPreventRuntimeInitBlockBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
@@ -118,7 +120,8 @@ public class MainClassBuildStep {
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReloadBuildItem,
             ApplicationInfoBuildItem applicationInfo,
-            Optional<AppCDSRequestedBuildItem> appCDSRequested) {
+            Optional<AppCDSRequestedBuildItem> appCDSRequested,
+            List<AddPreventRuntimeInitBlockBuildItem> addPreventRuntimeInitBlock) {
 
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(Application.APP_CLASS_NAME));
 
@@ -182,6 +185,17 @@ public class MainClassBuildStep {
 
         mv = file.getMethodCreator("doStart", void.class, String[].class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
+
+        if (!addPreventRuntimeInitBlock.isEmpty()) {
+            ResultHandle preBootSysProp = mv.invokeStaticMethod(
+                    ofMethod(System.class, "getProperty", String.class, String.class, String.class),
+                    mv.load(QuarkusEntryPoint.PRE_BOOT_SYSTEM_PROPERTY), mv.load("false"));
+            ResultHandle returnBool = mv.invokeStaticMethod(
+                    ofMethod(Boolean.class, "parseBoolean", boolean.class, String.class), preBootSysProp);
+            BytecodeCreator returnBranch = mv.ifTrue(returnBool).trueBranch();
+            returnBranch.invokeStaticMethod(ofMethod(ApplicationLifecycleManager.class, "exit", void.class));
+            returnBranch.returnValue(null);
+        }
 
         // if AppCDS generation was requested, we ensure that the application simply loads some classes from a file and terminates
         if (appCDSRequested.isPresent()) {

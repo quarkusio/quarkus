@@ -102,6 +102,14 @@ public class PackageConfig {
     @ConfigItem
     public Optional<String> userProvidersDirectory;
 
+    /**
+     * If set, results in the creation of additional index at build time that can slightly speed up boot time and reduce
+     * memory usage.
+     * This flag ONLY works when fast-jar is being used and is completely ignored otherwise.
+     */
+    @ConfigItem
+    public boolean preBoot;
+
     public boolean isAnyJarType() {
         return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
                 type.equalsIgnoreCase(PackageConfig.JAR) ||

@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.runner;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +26,8 @@ public class RunnerClassLoader extends ClassLoader {
 
     private final Set<String> parentFirstPackages;
     private final Set<String> nonExistentResources;
+    private final Map<String, Path> capturedFindResource;
+    private final Map<String, Set<Path>> capturedFindResources;
 
     private final ConcurrentMap<ClassLoadingResource, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
 
@@ -33,11 +36,26 @@ public class RunnerClassLoader extends ClassLoader {
     }
 
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
-            Set<String> parentFirstPackages, Set<String> nonExistentResources) {
+            Set<String> parentFirstPackages, Set<String> nonExistentResources, Map<String, Path> capturedFindResource,
+            Map<String, Set<Path>> capturedFindResources) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
         this.nonExistentResources = nonExistentResources;
+        this.capturedFindResource = capturedFindResource;
+        this.capturedFindResources = capturedFindResources;
+    }
+
+    Map<String, ClassLoadingResource[]> getResourceDirectoryMap() {
+        return resourceDirectoryMap;
+    }
+
+    Set<String> getParentFirstPackages() {
+        return parentFirstPackages;
+    }
+
+    Set<String> getNonExistentResources() {
+        return nonExistentResources;
     }
 
     @Override
@@ -101,7 +119,21 @@ public class RunnerClassLoader extends ClassLoader {
         if (nonExistentResources.contains(name)) {
             return null;
         }
-        ClassLoadingResource[] resources = getClassLoadingResources(name);
+        ClassLoadingResource[] resources = null;
+        if (capturedFindResource.containsKey(name)) {
+            Path capturedPath = capturedFindResource.get(name);
+            if (capturedPath != null) {
+                for (ClassLoadingResource resource : getClassLoadingResources(name)) {
+                    if (resource.getSource().equals(capturedPath)) {
+                        return resource.getResourceURL(name);
+                    }
+                }
+            } else {
+                // a null value means that the resource was captured but was not found in any ClassLoadingResource
+            }
+        } else {
+            resources = getClassLoadingResources(name);
+        }
         if (resources == null)
             return null;
         for (ClassLoadingResource resource : resources) {
@@ -141,7 +173,24 @@ public class RunnerClassLoader extends ClassLoader {
         if (nonExistentResources.contains(name)) {
             return Collections.emptyEnumeration();
         }
-        ClassLoadingResource[] resources = getClassLoadingResources(name);
+        ClassLoadingResource[] resources;
+        if (capturedFindResources.containsKey(name)) {
+            Set<Path> capturedPath = capturedFindResources.get(name);
+            if (capturedPath.isEmpty()) {
+                // an empty value means that the resource was captured but was not found in any ClassLoadingResource
+                resources = null;
+            } else {
+                int i = 0;
+                resources = new ClassLoadingResource[capturedPath.size()];
+                for (ClassLoadingResource resource : getClassLoadingResources(name)) {
+                    if (capturedPath.contains(resource.getSource())) {
+                        resources[i++] = resource;
+                    }
+                }
+            }
+        } else {
+            resources = getClassLoadingResources(name);
+        }
         if (resources == null)
             return null;
         List<URL> urls = new ArrayList<>();

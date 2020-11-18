@@ -122,6 +122,11 @@ public class JarResource implements ClassLoadingResource {
         return new ProtectionDomain(codesource, null, classLoader, null);
     }
 
+    @Override
+    public Path getSource() {
+        return jarPath;
+    }
+
     private JarFile readLockAcquireAndGetJarReference() {
         while (true) {
             readLock.lock();

@@ -5,11 +5,16 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.JarURLConnection;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,8 +85,60 @@ public class SerializedApplication {
         }
     }
 
-    public static SerializedApplication read(InputStream inputStream, Path appRoot) throws IOException {
-        try (DataInputStream in = new DataInputStream(inputStream)) {
+    public static void writeAdditionalIndex(Path applicationRoot, Map<String, URL> capturedFindResource,
+            Map<String, List<URL>> capturedFindResources) throws IOException, URISyntaxException {
+        OutputStream outputStream = Files
+                .newOutputStream(applicationRoot.resolve(QuarkusEntryPoint.QUARKUS_RUNNER_CL_ADDITIONAL_INDEX_DAT));
+        try (DataOutputStream data = new DataOutputStream(outputStream)) {
+            data.writeInt(MAGIC); // TODO: should we be using something different here?
+            data.writeInt(VERSION);
+
+            data.writeInt(capturedFindResource.size());
+            for (Map.Entry<String, URL> entry : capturedFindResource.entrySet()) {
+                if (entry.getValue() == null) {
+                    data.writeUTF(entry.getKey());
+                    data.writeUTF("");
+                } else {
+                    Path jarPath = jarURLToPath(entry.getValue());
+                    if (jarPath == null) {
+                        continue;
+                    }
+                    data.writeUTF(entry.getKey());
+                    String relativePath = applicationRoot.relativize(jarPath).toString().replace("\\", "/");
+                    data.writeUTF(relativePath);
+                }
+            }
+
+            data.writeInt(capturedFindResources.size());
+            for (Map.Entry<String, List<URL>> entry : capturedFindResources.entrySet()) {
+                data.writeUTF(entry.getKey());
+                data.writeInt(entry.getValue().size());
+                for (URL url : entry.getValue()) {
+                    Path jarPath = jarURLToPath(url);
+                    if (jarPath == null) {
+                        continue;
+                    }
+                    String relativePath = applicationRoot.relativize(jarPath).toString().replace("\\", "/");
+                    data.writeUTF(relativePath);
+                }
+            }
+
+            data.flush();
+        }
+    }
+
+    private static Path jarURLToPath(URL url) throws URISyntaxException, IOException {
+        if ("jar".equals(url.toURI().getScheme())) {
+            JarURLConnection connection = (JarURLConnection) url.openConnection();
+            connection.setDefaultUseCaches(false);
+            return Paths.get(connection.getJarFileURL().toURI());
+        }
+        return null;
+    }
+
+    public static SerializedApplication read(Path appRoot, InputStream mainDataFile, InputStream additionalIndexDataFile)
+            throws IOException {
+        try (DataInputStream in = new DataInputStream(mainDataFile)) {
             if (in.readInt() != MAGIC) {
                 throw new RuntimeException("Wrong magic number");
             }
@@ -124,9 +181,45 @@ public class SerializedApplication {
             for (int i = 0; i < nonExistentResourcesSize; i++) {
                 nonExistentResources.add(in.readUTF());
             }
+
+            Map<String, Path> capturedFindResource = new HashMap<>();
+            Map<String, Set<Path>> capturedFindResources = new HashMap<>();
+            if (additionalIndexDataFile != null) {
+                try (DataInputStream ain = new DataInputStream(additionalIndexDataFile)) {
+                    if (ain.readInt() != MAGIC) {
+                        throw new RuntimeException("Wrong magic number");
+                    }
+                    if (ain.readInt() != VERSION) {
+                        throw new RuntimeException("Wrong class path version");
+                    }
+
+                    int capturedFindResourceSize = ain.readInt();
+                    for (int i = 0; i < capturedFindResourceSize; i++) {
+                        String resource = ain.readUTF();
+                        String jarPath = ain.readUTF();
+                        capturedFindResource.put(resource, jarPath.isEmpty() ? null : appRoot.resolve(jarPath));
+                    }
+
+                    int capturedFindResourcesSize = ain.readInt();
+                    for (int i = 0; i < capturedFindResourcesSize; i++) {
+                        String resource = ain.readUTF();
+                        int jarsSize = ain.readInt();
+                        if (jarsSize == 0) {
+                            capturedFindResources.put(resource, Collections.emptySet());
+                        } else {
+                            Set<Path> jarPaths = new HashSet<>(jarsSize);
+                            for (int j = 0; j < jarsSize; j++) {
+                                jarPaths.add(appRoot.resolve(ain.readUTF()));
+                            }
+                            capturedFindResources.put(resource, jarPaths);
+                        }
+                    }
+                }
+            }
+
             return new SerializedApplication(
                     new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages,
-                            nonExistentResources),
+                            nonExistentResources, capturedFindResource, capturedFindResources),
                     mainClass);
         }
     }

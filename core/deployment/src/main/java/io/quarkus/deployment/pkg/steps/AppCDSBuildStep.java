@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
@@ -125,8 +124,8 @@ public class AppCDSBuildStep {
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(NULL_FILE);
-                processBuilder.redirectOutput(NULL_FILE);
+                processBuilder.redirectError(StepUtil.NULL_FILE);
+                processBuilder.redirectOutput(StepUtil.NULL_FILE);
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
@@ -185,8 +184,8 @@ public class AppCDSBuildStep {
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(NULL_FILE);
-                processBuilder.redirectOutput(NULL_FILE);
+                processBuilder.redirectError(StepUtil.NULL_FILE);
+                processBuilder.redirectOutput(StepUtil.NULL_FILE);
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
@@ -233,9 +232,4 @@ public class AppCDSBuildStep {
             return true;
         }
     }
-
-    // copied from Java 9
-    // TODO remove when we move to Java 11
-
-    private static final File NULL_FILE = new File(SystemUtils.IS_OS_WINDOWS ? "NUL" : "/dev/null");
 }

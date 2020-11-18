@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.ProtectionDomain;
 
 public interface ClassLoadingResource {
@@ -12,6 +13,11 @@ public interface ClassLoadingResource {
     ManifestInfo getManifestInfo();
 
     ProtectionDomain getProtectionDomain(ClassLoader runnerClassLoader);
+
+    /**
+     * The {@link Path} which resulted in the creation of this {@code ClassLoadingResource}
+     */
+    Path getSource();
 
     void close();
 

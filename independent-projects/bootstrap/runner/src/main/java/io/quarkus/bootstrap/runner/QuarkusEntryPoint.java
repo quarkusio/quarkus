@@ -16,7 +16,10 @@ import java.util.List;
 public class QuarkusEntryPoint {
 
     public static final String QUARKUS_APPLICATION_DAT = "quarkus/quarkus-application.dat";
+    public static final String QUARKUS_RUNNER_CL_ADDITIONAL_INDEX_DAT = "quarkus/quarkus-rcl-additional-index.dat";
     public static final String LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT = "lib/deployment/deployment-class-path.dat";
+
+    public static final String PRE_BOOT_SYSTEM_PROPERTY = "quarkus.application.pre-boot";
 
     public static void main(String... args) throws Throwable {
         System.setProperty("java.util.logging.manager", org.jboss.logmanager.LogManager.class.getName());
@@ -36,12 +39,45 @@ public class QuarkusEntryPoint {
             doReaugment(appRoot);
         } else {
             SerializedApplication app = null;
+            // TODO: do we want to use the same property here or have some dedicated property for capturing?
+            boolean isPreBoot = Boolean.parseBoolean(System.getProperty(PRE_BOOT_SYSTEM_PROPERTY, "false"));
             try (InputStream in = Files.newInputStream(appRoot.resolve(QUARKUS_APPLICATION_DAT))) {
-                app = SerializedApplication.read(in, appRoot);
-                Thread.currentThread().setContextClassLoader(app.getRunnerClassLoader());
-                Class<?> mainClass = app.getRunnerClassLoader().loadClass(app.getMainClass());
-                mainClass.getMethod("main", String[].class).invoke(null, args);
+                RunnerClassLoader runnerClassLoader;
+                if (isPreBoot) {
+                    app = SerializedApplication.read(appRoot, in, null);
+                    CapturingRunnerClassLoader capturingRunnerClassLoader = new CapturingRunnerClassLoader(
+                            app.getRunnerClassLoader().getParent(), app.getRunnerClassLoader().getResourceDirectoryMap(),
+                            app.getRunnerClassLoader().getParentFirstPackages(),
+                            app.getRunnerClassLoader().getNonExistentResources());
+                    // we need to use a shutdown hook because the application simply exits after "main"
+                    // is called because ApplicationLifecycleManager uses a default exit handler
+                    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                SerializedApplication.writeAdditionalIndex(appRoot,
+                                        capturingRunnerClassLoader.getCapturedFindResource(),
+                                        capturingRunnerClassLoader.getCapturedFindResources());
+                            } catch (Exception ignored) {
 
+                            }
+                        }
+                    }));
+                    runnerClassLoader = capturingRunnerClassLoader;
+                } else {
+                    Path additionalIndex = appRoot.resolve(QUARKUS_RUNNER_CL_ADDITIONAL_INDEX_DAT);
+                    if (Files.exists(additionalIndex)) {
+                        try (InputStream ais = Files.newInputStream(additionalIndex)) {
+                            app = SerializedApplication.read(appRoot, in, ais);
+                        }
+                    } else {
+                        app = SerializedApplication.read(appRoot, in, null);
+                    }
+                    runnerClassLoader = app.getRunnerClassLoader();
+                }
+                Thread.currentThread().setContextClassLoader(runnerClassLoader);
+                Class<?> mainClass = runnerClassLoader.loadClass(app.getMainClass());
+                mainClass.getMethod("main", String[].class).invoke(null, args);
             } finally {
                 if (app != null) {
                     app.getRunnerClassLoader().close();

@@ -63,6 +63,10 @@ public class WebJarLocatorDevModeTest {
         RestAssured.get("/webjars/momentjs/2.25.0/min/moment.min.js").then()
                 .statusCode(404);
 
+        // Test webjar that does not have a version in the jar path
+        RestAssured.get("/webjars/dcjs/dc.min.js").then()
+                .statusCode(200);
+
         // Change a source file
         test.modifySourceFile(PostResource.class, s -> s.replace("Hello:", "Hi:"));
 

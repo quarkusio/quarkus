@@ -12,7 +12,11 @@ import javax.persistence.Query;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
@@ -30,14 +34,36 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public abstract EntityManager getEntityManager(Class<?> clazz);
 
-    public EntityManager getEntityManager(String persistentUnitName) {
+    public static EntityManager getEntityManager(String persistentUnitName) {
+        ArcContainer arcContainer = Arc.container();
         if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
-            return Arc.container().instance(EntityManager.class).get();
+            InstanceHandle<EntityManager> emHandle = arcContainer.instance(EntityManager.class);
+            if (emHandle.isAvailable()) {
+                return emHandle.get();
+            }
+            if (!arcContainer.instance(AgroalDataSource.class).isAvailable()) {
+                throw new IllegalStateException(
+                        "The default datasource has not been properly configured. See https://quarkus.io/guides/datasource#jdbc-datasource for information on how to do that.");
+            }
+            throw new IllegalStateException(
+                    "No entities were found. Did you forget to annotate your Panache Entity classes with '@Entity'?");
         }
 
-        PersistenceUnit.PersistenceUnitLiteral persistenceUnitLiteral = new PersistenceUnit.PersistenceUnitLiteral(
-                persistentUnitName);
-        return Arc.container().instance(EntityManager.class, persistenceUnitLiteral).get();
+        InstanceHandle<EntityManager> emHandle = arcContainer.instance(EntityManager.class,
+                new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName));
+        if (emHandle.isAvailable()) {
+            return emHandle.get();
+        }
+        if (!arcContainer.instance(AgroalDataSource.class,
+                new DataSource.DataSourceLiteral(persistentUnitName)).isAvailable()) {
+            throw new IllegalStateException(
+                    "The named datasource '" + persistentUnitName
+                            + "' has not been properly configured. See https://quarkus.io/guides/datasource#multiple-datasources for information on how to do that.");
+        }
+        throw new IllegalStateException(
+                "No entities were attached to persistence unit '" + persistentUnitName
+                        + "'. Did you forget to annotate your Panache Entity classes with '@Entity' or improperly configure the 'quarkus.hibernate-orm.\" "
+                        + persistentUnitName + "\".packages' property?");
     }
 
     public EntityManager getEntityManager() {

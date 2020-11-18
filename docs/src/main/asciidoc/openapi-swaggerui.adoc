@@ -44,7 +44,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=openapi-swaggerui-quickstart \
     -DclassName="org.acme.openapi.swaggerui.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb"
+    -Dextensions="resteasy-jackson"
 cd openapi-swaggerui-quickstart
 ----
 

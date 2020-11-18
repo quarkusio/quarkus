@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 :config-file: application.properties
-:vault-version: 1.2.2
+:vault-version: 1.6.0
 :root-token: s.5VUS8pte13RqekCB2fmMT3u2
 :client-token: s.s93BVzJPzBiIGuYJHBTkG8Uw
 :extension-status: preview
@@ -138,7 +138,7 @@ Initialized     true
 Sealed          false
 Total Shares    1
 Threshold       1
-Version         1.2.2
+Version         1.6.0
 Cluster Name    vault-cluster-b07e80d8
 Cluster ID      55bd74b6-eaaf-3862-f7ce-3473ab86c57f
 HA Enabled      false

@@ -8,6 +8,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +80,37 @@ public class VaultTransitManager implements VaultTransitSecretEngine {
         return encryptBatch(keyName, singletonList(item)).get(0).getValueOrElseError();
     }
 
+    // workaround https://github.com/hashicorp/vault/issues/10232
+    private String encrypt(String keyName, EncryptionRequest request) {
+        VaultTransitEncryptBody body = new VaultTransitEncryptBody();
+        body.plaintext = Base64String.from(request.getData().getValue());
+        body.context = Base64String.from(request.getContext());
+        body.keyVersion = request.getKeyVersion();
+
+        TransitKeyConfig config = serverConfig.transit.key.get(keyName);
+        if (config != null) {
+            keyName = config.name.orElse(keyName);
+            body.type = config.type.orElse(null);
+            body.convergentEncryption = config.convergentEncryption.orElse(null);
+        }
+        VaultTransitEncrypt encrypt = vaultClient.encrypt(getToken(), keyName, body);
+        EncryptionResult result = new EncryptionResult(encrypt.data.ciphertext, encrypt.data.error);
+        if (result.isInError()) {
+            Map<EncryptionRequest, EncryptionResult> errorMap = new HashMap<>();
+            errorMap.put(request, result);
+            throw new VaultEncryptionBatchException("encryption error with key " + keyName, errorMap);
+        }
+        return result.getValue();
+    }
+
     @Override
     public Map<EncryptionRequest, String> encrypt(String keyName, List<EncryptionRequest> requests) {
+        if (requests.size() == 1) {
+            EncryptionRequest request = requests.get(0);
+            Map<EncryptionRequest, String> result = new HashMap<>();
+            result.put(request, encrypt(keyName, request));
+            return result;
+        }
         List<EncryptionResult> results = encryptBatch(keyName, requests);
         checkBatchErrors(results,
                 errors -> new VaultEncryptionBatchException(errors + " encryption errors", zip(requests, results)));

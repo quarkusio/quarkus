@@ -84,8 +84,8 @@ final class ContainerBuilderHelper {
 
                                 // Add with default permissions
                                 if (localPath.toFile().canExecute()) {
-                                    // make sure we can execute the file in the container
-                                    builder.addEntry(localPath, pathOnContainer, FilePermissions.fromOctalString("754"),
+                                    // make sure the file or directory can be executed
+                                    builder.addEntry(localPath, pathOnContainer, FilePermissions.fromOctalString("755"),
                                             modificationTime);
                                 } else {
                                     builder.addEntry(localPath, pathOnContainer, modificationTime);

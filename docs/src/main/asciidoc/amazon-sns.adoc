@@ -94,7 +94,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=amazon-sns-quickstart \
     -DclassName="org.acme.sns.QuarksCannonSyncResource" \
     -Dpath="/sync-cannon" \
-    -Dextensions="resteasy-jsonb,amazon-sns,resteasy-mutiny"
+    -Dextensions="resteasy-jackson,amazon-sns,resteasy-mutiny"
 cd amazon-sns-quickstart
 ----
 

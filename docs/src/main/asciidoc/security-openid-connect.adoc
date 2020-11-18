@@ -62,7 +62,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-openid-connect-quickstart \
-    -Dextensions="resteasy,oidc,resteasy-jsonb" \
+    -Dextensions="resteasy,oidc,resteasy-jackson" \
     -DnoExamples
 cd security-openid-connect-quickstart
 ----

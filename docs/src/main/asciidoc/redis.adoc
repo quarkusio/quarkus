@@ -48,7 +48,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=redis-quickstart \
-    -Dextensions="redis-client,resteasy-jsonb,resteasy-mutiny" \
+    -Dextensions="redis-client,resteasy-jackson,resteasy-mutiny" \
     -DnoExamples
 cd redis-quickstart
 ----

@@ -60,7 +60,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         Properties properties = new Properties();
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
-        properties.put("projectVersion", "1.0-SNAPSHOT");
+        properties.put("projectVersion", "1.0.0-SNAPSHOT");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -374,9 +374,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         assertThat(result.getExitCode()).isZero();
         // As the directory is not empty (log) navigate to the artifactID directory
-        testDir = new File(testDir, "my-quarkus-project");
-        check(new File(testDir, "src/main/java/org/acme/quarkus/sample/MyGreatResource.java"),
-                "package org.acme.quarkus.sample;");
+        testDir = new File(testDir, "code-with-quarkus");
+        check(new File(testDir, "src/main/java/org/acme/MyGreatResource.java"),
+                "package org.acme;");
     }
 
     private void check(final File resource, final String contentsToFind) throws IOException {
@@ -419,7 +419,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         String resp = DevModeTestUtils.getHttpResponse();
 
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
-                .containsIgnoringCase("1.0-SNAPSHOT");
+                .containsIgnoringCase("1.0.0-SNAPSHOT");
 
         String greeting = DevModeTestUtils.getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");

@@ -62,7 +62,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=hibernate-search-orm-elasticsearch-quickstart \
     -DclassName="org.acme.hibernate.search.elasticsearch.LibraryResource" \
     -Dpath="/library" \
-    -Dextensions="hibernate-orm-panache, hibernate-search-orm-elasticsearch, resteasy-jsonb, jdbc-postgresql"
+    -Dextensions="hibernate-orm-panache, hibernate-search-orm-elasticsearch, resteasy-jackson, jdbc-postgresql"
 cd hibernate-search-orm-elasticsearch-quickstart
 ----
 
@@ -71,7 +71,7 @@ This command generates a Maven structure importing the following extensions:
  * Hibernate ORM with Panache,
  * the PostgreSQL JDBC driver,
  * Hibernate Search + Elasticsearch,
- * RESTEasy and JSON-B.
+ * RESTEasy and Jackson.
 
 If you already have your Quarkus project configured, you can add the `hibernate-search-orm-elasticsearch` extension
 to your project by running the following command in your project base directory:
@@ -156,9 +156,10 @@ package org.acme.hibernate.search.elasticsearch.model;
 
 import java.util.Objects;
 
-import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
@@ -168,7 +169,7 @@ public class Book extends PanacheEntity {
     public String title;
 
     @ManyToOne
-    @JsonbTransient // <1>
+    @JsonIgnore <1>
     public Author author;
 
     @Override
@@ -191,7 +192,7 @@ public class Book extends PanacheEntity {
     }
 }
 ----
-<1> We mark this property with `@JsonbTransient` to avoid infinite loops when serializing with JSON-B.
+<1> We mark this property with `@JsonIgnore` to avoid infinite loops when serializing with Jackson.
 
 == Initializing the REST service
 
@@ -302,7 +303,7 @@ Let's go back to our entities.
 
 Enabling full text search capabilities for them is as simple as adding a few annotations.
 
-Let's edit the `Author` entity again to include this content:
+Let's edit the `Book` entity again to include this content:
 
 [source,java]
 ----
@@ -310,12 +311,13 @@ package org.acme.hibernate.search.elasticsearch.model;
 
 import java.util.Objects;
 
-import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
@@ -327,7 +329,7 @@ public class Book extends PanacheEntity {
     public String title;
 
     @ManyToOne
-    @JsonbTransient
+    @JsonIgnore
     public Author author;
 
     // Preexisting equals()/hashCode() methods

@@ -142,7 +142,7 @@ ciphertext    vault:v1:vIQxsLANFbcfKofJL55zjoIXV6MqAzvjKUUQLGg5pWTz0W2Qab/B4nEJa
 
 == Encrypt and Decrypt
 
-First, let's create a simple Quarkus application with vault and jsonb capabilities:
+First, let's create a simple Quarkus application with Vault and Jackson extensions:
 
 [source,bash, subs=attributes+]
 ----
@@ -151,7 +151,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=vault-transit-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="vault,resteasy-jsonb"
+    -Dextensions="vault,resteasy-jackson"
 cd vault-transit-quickstart
 ----
 

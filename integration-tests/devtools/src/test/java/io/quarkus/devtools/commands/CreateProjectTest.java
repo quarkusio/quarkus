@@ -51,8 +51,9 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve(".gitignore"))
                 .exists()
                 .satisfies(checkMatches("(?s).*target/\\R.*"));
-        assertThat(projectDir.resolve("src/main/java/my/project/resteasy/FooResource.java"))
+        assertThat(projectDir.resolve("src/main/java/io/foo/FooResource.java"))
                 .exists()
+                .satisfies(checkContains("package io.foo;"))
                 .satisfies(checkContains("class FooResource"))
                 .satisfies(checkContains("@Path(\"/foo\")"));
         assertThat(projectDir.resolve("pom.xml"))
@@ -74,9 +75,10 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         ProjectTestUtil.delete(file);
         assertCreateProject(newCreateProject(projectDir)
                 .groupId("io.bar")
+                .packageName("my.project.spring")
                 .artifactId("spring-web-app")
                 .version("1.0.0-BAR")
-                .className("my.project.spring.BarController")
+                .className("BarController")
                 .resourcePath("/bar")
                 .extensions(Collections.singleton("spring-web")));
         assertThat(projectDir.resolve("pom.xml"))
@@ -100,7 +102,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         ProjectTestUtil.delete(file);
         assertCreateProject(newCreateProject(projectDir)
                 .artifactId("spring-web-resteasy-app")
-                .className("my.project.spring.BarController")
+                .className("BarController")
+                .packageName("io.test")
                 .resourcePath("/bar")
                 .extensions(new HashSet<>(Arrays.asList("resteasy", "spring-web"))));
         assertThat(projectDir.resolve("pom.xml"))
@@ -109,14 +112,16 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("<artifactId>quarkus-spring-web</artifactId>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/SpringGreetingController.java"))
+        assertThat(projectDir.resolve("src/main/java/io/test/SpringGreetingController.java"))
                 .exists()
+                .satisfies(checkContains("package io.test;"))
                 .satisfies(checkContains("@RestController"))
                 .satisfies(checkContains("class SpringGreetingController"))
                 .satisfies(checkContains("@RequestMapping(\"/hello-spring\")"));
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/GreetingResource.java"))
+        assertThat(projectDir.resolve("src/main/java/io/test/GreetingResource.java"))
                 .exists()
+                .satisfies(checkContains("package io.test;"))
                 .satisfies(checkContains("class GreetingResource"))
                 .satisfies(checkContains("@Path(\"/hello-resteasy\")"));
     }
@@ -129,9 +134,10 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         assertCreateProject(newCreateProject(projectDir)
                 .buildTool(BuildTool.GRADLE)
                 .groupId("io.foo")
+                .packageName("my.project")
                 .artifactId("resteasy-app")
                 .version("1.0.0-FOO")
-                .className("my.project.FooResource")
+                .className("FooResource")
                 .resourcePath("/foo")
                 .extensions(Collections.singleton("resteasy")));
 

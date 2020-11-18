@@ -88,7 +88,8 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
         assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
 
-        final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/GreetingResource.java").toFile();
+        final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/com/acme/foo/GreetingResource.java")
+                .toFile();
         DevModeTestUtils.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");

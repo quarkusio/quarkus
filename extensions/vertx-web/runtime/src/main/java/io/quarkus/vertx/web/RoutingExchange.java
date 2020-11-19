@@ -11,8 +11,14 @@ import io.vertx.ext.web.RoutingContext;
  */
 public interface RoutingExchange {
 
+    /**
+     * @return the underlying Vert.x routing context.
+     */
     RoutingContext context();
 
+    /**
+     * @return the HTTP request object
+     */
     default HttpServerRequest request() {
         return context().request();
     }
@@ -29,7 +35,7 @@ public interface RoutingExchange {
 
     /**
      * 
-     * @param paramName
+     * @param headerName
      * @return the first header value with the specified name
      * @see HttpServerRequest#getHeader(CharSequence)
      */
@@ -37,22 +43,48 @@ public interface RoutingExchange {
         return Optional.ofNullable(request().getHeader(headerName));
     }
 
+    /**
+     * @return the HTTP response object
+     */
     default HttpServerResponse response() {
         return context().response();
     }
 
+    /**
+     * Set the response status code to 200 and return the response.
+     * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
+     * 
+     * @return the HTTP response object
+     */
     default HttpServerResponse ok() {
         return response().setStatusCode(200);
     }
 
+    /**
+     * Set the response status code to 200, write a chunk of data to the response then ends it.
+     * 
+     * @param chunk
+     */
     default void ok(String chunk) {
         ok().end(chunk);
     }
 
+    /**
+     * Set the response status code to 200 and return the response.
+     * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
+     * 
+     * @return the HTTP response object
+     */
     default HttpServerResponse serverError() {
         return response().setStatusCode(500);
     }
 
+    /**
+     * Set the response status code to 200 and return the response.
+     * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
+     * 
+     * @return the HTTP response object
+     */
     default HttpServerResponse notFound() {
         return response().setStatusCode(404);
     }

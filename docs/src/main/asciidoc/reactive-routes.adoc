@@ -200,6 +200,9 @@ A route method must be a non-private non-static method of a CDI bean.
 If the annotated method returns `void` then it has to accept at least one argument - see the supported types below. 
 If the annotated method does not return `void` then the arguments are optional.
 
+NOTE: Methods that return `void` must __end__ the response or the HTTP request to this route will never end.
+Some methods of `RoutingExchange` do it for you, others not and you must call the `end()` method of the response by yourself, please refer to its JavaDoc for more information.
+
 A route method can accept arguments of the following types: 
 
 * `io.vertx.ext.web.RoutingContext`

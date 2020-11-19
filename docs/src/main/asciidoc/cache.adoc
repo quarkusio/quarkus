@@ -540,7 +540,7 @@ act accordingly:
     public void caller(int val) {
 
         Integer result = callRemote(val);  //<1>
-        if (result == null) {
+        if (result != null) {
             System.out.println("Result is " + result);
         else {
            System.out.println("Got an exception");

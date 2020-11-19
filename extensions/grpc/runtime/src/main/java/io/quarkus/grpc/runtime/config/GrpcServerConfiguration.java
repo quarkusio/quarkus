@@ -35,6 +35,12 @@ public class GrpcServerConfiguration {
     public @ConfigItem OptionalInt maxInboundMessageSize;
 
     /**
+     * The max inbound metadata size in bytes
+     */
+    @ConfigItem
+    public OptionalInt maxInboundMetadataSize;
+
+    /**
      * The SSL/TLS config.
      */
     public SslServerConfig ssl;

@@ -278,6 +278,11 @@ public class GrpcServerRecorder {
         if (configuration.maxInboundMessageSize.isPresent()) {
             builder.maxInboundMessageSize(configuration.maxInboundMessageSize.getAsInt());
         }
+
+        if (configuration.maxInboundMetadataSize.isPresent()) {
+            builder.maxInboundMetadataSize(configuration.maxInboundMetadataSize.getAsInt());
+        }
+
         Optional<Duration> handshakeTimeout = configuration.handshakeTimeout;
         if (handshakeTimeout.isPresent()) {
             builder.handshakeTimeout(handshakeTimeout.get().toMillis(), TimeUnit.MILLISECONDS);

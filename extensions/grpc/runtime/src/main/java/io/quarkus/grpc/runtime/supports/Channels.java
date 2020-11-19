@@ -69,8 +69,8 @@ public class Channels {
                 .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
                 .maxHedgedAttempts(config.maxHedgedAttempts)
                 .maxRetryAttempts(config.maxRetryAttempts)
-                .maxInboundMetadataSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
-                .maxInboundMetadataSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
+                .maxInboundMetadataSize(config.maxInboundMetadataSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
+                .maxInboundMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
                 .negotiationType(NegotiationType.valueOf(config.negotiationType.toUpperCase()));
 
         if (config.retry) {

@@ -126,6 +126,10 @@ public class VertxHttpRecorder {
     private static final Handler<HttpServerRequest> ACTUAL_ROOT = new Handler<HttpServerRequest>() {
         @Override
         public void handle(HttpServerRequest httpServerRequest) {
+            if (httpServerRequest.absoluteURI() == null) {
+                httpServerRequest.response().setStatusCode(400).end();
+                return;
+            }
             //we need to pause the request to make sure that data does
             //not arrive before handlers have a chance to install a read handler
             //as it is possible filters such as the auth filter can do blocking tasks

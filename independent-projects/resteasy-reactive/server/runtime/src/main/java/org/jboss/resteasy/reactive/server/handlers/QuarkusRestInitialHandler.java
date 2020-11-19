@@ -20,8 +20,8 @@ public class QuarkusRestInitialHandler implements ServerRestHandler {
     final ThreadSetupAction requestContext;
     final RequestContextFactory requestContextFactory;
 
-    public QuarkusRestInitialHandler(RequestMapper<InitialMatch> mappers, QuarkusRestDeployment deployment) {
-        this.mappers = mappers;
+    public QuarkusRestInitialHandler(QuarkusRestDeployment deployment) {
+        this.mappers = new RequestMapper<>(deployment.getClassMappers());
         this.deployment = deployment;
         this.providers = new QuarkusRestProviders(deployment);
         this.preMappingHandlers = deployment.getPreMatchHandlers();

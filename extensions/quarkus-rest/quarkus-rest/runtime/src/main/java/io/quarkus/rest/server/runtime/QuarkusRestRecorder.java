@@ -26,7 +26,6 @@ import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
-import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -38,6 +37,7 @@ import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -62,9 +62,10 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
         return currentDeployment;
     }
 
-    public Handler<RoutingContext> handler(QuarkusRestDeploymentInfo info,
+    public RuntimeValue<QuarkusRestDeployment> createDeployment(QuarkusRestDeploymentInfo info,
             BeanContainer beanContainer,
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
+            RequestContextFactory contextFactory,
             BeanFactory<QuarkusRestInitialiser> initClassFactory) {
 
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
@@ -80,18 +81,22 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(closeable));
             }
         };
+        if (contextFactory == null) {
+            contextFactory = new RequestContextFactory() {
+                @Override
+                public ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment,
+                        QuarkusRestProviders providers, Object context, ThreadSetupAction requestContext,
+                        ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+                    return new QuarkusRequestContext(deployment, providers, (RoutingContext) context, requestContext,
+                            handlerChain,
+                            abortHandlerChain);
+                }
+            };
+        }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
-                closeTaskHandler, new RequestContextFactory() {
-                    @Override
-                    public ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment,
-                            QuarkusRestProviders providers, Object context, ThreadSetupAction requestContext,
-                            ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
-                        return new QuarkusRequestContext(deployment, providers, (RoutingContext) context, requestContext,
-                                handlerChain,
-                                abortHandlerChain);
-                    }
-                }, new ArcThreadSetupAction(beanContainer.requestContext()), vertxConfig.rootPath);
+                closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
+                vertxConfig.rootPath);
         QuarkusRestDeployment deployment = runtimeDeploymentManager.deploy();
         initClassFactory.createInstance().getInstance().init(deployment);
         currentDeployment = deployment;
@@ -100,8 +105,12 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             classMappers = deployment.getClassMappers();
             RuntimeResourceVisitor.visitRuntimeResources(classMappers, ScoreSystem.ScoreVisitor);
         }
-        QuarkusRestInitialHandler initialHandler = new QuarkusRestInitialHandler(
-                new RequestMapper<>(deployment.getClassMappers()), deployment);
+        return new RuntimeValue<>(deployment);
+    }
+
+    public Handler<RoutingContext> handler(RuntimeValue<QuarkusRestDeployment> deploymentRuntimeValue) {
+        QuarkusRestDeployment deployment = deploymentRuntimeValue.getValue();
+        QuarkusRestInitialHandler initialHandler = new QuarkusRestInitialHandler(deployment);
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {

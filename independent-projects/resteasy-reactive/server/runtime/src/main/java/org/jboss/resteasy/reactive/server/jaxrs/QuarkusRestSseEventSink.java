@@ -13,14 +13,15 @@ public class QuarkusRestSseEventSink implements SseEventSink {
     private static final byte[] EMPTY_BUFFER = new byte[0];
     private ResteasyReactiveRequestContext context;
     private QuarkusRestSseBroadcasterImpl broadcaster;
+    private boolean closed;
 
     public QuarkusRestSseEventSink(ResteasyReactiveRequestContext context) {
         this.context = context;
     }
 
     @Override
-    public boolean isClosed() {
-        return context.serverResponse().closed();
+    public synchronized boolean isClosed() {
+        return context.serverResponse().closed() || closed;
     }
 
     @Override
@@ -40,9 +41,10 @@ public class QuarkusRestSseEventSink implements SseEventSink {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (isClosed())
             return;
+        closed = true;
         // FIXME: do we need a state flag?
         ServerHttpResponse response = context.serverResponse();
         response.end();

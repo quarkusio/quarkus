@@ -87,6 +87,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     protected abstract Executor getEventLoop();
 
+    protected boolean isRequestScopeManagementRequired() {
+        return true;
+    }
+
     @Override
     public void run() {
         running = true;
@@ -103,11 +107,13 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     if (suspended) {
                         Executor exec = null;
                         synchronized (this) {
-                            if (requestScopeActivated) {
-                                if (position != handlers.length) {
-                                    disasociateRequestScope = true;
+                            if (isRequestScopeManagementRequired()) {
+                                if (requestScopeActivated) {
+                                    if (position != handlers.length) {
+                                        disasociateRequestScope = true;
+                                    }
+                                    requestScopeActivated = false;
                                 }
-                                requestScopeActivated = false;
                             }
                             if (this.executor != null) {
                                 //resume happened in the meantime
@@ -143,11 +149,18 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             // has been offloaded to the executor
             if (position == handlers.length && !suspended && !submittedToExecutor) {
                 close();
-            } else if (disasociateRequestScope) {
-                currentRequestScope.deactivate();
-                requestScopeDeactivated();
+            } else {
+                if (disasociateRequestScope) {
+                    currentRequestScope.deactivate();
+                    requestScopeDeactivated();
+                }
+                beginAsyncProcessing();
             }
         }
+    }
+
+    protected void beginAsyncProcessing() {
+
     }
 
     protected void requestScopeDeactivated() {

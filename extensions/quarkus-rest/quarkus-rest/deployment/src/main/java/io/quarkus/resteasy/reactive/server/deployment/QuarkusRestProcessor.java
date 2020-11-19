@@ -103,6 +103,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ParamConverterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -204,7 +205,9 @@ public class QuarkusRestProcessor {
             List<JaxrsFeatureBuildItem> features,
             List<ParamConverterBuildItem> paramConverterBuildItems,
             List<ContextResolverBuildItem> contextResolvers,
+            Optional<RequestContextFactoryBuildItem> requestContextFactoryBuildItem,
             Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
+            BuildProducer<QuarkusRestDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
             ApplicationResultBuildItem applicationResultBuildItem) throws NoSuchMethodException {
@@ -429,10 +432,11 @@ public class QuarkusRestProcessor {
                 applicationPath = Encode.decodePath(applicationPath);
             }
 
+            String deploymentPath = sanitizeApplicationPath(applicationPath);
             // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
             // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
             Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
-            Handler<RoutingContext> handler = recorder.handler(new QuarkusRestDeploymentInfo()
+            RuntimeValue<QuarkusRestDeployment> deployment = recorder.createDeployment(new QuarkusRestDeploymentInfo()
                     .setInterceptors(interceptors.sort())
                     .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
                     .setExceptionMapping(exceptionMapping)
@@ -448,20 +452,26 @@ public class QuarkusRestProcessor {
                     .setLocatableResourceClasses(subResourceClasses)
                     .setParamConverterProviders(converterProviders),
                     beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
+                    requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
                     initClassFactory);
 
-            String deploymentPath = sanitizeApplicationPath(applicationPath);
-            // Exact match for resources matched to the root path
-            routes.produce(new RouteBuildItem(
-                    new BasicRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
-            String matchPath = deploymentPath;
-            if (matchPath.endsWith("/")) {
-                matchPath += "*";
-            } else {
-                matchPath += "/*";
+            quarkusRestDeploymentBuildItemBuildProducer.produce(new QuarkusRestDeploymentBuildItem(deployment, deploymentPath));
+            if (!requestContextFactoryBuildItem.isPresent()) {
+                Handler<RoutingContext> handler = recorder.handler(deployment);
+
+                // Exact match for resources matched to the root path
+                routes.produce(new RouteBuildItem(
+                        new BasicRoute(deploymentPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
+                String matchPath = deploymentPath;
+                if (matchPath.endsWith("/")) {
+                    matchPath += "*";
+                } else {
+                    matchPath += "/*";
+                }
+                // Match paths that begin with the deployment path
+                routes.produce(
+                        new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
             }
-            // Match paths that begin with the deployment path
-            routes.produce(new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
         }
     }
 

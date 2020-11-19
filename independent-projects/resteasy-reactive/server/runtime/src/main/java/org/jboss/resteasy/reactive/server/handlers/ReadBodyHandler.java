@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
@@ -37,9 +39,11 @@ public class ReadBodyHandler implements ServerRestHandler {
         } else {
             vertxRequest.setExpectMultipart(true);
             requestContext.suspend();
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             vertxRequest.setReadListener(new ServerHttpRequest.ReadCallback() {
                 @Override
                 public void done() {
+                    requestContext.setInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
                     requestContext.resume();
                 }
 
@@ -47,7 +51,14 @@ public class ReadBodyHandler implements ServerRestHandler {
                 public void data(ByteBuffer data) {
                     // the TCK allows the body to be read as a form param and also as a body param
                     // the spec is silent about this
-                    // TODO: Implement this?
+                    // TODO: this is really really horrible and hacky and needs to be fixed.
+                    byte[] buf = new byte[data.remaining()];
+                    data.get(buf);
+                    try {
+                        outputStream.write(buf);
+                    } catch (IOException e) {
+                        //unpossible
+                    }
                 }
             });
         }

@@ -6,21 +6,16 @@
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>rest-parent-aggregator</artifactId>
-    <name>Quarkus - REST Parent</name>
+    <artifactId>quarkus-rest-servlet-parent</artifactId>
+    <name>Quarkus - REST Servlet</name>
     <packaging>pom</packaging>
     <modules>
-        <module>quarkus-rest-common</module>
-        <module>quarkus-rest</module>
-        <module>quarkus-jaxrs-client</module>
-        <module>quarkus-rest-jackson</module>
-        <module>quarkus-rest-jsonb</module>
-        <module>quarkus-rest-qute</module>
-        <module>quarkus-rest-servlet</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
 
 </project>

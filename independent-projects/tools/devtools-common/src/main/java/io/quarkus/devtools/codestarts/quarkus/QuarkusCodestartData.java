@@ -20,6 +20,7 @@ public final class QuarkusCodestartData {
         PROJECT_GROUP_ID("project.group-id"),
         PROJECT_ARTIFACT_ID("project.artifact-id"),
         PROJECT_VERSION("project.version"),
+        PROJECT_PACKAGE_NAME("project.package-name"),
         QUARKUS_MAVEN_PLUGIN_GROUP_ID("quarkus.maven-plugin.group-id"),
         QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID("quarkus.maven-plugin.artifact-id"),
         QUARKUS_MAVEN_PLUGIN_VERSION("quarkus.maven-plugin.version"),
@@ -61,6 +62,7 @@ public final class QuarkusCodestartData {
         PROJECT_GROUP_ID("project_groupId"),
         PROJECT_ARTIFACT_ID("project_artifactId"),
         PROJECT_VERSION("project_version"),
+        PROJECT_PACKAGE_NAME("package_name"),
         QUARKUS_MAVEN_PLUGIN_GROUP_ID("maven_plugin_groupId"),
         QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID("maven_plugin_artifactId"),
         QUARKUS_MAVEN_PLUGIN_VERSION("maven_plugin_version"),
@@ -128,12 +130,6 @@ public final class QuarkusCodestartData {
             if (idx >= 0) {
                 return className.substring(0, idx);
             }
-        }
-
-        // Default to cleaned groupId if packageName not set
-        Optional<String> groupIdValue = NestedMaps.getValue(legacyData, "project_groupId");
-        if (groupIdValue.isPresent()) {
-            return groupIdValue.get().replace("-", ".").replace("_", ".");
         }
         return null;
     }

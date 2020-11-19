@@ -508,6 +508,37 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
+    void generateWithCustomPackage() throws IOException {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addCodestart("qute").addCodestart("resteasy").addCodestart("funqy-http")
+                .putData(PROJECT_PACKAGE_NAME.getKey(), "my.custom.app")
+                .addData(getTestInputData())
+                .build();
+        final Path projectDir = testDirPath.resolve("custom-package");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("src/main/java/my/custom/app/GreetingResource.java")).exists()
+                .satisfies(checkContains("package my.custom.app;"));
+        assertThat(projectDir.resolve("src/test/java/my/custom/app/GreetingResourceTest.java")).exists()
+                .satisfies(checkContains("package my.custom.app;"));
+        assertThat(projectDir.resolve("src/test/java/my/custom/app/NativeGreetingResourceIT.java")).exists()
+                .satisfies(checkContains("package my.custom.app;"));
+        assertThat(projectDir.resolve("src/main/java/my/custom/app/qute/Quark.java")).exists()
+                .satisfies(checkContains("package my.custom.app.qute;"));
+        assertThat(projectDir.resolve("src/main/java/my/custom/app/qute/QuteResource.java")).exists()
+                .satisfies(checkContains("package my.custom.app.qute;"));
+        assertThat(projectDir.resolve("src/main/java/my/custom/app/funqy/Funqy.java")).exists()
+                .satisfies(checkContains("package my.custom.app.funqy;"));
+        assertThat(projectDir.resolve("src/test/java/my/custom/app/funqy/FunqyTest.java")).exists()
+                .satisfies(checkContains("package my.custom.app.funqy;"));
+    }
+
+    @Test
     public void generateGradleWrapperGithubAction() throws Exception {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)

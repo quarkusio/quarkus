@@ -65,10 +65,10 @@ public class MailConfig {
 
     /**
      * Set whether to trust all certificates on ssl connect the option is also
-     * applied to {@code STARTTLS} operation. {@code false} by default.
+     * applied to {@code STARTTLS} operation. Disabled by default.
      */
     @ConfigItem
-    public boolean trustAll;
+    public Optional<Boolean> trustAll = Optional.empty();
 
     /**
      * Configures the maximum allowed number of open connections to the mail server

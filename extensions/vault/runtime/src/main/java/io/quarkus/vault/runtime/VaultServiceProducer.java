@@ -6,6 +6,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Named;
 
 import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.VaultSystemBackendEngine;
 import io.quarkus.vault.VaultTOTPSecretEngine;
@@ -58,7 +59,7 @@ public class VaultServiceProducer {
         VaultManager.reset();
     }
 
-    public void setVaultConfigs(VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig) {
-        VaultManager.init(buildTimeConfig, serverConfig);
+    public void setVaultConfigs(VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
+        VaultManager.init(buildTimeConfig, serverConfig, tlsConfig);
     }
 }

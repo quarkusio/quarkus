@@ -30,7 +30,6 @@ public class VaultRuntimeConfig {
     public static final String KUBERNETES_CACERT = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt";
     public static final String DEFAULT_CONNECT_TIMEOUT = "5S";
     public static final String DEFAULT_READ_TIMEOUT = "1S";
-    public static final String DEFAULT_TLS_SKIP_VERIFY = "false";
     public static final String DEFAULT_TLS_USE_KUBERNETES_CACERT = "true";
     public static final String DEFAULT_KUBERNETES_AUTH_MOUNT_PATH = "auth/kubernetes";
 

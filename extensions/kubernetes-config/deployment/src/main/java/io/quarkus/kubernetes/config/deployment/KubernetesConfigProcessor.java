@@ -17,6 +17,7 @@ import io.quarkus.kubernetes.client.runtime.KubernetesConfigRecorder;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigSourceConfig;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.runtime.TlsConfig;
 
 public class KubernetesConfigProcessor {
 
@@ -24,9 +25,10 @@ public class KubernetesConfigProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public RunTimeConfigurationSourceValueBuildItem configure(KubernetesConfigRecorder recorder,
             KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
-            KubernetesClientBuildConfig clientConfig) {
+            KubernetesClientBuildConfig clientConfig,
+            TlsConfig tlsConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(
-                recorder.configSources(config, buildTimeConfig, clientConfig));
+                recorder.configSources(config, buildTimeConfig, clientConfig, tlsConfig));
     }
 
     @BuildStep

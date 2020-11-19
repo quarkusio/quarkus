@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.runtime.client.OkHttpVaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
@@ -28,6 +29,7 @@ import io.quarkus.vault.runtime.config.VaultUserpassAuthenticationConfig;
 public class VaultAuthManagerTest {
 
     VaultRuntimeConfig config = createConfig();
+    TlsConfig tlsConfig = new TlsConfig();
     AtomicBoolean lookupSelfShouldReturn403 = new AtomicBoolean(false);
     OkHttpVaultClient vaultClient = createVaultClient();
     VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultClient, config);
@@ -107,7 +109,7 @@ public class VaultAuthManagerTest {
             config.authentication.userpass.passwordWrappingToken = Optional.empty();
             config.connectTimeout = Duration.ofSeconds(1);
             config.readTimeout = Duration.ofSeconds(1);
-            config.tls.skipVerify = true;
+            config.tls.skipVerify = Optional.of(true);
             config.logConfidentialityLevel = LogConfidentialityLevel.LOW;
             config.renewGracePeriod = Duration.ofSeconds(3);
             return config;
@@ -117,7 +119,7 @@ public class VaultAuthManagerTest {
     }
 
     private OkHttpVaultClient createVaultClient() {
-        return new OkHttpVaultClient(config) {
+        return new OkHttpVaultClient(config, tlsConfig) {
             @Override
             public VaultUserPassAuth loginUserPass(String user, String password) {
                 return vaultUserPassAuth;

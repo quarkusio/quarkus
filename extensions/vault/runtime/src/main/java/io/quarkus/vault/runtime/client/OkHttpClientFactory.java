@@ -17,6 +17,7 @@ import javax.net.ssl.X509TrustManager;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
@@ -27,7 +28,7 @@ public class OkHttpClientFactory {
 
     private static final Logger log = Logger.getLogger(OkHttpClientFactory.class.getName());
 
-    public static OkHttpClient createHttpClient(VaultRuntimeConfig serverConfig) {
+    public static OkHttpClient createHttpClient(VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(serverConfig.connectTimeout)
@@ -40,7 +41,8 @@ public class OkHttpClientFactory {
         }
 
         try {
-            if (serverConfig.tls.skipVerify) {
+            boolean trustAll = serverConfig.tls.skipVerify.isPresent() ? serverConfig.tls.skipVerify.get() : tlsConfig.trustAll;
+            if (trustAll) {
                 skipVerify(builder);
             } else if (serverConfig.tls.caCert.isPresent()) {
                 cacert(builder, serverConfig.tls.caCert.get());

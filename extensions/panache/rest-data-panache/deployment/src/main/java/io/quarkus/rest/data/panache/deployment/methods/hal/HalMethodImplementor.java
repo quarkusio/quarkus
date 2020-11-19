@@ -10,7 +10,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.methods.StandardMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
-import io.quarkus.rest.data.panache.deployment.utils.ResourceName;
 import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
 import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapper;
 
@@ -34,12 +33,11 @@ abstract class HalMethodImplementor extends StandardMethodImplementor {
         return creator.newInstance(MethodDescriptor.ofConstructor(HalEntityWrapper.class, Object.class), entity);
     }
 
-    protected ResultHandle wrapHalEntities(BytecodeCreator creator, ResultHandle entities,
-            ResourceMetadata resourceMetadata) {
-        String collectionName = ResourceName.fromClass(resourceMetadata.getResourceInterface());
+    protected ResultHandle wrapHalEntities(BytecodeCreator creator, ResultHandle entities, String entityType,
+            String collectionName) {
         return creator.newInstance(
                 MethodDescriptor.ofConstructor(HalCollectionWrapper.class, Collection.class, Class.class, String.class),
-                entities, creator.loadClass(resourceMetadata.getEntityType()),
+                entities, creator.loadClass(entityType),
                 creator.load(collectionName));
     }
 }

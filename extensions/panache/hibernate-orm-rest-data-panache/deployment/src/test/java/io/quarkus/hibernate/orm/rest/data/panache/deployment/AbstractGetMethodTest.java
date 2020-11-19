@@ -137,23 +137,25 @@ public abstract class AbstractGetMethodTest {
         given().accept("application/hal+json")
                 .when().get("/collections")
                 .then().statusCode(200)
-                .and().body("_embedded.collections.id", contains("empty", "full"))
-                .and().body("_embedded.collections.name", contains("empty collection", "full collection"))
-                .and().body("_embedded.collections.items.id[0]", is(empty()))
-                .and().body("_embedded.collections.items.id[1]", contains(1, 2))
-                .and().body("_embedded.collections.items.name[1]", contains("first", "second"))
+                .and().body("_embedded.item-collections.id", contains("empty", "full"))
+                .and().body("_embedded.item-collections.name", contains("empty collection", "full collection"))
+                .and().body("_embedded.item-collections.items.id[0]", is(empty()))
+                .and().body("_embedded.item-collections.items.id[1]", contains(1, 2))
+                .and().body("_embedded.item-collections.items.name[1]", contains("first", "second"))
                 .and()
-                .body("_embedded.collections._links.add.href", contains(endsWith("/collections"), endsWith("/collections")))
+                .body("_embedded.item-collections._links.add.href",
+                        contains(endsWith("/collections"), endsWith("/collections")))
                 .and()
-                .body("_embedded.collections._links.list.href", contains(endsWith("/collections"), endsWith("/collections")))
+                .body("_embedded.item-collections._links.list.href",
+                        contains(endsWith("/collections"), endsWith("/collections")))
                 .and()
-                .body("_embedded.collections._links.self.href",
+                .body("_embedded.item-collections._links.self.href",
                         contains(endsWith("/collections/empty"), endsWith("/collections/full")))
                 .and()
-                .body("_embedded.collections._links.update.href",
+                .body("_embedded.item-collections._links.update.href",
                         contains(endsWith("/collections/empty"), endsWith("/collections/full")))
                 .and()
-                .body("_embedded.collections._links.remove.href",
+                .body("_embedded.item-collections._links.remove.href",
                         contains(endsWith("/collections/empty"), endsWith("/collections/full")))
                 .and().body("_links.add.href", endsWith("/collections"))
                 .and().body("_links.list.href", endsWith("/collections"));

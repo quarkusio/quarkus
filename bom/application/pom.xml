@@ -134,7 +134,7 @@
         <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.1.Final</jboss-logging.version>
-        <mutiny.version>0.10.1</mutiny.version>
+        <mutiny.version>0.11.0</mutiny.version>
         <axle-client.version>1.2.2</axle-client.version>
         <mutiny-client.version>1.2.2</mutiny-client.version>
         <kafka2.version>2.5.0</kafka2.version>

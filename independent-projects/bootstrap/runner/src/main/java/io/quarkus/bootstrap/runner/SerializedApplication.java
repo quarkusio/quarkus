@@ -63,7 +63,7 @@ public class SerializedApplication {
             data.writeInt(MAGIC);
             data.writeInt(VERSION);
             data.writeUTF(mainClass);
-            data.writeInt(classPath.size());
+            data.writeShort(classPath.size());
             Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new HashMap<>();
             for (int i = 0; i < classPath.size(); i++) {
                 Path jar = classPath.get(i);
@@ -79,20 +79,20 @@ public class SerializedApplication {
             for (Path jar : parentFirst) {
                 collectPackages(jar, parentFirstPackages);
             }
-            data.writeInt(parentFirstPackages.size());
+            data.writeShort(parentFirstPackages.size());
             for (String p : parentFirstPackages) {
                 data.writeUTF(p.replace("/", ".").replace("\\", "."));
             }
-            data.writeInt(nonExistentResources.size());
+            data.writeShort(nonExistentResources.size());
             for (String nonExistentResource : nonExistentResources) {
                 data.writeUTF(nonExistentResource);
             }
-            data.writeInt(directlyIndexedResourcesToCPJarIndex.size());
+            data.writeShort(directlyIndexedResourcesToCPJarIndex.size());
             for (Map.Entry<String, List<Integer>> entry : directlyIndexedResourcesToCPJarIndex.entrySet()) {
                 data.writeUTF(entry.getKey());
-                data.writeInt(entry.getValue().size());
+                data.writeShort(entry.getValue().size());
                 for (Integer index : entry.getValue()) {
-                    data.writeInt(index);
+                    data.writeShort(index);
                 }
             }
             data.flush();
@@ -110,7 +110,7 @@ public class SerializedApplication {
             String mainClass = in.readUTF();
             Map<String, ClassLoadingResource[]> resourceDirectoryMap = new HashMap<>();
             Set<String> parentFirstPackages = new HashSet<>();
-            int numPaths = in.readInt();
+            int numPaths = in.readUnsignedShort();
             ClassLoadingResource[] allClassLoadingResources = new ClassLoadingResource[numPaths];
             for (int pathCount = 0; pathCount < numPaths; pathCount++) {
                 String path = in.readUTF();
@@ -122,7 +122,7 @@ public class SerializedApplication {
                 }
                 JarResource resource = new JarResource(info, appRoot.resolve(path));
                 allClassLoadingResources[pathCount] = resource;
-                int numDirs = in.readInt();
+                int numDirs = in.readUnsignedShort();
                 for (int i = 0; i < numDirs; ++i) {
                     String dir = in.readUTF();
                     ClassLoadingResource[] existing = resourceDirectoryMap.get(dir);
@@ -136,25 +136,25 @@ public class SerializedApplication {
                     }
                 }
             }
-            int packages = in.readInt();
+            int packages = in.readUnsignedShort();
             for (int i = 0; i < packages; ++i) {
                 parentFirstPackages.add(in.readUTF());
             }
             Set<String> nonExistentResources = new HashSet<>();
-            int nonExistentResourcesSize = in.readInt();
+            int nonExistentResourcesSize = in.readUnsignedShort();
             for (int i = 0; i < nonExistentResourcesSize; i++) {
                 nonExistentResources.add(in.readUTF());
             }
             // this map is populated correctly because the JarResource entries are added to allClassLoadingResources
             // in the same order as the classpath was written during the writing of the index
             Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap = new HashMap<>();
-            int directlyIndexedSize = in.readInt();
+            int directlyIndexedSize = in.readUnsignedShort();
             for (int i = 0; i < directlyIndexedSize; i++) {
                 String resource = in.readUTF();
-                int indexesSize = in.readInt();
+                int indexesSize = in.readUnsignedShort();
                 ClassLoadingResource[] matchingResources = new ClassLoadingResource[indexesSize];
                 for (int j = 0; j < indexesSize; j++) {
-                    matchingResources[j] = allClassLoadingResources[in.readInt()];
+                    matchingResources[j] = allClassLoadingResources[in.readUnsignedShort()];
                 }
                 directlyIndexedResourcesIndexMap.put(resource, matchingResources);
             }
@@ -242,7 +242,7 @@ public class SerializedApplication {
             if (hasDefaultPackage) {
                 dirs.add("");
             }
-            out.writeInt(dirs.size());
+            out.writeShort(dirs.size());
             for (String i : dirs) {
                 out.writeUTF(i);
             }

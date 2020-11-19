@@ -3,6 +3,7 @@ package io.quarkus.agroal.runtime.health;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,6 +18,8 @@ import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.runtime.DataSourcesExcludedFromHealthChecks;
 
 @Readiness
 @ApplicationScoped
@@ -27,14 +30,21 @@ public class DataSourceHealthCheck implements HealthCheck {
     @PostConstruct
     protected void init() {
         Set<Bean<?>> beans = Arc.container().beanManager().getBeans(DataSource.class);
+        DataSourcesExcludedFromHealthChecks excluded = Arc.container().instance(DataSourcesExcludedFromHealthChecks.class)
+                .get();
+        List<String> excludedNames = excluded.getExcludedNames();
         for (Bean<?> bean : beans) {
             if (bean.getName() == null) {
-                // this is the default DataSource: retrieve it by type
-                DataSource defaultDs = Arc.container().instance(DataSource.class).get();
-                dataSources.put(DEFAULT_DS, defaultDs);
+                if (!excludedNames.contains(DataSourceUtil.DEFAULT_DATASOURCE_NAME)) {
+                    // this is the default DataSource: retrieve it by type
+                    DataSource defaultDs = Arc.container().instance(DataSource.class).get();
+                    dataSources.put(DEFAULT_DS, defaultDs);
+                }
             } else {
-                DataSource ds = (DataSource) Arc.container().instance(bean.getName()).get();
-                dataSources.put(bean.getName(), ds);
+                if (!excludedNames.contains(bean.getName())) {
+                    DataSource ds = (DataSource) Arc.container().instance(bean.getName()).get();
+                    dataSources.put(bean.getName(), ds);
+                }
             }
         }
     }

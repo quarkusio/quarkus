@@ -1,5 +1,5 @@
 # JBang Quarkus Project
 
 ```shell script
-./jbang src/ExampleResource.java 
+./jbang src/GreetingResource.java 
 ```

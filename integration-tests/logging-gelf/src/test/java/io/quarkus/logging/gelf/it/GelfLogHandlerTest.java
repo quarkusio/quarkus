@@ -48,7 +48,7 @@ public class GelfLogHandlerTest {
         }
 
         // wait for the input to be running
-        await().during(5, TimeUnit.SECONDS);
+        await().during(10, TimeUnit.SECONDS);
     }
 
     @Test

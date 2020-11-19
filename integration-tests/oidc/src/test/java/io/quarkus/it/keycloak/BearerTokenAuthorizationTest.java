@@ -137,14 +137,16 @@ public class BearerTokenAuthorizationTest {
     public void testVerificationFailedNoBearerToken() {
         RestAssured.given()
                 .when().get("/api/users/me").then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     @Test
     public void testVerificationFailedInvalidToken() {
         RestAssured.given().auth().oauth2("123")
                 .when().get("/api/users/me").then()
-                .statusCode(401);
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
     //see https://github.com/quarkusio/quarkus/issues/5809

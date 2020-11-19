@@ -388,8 +388,6 @@ class VertxWebProcessor {
         }
 
         detectConflictingRoutes(matchers);
-
-        recorder.clearCacheOnShutdown(shutdown);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -522,7 +520,7 @@ class VertxWebProcessor {
                 + HashUtil.sha1(sigBuilder.toString() + hashSuffix);
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(RouteHandler.class).build();
+                .superClass(RouteHandler.class).build();
 
         // Initialized state
         FieldCreator beanField = invokerCreator.getFieldCreator("bean", InjectableBean.class)
@@ -558,7 +556,7 @@ class VertxWebProcessor {
             FieldCreator containerField, FieldCreator validatorField) {
         MethodCreator constructor = invokerCreator.getMethodCreator("<init>", void.class);
         // Invoke super()
-        constructor.invokeSpecialMethod(Methods.OBJECT_CONSTRUCTOR, constructor.getThis());
+        constructor.invokeSpecialMethod(Methods.ROUTE_HANDLER_CONSTRUCTOR, constructor.getThis());
 
         ResultHandle containerHandle = constructor
                 .invokeStaticMethod(Methods.ARC_CONTAINER);

@@ -54,6 +54,7 @@ public class SimpleRouteTest {
         given().contentType("text/plain").body("world")
                 .post("/body").then().body(is("Hello world!"));
         when().get("/request").then().statusCode(200).body(is("HellO!"));
+        when().get("/inject?foo=Hey").then().statusCode(200).body(is("Hey"));
     }
 
     @Test
@@ -108,6 +109,11 @@ public class SimpleRouteTest {
             context.response().setStatusCode(200).end(transformer.transform("Hello!"));
         }
 
+        @Route
+        void inject(RoutingExchange exchange) {
+            exchange.ok(transformer.getFoo());
+        }
+
     }
 
     static class SimpleRoutesBean {
@@ -157,8 +163,15 @@ public class SimpleRouteTest {
     @RequestScoped
     static class Transformer {
 
+        @Inject
+        RoutingContext context;
+
         String transform(String message) {
             return message.replace('o', 'O');
+        }
+
+        String getFoo() {
+            return context.request().getParam("foo");
         }
 
     }

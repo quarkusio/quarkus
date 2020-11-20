@@ -36,7 +36,8 @@ public class ResourcePropertiesProvider {
         AnnotationInstance annotation = findResourcePropertiesAnnotation(resourceInterfaceName);
 
         return new ResourceProperties(isHal(annotation), getPath(annotation, resourceInterface),
-                isPaged(annotation), getMethodPropertiesInfoMap(resourceInterfaceName));
+                isPaged(annotation), getHalCollectionName(annotation, resourceInterface),
+                getMethodPropertiesInfoMap(resourceInterfaceName));
     }
 
     private AnnotationInstance findResourcePropertiesAnnotation(DotName className) {
@@ -115,6 +116,13 @@ public class ResourcePropertiesProvider {
     private String getPath(AnnotationInstance annotation, String resourceInterface) {
         if (annotation != null && annotation.value("path") != null) {
             return annotation.value("path").asString();
+        }
+        return ResourceName.fromClass(resourceInterface);
+    }
+
+    private String getHalCollectionName(AnnotationInstance annotation, String resourceInterface) {
+        if (annotation != null && annotation.value("halCollectionName") != null) {
+            return annotation.value("halCollectionName").asString();
         }
         return ResourceName.fromClass(resourceInterface);
     }

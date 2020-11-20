@@ -39,7 +39,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
      * Expose {@link RestDataResource#list(Page, Sort)} via HAL JAX-RS method.
      * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
      * query parameters are skipped and null {@link Page} instance is used.
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;GET
@@ -114,7 +114,8 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
                 resource, page, sort);
 
         // Wrap and return response
-        ResultHandle wrapper = wrapHalEntities(methodCreator, entities, resourceMetadata);
+        ResultHandle wrapper = wrapHalEntities(methodCreator, entities, resourceMetadata.getEntityType(),
+                resourceProperties.getHalCollectionName());
         methodCreator.invokeVirtualMethod(
                 ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper, links);
         methodCreator.returnValue(ResponseImplementor.ok(methodCreator, wrapper, links));
@@ -141,7 +142,8 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
                 resource, methodCreator.loadNull(), sort);
 
         // Wrap and return response
-        ResultHandle wrapper = wrapHalEntities(methodCreator, entities, resourceMetadata);
+        ResultHandle wrapper = wrapHalEntities(methodCreator, entities, resourceMetadata.getEntityType(),
+                resourceProperties.getHalCollectionName());
         methodCreator.returnValue(ResponseImplementor.ok(methodCreator, wrapper));
         methodCreator.close();
     }

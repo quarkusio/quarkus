@@ -10,12 +10,16 @@ public class ResourceProperties {
 
     private final boolean paged;
 
+    private final String halCollectionName;
+
     private final Map<String, MethodProperties> methodProperties;
 
-    public ResourceProperties(boolean hal, String path, boolean paged, Map<String, MethodProperties> methodProperties) {
+    public ResourceProperties(boolean hal, String path, boolean paged, String halCollectionName,
+            Map<String, MethodProperties> methodProperties) {
         this.hal = hal;
         this.path = path;
         this.paged = paged;
+        this.halCollectionName = halCollectionName;
         this.methodProperties = methodProperties;
     }
 
@@ -43,5 +47,9 @@ public class ResourceProperties {
             return methodProperties.get(methodName).isExposed();
         }
         return true;
+    }
+
+    public String getHalCollectionName() {
+        return halCollectionName;
     }
 }

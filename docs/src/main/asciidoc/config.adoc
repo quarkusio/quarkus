@@ -642,7 +642,7 @@ public class MicroProfileCustomValueConverter implements Converter<MicroProfileC
 
     @Override
     public MicroProfileCustomValue convert(String value) {
-        return new MicroProfileCustomValue(Integer.valueOf(value));
+        return new MicroProfileCustomValue(Integer.parseInt(value));
     }
 }
 ----
@@ -697,9 +697,9 @@ public class MyCustomConverter implements Converter<MicroProfileCustomValue> {
 
         final int secretNumber;
         if (value.startsFrom("OBF:")) {
-            secretNumber = Integer.valueOf(SecretDecoder.decode(value));
+            secretNumber = Integer.parseInt(SecretDecoder.decode(value));
         } else {
-            secretNumber = Integer.valueOf(value);
+            secretNumber = Integer.parseInt(value);
         }
 
         return new MicroProfileCustomValue(secretNumber);

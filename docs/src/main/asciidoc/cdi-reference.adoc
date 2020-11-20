@@ -549,7 +549,7 @@ NOTE: The runtime profile has absolutely no effect on the bean resolution using 
 === Enabling Beans for Quarkus Build Properties
 
 Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time property has a specific value,
-via the `@io.quarkus.arc.properties.IfBuildProperty` annotation.
+via the `@io.quarkus.arc.properties.IfBuildProperty` and `@io.quarkus.arc.properties.UnlessBuildProperty` annotation.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, this annotation allow for the creation of different bean configurations for different build properties.
 
 The scenario we mentioned above with `Tracer` could also be implemented in the following way:
@@ -561,6 +561,27 @@ public class TracerConfiguration {
 
     @Produces
     @IfBuildProperty(name = "some.tracer.enabled", stringValue = "true")
+    public Tracer realTracer(Reporter reporter, Configuration configuration) {
+        return new RealTracer(reporter, configuration);
+    }
+
+    @Produces
+    @DefaultBean
+    public Tracer noopTracer() {
+        return new NoopTracer();
+    }
+}
+----
+
+If instead, it is required that the `RealTracer` bean is only used if the `some.tracer.enabled` property is not `false`, then `@UnlessBuildProperty` would be ideal. The code would look like:
+
+[source,java]
+----
+@Dependent
+public class TracerConfiguration {
+
+    @Produces
+    @UnlessBuildProperty(name = "some.tracer.enabled", stringValue = "false")
     public Tracer realTracer(Reporter reporter, Configuration configuration) {
         return new RealTracer(reporter, configuration);
     }

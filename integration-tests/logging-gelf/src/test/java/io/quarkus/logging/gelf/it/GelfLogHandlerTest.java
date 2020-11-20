@@ -48,14 +48,14 @@ public class GelfLogHandlerTest {
         }
 
         // wait for the input to be running
-        await().during(5, TimeUnit.SECONDS);
+        await().during(10, TimeUnit.SECONDS);
     }
 
     @Test
     public void test() {
         RestAssured.given().when().get("/gelf-log-handler").then().statusCode(204);
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(20, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             RestAssured.given()

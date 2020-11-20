@@ -151,6 +151,8 @@
                                             <name>graylog</name>
                                             <alias>elasticsearch</alias>
                                         </network>
+                                        <cpus>2</cpus>
+                                        <cpuShares>2048</cpuShares>
                                         <ports>
                                             <port>9200:9200</port>
                                         </ports>
@@ -178,6 +180,7 @@
                                             <name>graylog</name>
                                             <alias>mongo</alias>
                                         </network>
+                                        <cpus>1</cpus>
                                         <ports>
                                             <port>27017:27017</port>
                                         </ports>
@@ -206,6 +209,7 @@
                                         <env>
                                             <GRAYLOG_HTTP_EXTERNAL_URI>http://127.0.0.1:9000/</GRAYLOG_HTTP_EXTERNAL_URI>
                                         </env>
+                                        <cpus>1</cpus>
                                         <ports>
                                             <port>9000:9000</port>
                                             <port>12201:12201/udp</port>

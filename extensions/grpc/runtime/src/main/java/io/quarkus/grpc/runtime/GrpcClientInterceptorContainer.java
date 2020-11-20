@@ -1,6 +1,5 @@
 package io.quarkus.grpc.runtime;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,14 +13,11 @@ import io.grpc.ClientInterceptor;
 
 @ApplicationScoped
 public class GrpcClientInterceptorContainer {
+    // Cannot be empty, as we have the IO Thread client interceptor
     @Inject
     Instance<ClientInterceptor> interceptors;
 
     public List<ClientInterceptor> getSortedInterceptors() {
-        if (interceptors.isUnsatisfied()) {
-            return Collections.emptyList();
-        }
-
         return interceptors.stream().sorted(new Comparator<ClientInterceptor>() { // NOSONAR
             @Override
             public int compare(ClientInterceptor si1, ClientInterceptor si2) {

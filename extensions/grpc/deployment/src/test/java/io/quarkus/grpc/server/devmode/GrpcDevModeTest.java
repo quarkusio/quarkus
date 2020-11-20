@@ -105,7 +105,7 @@ public class GrpcDevModeTest {
     public void testEchoStreamReload() {
         final CopyOnWriteArrayList<String> results = new CopyOnWriteArrayList<>();
         CompletionStage<Boolean> firstStreamFinished = callEcho("foo", results);
-        Awaitility.await().atMost(1, TimeUnit.SECONDS)
+        Awaitility.await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> results, Matchers.hasItem("echo::foo"));
 
         test.modifySourceFile("DevModeTestStreamService.java",
@@ -113,7 +113,7 @@ public class GrpcDevModeTest {
 
         final CopyOnWriteArrayList<String> newResults = new CopyOnWriteArrayList<>();
         callEcho("foo", newResults);
-        Awaitility.await().atMost(5, TimeUnit.SECONDS)
+        Awaitility.await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> newResults, Matchers.hasItem("newecho::foo"));
         assertThat(firstStreamFinished).isCompleted();
     }

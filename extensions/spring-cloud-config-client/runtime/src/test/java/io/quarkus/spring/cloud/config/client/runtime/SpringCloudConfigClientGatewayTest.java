@@ -22,8 +22,9 @@ class SpringCloudConfigClientGatewayTest {
     private static final int MOCK_SERVER_PORT = 9300;
     private static final WireMockServer wireMockServer = new WireMockServer(MOCK_SERVER_PORT);
 
+    private static final SpringCloudConfigClientConfig springCloudConfigClientConfig = configForTesting();
     private final SpringCloudConfigClientGateway sut = new DefaultSpringCloudConfigClientGateway(
-            configForTesting());
+            springCloudConfigClientConfig);
 
     @BeforeAll
     static void start() {
@@ -39,7 +40,9 @@ class SpringCloudConfigClientGatewayTest {
     void testBasicExchange() throws Exception {
         final String applicationName = "foo";
         final String profile = "dev";
-        wireMockServer.stubFor(WireMock.get(String.format("/%s/%s", applicationName, profile)).willReturn(WireMock
+        final String springCloudConfigUrl = String.format(
+                "/%s/%s/%s", applicationName, profile, springCloudConfigClientConfig.label.get());
+        wireMockServer.stubFor(WireMock.get(springCloudConfigUrl).willReturn(WireMock
                 .okJson(getJsonStringForApplicationAndProfile(applicationName, profile))));
 
         final Response response = sut.exchange(applicationName, profile);
@@ -73,6 +76,7 @@ class SpringCloudConfigClientGatewayTest {
     private static SpringCloudConfigClientConfig configForTesting() {
         SpringCloudConfigClientConfig springCloudConfigClientConfig = new SpringCloudConfigClientConfig();
         springCloudConfigClientConfig.url = "http://localhost:" + MOCK_SERVER_PORT;
+        springCloudConfigClientConfig.label = Optional.of("master");
         springCloudConfigClientConfig.connectionTimeout = Duration.ZERO;
         springCloudConfigClientConfig.readTimeout = Duration.ZERO;
         springCloudConfigClientConfig.username = Optional.empty();

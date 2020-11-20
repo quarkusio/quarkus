@@ -191,6 +191,9 @@ class DefaultSpringCloudConfigClientGateway implements SpringCloudConfigClientGa
         List<String> finalPathSegments = new ArrayList<>(result.getPathSegments());
         finalPathSegments.add(applicationName);
         finalPathSegments.add(profile);
+        if (springCloudConfigClientConfig.label.isPresent()) {
+            finalPathSegments.add(springCloudConfigClientConfig.label.get());
+        }
         result.setPathSegments(finalPathSegments);
         return result.build();
     }

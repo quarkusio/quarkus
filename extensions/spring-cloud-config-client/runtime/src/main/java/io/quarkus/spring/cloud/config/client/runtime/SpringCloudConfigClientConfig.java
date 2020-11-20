@@ -33,6 +33,14 @@ public class SpringCloudConfigClientConfig {
     public String url;
 
     /**
+     * The label to be used to pull remote configuration properties.
+     * The default is set on the Spring Cloud Config Server
+     * (generally "master" when the server uses a Git backend).
+     */
+    @ConfigItem
+    public Optional<String> label;
+
+    /**
      * The amount of time to wait when initially establishing a connection before giving up and timing out.
      * <p>
      * Specify `0` to wait indefinitely.

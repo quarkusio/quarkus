@@ -145,6 +145,9 @@ jobs:
           java-version: ${{ matrix.java.java-version }}
           release: ${{ matrix.java.release }}
 
+      - name: Configure max network buffer
+        run: sysctl -w net.core.rmem_max=262144
+
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:

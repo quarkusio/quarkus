@@ -10,6 +10,7 @@ class PersonEntity : PanacheMongoEntityBase() {
     var id: Long? = null
     var firstname: String? = null
     var lastname: String? = null
+    var status: Status = Status.ALIVE
 
     companion object : PanacheMongoCompanionBase<PersonEntity, Long> {
         fun findOrdered(): List<PersonEntity> {

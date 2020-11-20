@@ -7,4 +7,5 @@ class Person {
     var id: Long? = null
     var firstname: String? = null
     var lastname: String? = null
+    var status: Status = Status.ALIVE
 }

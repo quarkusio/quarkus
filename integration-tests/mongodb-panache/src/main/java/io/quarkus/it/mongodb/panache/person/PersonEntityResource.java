@@ -24,7 +24,9 @@ public class PersonEntityResource {
     @Path("/search/{name}")
     public Set<PersonName> searchPersons(@PathParam("name") String name) {
         Set<PersonName> uniqueNames = new HashSet<>();
-        List<PersonName> lastnames = PersonEntity.find("lastname", name).project(PersonName.class).list();
+        List<PersonName> lastnames = PersonEntity.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
+                .project(PersonName.class)
+                .list();
         lastnames.forEach(p -> uniqueNames.add(p));// this will throw if it's not the right type
         return uniqueNames;
     }

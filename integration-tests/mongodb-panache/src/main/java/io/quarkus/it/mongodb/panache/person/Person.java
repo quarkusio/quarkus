@@ -7,4 +7,5 @@ public class Person {
     public Long id;
     public String firstname;
     public String lastname;
+    public Status status = Status.ALIVE;
 }

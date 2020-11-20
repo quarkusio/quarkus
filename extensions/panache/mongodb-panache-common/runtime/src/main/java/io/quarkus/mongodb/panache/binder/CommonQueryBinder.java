@@ -37,6 +37,9 @@ final class CommonQueryBinder {
         if (Number.class.isAssignableFrom(value.getClass()) || value instanceof Boolean) {
             return value.toString();
         }
+        if (value.getClass().isEnum()) {
+            return "'" + ((Enum<?>) value).name() + "'";
+        }
         if (value instanceof Date) {
             ZonedDateTime zonedDateTime = ((Date) value).toInstant().atZone(ZoneOffset.UTC);
             return "{\"$date\": \"" + ISO_DATE_FORMATTER.format(zonedDateTime) + "\"} ";
@@ -54,7 +57,6 @@ final class CommonQueryBinder {
             return "{\"$date\": \"" + ISO_DATE_FORMATTER.format(zonedDateTime) + "\"} ";
         }
         if (value instanceof UUID) {
-            UUID uuidValue = (UUID) value;
             return "UUID('" + value.toString() + "')";
         }
         if (value instanceof ObjectId) {

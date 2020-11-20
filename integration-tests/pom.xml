@@ -270,6 +270,7 @@
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
                 <module>logging-json</module>
+                <module>jaxb</module>
                 <module>jaxp</module>
                 <module>mailer</module>
                 <module>native-config-profile</module>

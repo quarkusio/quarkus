@@ -1,0 +1,778 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Configuration Reference Guide
+
+include::./attributes.adoc[]
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:toc:
+
+In this reference guide we're going to describe various aspects of Quarkus configuration.
+A Quarkus application and Quarkus itself (core and extensions) are both configured via the same mechanism that leverages the https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] API.
+Quarkus configuration is based on https://github.com/smallrye/smallrye-config[SmallRye Config], an implementation of the MicroProfile Config specification.
+All of the standard features are supported.
+Moreover, there are several additional features which are made available by the SmallRye Config project as well as by Quarkus itself.
+
+TIP: If you're looking for information how to make a Quarkus extension configurable then see the <<writing-extensions.adoc#configuration,Writing Your Own Extension>> guide.
+
+[[configuration_sources]]
+== Configuration Sources
+
+By default, Quarkus reads configuration properties from several sources (in decreasing priority):
+
+1. <<system_properties,System properties>>
+2. <<environment_variables,Environment variables>>
+3. <<env_file,File named `.env`>> placed in the current working directory
+4. <<pwd_config_application_file,`application.properties` file placed in the `$PWD/config/` directory>>
+5. <<application_properties_file,An application configuration file>>, i.e. `src/main/resources/application.properties`
+
+[[system_properties]]
+=== System properties
+
+* for a runner jar: `java -Dquarkus.datasource.password=youshallnotpass -jar target/myapp-runner.jar`
+* for a native executable: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
+
+[[environment_variables]]
+=== Environment variables
+
+* for a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/myapp-runner.jar`
+* for a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
+
+NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile Config].
+
+[[env_file]]
+=== File named `.env` placed in the current working directory
+
+.Example `.env` file
+[source,properties]
+----
+QUARKUS_DATASOURCE_PASSWORD=youshallnotpass <1>
+----
+<1> The name `QUARKUS_DATASOURCE_PASSWORD` is converted using the same rules as for <<environment_variables>>.
+
+For dev mode, this file can be placed in the root of the project, but it is advised to **not** check it in to version control.
+
+NOTE: Environment variables without a configuration profile defined in `.env` file will overwrite all its related profiles in `application.properties`, e.g. `%test.application.value` is overwritten by `APPLICATION_VALUE` in `.env` file.
+
+[[pwd_config_application_file]]
+=== An `application.properties` file placed in `$PWD/config/`
+
+By placing an `application.properties` file inside a directory named `config` which resides in the directory where the application runs, any runtime properties defined in that file will override the default configuration. 
+Furthermore any runtime properties added to this file that were not part of the original `application.properties` file
+_will also_ be taken into account.
+This works in the same way for runner jar and the native executable.
+
+NOTE: The `config/application.properties` feature is available in development mode as well. To make use of it, `config/application.properties` needs to be placed inside the build tool's output directory (`target` for Maven and `build/classes/java/main` for Gradle).
+Keep in mind however that any cleaning operation from the build tool like `mvn clean` or `gradle clean` will remove the `config` directory as well.
+
+[[application_properties_file]]
+=== An application configuration file
+
+This is the main application configuration file located in `src/main/resources/application.properties`.
+
+.Example `application.properties` file
+[source,properties]
+----
+greeting.message=hello <1>
+quarkus.http.port=9090 <2>
+----
+<1> This is a user-defined configuration property.
+<2> This is a configuration property consumed by the `quarkus-vertx-http` extension.
+
+TIP: Quarkus supports the use of <<using_property_expressions,property expressions>> in the `application.properties` file.
+
+== Injecting configuration properties
+
+Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the configuration properties in the application.
+
+[source,java]
+----
+@ConfigProperty(name = "greeting.message") <1>
+String message;
+----
+<1> You can use `@Inject @ConfigProperty` or just `@ConfigProperty`.
+The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`.
+This behavior differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config].
+
+NOTE: If the application attempts to inject a configuration property that is not set, an error is thrown, thus allowing you to quickly know when your configuration is complete.
+
+.More `@ConfigProperty` Examples
+[source,java]
+----
+@ConfigProperty(name = "greeting.message") <1>
+String message;
+
+@ConfigProperty(name = "greeting.suffix", defaultValue="!") <2>
+String suffix;
+
+@ConfigProperty(name = "greeting.name")
+Optional<String> name; <3>
+----
+<1> If you do not provide a value for this property, the application startup fails with `javax.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
+<3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
+
+== Programmatically access the configuration
+
+You can also access the configuration programmatically.
+It can be handy to achieve dynamic lookup, or retrieve configured values from classes that are neither CDI beans or JAX-RS resources.
+
+You can access the configuration programmatically using `org.eclipse.microprofile.config.ConfigProvider.getConfig()` such as in:
+
+[source,java]
+----
+String databaseName = ConfigProvider.getConfig().getValue("database.name", String.class);
+Optional<String> maybeDatabaseName = ConfigProvider.getConfig().getOptionalValue("database.name", String.class);
+----
+
+[[using_configproperties]]
+== Using @ConfigProperties
+
+As an alternative to injecting multiple related configuration values in the way that was shown in the previous example,
+users can also use the `@io.quarkus.arc.config.ConfigProperties` annotation to group these properties together.
+
+For the greeting properties above, a `GreetingConfiguration` class could be created like so:
+
+[source,java]
+----
+package org.acme.config;
+
+import io.quarkus.arc.config.ConfigProperties;
+import java.util.Optional;
+
+@ConfigProperties(prefix = "greeting") <1>
+public class GreetingConfiguration {
+
+    private String message;
+    private String suffix = "!"; <2>
+    private Optional<String> name;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
+    }
+
+    public Optional<String> getName() {
+        return name;
+    }
+
+    public void setName(Optional<String> name) {
+        this.name = name;
+    }
+}
+----
+<1> `prefix` is optional. If not set then the prefix to be used will be determined by the class name. In this case it would still be `greeting` (since the `Configuration` suffix is removed). If the class were named `GreetingExtraConfiguration` then the resulting default prefix would be `greeting-extra`.
+<2> `!` will be the default value if `greeting.suffix` is not set.
+
+This class could then be injected into the `GreetingResource` using the familiar CDI `@Inject` annotation like so:
+
+[source,java]
+----
+@Inject
+GreetingConfiguration greetingConfiguration;
+----
+
+Another alternative style provided by Quarkus is to create `GreetingConfiguration` as an interface like so:
+
+[source,java]
+----
+package org.acme.config;
+
+import io.quarkus.arc.config.ConfigProperties;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import java.util.Optional;
+
+@ConfigProperties(prefix = "greeting")
+public interface GreetingConfiguration {
+
+    @ConfigProperty(name = "message") <1>
+    String message();
+
+    @ConfigProperty(defaultValue = "!")
+    String getSuffix(); <2>
+
+    Optional<String> getName(); <3>
+}
+----
+<1> The `@ConfigProperty` annotation is needed because the name of the configuration property that the method corresponds to doesn't follow the getter method naming conventions.
+<2> In this case since `name` was not set, the corresponding property will be `greeting.suffix`.
+<3> It is unnecessary to specify the `@ConfigProperty` annotation because the method name follows the getter method naming conventions (`greeting.name` being the corresponding property) and no default value is needed.
+
+When using `@ConfigProperties` on a class or an interface, if the value of one of its fields is not provided, the application startup will fail and a `javax.enterprise.inject.spi.DeploymentException` indicating the missing value information will be thrown.
+This does not apply to `Optional` fields and fields with a default value.
+
+=== Additional notes on @ConfigProperties
+
+When using a regular class annotated with `@ConfigProperties` the class doesn't necessarily have to declare getters and setters.
+Having simple public non-final fields is valid as well.
+
+Furthermore, the configuration classes support nested object configuration. Suppose there was a need to have an extra layer
+of greeting configuration named `content` that would contain a few fields. This could be achieved like so:
+
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    public String message;
+    public String suffix = "!";
+    public Optional<String> name;
+    public ContentConfig content; <1>
+
+    public static class ContentConfig {
+        public Integer prizeAmount;
+        public List<String> recipients;
+    }
+}
+----
+<1> The name of the field (not the class name) will determine the name of the properties that are bound to the object.
+
+Setting the properties would occur in the normal manner, for example in `application.properties` one could have:
+
+[source,properties]
+----
+greeting.message = hello
+greeting.name = quarkus
+greeting.content.prize-amount=10
+greeting.content.recipients=Jane,John
+----
+
+Furthermore, classes annotated with `@ConfigProperties` can be annotated with Bean Validation annotations similar to the following example:
+
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    @Size(min = 20)
+    public String message;
+    public String suffix = "!";
+
+}
+----
+
+WARNING: For validation to work, the `quarkus-hibernate-validator` extension needs to be present.
+
+If the validation fails with the given configuration, the application will fail to start and indicate the corresponding validation errors in the log.
+
+In the case of an interface being annotated with `@ConfigProperties`, the interface is allowed to extend other interfaces and methods from
+the entire interface hierarchy are used to bind properties.
+
+=== Using same ConfigProperties with different prefixes
+
+Quarkus also supports the use of the same `@ConfigProperties` object with different prefixes for each injection point using the `io.quarkus.arc.config.@ConfigPrefix` annotation.
+Say for example that `GreetingConfiguration` from above needs to be used for both the `greeting` prefix and the `other` prefix.
+In that case the code would look like so:
+
+`GreetingConfiguration.java`
+[source,java]
+----
+@ConfigProperties(prefix = "greeting")
+public class GreetingConfiguration {
+
+    @Size(min = 20)
+    public String message;
+    public String suffix = "!";
+
+}
+----
+
+`SomeBean.java`
+[source,java]
+----
+@ApplicationScoped
+public class SomeBean {
+
+    @Inject <1>
+    GreetingConfiguration greetingConfiguration;
+
+    @ConfigPrefix("other") <2>
+    GreetingConfiguration otherConfiguration;
+
+}
+----
+<1> At this injection point `greetingConfiguration` will use the `greeting` prefix since that is what has been defined on `@ConfigProperties`.
+<2> At this injection point `otherConfiguration` will use the `other` prefix from `@ConfigPrefix` instead of the `greeting` prefix. Notice that in this case `@Inject` is not required.
+
+[[configuration_profiles]]
+== Configuration Profiles
+
+Quarkus supports the notion of configuration profiles. 
+These allow you to have multiple configurations in the same file and select between them via a profile name.
+
+The syntax for this is `%{profile}.config.key=value`. For example if I have the following:
+
+[source,properties]
+----
+quarkus.http.port=9090
+%dev.quarkus.http.port=8181
+----
+
+The Quarkus HTTP port will be 9090, unless the `dev` profile is active, in which case it will be 8181.
+
+To use profiles in the `.env` file, you can follow a `_{PROFILE}_CONFIG_KEY=value` pattern. An equivalent of the above example in an `.env` file would be:
+
+[source,.env]
+----
+QUARKUS_HTTP_PORT=9090
+_DEV_QUARKUS_HTTP_PORT=8181
+----
+
+By default, Quarkus has three profiles, although it is possible to use as many as you like. 
+The default profiles are:
+
+* *dev* - Activated when in development mode (i.e. `quarkus:dev`)
+* *test* - Activated when running tests
+* *prod* - The default profile when not running in development or test mode
+
+There are two ways to set a custom profile, either via the `quarkus.profile` system property or the `QUARKUS_PROFILE`
+environment variable. If both are set the system property takes precedence. Note that it is not necessary to
+define the names of these profiles anywhere, all that is necessary is to create a config property with the profile
+name, and then set the current profile to that name. For example if I want a `staging` profile with a different HTTP port I can add the following to `application.properties`:
+
+[source,properties]
+----
+quarkus.http.port=9090
+%staging.quarkus.http.port=9999
+----
+
+And then set the `QUARKUS_PROFILE` environment variable to `staging` to activate my profile.
+
+[NOTE]
+====
+The proper way to check the active profile programmatically is to use the `getActiveProfile` method of `io.quarkus.runtime.configuration.ProfileManager`.
+
+Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
+====
+
+=== Default Runtime Profile
+
+The default Quarkus application runtime profile is set to the profile used to build the application.
+For example:
+[source,bash]
+----
+./mvnw package -Pnative -Dquarkus.profile=prod-aws
+./target/my-app-1.0-runner // <1>
+----
+<1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` system property.
+
+
+[[using_property_expressions]]
+== Using Property Expressions
+
+Quarkus supports the use of property expressions in the `application.properties` file.
+
+These expressions are resolved when the property is read.
+So if your configuration property is a build time configuration property, the property expression will be resolved at build time.
+If your configuration property is overridable at runtime, the property expression will be resolved at runtime.
+
+You can use property expressions both for the Quarkus configuration or for your own configuration properties.
+
+Property expressions are defined this way: `${my-property-expression}`.
+
+For example, having the following property:
+
+[source,properties]
+----
+remote.host=quarkus.io
+----
+and another property defined as:
+
+[source,properties]
+----
+callable.url=https://${remote.host}/
+----
+
+will result in the value of the `callable.url` property being set to:
+
+[source,properties]
+----
+callable.url=https://quarkus.io/
+----
+
+Another example would be defining different database servers depending on the profile used:
+
+[source,properties]
+----
+%dev.quarkus.datasource.jdbc.url=jdbc:mysql://localhost:3306/mydatabase?useSSL=false
+quarkus.datasource.jdbc.url=jdbc:mysql://remotehost:3306/mydatabase?useSSL=false
+----
+
+can be simplified by having:
+
+[source,properties]
+----
+%dev.application.server=localhost
+application.server=remotehost
+
+quarkus.datasource.jdbc.url=jdbc:mysql://${application.server}:3306/mydatabase?useSSL=false
+----
+
+It does result in one more line in this example but the value of `application.server` can be reused in other properties,
+diminishing the possibility of typos and providing more flexibility in property definitions.
+
+
+[#combine-property-env-var]
+== Combining Property Expressions and Environment Variables
+
+Quarkus also supports the combination of both property expressions and environment variables.
+
+Let's assume you have the following property defined in `application.properties`:
+
+[source,properties]
+----
+remote.host=quarkus.io
+----
+
+You can combine environment variables and property expressions by having a property defined as follows:
+
+[source,properties]
+----
+application.host=${HOST:${remote.host}}
+----
+
+This will expand the `HOST` environment variable and use the value of the property `remote.host` as the default value if `HOST` is not set.
+
+For the purpose of this section we used the property `remote.host` we defined previously.
+It has to be noted that the value could have been a fixed one such as in:
+
+[source,properties]
+----
+application.host=${HOST:localhost}
+----
+
+which will result in `localhost` as the default value if `HOST` is not set.
+
+[[configuring_quarkus]]
+== Configuring Quarkus
+
+Quarkus itself is configured via the same mechanism as your application. Quarkus reserves the `quarkus.` namespace
+for its own configuration and the configuration of all of its extensions. For example to configure the HTTP server port you can set `quarkus.http.port` in
+`application.properties`. All the Quarkus configuration properties are link:all-config[documented and searchable].
+
+[IMPORTANT]
+====
+As mentioned above, properties prefixed with `quarkus.` are effectively reserved for configuring Quarkus itself and its extensions.
+Therefore `quarkus.` should **never** be used as prefix for application specific properties.
+
+In the previous examples using `quarkus.message` instead of `greeting.message` would result in unexpected behavior.
+====
+
+Quarkus does much of its configuration and bootstrap at build time and some configuration properties are read and used during the build.
+These properties are _fixed at build time_ and it's not possible to change them at runtime.
+You always need to repackage your application in order to reflect changes of such properties.
+
+TIP: The properties fixed at build time are marked with a lock icon (icon:lock[]) in the link:all-config[list of all configuration options].
+
+However, some extensions do define properties that can be _overriden at runtime_.
+A canonical example is the database URL, username and password which are only known specifically in your target environment.
+This is a tradeoff as the more runtime properties are available, the less build time prework Quarkus can do. 
+The list of runtime properties is therefore lean.
+You can override these runtime properties with the following mechanisms (in decreasing priority) using:
+
+1. System properties
+2. Environment variables
+3. An environment file named `.env` placed in the current working directory
+4. A configuration file placed in `$PWD/config/application.properties`
+
+See <<configuration_sources>> for more details.
+
+== Generating configuration for your application
+
+It is also possible to generate an example `application.properties` with all known configuration properties, to make
+it easy to see what Quarkus configuration options are available. To do this, run:
+
+[source,bash]
+--
+./mvnw quarkus:generate-config
+--
+
+This will create a `src/main/resources/application.properties.example` file that contains all the config options
+exposed via the extensions you currently have installed. These options are commented out, and have their default value
+when applicable. For example this HTTP port config entry will appear as:
+
+
+[source,properties]
+--
+#
+# The HTTP port
+#
+#quarkus.http.port=8080
+--
+
+Rather than generating an example config file, you can also add these to you actual config file by setting the `-Dfile`
+parameter:
+
+[source,bash]
+--
+./mvnw quarkus:generate-config -Dfile=application.properties
+--
+
+If a config option is already present (commented or not) it will not be added, so it is safe to run this after
+adding an additional extension to see what additional options have been added.
+
+== Clearing properties
+
+Run time properties which are optional, and which have had values set at build time or which have a default value,
+may be explicitly cleared by assigning an empty string to the property.  Note that this will _only_ affect
+runtime properties, and will _only_ work with properties whose values are not required.
+
+The property may be cleared by setting the corresponding `application.properties` property, setting the
+corresponding system property, or setting the corresponding environment variable.
+
+[[custom_configuration]]
+== Custom Configuration
+
+=== Custom configuration sources
+
+You can also introduce custom configuration sources in the standard MicroProfile Config manner.  To
+do this, you must provide a class which implements either `org.eclipse.microprofile.config.spi.ConfigSource`
+or `org.eclipse.microprofile.config.spi.ConfigSourceProvider`.  Create a
+https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html[service file] for the
+class and it will be detected and installed at application startup.
+
+=== Custom configuration converters
+
+You can also use your custom types for configuration values. This can be done by implementing `org.eclipse.microprofile.config.spi.Converter<T>`
+and adding its fully qualified class name in the `META-INF/services/org.eclipse.microprofile.config.spi.Converter` file.
+
+Let us assume you have a custom type like this one:
+
+[source,java]
+----
+package org.acme.config;
+
+public class MicroProfileCustomValue {
+
+    private final int number;
+
+    public MicroProfileCustomValue(int number) {
+        this.number = number;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+}
+----
+
+The corresponding converter will look like the one below. Please note that your custom converter class must be `public` and must have
+a `public` no-argument constructor. It also must not be `abstract`.
+
+
+[source,java]
+----
+package org.acme.config;
+
+import org.eclipse.microprofile.config.spi.Converter;
+
+public class MicroProfileCustomValueConverter implements Converter<MicroProfileCustomValue> {
+
+    @Override
+    public MicroProfileCustomValue convert(String value) {
+        return new MicroProfileCustomValue(Integer.parseInt(value));
+    }
+}
+----
+
+Then you need to include the fully qualified class name of the converter in a service file `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+If you have more converters, simply add their class names in this file as well. One fully qualified class name per line, for example:
+
+[source]
+----
+org.acme.config.MicroProfileCustomValueConverter
+org.acme.config.SomeOtherConverter
+org.acme.config.YetAnotherConverter
+----
+
+Please note that `SomeOtherConverter` and `YetAnotherConverter` were added just for demonstration purposes. If you include in this file classes
+which are not available at runtime, the converters loading will fail.
+
+After this is done, you can use your custom type as a configuration value:
+
+[source,java]
+----
+@ConfigProperty(name = "configuration.value.name")
+MicroProfileCustomValue value;
+----
+
+==== Converter priority
+
+In some cases, you may want to use a custom converter to convert a type which is already converted
+by a different converter. In such cases, you can use the `javax.annotation.Priority` annotation to
+change converters precedence and make your custom converter of higher priority than the other
+in the list.
+
+By default, if no `@Priority` can be found on a converter, it's registered with a priority of 100
+and all Quarkus core converters are registered with a priority of 200, so depending on which
+converter you would like to replace, you need to set a higher value.
+
+To demonstrate the idea let us implement a custom converter which will take precedence over
+`MicroProfileCustomValueConverter` implemented in the previous example.
+
+[source,java]
+----
+package org.acme.config;
+
+import javax.annotation.Priority;
+import org.eclipse.microprofile.config.spi.Converter;
+
+@Priority(150)
+public class MyCustomConverter implements Converter<MicroProfileCustomValue> {
+
+    @Override
+    public MicroProfileCustomValue convert(String value) {
+
+        final int secretNumber;
+        if (value.startsFrom("OBF:")) {
+            secretNumber = Integer.parseInt(SecretDecoder.decode(value));
+        } else {
+            secretNumber = Integer.parseInt(value);
+        }
+
+        return new MicroProfileCustomValue(secretNumber);
+    }
+}
+----
+
+Since it converts the same value type (namely `MicroProfileCustomValue`) and has a priority
+of 150, it will be used instead of a `MicroProfileCustomValueConverter` which has a default
+priority of 100.
+
+NOTE: This new converter also needs to be listed in a service file, i.e. `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+
+[[yaml]]
+== YAML for Configuration
+
+=== Add YAML Config Support
+
+You might want to use YAML over properties for configuration.
+Since link:https://github.com/smallrye/smallrye-config[SmallRye Config] brings support for YAML
+configuration, Quarkus supports this as well.
+
+First you will need to add the Config YAML extension to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-config-yaml</artifactId>
+</dependency>
+----
+
+Or you can alternatively run this command in the directory containing your Quarkus project:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="config-yaml"
+----
+
+Now Quarkus can read YAML configuration files.
+The config directories and priorities are the same as before.
+
+NOTE: Quarkus will choose an `application.yaml` over an `application.properties`.
+YAML files are just an alternative way to configure your application.
+You should decide and keep one configuration type to avoid errors.
+
+==== Configuration Examples
+[source,yaml]
+----
+# YAML supports comments
+quarkus:
+  datasource:
+    db-kind: postgresql
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/some-database
+    username: quarkus
+    password: quarkus
+
+# REST Client configuration property
+org:
+  acme:
+    restclient:
+      CountriesService/mp-rest/url: https://restcountries.eu/rest
+
+# For configuration property names that use quotes, do not split the string inside the quotes.
+quarkus:
+  log:
+    category:
+      "io.quarkus.category":
+        level: INFO
+----
+
+[NOTE]
+====
+Quarkus also supports using `application.yml` as the name of the YAML file. The same rules apply for this file as for `application.yaml`.
+====
+
+=== Profile dependent configuration
+
+Providing profile dependent configuration with YAML is done like with properties.
+Just add the `%profile` wrapped in quotation marks before defining the key-value pairs:
+
+[source,yaml]
+----
+"%dev":
+  quarkus:
+    datasource:
+      db-kind: postgresql
+      jdbc:
+        url: jdbc:postgresql://localhost:5432/some-database
+      username: quarkus
+      password: quarkus
+----
+
+=== Configuration key conflicts
+
+The MicroProfile Configuration specification defines configuration keys as an arbitrary `.`-delimited string.
+However, structured formats like YAML naively only support a subset of the possible configuration namespace.
+For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
+One property is the prefix of another, so it may not be immediately evident how to specify both keys in your YAML configuration.
+
+This is solved by using a `null` key (normally represented by `~`) for any YAML property which is a prefix of another one.  Here's an example:
+
+.An example YAML configuration resolving prefix-related key name conflicts
+[source,yaml]
+----
+quarkus:
+  http:
+    cors:
+      ~: true
+      methods: GET,PUT,POST
+----
+
+In general, `null` YAML keys are not included in assembly of the configuration property name, allowing them to be used to
+any level for disambiguating configuration keys.
+
+== More info on how to configure
+
+Quarkus relies on SmallRye Config and inherits its features.
+
+SmallRye Config provides:
+
+* Additional Config Sources
+* Additional Converters
+* Interceptors for configuration value resolution
+* Relocate Configuration Properties
+* Fallback Configuration Properties
+* Logging
+* Hide Secrets
+
+For more information, please check the
+link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].

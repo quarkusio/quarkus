@@ -665,7 +665,7 @@ final class Beans {
     }
 
     static void validateBean(BeanInfo bean, List<Throwable> errors, List<BeanDeploymentValidator> validators,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, Set<DotName> classesReceivingNoArgsCtor) {
 
         if (bean.isClassBean()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
@@ -698,9 +698,13 @@ final class Beans {
                         }
                     }
                     if (superName != null) {
-                        String superClassName = superName.toString().replace('.', '/');
-                        bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
-                                new NoArgConstructorTransformFunction(superClassName)));
+                        if (!classesReceivingNoArgsCtor.contains(beanClass.name())) {
+                            String superClassName = superName.toString().replace('.', '/');
+                            bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
+                                    new NoArgConstructorTransformFunction(superClassName)));
+                            classesReceivingNoArgsCtor.add(beanClass.name());
+                        }
+
                     } else {
                         errors.add(new DeploymentException(
                                 "It's not possible to add a synthetic constructor with no parameters to the unproxyable bean class: "
@@ -762,9 +766,12 @@ final class Beans {
                             }
                         }
                         if (superName != null) {
-                            String superClassName = superName.toString().replace('.', '/');
-                            bytecodeTransformerConsumer.accept(new BytecodeTransformer(returnTypeClass.name().toString(),
-                                    new NoArgConstructorTransformFunction(superClassName)));
+                            if (!classesReceivingNoArgsCtor.contains(returnTypeClass.name())) {
+                                String superClassName = superName.toString().replace('.', '/');
+                                bytecodeTransformerConsumer.accept(new BytecodeTransformer(returnTypeClass.name().toString(),
+                                        new NoArgConstructorTransformFunction(superClassName)));
+                                classesReceivingNoArgsCtor.add(returnTypeClass.name());
+                            }
                         } else {
                             errors.add(new DeploymentException(String
                                     .format("It's not possible to add a synthetic constructor with no parameters to the unproxyable return type of "
@@ -805,9 +812,12 @@ final class Beans {
                         }
                     }
                     if (superName != null) {
-                        String superClassName = superName.toString().replace('.', '/');
-                        bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
-                                new NoArgConstructorTransformFunction(superClassName)));
+                        if (!classesReceivingNoArgsCtor.contains(beanClass.name())) {
+                            String superClassName = superName.toString().replace('.', '/');
+                            bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
+                                    new NoArgConstructorTransformFunction(superClassName)));
+                            classesReceivingNoArgsCtor.add(beanClass.name());
+                        }
                     } else {
                         errors.add(new DeploymentException(
                                 "It's not possible to add a synthetic constructor with no parameters to the unproxyable bean class: "

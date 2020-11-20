@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -24,6 +25,7 @@ import io.quarkus.arc.processor.Transformation;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
+import io.quarkus.arc.properties.UnlessBuildProperty;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -37,6 +39,7 @@ public class BuildTimeEnabledProcessor {
     private static final DotName UNLESS_BUILD_PROFILE = DotName.createSimple(UnlessBuildProfile.class.getName());
 
     private static final DotName IF_BUILD_PROPERTY = DotName.createSimple(IfBuildProperty.class.getName());
+    private static final DotName UNLESS_BUILD_PROPERTY = DotName.createSimple(UnlessBuildProperty.class.getName());
 
     @BuildStep
     void ifBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
@@ -45,9 +48,9 @@ public class BuildTimeEnabledProcessor {
             String profileOnInstance = instance.value().asString();
             boolean enabled = profileOnInstance.equals(ProfileManager.getActiveProfile());
             if (enabled) {
-                LOGGER.debug("Enabling " + instance + " since the profile value matches the active profile.");
+                LOGGER.debug("Enabling " + instance.target() + " since the profile value matches the active profile.");
             } else {
-                LOGGER.debug("Disabling " + instance + " since the profile value does not match the active profile.");
+                LOGGER.debug("Disabling " + instance.target() + " since the profile value does not match the active profile.");
             }
             producer.produce(new BuildTimeConditionBuildItem(instance.target(), enabled));
         }
@@ -60,9 +63,9 @@ public class BuildTimeEnabledProcessor {
             String profileOnInstance = instance.value().asString();
             boolean enabled = !profileOnInstance.equals(ProfileManager.getActiveProfile());
             if (enabled) {
-                LOGGER.debug("Enabling " + instance + " since the profile value does not match the active profile.");
+                LOGGER.debug("Enabling " + instance.target() + " since the profile value does not match the active profile.");
             } else {
-                LOGGER.debug("Disabling " + instance + " since the profile value matches the active profile.");
+                LOGGER.debug("Disabling " + instance.target() + " since the profile value matches the active profile.");
             }
             producer.produce(new BuildTimeConditionBuildItem(instance.target(), enabled));
         }
@@ -70,8 +73,28 @@ public class BuildTimeEnabledProcessor {
 
     @BuildStep
     void ifBuildProperty(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
+        buildProperty(IF_BUILD_PROPERTY, new BiFunction<String, String, Boolean>() {
+            @Override
+            public Boolean apply(String stringValue, String expectedStringValue) {
+                return stringValue.equals(expectedStringValue);
+            }
+        }, index, producer);
+    }
+
+    @BuildStep
+    void unlessBuildProperty(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
+        buildProperty(UNLESS_BUILD_PROPERTY, new BiFunction<String, String, Boolean>() {
+            @Override
+            public Boolean apply(String stringValue, String expectedStringValue) {
+                return !stringValue.equals(expectedStringValue);
+            }
+        }, index, producer);
+    }
+
+    void buildProperty(DotName annotationName, BiFunction<String, String, Boolean> testFun, BeanArchiveIndexBuildItem index,
+            BuildProducer<BuildTimeConditionBuildItem> producer) {
         Config config = ConfigProviderResolver.instance().getConfig();
-        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(IF_BUILD_PROPERTY);
+        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(annotationName);
         for (AnnotationInstance instance : annotationInstances) {
             String propertyName = instance.value("name").asString();
             String expectedStringValue = instance.value("stringValue").asString();
@@ -81,21 +104,21 @@ public class BuildTimeEnabledProcessor {
             Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
             boolean enabled;
             if (optionalValue.isPresent()) {
-                if (optionalValue.get().equals(expectedStringValue)) {
-                    LOGGER.debug("Enabling " + instance + " since the property value matches the expected one.");
+                if (testFun.apply(optionalValue.get(), expectedStringValue)) {
+                    LOGGER.debug("Enabling " + instance.target() + " since the property value matches the expected one.");
                     enabled = true;
                 } else {
-                    LOGGER.debug("Disabling " + instance
-                            + " since the property value does not match the expected one.");
+                    LOGGER.debug("Disabling " + instance.target()
+                            + " since the property value matches the specified value one.");
                     enabled = false;
                 }
             } else {
                 if (enableIfMissing) {
-                    LOGGER.debug("Enabling " + instance
+                    LOGGER.debug("Enabling " + instance.target()
                             + " since the property has not been set and 'enableIfMissing' is set to 'true'.");
                     enabled = true;
                 } else {
-                    LOGGER.debug("Disabling " + instance
+                    LOGGER.debug("Disabling " + instance.target()
                             + " since the property has not been set and 'enableIfMissing' is set to 'false'.");
                     enabled = false;
                 }

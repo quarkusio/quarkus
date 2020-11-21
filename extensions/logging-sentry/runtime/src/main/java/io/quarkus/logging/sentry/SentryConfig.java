@@ -76,4 +76,12 @@ public class SentryConfig {
      */
     @ConfigItem
     public Optional<String> release;
+
+    /**
+     *  Server name
+     *
+     *  To set the server name that will be sent with each event.
+     */
+    @ConfigItem
+    public Optional<String> serverName;
 }

@@ -68,19 +68,34 @@ public class CaffeineCache {
         CompletableFuture<Object> newCacheValue = new CompletableFuture<Object>();
         CompletableFuture<Object> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
         if (existingCacheValue == null) {
-            Object value = valueLoader.apply(key);
-            newCacheValue.complete(NullValueConverter.toCacheValue(value));
-            return unwrapCacheValue(newCacheValue);
+            try {
+                Object value = valueLoader.apply(key);
+                newCacheValue.complete(NullValueConverter.toCacheValue(value));
+            } catch (Throwable t) {
+                cache.asMap().remove(key, newCacheValue);
+                newCacheValue.complete(new CaffeineComputationThrowable(t));
+            }
+            return unwrapCacheValueOrThrowable(key, newCacheValue);
         } else {
-            return unwrapCacheValue(existingCacheValue);
+            return unwrapCacheValueOrThrowable(key, existingCacheValue);
         }
     }
 
-    private CompletableFuture<Object> unwrapCacheValue(CompletableFuture<Object> cacheValue) {
+    private CompletableFuture<Object> unwrapCacheValueOrThrowable(Object key, CompletableFuture<Object> cacheValue) {
         return cacheValue.thenApply(new Function<Object, Object>() {
             @Override
             public Object apply(Object value) {
-                return NullValueConverter.fromCacheValue(value);
+                // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
+                if (value instanceof CaffeineComputationThrowable) {
+                    Throwable cause = ((CaffeineComputationThrowable) value).getCause();
+                    if (cause instanceof RuntimeException) {
+                        throw (RuntimeException) cause;
+                    } else {
+                        throw new CacheException(cause);
+                    }
+                } else {
+                    return NullValueConverter.fromCacheValue(value);
+                }
             }
         });
     }

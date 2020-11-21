@@ -24,6 +24,7 @@ import io.grpc.testing.integration.Messages;
 import io.quarkus.grpc.blocking.BlockingTestServiceGrpc;
 import io.quarkus.grpc.blocking.MutinyBlockingTestServiceGrpc;
 import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyTestService;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
@@ -37,7 +38,7 @@ public class BlockingMethodsWithMutinyImplTest {
                     .addPackage(EmptyProtos.class.getPackage())
                     .addPackage(Messages.class.getPackage())
                     .addPackage(BlockingTestServiceGrpc.class.getPackage())
-                    .addClasses(BlockingMutinyTestService.class))
+                    .addClasses(BlockingMutinyTestService.class, AssertHelper.class))
             .withConfigurationResource("blocking-test-config.properties");
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);

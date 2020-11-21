@@ -27,6 +27,7 @@ import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.TestServiceGrpc;
 import io.quarkus.grpc.runtime.annotations.GrpcService;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
+import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyHelloService;
 import io.quarkus.grpc.server.services.TestService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -41,7 +42,7 @@ public class BlockingAndNonBlockingTest {
                     .addPackage(GreeterGrpc.class.getPackage())
                     .addPackage(TestServiceGrpc.class.getPackage())
                     .addPackage(EmptyProtos.class.getPackage())
-                    .addClasses(BlockingMutinyHelloService.class, TestService.class))
+                    .addClasses(BlockingMutinyHelloService.class, TestService.class, AssertHelper.class))
             .withConfigurationResource("blocking-config.properties");
 
     @Inject

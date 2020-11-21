@@ -1,5 +1,7 @@
 package io.quarkus.grpc.server.services;
 
+import static io.quarkus.grpc.server.services.AssertHelper.assertRunOnEventLoop;
+import static io.quarkus.grpc.server.services.AssertHelper.assertRunOnWorker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -15,21 +17,9 @@ import io.grpc.stub.StreamObserver;
 import io.grpc.testing.integration.Messages;
 import io.quarkus.grpc.blocking.BlockingTestServiceGrpc;
 import io.smallrye.common.annotation.Blocking;
-import io.vertx.core.Vertx;
 
 @Singleton
 public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestServiceImplBase {
-
-    private void assertRunOnEventLoop() {
-        assertThat(Vertx.currentContext()).isNotNull();
-        assertThat(Vertx.currentContext().isEventLoopContext()).isTrue();
-        assertThat(Thread.currentThread().getName()).contains("eventloop");
-    }
-
-    private void assertRunOnWorker() {
-        assertThat(Vertx.currentContext()).isNotNull();
-        assertThat(Thread.currentThread().getName()).contains("worker");
-    }
 
     @Override
     public void emptyCall(EmptyProtos.Empty request, StreamObserver<EmptyProtos.Empty> responseObserver) {

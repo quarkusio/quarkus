@@ -122,6 +122,7 @@ public enum Feature {
     SWAGGER_UI,
     TIKA,
     UNDERTOW_WEBSOCKETS,
+    UNLEASH,
     VAULT,
     VERTX,
     VERTX_WEB,

@@ -10,6 +10,7 @@ jobs:
   build-and-deploy:
     name: "Build and deploy"
     runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
     steps:
       - uses: actions/checkout@v2
         with:

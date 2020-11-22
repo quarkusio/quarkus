@@ -14,6 +14,7 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
       - '.github/*.java'
+      - '.github/*.conf'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -26,6 +27,7 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
       - '.github/*.java'
+      - '.github/*.conf'
 
 env:
   # Workaround testsuite locale issue

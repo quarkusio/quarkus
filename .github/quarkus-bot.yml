@@ -405,13 +405,13 @@ triage:
         - integration-tests/elytron
     - labels: [area/flyway]
       title: flyway
-      notify: [cristhiank,geoand,gastaldi,gsmet]
+      notify: [cristhiank, geoand, gastaldi, gsmet]
       directories:
         - extensions/flyway/
         - integration-tests/flyway/
     - labels: [area/liquibase]
       title: liquibase
-      notify: [andrejpetras,geoand,gsmet]
+      notify: [andrejpetras, geoand, gsmet]
       directories:
         - extensions/liquibase/
         - integration-tests/liquibase/

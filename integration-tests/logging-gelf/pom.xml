@@ -34,10 +34,6 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
@@ -98,10 +94,10 @@
 
     <profiles>
         <profile>
-            <id>test-gelf</id>
+        <id>test-gelf</id>
             <activation>
                 <property>
-                    <name>test-containers</name>
+                    <name>test-gelf</name>
                 </property>
             </activation>
             <build>
@@ -117,156 +113,6 @@
                         <configuration>
                             <skip>false</skip>
                         </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>docker-gelf</id>
-            <activation>
-                <property>
-                    <name>start-containers</name>
-                </property>
-            </activation>
-            <properties>
-                <elasticsearch.hosts>localhost:9200</elasticsearch.hosts>
-                <elasticsearch.protocol>http</elasticsearch.protocol>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
-                            <images>
-                                <image>
-                                    <!-- Graylog 3 only works with Elasticsearch 6 -->
-                                    <name>docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.9</name>
-                                    <alias>elasticsearch</alias>
-                                    <run>
-                                        <network>
-                                            <mode>custom</mode>
-                                            <name>graylog</name>
-                                            <alias>elasticsearch</alias>
-                                        </network>
-                                        <cpus>2</cpus>
-                                        <cpuShares>2048</cpuShares>
-                                        <ports>
-                                            <port>9200:9200</port>
-                                        </ports>
-                                        <log>
-                                            <prefix>Elasticsearch: </prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <http>
-                                                <url>http://localhost:9200</url>
-                                                <method>GET</method>
-                                                <status>200</status>
-                                            </http>
-                                            <time>20000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                                <image>
-                                    <name>mongo:4.2</name>
-                                    <alias>mongo</alias>
-                                    <run>
-                                        <network>
-                                            <mode>custom</mode>
-                                            <name>graylog</name>
-                                            <alias>mongo</alias>
-                                        </network>
-                                        <cpus>1</cpus>
-                                        <ports>
-                                            <port>27017:27017</port>
-                                        </ports>
-                                        <log>
-                                            <prefix>Mongo: </prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <tcp>
-                                                <host>127.0.0.1</host>
-                                                <ports>
-                                                    <port>27017</port>
-                                                </ports>
-                                            </tcp>
-                                        </wait>
-                                    </run>
-                                </image>
-                                <image>
-                                    <name>graylog/graylog:3.3.8</name>
-                                    <run>
-                                        <network>
-                                            <mode>custom</mode>
-                                            <name>graylog</name>
-                                        </network>
-                                        <env>
-                                            <GRAYLOG_HTTP_EXTERNAL_URI>http://127.0.0.1:9000/</GRAYLOG_HTTP_EXTERNAL_URI>
-                                        </env>
-                                        <cpus>1</cpus>
-                                        <ports>
-                                            <port>9000:9000</port>
-                                            <port>12201:12201/udp</port>
-                                            <port>1514:1514</port>
-                                        </ports>
-                                        <log>
-                                            <prefix>Graylog: </prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <wait>
-                                            <log>Graylog server up and running.</log>
-                                            <!-- Keep this value high, it takes at least 50s on CI -->
-                                            <time>90000</time>
-                                        </wait>
-                                        <dependsOn>
-                                            <container>elasticsearch</container>
-                                            <container>mongo</container>
-                                        </dependsOn>
-                                    </run>
-                                </image>
-                            </images>
-                            <allContainers>true</allContainers>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>process-test-classes</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>docker-prune</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${basedir}/../../.github/docker-prune.sh</executable>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>

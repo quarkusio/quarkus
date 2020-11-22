@@ -90,7 +90,7 @@ public abstract class ClassDefinition extends Definition {
             this.field = Assert.checkNotNullParam("field", field);
             final Class<?> declaringClass = field.getDeclaringClass();
             final Class<?> configurationClass = classDefinition.configurationClass;
-            if (declaringClass != configurationClass) {
+            if (!declaringClass.isAssignableFrom(configurationClass)) {
                 throw new IllegalArgumentException(
                         "Member declaring " + declaringClass + " does not match configuration " + configurationClass);
             }

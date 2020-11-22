@@ -64,7 +64,7 @@ public class GrpcServerProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     public KubernetesPortBuildItem registerGrpcServiceInKubernetes(List<BindableServiceBuildItem> bindables) {
         if (!bindables.isEmpty()) {
-            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc-server.port", Integer.class)
+            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
                     .orElse(9000);
             return new KubernetesPortBuildItem(port, GRPC_SERVER);
         }

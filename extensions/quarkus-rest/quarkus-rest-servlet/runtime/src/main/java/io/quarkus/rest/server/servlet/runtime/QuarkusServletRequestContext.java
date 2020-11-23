@@ -33,13 +33,11 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
 
-import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.rest.server.runtime.QuarkusRestSecurityContext;
-import io.quarkus.rest.server.runtime.VertxInputStream;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.http.HttpServerRequest;
@@ -268,7 +266,7 @@ public class QuarkusServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public InputStream createInputStream(ByteBuffer existingData) {
-        return new VertxInputStream(context, 10000, Unpooled.wrappedBuffer(existingData));
+        return new QuarkusRestServletInputStream(existingData, request);
     }
 
     @Override

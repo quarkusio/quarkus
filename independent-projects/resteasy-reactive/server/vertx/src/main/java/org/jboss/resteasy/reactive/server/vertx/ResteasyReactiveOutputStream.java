@@ -1,22 +1,19 @@
-package io.quarkus.rest.server.runtime;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
-
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+package org.jboss.resteasy.reactive.server.vertx;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 
@@ -35,7 +32,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     protected Throwable throwable;
     private ByteArrayOutputStream overflow;
 
-    public ResteasyReactiveOutputStream(QuarkusRequestContext context) {
+    public ResteasyReactiveOutputStream(VertxResteasyReactiveRequestContext context) {
         this.context = context;
         this.request = context.getContext().request();
         request.response().exceptionHandler(new Handler<Throwable>() {

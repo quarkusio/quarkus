@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
-            <artifactId>resteasy-reactive</artifactId>
+            <artifactId>resteasy-reactive-vertx</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

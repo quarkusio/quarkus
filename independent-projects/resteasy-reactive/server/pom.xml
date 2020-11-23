@@ -17,6 +17,7 @@
     <modules>
         <module>runtime</module>
         <module>processor</module>
+        <module>vertx</module>
     </modules>
 
 </project>

@@ -3594,6 +3594,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus.resteasy.reactive</groupId>
+                <artifactId>resteasy-reactive-vertx</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.resteasy.reactive</groupId>
                 <artifactId>resteasy-reactive-common</artifactId>
                 <version>${project.version}</version>
             </dependency>

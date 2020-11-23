@@ -7,7 +7,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
 
-import io.quarkus.rest.server.runtime.QuarkusRequestContext;
+import io.quarkus.rest.server.runtime.QuarkusResteasyReactiveRequestContext;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -29,7 +29,7 @@ public class UnauthorizedExceptionMapper implements QuarkusRestExceptionMapper<U
 
     @Override
     public Response toResponse(UnauthorizedException exception, ResteasyReactiveRequestContext ctx) {
-        return doToResponse(((QuarkusRequestContext) ctx).getContext());
+        return doToResponse(((QuarkusResteasyReactiveRequestContext) ctx).getContext());
     }
 
     private Response doToResponse(RoutingContext context) {

@@ -1,5 +1,15 @@
-package io.quarkus.rest.server.runtime;
+package org.jboss.resteasy.reactive.server.vertx;
 
+import io.netty.buffer.Unpooled;
+import io.netty.channel.EventLoop;
+import io.netty.util.concurrent.ScheduledFuture;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.net.impl.ConnectionBase;
+import io.vertx.ext.web.RoutingContext;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -10,10 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import javax.enterprise.event.Event;
-import javax.ws.rs.core.SecurityContext;
-
 import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
@@ -22,30 +28,15 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
 
-import io.netty.buffer.Unpooled;
-import io.netty.channel.EventLoop;
-import io.netty.util.concurrent.ScheduledFuture;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.impl.LazyValue;
-import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.net.impl.ConnectionBase;
-import io.vertx.ext.web.RoutingContext;
+public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequestContext
+        implements ServerHttpRequest, ServerHttpResponse {
 
-public class QuarkusRequestContext extends ResteasyReactiveRequestContext implements ServerHttpRequest, ServerHttpResponse {
+    protected final RoutingContext context;
+    protected final HttpServerRequest request;
+    protected final HttpServerResponse response;
 
-    private static final LazyValue<Event<SecurityIdentity>> SECURITY_IDENTITY_EVENT = new LazyValue<>(
-            QuarkusRequestContext::createEvent);
-    final RoutingContext context;
-    final HttpServerRequest request;
-    final HttpServerResponse response;
-
-    public QuarkusRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
+    public VertxResteasyReactiveRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers,
+            RoutingContext context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
@@ -65,30 +56,6 @@ public class QuarkusRequestContext extends ResteasyReactiveRequestContext implem
     @Override
     public ServerHttpResponse serverResponse() {
         return this;
-    }
-
-    protected void handleRequestScopeActivation() {
-        super.handleRequestScopeActivation();
-        QuarkusHttpUser user = (QuarkusHttpUser) context.user();
-        if (user != null) {
-            fireSecurityIdentity(user.getSecurityIdentity());
-        }
-    }
-
-    static void fireSecurityIdentity(SecurityIdentity identity) {
-        SECURITY_IDENTITY_EVENT.get().fire(identity);
-    }
-
-    static void clear() {
-        SECURITY_IDENTITY_EVENT.clear();
-    }
-
-    private static Event<SecurityIdentity> createEvent() {
-        return Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
-    }
-
-    protected SecurityContext createSecurityContext() {
-        return new QuarkusRestSecurityContext(context);
     }
 
     @Override

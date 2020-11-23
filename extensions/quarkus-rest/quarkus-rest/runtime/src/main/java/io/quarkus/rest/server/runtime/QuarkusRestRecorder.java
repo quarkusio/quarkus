@@ -87,7 +87,8 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
                 public ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment,
                         QuarkusRestProviders providers, Object context, ThreadSetupAction requestContext,
                         ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
-                    return new QuarkusRequestContext(deployment, providers, (RoutingContext) context, requestContext,
+                    return new QuarkusResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
+                            requestContext,
                             handlerChain,
                             abortHandlerChain);
                 }

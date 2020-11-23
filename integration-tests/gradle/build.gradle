@@ -50,7 +50,6 @@ test {
     if (System.properties.containsKey('maven.repo.local')) {
         systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
     }
-
     useJUnitPlatform()
 
     // Kotlin compiler does not support Java 14

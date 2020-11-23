@@ -151,6 +151,10 @@ Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter
 `eclipse-format.xml` file in the `independent-projects/ide-config` directory. Make sure the _Optimize Imports_ box is ticked, and
 select the `eclipse.importorder` file as the import order config file.
 
+Next, disable wildcard imports:
+navigate to _Editor_ -> _Code Style_ -> _Java_ -> _Imports_
+and set _Class count to use import with '\*'_ to `999`.
+Do the same with _Names count to use static import with '\*'_.
 
 ## Build
 

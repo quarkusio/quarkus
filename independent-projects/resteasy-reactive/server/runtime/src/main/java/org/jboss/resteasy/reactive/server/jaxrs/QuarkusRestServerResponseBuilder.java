@@ -2,12 +2,11 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
-import org.jboss.resteasy.reactive.server.core.CurrentRequest;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
@@ -20,15 +19,9 @@ public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder
             return this;
         }
         if (!location.isAbsolute()) {
-            CDI<Object> cdi = null;
-            try {
-                cdi = CDI.current();
-            } catch (IllegalStateException ignored) {
-
-            }
-            if (cdi != null) {
-                // FIXME: this leaks server stuff onto the client
-                ResteasyReactiveRequestContext request = CurrentRequest.get();
+            // FIXME: this leaks server stuff onto the client
+            ResteasyReactiveRequestContext request = CurrentRequestManager.get();
+            if (request != null) {
                 ServerHttpRequest req = request.serverRequest();
                 try {
                     String host = req.getRequestHost();
@@ -65,15 +58,9 @@ public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder
             return this;
         }
         if (!location.isAbsolute()) {
-            CDI<Object> cdi = null;
-            try {
-                cdi = CDI.current();
-            } catch (IllegalStateException ignored) {
-
-            }
-            if (cdi != null) {
+            ResteasyReactiveRequestContext request = CurrentRequestManager.get();
+            if (request != null) {
                 // FIXME: this leaks server stuff onto the client
-                ResteasyReactiveRequestContext request = CurrentRequest.get();
                 ServerHttpRequest req = request.serverRequest();
                 try {
                     String host = req.getRequestHost();

@@ -4,7 +4,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
-import org.jboss.resteasy.reactive.server.core.CurrentRequest;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 import io.vertx.core.http.HttpServerRequest;
@@ -23,16 +23,16 @@ public class QuarkusContextProducers {
     @RequestScoped
     @Produces
     HttpServerRequest httpServerRequest() {
-        return CurrentRequest.get().serverRequest().unwrap(HttpServerRequest.class);
+        return CurrentRequestManager.get().serverRequest().unwrap(HttpServerRequest.class);
     }
 
     @RequestScoped
     @Produces
     HttpServerResponse httpServerResponse() {
-        return CurrentRequest.get().serverRequest().unwrap(HttpServerResponse.class);
+        return CurrentRequestManager.get().serverRequest().unwrap(HttpServerResponse.class);
     }
 
     private ResteasyReactiveRequestContext getContext() {
-        return CurrentRequest.get();
+        return CurrentRequestManager.get();
     }
 }

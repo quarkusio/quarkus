@@ -17,6 +17,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.ContextResolvers;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
@@ -40,6 +41,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -67,6 +69,9 @@ public class QuarkusRestRecorder extends QuarkusRestCommonRecorder {
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
             BeanFactory<QuarkusRestInitialiser> initClassFactory) {
+
+        CurrentRequestManager
+                .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.instance(CurrentVertxRequest.class)));
 
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override

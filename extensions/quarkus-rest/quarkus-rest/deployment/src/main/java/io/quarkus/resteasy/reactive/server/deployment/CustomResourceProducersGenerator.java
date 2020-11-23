@@ -19,7 +19,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-import org.jboss.resteasy.reactive.server.core.CurrentRequest;
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.CookieParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
@@ -115,7 +115,7 @@ final class CustomResourceProducersGenerator {
                 m.setModifiers(Modifier.PRIVATE);
 
                 ResultHandle otherHttpContextObjectHandle = m.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(CurrentRequest.class, "get", ResteasyReactiveRequestContext.class));
+                        MethodDescriptor.ofMethod(CurrentRequestManager.class, "get", ResteasyReactiveRequestContext.class));
                 ResultHandle result = m.checkCast(otherHttpContextObjectHandle, ResteasyReactiveRequestContext.class);
                 m.returnValue(result);
             }

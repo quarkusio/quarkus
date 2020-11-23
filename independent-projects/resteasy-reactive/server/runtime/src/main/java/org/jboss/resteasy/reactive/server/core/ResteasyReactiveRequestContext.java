@@ -587,12 +587,11 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     protected void handleRequestScopeActivation() {
-        CurrentRequest.set(this);
+        CurrentRequestManager.set(this);
     }
 
     @Override
     protected void requestScopeDeactivated() {
-        CurrentRequest.set(null);
     }
 
     @Override

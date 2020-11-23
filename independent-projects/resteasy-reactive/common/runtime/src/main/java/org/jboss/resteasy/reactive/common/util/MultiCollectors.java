@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 // they can't possibly be useful, and even the JAX-RS spec doesn't mandate we have writers
 // for them
 public class MultiCollectors {
-    private static final int INITIAL_BUFFER_SIZE = 2048;
 
     public static Uni<String> concatenateStrings(Multi<String> multi) {
         return multi.collectItems().with(Collectors.joining());

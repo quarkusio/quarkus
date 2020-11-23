@@ -14,6 +14,8 @@ import io.vertx.core.buffer.Buffer;
 @Path("stream")
 public class StreamResource {
 
+    private static final int INITIAL_BUFFER_SIZE = 2048;
+
     @Path("text/collect")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -56,10 +58,22 @@ public class StreamResource {
         return Multi.createFrom().items("foo".toCharArray(), "bar".toCharArray());
     }
 
+    @Path("buffer/collect")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<Buffer> getCollectedBuffers() {
+        return concatenateBuffers(getStreamedBuffers());
+    }
+
     @Path("buffer/stream")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Multi<Buffer> getStreamedBuffers() {
         return Multi.createFrom().items(Buffer.buffer("foo"), Buffer.buffer("bar"));
+    }
+
+    public static Uni<Buffer> concatenateBuffers(Multi<Buffer> multi) {
+        return multi.collectItems().in(() -> Buffer.buffer(INITIAL_BUFFER_SIZE),
+                (accumulatingBuffer, receivedBuffer) -> accumulatingBuffer.appendBuffer(receivedBuffer));
     }
 }

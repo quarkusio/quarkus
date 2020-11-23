@@ -64,6 +64,10 @@ public class StreamTestCase {
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/buffer/collect")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
     }
 
     @Test

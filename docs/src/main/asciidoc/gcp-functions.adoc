@@ -304,7 +304,7 @@ gcloud beta functions deploy quarkus-example-pubsub \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
-To trigger the event, you can send a file to the `hello_topic` topic of you can use gcloud to simulate one:
+To trigger the event, you can send a file to the `hello_topic` topic or you can use gcloud to simulate one:
 
 [source,bash]
 ----

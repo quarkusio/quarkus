@@ -1,6 +1,7 @@
 package io.quarkus.cache.runtime;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -59,10 +60,30 @@ public class CacheResultInterceptor extends CacheInterceptor {
                 }
             }
 
-        } catch (CacheException e) {
-            if (e.getCause() instanceof Exception) {
+        } catch (ExecutionException e) {
+            /*
+             * Any exception raised during a cache computation will be encapsulated into an ExecutionException because it is
+             * thrown during a CompletionStage execution.
+             */
+            if (e.getCause() instanceof CacheException) {
+                // The ExecutionException was caused by a CacheException (most likely case).
+                CacheException cacheException = (CacheException) e.getCause();
+                // Let's see if we can throw the root cause of the exceptions chain.
+                if (cacheException.getCause() instanceof Exception) {
+                    // If it is an Exception, the root cause is thrown.
+                    throw (Exception) cacheException.getCause();
+                } else {
+                    // If it is an Error, the CacheException itself is thrown because interceptors have to throw exceptions.
+                    throw cacheException;
+                }
+            } else if (e.getCause() instanceof Exception) {
+                // The ExecutionException was caused by another type of Exception (very unlikely case). Let's throw that cause!
                 throw (Exception) e.getCause();
             } else {
+                /*
+                 * The ExecutionException was caused by an Error which can't be thrown because interceptors have to throw
+                 * exceptions. The ExecutionException itself is thrown instead.
+                 */
                 throw e;
             }
         }

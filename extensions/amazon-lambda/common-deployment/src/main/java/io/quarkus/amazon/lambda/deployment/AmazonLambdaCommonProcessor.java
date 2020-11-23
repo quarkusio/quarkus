@@ -15,7 +15,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
-import io.quarkus.jackson.ObjectMapperProducer;
+import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings("unchecked")

@@ -2,6 +2,8 @@ package io.quarkus.jackson;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.jackson.runtime.ObjectMapperProducer;
+
 /**
  * Meant to be implemented by a CDI bean that provides arbitrary customization for the default {@link ObjectMapper}.
  * <p>

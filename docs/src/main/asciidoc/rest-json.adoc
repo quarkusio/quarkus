@@ -186,7 +186,14 @@ It will allow to narrow down the number of JAX-RS providers (which can be seen a
 
 ==== Jackson
 
-Quarkus makes it very easy to configure various Jackson settings via CDI beans. The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jackson.ObjectMapperCustomizer`
+In Quarkus, the default Jackson `ObjectMapper` obtained via CDI (and consumed by the Quarkus extensions) is configured to ignore unknown properties
+(by disabling the `DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES` feature).
+
+You can restore the default behavior of Jackson by setting `quarkus.jackson.fail-on-unknown-properties=true` in your `application.properties`
+or on a per class basis via `@JsonIgnoreProperties(ignoreUnknown = false)`.
+
+Also, Quarkus makes it very easy to configure various Jackson settings via CDI beans.
+The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jackson.ObjectMapperCustomizer`
 inside of which any Jackson configuration can be applied.
 
 An example where a custom module needs to be registered would look like so:

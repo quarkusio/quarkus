@@ -14,6 +14,7 @@ public class Scope {
 
     private Scope parentScope;
     private Map<String, String> bindings;
+    private Map<String, Object> attributes;
 
     public Scope(Scope parentScope) {
         this.parentScope = parentScope;
@@ -36,6 +37,17 @@ public class Scope {
     public String getBindingTypeOrDefault(String binding, String defaultValue) {
         String type = getBindingType(binding);
         return type != null ? type : defaultValue;
+    }
+
+    public void setAttribute(String name, Object value) {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+        attributes.put(name, value);
+    }
+
+    public Object getAttribute(String name) {
+        return attributes != null ? attributes.get(name) : null;
     }
 
 }

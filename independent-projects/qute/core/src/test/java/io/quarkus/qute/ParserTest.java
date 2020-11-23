@@ -66,6 +66,7 @@ public class ParserTest {
                 .build();
         Template template = engine.parse("{@org.acme.Foo foo}"
                 + "{@java.util.List<org.acme.Label> labels}"
+                + "{@org.acme.Machine machine}"
                 + "{foo.name}"
                 + "{#for item in foo.items}"
                 + "{item.name}{bar.name}"
@@ -83,7 +84,8 @@ public class ParserTest {
                 + "{#for foo in foos}"
                 + "{foo.baz}"
                 + "{/for}"
-                + "{foo.call(labels,bar)}");
+                + "{foo.call(labels,bar)}"
+                + "{#when machine.status}{#is OK}..{#is NOK}{/when}");
         Set<Expression> expressions = template.getExpressions();
 
         assertExpr(expressions, "foo.name", 2, "|org.acme.Foo|.name");
@@ -92,13 +94,15 @@ public class ParserTest {
         assertExpr(expressions, "bar.name", 2, null);
         assertExpr(expressions, "labels", 1, "|java.util.List<org.acme.Label>|");
         assertExpr(expressions, "it.name", 2, "|java.util.List<org.acme.Label>|<for-element>.name");
-        assertExpr(expressions, "inject:bean.name", 2, "bean.name");
-        assertExpr(expressions, "inject:bean.labels", 2, "bean.labels");
-        assertExpr(expressions, "it.value", 2, "bean.labels<for-element>.value");
+        assertExpr(expressions, "inject:bean.name", 2, "inject:bean.name");
+        assertExpr(expressions, "inject:bean.labels", 2, "inject:bean.labels");
+        assertExpr(expressions, "it.value", 2, "inject:bean.labels<for-element>.value");
         assertExpr(expressions, "foo.bar", 2, "|org.acme.Foo|.bar");
         assertExpr(expressions, "baz.name", 2, "|org.acme.Foo|.bar.name");
         assertExpr(expressions, "foo.baz", 2, null);
         assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(labels,bar)");
+        Expression machineStatusExpr = find(expressions, "machine.status");
+        assertExpr(expressions, "OK", 1, "OK<when#" + machineStatusExpr.getGeneratedId() + ">");
     }
 
     @Test

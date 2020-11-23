@@ -619,6 +619,97 @@ You can also add any number of `else` blocks:
 {/if}
 ----
 
+[[when_section]]
+==== When/Switch Section
+
+This section is similar to Java's `switch` or Kotlin's `when` constructs.
+It matches a _tested value_ against all blocks sequentially until a condition is satisfied.
+The first matching block is executed.
+All other blocks are ignored (this behavior differs to the Java `switch` where a `break` statement is necessary).
+
+.Example using the `when`/`is` name aliases
+[source]
+----
+{#when items.size}
+  {#is 1} <1>
+    There is exactly one item!
+  {#is > 10} <2>
+    There are more than 10 items!
+  {#else} <3>
+    There are 2 -10 items!
+{/when}
+----
+<1> If there is exactly one parameter it's tested for equality.
+<2> It's possible to use <<when_operators,an operator>> to specify the matching logic. Unlike in the <<if_section>> nested operators are not supported.
+<3> `else` is block is executed if no other block matches the value.
+
+.Example using the `switch`/`case` name aliases
+[source]
+----
+{#switch person.name}
+  {#case 'John'} <1>
+    Hey John!
+  {#case 'Mary'} <1>
+    Hey Mary!
+{/switch}
+----
+<1> `case` is an alias for `is`.
+
+A tested value that resolves to an enum is handled specifically.
+The parameters of an `is`/`case` block are not evaluated as expressions but compared with the result of `toString()` invocation upon the tested value.
+
+[source]
+----
+{#when machine.status}
+  {#is ON} 
+    It's running. <1>
+  {#is in OFF BROKEN}
+    It's broken or OFF. <2>
+{/when}
+----
+<1> This block is executed if `machine.status.toString().equals("ON")`.
+<2> This block is executed if  `machine.status.toString().equals("OFF")` or `machine.status.toString().equals("BROKEN")`.
+
+NOTE: An enum constant is validated if the tested value has a type information available and resolves to an enum type.
+
+The following operators are supported in `is`/`case` block conditions:
+
+[[when_operators]]
+
+|===
+|Operator |Aliases |Example
+
+|not equal 
+|`!=`, `not`, `ne` 
+|`{#is not 10}`,`{#case != 10}`
+
+|greater than 
+|`gt`, `>`
+|`{#case le 10}`
+
+|greater than or equal to
+|`ge`, `>=`
+|`{#is >= 10}`
+
+|less than 
+|`lt`, `<`
+|`{#is < 10}`
+
+|less than or equal to
+|`le`, `\<=`
+|`{#case le 10}`
+
+|in
+|`in`
+|`{#is in 'foo' 'bar' 'baz'}`
+
+|not in
+|`ni`,`!in`
+|`{#is !in 1 2 3}`
+
+|===
+
+
 [[with_section]]
 ==== With Section
 

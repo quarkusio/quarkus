@@ -17,7 +17,7 @@ public class ExpressionTest {
 
     @Test
     public void testExpressions() throws InterruptedException, ExecutionException {
-        verify("data:name.value", "data", null, name("name", "name"), name("value", "value"));
+        verify("data:name.value", "data", null, name("name", "data:name"), name("value", "value"));
         verify("data:getName('value')", "data", null, virtualMethod("getName", ExpressionImpl.from("'value'")));
         // ignore adjacent separators
         verify("name..value", null, null, name("name"), name("value"));
@@ -29,13 +29,13 @@ public class ExpressionTest {
         verify("item.name or 'John'", null, null, name("item"), name("name"),
                 virtualMethod("or", ExpressionImpl.from("'John'")));
         verify("name.func('John', 1)", null, null, name("name"),
-                virtualMethod("func", ExpressionImpl.literalFrom("'John'"), ExpressionImpl.literalFrom("1")));
+                virtualMethod("func", ExpressionImpl.literalFrom(-1, "'John'"), ExpressionImpl.literalFrom(-1, "1")));
         verify("name ?: 'John Bug'", null, null, name("name"),
-                virtualMethod("?:", ExpressionImpl.literalFrom("'John Bug'")));
-        verify("name ? 'John' : 'Bug'", null, null, name("name"), virtualMethod("?", ExpressionImpl.literalFrom("'John'")),
-                virtualMethod(":", ExpressionImpl.literalFrom("'Bug'")));
+                virtualMethod("?:", ExpressionImpl.literalFrom(-1, "'John Bug'")));
+        verify("name ? 'John' : 'Bug'", null, null, name("name"), virtualMethod("?", ExpressionImpl.literalFrom(-1, "'John'")),
+                virtualMethod(":", ExpressionImpl.literalFrom(-1, "'Bug'")));
         verify("name.func(data:foo)", null, null, name("name"), virtualMethod("func", ExpressionImpl.from("data:foo")));
-        verify("this.getList(5).size", null, null, name("this"), virtualMethod("getList", ExpressionImpl.literalFrom("5")),
+        verify("this.getList(5).size", null, null, name("this"), virtualMethod("getList", ExpressionImpl.literalFrom(-1, "5")),
                 name("size"));
         verify("foo.call(bar.baz)", null, null, name("foo"), virtualMethod("call", ExpressionImpl.from("bar.baz")));
         verify("foo.call(bar.call(1))", null, null, name("foo"), virtualMethod("call", ExpressionImpl.from("bar.call(1)")));

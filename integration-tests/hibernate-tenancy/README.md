@@ -28,7 +28,7 @@ mvn clean install -Dtest-containers
 ```
 
 If you have specific requirements, you can define a specific connection URL with `-Dmariadb.base_url=jdbc:mariadb://...`.
-Note that this specific integration test module module requires permissions to create additional users and databases, hence the `mariadb.base_url` variable
+Note that this specific integration test module requires permissions to create additional users and databases, hence the `mariadb.base_url` variable
 should not include the database name: check the `application.properties` to see how it's used.
 
 To run the MariaDB server "manually" via command line for testing, the following command line could be useful:

@@ -29,6 +29,8 @@ class SentryConfigProvider implements ConfigurationProvider {
                 return config.environment.orElse(null);
             case DefaultSentryClientFactory.RELEASE_OPTION:
                 return config.release.orElse(null);
+            case DefaultSentryClientFactory.SERVERNAME_OPTION:
+                return config.serverName.orElse(null);
             // New SentryConfig options should be mapped here
             default:
                 return null;

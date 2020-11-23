@@ -1,5 +1,7 @@
 package io.quarkus.rest.server.runtime;
 
+import java.util.function.Supplier;
+
 import javax.enterprise.event.Event;
 import javax.ws.rs.core.SecurityContext;
 
@@ -18,7 +20,12 @@ import io.vertx.ext.web.RoutingContext;
 public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactiveRequestContext {
 
     private static final LazyValue<Event<SecurityIdentity>> SECURITY_IDENTITY_EVENT = new LazyValue<>(
-            QuarkusResteasyReactiveRequestContext::createEvent);
+            new Supplier<Event<SecurityIdentity>>() {
+                @Override
+                public Event<SecurityIdentity> get() {
+                    return QuarkusResteasyReactiveRequestContext.createEvent();
+                }
+            });
 
     public QuarkusResteasyReactiveRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers,
             RoutingContext context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,

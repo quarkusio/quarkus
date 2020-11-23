@@ -1,12 +1,12 @@
 package org.jboss.resteasy.reactive.common.util;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
@@ -21,8 +21,16 @@ public class ServerMediaType {
     private final MediaType[] sortedOriginalMediaTypes;
     private final MediaType hardCoded;
 
-    public ServerMediaType(String[] mediaTypes, String charset) {
-        this(Arrays.stream(mediaTypes).map(MediaType::valueOf).collect(Collectors.toList()), charset);
+    public ServerMediaType(String[] mediaTypesStrs, String charset) {
+        this(mediaTypesFromArray(mediaTypesStrs), charset);
+    }
+
+    private static List<MediaType> mediaTypesFromArray(String[] mediaTypesStrs) {
+        List<MediaType> mediaTypes = new ArrayList<>(mediaTypesStrs.length);
+        for (String mediaTypesStr : mediaTypesStrs) {
+            mediaTypes.add(MediaType.valueOf(mediaTypesStr));
+        }
+        return mediaTypes;
     }
 
     public ServerMediaType(List<MediaType> mediaTypes, String charset) {

@@ -277,7 +277,7 @@ public class OpenshiftProcessor {
             return;
         }
 
-        createContainerImage(kubernetesClient, openshiftYml.get(), config, null, out.getOutputDirectory(),
+        createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", out.getOutputDirectory(),
                 nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }

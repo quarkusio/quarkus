@@ -83,6 +83,21 @@ public class ReactiveHelloService extends MutinyGreeterGrpc.GreeterImplBase {
 }
 ----
 
+== Blocking service implementation
+
+By default, all the methods from a gRPC service run on the event loop.
+As a consequence, you must **not** block.
+If your service logic must block, annotate the method with `io.smallrye.common.annotation.Blocking`:
+
+[source, java]
+----
+@Override
+@Blocking
+public Uni<HelloReply> sayHelloBlocking(HelloRequest request) {
+    // Do something blocking before returning the Uni
+}
+----
+
 == Handling streams
 
 gRPC allows receiving and returning streams:

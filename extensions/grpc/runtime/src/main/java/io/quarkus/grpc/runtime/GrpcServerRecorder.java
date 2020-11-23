@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.enterprise.inject.Instance;
 
@@ -49,6 +50,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.grpc.VertxServer;
@@ -96,15 +98,24 @@ public class GrpcServerRecorder {
     private void prodStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration) {
         CompletableFuture<Void> startResult = new CompletableFuture<>();
 
-        vertx.deployVerticle(() -> new GrpcServerVerticle(configuration, grpcContainer),
+        vertx.deployVerticle(
+                new Supplier<Verticle>() {
+                    @Override
+                    public Verticle get() {
+                        return new GrpcServerVerticle(configuration, grpcContainer);
+                    }
+                },
                 new DeploymentOptions().setInstances(configuration.instances),
-                result -> {
-                    if (result.failed()) {
-                        startResult.completeExceptionally(result.cause());
-                    } else {
-                        postStartup(grpcContainer, configuration);
+                new Handler<AsyncResult<String>>() {
+                    @Override
+                    public void handle(AsyncResult<String> result) {
+                        if (result.failed()) {
+                            startResult.completeExceptionally(result.cause());
+                        } else {
+                            GrpcServerRecorder.this.postStartup(grpcContainer, configuration);
 
-                        startResult.complete(null);
+                            startResult.complete(null);
+                        }
                     }
                 });
 

@@ -42,7 +42,7 @@ public class Person {
 
     @ManyToOne
     @JoinColumn(name = "address_id")
-    private Address address;
+    private Address someAddress;
 
     public Person(String name) {
         this.name = name;
@@ -96,12 +96,12 @@ public class Person {
         this.active = active;
     }
 
-    public Address getAddress() {
-        return address;
+    public Address getSomeAddress() {
+        return someAddress;
     }
 
-    public void setAddress(Address address) {
-        this.address = address;
+    public void setSomeAddress(Address address) {
+        this.someAddress = address;
     }
 
     @MappedSuperclass
@@ -141,7 +141,7 @@ public class Person {
         private String zipCode;
 
         @JsonbTransient
-        @OneToMany(mappedBy = "address")
+        @OneToMany(mappedBy = "someAddress")
         private List<Person> people;
 
         public Long getId() {

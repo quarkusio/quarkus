@@ -54,6 +54,7 @@ import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseContainerProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
 import io.quarkus.liquibase.runtime.graal.LiquibaseServiceLoader;
+import liquibase.change.core.LoadDataChange;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.ChangeSet;
 import liquibase.changelog.DatabaseChangeLog;
@@ -188,7 +189,8 @@ class LiquibaseProcessor {
 
         reflective.produce(new ReflectiveClassBuildItem(true, true, true,
                 "liquibase.change.ColumnConfig",
-                "liquibase.change.AddColumnConfig"));
+                "liquibase.change.AddColumnConfig",
+                "liquibase.change.core.LoadDataColumnConfig"));
 
         reflective.produce(new ReflectiveClassBuildItem(false, false, true,
                 "liquibase.change.ConstraintsConfig"));
@@ -371,7 +373,7 @@ class LiquibaseProcessor {
 
         // default datasource
         if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            resources.addAll(findAllChangeLogs(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
+            resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
                     classLoaderResourceAccessor, changeLogParameters));
         }
 
@@ -384,7 +386,7 @@ class LiquibaseProcessor {
 
         for (String namedDataSourceChangeLog : namedDataSourceChangeLogs) {
             resources.addAll(
-                    findAllChangeLogs(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
+                    findAllChangeLogFiles(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
                             changeLogParameters));
         }
 
@@ -396,7 +398,7 @@ class LiquibaseProcessor {
     /**
      * Finds all resource files for the given change log file
      */
-    private Set<String> findAllChangeLogs(String file, ChangeLogParserFactory changeLogParserFactory,
+    private Set<String> findAllChangeLogFiles(String file, ChangeLogParserFactory changeLogParserFactory,
             ClassLoaderResourceAccessor classLoaderResourceAccessor,
             ChangeLogParameters changeLogParameters) {
         try {
@@ -408,6 +410,11 @@ class LiquibaseProcessor {
                 // get all changeSet files
                 for (ChangeSet changeSet : changelog.getChangeSets()) {
                     result.add(changeSet.getFilePath());
+
+                    changeSet.getChanges().stream()
+                            .filter(c -> c instanceof LoadDataChange)
+                            .map(c -> ((LoadDataChange) c).getFile())
+                            .forEach(result::add);
 
                     // get all parents of the changeSet
                     DatabaseChangeLog parent = changeSet.getChangeLog();

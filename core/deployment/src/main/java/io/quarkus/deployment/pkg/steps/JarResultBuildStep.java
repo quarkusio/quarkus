@@ -119,6 +119,7 @@ public class JarResultBuildStep {
             "META-INF/quarkus-extension.yaml",
             "META-INF/quarkus-deployment-dependency.graph",
             "META-INF/jandex.idx",
+            "META-INF/build.metadata", //present in the red hat build of Quarkus
             "LICENSE");
 
     private static final Logger log = Logger.getLogger(JarResultBuildStep.class);
@@ -608,7 +609,11 @@ public class JarResultBuildStep {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     List<String> paths = new ArrayList<>();
                     for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-                        paths.addAll(relativePaths.get(i.getArtifact().getKey()));
+                        final List<String> list = relativePaths.get(i.getArtifact().getKey());
+                        // some of the dependencies may have been filtered out
+                        if (list != null) {
+                            paths.addAll(list);
+                        }
                     }
                     obj.writeObject(paths);
                     obj.close();

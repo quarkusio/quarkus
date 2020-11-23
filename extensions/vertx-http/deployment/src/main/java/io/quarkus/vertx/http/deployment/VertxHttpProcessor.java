@@ -10,6 +10,7 @@ import java.security.CodeSource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -26,6 +27,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
@@ -52,6 +54,7 @@ import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.vertx.core.Handler;
+import io.vertx.core.http.impl.HttpServerRequestImpl;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -59,6 +62,13 @@ import io.vertx.ext.web.RoutingContext;
 class VertxHttpProcessor {
 
     private static final Logger logger = Logger.getLogger(VertxHttpProcessor.class);
+
+    @BuildStep
+    LogCategoryBuildItem logging() {
+        //this log is only used to log an error about an incorrect URI, which results in a 400 response
+        //we don't want to log this
+        return new LogCategoryBuildItem(HttpServerRequestImpl.class.getName(), Level.OFF);
+    }
 
     @BuildStep
     HttpRootPathBuildItem httpRoot(HttpBuildTimeConfig httpBuildTimeConfig) {

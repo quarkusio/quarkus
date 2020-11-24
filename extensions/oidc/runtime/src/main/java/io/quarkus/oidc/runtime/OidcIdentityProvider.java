@@ -37,6 +37,10 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
 
+    static final String CODE_FLOW_ACCESS_TOKEN = "access_token";
+    static final String REFRESH_TOKEN_GRANT_RESPONSE = "refresh_token_grant_response";
+    static final String NEW_AUTHENTICATION = "new_authentication";
+
     @SuppressWarnings("deprecation")
     private static final Uni<AccessToken> NULL_CODE_ACCESS_TOKEN_UNI = Uni.createFrom().nullItem();
     private static final Uni<JsonObject> NULL_USER_INFO_UNI = Uni.createFrom().nullItem();
@@ -66,15 +70,6 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> get() {
-                                if (isTenantBlocking(tenantConfigContext)) {
-                                    return context.runBlocking(new Supplier<SecurityIdentity>() {
-                                        @Override
-                                        public SecurityIdentity get() {
-                                            return authenticate(request, vertxContext, tenantConfigContext).await()
-                                                    .indefinitely();
-                                        }
-                                    });
-                                }
                                 return authenticate(request, vertxContext, tenantConfigContext);
                             }
                         });
@@ -242,15 +237,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (tokenJson != null
                 && oidcConfig.token.refreshExpired
                 && oidcConfig.token.autoRefreshInterval.isPresent()
-                && vertxContext.get("tokenAutoRefreshInProgress") != Boolean.TRUE
-                && vertxContext.get("new_authentication") != Boolean.TRUE) {
+                && vertxContext.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
+                && vertxContext.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
             final long autoRefreshInterval = oidcConfig.token.autoRefreshInterval.get().getSeconds();
             final long expiry = tokenJson.getLong("exp");
             final long now = System.currentTimeMillis() / 1000;
-            if (now + autoRefreshInterval > expiry) {
-                vertxContext.put("tokenAutoRefreshInProgress", Boolean.TRUE);
-                return true;
-            }
+            return now + autoRefreshInterval > expiry;
         }
         return false;
     }
@@ -271,7 +263,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     // JSON token representation may be null not only if it is an opaque access token
                     // but also if it is JWT and no JWK with a matching kid is available, asynchronous
                     // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
-                    rolesJson = OidcUtils.decodeJwtContent((String) vertxContext.get("access_token"));
+                    rolesJson = OidcUtils.decodeJwtContent((String) vertxContext.get(CODE_FLOW_ACCESS_TOKEN));
                 }
                 if (rolesJson == null) {
                     // this is the introspection response which may contain a 'scope' property
@@ -288,7 +280,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (request.getToken() instanceof IdTokenCredential
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
                         || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
-            final String codeAccessToken = (String) vertxContext.get("access_token");
+            final String codeAccessToken = (String) vertxContext.get(CODE_FLOW_ACCESS_TOKEN);
             if (OidcUtils.isOpaqueToken(codeAccessToken)) {
                 // remote introspection is required, a blocking call
                 return Uni.createFrom().emitter(
@@ -402,7 +394,4 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         });
     }
 
-    private static boolean isTenantBlocking(TenantConfigContext resolvedContext) {
-        return resolvedContext.oidcConfig.token.refreshExpired;
-    }
 }

@@ -1,5 +1,6 @@
 package io.quarkus.vault;
 
+import static io.quarkus.vault.VaultTransitExportKeyType.encryption;
 import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_DERIVED_KEY_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_KEY2_NAME;
 import static io.quarkus.vault.test.VaultTestExtension.ENCRYPTION_KEY_NAME;
@@ -10,6 +11,8 @@ import static io.quarkus.vault.transit.VaultTransitSecretEngineConstants.INVALID
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -32,10 +35,13 @@ import io.quarkus.vault.test.client.TestVaultClient;
 import io.quarkus.vault.transit.ClearData;
 import io.quarkus.vault.transit.DecryptionRequest;
 import io.quarkus.vault.transit.EncryptionRequest;
+import io.quarkus.vault.transit.KeyConfigRequestDetail;
+import io.quarkus.vault.transit.KeyCreationRequestDetail;
 import io.quarkus.vault.transit.RewrappingRequest;
 import io.quarkus.vault.transit.SigningInput;
 import io.quarkus.vault.transit.SigningRequest;
 import io.quarkus.vault.transit.TransitContext;
+import io.quarkus.vault.transit.VaultTransitKeyExportDetail;
 import io.quarkus.vault.transit.VaultVerificationBatchException;
 import io.quarkus.vault.transit.VerificationRequest;
 
@@ -50,6 +56,7 @@ public class VaultTransitITCase {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application-vault.properties", "application.properties"));
+    public static final String KEY_NAME = "mykey";
 
     private TransitContext context = TransitContext.fromContext("my context");
     private ClearData data = new ClearData(COUCOU);
@@ -271,6 +278,38 @@ public class VaultTransitITCase {
     private <K, V> V getSingleValue(Map<K, V> map) {
         assertEquals(1, map.size());
         return map.values().stream().findFirst().get();
+    }
+
+    @Test
+    public void adminKey() {
+
+        assertFalse(transitSecretEngine.listKeys().contains(KEY_NAME));
+        transitSecretEngine.createKey(KEY_NAME, new KeyCreationRequestDetail().setExportable(true));
+        assertTrue(transitSecretEngine.listKeys().contains(KEY_NAME));
+
+        VaultTransitKeyDetail mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertEquals(KEY_NAME, mykey.getName());
+        assertTrue(mykey.isExportable());
+        assertFalse(mykey.isDeletionAllowed());
+        assertTrue(mykey.isSupportsDecryption());
+        assertTrue(mykey.isSupportsEncryption());
+        assertTrue(mykey.isSupportsDerivation());
+        assertEquals(1, mykey.getKeys().size());
+        assertTrue(mykey.getKeys().containsKey("1"));
+        assertEquals(1, mykey.getMinDecryptionVersion());
+        assertEquals(0, mykey.getMinEncryptionVersion());
+
+        VaultTransitKeyExportDetail exportDetail = transitSecretEngine.exportKey(KEY_NAME, encryption, "1");
+        assertEquals(KEY_NAME, exportDetail.getName());
+        assertEquals(1, exportDetail.getKeys().size());
+        assertTrue(exportDetail.getKeys().containsKey("1"));
+
+        transitSecretEngine.updateKeyConfiguration(KEY_NAME, new KeyConfigRequestDetail().setDeletionAllowed(true));
+        mykey = transitSecretEngine.readKey(KEY_NAME);
+        assertTrue(mykey.isDeletionAllowed());
+
+        transitSecretEngine.deleteKey(KEY_NAME);
+        assertNull(transitSecretEngine.readKey(KEY_NAME));
     }
 
 }

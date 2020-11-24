@@ -56,10 +56,15 @@ import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPListKeysResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPReadKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPValidateCodeBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPValidateCodeResult;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncrypt;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncryptBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitKeyConfigBody;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitKeyExport;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitListKeysResult;
+import io.quarkus.vault.runtime.client.dto.transit.VaultTransitReadKeyResult;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRewrapBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSign;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
@@ -197,6 +202,37 @@ public class OkHttpVaultClient implements VaultClient {
     @Override
     public VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole) {
         return get("database/creds/" + databaseCredentialsRole, token, VaultDatabaseCredentials.class);
+    }
+
+    @Override
+    public void updateTransitKeyConfiguration(String token, String keyName, VaultTransitKeyConfigBody body) {
+        post("transit/keys/" + keyName + "/config", token, body, 204);
+    }
+
+    @Override
+    public void createTransitKey(String token, String keyName, VaultTransitCreateKeyBody body) {
+        post("transit/keys/" + keyName, token, body, 204);
+    }
+
+    @Override
+    public void deleteTransitKey(String token, String keyName) {
+        delete("transit/keys/" + keyName, token, 204);
+    }
+
+    @Override
+    public VaultTransitKeyExport exportTransitKey(String token, String keyType, String keyName, String version) {
+        String path = "transit/export/" + keyType + "/" + keyName + (version != null ? "/" + version : "");
+        return get(path, token, VaultTransitKeyExport.class);
+    }
+
+    @Override
+    public VaultTransitReadKeyResult readTransitKey(String token, String keyName) {
+        return get("transit/keys/" + keyName, token, VaultTransitReadKeyResult.class);
+    }
+
+    @Override
+    public VaultTransitListKeysResult listTransitKeys(String token) {
+        return list("transit/keys", token, VaultTransitListKeysResult.class);
     }
 
     @Override

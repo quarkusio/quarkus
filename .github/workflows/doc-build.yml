@@ -19,6 +19,8 @@ jobs:
   build-doc:
     name: "Documentation Build"
     runs-on: ubuntu-latest
+    # Skip master in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     steps:
       - uses: actions/checkout@v2
       - uses: n1hility/cancel-previous-runs@v2

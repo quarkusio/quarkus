@@ -27,6 +27,7 @@ jobs:
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
     steps:
       - name: Build
         run: sleep 1

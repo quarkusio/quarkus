@@ -14,6 +14,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
 
     strategy:
       fail-fast: false

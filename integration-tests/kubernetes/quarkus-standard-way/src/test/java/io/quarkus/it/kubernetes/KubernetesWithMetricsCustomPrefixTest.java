@@ -24,7 +24,7 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithMetricsTest {
+public class KubernetesWithMetricsCustomPrefixTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -33,7 +33,7 @@ public class KubernetesWithMetricsTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics.properties")
+            .withConfigurationResource("kubernetes-with-metrics-custom-prefix.properties")
             .setForcedDependencies(
                     Collections.singletonList(
                             new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion())));
@@ -72,9 +72,11 @@ public class KubernetesWithMetricsTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getMetadata()).satisfies(meta -> {
-                        assertThat(meta.getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
-                                entry("prometheus.io/path", "/met"), entry("prometheus.io/port", "9090"),
-                                entry("prometheus.io/scheme", "http"));
+                        // Annotations will have a different default prefix,
+                        // and the scrape annotation was specifically configured
+                        assertThat(meta.getAnnotations()).contains(entry("example.io/should_be_scraped", "true"),
+                                entry("example.io/path", "/met"), entry("example.io/port", "9090"),
+                                entry("example.io/scheme", "http"));
                     });
                 });
             });

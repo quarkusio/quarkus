@@ -54,7 +54,6 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.kubernetes.deployment.Annotations.Prometheus;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
@@ -315,17 +314,24 @@ public class KubernetesCommonHelper {
                             now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")), new String[0]))));
         }
 
-        metricsConfiguration.ifPresent(m -> {
-            String path = m.metricsEndpoint();
-            if (!ports.isEmpty() && path != null) {
-                result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name, Prometheus.SCRAPE, "true")));
-                result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name, Prometheus.PATH, path)));
-                result.add(new DecoratorBuildItem(target,
-                        new AddAnnotationDecorator(name, Prometheus.PORT, "" + ports.get(0).getPort())));
-            }
-        });
+        if (config.getPrometheusConfig().annotations) {
+            // Add metrics annotations
+            metricsConfiguration.ifPresent(m -> {
+                String path = m.metricsEndpoint();
+                String prefix = config.getPrometheusConfig().prefix;
+                if (!ports.isEmpty() && path != null) {
+                    result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
+                            config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true")));
+                    result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
+                            config.getPrometheusConfig().path.orElse(prefix + "/path"), path)));
+                    result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
+                            config.getPrometheusConfig().port.orElse(prefix + "/port"), "" + ports.get(0).getPort())));
+                    result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
+                            config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http")));
+                }
+            });
+        }
 
-        //Add metrics annotations
         return result;
     }
 
@@ -382,5 +388,4 @@ public class KubernetesCommonHelper {
         }
         return result;
     }
-
 }

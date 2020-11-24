@@ -154,7 +154,7 @@ security annotations. Defaults to `false`.
 
 === Disabling permissions 
 
-The permissions can be disabled at build time with a permissions policy specific `enabled` property, for example: 
+Permissions can be disabled at build time with an `enabled` property for each declared permission, for example: 
 
 [source,properties]
 ----

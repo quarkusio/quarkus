@@ -152,7 +152,7 @@ That is if the security annotations do not define the access control. Defaults t
 and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations. Defaults to `false`.
 
-=== Disabling the permissions 
+=== Disabling permissions 
 
 The permissions can be disabled at build time with a permissions policy specific `enabled` property, for example: 
 

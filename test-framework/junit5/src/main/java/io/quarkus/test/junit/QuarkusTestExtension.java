@@ -69,6 +69,7 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.PathTestHelper;
@@ -568,6 +569,8 @@ public class QuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        //set the right launch mode in the outer CL, used by the HTTP host config source
+        ProfileManager.setLaunchMode(LaunchMode.TEST);
         if (isNativeTest(context)) {
             return;
         }

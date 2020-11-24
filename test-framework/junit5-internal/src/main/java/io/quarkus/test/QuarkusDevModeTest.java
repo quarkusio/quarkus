@@ -48,6 +48,8 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
@@ -147,6 +149,8 @@ public class QuarkusDevModeTest
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        //set the right launch mode in the outer CL, used by the HTTP host config source
+        ProfileManager.setLaunchMode(LaunchMode.DEVELOPMENT);
         originalRootLoggerHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
     }

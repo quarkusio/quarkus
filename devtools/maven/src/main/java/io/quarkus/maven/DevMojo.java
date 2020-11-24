@@ -186,6 +186,9 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${suspend}")
     private String suspend;
 
+    @Parameter(defaultValue = "localhost")
+    private String debugHost;
+
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
 
@@ -582,6 +585,7 @@ public class DevMojo extends AbstractMojo {
                 .outputDir(outputDirectory)
                 .suspend(suspend)
                 .debug(debug)
+                .debugHost(debugHost)
                 .debugPortOk(debugPortOk)
                 .deleteDevJar(deleteDevJar);
 

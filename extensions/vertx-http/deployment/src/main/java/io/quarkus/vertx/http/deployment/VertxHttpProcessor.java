@@ -10,6 +10,7 @@ import java.security.CodeSource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
@@ -47,6 +49,7 @@ import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.HttpHostConfigSource;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
@@ -179,6 +182,13 @@ class VertxHttpProcessor {
                 shutdownConfig, executorBuildItem.getExecutorProxy());
 
         return new ServiceStartBuildItem("vertx-http");
+    }
+
+    @BuildStep
+    void hostDefault(BuildProducer<RunTimeConfigurationSourceBuildItem> serviceProviderBuildItem) {
+        serviceProviderBuildItem
+                .produce(new RunTimeConfigurationSourceBuildItem(HttpHostConfigSource.class.getName(),
+                        OptionalInt.of(Integer.MIN_VALUE)));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

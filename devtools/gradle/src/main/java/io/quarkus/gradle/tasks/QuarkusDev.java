@@ -198,7 +198,7 @@ public class QuarkusDev extends QuarkusTask {
                 .buildDir(getBuildDir())
                 .outputDir(getBuildDir())
                 .debug(System.getProperty("debug"))
-                .debug(System.getProperty("debugHost"))
+                .debugHost(System.getProperty("debugHost", "localhost"))
                 .suspend(System.getProperty("suspend"));
 
         if (getJvmArgs() != null) {

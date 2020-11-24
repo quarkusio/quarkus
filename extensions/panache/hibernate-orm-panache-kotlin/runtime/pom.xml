@@ -47,10 +47,6 @@
             <artifactId>quarkus-jackson</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
-        </dependency>
 
         <!-- test dependencies -->
         <dependency>

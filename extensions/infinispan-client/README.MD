@@ -85,7 +85,7 @@ The keystore is configured via hotrod-client.properties file located in META-INF
 #### Configure your project to allow security services
 
 You (currently) need to enable all security services in Substrate
-(https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md). This can be done by adding
+(https://github.com/oracle/graal/blob/master/substratevm/JCASecurityServices.md). This can be done by adding
 `<enableAllSecurityServices>true</enableAllSecurityServices>` to the quarkus-maven-plugin configuration values.
 
 ### Authentication

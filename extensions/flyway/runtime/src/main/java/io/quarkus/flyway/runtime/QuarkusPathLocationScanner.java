@@ -10,6 +10,7 @@ import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.internal.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
+import org.flywaydb.core.internal.scanner.filesystem.FileSystemScanner;
 import org.jboss.logging.Logger;
 
 /**
@@ -31,10 +32,19 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
         this.scannedResources = new ArrayList<>();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
+        FileSystemScanner fileSystemScanner = null;
         for (String migrationFile : applicationMigrationFiles) {
-            if (canHandleMigrationFile(locations, migrationFile)) {
+            if (isClassPathResource(locations, migrationFile)) {
                 LOGGER.debugf("Loading %s", migrationFile);
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
+            } else if (migrationFile.startsWith(Location.FILESYSTEM_PREFIX)) {
+                if (fileSystemScanner == null) {
+                    fileSystemScanner = new FileSystemScanner(StandardCharsets.UTF_8, false);
+                }
+                LOGGER.debugf("Checking %s for migration files", migrationFile);
+                Collection<LoadableResource> resources = fileSystemScanner.scanForResources(new Location(migrationFile));
+                LOGGER.debugf("%s contains %d migration files", migrationFile, resources.size());
+                scannedResources.addAll(resources);
             }
         }
 
@@ -49,7 +59,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
         return scannedResources;
     }
 
-    private boolean canHandleMigrationFile(Collection<Location> locations, String migrationFile) {
+    private boolean isClassPathResource(Collection<Location> locations, String migrationFile) {
         for (Location location : locations) {
             String locationPath = location.getPath();
             if (!locationPath.endsWith(LOCATION_SEPARATOR)) {

@@ -152,6 +152,20 @@ That is if the security annotations do not define the access control. Defaults t
 and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations. Defaults to `false`.
 
+=== Disabling permissions 
+
+Permissions can be disabled at build time with an `enabled` property for each declared permission, for example: 
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.enabled=false
+quarkus.http.auth.permission.permit1.paths=/public/*,/css/*,/js/*,/robots.txt
+quarkus.http.auth.permission.permit1.policy=permit
+quarkus.http.auth.permission.permit1.methods=GET,HEAD
+----
+
+and enabled at runtime with a system property or environment variable, for example: `-Dquarkus.http.auth.permission.permit1.enabled=true`.
+
 [#standard-security-annotations]
 == Authorization using Annotations
 

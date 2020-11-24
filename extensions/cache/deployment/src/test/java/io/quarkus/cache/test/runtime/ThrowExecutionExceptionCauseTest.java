@@ -40,6 +40,10 @@ public class ThrowExecutionExceptionCauseTest {
             cachedService.throwRuntimeExceptionDuringCacheComputation();
         });
         assertEquals(FORCED_EXCEPTION_MESSAGE, e.getMessage());
+        // Let's check we didn't put an uncompleted future in the cache because of the previous exception.
+        assertThrows(NumberFormatException.class, () -> {
+            cachedService.throwRuntimeExceptionDuringCacheComputation();
+        });
     }
 
     @Test

@@ -33,7 +33,9 @@ public class PersonRepositoryResource {
     @Path("/search/{name}")
     public Set<PersonName> searchPersons(@PathParam("name") String name) {
         Set<PersonName> uniqueNames = new HashSet<>();
-        List<PersonName> lastnames = personRepository.find("lastname", name).project(PersonName.class).list();
+        List<PersonName> lastnames = personRepository.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
+                .project(PersonName.class)
+                .list();
         lastnames.forEach(p -> uniqueNames.add(p));// this will throw if it's not the right type
         return uniqueNames;
     }

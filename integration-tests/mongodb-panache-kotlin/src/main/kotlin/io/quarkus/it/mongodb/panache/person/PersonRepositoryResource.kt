@@ -3,7 +3,6 @@ package io.quarkus.it.mongodb.panache.person
 import io.quarkus.panache.common.Sort
 import java.net.URI
 import javax.inject.Inject
-import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
 import javax.ws.rs.GET
 import javax.ws.rs.PATCH
@@ -11,9 +10,7 @@ import javax.ws.rs.POST
 import javax.ws.rs.PUT
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
-import javax.ws.rs.Produces
 import javax.ws.rs.QueryParam
-import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/persons/repository")
@@ -35,7 +32,7 @@ class PersonRepositoryResource {
     @GET
     @Path("/search/{name}")
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
-        return personRepository.find("lastname", name)
+        return personRepository.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
                 .project(PersonName::class.java)
                 .list()
                 .toSet()

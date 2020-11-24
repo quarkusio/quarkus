@@ -8,6 +8,8 @@ import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.compu
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_ARTIFACT_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_VERSION;
+import static io.quarkus.devtools.project.codegen.ProjectGenerator.PACKAGE_NAME;
+import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_VERSION;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
@@ -55,6 +57,13 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 invocation.setValue(k.toString().replace("-", "_"), v.toString());
             }
         });
+
+        // Default to cleaned groupId if packageName not set
+        final String pkgName = invocation.getStringValue(PACKAGE_NAME);
+        final String groupId = invocation.getStringValue(PROJECT_GROUP_ID);
+        if (pkgName == null && groupId != null) {
+            invocation.setValue(PACKAGE_NAME, groupId.replace("-", ".").replace("_", "."));
+        }
 
         final List<AppArtifactCoords> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery);
         if (extensionsToAdd == null) {

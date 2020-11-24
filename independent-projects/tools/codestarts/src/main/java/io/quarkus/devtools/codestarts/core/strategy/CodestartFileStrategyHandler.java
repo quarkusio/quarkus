@@ -25,7 +25,7 @@ public interface CodestartFileStrategyHandler {
                     new ForbiddenCodestartFileStrategyHandler(),
                     new SmartConfigMergeCodestartFileStrategyHandler(),
                     new SmartPomMergeCodestartFileStrategyHandler(),
-                    new NativeTestDirResolveCodestartFileStrategyHandler())
+                    new SmartPackageFileStrategyHandler())
             .collect(Collectors.toMap(CodestartFileStrategyHandler::name, Function.identity()));
 
     String name();

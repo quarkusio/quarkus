@@ -1066,6 +1066,7 @@ public class BeanDeployment {
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
 
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
+        Set<DotName> classesReceivingNoArgsCtor = new HashSet<>();
 
         for (BeanInfo bean : beans) {
             if (bean.getName() != null) {
@@ -1076,7 +1077,7 @@ public class BeanDeployment {
                 }
                 named.add(bean);
             }
-            bean.validate(errors, validators, bytecodeTransformerConsumer);
+            bean.validate(errors, validators, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
         }
 
         if (!namedBeans.isEmpty()) {

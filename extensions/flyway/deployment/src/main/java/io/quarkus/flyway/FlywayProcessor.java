@@ -27,6 +27,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Default;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -196,6 +197,10 @@ class FlywayProcessor {
             // Locations can be a comma separated list
             for (String location : locations) {
                 location = normalizeLocation(location);
+                if (location.startsWith(Location.FILESYSTEM_PREFIX)) {
+                    applicationMigrationResources.add(location);
+                    continue;
+                }
 
                 Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
                 while (migrations.hasMoreElements()) {

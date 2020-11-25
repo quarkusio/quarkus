@@ -64,6 +64,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:grpc.html[Using gRPC]
 * link:picocli.html[Command Mode with Picocli]
 * link:redis.html[Connecting to Redis]
+* link:reactive-messaging-http.html[]
 
 * link:faq.html[FAQs]
 

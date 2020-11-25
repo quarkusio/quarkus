@@ -196,6 +196,10 @@ public class NativeImageAutoFeatureStep {
                     overallCatch.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"));
             TryBlock tc = overallCatch.tryBlock();
             for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
+                for (String pattern : resourcePatternsItem.getExcludePatterns()) {
+                    tc.invokeInterfaceMethod(RESOURCES_REGISTRY_IGNORE_RESOURCES, resourcesRegistrySingleton,
+                            overallCatch.load(pattern));
+                }
                 for (String pattern : resourcePatternsItem.getIncludePatterns()) {
                     tc.invokeInterfaceMethod(
                             RESOURCES_REGISTRY_ADD_RESOURCES,

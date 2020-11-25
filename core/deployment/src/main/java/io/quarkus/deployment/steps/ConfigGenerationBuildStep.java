@@ -29,9 +29,10 @@ import io.quarkus.deployment.configuration.definition.ClassDefinition;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.runtime.ConfigChangeRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.configuration.ConfigChangeRecorder;
+import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig;
 
 public class ConfigGenerationBuildStep {
 
@@ -82,7 +83,8 @@ public class ConfigGenerationBuildStep {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void checkForBuildTimeConfigChange(
-            ConfigChangeRecorder recorder, ConfigurationBuildItem configItem, LoggingSetupBuildItem loggingSetupBuildItem) {
+            ConfigChangeRecorder recorder, ConfigurationBuildItem configItem, LoggingSetupBuildItem loggingSetupBuildItem,
+            ConfigurationRuntimeConfig configurationConfig) {
         BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
         Config config = ConfigProvider.getConfig();
 
@@ -96,7 +98,7 @@ public class ConfigGenerationBuildStep {
             }
         }
         values.remove("quarkus.profile");
-        recorder.handleConfigChange(values);
+        recorder.handleConfigChange(configurationConfig, values);
     }
 
     private void handleMembers(Config config, Map<String, String> values, Iterable<ClassDefinition.ClassMember> members,

@@ -148,6 +148,7 @@
         <module>logging-json</module>
         <module>jaxp</module>
         <module>mailer</module>
+        <module>native-config-profile</module>
 
         <!-- gRPC tests -->
         <module>grpc-tls</module>

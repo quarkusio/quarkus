@@ -1,6 +1,6 @@
 package io.quarkus.reactive.mysql.client.deployment;
 
-import javax.inject.Singleton;
+import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
@@ -114,7 +114,7 @@ class ReactiveMySQLClientProcessor {
         ExtendedBeanConfigurator mySQLPoolBeanConfigurator = SyntheticBeanBuildItem.configure(MySQLPool.class)
                 .defaultBean()
                 .addType(Pool.class)
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .runtimeValue(pool)
                 .unremovable()
                 .setRuntimeInit();
@@ -126,7 +126,7 @@ class ReactiveMySQLClientProcessor {
         ExtendedBeanConfigurator mutinyMySQLPoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.mysqlclient.MySQLPool.class)
                 .defaultBean()
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .runtimeValue(recorder.mutinyMySQLPool(pool))
                 .setRuntimeInit();
 

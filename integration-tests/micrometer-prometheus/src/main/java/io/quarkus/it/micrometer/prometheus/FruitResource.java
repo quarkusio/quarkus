@@ -7,8 +7,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.smallrye.common.annotation.Blocking;
 
 @Path("/fruit")
+@Blocking
 public class FruitResource {
 
     @GET

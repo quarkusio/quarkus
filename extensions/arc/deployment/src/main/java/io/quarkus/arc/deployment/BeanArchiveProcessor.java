@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.PersistentClassIndex;
 
 public class BeanArchiveProcessor {
 
@@ -81,15 +82,16 @@ public class BeanArchiveProcessor {
                     generatedBeanClass.getSource()));
         }
 
-        BeanArchives.PersistentClassIndex index = liveReloadBuildItem.getContextObject(BeanArchives.PersistentClassIndex.class);
+        PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
         if (index == null) {
-            index = new BeanArchives.PersistentClassIndex();
-            liveReloadBuildItem.setContextObject(BeanArchives.PersistentClassIndex.class, index);
+            index = new PersistentClassIndex();
+            liveReloadBuildItem.setContextObject(PersistentClassIndex.class, index);
         }
 
         // Finally, index ArC/CDI API built-in classes
         return new BeanArchiveIndexBuildItem(
-                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), index, applicationIndex,
+                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), index.getAdditionalClasses(),
+                        applicationIndex,
                         additionalBeanIndexer.complete()),
                 generatedClassNames,
                 additionalBeans);

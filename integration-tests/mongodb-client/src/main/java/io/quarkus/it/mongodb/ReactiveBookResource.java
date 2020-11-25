@@ -5,7 +5,6 @@ import static com.mongodb.client.model.Filters.eq;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -19,21 +18,18 @@ public class ReactiveBookResource {
     @Inject
     ReactiveMongoClient client;
 
-    private ReactiveMongoCollection<Book> collection;
-
-    @PostConstruct
-    public void init() {
-        collection = client.getDatabase("books").getCollection("my-reactive-collection", Book.class);
+    private ReactiveMongoCollection<Book> getCollection() {
+        return client.getDatabase("books").getCollection("my-reactive-collection", Book.class);
     }
 
     @GET
     public CompletionStage<List<Book>> getBooks() {
-        return collection.find().collectItems().asList().subscribeAsCompletionStage();
+        return getCollection().find().collectItems().asList().subscribeAsCompletionStage();
     }
 
     @POST
     public CompletionStage<Response> addBook(Book book) {
-        return collection.insertOne(book)
+        return getCollection().insertOne(book)
                 .onItem().transform(x -> Response.accepted().build())
                 .subscribeAsCompletionStage();
     }
@@ -41,7 +37,7 @@ public class ReactiveBookResource {
     @GET
     @Path("/{author}")
     public CompletionStage<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
-        return collection.find(eq("author", author))
+        return getCollection().find(eq("author", author))
                 .collectItems().asList()
                 .subscribeAsCompletionStage();
     }

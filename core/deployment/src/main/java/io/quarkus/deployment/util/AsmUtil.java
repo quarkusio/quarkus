@@ -157,6 +157,21 @@ public class AsmUtil {
         return sb.toString();
     }
 
+    /**
+     * Returns the Java bytecode signature of a given Jandex Type using the given type argument mappings.
+     * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List&lt;Ljava/lang/Integer;>;</tt> if
+     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
+     * 
+     * @param type the type you want the signature for.
+     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
+     * @return a bytecode signature for that type.
+     */
+    public static String getSignature(Type type, Function<String, String> typeArgMapper) {
+        StringBuilder sb = new StringBuilder();
+        toSignature(sb, type, typeArgMapper, false);
+        return sb.toString();
+    }
+
     private static void toSignature(StringBuilder sb, Type type, Function<String, String> typeArgMapper, boolean erased) {
         switch (type.kind()) {
             case ARRAY:

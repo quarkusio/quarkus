@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Destroyed;
@@ -46,7 +45,8 @@ public final class BeanArchives {
      * @param applicationIndexes
      * @return the final bean archive index
      */
-    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader, PersistentClassIndex persistentClassIndex,
+    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader,
+            Map<DotName, Optional<ClassInfo>> persistentClassIndex,
             IndexView... applicationIndexes) {
         List<IndexView> indexes = new ArrayList<>();
         Collections.addAll(indexes, applicationIndexes);
@@ -83,10 +83,11 @@ public final class BeanArchives {
         private final ClassLoader deploymentClassLoader;
         final Map<DotName, Optional<ClassInfo>> additionalClasses;
 
-        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader, PersistentClassIndex persistentClassIndex) {
+        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader,
+                Map<DotName, Optional<ClassInfo>> additionalClasses) {
             this.index = index;
             this.deploymentClassLoader = deploymentClassLoader;
-            this.additionalClasses = persistentClassIndex.additionalClasses;
+            this.additionalClasses = additionalClasses;
         }
 
         @Override
@@ -267,10 +268,4 @@ public final class BeanArchives {
         }
         return result;
     }
-
-    public static class PersistentClassIndex {
-
-        final Map<DotName, Optional<ClassInfo>> additionalClasses = new ConcurrentHashMap<>();
-    }
-
 }

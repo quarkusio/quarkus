@@ -211,16 +211,7 @@ public class UndertowDeploymentRecorder {
         }
         d.addAuthenticationMechanism("QUARKUS", new ImmediateAuthenticationMechanismFactory(QuarkusAuthMechanism.INSTANCE));
         d.setLoginConfig(new LoginConfig("QUARKUS", "QUARKUS"));
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    d.getResourceManager().close();
-                } catch (IOException e) {
-                    log.error("Failed to close Servlet ResourceManager", e);
-                }
-            }
-        });
+        context.addShutdownTask(new ShutdownContext.CloseRunnable(d.getResourceManager()));
 
         d.addNotificationReceiver(new NotificationReceiver() {
             @Override

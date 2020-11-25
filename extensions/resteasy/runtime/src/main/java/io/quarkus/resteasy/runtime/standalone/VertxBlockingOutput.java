@@ -8,6 +8,7 @@ import java.util.concurrent.CompletionStage;
 import org.jboss.logging.Logger;
 
 import io.netty.buffer.ByteBuf;
+import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;

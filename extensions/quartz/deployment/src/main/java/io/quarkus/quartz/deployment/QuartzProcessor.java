@@ -240,7 +240,7 @@ public class QuartzProcessor {
             QuartzJDBCDriverDialectBuildItem driverDialect) {
 
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(QuartzSupport.class)
-                .scope(Singleton.class)
+                .scope(Singleton.class) // this should be @ApplicationScoped but it fails for some reason
                 .setRuntimeInit()
                 .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver())).done());
     }

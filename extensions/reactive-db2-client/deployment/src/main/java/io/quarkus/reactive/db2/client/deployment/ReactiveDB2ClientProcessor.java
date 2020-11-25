@@ -1,6 +1,6 @@
 package io.quarkus.reactive.db2.client.deployment;
 
-import javax.inject.Singleton;
+import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
@@ -114,7 +114,7 @@ class ReactiveDB2ClientProcessor {
         ExtendedBeanConfigurator db2PoolBeanConfigurator = SyntheticBeanBuildItem.configure(DB2Pool.class)
                 .defaultBean()
                 .addType(Pool.class)
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .runtimeValue(pool)
                 .unremovable()
                 .setRuntimeInit();
@@ -126,7 +126,7 @@ class ReactiveDB2ClientProcessor {
         ExtendedBeanConfigurator mutinyDB2PoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.db2client.DB2Pool.class)
                 .defaultBean()
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .runtimeValue(recorder.mutinyDB2Pool(pool))
                 .setRuntimeInit();
 

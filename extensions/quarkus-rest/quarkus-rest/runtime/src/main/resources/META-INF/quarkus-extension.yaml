@@ -1,0 +1,11 @@
+---
+name: "Quarkus REST"
+metadata:
+  short-name: "quarkus-rest"
+  keywords:
+  - "jaxrs"
+  - "web"
+  - "rest"
+  categories:
+  - "web"
+  status: "experimental"

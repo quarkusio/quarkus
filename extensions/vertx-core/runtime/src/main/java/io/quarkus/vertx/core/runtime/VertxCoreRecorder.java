@@ -25,6 +25,7 @@ import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -272,6 +273,9 @@ public class VertxCoreRecorder {
 
     void destroy() {
         if (vertx != null && vertx.v != null) {
+            // Netty attaches a ThreadLocal to the main thread that can leak the QuarkusClassLoader which can be problematic in dev or test mode
+            FastThreadLocal.destroy();
+            EventLoopGroup eventLoop = vertx.v.nettyEventLoopGroup();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
             vertx.v.close(ar -> {
@@ -287,7 +291,7 @@ public class VertxCoreRecorder {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted when closing Vert.x instance", e);
+                throw new IllegalStateException("Exception when closing Vert.x instance", e);
             }
             vertx = null;
         }

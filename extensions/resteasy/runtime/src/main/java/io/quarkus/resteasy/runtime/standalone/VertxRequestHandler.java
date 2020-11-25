@@ -73,15 +73,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         // have to create input stream here.  Cannot execute in another thread
         // otherwise request handlers may not get set up before request ends
         InputStream is;
-        try {
-            if (request.getBody() != null) {
-                is = new ByteArrayInputStream(request.getBody().getBytes());
-            } else {
-                is = new VertxInputStream(request, readTimeout);
-            }
-        } catch (IOException e) {
-            request.fail(e);
-            return;
+        if (request.getBody() != null) {
+            is = new ByteArrayInputStream(request.getBody().getBytes());
+        } else {
+            is = new VertxInputStream(request, readTimeout);
         }
         if (BlockingOperationControl.isBlockingAllowed()) {
             try {

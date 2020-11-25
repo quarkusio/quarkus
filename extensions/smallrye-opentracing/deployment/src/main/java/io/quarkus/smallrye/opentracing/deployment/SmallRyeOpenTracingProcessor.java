@@ -17,7 +17,10 @@ import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingDynamicFeature;
+import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingStandaloneContainerResponseFilter;
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingStandaloneVertxDynamicFeature;
 import io.quarkus.smallrye.opentracing.runtime.TracerProducer;
 import io.quarkus.undertow.deployment.FilterBuildItem;
@@ -39,6 +42,8 @@ public class SmallRyeOpenTracingProcessor {
     void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
             BuildProducer<FilterBuildItem> filterProducer,
             BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<CustomContainerResponseFilterBuildItem> customResponseFilters,
+            BuildProducer<DynamicFeatureBuildItem> dynamicFeatures,
             Capabilities capabilities) {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENTRACING));
@@ -55,10 +60,13 @@ public class SmallRyeOpenTracingProcessor {
                     .addFilterUrlMapping("*", DispatcherType.ERROR)
                     .build();
             filterProducer.produce(filterInfo);
-        } else {
-            //otherwise we know we have RESTeasy on vert.x
+        } else if (capabilities.isPresent(Capability.RESTEASY)) {
             providers.produce(
                     new ResteasyJaxrsProviderBuildItem(QuarkusSmallRyeTracingStandaloneVertxDynamicFeature.class.getName()));
+        } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
+            customResponseFilters.produce(new CustomContainerResponseFilterBuildItem(
+                    QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()));
+            dynamicFeatures.produce(new DynamicFeatureBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
         }
     }
 

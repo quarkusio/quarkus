@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class QuteRecorder {
 
-    public Supplier<Object> createContext(QuteConfig config, List<String> resolverClasses,
+    public Supplier<Object> createContext(List<String> resolverClasses,
             List<String> templatePaths, List<String> tags, Map<String, List<String>> variants) {
         return new Supplier<Object>() {
 
@@ -33,11 +33,6 @@ public class QuteRecorder {
                     }
 
                     @Override
-                    public QuteConfig getConfig() {
-                        return config;
-                    }
-
-                    @Override
                     public Map<String, List<String>> getVariants() {
                         return variants;
                     }
@@ -47,8 +42,6 @@ public class QuteRecorder {
     }
 
     public interface QuteContext {
-
-        QuteConfig getConfig();
 
         List<String> getResolverClasses();
 

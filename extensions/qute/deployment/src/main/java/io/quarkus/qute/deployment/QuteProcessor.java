@@ -1014,7 +1014,7 @@ public class QuteProcessor {
 
     @BuildStep
     @Record(value = STATIC_INIT)
-    void initialize(QuteConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
+    void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
             List<GeneratedValueResolverBuildItem> generatedValueResolvers, List<TemplatePathBuildItem> templatePaths,
             Optional<TemplateVariantsBuildItem> templateVariants) {
 
@@ -1037,7 +1037,7 @@ public class QuteProcessor {
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(QuteContext.class)
-                .supplier(recorder.createContext(config, generatedValueResolvers.stream()
+                .supplier(recorder.createContext(generatedValueResolvers.stream()
                         .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()), templates,
                         tags, variants))
                 .done());

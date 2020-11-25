@@ -181,10 +181,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     // user has set the auto direct application property to false indicating that
     // the client application will manually handle the redirect to account for SPA behavior
     private boolean shouldAutoRedirect(TenantConfigContext configContext, RoutingContext context) {
-        return isJavaScript(context)
-                ? configContext.oidcConfig.authentication.javaScriptAutoRedirect
-                        && configContext.oidcConfig.authentication.xhrAutoRedirect
-                : true;
+        return isJavaScript(context) ? configContext.oidcConfig.authentication.javaScriptAutoRedirect : true;
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext context) {

@@ -3,7 +3,7 @@ package io.quarkus.vertx.web.runtime;
 import javax.enterprise.event.Event;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -20,12 +20,16 @@ import io.vertx.ext.web.RoutingContext;
  */
 public abstract class RouteHandler implements Handler<RoutingContext> {
 
+    private static final String REQUEST_CONTEXT_STATE = "__cdi_req_ctx";
+
     private final Event<SecurityIdentity> securityIdentityEvent;
     private final CurrentVertxRequest currentVertxRequest;
+    private final ManagedContext requestContext;
 
     public RouteHandler() {
         this.securityIdentityEvent = Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
         this.currentVertxRequest = Arc.container().instance(CurrentVertxRequest.class).get();
+        this.requestContext = Arc.container().requestContext();
     }
 
     /**
@@ -38,7 +42,6 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext context) {
         QuarkusHttpUser user = (QuarkusHttpUser) context.user();
-        ManagedContext requestContext = Arc.container().requestContext();
         //todo: how should we handle non-proactive authentication here?
         if (requestContext.isActive()) {
             if (user != null) {
@@ -47,22 +50,31 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
             invoke(context);
         } else {
             try {
-                // Activate the context, i.e. set the thread locals
-                requestContext.activate();
+                // First attempt to obtain the request context state.
+                // If there is a route filter and the request can have body (POST, PUT, etc.) the route 
+                // method is invoked asynchronously (once all data are read). 
+                // However, the request context is activated by the filter and we need to make sure 
+                // the same context is then used in the route method
+                ContextState state = context.get(REQUEST_CONTEXT_STATE);
+                // Activate the context, i.e. set the thread locals, state can be null
+                requestContext.activate(state);
                 currentVertxRequest.setCurrent(context);
                 if (user != null) {
                     securityIdentityEvent.fire(user.getSecurityIdentity());
                 }
-                // Reactive routes can use async processing (e.g. mutiny Uni/Multi) and context propagation
-                // 1. Store the state (which is basically a shared Map instance)
-                // 2. Terminate the context correcly when the response is disposed or an exception is thrown 
-                InjectableContext.ContextState state = requestContext.getState();
-                context.addEndHandler(new Handler<AsyncResult<Void>>() {
-                    @Override
-                    public void handle(AsyncResult<Void> result) {
-                        requestContext.destroy(state);
-                    }
-                });
+                if (state == null) {
+                    // Reactive routes can use async processing (e.g. mutiny Uni/Multi) and context propagation
+                    // 1. Store the state (which is basically a shared Map instance)
+                    // 2. Terminate the context correcly when the response is disposed or an exception is thrown 
+                    final ContextState endState = requestContext.getState();
+                    context.put(REQUEST_CONTEXT_STATE, endState);
+                    context.addEndHandler(new Handler<AsyncResult<Void>>() {
+                        @Override
+                        public void handle(AsyncResult<Void> result) {
+                            requestContext.destroy(endState);
+                        }
+                    });
+                }
                 invoke(context);
             } finally {
                 // Deactivate the context, i.e. cleanup the thread locals

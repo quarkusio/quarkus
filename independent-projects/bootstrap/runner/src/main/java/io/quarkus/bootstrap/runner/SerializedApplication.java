@@ -10,9 +10,13 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,9 +34,11 @@ import java.util.zip.ZipEntry;
 public class SerializedApplication {
 
     public static final String META_INF_VERSIONS = "META-INF/versions/";
+    // the files immediately (i.e. not recursively) under these paths should all be indexed
+    private static final Set<String> FULLY_INDEXED_PATHS = new LinkedHashSet<>(Arrays.asList("", "META-INF/services"));
 
     private static final int MAGIC = 0XF0315432;
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     private final RunnerClassLoader runnerClassLoader;
     private final String mainClass;
@@ -57,24 +63,37 @@ public class SerializedApplication {
             data.writeInt(MAGIC);
             data.writeInt(VERSION);
             data.writeUTF(mainClass);
-            data.writeInt(classPath.size());
-            for (Path jar : classPath) {
+            data.writeShort(classPath.size());
+            Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new HashMap<>();
+            for (int i = 0; i < classPath.size(); i++) {
+                Path jar = classPath.get(i);
                 String relativePath = applicationRoot.relativize(jar).toString().replace("\\", "/");
                 data.writeUTF(relativePath);
-                writeJar(data, jar);
+                Collection<String> resources = writeJar(data, jar);
+                for (String resource : resources) {
+                    directlyIndexedResourcesToCPJarIndex.computeIfAbsent(resource, s -> new ArrayList<>()).add(i);
+                }
             }
             Set<String> parentFirstPackages = new HashSet<>();
 
             for (Path jar : parentFirst) {
                 collectPackages(jar, parentFirstPackages);
             }
-            data.writeInt(parentFirstPackages.size());
+            data.writeShort(parentFirstPackages.size());
             for (String p : parentFirstPackages) {
                 data.writeUTF(p.replace("/", ".").replace("\\", "."));
             }
-            data.writeInt(nonExistentResources.size());
+            data.writeShort(nonExistentResources.size());
             for (String nonExistentResource : nonExistentResources) {
                 data.writeUTF(nonExistentResource);
+            }
+            data.writeShort(directlyIndexedResourcesToCPJarIndex.size());
+            for (Map.Entry<String, List<Integer>> entry : directlyIndexedResourcesToCPJarIndex.entrySet()) {
+                data.writeUTF(entry.getKey());
+                data.writeShort(entry.getValue().size());
+                for (Integer index : entry.getValue()) {
+                    data.writeShort(index);
+                }
             }
             data.flush();
         }
@@ -91,8 +110,9 @@ public class SerializedApplication {
             String mainClass = in.readUTF();
             Map<String, ClassLoadingResource[]> resourceDirectoryMap = new HashMap<>();
             Set<String> parentFirstPackages = new HashSet<>();
-            int numPaths = in.readInt();
-            for (int pathCount = 0; pathCount < numPaths; ++pathCount) {
+            int numPaths = in.readUnsignedShort();
+            ClassLoadingResource[] allClassLoadingResources = new ClassLoadingResource[numPaths];
+            for (int pathCount = 0; pathCount < numPaths; pathCount++) {
                 String path = in.readUTF();
                 boolean hasManifest = in.readBoolean();
                 ManifestInfo info = null;
@@ -101,7 +121,8 @@ public class SerializedApplication {
                             readNullableString(in), readNullableString(in), readNullableString(in));
                 }
                 JarResource resource = new JarResource(info, appRoot.resolve(path));
-                int numDirs = in.readInt();
+                allClassLoadingResources[pathCount] = resource;
+                int numDirs = in.readUnsignedShort();
                 for (int i = 0; i < numDirs; ++i) {
                     String dir = in.readUTF();
                     ClassLoadingResource[] existing = resourceDirectoryMap.get(dir);
@@ -115,18 +136,31 @@ public class SerializedApplication {
                     }
                 }
             }
-            int packages = in.readInt();
+            int packages = in.readUnsignedShort();
             for (int i = 0; i < packages; ++i) {
                 parentFirstPackages.add(in.readUTF());
             }
             Set<String> nonExistentResources = new HashSet<>();
-            int nonExistentResourcesSize = in.readInt();
+            int nonExistentResourcesSize = in.readUnsignedShort();
             for (int i = 0; i < nonExistentResourcesSize; i++) {
                 nonExistentResources.add(in.readUTF());
             }
+            // this map is populated correctly because the JarResource entries are added to allClassLoadingResources
+            // in the same order as the classpath was written during the writing of the index
+            Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap = new HashMap<>();
+            int directlyIndexedSize = in.readUnsignedShort();
+            for (int i = 0; i < directlyIndexedSize; i++) {
+                String resource = in.readUTF();
+                int indexesSize = in.readUnsignedShort();
+                ClassLoadingResource[] matchingResources = new ClassLoadingResource[indexesSize];
+                for (int j = 0; j < indexesSize; j++) {
+                    matchingResources[j] = allClassLoadingResources[in.readUnsignedShort()];
+                }
+                directlyIndexedResourcesIndexMap.put(resource, matchingResources);
+            }
             return new SerializedApplication(
                     new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages,
-                            nonExistentResources),
+                            nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap),
                     mainClass);
         }
     }
@@ -138,7 +172,11 @@ public class SerializedApplication {
         return null;
     }
 
-    private static void writeJar(DataOutputStream out, Path jar) throws IOException {
+    /**
+     * @return a List of all resources that exist in the paths that we desire to have fully indexed
+     *         (configured via {@code FULLY_INDEXED_PATHS})
+     */
+    private static List<String> writeJar(DataOutputStream out, Path jar) throws IOException {
         try (JarFile zip = new JarFile(jar.toFile())) {
             Manifest manifest = zip.getManifest();
             if (manifest == null) {
@@ -160,12 +198,16 @@ public class SerializedApplication {
             }
 
             Set<String> dirs = new HashSet<>();
+            Map<String, List<String>> fullyIndexedPaths = new HashMap<>();
             Enumeration<? extends ZipEntry> entries = zip.entries();
-            boolean hasDefaultPackge = false;
+            boolean hasDefaultPackage = false;
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
                 if (!entry.getName().contains("/")) {
-                    hasDefaultPackge = true;
+                    hasDefaultPackage = true;
+                    if (!entry.getName().isEmpty() && FULLY_INDEXED_PATHS.contains("")) {
+                        fullyIndexedPaths.computeIfAbsent("", s -> new ArrayList<>(10)).add(entry.getName());
+                    }
                 } else if (!entry.isDirectory()) {
                     //some jars don't have correct directory entries
                     //so we look at the file paths instead
@@ -186,15 +228,29 @@ public class SerializedApplication {
                             }
                         }
                     }
+
+                    for (String path : FULLY_INDEXED_PATHS) {
+                        if (path.isEmpty()) {
+                            continue;
+                        }
+                        if (entry.getName().startsWith(path)) {
+                            fullyIndexedPaths.computeIfAbsent(path, s -> new ArrayList<>(10)).add(entry.getName());
+                        }
+                    }
                 }
             }
-            if (hasDefaultPackge) {
+            if (hasDefaultPackage) {
                 dirs.add("");
             }
-            out.writeInt(dirs.size());
+            out.writeShort(dirs.size());
             for (String i : dirs) {
                 out.writeUTF(i);
             }
+            List<String> result = new ArrayList<>();
+            for (List<String> values : fullyIndexedPaths.values()) {
+                result.addAll(values);
+            }
+            return result;
         }
     }
 

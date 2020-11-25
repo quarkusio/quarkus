@@ -371,7 +371,7 @@ In such cases, you can use `quarkus.oidc.token-state-manager.split-tokens=true` 
 
 Alternatively, if having an ID token only is sufficient for your Quarkus endpoint and no access or refresh tokens are used then set `quarkus.oidc.state-session-manager.stategy=id-token`.
 
-Register your own `io.quarkus.oidc.TokenStateManager' implementation as an ApplicationScoped CDI bean if you need to customize the way the tokens are associated with the session cookie. For exmaple, you may want to keep the tokens in a database and have only a database pointer stored in a session cookie. Note though that it may present some challenges in making the tokens available across multiple microservices nodes.
+Register your own `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean if you need to customize the way the tokens are associated with the session cookie. For example, you may want to keep the tokens in a database and have only a database pointer stored in a session cookie. Note though that it may present some challenges in making the tokens available across multiple microservices nodes.
 
 == Listening to important authentication events
 

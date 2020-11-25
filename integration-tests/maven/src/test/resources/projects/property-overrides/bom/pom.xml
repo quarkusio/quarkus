@@ -6,7 +6,6 @@
         <groupId>org.acme</groupId>
         <artifactId>acme-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>acme-bom</artifactId>

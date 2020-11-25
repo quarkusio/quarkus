@@ -7,7 +7,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>quarkus-integration-test-micrometer-jmx</artifactId>

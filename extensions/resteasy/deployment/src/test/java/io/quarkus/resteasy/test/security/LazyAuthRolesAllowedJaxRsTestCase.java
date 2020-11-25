@@ -23,7 +23,7 @@ public class LazyAuthRolesAllowedJaxRsTestCase {
                             TestIdentityController.class,
                             UnsecuredSubResource.class)
                     .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
-                            "application.properties"));;
+                            "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {

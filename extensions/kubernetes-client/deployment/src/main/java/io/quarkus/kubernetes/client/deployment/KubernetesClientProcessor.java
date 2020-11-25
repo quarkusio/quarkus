@@ -92,13 +92,6 @@ public class KubernetesClientProcessor {
                         DotName.createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList")));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
-        final String[] doneables = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple("io.fabric8.kubernetes.api.model.Doneable"))
-                .stream()
-                .map(c -> c.name().toString())
-                .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.weakClass(doneables));
-
         final String[] deserializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
                 .stream()

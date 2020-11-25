@@ -37,7 +37,8 @@ public class OpenShiftClientTest {
                 .once();
 
         NamespacedOpenShiftClient openShiftClient = mockServer.createOpenShiftClient();
-        openShiftClient.routes().createNew().withNewMetadata().withName("myroute").withNamespace("test").endMetadata().done();
+        openShiftClient.routes()
+                .create(new RouteBuilder().withNewMetadata().withName("myroute").withNamespace("test").endMetadata().build());
         Route route = openShiftClient.routes().inNamespace("test").withName("myroute").get();
         Assertions.assertNotNull(route);
     }

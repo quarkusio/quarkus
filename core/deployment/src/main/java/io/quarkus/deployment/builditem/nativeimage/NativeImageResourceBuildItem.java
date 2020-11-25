@@ -8,6 +8,12 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A build item that indicates that a static resource should be included in the native image
+ * <p>
+ * Related build items:
+ * <ul>
+ * <li>Use {@link NativeImageResourceDirectoryBuildItem} if you need to add a directory of resources
+ * <li>Use {@link NativeImageResourcePatternsBuildItem} to select resource paths by regular expressions or globs
+ * </ul>
  */
 public final class NativeImageResourceBuildItem extends MultiBuildItem {
 

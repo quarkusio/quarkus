@@ -2,6 +2,8 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
@@ -13,6 +15,7 @@ import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
 import javax.transaction.Transactional;
 
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
@@ -21,6 +24,7 @@ import org.reactivestreams.Publisher;
 import com.arjuna.ats.jta.logging.jtaLogger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
+import io.quarkus.narayana.jta.runtime.AdditionalTransactionConfiguration;
 import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.smallrye.mutiny.Multi;
@@ -35,8 +39,13 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    public static final Object ADDITIONAL_CONFIG_KEY = new Object();
+
     @Inject
     TransactionManager transactionManager;
+
+    @Inject
+    TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
     private final boolean userTransactionAvailable;
 
@@ -96,6 +105,35 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         return configuration;
     }
 
+    private Map<Class<?>, Annotation> getAdditionalTransactionalConfiguration(InvocationContext ic) {
+        Map<Class<?>, Annotation> additionalTransactionConfigurations = new HashMap<>();
+
+        // Lookup annotations on the class
+        Class<?> clazz;
+        Object target = ic.getTarget();
+        if (target != null) {
+            clazz = target.getClass();
+        } else {
+            // Very likely an intercepted static method
+            clazz = ic.getMethod().getDeclaringClass();
+        }
+        for (Annotation annotation : clazz.getAnnotations()) {
+            if (annotation.annotationType().isAnnotationPresent(AdditionalTransactionConfiguration.class)) {
+                additionalTransactionConfigurations.put(annotation.annotationType(), annotation);
+            }
+        }
+
+        // Lookup annotations on the method
+        // In case the same annotation type is defined both on the class and on the method, the method one will override the class one.
+        for (Annotation annotation : ic.getMethod().getAnnotations()) {
+            if (annotation.annotationType().isAnnotationPresent(AdditionalTransactionConfiguration.class)) {
+                additionalTransactionConfigurations.put(annotation.annotationType(), annotation);
+            }
+        }
+
+        return additionalTransactionConfigurations;
+    }
+
     protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm) throws Exception {
         return invokeInOurTx(ic, tm, () -> {
         });
@@ -119,6 +157,10 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                 tm.setTransactionTimeout(currentTmTimeout);
             }
         }
+
+        Map<Class<?>, Annotation> additionalTransactionConfigurations = getAdditionalTransactionalConfiguration(ic);
+        // put the additional transaction configuration inside the synchronization registry to access it from Hibernate
+        transactionSynchronizationRegistry.putResource(ADDITIONAL_CONFIG_KEY, additionalTransactionConfigurations);
 
         boolean throwing = false;
         Object ret = null;

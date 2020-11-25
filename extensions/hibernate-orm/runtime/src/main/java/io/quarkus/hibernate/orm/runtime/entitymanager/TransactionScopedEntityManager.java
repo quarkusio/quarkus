@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.entitymanager;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,12 @@ import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
+
 import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
+import io.quarkus.hibernate.orm.runtime.SessionConfiguration;
+import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorBase;
 import io.quarkus.runtime.BlockingOperationControl;
 
 public class TransactionScopedEntityManager implements EntityManager {
@@ -58,6 +64,15 @@ public class TransactionScopedEntityManager implements EntityManager {
                 return new EntityManagerResult(entityManager, false, true);
             }
             EntityManager newEntityManager = entityManagerFactory.createEntityManager();
+            Map<Class<?>, Annotation> additionalConfig = (Map<Class<?>, Annotation>) transactionSynchronizationRegistry
+                    .getResource(TransactionalInterceptorBase.ADDITIONAL_CONFIG_KEY);
+            SessionConfiguration sessionConfiguration = (SessionConfiguration) additionalConfig.get(SessionConfiguration.class);
+            if (sessionConfiguration != null && sessionConfiguration.readOnly()) {
+                Session session = newEntityManager.unwrap(Session.class);
+                session.setDefaultReadOnly(true);
+                session.setHibernateFlushMode(FlushMode.MANUAL);
+            }
+
             newEntityManager.joinTransaction();
             transactionSynchronizationRegistry.putResource(entityManagerKey, newEntityManager);
             transactionSynchronizationRegistry.registerInterposedSynchronization(new Synchronization() {

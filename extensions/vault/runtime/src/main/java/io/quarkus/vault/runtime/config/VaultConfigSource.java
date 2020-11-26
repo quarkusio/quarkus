@@ -1,82 +1,37 @@
 package io.quarkus.vault.runtime.config;
 
-import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
-import static io.quarkus.vault.runtime.LogConfidentialityLevel.MEDIUM;
 import static io.quarkus.vault.runtime.config.VaultCacheEntry.tryReturnLastKnownValue;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_CONNECT_TIMEOUT;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KUBERNETES_AUTH_MOUNT_PATH;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KUBERNETES_JWT_TOKEN_PATH;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_READ_TIMEOUT;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_RENEW_GRACE_PERIOD;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_SECRET_CONFIG_CACHE_PERIOD;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_USE_KUBERNETES_CACERT;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.KV_SECRET_ENGINE_VERSION_V2;
-import static java.lang.Boolean.parseBoolean;
-import static java.lang.Integer.parseInt;
 import static java.util.Collections.emptyMap;
 import static java.util.Optional.empty;
-import static java.util.regex.Pattern.compile;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.Duration;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.TlsConfig;
-import io.quarkus.runtime.configuration.DurationConverter;
-import io.quarkus.vault.VaultException;
-import io.quarkus.vault.runtime.LogConfidentialityLevel;
 import io.quarkus.vault.runtime.VaultManager;
 
 public class VaultConfigSource implements ConfigSource {
 
     private static final Logger log = Logger.getLogger(VaultConfigSource.class);
 
-    static final String PROPERTY_PREFIX = "quarkus.vault.";
-    public static final Pattern CREDENTIALS_PATTERN = compile("^quarkus\\.vault\\.credentials-provider\\.([^.]+)\\.");
-    public static final Pattern TRANSIT_KEY_PATTERN = compile("^quarkus\\.vault\\.transit.key\\.([^.]+)\\.");
-    public static final String SECRET_CONFIG_KV_PREFIX_PATHS = "secret-config-kv-path";
-    public static final Pattern SECRET_CONFIG_KV_PREFIX_PATH_PATTERN = compile(
-            "^quarkus\\.vault\\." + SECRET_CONFIG_KV_PREFIX_PATHS + "\\.(?:([^.]+)|(?:\"([^\"]+)\"))$");
-    public static final Pattern EXPANSION_PATTERN = compile("\\$\\{([^}]+)\\}");
-
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
-    private AtomicReference<VaultRuntimeConfig> serverConfig = new AtomicReference<>(null);
-    private AtomicReference<VaultBuildTimeConfig> buildServerConfig = new AtomicReference<>(null);
-    private AtomicReference<TlsConfig> tlsConfig = new AtomicReference<>(null);
+    private VaultRuntimeConfig serverConfig;
 
-    private AtomicBoolean init = new AtomicBoolean(false);
     private int ordinal;
-    private DurationConverter durationConverter = new DurationConverter();
 
-    public VaultConfigSource(int ordinal) {
+    public VaultConfigSource(int ordinal, VaultRuntimeConfig vaultRuntimeConfig) {
         this.ordinal = ordinal;
+        this.serverConfig = vaultRuntimeConfig;
     }
 
     @Override
     public String getName() {
-        return "vault";
+        return VaultRuntimeConfig.NAME;
     }
 
     @Override
@@ -96,19 +51,10 @@ public class VaultConfigSource implements ConfigSource {
 
     @Override
     public String getValue(String propertyName) {
-
-        VaultRuntimeConfig serverConfig = getRuntimeConfig();
-
-        if (!serverConfig.url.isPresent()) {
-            return null;
-        }
-
-        return getSecretConfig().get(propertyName);
+        return serverConfig.url.isPresent() ? getSecretConfig().get(propertyName) : null;
     }
 
     private Map<String, String> getSecretConfig() {
-
-        VaultRuntimeConfig serverConfig = getRuntimeConfig();
 
         VaultCacheEntry<Map<String, String>> cacheEntry = cache.get();
         if (cacheEntry != null && cacheEntry.youngerThan(serverConfig.secretConfigCachePeriod)) {
@@ -139,8 +85,7 @@ public class VaultConfigSource implements ConfigSource {
     }
 
     private Map<String, String> fetchSecrets(String path, String prefix) {
-        VaultManager instance = getVaultManager();
-        return instance == null ? emptyMap() : prefixMap(instance.getVaultKvManager().readSecret(path), prefix);
+        return prefixMap(VaultManager.getInstance().getVaultKvManager().readSecret(path), prefix);
     }
 
     private Map<String, String> prefixMap(Map<String, String> map, String prefix) {
@@ -148,258 +93,4 @@ public class VaultConfigSource implements ConfigSource {
                 ? map
                 : map.entrySet().stream().collect(toMap(entry -> prefix + "." + entry.getKey(), Map.Entry::getValue));
     }
-
-    // ---
-
-    private VaultManager getVaultManager() {
-
-        VaultBuildTimeConfig buildTimeConfig = getBuildtimeConfig();
-        VaultRuntimeConfig serverConfig = getRuntimeConfig();
-        TlsConfig tlsConfig = getTlsConfig();
-
-        // init at most once
-        if (init.compareAndSet(false, true)) {
-            VaultManager.init(buildTimeConfig, serverConfig, tlsConfig);
-        }
-
-        return VaultManager.getInstance();
-    }
-
-    private VaultRuntimeConfig getRuntimeConfig() {
-        return getConfig(this.serverConfig, () -> loadRuntimeConfig(), "runtime");
-    }
-
-    private VaultBuildTimeConfig getBuildtimeConfig() {
-        return getConfig(this.buildServerConfig, () -> loadBuildtimeConfig(), "buildtime");
-    }
-
-    private TlsConfig getTlsConfig() {
-        return getConfig(this.tlsConfig, () -> loadTlsConfig(), "tls");
-    }
-
-    private <T> T getConfig(AtomicReference<T> ref, Supplier<T> supplier, String name) {
-        T config = ref.get();
-        if (config != null) {
-            return config;
-        } else {
-            config = supplier.get();
-            log.debug("loaded vault " + name + " config " + config);
-            ref.set(config);
-            return ref.get();
-        }
-    }
-
-    // need to recode config loading since we are at the config source level
-    private VaultBuildTimeConfig loadBuildtimeConfig() {
-        VaultBuildTimeConfig vaultBuildTimeConfig = new VaultBuildTimeConfig();
-        vaultBuildTimeConfig.health = new HealthConfig();
-
-        vaultBuildTimeConfig.health.enabled = parseBoolean(
-                getVaultProperty("health.enabled", "false"));
-
-        vaultBuildTimeConfig.health.standByOk = parseBoolean(
-                getVaultProperty("health.stand-by-ok", "false"));
-        vaultBuildTimeConfig.health.performanceStandByOk = parseBoolean(
-                getVaultProperty("health.performance-stand-by-ok", "false"));
-
-        return vaultBuildTimeConfig;
-    }
-
-    // need to recode config loading since we are at the config source level
-    private VaultRuntimeConfig loadRuntimeConfig() {
-
-        VaultRuntimeConfig serverConfig = new VaultRuntimeConfig();
-        serverConfig.tls = new VaultTlsConfig();
-        serverConfig.transit = new VaultTransitConfig();
-        serverConfig.authentication = new VaultAuthenticationConfig();
-        serverConfig.authentication.userpass = new VaultUserpassAuthenticationConfig();
-        serverConfig.authentication.appRole = new VaultAppRoleAuthenticationConfig();
-        serverConfig.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
-        serverConfig.url = newURL(getOptionalVaultProperty("url"));
-        serverConfig.authentication.clientToken = getOptionalVaultProperty("authentication.client-token");
-        serverConfig.authentication.clientTokenWrappingToken = getOptionalVaultProperty(
-                "authentication.client-token-wrapping-token");
-        serverConfig.authentication.kubernetes.role = getOptionalVaultProperty("authentication.kubernetes.role");
-        serverConfig.authentication.kubernetes.jwtTokenPath = getVaultProperty("authentication.kubernetes.jwt-token-path",
-                DEFAULT_KUBERNETES_JWT_TOKEN_PATH);
-        serverConfig.authentication.kubernetes.authMountPath = getVaultProperty("authentication.kubernetes.auth-mount-path",
-                DEFAULT_KUBERNETES_AUTH_MOUNT_PATH);
-        serverConfig.authentication.userpass.username = getOptionalVaultProperty("authentication.userpass.username");
-        serverConfig.authentication.userpass.password = getOptionalVaultProperty("authentication.userpass.password");
-        serverConfig.authentication.userpass.passwordWrappingToken = getOptionalVaultProperty(
-                "authentication.userpass.password-wrapping-token");
-        serverConfig.authentication.appRole.roleId = getOptionalVaultProperty("authentication.app-role.role-id");
-        serverConfig.authentication.appRole.secretId = getOptionalVaultProperty("authentication.app-role.secret-id");
-        serverConfig.authentication.appRole.secretIdWrappingToken = getOptionalVaultProperty(
-                "authentication.app-role.secret-id-wrapping-token");
-        serverConfig.renewGracePeriod = getVaultDuration("renew-grace-period", DEFAULT_RENEW_GRACE_PERIOD);
-        serverConfig.secretConfigCachePeriod = getVaultDuration("secret-config-cache-period",
-                DEFAULT_SECRET_CONFIG_CACHE_PERIOD);
-        serverConfig.logConfidentialityLevel = LogConfidentialityLevel
-                .valueOf(getVaultProperty("log-confidentiality-level", MEDIUM.name()).toUpperCase());
-        serverConfig.kvSecretEngineVersion = parseInt(
-                getVaultProperty("kv-secret-engine-version", KV_SECRET_ENGINE_VERSION_V2));
-        serverConfig.kvSecretEngineMountPath = getVaultProperty("kv-secret-engine-mount-path",
-                DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH);
-        serverConfig.secretConfigKvPath = getOptionalListProperty("secret-config-kv-path");
-        serverConfig.tls.skipVerify = getOptionalVaultProperty("tls.skip-verify").map(Boolean::parseBoolean);
-        serverConfig.tls.useKubernetesCaCert = parseBoolean(
-                getVaultProperty("tls.use-kubernetes-ca-cert", DEFAULT_TLS_USE_KUBERNETES_CACERT));
-        serverConfig.tls.caCert = getOptionalVaultProperty("tls.ca-cert");
-        serverConfig.connectTimeout = getVaultDuration("connect-timeout", DEFAULT_CONNECT_TIMEOUT);
-        serverConfig.readTimeout = getVaultDuration("read-timeout", DEFAULT_READ_TIMEOUT);
-
-        serverConfig.credentialsProvider = createCredentialProviderConfigParser().getConfig();
-        serverConfig.transit.key = createTransitKeyConfigParser().getConfig();
-        serverConfig.secretConfigKvPathPrefix = getSecretConfigKvPrefixPaths();
-
-        return serverConfig;
-    }
-
-    private TlsConfig loadTlsConfig() {
-        TlsConfig tlsConfig = new TlsConfig();
-        tlsConfig.trustAll = Boolean.parseBoolean(getProperty("quarkus.tls.trust-all", "false", 0));
-        return tlsConfig;
-    }
-
-    private VaultMapConfigParser<CredentialsProviderConfig> createCredentialProviderConfigParser() {
-        return new VaultMapConfigParser<>(CREDENTIALS_PATTERN, this::getCredentialsProviderConfig, getConfigSourceStream());
-    }
-
-    private CredentialsProviderConfig getCredentialsProviderConfig(String name) {
-        String prefix = "credentials-provider." + name;
-        CredentialsProviderConfig config = new CredentialsProviderConfig();
-        config.databaseCredentialsRole = getOptionalVaultProperty(prefix + ".database-credentials-role");
-        config.kvPath = getOptionalVaultProperty(prefix + ".kv-path");
-        config.kvKey = getVaultProperty(prefix + ".kv-key", PASSWORD_PROPERTY_NAME);
-        return config;
-    }
-
-    private VaultMapConfigParser<TransitKeyConfig> createTransitKeyConfigParser() {
-        return new VaultMapConfigParser<>(TRANSIT_KEY_PATTERN, this::getTransitKeyConfig, getConfigSourceStream());
-    }
-
-    private TransitKeyConfig getTransitKeyConfig(String name) {
-        String prefix = "transit.key." + name;
-        TransitKeyConfig config = new TransitKeyConfig();
-        config.name = getOptionalVaultProperty(prefix + ".name");
-        config.hashAlgorithm = getOptionalVaultProperty(prefix + ".hash-algorithm");
-        config.signatureAlgorithm = getOptionalVaultProperty(prefix + ".signature-algorithm");
-        config.type = getOptionalVaultProperty(prefix + ".type");
-        config.convergentEncryption = getOptionalVaultProperty(prefix + ".convergent-encryption");
-        Optional<String> prehashed = getOptionalVaultProperty(prefix + ".prehashed");
-        config.prehashed = Optional.ofNullable(prehashed.isPresent() ? Boolean.parseBoolean(prehashed.get()) : null);
-        return config;
-    }
-
-    private Optional<List<String>> getOptionalListProperty(String name) {
-
-        Optional<String> optionalVaultProperty = getOptionalVaultProperty(name);
-        if (!optionalVaultProperty.isPresent()) {
-            return empty();
-        }
-
-        String[] split = optionalVaultProperty.get().split(",");
-        return Optional.of(Arrays.stream(split)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(toList()));
-    }
-
-    private Optional<URL> newURL(Optional<String> url) {
-        try {
-            return Optional.ofNullable(url.isPresent() ? new URL(url.get()) : null);
-        } catch (MalformedURLException e) {
-            throw new VaultException(e);
-        }
-    }
-
-    private Optional<String> getOptionalVaultProperty(String key) {
-        return Optional.ofNullable(getVaultProperty(key, null));
-    }
-
-    private Duration getVaultDuration(String key, String defaultValue) {
-        return durationConverter.convert(getVaultProperty(key, defaultValue));
-    }
-
-    private String getVaultProperty(String key, String defaultValue) {
-        String propertyName = PROPERTY_PREFIX + key;
-        return getProperty(propertyName, defaultValue, 0);
-    }
-
-    protected String getProperty(String propertyName, String defaultValue, int depth) {
-
-        if (depth == 3) {
-            throw new RuntimeException("max expansion depth reached when looking for key " + propertyName);
-        }
-
-        String result = getBaseProperty(propertyName, defaultValue);
-
-        if (result != null) {
-            Matcher matcher = EXPANSION_PATTERN.matcher(result);
-            while (matcher.find()) {
-                String expansionKey = matcher.group(1);
-                String replacement = getProperty(expansionKey, null, depth + 1);
-                if (replacement == null) {
-                    throw new RuntimeException(
-                            "unable to find expansion key " + expansionKey + " when fetching " + propertyName);
-                }
-                result = result.substring(0, matcher.start()) + replacement + result.substring(matcher.end());
-                matcher = EXPANSION_PATTERN.matcher(result);
-            }
-        }
-
-        return result;
-    }
-
-    protected String getBaseProperty(String propertyName, String defaultValue) {
-        return getConfigSourceStream()
-                .map(configSource -> configSource.getValue(propertyName))
-                .filter(value -> value != null && value.length() != 0)
-                .map(String::trim)
-                .findFirst()
-                .orElse(defaultValue);
-    }
-
-    private Map<String, VaultRuntimeConfig.KvPathConfig> getSecretConfigKvPrefixPaths() {
-
-        return getConfigSourceStream()
-                .flatMap(configSource -> configSource.getPropertyNames().stream())
-                .map(this::getSecretConfigKvPrefixPathName)
-                .filter(Objects::nonNull)
-                .distinct()
-                .map(this::createNameSecretConfigKvPrefixPathPair)
-                .collect(toMap(SimpleEntry::getKey,
-                        kvStore -> new VaultRuntimeConfig.KvPathConfig(kvStore.getValue())));
-    }
-
-    private Stream<ConfigSource> getConfigSourceStream() {
-        Config config = ConfigProviderResolver.instance().getConfig();
-        return StreamSupport.stream(config.getConfigSources().spliterator(), false).filter(this::retain);
-    }
-
-    private boolean retain(ConfigSource configSource) {
-        String other;
-        try {
-            other = configSource.getName();
-        } catch (NullPointerException e) {
-            // FIXME at org.jboss.resteasy.microprofile.config.BaseServletConfigSource.getName(BaseServletConfigSource.java:51)
-            other = null;
-        }
-        return !getName().equals(other);
-    }
-
-    private SimpleEntry<String, List<String>> createNameSecretConfigKvPrefixPathPair(String name) {
-        return new SimpleEntry<>(name, getSecretConfigKvPrefixPath(name));
-    }
-
-    private String getSecretConfigKvPrefixPathName(String propertyName) {
-        Matcher matcher = SECRET_CONFIG_KV_PREFIX_PATH_PATTERN.matcher(propertyName);
-        return matcher.matches() ? (matcher.group(1) != null ? matcher.group(1) : matcher.group(2)) : null;
-    }
-
-    private List<String> getSecretConfigKvPrefixPath(String prefixName) {
-        return getOptionalListProperty(SECRET_CONFIG_KV_PREFIX_PATHS + "." + prefixName).get();
-    }
-
 }

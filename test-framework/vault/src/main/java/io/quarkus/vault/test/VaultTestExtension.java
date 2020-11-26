@@ -310,26 +310,26 @@ public class VaultTestExtension {
         // wrapped
 
         appRoleSecretIdWrappingToken = fetchWrappingToken(
-                execVault(format("vault write -wrap-ttl=60s -f auth/approle/role/%s/secret-id", VAULT_AUTH_APPROLE)));
+                execVault(format("vault write -wrap-ttl=120s -f auth/approle/role/%s/secret-id", VAULT_AUTH_APPROLE)));
         log.info("appRoleSecretIdWrappingToken=" + appRoleSecretIdWrappingToken);
 
         clientTokenWrappingToken = fetchWrappingToken(
-                execVault(format("vault token create -wrap-ttl=60s -ttl=10m -policy=%s", VAULT_POLICY)));
+                execVault(format("vault token create -wrap-ttl=120s -ttl=10m -policy=%s", VAULT_POLICY)));
         log.info("clientTokenWrappingToken=" + clientTokenWrappingToken);
 
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V1, WRAPPING_TEST_PATH, USERPASS_WRAPPING_TOKEN_PASSWORD_KEY,
                 VAULT_AUTH_USERPASS_PASSWORD));
         passwordKvv1WrappingToken = fetchWrappingToken(
-                execVault(format("vault kv get -wrap-ttl=60s %s/%s", SECRET_PATH_V1, WRAPPING_TEST_PATH)));
+                execVault(format("vault kv get -wrap-ttl=120s %s/%s", SECRET_PATH_V1, WRAPPING_TEST_PATH)));
         log.info("passwordKvv1WrappingToken=" + passwordKvv1WrappingToken);
 
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V2, WRAPPING_TEST_PATH, USERPASS_WRAPPING_TOKEN_PASSWORD_KEY,
                 VAULT_AUTH_USERPASS_PASSWORD));
         passwordKvv2WrappingToken = fetchWrappingToken(
-                execVault(format("vault kv get -wrap-ttl=60s %s/%s", SECRET_PATH_V2, WRAPPING_TEST_PATH)));
+                execVault(format("vault kv get -wrap-ttl=120s %s/%s", SECRET_PATH_V2, WRAPPING_TEST_PATH)));
         log.info("passwordKvv2WrappingToken=" + passwordKvv2WrappingToken);
         anotherPasswordKvv2WrappingToken = fetchWrappingToken(
-                execVault(format("vault kv get -wrap-ttl=60s %s/%s", SECRET_PATH_V2, WRAPPING_TEST_PATH)));
+                execVault(format("vault kv get -wrap-ttl=120s %s/%s", SECRET_PATH_V2, WRAPPING_TEST_PATH)));
         log.info("anotherPasswordKvv2WrappingToken=" + anotherPasswordKvv2WrappingToken);
 
         // dynamic secrets

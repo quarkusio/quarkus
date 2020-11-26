@@ -16,4 +16,10 @@ public class TlsConfig {
     @ConfigItem(defaultValue = "false")
     public boolean trustAll;
 
+    @Override
+    public String toString() {
+        return "TlsConfig{" +
+                "trustAll=" + trustAll +
+                '}';
+    }
 }

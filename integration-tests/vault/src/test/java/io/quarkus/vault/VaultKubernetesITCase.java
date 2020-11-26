@@ -2,10 +2,7 @@ package io.quarkus.vault;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Optional;
-
-import javax.inject.Inject;
-
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -15,8 +12,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.vault.runtime.config.VaultAuthenticationType;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
 
 @DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
@@ -28,22 +23,20 @@ public class VaultKubernetesITCase {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application-vault-kubernetes.properties", "application.properties"));
 
-    @Inject
-    VaultRuntimeConfig runtimeConfig;
+    @ConfigProperty(name = "quarkus.vault.authentication.kubernetes.role")
+    String role;
 
-    @Test
-    public void testGetAuthenticationType() {
-        assertEquals(VaultAuthenticationType.KUBERNETES, runtimeConfig.getAuthenticationType());
-    }
+    @ConfigProperty(name = "quarkus.vault.authentication.kubernetes.auth-mount-path")
+    String path;
 
     @Test
     public void testRole() {
-        assertEquals(Optional.of("test"), runtimeConfig.authentication.kubernetes.role);
+        assertEquals("test", role);
     }
 
     @Test
     public void testAuthMountPath() {
-        assertEquals("auth/test", runtimeConfig.authentication.kubernetes.authMountPath);
+        assertEquals("auth/test", path);
     }
 
 }

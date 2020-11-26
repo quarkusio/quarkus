@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import java.io.IOException;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -150,7 +149,7 @@ public class RunnerClassLoader extends ClassLoader {
     }
 
     @Override
-    protected Enumeration<URL> findResources(String name) throws IOException {
+    protected Enumeration<URL> findResources(String name) {
         name = sanitizeName(name);
         if (nonExistentResources.contains(name)) {
             return Collections.emptyEnumeration();

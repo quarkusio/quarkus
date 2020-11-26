@@ -193,39 +193,152 @@ To add an annotation in the generated resources:
 quarkus.openshift.annotations.foo=bar
 ----
 
+[#env-vars]
 ==== Environment variables
 
-To add an annotation in the generated resources:
+OpenShift provides multiple ways of defining environment variables:
+
+- key/value pairs
+- import all values from a Secret or ConfigMap
+- interpolate a single value identified by a given field in a Secret or ConfigMap
+- interpolate a value from a field within the same resource
+
+===== Environment variables from key/value pairs
+
+To add a key/value pair as an environment variable in the generated resources:
 
 [source,properties]
 ----
-quarkus.openshift.env-vars.my-env-var.value=foobar
+quarkus.openshift.env.vars.my-env-var=foobar
 ----
 
 The command above will add `MY_ENV_VAR=foobar` as an environment variable.
 Please note that the key `my-env-var` will be converted to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
 
-You may also noticed that in contrast to labels, and annotations for environment variables you don't just use a key=value approach.
-That is because for environment variables there are additional options rather than just value.
-
 ===== Environment variables from Secret
 
-To add all key value pairs of a `Secret` as environment variables:
+To add all key/value pairs of `Secret` as environment variables just apply the following configuration, separating each `Secret`
+to be used as source by a comma (`,`):
 
 [source,properties]
 ----
-quarkus.openshift.env-vars.my-env-var.secret=my-secret
+quarkus.openshift.env.secrets=my-secret,my-other-secret
+----
+
+which would generate the following in the container definition:
+
+[source,yaml]
+----
+envFrom:
+  - secretRef:
+      name: my-secret
+      optional: false
+  - secretRef:
+      name: my-other-secret
+      optional: false
+----
+
+The following extracts a value identified by the `keyName` field from the `my-secret` Secret into a `foo` environment variable:
+
+[source,properties]
+----
+quarkus.openshift.env.mapping.foo.from-secret=my-secret
+quarkus.openshift.env.mapping.foo.with-key=keyName
+----
+
+This would generate the following in the `env` section of your container:
+
+[source,yaml]
+----
+- env:
+  - name: FOO
+    valueFrom:
+      secretKeyRef:
+        key: keyName
+        name: my-secret
+        optional: false
 ----
 
 ===== Environment variables from ConfigMap
 
-To add all key value pairs of a `ConfigMap` as environment variables:
+To add all key/value pairs from `ConfigMap` as environment variables just apply the following configuration, separating each
+`ConfigMap` to be used as source by a comma (`,`):
 
 [source,properties]
 ----
-quarkus.openshift.env-vars.my-env-var.configmap=my-secret
+quarkus.openshift.env.configmaps=my-config-map,another-config-map
 ----
 
+which would generate the following in the container definition:
+
+[source,yaml]
+----
+envFrom:
+  - configMapRef:
+      name: my-config-map
+      optional: false
+  - configMapRef:
+      name: another-config-map
+      optional: false
+----
+
+The following extracts a value identified by the `keyName` field from the `my-config-map` ConfigMap into a `foo`
+environment variable:
+
+[source,properties]
+----
+quarkus.openshift.env.mapping.foo.from-configmap=my-configmap
+quarkus.openshift.env.mapping.foo.with-key=keyName
+----
+
+This would generate the following in the `env` section of your container:
+
+[source,yaml]
+----
+- env:
+  - name: FOO
+    valueFrom:
+      configMapRefKey:
+        key: keyName
+        name: my-configmap
+        optional: false
+----
+
+===== Environment variables from fields
+
+It's also possible to use the value from another field to add a new environment variable by specifying the path of the field to be used as a source, as follows:
+
+[source,properties]
+----
+quarkus.openshift.env.fields.foo=metadata.name
+----
+
+===== Validation
+
+A conflict between two definitions, e.g. mistakenly assigning both a value and specifying that a variable is derived from a field, will result in an error being thrown at build time so that you get the opportunity to fix the issue before you deploy your application to your cluster where it might be more difficult to diagnose the source of the issue.
+
+Similarly, two redundant definitions, e.g. defining an injection from the same secret twice, will not cause an issue but will indeed report a warning to let you know that you might not have intended to duplicate that definition.
+
+[#env-vars-backwards]
+===== Backwards compatibility
+
+Previous versions of the OpenShift extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.
+
+.Old vs. new syntax
+|====
+|                               |Old                                                    | New                                                 |
+| Plain variable                |`quarkus.openshift.env-vars.my-env-var.value=foobar`  | `quarkus.openshift.env.vars.my-env-var=foobar`     |
+| From field                    |`quarkus.openshift.env-vars.my-env-var.field=foobar`  | `quarkus.openshift.env.fields.my-env-var=foobar`   |
+| All from `ConfigMap`          |`quarkus.openshift.env-vars.xxx.configmap=foobar`     | `quarkus.openshift.env.configmaps=foobar`          |
+| All from `Secret`             |`quarkus.openshift.env-vars.xxx.secret=foobar`        | `quarkus.openshift.env.secrets=foobar`             |
+| From one `Secret` field       |`quarkus.openshift.env-vars.foo.secret=foobar`        | `quarkus.openshift.env.mapping.foo.from-secret=foobar` |
+|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field` |
+| From one `ConfigMap` field    |`quarkus.openshift.env-vars.foo.configmap=foobar`     | `quarkus.openshift.env.mapping.foo.from-configmap=foobar` |
+|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field` |
+|====
+
+NOTE: If you redefine the same variable using the new syntax while keeping the old syntax, **ONLY** the new version will be kept, and a warning will be issued to alert you of the problem. For example, if you define both
+`quarkus.openshift.env-vars.my-env-var.value=foobar` and `quarkus.openshift.env.vars.my-env-var=newValue`, the extension will only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
 
 ==== Mounting volumes
 

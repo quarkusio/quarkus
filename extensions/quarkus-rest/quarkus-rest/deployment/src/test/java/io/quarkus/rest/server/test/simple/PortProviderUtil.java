@@ -11,16 +11,6 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 public class PortProviderUtil {
 
     /**
-     * Create a Resteasy client proxy with an empty base request path.
-     *
-     * @param clazz the client interface class
-     * @return the proxy object
-     */
-    public static <T> T createProxy(Class<T> clazz, String testName) {
-        return createProxy(clazz, "");
-    }
-
-    /**
      * Create a URI for the provided path, using the configured port
      *
      * @param path the request path

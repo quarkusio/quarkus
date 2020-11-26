@@ -1,4 +1,4 @@
-package io.quarkus.rest.server.test.sse;
+package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
 
 public class Message {
     public String name;

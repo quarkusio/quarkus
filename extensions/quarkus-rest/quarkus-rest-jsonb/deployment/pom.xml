@@ -41,6 +41,11 @@
             <artifactId>quarkus-hibernate-validator</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jaxrs-client-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 

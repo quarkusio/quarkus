@@ -68,7 +68,6 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.RequireCDIRequestScope;
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.RestHeader;
@@ -148,7 +147,6 @@ public final class ResteasyReactiveDotNames {
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
-    public static final DotName REQUIRE_CDI_REQUEST_SCOPE = DotName.createSimple(RequireCDIRequestScope.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 

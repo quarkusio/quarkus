@@ -5,11 +5,9 @@ import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 public class InvocationHandler implements ServerRestHandler {
     private final EndpointInvoker invoker;
-    private final boolean requireCDIRequestScope;
 
-    public InvocationHandler(EndpointInvoker invoker, boolean requireCDIRequestScope) {
+    public InvocationHandler(EndpointInvoker invoker) {
         this.invoker = invoker;
-        this.requireCDIRequestScope = requireCDIRequestScope;
     }
 
     @Override
@@ -25,9 +23,7 @@ public class InvocationHandler implements ServerRestHandler {
         if (async) {
             requestContext.suspend();
         }
-        if (requireCDIRequestScope) {
-            requestContext.requireCDIRequestScope();
-        }
+        requestContext.requireCDIRequestScope();
         try {
             Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
             if (!async) {

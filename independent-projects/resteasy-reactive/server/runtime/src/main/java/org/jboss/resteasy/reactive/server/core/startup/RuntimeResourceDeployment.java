@@ -220,7 +220,7 @@ public class RuntimeResourceDeployment {
         } else {
             score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
         }
-        handlers.add(new InvocationHandler(invoker, method.isCDIRequestScopeRequired()));
+        handlers.add(new InvocationHandler(invoker));
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
         Class<?> rawReturnType = getRawType(returnType);

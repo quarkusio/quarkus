@@ -63,8 +63,6 @@ public class ResourceMethod {
 
     private boolean isFormParamRequired;
 
-    private boolean cdiRequestScopeRequired = true;
-
     public boolean isResourceLocator() {
         return httpMethod == null;
     }
@@ -192,15 +190,6 @@ public class ResourceMethod {
 
     public ResourceMethod setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
-        return this;
-    }
-
-    public boolean isCDIRequestScopeRequired() {
-        return cdiRequestScopeRequired;
-    }
-
-    public ResourceMethod setCDIRequestScopeRequired(boolean cdiRequestScopeRequired) {
-        this.cdiRequestScopeRequired = cdiRequestScopeRequired;
         return this;
     }
 

@@ -32,7 +32,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRODUCES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUIRE_CDI_REQUEST_SCOPE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
@@ -420,17 +419,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                     blocking = true;
                 }
             }
-            boolean cdiRequestScopeRequired = true;
-            AnnotationInstance cdiRequestScopeRequiredAnnotation = getInheritableAnnotation(info, REQUIRE_CDI_REQUEST_SCOPE);
-            if (cdiRequestScopeRequiredAnnotation != null) {
-                AnnotationValue value = cdiRequestScopeRequiredAnnotation.value();
-                if (value != null) {
-                    cdiRequestScopeRequired = value.asBoolean();
-                } else {
-                    cdiRequestScopeRequired = true;
-                }
-            }
-
             ResourceMethod method = new ResourceMethod()
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
@@ -443,7 +431,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                     .setSse(sse)
                     .setSseElementType(sseElementType)
                     .setFormParamRequired(formParamRequired)
-                    .setCDIRequestScopeRequired(cdiRequestScopeRequired)
                     .setParameters(methodParameters)
                     .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?

@@ -66,9 +66,10 @@ Finally, we will create a *template instance*, set the data and render the outpu
 [source,java]
 ----
 // Renders <html><p>Hello Jim!</p></html>
-helloTemplate.data("name", "Jim").render(); <1> 
+helloTemplate.data("name", "Jim").render(); <1> <2>
 ----
 <1> `Template.data(String, Object)` is a convenient method that creates a template instance and sets the data in one step.
+<2> `TemplateInstance.render()` triggers a synchronous rendering, i.e. the current thread is blocked until the rendering is finished. However, there are also asynchronous ways to trigger the rendering and consume the results. For example there is the `TemplateInstance.renderAsync()` method that returns `CompletionStage<String>` or `TemplateInstance.createMulti()` that returns Mutiny's `Multi<String>`.
 
 So the workflow is simple: 
 
@@ -861,6 +862,50 @@ We can include the tag like this:
 ----
 <1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
 <2> Tag content injected using the `nested-content` key in the tag template.
+
+=== Rendering Output
+
+`TemplateInstance` provides several ways to trigger the rendering and consume the result.
+The most straightforward approach is represented by `TemplateInstance.render()`.
+This method triggers a synchronous rendering, i.e. the current thread is blocked until the rendering is finished, and returns the output.
+By contrast, `TemplateInstance.renderAsync()` returns a `CompletionStage<String>` which is completed when the rendering is finished.
+
+.`TemplateInstance.renderAsync()` Example
+[source,java]
+----
+template.data(foo).renderAsync().whenComplete((result, failure) -> { <1>
+   if (failure == null) {
+      // consume the output...
+   } else {
+      // process failure...
+   }
+};
+----
+<1> Register a callback that is executed once the rendering is finished. 
+
+There are also two methods that return https://smallrye.io/smallrye-mutiny/[Mutiny] types.
+`TemplateInstance.createUni()` returns a new `Uni<String>` object.
+If you call `createUni()` the template is not rendered right away. 
+Instead, every time `Uni.subscribe()` is called a new rendering of the template is triggered.
+
+.`TemplateInstance.createUni()` Example
+[source,java]
+----
+template.data(foo).createUni().subscribe().with(System.out::println);
+----
+
+`TemplateInstance.createMulti()` returns a new `Multi<String>` object.
+Each item represents a part/chunk of the rendered template.
+Again, `createMulti()` does not trigger rendering. 
+Instead, every time a computation is triggered by a subscriber the template is rendered again.
+
+.`TemplateInstance.createMulti()` Example
+[source,java]
+----
+template.data(foo).createMulti().subscribe().with(buffer:append,buffer::flush);
+----
+
+NOTE: The template rendering is divided in two phases. During the first phase, which is asynchronous, all expressions in the template are resolved and a _result tree_ is built. In the second phase, which is synchronous, the result tree is _materialized_, i.e. one by one the result nodes emit chunks that are consumed/buffered by the specific consumer.
 
 === Engine Configuration
 

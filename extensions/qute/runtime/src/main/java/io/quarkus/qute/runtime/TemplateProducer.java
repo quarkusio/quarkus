@@ -29,6 +29,7 @@ import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Singleton
 public class TemplateProducer {
@@ -157,6 +158,11 @@ public class TemplateProducer {
         @Override
         public Multi<String> createMulti() {
             return templateInstance().createMulti();
+        }
+
+        @Override
+        public Uni<String> createUni() {
+            return templateInstance().createUni();
         }
 
         @Override

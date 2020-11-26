@@ -807,6 +807,18 @@ Finally both the confidentiality and integrity of the claims can be further enfo
 
 SmallRye JWT provides an API for securing the JWT claims using all of these options.
 
+== Maven dependency
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.smallrye</groupId>
+  <artifactId>smallrye-jwt-build</artifactId>
+</dependency>
+----
+
+Note you can use Smallrye JWT Build API without having to create MP JWT endpoints.
+
 === Create JwtClaimsBuilder and set the claims
 
 The first step is to initialize a `JwtClaimsBuilder` using one of the options below and add some claims to it:

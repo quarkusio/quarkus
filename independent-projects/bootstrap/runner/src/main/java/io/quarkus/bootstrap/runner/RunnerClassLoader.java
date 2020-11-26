@@ -25,6 +25,12 @@ public final class RunnerClassLoader extends ClassLoader {
     private final Set<String> fullyIndexedDirectories;
     private final Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap;
 
+    //Protected by synchronization on this
+    private final ClassLoadingResource[] currentlyBufferedResources = new ClassLoadingResource[4];//Experimentally found to be a reasonable number
+
+    //Protected by synchronization on this
+    private boolean postBootPhase = false;
+
     static {
         registerAsParallelCapable();
     }
@@ -76,6 +82,7 @@ public final class RunnerClassLoader extends ClassLoader {
             if (resources != null) {
                 String classResource = name.replace('.', '/') + ".class";
                 for (ClassLoadingResource resource : resources) {
+                    accessingResource(resource);
                     byte[] data = resource.getResourceData(classResource);
                     if (data == null) {
                         continue;
@@ -86,7 +93,36 @@ public final class RunnerClassLoader extends ClassLoader {
             }
         }
         return getParent().loadClass(name);
+    }
 
+    private synchronized void accessingResource(final ClassLoadingResource resource) {
+        if (!postBootPhase) {
+            //We only want to limit the jar buffers after the initial bootstrap has been completed
+            return;
+        }
+        // This is not a cache aiming to accurately retain the most hot resources:
+        // it's too small to benefit from traditional hit metrics,
+        // we rather prefer to keep it very light.
+        if (currentlyBufferedResources[0] == resource) {
+            //it's already on the head of the cache: nothing to be done.
+            return;
+        }
+        for (int i = 1; i < currentlyBufferedResources.length; i++) {
+            final ClassLoadingResource currentI = currentlyBufferedResources[i];
+            if (currentI == resource || currentI == null) {
+                //it was already cached, or we found an empty slot: bubble it up by one position to give it a boost
+                final ClassLoadingResource previous = currentlyBufferedResources[i - 1];
+                currentlyBufferedResources[i - 1] = resource;
+                currentlyBufferedResources[i] = previous;
+                return;
+            }
+        }
+        // else, we drop one element from the cache,
+        // and inserting the latest resource on the tail:
+        final ClassLoadingResource last = currentlyBufferedResources[currentlyBufferedResources.length - 1];
+        currentlyBufferedResources[currentlyBufferedResources.length - 1] = resource;
+        // Finally, release the cache for the dropped element:
+        last.resetInternalCaches();
     }
 
     @Override
@@ -99,6 +135,7 @@ public final class RunnerClassLoader extends ClassLoader {
         if (resources == null)
             return null;
         for (ClassLoadingResource resource : resources) {
+            accessingResource(resource);
             URL data = resource.getResourceURL(name);
             if (data != null) {
                 return data;
@@ -147,6 +184,7 @@ public final class RunnerClassLoader extends ClassLoader {
             return null;
         List<URL> urls = new ArrayList<>();
         for (ClassLoadingResource resource : resources) {
+            accessingResource(resource);
             URL data = resource.getResourceURL(name);
             if (data != null) {
                 urls.add(data);
@@ -224,11 +262,12 @@ public final class RunnerClassLoader extends ClassLoader {
         }
     }
 
-    public void resetInternalCaches() {
+    public synchronized void resetInternalCaches() {
         for (Map.Entry<String, ClassLoadingResource[]> entry : resourceDirectoryMap.entrySet()) {
             for (ClassLoadingResource i : entry.getValue()) {
                 i.resetInternalCaches();
             }
         }
+        this.postBootPhase = true;
     }
 }

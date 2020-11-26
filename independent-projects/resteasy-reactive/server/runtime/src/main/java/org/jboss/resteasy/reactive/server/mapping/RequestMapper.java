@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.mapping;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -169,7 +170,8 @@ public class RequestMapper<T> {
 
         @Override
         public String toString() {
-            return "RequestMatch{ value: " + value + ", template: " + template + ", pathParamValues: " + pathParamValues + " }";
+            return "RequestMatch{ value: " + value + ", template: " + template + ", pathParamValues: "
+                    + Arrays.toString(pathParamValues) + " }";
         }
     }
 

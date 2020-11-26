@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.api;
+package org.jboss.resteasy.reactive.client.api;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;

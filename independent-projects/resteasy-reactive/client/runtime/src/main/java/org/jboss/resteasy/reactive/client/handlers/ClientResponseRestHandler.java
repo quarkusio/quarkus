@@ -10,11 +10,11 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.client.QuarkusRestClientRequestContext;
 import org.jboss.resteasy.reactive.client.QuarkusRestClientResponseBuilder;
 import org.jboss.resteasy.reactive.client.QuarkusRestClientResponseContext;
 import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 

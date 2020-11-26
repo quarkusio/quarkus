@@ -120,8 +120,8 @@ public class RunnerClassLoader extends ClassLoader {
         return null;
     }
 
-    private String sanitizeName(String name) {
-        if (name.startsWith("/")) {
+    private String sanitizeName(final String name) {
+        if (name.charAt(0) == '/') {
             return name.substring(1);
         }
         return name;

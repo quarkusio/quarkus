@@ -74,7 +74,7 @@ import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
-import org.jboss.resteasy.reactive.SseElementType;
+import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 
 public final class ResteasyReactiveDotNames {
@@ -93,7 +93,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName RESOURCE_INFO = DotName.createSimple(ResourceInfo.class.getName());
     public static final DotName QUARKUS_REST_CONTEXT = DotName.createSimple(QuarkusRestContext.class.getName());
 
-    public static final DotName SSE_ELEMENT_TYPE = DotName.createSimple(SseElementType.class.getName());
+    public static final DotName REST_SSE_ELEMENT_TYPE = DotName.createSimple(RestSseElementType.class.getName());
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
     public static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
     public static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
@@ -188,13 +188,6 @@ public final class ResteasyReactiveDotNames {
     public static final DotName JSONP_JSON_NUMBER = DotName.createSimple(javax.json.JsonNumber.class.getName());
     public static final DotName JSONP_JSON_VALUE = DotName.createSimple(javax.json.JsonValue.class.getName());
     public static final DotName JSONP_JSON_STRING = DotName.createSimple(javax.json.JsonString.class.getName());
-
-    public static final DotName CUSTOM_CONTAINER_REQUEST_FILTER = DotName
-            .createSimple(org.jboss.resteasy.reactive.ContainerRequestFilter.class.getName());
-    public static final DotName CUSTOM_CONTAINER_RESPONSE_FILTER = DotName
-            .createSimple(org.jboss.resteasy.reactive.ContainerResponseFilter.class.getName());
-    public static final DotName EXCEPTION_MAPPER_ANNOTATION = DotName
-            .createSimple(org.jboss.resteasy.reactive.ExceptionMapper.class.getName());
 
     public static final DotName CONTAINER_REQUEST_CONTEXT = DotName.createSimple(ContainerRequestContext.class.getName());
     public static final DotName CONTAINER_RESPONSE_CONTEXT = DotName.createSimple(ContainerResponseContext.class.getName());

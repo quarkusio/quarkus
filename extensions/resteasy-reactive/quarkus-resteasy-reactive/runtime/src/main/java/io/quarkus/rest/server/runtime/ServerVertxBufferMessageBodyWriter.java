@@ -4,8 +4,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
 
 import io.quarkus.resteasy.reactive.common.runtime.VertxBufferMessageBodyWriter;

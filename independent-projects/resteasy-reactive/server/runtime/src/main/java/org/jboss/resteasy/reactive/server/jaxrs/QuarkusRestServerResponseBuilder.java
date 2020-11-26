@@ -6,7 +6,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
@@ -32,7 +32,7 @@ public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder
                         host = host.substring(0, index);
                     }
                     String prefix = "";
-                    QuarkusRestDeployment deployment = request.getDeployment();
+                    Deployment deployment = request.getDeployment();
                     if (deployment != null) {
                         // prefix is already sanitised
                         prefix = deployment.getPrefix();

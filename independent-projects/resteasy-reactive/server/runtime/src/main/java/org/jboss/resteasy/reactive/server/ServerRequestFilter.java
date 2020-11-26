@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive;
+package org.jboss.resteasy.reactive.server;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,7 +15,7 @@ import javax.ws.rs.core.UriInfo;
  * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerRequestFilter} is generated
  * that calls the annotated method with the proper arguments
  * <p>
- * The idea behind using this is to make it much to write a {@code ContainerRequestFilter} as all the necessary information
+ * The idea behind using this is to make it much to write a {@code ServerRequestFilter} as all the necessary information
  * is passed as arguments to the method instead of forcing the author to use a mix of {@code @Context} and programmatic CDI
  * look-ups.
  * <p>
@@ -31,27 +31,26 @@ import javax.ws.rs.core.UriInfo;
  *         this.someBean = someBean;
  *     }
  *
- *     &#64;ContainerRequestFilter
+ *     &#64;ServerRequestFilter
  *     public void whatever(UriInfo uriInfo, HttpHeaders httpHeaders) {
  *         // do something
  *     }
  * }
  * </pre>
  *
- * Methods annotated with {@code ContainerRequestFilter} can declare any of the following parameters (in any order)
+ * Methods annotated with {@code ServerRequestFilter} can declare any of the following parameters (in any order)
  * <ul>
  * <li>{@link ContainerRequestContext}
  * <li>{@link UriInfo}
  * <li>{@link HttpHeaders}
  * <li>{@link Request}
- * <li>{@link HttpServerRequest}
  * <li>{@link ResourceInfo}
- * <li>{@link io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo}
+ * <li>{@link SimplifiedResourceInfo}
  * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface ContainerRequestFilter {
+public @interface ServerRequestFilter {
 
     /**
      * The priority with which this request filter will be executed

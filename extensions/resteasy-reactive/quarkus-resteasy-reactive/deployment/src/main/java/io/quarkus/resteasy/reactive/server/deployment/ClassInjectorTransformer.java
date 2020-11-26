@@ -12,7 +12,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.resteasy.reactive.common.processor.IndexedParameter;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.DelegatingParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
@@ -50,7 +50,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     private static final String INJECT_METHOD_NAME = "__quarkus_rest_inject";
     private static final String INJECT_METHOD_DESCRIPTOR = "(" + QUARKUS_REST_INJECTION_CONTEXT_DESCRIPTOR + ")V";
 
-    private static final String QUARKUS_REST_DEPLOYMENT_BINARY_NAME = QuarkusRestDeployment.class.getName().replace('.', '/');
+    private static final String QUARKUS_REST_DEPLOYMENT_BINARY_NAME = Deployment.class.getName().replace('.', '/');
     private static final String QUARKUS_REST_DEPLOYMENT_DESCRIPTOR = "L" + QUARKUS_REST_DEPLOYMENT_BINARY_NAME + ";";
 
     static final String INIT_CONVERTER_METHOD_NAME = "__quarkus_init_converter__";

@@ -15,7 +15,7 @@ import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.URIDecoder;
 import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.UriMatch;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
@@ -103,7 +103,7 @@ public class QuarkusRestUriInfo implements UriInfo {
     @Override
     public URI getBaseUri() {
         try {
-            QuarkusRestDeployment deployment = currentRequest.getDeployment();
+            Deployment deployment = currentRequest.getDeployment();
             // the TCK doesn't tell us, but Stuart and Georgios prefer dressing their base URIs with useless slashes ;)
             String prefix = "/";
             if (deployment != null) {

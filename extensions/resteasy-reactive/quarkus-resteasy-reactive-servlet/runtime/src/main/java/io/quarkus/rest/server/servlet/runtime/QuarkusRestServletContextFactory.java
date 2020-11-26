@@ -3,7 +3,7 @@ package io.quarkus.rest.server.servlet.runtime;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
@@ -19,7 +19,7 @@ public class QuarkusRestServletContextFactory implements RequestContextFactory {
     public static final QuarkusRestServletContextFactory INSTANCE = new QuarkusRestServletContextFactory();
 
     @Override
-    public ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers,
+    public ResteasyReactiveRequestContext createContext(Deployment deployment, QuarkusRestProviders providers,
             Object context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
             ServerRestHandler[] abortHandlerChain) {
         ServletRequestContext src = (ServletRequestContext) context;

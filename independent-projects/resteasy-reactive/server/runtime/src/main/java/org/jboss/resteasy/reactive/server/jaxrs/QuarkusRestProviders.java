@@ -10,14 +10,14 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 
 //TODO: test
 public class QuarkusRestProviders implements Providers {
 
-    private final QuarkusRestDeployment deployment;
+    private final Deployment deployment;
 
-    public QuarkusRestProviders(QuarkusRestDeployment deployment) {
+    public QuarkusRestProviders(Deployment deployment) {
         this.deployment = deployment;
     }
 

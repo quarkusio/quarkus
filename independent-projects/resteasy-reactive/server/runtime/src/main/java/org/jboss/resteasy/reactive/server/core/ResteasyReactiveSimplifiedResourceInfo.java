@@ -1,14 +1,14 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 
-public final class QuarkusRestSimplifiedResourceInfo implements SimplifiedResourceInfo {
+public final class ResteasyReactiveSimplifiedResourceInfo implements SimplifiedResourceInfo {
 
     private final String methodName;
     private final Class<?> resourceClass;
     private final Class<?>[] parameterTypes;
 
-    public QuarkusRestSimplifiedResourceInfo(String methodName, Class<?> resourceClass, Class<?>[] parameterTypes) {
+    public ResteasyReactiveSimplifiedResourceInfo(String methodName, Class<?> resourceClass, Class<?>[] parameterTypes) {
         this.methodName = methodName;
         this.resourceClass = resourceClass;
         this.parameterTypes = parameterTypes;

@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.common.model;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.jboss.resteasy.reactive.SseElementType;
+import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 /**
@@ -29,7 +29,7 @@ public class ResourceMethod {
     private String[] produces;
 
     /**
-     * The value of the {@link SseElementType} annotation, if none is specified on the method
+     * The value of the {@link RestSseElementType} annotation, if none is specified on the method
      * then this represents the value inherited from the class level, or null if not specified.
      */
     private String sseElementType;

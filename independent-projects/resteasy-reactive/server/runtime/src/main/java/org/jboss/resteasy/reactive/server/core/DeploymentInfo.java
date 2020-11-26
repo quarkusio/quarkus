@@ -9,7 +9,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
-public class QuarkusRestDeploymentInfo {
+public class DeploymentInfo {
 
     private ResourceInterceptors interceptors;
     private ExceptionMapping exceptionMapping;
@@ -30,7 +30,7 @@ public class QuarkusRestDeploymentInfo {
         return interceptors;
     }
 
-    public QuarkusRestDeploymentInfo setInterceptors(ResourceInterceptors interceptors) {
+    public DeploymentInfo setInterceptors(ResourceInterceptors interceptors) {
         this.interceptors = interceptors;
         return this;
     }
@@ -39,7 +39,7 @@ public class QuarkusRestDeploymentInfo {
         return exceptionMapping;
     }
 
-    public QuarkusRestDeploymentInfo setExceptionMapping(ExceptionMapping exceptionMapping) {
+    public DeploymentInfo setExceptionMapping(ExceptionMapping exceptionMapping) {
         this.exceptionMapping = exceptionMapping;
         return this;
     }
@@ -48,7 +48,7 @@ public class QuarkusRestDeploymentInfo {
         return ctxResolvers;
     }
 
-    public QuarkusRestDeploymentInfo setCtxResolvers(ContextResolvers ctxResolvers) {
+    public DeploymentInfo setCtxResolvers(ContextResolvers ctxResolvers) {
         this.ctxResolvers = ctxResolvers;
         return this;
     }
@@ -57,7 +57,7 @@ public class QuarkusRestDeploymentInfo {
         return features;
     }
 
-    public QuarkusRestDeploymentInfo setFeatures(Features features) {
+    public DeploymentInfo setFeatures(Features features) {
         this.features = features;
         return this;
     }
@@ -66,7 +66,7 @@ public class QuarkusRestDeploymentInfo {
         return dynamicFeatures;
     }
 
-    public QuarkusRestDeploymentInfo setDynamicFeatures(DynamicFeatures dynamicFeatures) {
+    public DeploymentInfo setDynamicFeatures(DynamicFeatures dynamicFeatures) {
         this.dynamicFeatures = dynamicFeatures;
         return this;
     }
@@ -75,7 +75,7 @@ public class QuarkusRestDeploymentInfo {
         return serialisers;
     }
 
-    public QuarkusRestDeploymentInfo setSerialisers(ServerSerialisers serialisers) {
+    public DeploymentInfo setSerialisers(ServerSerialisers serialisers) {
         this.serialisers = serialisers;
         return this;
     }
@@ -84,7 +84,7 @@ public class QuarkusRestDeploymentInfo {
         return resourceClasses;
     }
 
-    public QuarkusRestDeploymentInfo setResourceClasses(List<ResourceClass> resourceClasses) {
+    public DeploymentInfo setResourceClasses(List<ResourceClass> resourceClasses) {
         this.resourceClasses = resourceClasses;
         return this;
     }
@@ -93,7 +93,7 @@ public class QuarkusRestDeploymentInfo {
         return locatableResourceClasses;
     }
 
-    public QuarkusRestDeploymentInfo setLocatableResourceClasses(List<ResourceClass> locatableResourceClasses) {
+    public DeploymentInfo setLocatableResourceClasses(List<ResourceClass> locatableResourceClasses) {
         this.locatableResourceClasses = locatableResourceClasses;
         return this;
     }
@@ -102,12 +102,12 @@ public class QuarkusRestDeploymentInfo {
         return paramConverterProviders;
     }
 
-    public QuarkusRestDeploymentInfo setParamConverterProviders(ParamConverterProviders paramConverterProviders) {
+    public DeploymentInfo setParamConverterProviders(ParamConverterProviders paramConverterProviders) {
         this.paramConverterProviders = paramConverterProviders;
         return this;
     }
 
-    public QuarkusRestDeploymentInfo setFactoryCreator(Function<Class<?>, BeanFactory<?>> factoryCreator) {
+    public DeploymentInfo setFactoryCreator(Function<Class<?>, BeanFactory<?>> factoryCreator) {
         this.factoryCreator = factoryCreator;
         return this;
     }
@@ -120,7 +120,7 @@ public class QuarkusRestDeploymentInfo {
         return applicationSupplier;
     }
 
-    public QuarkusRestDeploymentInfo setApplicationSupplier(Supplier<Application> applicationSupplier) {
+    public DeploymentInfo setApplicationSupplier(Supplier<Application> applicationSupplier) {
         this.applicationSupplier = applicationSupplier;
         return this;
     }
@@ -129,7 +129,7 @@ public class QuarkusRestDeploymentInfo {
         return clientProxyUnwrapper;
     }
 
-    public QuarkusRestDeploymentInfo setClientProxyUnwrapper(Function<Object, Object> clientProxyUnwrapper) {
+    public DeploymentInfo setClientProxyUnwrapper(Function<Object, Object> clientProxyUnwrapper) {
         this.clientProxyUnwrapper = clientProxyUnwrapper;
         return this;
     }
@@ -138,7 +138,7 @@ public class QuarkusRestDeploymentInfo {
         return config;
     }
 
-    public QuarkusRestDeploymentInfo setConfig(ResteasyReactiveConfig config) {
+    public DeploymentInfo setConfig(ResteasyReactiveConfig config) {
         this.config = config;
         return this;
     }
@@ -147,7 +147,7 @@ public class QuarkusRestDeploymentInfo {
         return applicationPath;
     }
 
-    public QuarkusRestDeploymentInfo setApplicationPath(String applicationPath) {
+    public DeploymentInfo setApplicationPath(String applicationPath) {
         this.applicationPath = applicationPath;
         return this;
     }

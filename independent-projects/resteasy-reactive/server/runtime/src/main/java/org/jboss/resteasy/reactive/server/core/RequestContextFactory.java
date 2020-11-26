@@ -6,7 +6,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public interface RequestContextFactory {
 
-    ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers,
+    ResteasyReactiveRequestContext createContext(Deployment deployment, QuarkusRestProviders providers,
             Object context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain);
 }

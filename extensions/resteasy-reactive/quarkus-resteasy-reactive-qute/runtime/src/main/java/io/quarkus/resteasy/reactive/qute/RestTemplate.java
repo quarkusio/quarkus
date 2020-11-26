@@ -1,8 +1,8 @@
 package io.quarkus.resteasy.reactive.qute;
 
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.qute.Engine;

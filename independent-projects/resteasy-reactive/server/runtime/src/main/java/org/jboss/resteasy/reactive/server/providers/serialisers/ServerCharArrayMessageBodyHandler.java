@@ -7,8 +7,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.CharArrayMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
 

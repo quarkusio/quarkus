@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 
 import io.undertow.servlet.handlers.ServletRequestContext;
@@ -18,7 +18,7 @@ public class QuarkusRestServlet extends HttpServlet {
 
     private final QuarkusRestInitialHandler initialHandler;
 
-    public QuarkusRestServlet(QuarkusRestDeployment deployment) {
+    public QuarkusRestServlet(Deployment deployment) {
         this.initialHandler = new QuarkusRestInitialHandler(deployment);
     }
 

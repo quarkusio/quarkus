@@ -6,10 +6,10 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestSimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveSimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.EndpointInvoker;
@@ -117,7 +117,7 @@ public class RuntimeResource {
     }
 
     public SimplifiedResourceInfo getSimplifiedResourceInfo() {
-        return new QuarkusRestSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
+        return new ResteasyReactiveSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
     }
 
     public MediaType getSseElementType() {

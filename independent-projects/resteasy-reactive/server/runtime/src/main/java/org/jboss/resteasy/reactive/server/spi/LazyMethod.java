@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.core;
+package org.jboss.resteasy.reactive.server.spi;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.*;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -241,7 +243,7 @@ public class ResteasyReactiveScanningProcessor {
         }
 
         for (AnnotationInstance instance : index
-                .getAnnotations(ResteasyReactiveDotNames.CUSTOM_CONTAINER_REQUEST_FILTER)) {
+                .getAnnotations(SERVER_REQUEST_FILTER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
@@ -264,7 +266,7 @@ public class ResteasyReactiveScanningProcessor {
             additionalContainerRequestFilters.produce(builder.build());
         }
         for (AnnotationInstance instance : index
-                .getAnnotations(ResteasyReactiveDotNames.CUSTOM_CONTAINER_RESPONSE_FILTER)) {
+                .getAnnotations(SERVER_RESPONSE_FILTER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }

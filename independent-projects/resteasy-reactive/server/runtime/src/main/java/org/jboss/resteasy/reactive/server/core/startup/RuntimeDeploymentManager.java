@@ -21,11 +21,11 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.Features;
 import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
@@ -46,14 +46,14 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class RuntimeDeploymentManager {
     public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
-    private final QuarkusRestDeploymentInfo info;
+    private final DeploymentInfo info;
     private final Supplier<Executor> executorSupplier;
     private final Consumer<Closeable> closeTaskHandler;
     private final RequestContextFactory requestContextFactory;
     private final ThreadSetupAction threadSetupAction;
     private final String rootPath;
 
-    public RuntimeDeploymentManager(QuarkusRestDeploymentInfo info,
+    public RuntimeDeploymentManager(DeploymentInfo info,
             Supplier<Executor> executorSupplier,
             Consumer<Closeable> closeTaskHandler,
             RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath) {
@@ -65,7 +65,7 @@ public class RuntimeDeploymentManager {
         this.rootPath = rootPath;
     }
 
-    public QuarkusRestDeployment deploy() {
+    public Deployment deploy() {
         ResourceInterceptors interceptors = info.getInterceptors();
         ServerSerialisers serialisers = info.getSerialisers();
         Features features = info.getFeatures();
@@ -181,7 +181,7 @@ public class RuntimeDeploymentManager {
             }
         }
 
-        QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, info.getCtxResolvers(), serialisers,
+        Deployment deployment = new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, quarkusRestConfiguration, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers);

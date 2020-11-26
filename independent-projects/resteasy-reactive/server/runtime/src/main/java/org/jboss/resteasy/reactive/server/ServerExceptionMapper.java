@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive;
+package org.jboss.resteasy.reactive.server;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -24,14 +24,13 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link UriInfo}
  * <li>{@link HttpHeaders}
  * <li>{@link Request}
- * <li>{@link HttpServerRequest}
  * <li>{@link ResourceInfo}
- * <li>{@link io.quarkus.rest.server.runtime.spi.SimplifiedResourceInfo}
+ * <li>{@link SimplifiedResourceInfo}
  * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface ExceptionMapper {
+public @interface ServerExceptionMapper {
 
     Class<? extends Throwable>[] value();
 }

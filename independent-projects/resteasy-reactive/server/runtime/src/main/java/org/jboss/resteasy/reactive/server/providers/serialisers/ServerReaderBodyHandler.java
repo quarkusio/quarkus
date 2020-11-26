@@ -9,8 +9,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.common.providers.serialisers.ReaderBodyHandler;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
 
 public class ServerReaderBodyHandler extends ReaderBodyHandler implements QuarkusRestMessageBodyReader<Reader> {

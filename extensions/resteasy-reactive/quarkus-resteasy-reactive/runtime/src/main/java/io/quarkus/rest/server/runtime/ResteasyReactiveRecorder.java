@@ -16,9 +16,9 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.ContextResolvers;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
+import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
@@ -55,13 +55,13 @@ public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
         }
     };
 
-    private static volatile QuarkusRestDeployment currentDeployment;
+    private static volatile Deployment currentDeployment;
 
-    public static QuarkusRestDeployment getCurrentDeployment() {
+    public static Deployment getCurrentDeployment() {
         return currentDeployment;
     }
 
-    public RuntimeValue<QuarkusRestDeployment> createDeployment(QuarkusRestDeploymentInfo info,
+    public RuntimeValue<Deployment> createDeployment(DeploymentInfo info,
             BeanContainer beanContainer,
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
@@ -86,7 +86,7 @@ public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
         if (contextFactory == null) {
             contextFactory = new RequestContextFactory() {
                 @Override
-                public ResteasyReactiveRequestContext createContext(QuarkusRestDeployment deployment,
+                public ResteasyReactiveRequestContext createContext(Deployment deployment,
                         QuarkusRestProviders providers, Object context, ThreadSetupAction requestContext,
                         ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
                     return new QuarkusResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
@@ -100,7 +100,7 @@ public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
                 vertxConfig.rootPath);
-        QuarkusRestDeployment deployment = runtimeDeploymentManager.deploy();
+        Deployment deployment = runtimeDeploymentManager.deploy();
         initClassFactory.createInstance().getInstance().init(deployment);
         currentDeployment = deployment;
 
@@ -111,8 +111,8 @@ public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
         return new RuntimeValue<>(deployment);
     }
 
-    public Handler<RoutingContext> handler(RuntimeValue<QuarkusRestDeployment> deploymentRuntimeValue) {
-        QuarkusRestDeployment deployment = deploymentRuntimeValue.getValue();
+    public Handler<RoutingContext> handler(RuntimeValue<Deployment> deploymentRuntimeValue) {
+        Deployment deployment = deploymentRuntimeValue.getValue();
         QuarkusRestInitialHandler initialHandler = new QuarkusRestInitialHandler(deployment);
         return new Handler<RoutingContext>() {
             @Override

@@ -32,7 +32,7 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Providers;
 
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.Blocking;

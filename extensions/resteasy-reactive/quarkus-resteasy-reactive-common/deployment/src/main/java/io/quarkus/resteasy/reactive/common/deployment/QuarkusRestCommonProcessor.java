@@ -226,7 +226,7 @@ public class QuarkusRestCommonProcessor {
                     resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
                 }
                 List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotations()
-                        .get(ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION);
+                        .get(QuarkusResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
                 if (exceptionMapperAnnotationInstances != null) {
                     for (AnnotationInstance instance : exceptionMapperAnnotationInstances) {
                         if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {

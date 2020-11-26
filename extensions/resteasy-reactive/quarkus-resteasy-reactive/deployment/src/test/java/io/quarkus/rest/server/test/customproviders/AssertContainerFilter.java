@@ -9,13 +9,13 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Request;
 
-import org.jboss.resteasy.reactive.ContainerRequestFilter;
-import org.jboss.resteasy.reactive.ContainerResponseFilter;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestSimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.ServerRequestFilter;
+import org.jboss.resteasy.reactive.server.ServerResponseFilter;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveSimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestRequest;
+import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
@@ -33,27 +33,27 @@ public class AssertContainerFilter {
         this.someBean = someBean;
     }
 
-    @ContainerRequestFilter
+    @ServerRequestFilter
     public void whatever(Request request, HttpServerRequest httpServerRequest, SimplifiedResourceInfo simplifiedResourceInfo,
             ResourceInfo resourceInfo, QuarkusRestContainerRequestContext quarkusRestContainerRequestContext,
             RoutingContext routingContext) {
         assertNotNull(someBean);
         assertTrue(QuarkusRestRequest.class.isAssignableFrom(request.getClass()));
         assertNotNull(httpServerRequest);
-        assertTrue(QuarkusRestSimplifiedResourceInfo.class.isAssignableFrom(simplifiedResourceInfo.getClass()));
+        assertTrue(ResteasyReactiveSimplifiedResourceInfo.class.isAssignableFrom(simplifiedResourceInfo.getClass()));
         assertTrue(LazyMethod.class.isAssignableFrom(resourceInfo.getClass()));
         assertNotNull(quarkusRestContainerRequestContext);
         assertNotNull(routingContext);
         COUNT.incrementAndGet();
     }
 
-    @ContainerRequestFilter
+    @ServerRequestFilter
     public void another() {
         assertNotNull(someBean);
         COUNT.incrementAndGet();
     }
 
-    @ContainerResponseFilter
+    @ServerResponseFilter
     public void response(QuarkusRestContainerRequestContext quarkusRestContainerRequestContext,
             ContainerResponseContext containerResponseContext) {
         assertNotNull(someBean);

@@ -35,7 +35,7 @@ import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.GeneratedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
@@ -290,7 +290,7 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
             if (result.getConverter() != null) {
                 initConverters.invokeStaticMethod(MethodDescriptor.ofMethod(currentTypeName,
                         ClassInjectorTransformer.INIT_CONVERTER_METHOD_NAME + field.name(),
-                        void.class, QuarkusRestDeployment.class),
+                        void.class, Deployment.class),
                         initConverters.getMethodParam(0));
             }
             if (result.getType() == ParameterType.BEAN) {

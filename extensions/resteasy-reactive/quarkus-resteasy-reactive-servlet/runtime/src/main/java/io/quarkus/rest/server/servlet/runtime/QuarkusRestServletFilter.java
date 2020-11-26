@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 
 import io.undertow.servlet.handlers.ServletRequestContext;
@@ -19,7 +19,7 @@ public class QuarkusRestServletFilter extends HttpFilter {
 
     private final QuarkusRestInitialHandler initialHandler;
 
-    public QuarkusRestServletFilter(QuarkusRestDeployment deployment) {
+    public QuarkusRestServletFilter(Deployment deployment) {
         this.initialHandler = new QuarkusRestInitialHandler(deployment);
     }
 

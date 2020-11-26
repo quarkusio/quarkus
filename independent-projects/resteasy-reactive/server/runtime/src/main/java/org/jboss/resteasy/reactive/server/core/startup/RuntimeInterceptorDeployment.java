@@ -21,8 +21,8 @@ import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
@@ -50,11 +50,11 @@ public class RuntimeInterceptorDeployment {
     private final List<ResourceRequestFilterHandler> globalRequestInterceptorHandlers;
     private final List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers;
     private final InterceptorHandler globalInterceptorHandler;
-    private final QuarkusRestDeploymentInfo info;
+    private final DeploymentInfo info;
     private final Consumer<Closeable> closeTaskHandler;
     private final QuarkusRestConfiguration quarkusRestConfiguration;
 
-    public RuntimeInterceptorDeployment(QuarkusRestDeploymentInfo info, QuarkusRestConfiguration quarkusRestConfiguration,
+    public RuntimeInterceptorDeployment(DeploymentInfo info, QuarkusRestConfiguration quarkusRestConfiguration,
             Consumer<Closeable> closeTaskHandler) {
         this.info = info;
         this.quarkusRestConfiguration = quarkusRestConfiguration;

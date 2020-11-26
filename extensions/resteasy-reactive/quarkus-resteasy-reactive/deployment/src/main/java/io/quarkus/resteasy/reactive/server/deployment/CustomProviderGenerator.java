@@ -3,10 +3,13 @@ package io.quarkus.resteasy.reactive.server.deployment;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT;
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.ROUTING_CONTEXT;
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER;
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER;
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_RESPONSE_CONTEXT;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CUSTOM_CONTAINER_REQUEST_FILTER;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CUSTOM_CONTAINER_RESPONSE_FILTER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
@@ -23,15 +26,15 @@ import javax.ws.rs.container.ContainerResponseContext;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.ContainerRequestFilter;
-import org.jboss.resteasy.reactive.ContainerResponseFilter;
 import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.ServerRequestFilter;
+import org.jboss.resteasy.reactive.server.ServerResponseFilter;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -46,7 +49,7 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Generates the actual implementation of a provider that allows user code using annotations like
- * {@link ContainerRequestFilter} and {@link ContainerResponseFilter} to work seamlessly
+ * {@link ServerRequestFilter} and {@link ServerResponseFilter} to work seamlessly
  */
 final class CustomProviderGenerator {
 
@@ -55,7 +58,7 @@ final class CustomProviderGenerator {
 
     /**
      * Generates an implementation of {@link javax.ws.rs.container.ContainerRequestFilter} that delegates to the method
-     * annotated with {@code @ContainerRequestFilter}.
+     * annotated with {@code @ServerRequestFilter}.
      * <p>
      * An example of the generated code is:
      *
@@ -63,7 +66,7 @@ final class CustomProviderGenerator {
      *
      * &#64;Singleton
      * &#64;Unremovable
-     * public class CustomContainerRequestFilter$GeneratedContainerRequestFilter$someMethod implements ContainerRequestFilter {
+     * public class CustomContainerRequestFilter$GeneratedContainerRequestFilter$someMethod implements ServerRequestFilter {
      *     private final CustomContainerRequestFilter delegate;
      *
      *     &#64;Inject
@@ -83,8 +86,8 @@ final class CustomProviderGenerator {
      * </pre>
      */
     static String generateContainerRequestFilter(MethodInfo targetMethod, ClassOutput classOutput) {
-        checkModifiers(targetMethod, CUSTOM_CONTAINER_REQUEST_FILTER);
-        String generatedClassName = getGeneratedClassName(targetMethod, CUSTOM_CONTAINER_REQUEST_FILTER);
+        checkModifiers(targetMethod, SERVER_REQUEST_FILTER);
+        String generatedClassName = getGeneratedClassName(targetMethod, SERVER_REQUEST_FILTER);
         DotName declaringClassName = targetMethod.declaringClass().name();
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
                 .className(generatedClassName)
@@ -119,7 +122,7 @@ final class CustomProviderGenerator {
                 DotName paramDotName = param.name();
                 if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(0);
-                } else if (ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
+                } else if (QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
                             QuarkusRestContainerRequestContext.class);
                 } else if (URI_INFO.equals(paramDotName)) {
@@ -142,12 +145,12 @@ final class CustomProviderGenerator {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getLazyMethod", LazyMethod.class), runtimeResourceHandle);
-                } else if (ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
+                } else if (SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
                             runtimeResourceHandle);
-                } else if (ResteasyReactiveServerDotNames.ROUTING_CONTEXT.equals(paramDotName)) {
+                } else if (ROUTING_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
                 } else {
                     String parameterName = targetMethod.parameterName(i);
@@ -167,7 +170,7 @@ final class CustomProviderGenerator {
 
     /**
      * Generates an implementation of {@link javax.ws.rs.container.ContainerResponseFilter} that delegates to the method
-     * annotated with {@code @ContainerResponseFilter}.
+     * annotated with {@code @ServerResponseFilter}.
      * <p>
      * An example of the generated code is:
      *
@@ -176,7 +179,7 @@ final class CustomProviderGenerator {
      * &#64;Singleton
      * &#64;Unremovable
      * public class CustomContainerResponseFilter$GeneratedContainerResponseFilter$someMethod
-     *         implements ContainerResponseFilter {
+     *         implements ServerResponseFilter {
      *     private final CustomContainerRequestFilter delegate;
      *
      *     &#64;Inject
@@ -195,8 +198,8 @@ final class CustomProviderGenerator {
      * </pre>
      */
     static String generateContainerResponseFilter(MethodInfo targetMethod, ClassOutput classOutput) {
-        checkModifiers(targetMethod, CUSTOM_CONTAINER_RESPONSE_FILTER);
-        String generatedClassName = getGeneratedClassName(targetMethod, CUSTOM_CONTAINER_RESPONSE_FILTER);
+        checkModifiers(targetMethod, SERVER_RESPONSE_FILTER);
+        String generatedClassName = getGeneratedClassName(targetMethod, SERVER_RESPONSE_FILTER);
         DotName declaringClassName = targetMethod.declaringClass().name();
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
                 .className(generatedClassName)
@@ -233,7 +236,7 @@ final class CustomProviderGenerator {
                 DotName paramDotName = param.name();
                 if (CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(0);
-                } else if (ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
+                } else if (QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
                             QuarkusRestContainerRequestContext.class);
                 } else if (CONTAINER_RESPONSE_CONTEXT.equals(paramDotName)) {
@@ -250,7 +253,7 @@ final class CustomProviderGenerator {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getLazyMethod", LazyMethod.class), runtimeResourceHandle);
-                } else if (ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
+                } else if (SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
                             ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),

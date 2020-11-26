@@ -38,9 +38,9 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_SSE_ELEMENT_TYPE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE_ELEMENT_TYPE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
@@ -103,7 +103,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             ResteasyReactiveDotNames.SSE_EVENT_SINK,
             // extras
             ResteasyReactiveDotNames.QUARKUS_REST_CONTEXT,
-            DotName.createSimple("org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo"), //TODO: fixme
+            DotName.createSimple("org.jboss.resteasy.reactive.server.SimplifiedResourceInfo"), //TODO: fixme
             ResteasyReactiveDotNames.RESOURCE_INFO)));
 
     protected static final Logger log = Logger.getLogger(EndpointInvoker.class);
@@ -237,7 +237,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
         String classSseElementType = null;
-        AnnotationInstance classSseElementTypeAnnotation = currentClassInfo.classAnnotation(SSE_ELEMENT_TYPE);
+        AnnotationInstance classSseElementTypeAnnotation = currentClassInfo.classAnnotation(REST_SSE_ELEMENT_TYPE);
         if (classSseElementTypeAnnotation != null) {
             classSseElementType = classSseElementTypeAnnotation.value().asString();
         }
@@ -404,7 +404,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             produces = applyDefaultProduces(produces, nonAsyncReturnType);
 
             String sseElementType = classSseElementType;
-            AnnotationInstance sseElementTypeAnnotation = info.annotation(SSE_ELEMENT_TYPE);
+            AnnotationInstance sseElementTypeAnnotation = info.annotation(REST_SSE_ELEMENT_TYPE);
             if (sseElementTypeAnnotation != null) {
                 sseElementType = sseElementTypeAnnotation.value().asString();
             }

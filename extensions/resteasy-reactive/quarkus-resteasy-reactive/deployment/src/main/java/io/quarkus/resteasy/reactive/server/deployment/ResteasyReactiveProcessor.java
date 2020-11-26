@@ -49,12 +49,12 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.ContextResolvers;
+import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.Features;
 import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -260,7 +260,7 @@ public class ResteasyReactiveProcessor {
         ServerEndpointIndexer serverEndpointIndexer;
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
                 QUARKUS_INIT_CLASS, null, Object.class.getName(), ResteasyReactiveInitialiser.class.getName());
-                MethodCreator initConverters = c.getMethodCreator("init", void.class, QuarkusRestDeployment.class)) {
+                MethodCreator initConverters = c.getMethodCreator("init", void.class, Deployment.class)) {
 
             serverEndpointIndexer = new ServerEndpointIndexer.Builder()
                     .setIndex(index)
@@ -436,7 +436,7 @@ public class ResteasyReactiveProcessor {
             // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
             // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
             Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
-            RuntimeValue<QuarkusRestDeployment> deployment = recorder.createDeployment(new QuarkusRestDeploymentInfo()
+            RuntimeValue<Deployment> deployment = recorder.createDeployment(new DeploymentInfo()
                     .setInterceptors(interceptors.sort())
                     .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
                     .setExceptionMapping(exceptionMapping)

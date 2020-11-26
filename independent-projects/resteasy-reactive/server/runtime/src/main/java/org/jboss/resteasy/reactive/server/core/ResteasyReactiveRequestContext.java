@@ -50,7 +50,7 @@ public abstract class ResteasyReactiveRequestContext
         implements Closeable, QuarkusRestInjectionContext {
 
     public static final Object[] EMPTY_ARRAY = new Object[0];
-    protected final QuarkusRestDeployment deployment;
+    protected final Deployment deployment;
     protected final QuarkusRestProviders providers;
     /**
      * The parameters array, populated by handlers
@@ -133,7 +133,7 @@ public abstract class ResteasyReactiveRequestContext
     private OutputStream outputStream;
     private OutputStream underlyingOutputStream;
 
-    public ResteasyReactiveRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers,
+    public ResteasyReactiveRequestContext(Deployment deployment, QuarkusRestProviders providers,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.deployment = deployment;
@@ -145,7 +145,7 @@ public abstract class ResteasyReactiveRequestContext
 
     public abstract ServerHttpResponse serverResponse();
 
-    public QuarkusRestDeployment getDeployment() {
+    public Deployment getDeployment() {
         return deployment;
     }
 

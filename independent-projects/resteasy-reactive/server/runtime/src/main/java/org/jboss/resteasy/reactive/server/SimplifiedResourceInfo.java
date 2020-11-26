@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.spi;
+package org.jboss.resteasy.reactive.server;
 
 /**
  * Type that can be injected into places where ResourceInfo can.

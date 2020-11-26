@@ -4,14 +4,14 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.ExceptionMapper;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
 final class ClassLevelExceptionMappersBuildItem extends SimpleBuildItem {
 
     /**
-     * The key is the DotName of the class which contains methods annotated with {@link ExceptionMapper}
+     * The key is the DotName of the class which contains methods annotated with {@link ServerExceptionMapper}
      * and the value is a map of from exception class name to generated exception mapper class name
      */
     private final Map<DotName, Map<String, String>> mappers;

@@ -6,12 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 
-import org.jboss.resteasy.reactive.ContainerResponseFilter;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.ServerResponseFilter;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 
 public class CustomContainerResponseFilter {
 
-    @ContainerResponseFilter
+    @ServerResponseFilter
     public void whatever(SimplifiedResourceInfo simplifiedResourceInfo, ContainerResponseContext responseContext,
             ContainerRequestContext requestContext, Throwable t) {
         assertNotNull(requestContext);

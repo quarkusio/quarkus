@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.List;
 import javax.ws.rs.NotFoundException;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
@@ -13,7 +13,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 public class QuarkusRestInitialHandler implements ServerRestHandler {
 
     final RequestMapper<InitialMatch> mappers;
-    final QuarkusRestDeployment deployment;
+    final Deployment deployment;
     final QuarkusRestProviders providers;
     final List<ResourceRequestFilterHandler> preMappingHandlers;
     final ServerRestHandler[] initialChain;
@@ -21,7 +21,7 @@ public class QuarkusRestInitialHandler implements ServerRestHandler {
     final ThreadSetupAction requestContext;
     final RequestContextFactory requestContextFactory;
 
-    public QuarkusRestInitialHandler(QuarkusRestDeployment deployment) {
+    public QuarkusRestInitialHandler(Deployment deployment) {
         this.mappers = new RequestMapper<>(deployment.getClassMappers());
         this.deployment = deployment;
         this.providers = new QuarkusRestProviders(deployment);

@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.*;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.paramHandleFromReqContextMethod;
 import static io.quarkus.resteasy.reactive.server.deployment.GeneratorUtils.routingContextHandler;
@@ -25,13 +26,13 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestContainerRequestContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -52,7 +53,7 @@ final class ClassLevelExceptionMapperGenerator {
      * For example, for a method like:
      * 
      * <pre>
-     * &#64;ExceptionMapper(IllegalArgumentException.class)
+     * &#64;ServerExceptionMapper(IllegalArgumentException.class)
      * public Response perClassMapper(IllegalArgumentException e, Request r) {
      *
      * }
@@ -81,7 +82,7 @@ final class ClassLevelExceptionMapperGenerator {
 
         ClassInfo targetClass = targetMethod.declaringClass();
         AnnotationInstance exceptionMapperInstance = targetMethod
-                .annotation(ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION);
+                .annotation(SERVER_EXCEPTION_MAPPER);
         Type[] handledExceptionTypes = exceptionMapperInstance.value().asClassArray();
         Map<String, String> result = new HashMap<>();
         for (Type handledExceptionType : handledExceptionTypes) {
@@ -214,12 +215,12 @@ final class ClassLevelExceptionMapperGenerator {
     private static void checkModifiers(MethodInfo info) {
         if ((info.flags() & Modifier.PRIVATE) != 0) {
             throw new RuntimeException("Method '" + info.name() + " of class '" + info.declaringClass().name()
-                    + "' cannot be private as it is annotated with '@" + ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION
+                    + "' cannot be private as it is annotated with '@" + SERVER_EXCEPTION_MAPPER
                     + "'");
         }
         if ((info.flags() & Modifier.STATIC) != 0) {
             throw new RuntimeException("Method '" + info.name() + " of class '" + info.declaringClass().name()
-                    + "' cannot be static as it is annotated with '@" + ResteasyReactiveDotNames.EXCEPTION_MAPPER_ANNOTATION
+                    + "' cannot be static as it is annotated with '@" + SERVER_EXCEPTION_MAPPER
                     + "'");
         }
     }

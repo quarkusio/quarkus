@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.SecurityContext;
 
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
@@ -58,7 +58,7 @@ public class QuarkusServletRequestContext extends ResteasyReactiveRequestContext
     byte[] asyncWriteData;
     Consumer<Throwable> asyncWriteHandler;
 
-    public QuarkusServletRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers,
+    public QuarkusServletRequestContext(Deployment deployment, QuarkusRestProviders providers,
             HttpServletRequest request, HttpServletResponse response,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             RoutingContext context) {

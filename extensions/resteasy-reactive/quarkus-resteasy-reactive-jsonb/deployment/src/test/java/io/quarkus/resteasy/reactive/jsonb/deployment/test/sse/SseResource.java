@@ -10,7 +10,7 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
-import org.jboss.resteasy.reactive.SseElementType;
+import org.jboss.resteasy.reactive.RestSseElementType;
 
 import io.smallrye.mutiny.Multi;
 
@@ -41,7 +41,7 @@ public class SseResource {
     @Path("json")
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
+    @RestSseElementType(MediaType.APPLICATION_JSON)
     public void sseJson(Sse sse, SseEventSink sink) throws IOException {
         if (sink == null) {
             throw new IllegalStateException("No client connected.");
@@ -75,7 +75,7 @@ public class SseResource {
     @Path("json/multi")
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
+    @RestSseElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
     }

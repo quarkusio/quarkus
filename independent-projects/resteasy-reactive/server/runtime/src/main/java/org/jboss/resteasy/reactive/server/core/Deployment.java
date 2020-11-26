@@ -23,7 +23,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
-public class QuarkusRestDeployment {
+public class Deployment {
     private final ExceptionMapping exceptionMapping;
     private final ContextResolvers contextResolvers;
     private final ServerSerialisers serialisers;
@@ -38,7 +38,7 @@ public class QuarkusRestDeployment {
     private final List<ResourceRequestFilterHandler> preMatchHandlers;
     private final List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers;
 
-    public QuarkusRestDeployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
+    public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
             ServerRestHandler[] abortHandlerChain,
             EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,

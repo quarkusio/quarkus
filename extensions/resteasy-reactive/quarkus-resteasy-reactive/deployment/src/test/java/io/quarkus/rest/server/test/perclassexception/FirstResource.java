@@ -9,9 +9,9 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.jboss.resteasy.reactive.ExceptionMapper;
 import org.jboss.resteasy.reactive.RestQuery;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 
 import io.vertx.core.http.HttpServerRequest;
 
@@ -31,12 +31,12 @@ public class FirstResource {
         throw new RuntimeException();
     }
 
-    @ExceptionMapper({ IllegalStateException.class, IllegalArgumentException.class })
+    @ServerExceptionMapper({ IllegalStateException.class, IllegalArgumentException.class })
     public Response handleIllegal() {
         return Response.status(409).build();
     }
 
-    @ExceptionMapper(MyException.class)
+    @ServerExceptionMapper(MyException.class)
     public Response handleMy(SimplifiedResourceInfo simplifiedResourceInfo, MyException myException,
             ContainerRequestContext containerRequestContext, UriInfo uriInfo, HttpHeaders httpHeaders, Request request,
             HttpServerRequest httpServerRequest) {

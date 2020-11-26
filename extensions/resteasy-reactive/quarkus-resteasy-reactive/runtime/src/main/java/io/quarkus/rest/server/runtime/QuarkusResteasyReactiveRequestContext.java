@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 import javax.enterprise.event.Event;
 import javax.ws.rs.core.SecurityContext;
 
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
+import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
@@ -27,7 +27,7 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
                 }
             });
 
-    public QuarkusResteasyReactiveRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers,
+    public QuarkusResteasyReactiveRequestContext(Deployment deployment, QuarkusRestProviders providers,
             RoutingContext context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
             ServerRestHandler[] abortHandlerChain) {
         super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain);

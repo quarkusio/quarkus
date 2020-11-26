@@ -15,7 +15,7 @@ import java.util.function.Function;
 /**
  * Classloader used for production application, using the multi jar strategy
  */
-public class RunnerClassLoader extends ClassLoader {
+public final class RunnerClassLoader extends ClassLoader {
 
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
@@ -126,7 +126,7 @@ public class RunnerClassLoader extends ClassLoader {
         return name;
     }
 
-    private ClassLoadingResource[] getClassLoadingResources(String name) {
+    private ClassLoadingResource[] getClassLoadingResources(final String name) {
         ClassLoadingResource[] resources = directlyIndexedResourcesIndexMap.get(name);
         if (resources != null) {
             return resources;

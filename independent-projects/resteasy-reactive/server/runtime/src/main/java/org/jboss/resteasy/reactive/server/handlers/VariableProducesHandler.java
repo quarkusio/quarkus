@@ -4,6 +4,7 @@ import java.util.List;
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
@@ -40,7 +41,8 @@ public class VariableProducesHandler implements ServerRestHandler {
             //TODO?
             return;
         }
-        MediaType res = mediaTypeList.negotiateProduces(requestContext.serverRequest()).getKey();
+        MediaType res = mediaTypeList.negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT))
+                .getKey();
         if (res == null) {
             throw new WebApplicationException(Response
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())

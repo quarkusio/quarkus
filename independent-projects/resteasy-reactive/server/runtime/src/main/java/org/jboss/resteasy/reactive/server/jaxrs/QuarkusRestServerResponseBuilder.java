@@ -4,11 +4,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder {
 

@@ -21,12 +21,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
-import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequestContext
         implements ServerHttpRequest, ServerHttpResponse {

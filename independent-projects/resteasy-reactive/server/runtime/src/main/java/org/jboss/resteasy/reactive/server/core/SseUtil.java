@@ -13,9 +13,9 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestOutboundSseEvent;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 public class SseUtil extends CommonSseUtil {
 

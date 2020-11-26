@@ -7,13 +7,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 
 /**
  * A representation of a server side media type.
  *
+ * TODO: This belongs in the server module but needs to be untangled from ResourceWriter (in a way that doesn't hurt
+ * performance) to make that happen
  */
 public class ServerMediaType {
 
@@ -100,8 +100,8 @@ public class ServerMediaType {
      * @return An entry containing the negotiated desired media type as a key and the negotiated
      *         provided media type as a value
      */
-    public Map.Entry<MediaType, MediaType> negotiateProduces(ServerHttpRequest request) {
-        return negotiateProduces(request, this.hardCoded);
+    public Map.Entry<MediaType, MediaType> negotiateProduces(String acceptHeader) {
+        return negotiateProduces(acceptHeader, this.hardCoded);
     }
 
     /**
@@ -109,19 +109,18 @@ public class ServerMediaType {
      * @return An entry containing the negotiated desired media type as a key and the negotiated
      *         provided media type as a value
      */
-    public Map.Entry<MediaType, MediaType> negotiateProduces(ServerHttpRequest request, MediaType hardCoded) {
+    public Map.Entry<MediaType, MediaType> negotiateProduces(String acceptHeader, MediaType hardCoded) {
         if (hardCoded != null) {
             //technically we should negotiate here, and check if we need to return a 416
             //but for performance reasons we ignore this
             return new AbstractMap.SimpleEntry<>(hardCoded, null);
         }
-        String acceptStr = request.getRequestHeader(HttpHeaders.ACCEPT);
         MediaType selectedDesired = null;
         MediaType selectedProvided = null;
         List<MediaType> parsedAccepted;
-        if (acceptStr != null) {
+        if (acceptHeader != null) {
             //TODO: this can be optimised
-            parsedAccepted = MediaTypeHelper.parseHeader(acceptStr);
+            parsedAccepted = MediaTypeHelper.parseHeader(acceptHeader);
             MediaTypeHelper.sortByWeight(parsedAccepted);
             String currentClientQ = null;
             int currentServerIndex = Integer.MAX_VALUE;

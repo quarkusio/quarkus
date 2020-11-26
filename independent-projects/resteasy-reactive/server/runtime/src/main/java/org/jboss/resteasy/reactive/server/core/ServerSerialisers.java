@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -28,8 +29,6 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
-import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
@@ -52,6 +51,8 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMess
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 public class ServerSerialisers extends Serialisers {
 
@@ -273,7 +274,8 @@ public class ServerSerialisers extends Serialisers {
             if (!resourceWriter.matchesRuntimeType(RuntimeType.SERVER)) {
                 continue;
             }
-            Map.Entry<MediaType, MediaType> current = resourceWriter.serverMediaType().negotiateProduces(request, null);
+            Map.Entry<MediaType, MediaType> current = resourceWriter.serverMediaType()
+                    .negotiateProduces(request.getRequestHeader(HttpHeaders.ACCEPT), null);
             if (current.getValue() == null) {
                 continue;
             }
@@ -311,7 +313,8 @@ public class ServerSerialisers extends Serialisers {
         }
         MediaType selected = null;
         for (ResourceWriter writer : constrainedResultsForClass) {
-            selected = writer.serverMediaType().negotiateProduces(requestContext.serverRequest()).getKey();
+            selected = writer.serverMediaType()
+                    .negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT)).getKey();
             if (selected != null) {
                 break;
             }

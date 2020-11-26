@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.common.http;
+package org.jboss.resteasy.reactive.server.spi;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;

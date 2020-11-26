@@ -31,7 +31,6 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContext;
 import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.quarkus.arc.Unremovable;
@@ -239,9 +238,6 @@ final class CustomProviderGenerator {
                             QuarkusRestContainerRequestContext.class);
                 } else if (CONTAINER_RESPONSE_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(1);
-                } else if (ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_RESPONSE_CONTEXT.equals(paramDotName)) {
-                    targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(1),
-                            QuarkusRestContainerResponseContext.class);
                 } else if (HTTP_SERVER_REQUEST.equals(paramDotName)) {
                     ResultHandle routingContextHandle = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(

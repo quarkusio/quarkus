@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Request;
 
@@ -14,7 +15,6 @@ import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestSimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestRequest;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContext;
 import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 
 import io.vertx.core.http.HttpServerRequest;
@@ -55,10 +55,10 @@ public class AssertContainerFilter {
 
     @ContainerResponseFilter
     public void response(QuarkusRestContainerRequestContext quarkusRestContainerRequestContext,
-            QuarkusRestContainerResponseContext quarkusRestContainerResponseContext) {
+            ContainerResponseContext containerResponseContext) {
         assertNotNull(someBean);
         assertNotNull(quarkusRestContainerRequestContext);
-        assertNotNull(quarkusRestContainerResponseContext);
+        assertNotNull(containerResponseContext);
         COUNT.incrementAndGet();
     }
 }

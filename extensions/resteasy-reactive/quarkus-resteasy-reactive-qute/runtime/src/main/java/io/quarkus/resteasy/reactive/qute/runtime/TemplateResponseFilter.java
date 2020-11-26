@@ -3,11 +3,11 @@ package io.quarkus.resteasy.reactive.qute.runtime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.ContainerResponseFilter;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContext;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
@@ -15,7 +15,7 @@ import io.quarkus.qute.Variant;
 public class TemplateResponseFilter {
 
     @ContainerResponseFilter
-    public void filter(QuarkusRestContainerRequestContext requestContext, QuarkusRestContainerResponseContext responseContext) {
+    public void filter(QuarkusRestContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         Object entity = responseContext.getEntity();
         if (!(entity instanceof TemplateInstance)) {
             return;

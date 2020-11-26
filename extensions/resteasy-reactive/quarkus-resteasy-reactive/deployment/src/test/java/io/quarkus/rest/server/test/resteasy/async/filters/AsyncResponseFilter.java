@@ -11,7 +11,6 @@ import javax.ws.rs.container.ContainerResponseContext;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseFilter;
 
 public abstract class AsyncResponseFilter implements QuarkusRestContainerResponseFilter {
@@ -25,7 +24,7 @@ public abstract class AsyncResponseFilter implements QuarkusRestContainerRespons
     }
 
     @Override
-    public void filter(QuarkusRestContainerRequestContext requestContext, QuarkusRestContainerResponseContext ctx) {
+    public void filter(QuarkusRestContainerRequestContext requestContext, ContainerResponseContext ctx) {
         // copy request filter callback values
         for (Entry<String, List<String>> entry : requestContext.getHeaders().entrySet()) {
             if (entry.getKey().startsWith("RequestFilterCallback"))

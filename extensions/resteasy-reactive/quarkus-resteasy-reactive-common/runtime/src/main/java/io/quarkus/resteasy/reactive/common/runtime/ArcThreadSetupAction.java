@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.common.runtime;
 
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;

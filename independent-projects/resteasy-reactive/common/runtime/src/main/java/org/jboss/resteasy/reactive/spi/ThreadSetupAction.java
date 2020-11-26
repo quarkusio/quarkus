@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.common.core;
+package org.jboss.resteasy.reactive.spi;
 
 public interface ThreadSetupAction {
 

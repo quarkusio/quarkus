@@ -22,6 +22,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestServerResponseBuilder
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class ClassRoutingHandler implements ServerRestHandler {
     private final Map<String, RequestMapper<RuntimeResource>> mappers;

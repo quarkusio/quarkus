@@ -16,8 +16,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.util.types.Types;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
 

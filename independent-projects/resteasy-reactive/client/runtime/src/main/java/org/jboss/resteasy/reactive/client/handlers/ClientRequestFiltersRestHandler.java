@@ -3,9 +3,9 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.util.List;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.ClientRequestFilter;
-import org.jboss.resteasy.reactive.client.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.QuarkusRestClientRequestContext;
 import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
 public class ClientRequestFiltersRestHandler implements ClientRestHandler {
     @Override

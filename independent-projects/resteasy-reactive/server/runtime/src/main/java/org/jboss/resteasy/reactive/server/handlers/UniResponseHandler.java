@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 
 import io.smallrye.mutiny.Uni;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class UniResponseHandler implements ServerRestHandler {
 

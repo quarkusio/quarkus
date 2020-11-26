@@ -10,6 +10,7 @@ import javax.ws.rs.HttpMethod;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
  * Handler that reads data and sets up the input stream

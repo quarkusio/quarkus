@@ -3,12 +3,12 @@ package io.quarkus.rest.server.servlet.runtime;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.vertx.VertxHttpExchange;

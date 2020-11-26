@@ -25,12 +25,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 /**
  * This is a stateful invocation, you can't invoke it twice.

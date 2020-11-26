@@ -8,6 +8,7 @@ import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestServerResponseBuilder;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
  * Our job is to turn endpoint return types into Response instances

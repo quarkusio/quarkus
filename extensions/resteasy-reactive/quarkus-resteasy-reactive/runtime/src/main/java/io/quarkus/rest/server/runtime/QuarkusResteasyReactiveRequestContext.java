@@ -5,11 +5,11 @@ import java.util.function.Supplier;
 import javax.enterprise.event.Event;
 import javax.ws.rs.core.SecurityContext;
 
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.impl.LazyValue;

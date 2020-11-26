@@ -2,12 +2,13 @@ package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.List;
 import javax.ws.rs.NotFoundException;
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestDeployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class QuarkusRestInitialHandler implements ServerRestHandler {
 

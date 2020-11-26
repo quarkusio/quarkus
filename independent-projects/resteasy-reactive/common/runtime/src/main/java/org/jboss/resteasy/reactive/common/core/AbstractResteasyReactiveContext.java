@@ -11,6 +11,8 @@ import java.util.concurrent.Executor;
 import javax.ws.rs.container.CompletionCallback;
 import javax.ws.rs.container.ConnectionCallback;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.spi.RestHandler;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasyReactiveContext<T, H>, H extends RestHandler<T>>
         implements Runnable, Closeable, QuarkusRestContext {

@@ -10,6 +10,7 @@ import org.jboss.resteasy.reactive.common.util.QuarkusRestUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class ParameterHandler implements ServerRestHandler {
 

@@ -1,7 +1,7 @@
-package org.jboss.resteasy.reactive.server.handlers;
+package org.jboss.resteasy.reactive.server.spi;
 
-import org.jboss.resteasy.reactive.common.core.RestHandler;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.spi.RestHandler;
 
 public interface ServerRestHandler extends RestHandler<ResteasyReactiveRequestContext> {
 

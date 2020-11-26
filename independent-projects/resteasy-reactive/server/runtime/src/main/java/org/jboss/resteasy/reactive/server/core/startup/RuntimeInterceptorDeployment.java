@@ -26,9 +26,9 @@ import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestDynamicFeatureContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceMethod;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 /**

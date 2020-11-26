@@ -59,6 +59,7 @@ import org.jboss.resteasy.reactive.client.handlers.ClientErrorHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientRequestFiltersRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestClient implements Client {

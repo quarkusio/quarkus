@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 import javax.ws.rs.container.ContainerRequestFilter;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestContainerRequestContextImpl;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class ResourceRequestFilterHandler implements ServerRestHandler {
 

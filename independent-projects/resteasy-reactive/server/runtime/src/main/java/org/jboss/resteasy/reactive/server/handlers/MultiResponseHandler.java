@@ -7,6 +7,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.SseUtil;
 import org.jboss.resteasy.reactive.server.core.StreamingUtil;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestOutboundSseEvent;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

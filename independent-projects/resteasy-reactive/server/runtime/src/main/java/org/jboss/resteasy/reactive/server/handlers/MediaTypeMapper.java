@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
  * Handler that deals with the case when two methods have the same path,

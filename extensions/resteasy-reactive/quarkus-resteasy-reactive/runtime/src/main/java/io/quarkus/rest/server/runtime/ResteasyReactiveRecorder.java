@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 import javax.ws.rs.core.Application;
 
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
@@ -24,11 +23,12 @@ import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;

@@ -25,12 +25,10 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestAsyncResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestContainerRequestContextImpl;
@@ -44,6 +42,8 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public abstract class ResteasyReactiveRequestContext
         extends AbstractResteasyReactiveContext<ResteasyReactiveRequestContext, ServerRestHandler>

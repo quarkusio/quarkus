@@ -17,9 +17,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Variant;
-import org.jboss.resteasy.reactive.client.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.QuarkusRestAsyncInvoker;
 import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {

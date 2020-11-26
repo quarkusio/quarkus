@@ -14,6 +14,7 @@ import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
  * Handler that negotiates the content type for endpoints that

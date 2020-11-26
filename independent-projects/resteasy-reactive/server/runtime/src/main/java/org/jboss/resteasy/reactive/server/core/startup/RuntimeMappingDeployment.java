@@ -9,10 +9,10 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.server.handlers.MediaTypeMapper;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class RuntimeMappingDeployment {
 

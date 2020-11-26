@@ -8,7 +8,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.LazyMethod;
 import org.jboss.resteasy.reactive.server.core.QuarkusRestSimplifiedResourceInfo;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;

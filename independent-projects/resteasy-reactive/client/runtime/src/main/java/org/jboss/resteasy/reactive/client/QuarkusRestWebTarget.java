@@ -10,10 +10,11 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestUriBuilder;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class QuarkusRestWebTarget implements WebTarget {
 

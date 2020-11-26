@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
-import org.jboss.resteasy.reactive.common.core.ThreadSetupAction;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.util.types.Types;
@@ -19,9 +18,10 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimePara
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
+import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class QuarkusRestDeployment {
     private final ExceptionMapping exceptionMapping;

@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
-import org.jboss.resteasy.reactive.client.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
 /**
  * Simple error handler that fails the result

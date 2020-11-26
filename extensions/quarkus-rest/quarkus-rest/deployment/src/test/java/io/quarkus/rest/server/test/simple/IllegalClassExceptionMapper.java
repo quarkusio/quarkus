@@ -22,7 +22,7 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 @Provider
 public class IllegalClassExceptionMapper implements ExceptionMapper<IncompatibleClassChangeError> {
 
-    public class MethodFindingClassVisitor extends ClassVisitor {
+    public static class MethodFindingClassVisitor extends ClassVisitor {
 
         private String method;
         private Textifier textifier;

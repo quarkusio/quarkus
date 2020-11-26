@@ -28,11 +28,11 @@ import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestContainerRequestContextImpl;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
+import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -65,7 +65,7 @@ final class ClassLevelExceptionMapperGenerator {
      * &#64;Singleton
      * &#64;Unremovable
      * public class GreetingResource$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$perClassMapper
-     *         implements QuarkusRestExceptionMapper {
+     *         implements ResteasyReactiveExceptionMapper {
      *
      *     public Response toResponse(IllegalArgumentException e, QuarkusRestRequestContext ctx) {
      *         GreetingResource instance = (GreetingResource) ctx.getEndpointInstance();
@@ -88,7 +88,7 @@ final class ClassLevelExceptionMapperGenerator {
         for (Type handledExceptionType : handledExceptionTypes) {
             String generatedClassName = getGeneratedClassName(targetMethod, handledExceptionType);
             try (ClassCreator cc = ClassCreator.builder().className(generatedClassName)
-                    .interfaces(QuarkusRestExceptionMapper.class).classOutput(classOutput).build()) {
+                    .interfaces(ResteasyReactiveExceptionMapper.class).classOutput(classOutput).build()) {
                 cc.addAnnotation(Singleton.class);
                 cc.addAnnotation(Unremovable.class);
 
@@ -157,7 +157,7 @@ final class ClassLevelExceptionMapperGenerator {
                                 || ResteasyReactiveServerDotNames.QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                             targetMethodParamHandles[i] = qrToResponse.invokeVirtualMethod(
                                     ofMethod(ResteasyReactiveRequestContext.class.getName(), "getContainerRequestContext",
-                                            QuarkusRestContainerRequestContextImpl.class),
+                                            ContainerRequestContextImpl.class),
                                     contextHandle);
                         } else if (URI_INFO.equals(paramDotName)) {
                             paramHandleFromReqContextMethod(qrToResponse, contextHandle, targetMethodParamHandles, i,
@@ -166,7 +166,7 @@ final class ClassLevelExceptionMapperGenerator {
                         } else if (HTTP_HEADERS.equals(paramDotName)) {
                             paramHandleFromReqContextMethod(qrToResponse, contextHandle, targetMethodParamHandles, i,
                                     "getHttpHeaders",
-                                    QuarkusRestHttpHeaders.class);
+                                    HttpHeadersImpl.class);
                         } else if (REQUEST.equals(paramDotName)) {
                             paramHandleFromReqContextMethod(qrToResponse, contextHandle, targetMethodParamHandles, i,
                                     "getRequest",

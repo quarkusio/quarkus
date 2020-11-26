@@ -7,8 +7,8 @@ import javax.ws.rs.container.ContainerResponseFilter;
 public interface QuarkusRestContainerResponseFilter extends ContainerResponseFilter {
     @Override
     default void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-        filter((QuarkusRestContainerRequestContext) requestContext, responseContext);
+        filter((ResteasyReactiveContainerRequestContext) requestContext, responseContext);
     }
 
-    void filter(QuarkusRestContainerRequestContext requestContext, ContainerResponseContext responseContext);
+    void filter(ResteasyReactiveContainerRequestContext requestContext, ContainerResponseContext responseContext);
 }

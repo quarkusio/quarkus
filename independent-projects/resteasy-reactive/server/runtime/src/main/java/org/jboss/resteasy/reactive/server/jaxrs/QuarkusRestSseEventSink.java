@@ -12,7 +12,7 @@ public class QuarkusRestSseEventSink implements SseEventSink {
 
     private static final byte[] EMPTY_BUFFER = new byte[0];
     private ResteasyReactiveRequestContext context;
-    private QuarkusRestSseBroadcasterImpl broadcaster;
+    private SseBroadcasterImpl broadcaster;
     private boolean closed;
 
     public QuarkusRestSseEventSink(ResteasyReactiveRequestContext context) {
@@ -28,7 +28,7 @@ public class QuarkusRestSseEventSink implements SseEventSink {
     public CompletionStage<?> send(OutboundSseEvent event) {
         if (isClosed())
             throw new IllegalStateException("Already closed");
-        // NOTE: we can't cast event to QuarkusRestOutboundSseEvent because the TCK sends us its own subclass
+        // NOTE: we can't cast event to OutboundSseEventImpl because the TCK sends us its own subclass
         CompletionStage<?> ret = SseUtil.send(context, event);
         if (broadcaster != null) {
             return ret.whenComplete((value, x) -> {
@@ -76,7 +76,7 @@ public class QuarkusRestSseEventSink implements SseEventSink {
         }
     }
 
-    void register(QuarkusRestSseBroadcasterImpl broadcaster) {
+    void register(SseBroadcasterImpl broadcaster) {
         if (this.broadcaster != null)
             throw new IllegalStateException("Already registered on a broadcaster");
         this.broadcaster = broadcaster;

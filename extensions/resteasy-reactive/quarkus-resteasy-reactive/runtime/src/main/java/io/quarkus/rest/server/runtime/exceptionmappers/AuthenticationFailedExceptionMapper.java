@@ -4,7 +4,7 @@ import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 
 import io.quarkus.rest.server.runtime.QuarkusResteasyReactiveRequestContext;
 import io.quarkus.security.AuthenticationFailedException;
@@ -14,10 +14,10 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * TODO: We'll probably need to make QuarkusRestExceptionMapper work in an async manner as
+ * TODO: We'll probably need to make ResteasyReactiveExceptionMapper work in an async manner as
  * this implementation blocks
  */
-public class AuthenticationFailedExceptionMapper implements QuarkusRestExceptionMapper<AuthenticationFailedException> {
+public class AuthenticationFailedExceptionMapper implements ResteasyReactiveExceptionMapper<AuthenticationFailedException> {
 
     @Override
     public Response toResponse(AuthenticationFailedException exception) {

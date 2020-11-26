@@ -34,12 +34,12 @@ public class QuarkusRestRuntimeDelegate extends RuntimeDelegate {
 
     @Override
     public Response.ResponseBuilder createResponseBuilder() {
-        return new QuarkusRestServerResponseBuilder();
+        return new QuarkusRestResponseBuilderImpl();
     }
 
     @Override
     public Variant.VariantListBuilder createVariantListBuilder() {
-        return new QuarkusRestVariantListBuilder();
+        return new VariantListBuilderImpl();
     }
 
     @Override

@@ -18,7 +18,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 
-public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInterceptorContext
+public class QuarkusRestWriterInterceptorContext extends AbstractInterceptorContext
         implements WriterInterceptorContext {
 
     private final WriterInterceptor[] interceptors;

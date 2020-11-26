@@ -20,11 +20,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
-public class QuarkusRestContainerResponseContextImpl implements ContainerResponseContext {
+public class ContainerResponseContextImpl implements ContainerResponseContext {
 
     private final ResteasyReactiveRequestContext context;
 
-    public QuarkusRestContainerResponseContextImpl(ResteasyReactiveRequestContext requestContext) {
+    public ContainerResponseContextImpl(ResteasyReactiveRequestContext requestContext) {
         this.context = requestContext;
     }
 

@@ -9,8 +9,8 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 /**
  * Extension of MessageBodyWriter which can write directly to a Vert.x response
  */
-// FIXME: do we actually need to make it extend MessageBodyWriter?
-public interface QuarkusRestMessageBodyWriter<T> extends MessageBodyWriter<T> {
+// FIXME: do we actually need to make it extend MessageBodyWriter?                                ``
+public interface ResteasyReactiveMessageBodyWriter<T> extends MessageBodyWriter<T> {
 
     boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType);
 

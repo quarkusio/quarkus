@@ -17,13 +17,13 @@ import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public class QuarkusRestHttpHeaders implements HttpHeaders {
+public class HttpHeadersImpl implements HttpHeaders {
 
     private final MultivaluedMap<String, String> requestHeaders;
     private final MultivaluedMap<String, String> unmodifiableRequestHeaders;
     private Map<String, Cookie> cookies;
 
-    public QuarkusRestHttpHeaders(Iterable<Map.Entry<String, String>> vertxHeaders) {
+    public HttpHeadersImpl(Iterable<Map.Entry<String, String>> vertxHeaders) {
         requestHeaders = new CaseInsensitiveMap<>();
         for (Map.Entry<String, String> entry : vertxHeaders) {
             requestHeaders.add(entry.getKey(), entry.getValue());

@@ -28,7 +28,7 @@ import org.jboss.resteasy.reactive.common.model.SettableResourceInterceptor;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
-public class QuarkusRestFeatureContext implements FeatureContext {
+public class FeatureContextImpl implements FeatureContext {
 
     protected final ResourceInterceptors interceptors;
     private final ExceptionMapping exceptionMapping;
@@ -37,7 +37,7 @@ public class QuarkusRestFeatureContext implements FeatureContext {
 
     private boolean filtersNeedSorting = false;
 
-    public QuarkusRestFeatureContext(ResourceInterceptors interceptors, ExceptionMapping exceptionMapping,
+    public FeatureContextImpl(ResourceInterceptors interceptors, ExceptionMapping exceptionMapping,
             QuarkusRestConfiguration configuration, Function<Class<?>, BeanFactory<?>> beanFactoryCreator) {
         this.interceptors = interceptors;
         this.exceptionMapping = exceptionMapping;

@@ -10,9 +10,10 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStruct
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonpUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 
-public class ServerJsonStructureHandler extends JsonStructureHandler implements QuarkusRestMessageBodyWriter<JsonStructure> {
+public class ServerJsonStructureHandler extends JsonStructureHandler
+        implements ResteasyReactiveMessageBodyWriter<JsonStructure> {
 
     @Override
     public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {

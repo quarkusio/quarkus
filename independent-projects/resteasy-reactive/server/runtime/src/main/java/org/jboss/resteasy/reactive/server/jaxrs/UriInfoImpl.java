@@ -23,14 +23,14 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 /**
  * UriInfo implementation
  */
-public class QuarkusRestUriInfo implements UriInfo {
+public class UriInfoImpl implements UriInfo {
 
     private final ResteasyReactiveRequestContext currentRequest;
     private MultivaluedMap<String, String> queryParams;
     private MultivaluedMap<String, String> pathParams;
     private URI requestUri;
 
-    public QuarkusRestUriInfo(ResteasyReactiveRequestContext currentRequest) {
+    public UriInfoImpl(ResteasyReactiveRequestContext currentRequest) {
         this.currentRequest = currentRequest;
     }
 

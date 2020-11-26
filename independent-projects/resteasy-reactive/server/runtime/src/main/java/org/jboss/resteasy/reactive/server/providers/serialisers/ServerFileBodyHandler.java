@@ -13,7 +13,7 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 // TODO: this is very simplistic at the moment
@@ -21,7 +21,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 @Provider
 @Produces("*/*")
 @Consumes("*/*")
-public class ServerFileBodyHandler extends FileBodyHandler implements QuarkusRestMessageBodyWriter<File> {
+public class ServerFileBodyHandler extends FileBodyHandler implements ResteasyReactiveMessageBodyWriter<File> {
 
     @Override
     public long getSize(File o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

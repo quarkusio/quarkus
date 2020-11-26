@@ -12,12 +12,11 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 
-//TODO: test
-public class QuarkusRestProviders implements Providers {
+public class ProvidersImpl implements Providers {
 
     private final Deployment deployment;
 
-    public QuarkusRestProviders(Deployment deployment) {
+    public ProvidersImpl(Deployment deployment) {
         this.deployment = deployment;
     }
 

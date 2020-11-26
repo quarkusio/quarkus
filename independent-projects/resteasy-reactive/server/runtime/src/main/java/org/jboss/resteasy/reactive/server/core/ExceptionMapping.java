@@ -8,7 +8,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 
 public class ExceptionMapping {
 
@@ -29,8 +29,8 @@ public class ExceptionMapping {
         // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
         ExceptionMapper exceptionMapper = getExceptionMapper((Class<Throwable>) klass, context);
         if (exceptionMapper != null) {
-            if (exceptionMapper instanceof QuarkusRestExceptionMapper) {
-                return ((QuarkusRestExceptionMapper) exceptionMapper).toResponse(throwable, context);
+            if (exceptionMapper instanceof ResteasyReactiveExceptionMapper) {
+                return ((ResteasyReactiveExceptionMapper) exceptionMapper).toResponse(throwable, context);
             }
             return exceptionMapper.toResponse(throwable);
         }

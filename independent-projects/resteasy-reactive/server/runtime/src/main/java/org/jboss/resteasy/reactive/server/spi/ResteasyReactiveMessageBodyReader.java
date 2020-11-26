@@ -7,7 +7,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
-public interface QuarkusRestMessageBodyReader<T> extends MessageBodyReader<T> {
+public interface ResteasyReactiveMessageBodyReader<T> extends MessageBodyReader<T> {
 
     boolean isReadable(Class<?> type, Type genericType,
             LazyMethod lazyMethod, MediaType mediaType);

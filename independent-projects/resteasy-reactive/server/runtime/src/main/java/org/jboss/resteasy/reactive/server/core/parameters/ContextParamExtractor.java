@@ -16,10 +16,10 @@ import javax.ws.rs.sse.SseEventSink;
 import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestAsyncResponse;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceContext;
+import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestSse;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestSseEventSink;
+import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 
 public class ContextParamExtractor implements ParameterExtractor {
 
@@ -49,7 +49,7 @@ public class ContextParamExtractor implements ParameterExtractor {
             return context.getDeployment().getConfiguration();
         }
         if (type.equals(AsyncResponse.class)) {
-            QuarkusRestAsyncResponse response = new QuarkusRestAsyncResponse(context);
+            AsyncResponseImpl response = new AsyncResponseImpl(context);
             context.setAsyncResponse(response);
             return response;
         }
@@ -80,7 +80,7 @@ public class ContextParamExtractor implements ParameterExtractor {
             return context.getSecurityContext();
         }
         if (type.equals(ResourceContext.class)) {
-            return QuarkusRestResourceContext.INSTANCE;
+            return ResourceContextImpl.INSTANCE;
         }
         Object instance = context.unwrap(type);
         if (instance != null) {

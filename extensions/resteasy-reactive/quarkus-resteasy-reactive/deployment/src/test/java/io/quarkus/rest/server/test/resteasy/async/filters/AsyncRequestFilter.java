@@ -8,8 +8,8 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestFilter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
 public abstract class AsyncRequestFilter implements QuarkusRestContainerRequestFilter {
 
@@ -22,7 +22,7 @@ public abstract class AsyncRequestFilter implements QuarkusRestContainerRequestF
     }
 
     @Override
-    public void filter(QuarkusRestContainerRequestContext ctx) {
+    public void filter(ResteasyReactiveContainerRequestContext ctx) {
         ctx.getHeaders().add("RequestFilterCallback" + name, String.valueOf(callbackException));
         callbackException = null;
 

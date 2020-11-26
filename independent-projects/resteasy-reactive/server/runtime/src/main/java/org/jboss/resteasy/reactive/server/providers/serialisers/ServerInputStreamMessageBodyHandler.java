@@ -10,11 +10,11 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.InputStreamMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
 @Provider
 public class ServerInputStreamMessageBodyHandler extends InputStreamMessageBodyHandler
-        implements QuarkusRestMessageBodyReader<InputStream> {
+        implements ResteasyReactiveMessageBodyReader<InputStream> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {

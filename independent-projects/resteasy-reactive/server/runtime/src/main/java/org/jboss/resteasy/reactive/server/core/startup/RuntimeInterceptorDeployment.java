@@ -26,8 +26,8 @@ import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestDynamicFeatureContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceMethod;
+import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureContext;
+import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -203,12 +203,12 @@ public class RuntimeInterceptorDeployment {
                 // in the global fields
                 ResourceInterceptors dynamicallyConfiguredInterceptors = new ResourceInterceptors();
 
-                QuarkusRestResourceMethod quarkusRestResourceMethod = new QuarkusRestResourceMethod(clazz, method); // TODO: look into using LazyMethod
-                QuarkusRestDynamicFeatureContext context = new QuarkusRestDynamicFeatureContext(
+                DynamicFeatureResourceInfo dynamicFeatureResourceInfo = new DynamicFeatureResourceInfo(clazz, method); // TODO: look into using LazyMethod
+                DynamicFeatureContext context = new DynamicFeatureContext(
                         dynamicallyConfiguredInterceptors, quarkusRestConfiguration, info.getFactoryCreator());
                 for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {
                     DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
-                    feature.configure(quarkusRestResourceMethod, context);
+                    feature.configure(dynamicFeatureResourceInfo, context);
                 }
                 dynamicallyConfiguredInterceptors.sort();
 

@@ -9,7 +9,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestContextResolverDelegate;
+import org.jboss.resteasy.reactive.server.jaxrs.ContextResolverDelegate;
 
 public class ContextResolvers {
 
@@ -73,7 +73,7 @@ public class ContextResolvers {
                 return delegates.get(0);
             }
 
-            return new QuarkusRestContextResolverDelegate<>(delegates);
+            return new ContextResolverDelegate<>(delegates);
         }
         return null;
     }

@@ -8,12 +8,12 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.StringMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 
 @Provider
 public class ServerStringMessageBodyHandler extends StringMessageBodyHandler
-        implements QuarkusRestMessageBodyWriter<Object>, QuarkusRestMessageBodyReader<String> {
+        implements ResteasyReactiveMessageBodyWriter<Object>, ResteasyReactiveMessageBodyReader<String> {
 
     @Override
     public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {

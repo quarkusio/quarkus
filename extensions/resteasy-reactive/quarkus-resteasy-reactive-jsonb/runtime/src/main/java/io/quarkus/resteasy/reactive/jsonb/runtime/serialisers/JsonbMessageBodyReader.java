@@ -14,9 +14,9 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
-public class JsonbMessageBodyReader implements QuarkusRestMessageBodyReader<Object> {
+public class JsonbMessageBodyReader implements ResteasyReactiveMessageBodyReader<Object> {
 
     private final Jsonb json;
 

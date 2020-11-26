@@ -8,7 +8,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 
-public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
+public class OutboundSseEventImpl implements OutboundSseEvent {
     private final String name;
 
     private final String comment;
@@ -29,7 +29,7 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
 
     private boolean escape = false;
 
-    QuarkusRestOutboundSseEvent(final String name, final String id, final long reconnectDelay, final Class<?> type,
+    OutboundSseEventImpl(final String name, final String id, final long reconnectDelay, final Class<?> type,
             final Type genericType,
             final MediaType mediaType, final Object data, final String comment) {
         this.name = name;
@@ -195,11 +195,11 @@ public class QuarkusRestOutboundSseEvent implements OutboundSseEvent {
         }
 
         @Override
-        public QuarkusRestOutboundSseEvent build() {
+        public OutboundSseEventImpl build() {
             if (this.comment == null && this.data == null) {
                 throw new IllegalArgumentException("Must set either comment or data");
             }
-            return new QuarkusRestOutboundSseEvent(name, id, reconnectDelay, type, genericType, mediaType, data, comment);
+            return new OutboundSseEventImpl(name, id, reconnectDelay, type, genericType, mediaType, data, comment);
         }
     }
 }

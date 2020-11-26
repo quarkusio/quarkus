@@ -36,7 +36,7 @@ import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestFeatureContext;
+import org.jboss.resteasy.reactive.server.jaxrs.FeatureContextImpl;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -198,7 +198,7 @@ public class RuntimeDeploymentManager {
             return configuration;
         }
 
-        QuarkusRestFeatureContext featureContext = new QuarkusRestFeatureContext(interceptors, exceptionMapping,
+        FeatureContextImpl featureContext = new FeatureContextImpl(interceptors, exceptionMapping,
                 configuration, info.getFactoryCreator());
         List<ResourceFeature> resourceFeatures = features.getResourceFeatures();
         for (ResourceFeature resourceFeature : resourceFeatures) {

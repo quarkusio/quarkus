@@ -74,7 +74,7 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -275,7 +275,7 @@ public class RuntimeResourceDeployment {
                             MessageBodyWriter<?> writer = buildTimeWriters.get(0);
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
                                     writer, serialisers)));
-                            if (writer instanceof QuarkusRestMessageBodyWriter)
+                            if (writer instanceof ResteasyReactiveMessageBodyWriter)
                                 score.add(ScoreSystem.Category.Writer,
                                         ScoreSystem.Diagnostic.WriterBuildTimeDirect(writer));
                             else

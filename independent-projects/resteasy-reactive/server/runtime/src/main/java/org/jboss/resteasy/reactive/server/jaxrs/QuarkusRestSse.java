@@ -10,11 +10,11 @@ public class QuarkusRestSse implements Sse {
 
     @Override
     public OutboundSseEvent.Builder newEventBuilder() {
-        return new QuarkusRestOutboundSseEvent.BuilderImpl();
+        return new OutboundSseEventImpl.BuilderImpl();
     }
 
     @Override
     public SseBroadcaster newBroadcaster() {
-        return new QuarkusRestSseBroadcasterImpl();
+        return new SseBroadcasterImpl();
     }
 }

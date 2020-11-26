@@ -14,13 +14,13 @@ import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
 
-public class QuarkusRestRequest implements Request {
+public class RequestImpl implements Request {
 
     private final ResteasyReactiveRequestContext requestContext;
     private final String httpMethod;
     private String varyHeader;
 
-    public QuarkusRestRequest(ResteasyReactiveRequestContext requestContext) {
+    public RequestImpl(ResteasyReactiveRequestContext requestContext) {
         this.requestContext = requestContext;
         this.httpMethod = requestContext.serverRequest().getRequestMethod();
     }

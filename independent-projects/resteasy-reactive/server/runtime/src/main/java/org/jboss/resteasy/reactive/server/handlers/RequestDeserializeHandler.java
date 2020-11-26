@@ -16,7 +16,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestReaderInterceptorContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class RequestDeserializeHandler implements ServerRestHandler {
@@ -81,8 +81,9 @@ public class RequestDeserializeHandler implements ServerRestHandler {
 
     private boolean isReadable(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext,
             MediaType requestType) {
-        if (reader instanceof QuarkusRestMessageBodyReader) {
-            return ((QuarkusRestMessageBodyReader<?>) reader).isReadable(type, type, requestContext.getTarget().getLazyMethod(),
+        if (reader instanceof ResteasyReactiveMessageBodyReader) {
+            return ((ResteasyReactiveMessageBodyReader<?>) reader).isReadable(type, type,
+                    requestContext.getTarget().getLazyMethod(),
                     requestType);
         }
         return reader.isReadable(type, type, getAnnotations(requestContext), requestType);
@@ -91,8 +92,8 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     @SuppressWarnings("unchecked")
     public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext, MediaType requestType)
             throws IOException {
-        if (reader instanceof QuarkusRestMessageBodyReader) {
-            return ((QuarkusRestMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
+        if (reader instanceof ResteasyReactiveMessageBodyReader) {
+            return ((ResteasyReactiveMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
         }
         return reader.readFrom((Class) type, type, getAnnotations(requestContext), requestType,
                 requestContext.getHttpHeaders().getRequestHeaders(), requestContext.getInputStream());

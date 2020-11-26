@@ -10,9 +10,9 @@ import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 // TODO: It might not make sense to have this extend from QuarkusRestFeatureContext
-public class QuarkusRestDynamicFeatureContext extends QuarkusRestFeatureContext {
+public class DynamicFeatureContext extends FeatureContextImpl {
 
-    public QuarkusRestDynamicFeatureContext(ResourceInterceptors interceptors, QuarkusRestConfiguration configuration,
+    public DynamicFeatureContext(ResourceInterceptors interceptors, QuarkusRestConfiguration configuration,
             Function<Class<?>, BeanFactory<?>> beanContainer) {
         super(interceptors, null, configuration, beanContainer);
     }
@@ -23,7 +23,6 @@ public class QuarkusRestDynamicFeatureContext extends QuarkusRestFeatureContext 
         return isFilter(componentClass) || isInterceptor(componentClass);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected void registerFilters(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority) {
         boolean isRequest = ContainerRequestFilter.class.isAssignableFrom(componentClass);

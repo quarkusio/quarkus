@@ -3,11 +3,11 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 import java.util.Collection;
 import javax.ws.rs.ext.ContextResolver;
 
-public class QuarkusRestContextResolverDelegate<T> implements ContextResolver<T> {
+public class ContextResolverDelegate<T> implements ContextResolver<T> {
 
     private final Collection<ContextResolver<T>> delegates;
 
-    public QuarkusRestContextResolverDelegate(Collection<ContextResolver<T>> delegates) {
+    public ContextResolverDelegate(Collection<ContextResolver<T>> delegates) {
         this.delegates = delegates;
     }
 

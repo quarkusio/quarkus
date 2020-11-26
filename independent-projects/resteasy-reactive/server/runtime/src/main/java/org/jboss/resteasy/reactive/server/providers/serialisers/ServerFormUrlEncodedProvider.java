@@ -15,8 +15,8 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.FormUrlEncodedPr
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -28,7 +28,7 @@ import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
 @Consumes("application/x-www-form-urlencoded")
 @ConstrainedTo(RuntimeType.CLIENT)
 public class ServerFormUrlEncodedProvider extends FormUrlEncodedProvider
-        implements QuarkusRestMessageBodyReader<MultivaluedMap>, QuarkusRestMessageBodyWriter<MultivaluedMap> {
+        implements ResteasyReactiveMessageBodyReader<MultivaluedMap>, ResteasyReactiveMessageBodyWriter<MultivaluedMap> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {

@@ -8,11 +8,11 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.BooleanMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
 @Provider
 public class ServerBooleanMessageBodyHandler extends BooleanMessageBodyHandler
-        implements QuarkusRestMessageBodyReader<Boolean> {
+        implements ResteasyReactiveMessageBodyReader<Boolean> {
 
     public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {
         return type == Boolean.class;

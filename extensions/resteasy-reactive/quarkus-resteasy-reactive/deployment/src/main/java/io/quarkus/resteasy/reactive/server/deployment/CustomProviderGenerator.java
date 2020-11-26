@@ -31,10 +31,10 @@ import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestHttpHeaders;
+import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -75,10 +75,10 @@ final class CustomProviderGenerator {
      *     }
      *
      *     public void filter(ContainerRequestContext var1) {
-     *         QuarkusRestRequestContext var2 = (QuarkusRestRequestContext) ((QuarkusRestContainerRequestContext) var1)
+     *         QuarkusRestRequestContext var2 = (QuarkusRestRequestContext) ((ResteasyReactiveContainerRequestContext) var1)
      *                 .getQuarkusRestContext();
      *         UriInfo var3 = var2.getUriInfo();
-     *         QuarkusRestHttpHeaders var4 = var2.getHttpHeaders();
+     *         HttpHeadersImpl var4 = var2.getHttpHeaders();
      *         this.delegate.someMethod(var3, (HttpHeaders) var4);
      *     }
      * }
@@ -124,7 +124,7 @@ final class CustomProviderGenerator {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(0);
                 } else if (QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
-                            QuarkusRestContainerRequestContext.class);
+                            ResteasyReactiveContainerRequestContext.class);
                 } else if (URI_INFO.equals(paramDotName)) {
                     GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
                             "getUriInfo",
@@ -132,7 +132,7 @@ final class CustomProviderGenerator {
                 } else if (HTTP_HEADERS.equals(paramDotName)) {
                     GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
                             "getHttpHeaders",
-                            QuarkusRestHttpHeaders.class);
+                            HttpHeadersImpl.class);
                 } else if (REQUEST.equals(paramDotName)) {
                     GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
                             "getRequest",
@@ -188,7 +188,7 @@ final class CustomProviderGenerator {
      *     }
      *
      *     public void filter(ContainerRequestContext var1, ContainerResponseContext var2) {
-     *         QuarkusRestRequestContext var3 = (QuarkusRestRequestContext) ((QuarkusRestContainerRequestContext) var1)
+     *         QuarkusRestRequestContext var3 = (QuarkusRestRequestContext) ((ResteasyReactiveContainerRequestContext) var1)
      *                 .getQuarkusRestContext();
      *         UriInfo var4 = var2.getUriInfo();
      *         this.delegate.someMethod(var4);
@@ -238,7 +238,7 @@ final class CustomProviderGenerator {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(0);
                 } else if (QUARKUS_REST_CONTAINER_REQUEST_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.checkCast(filterMethod.getMethodParam(0),
-                            QuarkusRestContainerRequestContext.class);
+                            ResteasyReactiveContainerRequestContext.class);
                 } else if (CONTAINER_RESPONSE_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = filterMethod.getMethodParam(1);
                 } else if (HTTP_SERVER_REQUEST.equals(paramDotName)) {
@@ -281,9 +281,9 @@ final class CustomProviderGenerator {
     private static ResultHandle getQRReqCtxHandle(MethodCreator filter, int containerReqCtxParamIndex) {
         ResultHandle containerReqCtxHandle = filter.getMethodParam(containerReqCtxParamIndex);
         ResultHandle qrContainerReqCtxHandle = filter.checkCast(containerReqCtxHandle,
-                QuarkusRestContainerRequestContext.class);
+                ResteasyReactiveContainerRequestContext.class);
         ResultHandle qrCtxHandle = filter.invokeInterfaceMethod(
-                ofMethod(QuarkusRestContainerRequestContext.class, "getQuarkusRestContext", QuarkusRestContext.class),
+                ofMethod(ResteasyReactiveContainerRequestContext.class, "getQuarkusRestContext", QuarkusRestContext.class),
                 qrContainerReqCtxHandle);
         return filter.checkCast(qrCtxHandle, ResteasyReactiveRequestContext.class);
     }

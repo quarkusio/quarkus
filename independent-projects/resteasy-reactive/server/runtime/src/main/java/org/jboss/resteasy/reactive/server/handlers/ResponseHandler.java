@@ -7,7 +7,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestServerResponseBuilder;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
@@ -50,11 +50,11 @@ public class ResponseHandler implements ServerRestHandler {
             if (!mediaTypeAlreadyExists && produces != null) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
-            if ((responseBuilder instanceof QuarkusRestServerResponseBuilder)) {
+            if ((responseBuilder instanceof QuarkusRestResponseBuilderImpl)) {
                 // avoid unnecessary copying of HTTP headers from the Builder to the Response
                 requestContext
                         .setResponse(
-                                new LazyResponse.Existing(((QuarkusRestServerResponseBuilder) responseBuilder).build(false)));
+                                new LazyResponse.Existing(((QuarkusRestResponseBuilderImpl) responseBuilder).build(false)));
             } else {
                 requestContext.setResponse(new LazyResponse.Existing(responseBuilder.build()));
             }
@@ -82,9 +82,9 @@ public class ResponseHandler implements ServerRestHandler {
                         if (produces != null) {
                             responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
                         }
-                        if ((responseBuilder instanceof QuarkusRestServerResponseBuilder)) {
+                        if ((responseBuilder instanceof QuarkusRestResponseBuilderImpl)) {
                             // avoid unnecessary copying of HTTP headers from the Builder to the Response
-                            response = ((QuarkusRestServerResponseBuilder) responseBuilder).build(false);
+                            response = ((QuarkusRestResponseBuilderImpl) responseBuilder).build(false);
                         } else {
                             response = responseBuilder.build();
                         }

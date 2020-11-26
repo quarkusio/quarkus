@@ -7,7 +7,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
@@ -15,7 +15,7 @@ import io.quarkus.qute.Variant;
 public class TemplateResponseFilter {
 
     @ServerResponseFilter
-    public void filter(QuarkusRestContainerRequestContext requestContext, ContainerResponseContext responseContext) {
+    public void filter(ResteasyReactiveContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         Object entity = responseContext.getEntity();
         if (!(entity instanceof TemplateInstance)) {
             return;

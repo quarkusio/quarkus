@@ -23,7 +23,7 @@ import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestProviders;
+import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
@@ -87,7 +87,7 @@ public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
             contextFactory = new RequestContextFactory() {
                 @Override
                 public ResteasyReactiveRequestContext createContext(Deployment deployment,
-                        QuarkusRestProviders providers, Object context, ThreadSetupAction requestContext,
+                        ProvidersImpl providers, Object context, ThreadSetupAction requestContext,
                         ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
                     return new QuarkusResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
                             requestContext,

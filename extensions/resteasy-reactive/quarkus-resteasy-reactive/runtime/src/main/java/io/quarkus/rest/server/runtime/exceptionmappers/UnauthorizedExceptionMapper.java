@@ -5,7 +5,7 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestExceptionMapper;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 
 import io.quarkus.rest.server.runtime.QuarkusResteasyReactiveRequestContext;
 import io.quarkus.security.UnauthorizedException;
@@ -15,10 +15,10 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * TODO: We'll probably need to make QuarkusRestExceptionMapper work in an async manner as
+ * TODO: We'll probably need to make ResteasyReactiveExceptionMapper work in an async manner as
  * this implementation blocks
  */
-public class UnauthorizedExceptionMapper implements QuarkusRestExceptionMapper<UnauthorizedException> {
+public class UnauthorizedExceptionMapper implements ResteasyReactiveExceptionMapper<UnauthorizedException> {
 
     private static final Logger log = Logger.getLogger(UnauthorizedExceptionMapper.class.getName());
 

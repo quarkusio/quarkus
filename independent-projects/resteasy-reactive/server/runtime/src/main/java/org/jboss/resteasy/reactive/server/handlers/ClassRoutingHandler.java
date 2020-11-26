@@ -18,7 +18,7 @@ import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestServerResponseBuilder;
+import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
@@ -62,7 +62,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {
                     if (existingMapper.map(remaining) != null) {
                         throw new NotAllowedException(
-                                new QuarkusRestServerResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                                new QuarkusRestResponseBuilderImpl().status(Response.Status.METHOD_NOT_ALLOWED).build());
                     }
                 }
                 throwNotFound(requestContext);
@@ -90,7 +90,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                     }
                     if (entry.getValue().map(remaining) != null) {
                         throw new NotAllowedException(
-                                new QuarkusRestServerResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                                new QuarkusRestResponseBuilderImpl().status(Response.Status.METHOD_NOT_ALLOWED).build());
                     }
                 }
                 throwNotFound(requestContext);

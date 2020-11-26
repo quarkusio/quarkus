@@ -5,12 +5,13 @@ import javax.ws.rs.container.ResourceInfo;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 
-public class QuarkusRestResourceMethod implements ResourceInfo {
+// TODO: this needs to go away...
+public class DynamicFeatureResourceInfo implements ResourceInfo {
 
     private final Class<?> resourceClass;
     private final Method resourceMethod;
 
-    public QuarkusRestResourceMethod(ResourceClass resourceClass, ResourceMethod resourceMethod) {
+    public DynamicFeatureResourceInfo(ResourceClass resourceClass, ResourceMethod resourceMethod) {
         try {
             Class<?> clazz = Class.forName(resourceClass.getClassName(), false, Thread.currentThread().getContextClassLoader());
             Method[] methods = clazz.getMethods();
@@ -49,7 +50,7 @@ public class QuarkusRestResourceMethod implements ResourceInfo {
         }
     }
 
-    public QuarkusRestResourceMethod(Class<?> resourceClass, Method resourceMethod) {
+    public DynamicFeatureResourceInfo(Class<?> resourceClass, Method resourceMethod) {
         this.resourceClass = resourceClass;
         this.resourceMethod = resourceMethod;
     }

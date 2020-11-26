@@ -9,7 +9,7 @@ import javax.ws.rs.ext.InterceptorContext;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 
-public abstract class QuarkusRestAbstractInterceptorContext implements InterceptorContext {
+public abstract class AbstractInterceptorContext implements InterceptorContext {
     protected final ResteasyReactiveRequestContext context;
     protected Annotation[] annotations;
     protected Class<?> type;
@@ -19,7 +19,7 @@ public abstract class QuarkusRestAbstractInterceptorContext implements Intercept
     // as the interceptors can change the type or mediaType, when that happens we need to find a new reader/writer
     protected boolean rediscoveryNeeded = false;
 
-    public QuarkusRestAbstractInterceptorContext(ResteasyReactiveRequestContext context, Annotation[] annotations,
+    public AbstractInterceptorContext(ResteasyReactiveRequestContext context, Annotation[] annotations,
             Class<?> type,
             Type genericType, MediaType mediaType, ServerSerialisers serialisers) {
         this.context = context;

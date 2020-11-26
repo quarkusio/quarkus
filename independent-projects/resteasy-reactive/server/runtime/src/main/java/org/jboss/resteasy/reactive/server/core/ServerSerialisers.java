@@ -50,7 +50,7 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerInputStrea
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
@@ -163,8 +163,8 @@ public class ServerSerialisers extends Serialisers {
 
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
-        if (writer instanceof QuarkusRestMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
-            QuarkusRestMessageBodyWriter<Object> quarkusRestWriter = (QuarkusRestMessageBodyWriter<Object>) writer;
+        if (writer instanceof ResteasyReactiveMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
+            ResteasyReactiveMessageBodyWriter<Object> quarkusRestWriter = (ResteasyReactiveMessageBodyWriter<Object>) writer;
             RuntimeResource target = context.getTarget();
             ServerSerialisers.encodeResponseHeaders(context);
             if (quarkusRestWriter.isWriteable(entity.getClass(), target == null ? null : target.getLazyMethod(),

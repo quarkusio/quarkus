@@ -12,11 +12,11 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class JacksonMessageBodyWriter implements QuarkusRestMessageBodyWriter<Object> {
+public class JacksonMessageBodyWriter implements ResteasyReactiveMessageBodyWriter<Object> {
 
     private final ObjectMapper mapper;
 

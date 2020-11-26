@@ -3,8 +3,8 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.container.ResourceContext;
 
-public class QuarkusRestResourceContext implements ResourceContext {
-    public static QuarkusRestResourceContext INSTANCE = new QuarkusRestResourceContext();
+public class ResourceContextImpl implements ResourceContext {
+    public static ResourceContextImpl INSTANCE = new ResourceContextImpl();
 
     @Override
     public <T> T getResource(Class<T> resourceClass) {

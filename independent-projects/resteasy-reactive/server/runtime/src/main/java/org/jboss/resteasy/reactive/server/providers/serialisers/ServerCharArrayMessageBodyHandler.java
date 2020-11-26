@@ -9,12 +9,12 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.CharArrayMessage
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 
 @Provider
 public class ServerCharArrayMessageBodyHandler extends CharArrayMessageBodyHandler
-        implements QuarkusRestMessageBodyWriter<char[]>, QuarkusRestMessageBodyReader<char[]> {
+        implements ResteasyReactiveMessageBodyWriter<char[]>, ResteasyReactiveMessageBodyReader<char[]> {
 
     @Override
     public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {

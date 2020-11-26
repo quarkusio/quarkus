@@ -11,11 +11,11 @@ import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
-public class QuarkusRestSseBroadcasterImpl implements SseBroadcaster {
+public class SseBroadcasterImpl implements SseBroadcaster {
 
-    private List<SseEventSink> sinks = new ArrayList<>();
-    private List<BiConsumer<SseEventSink, Throwable>> onErrorListeners = new ArrayList<>();
-    private List<Consumer<SseEventSink>> onCloseListeners = new ArrayList<>();
+    private final List<SseEventSink> sinks = new ArrayList<>();
+    private final List<BiConsumer<SseEventSink, Throwable>> onErrorListeners = new ArrayList<>();
+    private final List<Consumer<SseEventSink>> onCloseListeners = new ArrayList<>();
     private volatile boolean isClosed;
 
     @Override

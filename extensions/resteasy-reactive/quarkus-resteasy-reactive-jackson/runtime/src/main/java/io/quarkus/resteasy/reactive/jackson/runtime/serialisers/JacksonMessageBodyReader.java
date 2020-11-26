@@ -13,12 +13,12 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-public class JacksonMessageBodyReader implements QuarkusRestMessageBodyReader<Object> {
+public class JacksonMessageBodyReader implements ResteasyReactiveMessageBodyReader<Object> {
 
     private final ObjectReader reader;
 

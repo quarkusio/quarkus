@@ -6,7 +6,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.SseUtil;
 import org.jboss.resteasy.reactive.server.core.StreamingUtil;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestOutboundSseEvent;
+import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -21,7 +21,7 @@ public class MultiResponseHandler implements ServerRestHandler {
 
         @Override
         public void onNext(Object item) {
-            QuarkusRestOutboundSseEvent event = new QuarkusRestOutboundSseEvent.BuilderImpl().data(item).build();
+            OutboundSseEventImpl event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
             SseUtil.send(requestContext, event).handle((v, t) -> {
                 if (t != null) {
                     // need to cancel because the exception didn't come from the Multi

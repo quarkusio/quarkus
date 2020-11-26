@@ -18,7 +18,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
-public class QuarkusRestAsyncResponse implements AsyncResponse, Runnable {
+public class AsyncResponseImpl implements AsyncResponse, Runnable {
 
     private final ResteasyReactiveRequestContext context;
     private volatile boolean suspended;
@@ -27,7 +27,7 @@ public class QuarkusRestAsyncResponse implements AsyncResponse, Runnable {
     // only used with lock, no need for volatile
     private Runnable timerCancelTask = null;
 
-    public QuarkusRestAsyncResponse(ResteasyReactiveRequestContext context) {
+    public AsyncResponseImpl(ResteasyReactiveRequestContext context) {
         this.context = context;
         suspended = true;
     }

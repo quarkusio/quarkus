@@ -18,8 +18,8 @@ import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceContext;
 import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestSse;
+import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 
 /**
  * Provides CDI producers for objects that can be injected via @Context
@@ -110,7 +110,7 @@ public class ContextProducers {
     @ApplicationScoped
     @Produces
     ResourceContext resourceContext() {
-        return QuarkusRestResourceContext.INSTANCE;
+        return ResourceContextImpl.INSTANCE;
     }
 
     @ApplicationScoped

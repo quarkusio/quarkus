@@ -11,9 +11,9 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUti
 import org.jboss.resteasy.reactive.common.providers.serialisers.ReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
-public class ServerReaderBodyHandler extends ReaderBodyHandler implements QuarkusRestMessageBodyReader<Reader> {
+public class ServerReaderBodyHandler extends ReaderBodyHandler implements ResteasyReactiveMessageBodyReader<Reader> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {

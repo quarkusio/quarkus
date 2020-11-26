@@ -16,16 +16,16 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
-public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContainerRequestContext {
+public class ContainerRequestContextImpl implements ResteasyReactiveContainerRequestContext {
 
     private final ResteasyReactiveRequestContext quarkusRestContext;
     private boolean aborted;
     private boolean preMatch;
     private boolean response;
 
-    public QuarkusRestContainerRequestContextImpl(ResteasyReactiveRequestContext requestContext) {
+    public ContainerRequestContextImpl(ResteasyReactiveRequestContext requestContext) {
         this.quarkusRestContext = requestContext;
     }
 
@@ -172,7 +172,7 @@ public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContai
         return preMatch;
     }
 
-    public QuarkusRestContainerRequestContextImpl setPreMatch(boolean preMatch) {
+    public ContainerRequestContextImpl setPreMatch(boolean preMatch) {
         this.preMatch = preMatch;
         return this;
     }
@@ -192,7 +192,7 @@ public class QuarkusRestContainerRequestContextImpl implements QuarkusRestContai
         return response;
     }
 
-    public QuarkusRestContainerRequestContextImpl setResponse(boolean response) {
+    public ContainerRequestContextImpl setResponse(boolean response) {
         this.response = response;
         return this;
     }

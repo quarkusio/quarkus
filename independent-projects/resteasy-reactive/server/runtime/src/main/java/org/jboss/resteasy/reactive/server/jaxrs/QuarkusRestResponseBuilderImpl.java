@@ -10,7 +10,7 @@ import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
-public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder {
+public class QuarkusRestResponseBuilderImpl extends QuarkusRestResponseBuilder {
 
     @Override
     public Response.ResponseBuilder location(URI location) {
@@ -84,13 +84,13 @@ public class QuarkusRestServerResponseBuilder extends QuarkusRestResponseBuilder
 
     @Override
     protected QuarkusRestResponseBuilder doClone() {
-        return new QuarkusRestServerResponseBuilder();
+        return new QuarkusRestResponseBuilderImpl();
     }
 
     //TODO: add the rest of static methods of Response if we need them
 
     public static Response.ResponseBuilder withStatus(Response.Status status) {
-        return new QuarkusRestServerResponseBuilder().status(status);
+        return new QuarkusRestResponseBuilderImpl().status(status);
     }
 
     public static Response.ResponseBuilder ok() {

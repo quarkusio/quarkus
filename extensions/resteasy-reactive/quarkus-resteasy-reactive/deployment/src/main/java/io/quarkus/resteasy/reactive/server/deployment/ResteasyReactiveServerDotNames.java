@@ -13,7 +13,7 @@ public class ResteasyReactiveServerDotNames {
     public static final DotName SERVER_RESPONSE_FILTER = DotName
             .createSimple(ServerResponseFilter.class.getName());
     public static final DotName QUARKUS_REST_CONTAINER_REQUEST_CONTEXT = DotName
-            .createSimple("org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestContext");
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext");
     public static final DotName SIMPLIFIED_RESOURCE_INFO = DotName.createSimple(SimplifiedResourceInfo.class.getName());
     public static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
 }

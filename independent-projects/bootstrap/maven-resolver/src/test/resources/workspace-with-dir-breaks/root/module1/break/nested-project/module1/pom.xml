@@ -6,7 +6,6 @@
         <groupId>org.acme</groupId>
         <artifactId>nested-project-parent</artifactId>
         <version>1.0</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <artifactId>nested-project-module1</artifactId>

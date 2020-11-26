@@ -6,7 +6,6 @@
         <groupId>org.acme</groupId>
         <artifactId>quarkus-quickstart-multimodule-parent</artifactId>
         <version>${revision}</version>
-        <relativePath>../</relativePath>
     </parent>
     <artifactId>quarkus-quickstart-multimodule-rest</artifactId>
 

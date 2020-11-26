@@ -22,7 +22,7 @@ public class LazyAuthRolesAllowedServletTestCase {
                             TestIdentityProvider.class,
                             TestIdentityController.class)
                     .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
-                            "application.properties"));;
+                            "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {

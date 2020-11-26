@@ -1,0 +1,11 @@
+---
+name: "Quarkus RESTEasy Reactive"
+metadata:
+  short-name: "quarkus-resteasy-reactive"
+  keywords:
+  - "jaxrs"
+  - "web"
+  - "rest"
+  categories:
+  - "web"
+  status: "experimental"

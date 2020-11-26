@@ -35,7 +35,7 @@
         <module>undertow</module>
         <module>undertow-websockets</module>
         <module>webjars-locator</module>
-        <module>quarkus-rest</module>
+        <module>resteasy-reactive</module>
 
         <!-- Monitoring -->
         <module>smallrye-health</module>

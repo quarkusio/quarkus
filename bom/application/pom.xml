@@ -1702,44 +1702,44 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-common</artifactId>
+                <artifactId>quarkus-resteasy-reactive-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-common-deployment</artifactId>
+                <artifactId>quarkus-resteasy-reactive-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest</artifactId>
+                <artifactId>quarkus-resteasy-reactive</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-spi</artifactId>
+                <artifactId>quarkus-resteasy-reactive-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-deployment</artifactId>
+                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-deployment</artifactId>
+                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-servlet-deployment</artifactId>
+                <artifactId>quarkus-resteasy-reactive-servlet-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-servlet</artifactId>
+                <artifactId>quarkus-resteasy-reactive-servlet</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1754,32 +1754,32 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-qute</artifactId>
+                <artifactId>quarkus-resteasy-reactive-qute</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-qute-deployment</artifactId>
+                <artifactId>quarkus-resteasy-reactive-qute-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-jsonb</artifactId>
+                <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-jsonb-deployment</artifactId>
+                <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-jackson</artifactId>
+                <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-jackson-deployment</artifactId>
+                <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

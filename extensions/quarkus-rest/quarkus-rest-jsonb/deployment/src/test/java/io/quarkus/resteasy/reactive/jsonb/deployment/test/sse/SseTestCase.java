@@ -1,4 +1,4 @@
-package io.quarkus.rest.server.test.sse;
+package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
 
 import java.net.URI;
 import java.time.Duration;

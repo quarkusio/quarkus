@@ -126,16 +126,12 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
             List<org.gradle.api.artifacts.Dependency> deploymentDeps) {
         final Configuration boms = project.getConfigurations()
                 .detachedConfiguration(deploymentDeps.toArray(new org.gradle.api.artifacts.Dependency[0]));
-        final Set<AppArtifactKey> processedKeys = new HashSet<>(1);
         final Map<String, String> platformProps = new HashMap<>();
         final Set<AppArtifactKey> descriptorKeys = new HashSet<>(4);
         final Set<AppArtifactKey> propertyKeys = new HashSet<>(2);
         boms.getResolutionStrategy().eachDependency(d -> {
             final String group = d.getTarget().getGroup();
             final String name = d.getTarget().getName();
-            if (!processedKeys.add(new AppArtifactKey(group, name))) {
-                return;
-            }
             if (name.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
                 descriptorKeys.add(new AppArtifactKey(group,
                         name.substring(0, name.length() - BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),

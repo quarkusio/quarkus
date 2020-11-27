@@ -46,6 +46,8 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeReso
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.EndpointInvokerFactory;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonArrayHandler;
@@ -66,10 +68,12 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
-public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter> {
+public class ServerEndpointIndexer
+        extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter, ServerResourceMethod> {
     private final MethodCreator initConverters;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
+    protected final EndpointInvokerFactory endpointInvokerFactory;
     private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             DotName.createSimple(HttpServerRequest.class.getName()),
             DotName.createSimple(HttpServerResponse.class.getName()),
@@ -77,6 +81,7 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
 
     ServerEndpointIndexer(Builder builder) {
         super(builder);
+        this.endpointInvokerFactory = builder.endpointInvokerFactory;
         this.initConverters = builder.initConverters;
         this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
         this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
@@ -254,6 +259,16 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
         return delegate;
     }
 
+    @Override
+    protected ServerResourceMethod createResourceMethod() {
+        return new ServerResourceMethod();
+    }
+
+    @Override
+    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
+        method.setInvoker(endpointInvokerFactory.create(method, currentClassInfo, info));
+    }
+
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo,
             Map<String, String> existingConverters,
@@ -335,11 +350,17 @@ public class ServerEndpointIndexer extends EndpointIndexer<ServerEndpointIndexer
         return currentInjectableBean;
     }
 
-    public static final class Builder extends EndpointIndexer.Builder<ServerEndpointIndexer, Builder> {
+    public static final class Builder extends EndpointIndexer.Builder<ServerEndpointIndexer, Builder, ServerResourceMethod> {
 
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
         private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
         private MethodCreator initConverters;
+        private EndpointInvokerFactory endpointInvokerFactory;
+
+        public Builder setEndpointInvokerFactory(EndpointInvokerFactory endpointInvokerFactory) {
+            this.endpointInvokerFactory = endpointInvokerFactory;
+            return this;
+        }
 
         @Override
         public ServerEndpointIndexer build() {

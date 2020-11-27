@@ -83,9 +83,8 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
-import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
-public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM extends IndexedParameter<PARAM>> {
+public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD>, PARAM extends IndexedParameter<PARAM>, METHOD extends ResourceMethod> {
 
     protected static final Map<String, String> primitiveTypes;
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
@@ -106,7 +105,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimplifiedResourceInfo"), //TODO: fixme
             ResteasyReactiveDotNames.RESOURCE_INFO)));
 
-    protected static final Logger log = Logger.getLogger(EndpointInvoker.class);
+    protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
 
@@ -149,7 +148,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     }
 
     protected final IndexView index;
-    protected final EndpointInvokerFactory endpointInvokerFactory;
     private final Map<String, String> existingConverters;
     private final Map<DotName, String> scannedResourcePaths;
     private final ResteasyReactiveConfig config;
@@ -162,9 +160,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
 
-    protected EndpointIndexer(Builder<T, ?> builder) {
+    protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
-        this.endpointInvokerFactory = builder.endpointInvokerFactory;
         this.existingConverters = builder.existingConverters;
         this.scannedResourcePaths = builder.scannedResourcePaths;
         this.config = builder.config;
@@ -229,6 +226,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
             throw new RuntimeException(e);
         }
     }
+
+    protected abstract METHOD createResourceMethod();
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
@@ -419,7 +418,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                     blocking = true;
                 }
             }
-            ResourceMethod method = new ResourceMethod()
+            ResourceMethod method = createResourceMethod()
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
                     .setConsumes(consumes)
@@ -470,12 +469,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
                             }
                         }
                     }));
-
-            method.setInvoker(endpointInvokerFactory.create(method, currentClassInfo, info));
+            handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, info);
             return method;
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info) {
+
     }
 
     protected abstract InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
@@ -870,9 +872,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         return NameBindingUtil.nameBindingNames(index, methodInfo, forClass);
     }
 
-    public static abstract class Builder<T extends EndpointIndexer<T, ?>, B extends Builder<T, B>> {
+    public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
         private Function<String, BeanFactory<Object>> factoryCreator;
-        private EndpointInvokerFactory endpointInvokerFactory;
         private boolean defaultBlocking;
         private IndexView index;
         private Map<String, String> existingConverters;
@@ -884,11 +885,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM>, PARAM
         private AdditionalWriters additionalWriters;
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
-
-        public B setEndpointInvokerFactory(EndpointInvokerFactory endpointInvokerFactory) {
-            this.endpointInvokerFactory = endpointInvokerFactory;
-            return (B) this;
-        }
 
         public B setDefaultBlocking(boolean defaultBlocking) {
             this.defaultBlocking = defaultBlocking;

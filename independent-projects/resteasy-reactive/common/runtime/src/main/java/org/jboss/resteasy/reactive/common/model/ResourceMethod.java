@@ -2,9 +2,7 @@ package org.jboss.resteasy.reactive.common.model;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Supplier;
 import org.jboss.resteasy.reactive.RestSseElementType;
-import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 /**
  * A representation of a REST endpoint. This is passed directly to recorders so must be bytecode serializable.
@@ -45,8 +43,6 @@ public class ResourceMethod {
      * If none is specified on the method then this represents the value inherited from the class level.
      */
     private Set<String> nameBindingNames = Collections.emptySet();
-
-    private Supplier<EndpointInvoker> invoker;
 
     private String name;
 
@@ -145,15 +141,6 @@ public class ResourceMethod {
 
     public ResourceMethod setParameters(MethodParameter[] parameters) {
         this.parameters = parameters;
-        return this;
-    }
-
-    public Supplier<EndpointInvoker> getInvoker() {
-        return invoker;
-    }
-
-    public ResourceMethod setInvoker(Supplier<EndpointInvoker> invoker) {
-        this.invoker = invoker;
         return this;
     }
 

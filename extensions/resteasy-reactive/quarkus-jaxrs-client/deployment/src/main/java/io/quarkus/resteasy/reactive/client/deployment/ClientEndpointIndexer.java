@@ -30,7 +30,8 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObject
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStructureHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueHandler;
 
-public class ClientEndpointIndexer extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam> {
+public class ClientEndpointIndexer
+        extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam, ResourceMethod> {
     ClientEndpointIndexer(Builder builder) {
         super(builder);
     }
@@ -59,6 +60,11 @@ public class ClientEndpointIndexer extends EndpointIndexer<ClientEndpointIndexer
             log.debug("Ignoring interface for creating client proxy" + classInfo.name(), e);
             return null;
         }
+    }
+
+    @Override
+    protected ResourceMethod createResourceMethod() {
+        return new ResourceMethod();
     }
 
     @Override
@@ -111,7 +117,7 @@ public class ClientEndpointIndexer extends EndpointIndexer<ClientEndpointIndexer
 
     }
 
-    public static final class Builder extends EndpointIndexer.Builder<ClientEndpointIndexer, Builder> {
+    public static final class Builder extends EndpointIndexer.Builder<ClientEndpointIndexer, Builder, ResourceMethod> {
         @Override
         public ClientEndpointIndexer build() {
             return new ClientEndpointIndexer(this);

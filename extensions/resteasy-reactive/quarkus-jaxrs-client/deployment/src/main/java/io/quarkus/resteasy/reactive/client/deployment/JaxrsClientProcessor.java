@@ -53,7 +53,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.client.runtime.ResteasyReactiveClientRecorder;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
-import io.quarkus.resteasy.reactive.common.deployment.QuarkusInvokerFactory;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestConfig;
@@ -95,7 +94,6 @@ public class JaxrsClientProcessor {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         ClientEndpointIndexer clientEndpointIndexer = new ClientEndpointIndexer.Builder()
                 .setIndex(index)
-                .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                 .setExistingConverters(new HashMap<>())
                 .setScannedResourcePaths(resourceScanningResultBuildItem.getScannedResourcePaths())
                 .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))

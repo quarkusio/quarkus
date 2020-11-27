@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.common.deployment;
+package io.quarkus.resteasy.reactive.server.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.function.Supplier;
@@ -8,9 +8,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
-import org.jboss.resteasy.reactive.common.processor.EndpointInvokerFactory;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
-import org.jboss.resteasy.reactive.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.processor.EndpointInvokerFactory;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -18,15 +18,15 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.rest.server.runtime.ResteasyReactiveRecorder;
 
 public class QuarkusInvokerFactory implements EndpointInvokerFactory {
 
     final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-    final QuarkusRestCommonRecorder recorder;
+    final ResteasyReactiveRecorder recorder;
 
     public QuarkusInvokerFactory(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            QuarkusRestCommonRecorder recorder) {
+            ResteasyReactiveRecorder recorder) {
         this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
         this.recorder = recorder;
     }

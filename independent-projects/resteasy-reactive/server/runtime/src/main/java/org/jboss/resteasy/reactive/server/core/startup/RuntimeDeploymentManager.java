@@ -40,6 +40,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.FeatureContextImpl;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -98,8 +99,9 @@ public class RuntimeDeploymentManager {
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (ResourceMethod method : clazz.getMethods()) {
                 //TODO: add DynamicFeature for these
+                //TODO: remove the cast
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
-                        clazz, method, true, classPathTemplate);
+                        clazz, (ServerResourceMethod) method, true, classPathTemplate);
 
                 RuntimeMappingDeployment.buildMethodMapper(templates, method, runtimeResource);
             }
@@ -120,7 +122,7 @@ public class RuntimeDeploymentManager {
             }
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
-                        clazz, method, false, classTemplate);
+                        clazz, (ServerResourceMethod) method, false, classTemplate);
 
                 RuntimeMappingDeployment.buildMethodMapper(perClassMappers, method, runtimeResource);
             }

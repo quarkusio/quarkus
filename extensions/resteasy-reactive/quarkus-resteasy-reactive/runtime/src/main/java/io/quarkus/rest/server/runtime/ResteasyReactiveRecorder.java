@@ -24,6 +24,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
@@ -174,6 +175,20 @@ public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
     public void registerContextResolver(ContextResolvers contextResolvers, String string,
             ResourceContextResolver resolver) {
         contextResolvers.addContextResolver(loadClass(string), resolver);
+    }
+
+    public Supplier<EndpointInvoker> invoker(String baseName) {
+        return new Supplier<EndpointInvoker>() {
+            @Override
+            public EndpointInvoker get() {
+                try {
+                    return (EndpointInvoker) loadClass(baseName).newInstance();
+                } catch (IllegalAccessException | InstantiationException e) {
+                    throw new RuntimeException("Unable to generate endpoint invoker", e);
+                }
+
+            }
+        };
     }
 
     public Function<Class<?>, BeanFactory<?>> factoryCreator(BeanContainer container) {

@@ -10,18 +10,18 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 // TODO: this is very simplistic at the moment
 
 @Provider
 @Produces("*/*")
 @Consumes("*/*")
-public class ServerFileBodyHandler extends FileBodyHandler implements QuarkusRestMessageBodyWriter<File> {
+public class ServerFileBodyHandler extends FileBodyHandler implements ServerMessageBodyWriter<File> {
 
     @Override
     public long getSize(File o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -29,12 +29,12 @@ public class ServerFileBodyHandler extends FileBodyHandler implements QuarkusRes
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return File.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(File o, ResteasyReactiveRequestContext context) throws WebApplicationException {
+    public void writeResponse(File o, ServerRequestContext context) throws WebApplicationException {
         ServerHttpResponse vertxResponse = context.serverResponse();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {

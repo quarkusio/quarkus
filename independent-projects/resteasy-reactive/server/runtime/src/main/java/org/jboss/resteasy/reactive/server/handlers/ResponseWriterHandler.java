@@ -7,6 +7,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
  * Our job is to write a Response

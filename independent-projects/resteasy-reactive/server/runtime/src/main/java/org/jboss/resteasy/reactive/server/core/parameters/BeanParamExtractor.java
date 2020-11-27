@@ -2,7 +2,7 @@ package org.jboss.resteasy.reactive.server.core.parameters;
 
 import javax.ws.rs.container.CompletionCallback;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionTarget;
+import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class BeanParamExtractor implements ParameterExtractor {
@@ -22,7 +22,7 @@ public class BeanParamExtractor implements ParameterExtractor {
                 instance.close();
             }
         });
-        ((QuarkusRestInjectionTarget) instance.getInstance()).__quarkus_rest_inject(context);
+        ((ResteasyReactiveInjectionTarget) instance.getInstance()).__quarkus_rest_inject(context);
         return instance.getInstance();
     }
 }

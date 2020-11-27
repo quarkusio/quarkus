@@ -1,0 +1,12 @@
+---
+name: "Quarkus RESTEasy Reactive Servlet"
+metadata:
+  short-name: "quarkus-resteasy-reactive-servlet"
+  keywords:
+  - "jaxrs"
+  - "web"
+  - "rest"
+  - "servlet"
+  categories:
+  - "web"
+  status: "experimental"

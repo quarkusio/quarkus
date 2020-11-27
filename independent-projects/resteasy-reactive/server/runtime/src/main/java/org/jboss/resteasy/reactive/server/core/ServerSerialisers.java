@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -28,9 +29,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
-import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
@@ -38,7 +37,7 @@ import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestWriterInterceptorContext;
+import org.jboss.resteasy.reactive.server.jaxrs.WriterInterceptorContextImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerBooleanMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerByteArrayMessageBodyHandler;
@@ -51,7 +50,9 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerInputStrea
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 
 public class ServerSerialisers extends Serialisers {
 
@@ -162,12 +163,12 @@ public class ServerSerialisers extends Serialisers {
 
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
-        if (writer instanceof QuarkusRestMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
-            QuarkusRestMessageBodyWriter<Object> quarkusRestWriter = (QuarkusRestMessageBodyWriter<Object>) writer;
+        if (writer instanceof ServerMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
+            ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
             RuntimeResource target = context.getTarget();
             ServerSerialisers.encodeResponseHeaders(context);
             if (quarkusRestWriter.isWriteable(entity.getClass(), target == null ? null : target.getLazyMethod(),
-                    context.getResponseContentMediaType())) {
+                    context.getResponseMediaType())) {
                 if (mediaType != null) {
                     context.setResponseContentType(mediaType);
                 }
@@ -178,7 +179,7 @@ public class ServerSerialisers extends Serialisers {
             }
         } else {
             if (writer.isWriteable(entity.getClass(), context.getGenericReturnType(), context.getAllAnnotations(),
-                    context.getResponseContentMediaType())) {
+                    context.getResponseMediaType())) {
                 Response response = context.getResponse().get();
                 if (mediaType != null) {
                     context.setResponseContentType(mediaType);
@@ -201,7 +202,7 @@ public class ServerSerialisers extends Serialisers {
 
     public static void runWriterInterceptors(ResteasyReactiveRequestContext context, Object entity, MessageBodyWriter writer,
             Response response, WriterInterceptor[] writerInterceptor, ServerSerialisers serialisers) throws IOException {
-        QuarkusRestWriterInterceptorContext wc = new QuarkusRestWriterInterceptorContext(context, writerInterceptor, writer,
+        WriterInterceptorContextImpl wc = new WriterInterceptorContextImpl(context, writerInterceptor, writer,
                 context.getAllAnnotations(), entity.getClass(), context.getGenericReturnType(), entity, response.getMediaType(),
                 response.getHeaders(), serialisers);
         wc.proceed();
@@ -220,7 +221,7 @@ public class ServerSerialisers extends Serialisers {
      * This is probably more complex than it needs to be, but some RESTEasy tests show that the response type
      * is influenced by the provider's weight of the media types
      */
-    public BestMatchingServerWriterResult findBestMatchingServerWriter(QuarkusRestConfiguration configuration,
+    public BestMatchingServerWriterResult findBestMatchingServerWriter(ConfigurationImpl configuration,
             Class<?> entityType, ServerHttpRequest request) {
         // TODO: refactor to have use common code from findWriters
         Class<?> klass = entityType;
@@ -273,7 +274,8 @@ public class ServerSerialisers extends Serialisers {
             if (!resourceWriter.matchesRuntimeType(RuntimeType.SERVER)) {
                 continue;
             }
-            Map.Entry<MediaType, MediaType> current = resourceWriter.serverMediaType().negotiateProduces(request, null);
+            Map.Entry<MediaType, MediaType> current = resourceWriter.serverMediaType()
+                    .negotiateProduces(request.getRequestHeader(HttpHeaders.ACCEPT), null);
             if (current.getValue() == null) {
                 continue;
             }
@@ -311,7 +313,8 @@ public class ServerSerialisers extends Serialisers {
         }
         MediaType selected = null;
         for (ResourceWriter writer : constrainedResultsForClass) {
-            selected = writer.serverMediaType().negotiateProduces(requestContext.serverRequest()).getKey();
+            selected = writer.serverMediaType()
+                    .negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT)).getKey();
             if (selected != null) {
                 break;
             }

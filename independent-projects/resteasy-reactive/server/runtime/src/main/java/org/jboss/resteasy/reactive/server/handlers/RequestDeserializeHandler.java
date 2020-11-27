@@ -15,8 +15,9 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestReaderInterceptorContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
+import org.jboss.resteasy.reactive.server.jaxrs.ReaderInterceptorContextImpl;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class RequestDeserializeHandler implements ServerRestHandler {
 
@@ -58,7 +59,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                         if (interceptors == null) {
                             result = readFrom(reader, requestContext, requestType);
                         } else {
-                            result = new QuarkusRestReaderInterceptorContext(requestContext,
+                            result = new ReaderInterceptorContextImpl(requestContext,
                                     getAnnotations(requestContext),
                                     type, type, requestType, reader, requestContext.getInputStream(), interceptors, serialisers)
                                             .proceed();
@@ -80,8 +81,9 @@ public class RequestDeserializeHandler implements ServerRestHandler {
 
     private boolean isReadable(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext,
             MediaType requestType) {
-        if (reader instanceof QuarkusRestMessageBodyReader) {
-            return ((QuarkusRestMessageBodyReader<?>) reader).isReadable(type, type, requestContext.getTarget().getLazyMethod(),
+        if (reader instanceof ServerMessageBodyReader) {
+            return ((ServerMessageBodyReader<?>) reader).isReadable(type, type,
+                    requestContext.getTarget().getLazyMethod(),
                     requestType);
         }
         return reader.isReadable(type, type, getAnnotations(requestContext), requestType);
@@ -90,8 +92,8 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     @SuppressWarnings("unchecked")
     public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext, MediaType requestType)
             throws IOException {
-        if (reader instanceof QuarkusRestMessageBodyReader) {
-            return ((QuarkusRestMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
+        if (reader instanceof ServerMessageBodyReader) {
+            return ((ServerMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
         }
         return reader.readFrom((Class) type, type, getAnnotations(requestContext), requestType,
                 requestContext.getHttpHeaders().getRequestHeaders(), requestContext.getInputStream());

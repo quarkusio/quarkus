@@ -3,11 +3,9 @@ package org.jboss.resteasy.reactive.common.util;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
-import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 public abstract class DeploymentUtils {
     private static final Map<String, Class<?>> primitiveTypes;
@@ -23,20 +21,6 @@ public abstract class DeploymentUtils {
         prims.put(double.class.getName(), double.class);
         prims.put(long.class.getName(), long.class);
         primitiveTypes = Collections.unmodifiableMap(prims);
-    }
-
-    public static Supplier<EndpointInvoker> invoker(String baseName) {
-        return new Supplier<EndpointInvoker>() {
-            @Override
-            public EndpointInvoker get() {
-                try {
-                    return (EndpointInvoker) loadClass(baseName).newInstance();
-                } catch (IllegalAccessException | InstantiationException e) {
-                    throw new RuntimeException("Unable to generate endpoint invoker", e);
-                }
-
-            }
-        };
     }
 
     public static void registerWriter(Serialisers serialisers, String entityClassName,

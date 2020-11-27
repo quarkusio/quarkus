@@ -17,9 +17,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Variant;
-import org.jboss.resteasy.reactive.client.ClientRestHandler;
-import org.jboss.resteasy.reactive.client.QuarkusRestAsyncInvoker;
-import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
@@ -71,7 +71,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 }
             }
         });
-        if (actualEntity == QuarkusRestAsyncInvoker.EMPTY_BUFFER) {
+        if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
             httpClientRequest.end();
         } else {
             httpClientRequest.end(actualEntity);
@@ -92,7 +92,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest, RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
-        Buffer actualEntity = QuarkusRestAsyncInvoker.EMPTY_BUFFER;
+        Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
         Entity<?> entity = state.getEntity();
         if (entity != null) {
             // no need to set the entity.getMediaType, it comes from the variant

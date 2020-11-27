@@ -2,9 +2,7 @@ package org.jboss.resteasy.reactive.common.model;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Supplier;
-import org.jboss.resteasy.reactive.SseElementType;
-import org.jboss.resteasy.reactive.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.RestSseElementType;
 
 /**
  * A representation of a REST endpoint. This is passed directly to recorders so must be bytecode serializable.
@@ -29,7 +27,7 @@ public class ResourceMethod {
     private String[] produces;
 
     /**
-     * The value of the {@link SseElementType} annotation, if none is specified on the method
+     * The value of the {@link RestSseElementType} annotation, if none is specified on the method
      * then this represents the value inherited from the class level, or null if not specified.
      */
     private String sseElementType;
@@ -46,8 +44,6 @@ public class ResourceMethod {
      */
     private Set<String> nameBindingNames = Collections.emptySet();
 
-    private Supplier<EndpointInvoker> invoker;
-
     private String name;
 
     private String returnType;
@@ -62,8 +58,6 @@ public class ResourceMethod {
     private boolean isSse;
 
     private boolean isFormParamRequired;
-
-    private boolean cdiRequestScopeRequired = true;
 
     public boolean isResourceLocator() {
         return httpMethod == null;
@@ -150,15 +144,6 @@ public class ResourceMethod {
         return this;
     }
 
-    public Supplier<EndpointInvoker> getInvoker() {
-        return invoker;
-    }
-
-    public ResourceMethod setInvoker(Supplier<EndpointInvoker> invoker) {
-        this.invoker = invoker;
-        return this;
-    }
-
     public boolean isBlocking() {
         return blocking;
     }
@@ -192,15 +177,6 @@ public class ResourceMethod {
 
     public ResourceMethod setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
-        return this;
-    }
-
-    public boolean isCDIRequestScopeRequired() {
-        return cdiRequestScopeRequired;
-    }
-
-    public ResourceMethod setCDIRequestScopeRequired(boolean cdiRequestScopeRequired) {
-        this.cdiRequestScopeRequired = cdiRequestScopeRequired;
         return this;
     }
 

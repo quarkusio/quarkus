@@ -4,6 +4,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class BlockingHandler implements ServerRestHandler {
 

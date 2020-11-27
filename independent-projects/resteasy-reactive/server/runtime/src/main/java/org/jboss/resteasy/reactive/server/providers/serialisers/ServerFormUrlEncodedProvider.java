@@ -13,10 +13,10 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyReader;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -28,26 +28,26 @@ import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
 @Consumes("application/x-www-form-urlencoded")
 @ConstrainedTo(RuntimeType.CLIENT)
 public class ServerFormUrlEncodedProvider extends FormUrlEncodedProvider
-        implements QuarkusRestMessageBodyReader<MultivaluedMap>, QuarkusRestMessageBodyWriter<MultivaluedMap> {
+        implements ServerMessageBodyReader<MultivaluedMap>, ServerMessageBodyWriter<MultivaluedMap> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
         return MultivaluedMap.class.equals(type);
     }
 
     @Override
     public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, MediaType mediaType,
-            ResteasyReactiveRequestContext context) throws WebApplicationException, IOException {
+            ServerRequestContext context) throws WebApplicationException, IOException {
         return doReadFrom(mediaType, context.getInputStream());
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return MultivaluedMap.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(MultivaluedMap o, ResteasyReactiveRequestContext context) throws WebApplicationException {
+    public void writeResponse(MultivaluedMap o, ServerRequestContext context) throws WebApplicationException {
         try {
             // FIXME: use response encoding
             context.serverResponse().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));

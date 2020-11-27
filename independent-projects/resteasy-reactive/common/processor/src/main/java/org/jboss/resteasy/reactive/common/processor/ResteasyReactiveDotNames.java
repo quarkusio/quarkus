@@ -68,15 +68,13 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.RequireCDIRequestScope;
 import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
-import org.jboss.resteasy.reactive.SseElementType;
-import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.RestSseElementType;
 
 public final class ResteasyReactiveDotNames {
 
@@ -92,9 +90,10 @@ public final class ResteasyReactiveDotNames {
     public static final DotName SSE = DotName.createSimple(Sse.class.getName());
     public static final DotName SSE_EVENT_SINK = DotName.createSimple(SseEventSink.class.getName());
     public static final DotName RESOURCE_INFO = DotName.createSimple(ResourceInfo.class.getName());
-    public static final DotName QUARKUS_REST_CONTEXT = DotName.createSimple(QuarkusRestContext.class.getName());
+    public static final DotName SERVER_REQUEST_CONTEXT = DotName
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ServerRequestContext");
 
-    public static final DotName SSE_ELEMENT_TYPE = DotName.createSimple(SseElementType.class.getName());
+    public static final DotName REST_SSE_ELEMENT_TYPE = DotName.createSimple(RestSseElementType.class.getName());
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
     public static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
     public static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
@@ -148,7 +147,6 @@ public final class ResteasyReactiveDotNames {
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
-    public static final DotName REQUIRE_CDI_REQUEST_SCOPE = DotName.createSimple(RequireCDIRequestScope.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 
@@ -191,13 +189,6 @@ public final class ResteasyReactiveDotNames {
     public static final DotName JSONP_JSON_VALUE = DotName.createSimple(javax.json.JsonValue.class.getName());
     public static final DotName JSONP_JSON_STRING = DotName.createSimple(javax.json.JsonString.class.getName());
 
-    public static final DotName CUSTOM_CONTAINER_REQUEST_FILTER = DotName
-            .createSimple(org.jboss.resteasy.reactive.ContainerRequestFilter.class.getName());
-    public static final DotName CUSTOM_CONTAINER_RESPONSE_FILTER = DotName
-            .createSimple(org.jboss.resteasy.reactive.ContainerResponseFilter.class.getName());
-    public static final DotName EXCEPTION_MAPPER_ANNOTATION = DotName
-            .createSimple(org.jboss.resteasy.reactive.ExceptionMapper.class.getName());
-
     public static final DotName CONTAINER_REQUEST_CONTEXT = DotName.createSimple(ContainerRequestContext.class.getName());
     public static final DotName CONTAINER_RESPONSE_CONTEXT = DotName.createSimple(ContainerResponseContext.class.getName());
 
@@ -207,9 +198,9 @@ public final class ResteasyReactiveDotNames {
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
     public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_FILTER = DotName
-            .createSimple("org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseFilter");
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerResponseFilter");
     public static final DotName QUARKUS_REST_CONTAINER_REQUEST_FILTER = DotName
-            .createSimple("org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestFilter");
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter");
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.

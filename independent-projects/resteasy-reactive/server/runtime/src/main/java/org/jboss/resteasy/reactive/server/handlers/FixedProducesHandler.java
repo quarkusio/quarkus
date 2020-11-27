@@ -8,6 +8,7 @@ import javax.ws.rs.core.Variant;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
  * Handler that negotiates the content type for endpoints that

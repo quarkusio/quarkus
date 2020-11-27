@@ -16,12 +16,13 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
-import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestServerResponseBuilder;
+import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class ClassRoutingHandler implements ServerRestHandler {
     private final Map<String, RequestMapper<RuntimeResource>> mappers;
@@ -61,7 +62,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {
                     if (existingMapper.map(remaining) != null) {
                         throw new NotAllowedException(
-                                new QuarkusRestServerResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                                new ResponseBuilderImpl().status(Response.Status.METHOD_NOT_ALLOWED).build());
                     }
                 }
                 throwNotFound(requestContext);
@@ -89,7 +90,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                     }
                     if (entry.getValue().map(remaining) != null) {
                         throw new NotAllowedException(
-                                new QuarkusRestServerResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                                new ResponseBuilderImpl().status(Response.Status.METHOD_NOT_ALLOWED).build());
                     }
                 }
                 throwNotFound(requestContext);

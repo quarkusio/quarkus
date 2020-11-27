@@ -13,9 +13,9 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestOutboundSseEvent;
+import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 public class SseUtil extends CommonSseUtil {
 
@@ -44,7 +44,7 @@ public class SseUtil extends CommonSseUtil {
         StringBuilder sb = new StringBuilder();
         MediaType eventMediaType = null;
         // NOT IN SPEC
-        if (event instanceof QuarkusRestOutboundSseEvent && ((QuarkusRestOutboundSseEvent) event).isMediaTypeSet()) {
+        if (event instanceof OutboundSseEventImpl && ((OutboundSseEventImpl) event).isMediaTypeSet()) {
             eventMediaType = event.getMediaType();
             serialiseField(context, sb, "content-type", eventMediaType.toString(), false);
         }

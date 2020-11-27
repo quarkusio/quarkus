@@ -10,23 +10,23 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.api.WebClientApplicationException;
-import org.jboss.resteasy.reactive.client.ClientRestHandler;
-import org.jboss.resteasy.reactive.client.QuarkusRestClientRequestContext;
-import org.jboss.resteasy.reactive.client.QuarkusRestClientResponseBuilder;
-import org.jboss.resteasy.reactive.client.QuarkusRestClientResponseContext;
-import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
+import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientResponseBuilderImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientResponseRestHandler implements ClientRestHandler {
     @Override
     public void handle(RestClientRequestContext context) throws Exception {
-        QuarkusRestClientResponseContext responseContext = new QuarkusRestClientResponseContext(context);
+        ClientResponseContextImpl responseContext = new ClientResponseContextImpl(context);
         if (context.isCheckSuccessfulFamily()
                 && (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL)) {
             throw new WebClientApplicationException("Server response status was: " + responseContext.getStatus());
         }
-        QuarkusRestClientRequestContext requestContext = context.getClientRequestContext();
+        ClientRequestContextImpl requestContext = context.getClientRequestContext();
         // the spec doesn't really say this, but the TCK checks that the abortWith entity ends up read
         // so we have to write it, but without filters/interceptors
         if (requestContext != null && requestContext.getAbortedWith() != null) {
@@ -45,7 +45,7 @@ public class ClientResponseRestHandler implements ClientRestHandler {
                 }
             }
         }
-        QuarkusRestClientResponseBuilder builder = new QuarkusRestClientResponseBuilder();
+        ClientResponseBuilderImpl builder = new ClientResponseBuilderImpl();
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
         builder.invocationState(context);
@@ -67,7 +67,7 @@ public class ClientResponseRestHandler implements ClientRestHandler {
         context.getResult().complete(builder.build());
     }
 
-    private void setExistingEntity(Response abortedWith, QuarkusRestClientResponseContext responseContext,
+    private void setExistingEntity(Response abortedWith, ClientResponseContextImpl responseContext,
             RestClientRequestContext restClientRequestContext) throws IOException {
         Object value = abortedWith.getEntity();
         if (value == null) {

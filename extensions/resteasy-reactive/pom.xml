@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>resteasy-reactive-parent-aggregator</artifactId>
+    <name>Quarkus - RESTEasy Reactive - Parent - Aggregator</name>
+    <packaging>pom</packaging>
+    <modules>
+        <module>quarkus-resteasy-reactive-common</module>
+        <module>quarkus-resteasy-reactive</module>
+        <module>quarkus-jaxrs-client</module>
+        <module>quarkus-resteasy-reactive-jackson</module>
+        <module>quarkus-resteasy-reactive-jsonb</module>
+        <module>quarkus-resteasy-reactive-qute</module>
+        <module>quarkus-resteasy-reactive-servlet</module>
+    </modules>
+
+</project>

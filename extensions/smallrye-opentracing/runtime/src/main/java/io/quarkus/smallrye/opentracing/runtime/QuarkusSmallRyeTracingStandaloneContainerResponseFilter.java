@@ -4,14 +4,14 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 
-import org.jboss.resteasy.reactive.ContainerResponseFilter;
+import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 import io.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.opentracing.tag.Tags;
 
 public class QuarkusSmallRyeTracingStandaloneContainerResponseFilter {
 
-    @ContainerResponseFilter(priority = Priorities.HEADER_DECORATOR - 1) // this needs to be executed after ServerTracingFilter
+    @ServerResponseFilter(priority = Priorities.HEADER_DECORATOR - 1) // this needs to be executed after ServerTracingFilter
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext, Throwable t) {
         Object wrapperObj = requestContext.getProperty(SpanWrapper.PROPERTY_NAME);
         if (!(wrapperObj instanceof SpanWrapper)) {

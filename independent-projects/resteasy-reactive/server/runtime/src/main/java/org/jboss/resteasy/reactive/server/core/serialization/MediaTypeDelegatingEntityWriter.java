@@ -21,7 +21,7 @@ public class MediaTypeDelegatingEntityWriter implements EntityWriter {
 
     @Override
     public void write(ResteasyReactiveRequestContext context, Object entity) throws IOException {
-        EntityWriter delegate = typeMap.get(context.getResponseContentMediaType());
+        EntityWriter delegate = typeMap.get(context.getResponseMediaType());
         if (delegate != null) {
             delegate.write(context, entity);
             return;

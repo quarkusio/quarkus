@@ -11,7 +11,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 // FIXME: we need to refactor the serialisation of entities to bytes between here and Sse and Serialisers
 // and figure out where interceptors come into play
@@ -39,7 +39,7 @@ public class StreamingUtil {
         ServerSerialisers serialisers = context.getDeployment().getSerialisers();
         Class<?> entityClass = entity.getClass();
         Type entityType = context.getGenericReturnType();
-        MediaType mediaType = context.getResponseContentMediaType();
+        MediaType mediaType = context.getResponseMediaType();
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers

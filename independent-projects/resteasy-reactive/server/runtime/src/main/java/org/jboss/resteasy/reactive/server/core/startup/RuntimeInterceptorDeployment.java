@@ -14,21 +14,21 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.HasPriority;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestDynamicFeatureContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResourceMethod;
+import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureContext;
+import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 /**
@@ -50,14 +50,14 @@ public class RuntimeInterceptorDeployment {
     private final List<ResourceRequestFilterHandler> globalRequestInterceptorHandlers;
     private final List<ResourceResponseFilterHandler> globalResponseInterceptorHandlers;
     private final InterceptorHandler globalInterceptorHandler;
-    private final QuarkusRestDeploymentInfo info;
+    private final DeploymentInfo info;
     private final Consumer<Closeable> closeTaskHandler;
-    private final QuarkusRestConfiguration quarkusRestConfiguration;
+    private final ConfigurationImpl configurationImpl;
 
-    public RuntimeInterceptorDeployment(QuarkusRestDeploymentInfo info, QuarkusRestConfiguration quarkusRestConfiguration,
+    public RuntimeInterceptorDeployment(DeploymentInfo info, ConfigurationImpl configurationImpl,
             Consumer<Closeable> closeTaskHandler) {
         this.info = info;
-        this.quarkusRestConfiguration = quarkusRestConfiguration;
+        this.configurationImpl = configurationImpl;
         this.closeTaskHandler = closeTaskHandler;
         ResourceInterceptors interceptors = info.getInterceptors();
         globalRequestInterceptorsMap = createInterceptorInstances(
@@ -203,12 +203,12 @@ public class RuntimeInterceptorDeployment {
                 // in the global fields
                 ResourceInterceptors dynamicallyConfiguredInterceptors = new ResourceInterceptors();
 
-                QuarkusRestResourceMethod quarkusRestResourceMethod = new QuarkusRestResourceMethod(clazz, method); // TODO: look into using LazyMethod
-                QuarkusRestDynamicFeatureContext context = new QuarkusRestDynamicFeatureContext(
-                        dynamicallyConfiguredInterceptors, quarkusRestConfiguration, info.getFactoryCreator());
+                DynamicFeatureResourceInfo dynamicFeatureResourceInfo = new DynamicFeatureResourceInfo(clazz, method); // TODO: look into using LazyMethod
+                DynamicFeatureContext context = new DynamicFeatureContext(
+                        dynamicallyConfiguredInterceptors, configurationImpl, info.getFactoryCreator());
                 for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {
                     DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
-                    feature.configure(quarkusRestResourceMethod, context);
+                    feature.configure(dynamicFeatureResourceInfo, context);
                 }
                 dynamicallyConfiguredInterceptors.sort();
 

@@ -6,13 +6,13 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestSimplifiedResourceInfo;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
-import org.jboss.resteasy.reactive.server.spi.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveSimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
-import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 public class RuntimeResource {
 
@@ -29,7 +29,7 @@ public class RuntimeResource {
     private final Type returnType;
     private final boolean blocking;
     private final Class<?> resourceClass;
-    private final LazyMethod lazyMethod;
+    private final ResteasyReactiveResourceInfo lazyMethod;
     private final Map<String, Integer> pathParameterIndexes;
     private final Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score;
     private final MediaType sseElementType;
@@ -40,7 +40,7 @@ public class RuntimeResource {
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
             Class<?>[] parameterTypes,
-            Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
+            Type returnType, boolean blocking, Class<?> resourceClass, ResteasyReactiveResourceInfo lazyMethod,
             Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score,
             MediaType sseElementType,
             Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers) {
@@ -112,12 +112,12 @@ public class RuntimeResource {
         return endpointFactory;
     }
 
-    public LazyMethod getLazyMethod() {
+    public ResteasyReactiveResourceInfo getLazyMethod() {
         return lazyMethod;
     }
 
-    public SimplifiedResourceInfo getSimplifiedResourceInfo() {
-        return new QuarkusRestSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
+    public SimpleResourceInfo getSimplifiedResourceInfo() {
+        return new ResteasyReactiveSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
     }
 
     public MediaType getSseElementType() {

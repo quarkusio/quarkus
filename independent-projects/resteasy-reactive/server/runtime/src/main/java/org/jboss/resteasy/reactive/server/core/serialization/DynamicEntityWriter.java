@@ -8,12 +8,12 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
-import org.jboss.resteasy.reactive.common.http.ServerHttpRequest;
-import org.jboss.resteasy.reactive.common.http.ServerHttpResponse;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
+import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 /**
  * Writer that is fully dynamic, and follows the spec defined resolution process
@@ -36,7 +36,8 @@ public class DynamicEntityWriter implements EntityWriter {
             ServerHttpRequest vertxRequest = context.serverRequest();
             // first check and see if the resource method defined a media type and try to use it
             if ((context.getTarget() != null) && (context.getTarget().getProduces() != null)) {
-                MediaType res = context.getTarget().getProduces().negotiateProduces(vertxRequest).getKey();
+                MediaType res = context.getTarget().getProduces()
+                        .negotiateProduces(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT)).getKey();
                 List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(), res,
                         RuntimeType.SERVER);
                 if (!writersList.isEmpty()) {

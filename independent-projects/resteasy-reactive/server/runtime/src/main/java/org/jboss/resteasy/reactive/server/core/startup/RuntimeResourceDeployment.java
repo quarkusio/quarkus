@@ -27,13 +27,11 @@ import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
-import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
-import org.jboss.resteasy.reactive.server.core.LazyMethod;
+import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
-import org.jboss.resteasy.reactive.server.core.QuarkusRestDeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.parameters.AsyncResponseExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.BeanParamExtractor;
@@ -68,17 +66,19 @@ import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
-import org.jboss.resteasy.reactive.server.handlers.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.handlers.SseResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.UniResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.VariableProducesHandler;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
-import org.jboss.resteasy.reactive.spi.EndpointInvoker;
 
 public class RuntimeResourceDeployment {
 
@@ -86,7 +86,7 @@ public class RuntimeResourceDeployment {
 
     private static final Logger log = Logger.getLogger(RuntimeResourceDeployment.class);
 
-    private final QuarkusRestDeploymentInfo info;
+    private final DeploymentInfo info;
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig quarkusRestConfig;
     private final Supplier<Executor> executorSupplier;
@@ -94,7 +94,7 @@ public class RuntimeResourceDeployment {
     private final DynamicEntityWriter dynamicEntityWriter;
     private final ResourceLocatorHandler resourceLocatorHandler;
 
-    public RuntimeResourceDeployment(QuarkusRestDeploymentInfo info, Supplier<Executor> executorSupplier,
+    public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
             RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
             ResourceLocatorHandler resourceLocatorHandler) {
         this.info = info;
@@ -107,7 +107,7 @@ public class RuntimeResourceDeployment {
     }
 
     public RuntimeResource buildResourceMethod(ResourceClass clazz,
-            ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
+            ServerResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(clazz, method);
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
@@ -183,7 +183,8 @@ public class RuntimeResourceDeployment {
         }
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
-        LazyMethod lazyMethod = new LazyMethod(method.getName(), resourceClass, parameterTypes);
+        ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
+                parameterTypes);
 
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
@@ -220,7 +221,7 @@ public class RuntimeResourceDeployment {
         } else {
             score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
         }
-        handlers.add(new InvocationHandler(invoker, method.isCDIRequestScopeRequired()));
+        handlers.add(new InvocationHandler(invoker));
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
         Class<?> rawReturnType = getRawType(returnType);
@@ -275,7 +276,7 @@ public class RuntimeResourceDeployment {
                             MessageBodyWriter<?> writer = buildTimeWriters.get(0);
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
                                     writer, serialisers)));
-                            if (writer instanceof QuarkusRestMessageBodyWriter)
+                            if (writer instanceof ServerMessageBodyWriter)
                                 score.add(ScoreSystem.Category.Writer,
                                         ScoreSystem.Diagnostic.WriterBuildTimeDirect(writer));
                             else

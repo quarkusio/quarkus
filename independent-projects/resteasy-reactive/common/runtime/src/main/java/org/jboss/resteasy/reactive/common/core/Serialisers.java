@@ -19,7 +19,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
@@ -36,12 +36,12 @@ public abstract class Serialisers {
     protected final QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers = new QuarkusMultivaluedHashMap<>();
     protected final QuarkusMultivaluedMap<Class<?>, ResourceReader> readers = new QuarkusMultivaluedHashMap<>();
 
-    public List<MessageBodyReader<?>> findReaders(QuarkusRestConfiguration configuration, Class<?> entityType,
+    public List<MessageBodyReader<?>> findReaders(ConfigurationImpl configuration, Class<?> entityType,
             MediaType mediaType) {
         return findReaders(configuration, entityType, mediaType, null);
     }
 
-    public List<MessageBodyReader<?>> findReaders(QuarkusRestConfiguration configuration, Class<?> entityType,
+    public List<MessageBodyReader<?>> findReaders(ConfigurationImpl configuration, Class<?> entityType,
             MediaType mediaType, RuntimeType runtimeType) {
         List<MediaType> mt = Collections.singletonList(mediaType);
         List<MessageBodyReader<?>> ret = new ArrayList<>();
@@ -261,12 +261,12 @@ public abstract class Serialisers {
         }
     }
 
-    public List<MessageBodyWriter<?>> findWriters(QuarkusRestConfiguration configuration, Class<?> entityType,
+    public List<MessageBodyWriter<?>> findWriters(ConfigurationImpl configuration, Class<?> entityType,
             MediaType resolvedMediaType) {
         return findWriters(configuration, entityType, resolvedMediaType, null);
     }
 
-    public List<MessageBodyWriter<?>> findWriters(QuarkusRestConfiguration configuration, Class<?> entityType,
+    public List<MessageBodyWriter<?>> findWriters(ConfigurationImpl configuration, Class<?> entityType,
             MediaType resolvedMediaType, RuntimeType runtimeType) {
         // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity specially
         // it's probably missing from there, while the client handles it upstack

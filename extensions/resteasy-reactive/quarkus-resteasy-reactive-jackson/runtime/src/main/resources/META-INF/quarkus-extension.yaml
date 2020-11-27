@@ -1,0 +1,15 @@
+---
+name: "Quarkus RESTEasy Reactive Jackson"
+metadata:
+  short-name: "quarkus-resteasy-reactive-jackson"
+  keywords:
+    - "rest-jackson"
+    - "quarkus-resteasy-reactive-json"
+    - "jaxrs-json"
+    - "rest"
+    - "jaxrs"
+    - "json"
+    - "jackson"
+  categories:
+  - "web"
+  status: "experimental"

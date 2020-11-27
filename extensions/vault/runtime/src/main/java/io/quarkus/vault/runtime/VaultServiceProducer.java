@@ -6,13 +6,10 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Named;
 
 import io.quarkus.credentials.CredentialsProvider;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.VaultSystemBackendEngine;
 import io.quarkus.vault.VaultTOTPSecretEngine;
 import io.quarkus.vault.VaultTransitSecretEngine;
-import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
 @ApplicationScoped
 public class VaultServiceProducer {
@@ -57,9 +54,5 @@ public class VaultServiceProducer {
     @PreDestroy
     public void close() {
         VaultManager.reset();
-    }
-
-    public void setVaultConfigs(VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
-        VaultManager.init(buildTimeConfig, serverConfig, tlsConfig);
     }
 }

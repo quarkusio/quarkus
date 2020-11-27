@@ -29,9 +29,7 @@ public class VaultManager {
     }
 
     public static void init(VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
-        if (instance == null) {
-            instance = new VaultManager(buildTimeConfig, serverConfig, tlsConfig);
-        }
+        instance = new VaultManager(buildTimeConfig, serverConfig, tlsConfig);
     }
 
     public static void reset() {

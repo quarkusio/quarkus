@@ -585,6 +585,7 @@ it will take effect all the time, not just when testing.
 Note that at present this approach does not work with native image testing, as this would required the test alternatives
 to be baked into the native image.
 
+[[quarkus_mock]]
 === Mocking using QuarkusMock
 
 The `io.quarkus.test.junit.QuarkusMock` class can be used to temporarily mock out any normal scoped

@@ -188,10 +188,29 @@ A: You can use all the built-in scopes mentioned by the specification except for
 
 NOTE: There can be other custom scopes provided by Quarkus extensions. For example, `quarkus-narayana-jta` provides `javax.transaction.TransactionScoped`.
 
+== _Q: `@ApplicationScoped` and `@Singleton` look very similar. Which one should I choose for my Quarkus application?_
+
+A: It depends ;-).
+
+A `@Singleton` bean has no <<client_proxies,client proxy>> and hence an instance is _created eagerly_ when the bean is injected. By contrast, an instance of an `@ApplicationScoped` bean is _created lazily_, i.e.
+when a method is invoked upon an injected instance for the first time.
+
+Furthermore, client proxies only delegate method invocations and thus you should never read/write fields of an injected `@ApplicationScoped` bean directly.
+You can read/write fields of an injected `@Singleton` safely.
+
+`@Singleton` should have a slightly better performance because the is no indirection (no proxy that delegates to the current instance from the context).
+
+On the other hand, you cannot mock `@Singleton` beans using <<getting-started-testing.adoc#quarkus_mock,QuarkusMock>>.
+
+`@ApplicationScoped` beans can be also destroyed and recreated at runtime.
+Existing injection points just work because the injected proxy delegates to the current instance.
+
+Therefore, we recommend to stick with `@ApplicationScoped` by default unless there's a good reason to use `@Singleton`.
+
 [[client_proxies]]
 == _Q: I don't understand the concept of client proxies._
 
-Indeed, the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#client_proxies[client proxies, window="_blank"] could be hard to grasp but they provide some useful functionality.
+A: Indeed, the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#client_proxies[client proxies, window="_blank"] could be hard to grasp but they provide some useful functionality.
 A client proxy is basically an object that delegates all method invocations to a target bean instance.
 It's a container construct that implements `io.quarkus.arc.ClientProxy` and extends the bean class.
 

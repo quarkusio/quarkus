@@ -13,20 +13,30 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.logging.Logger;
 
-@CacheResultInterceptorBinding
+import io.quarkus.cache.CacheResult;
+
+@CacheResult(cacheName = "") // The `cacheName` attribute is @Nonbinding.
 @Interceptor
 @Priority(CacheInterceptor.BASE_PRIORITY + 2)
 public class CacheResultInterceptor extends CacheInterceptor {
 
     private static final Logger LOGGER = Logger.getLogger(CacheResultInterceptor.class);
+    private static final String INTERCEPTOR_BINDING_ERROR_MSG = "The Quarkus cache extension is not working properly (CacheResult interceptor binding retrieval failed), please create a GitHub issue in the Quarkus repository to help the maintainers fix this bug";
 
     @AroundInvoke
-    public Object intercept(InvocationContext context) throws Throwable {
-        CacheResultInterceptorBinding binding = getInterceptorBinding(context, CacheResultInterceptorBinding.class);
+    public Object intercept(InvocationContext invocationContext) throws Throwable {
+        CacheInterceptionContext<CacheResult> interceptionContext = getInterceptionContext(invocationContext,
+                CacheResult.class);
 
+        if (interceptionContext.getInterceptorBindings().isEmpty()) {
+            // This should never happen.
+            LOGGER.warn(INTERCEPTOR_BINDING_ERROR_MSG);
+            return invocationContext.proceed();
+        }
+
+        CacheResult binding = interceptionContext.getInterceptorBindings().get(0);
         AbstractCache cache = (AbstractCache) cacheManager.getCache(binding.cacheName()).get();
-        short[] cacheKeyParameterPositions = getCacheKeyParameterPositions(context);
-        Object key = getCacheKey(cache, cacheKeyParameterPositions, context.getParameters());
+        Object key = getCacheKey(cache, interceptionContext.getCacheKeyParameterPositions(), invocationContext.getParameters());
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, binding.cacheName());
         }
@@ -37,7 +47,7 @@ public class CacheResultInterceptor extends CacheInterceptor {
                 @Override
                 public Object apply(Object k) {
                     try {
-                        return context.proceed();
+                        return invocationContext.proceed();
                     } catch (Exception e) {
                         throw new CacheException(e);
                     }
@@ -55,7 +65,7 @@ public class CacheResultInterceptor extends CacheInterceptor {
                     return cacheValue.get(binding.lockTimeout(), TimeUnit.MILLISECONDS);
                 } catch (TimeoutException e) {
                     // TODO: Add statistics here to monitor the timeout.
-                    return context.proceed();
+                    return invocationContext.proceed();
                 }
             }
 

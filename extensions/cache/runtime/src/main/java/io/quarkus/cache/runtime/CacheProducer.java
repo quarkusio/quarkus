@@ -18,7 +18,7 @@ public class CacheProducer {
     CacheManager cacheManager;
 
     @Produces
-    @CacheName("") // The `value` attribute here is not important because it is @Nonbinding.
+    @CacheName("") // The `value` attribute is @Nonbinding.
     Cache produce(InjectionPoint injectionPoint) {
         for (Annotation qualifier : injectionPoint.getQualifiers()) {
             if (qualifier instanceof CacheName) {

@@ -13,7 +13,7 @@ import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
  * This is the Response class client response
  * object with more deserialising powers than user-created responses @{link {@link ResponseImpl}.
  */
-public class ClientResponseImplImpl extends ResponseImpl {
+public class ClientResponseImpl extends ResponseImpl {
 
     RestClientRequestContext restClientRequestContext;
 

@@ -7,29 +7,29 @@ import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 
-public class ClientResponseBuilderImplImpl extends ResponseBuilderImpl { //TODO: should not extend the server version
+public class ClientResponseBuilderImpl extends ResponseBuilderImpl { //TODO: should not extend the server version
 
     InputStream entityStream;
     RestClientRequestContext restClientRequestContext;
 
-    public ClientResponseBuilderImplImpl invocationState(RestClientRequestContext restClientRequestContext) {
+    public ClientResponseBuilderImpl invocationState(RestClientRequestContext restClientRequestContext) {
         this.restClientRequestContext = restClientRequestContext;
         return this;
     }
 
-    public ClientResponseBuilderImplImpl entityStream(InputStream entityStream) {
+    public ClientResponseBuilderImpl entityStream(InputStream entityStream) {
         this.entityStream = entityStream;
         return this;
     }
 
     @Override
     protected ResponseBuilderImpl doClone() {
-        return new ClientResponseBuilderImplImpl();
+        return new ClientResponseBuilderImpl();
     }
 
     @Override
     public ResponseImpl build() {
-        ClientResponseImplImpl response = new ClientResponseImplImpl();
+        ClientResponseImpl response = new ClientResponseImpl();
         populateResponse(response);
         response.restClientRequestContext = restClientRequestContext;
         response.setEntityStream(entityStream);

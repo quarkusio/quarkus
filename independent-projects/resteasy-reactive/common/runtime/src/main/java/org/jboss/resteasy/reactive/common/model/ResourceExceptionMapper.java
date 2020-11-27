@@ -7,7 +7,8 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 public class ResourceExceptionMapper<T extends Throwable> {
 
     private BeanFactory<ExceptionMapper<T>> factory;
-    private Integer priority = Priorities.USER;
+    private int priority = Priorities.USER;
+    private String className;
 
     public void setFactory(BeanFactory<ExceptionMapper<T>> factory) {
         this.factory = factory;
@@ -17,11 +18,20 @@ public class ResourceExceptionMapper<T extends Throwable> {
         return factory;
     }
 
-    public Integer getPriority() {
+    public int getPriority() {
         return priority;
     }
 
-    public void setPriority(Integer priority) {
+    public void setPriority(int priority) {
         this.priority = priority;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public ResourceExceptionMapper<T> setClassName(String className) {
+        this.className = className;
+        return this;
     }
 }

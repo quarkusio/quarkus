@@ -5,7 +5,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class ListConverter implements ParameterConverter {
 

@@ -11,4 +11,26 @@ public interface ThreadSetupAction {
 
         void deactivate();
     }
+
+    ThreadSetupAction NOOP = new ThreadSetupAction() {
+        @Override
+        public ThreadState activateInitial() {
+            return new ThreadState() {
+                @Override
+                public void close() {
+
+                }
+
+                @Override
+                public void activate() {
+
+                }
+
+                @Override
+                public void deactivate() {
+
+                }
+            };
+        }
+    };
 }

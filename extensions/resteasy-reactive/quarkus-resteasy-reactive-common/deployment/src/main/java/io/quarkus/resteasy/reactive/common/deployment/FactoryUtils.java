@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import java.util.Objects;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
@@ -19,6 +20,7 @@ public class FactoryUtils {
     public static <T> BeanFactory<T> factory(String providerClass, Set<String> singletons,
             ResteasyReactiveCommonRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem) {
+        Objects.requireNonNull(providerClass, "providerClass cannot be null");
         if (singletons.contains(providerClass)) {
             return new SingletonBeanFactory<>(providerClass);
         } else {

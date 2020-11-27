@@ -1,9 +1,12 @@
-package org.jboss.resteasy.reactive.server.core;
+package org.jboss.resteasy.reactive.server.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import javax.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ParamConverterProviders {
 
@@ -19,5 +22,11 @@ public class ParamConverterProviders {
 
     public void sort() {
         Collections.sort(paramConverterProviders);
+    }
+
+    public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
+        for (ResourceParamConverterProvider i : paramConverterProviders) {
+            i.setFactory((BeanFactory<ParamConverterProvider>) factoryCreator.apply(i.getClassName()));
+        }
     }
 }

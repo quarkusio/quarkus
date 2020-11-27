@@ -10,6 +10,7 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 public class ResourceContextResolver {
 
     private BeanFactory<ContextResolver<?>> factory;
+    private String className;
     private List<String> mediaTypeStrings = new ArrayList<>();
     private volatile List<MediaType> mediaTypes;
 
@@ -19,6 +20,15 @@ public class ResourceContextResolver {
 
     public BeanFactory<ContextResolver<?>> getFactory() {
         return factory;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public ResourceContextResolver setClassName(String className) {
+        this.className = className;
+        return this;
     }
 
     public ResourceContextResolver setMediaTypeStrings(List<String> mediaTypeStrings) {

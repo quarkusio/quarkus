@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -53,8 +52,8 @@ class SectionNode implements TemplateNode {
         return builder.toString();
     }
 
-    public Set<Expression> getExpressions() {
-        Set<Expression> expressions = new HashSet<>();
+    public List<Expression> getExpressions() {
+        List<Expression> expressions = new ArrayList<>();
         for (SectionBlock block : blocks) {
             expressions.addAll(block.getExpressions());
         }

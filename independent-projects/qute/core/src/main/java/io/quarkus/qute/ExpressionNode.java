@@ -1,7 +1,7 @@
 package io.quarkus.qute;
 
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -50,8 +50,8 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
         return engine;
     }
 
-    public Set<Expression> getExpressions() {
-        return Collections.singleton(expression);
+    public List<Expression> getExpressions() {
+        return Collections.singletonList(expression);
     }
 
     @Override

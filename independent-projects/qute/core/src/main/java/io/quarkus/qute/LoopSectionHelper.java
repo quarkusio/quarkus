@@ -99,7 +99,8 @@ public class LoopSectionHelper implements SectionHelper {
 
     public static class Factory implements SectionHelperFactory<LoopSectionHelper> {
 
-        public static final String HINT = "<for-element>";
+        public static final String HINT_ELEMENT = "<loop-element>";
+        public static final String HINT_PREFIX = "<loop#";
         private static final String ALIAS = "alias";
         private static final String IN = "in";
         private static final String ITERABLE = "iterable";
@@ -130,17 +131,25 @@ public class LoopSectionHelper implements SectionHelper {
                 if (iterable == null) {
                     iterable = ValueResolvers.THIS;
                 }
+                // foo.items
+                // > |org.acme.Foo|.items<loop-element>
+                previousScope.setLastPartHint(HINT_ELEMENT);
                 Expression iterableExpr = block.addExpression(ITERABLE, iterable);
+                previousScope.setLastPartHint(null);
+
                 String alias = block.getParameters().get(ALIAS);
+
                 if (iterableExpr.hasTypeInfo()) {
+                    // it.name
+                    // > it<loop#123>.name
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
                     Scope newScope = new Scope(previousScope);
-                    newScope.put(alias, iterableExpr.collectTypeInfo() + HINT);
+                    newScope.putBinding(alias, alias + HINT_PREFIX + iterableExpr.getGeneratedId() + ">");
                     return newScope;
                 } else {
                     // Make sure we do not try to validate against the parent context
                     Scope newScope = new Scope(previousScope);
-                    newScope.put(alias, null);
+                    newScope.putBinding(alias, null);
                     return newScope;
                 }
             } else {

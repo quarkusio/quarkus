@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class ParserTest {
@@ -86,21 +85,30 @@ public class ParserTest {
                 + "{/for}"
                 + "{foo.call(labels,bar)}"
                 + "{#when machine.status}{#is OK}..{#is NOK}{/when}");
-        Set<Expression> expressions = template.getExpressions();
+        List<Expression> expressions = template.getExpressions();
 
         assertExpr(expressions, "foo.name", 2, "|org.acme.Foo|.name");
-        assertExpr(expressions, "foo.items", 2, "|org.acme.Foo|.items");
-        assertExpr(expressions, "item.name", 2, "|org.acme.Foo|.items<for-element>.name");
+
+        Expression fooItems = find(expressions, "foo.items");
+        assertExpr(expressions, "foo.items", 2, "|org.acme.Foo|.items<loop-element>");
+        assertExpr(expressions, "item.name", 2, "item<loop#" + fooItems.getGeneratedId() + ">.name");
         assertExpr(expressions, "bar.name", 2, null);
-        assertExpr(expressions, "labels", 1, "|java.util.List<org.acme.Label>|");
-        assertExpr(expressions, "it.name", 2, "|java.util.List<org.acme.Label>|<for-element>.name");
+
+        Expression labels = find(expressions, "labels");
+        assertExpr(expressions, "labels", 1, "|java.util.List<org.acme.Label>|<loop-element>");
+        assertExpr(expressions, "it.name", 2, "it<loop#" + labels.getGeneratedId() + ">.name");
+
         assertExpr(expressions, "inject:bean.name", 2, "inject:bean.name");
-        assertExpr(expressions, "inject:bean.labels", 2, "inject:bean.labels");
-        assertExpr(expressions, "it.value", 2, "inject:bean.labels<for-element>.value");
+
+        Expression beanLabels = find(expressions, "inject:bean.labels");
+        assertExpr(expressions, "inject:bean.labels", 2, "inject:bean.labels<loop-element>");
+        assertExpr(expressions, "it.value", 2, "it<loop#" + beanLabels.getGeneratedId() + ">.value");
+
         assertExpr(expressions, "foo.bar", 2, "|org.acme.Foo|.bar");
         assertExpr(expressions, "baz.name", 2, "|org.acme.Foo|.bar.name");
         assertExpr(expressions, "foo.baz", 2, null);
         assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(labels,bar)");
+
         Expression machineStatusExpr = find(expressions, "machine.status");
         assertExpr(expressions, "OK", 1, "OK<when#" + machineStatusExpr.getGeneratedId() + ">");
     }
@@ -253,6 +261,18 @@ public class ParserTest {
         assertEquals("next", ((TextNode) rootNodes.get(2)).getValue());
     }
 
+    @Test
+    public void testGetExpressions() {
+        Template template = Engine.builder().addDefaults().build()
+                .parse("{foo}{#each items}{it.name}{#for foo in foos}{foo.name}{/for}{/each}");
+        List<Expression> expressions = template.getExpressions();
+        assertEquals("foo", expressions.get(0).toOriginalString());
+        assertEquals("items", expressions.get(1).toOriginalString());
+        assertEquals("it.name", expressions.get(2).toOriginalString());
+        assertEquals("foos", expressions.get(3).toOriginalString());
+        assertEquals("foo.name", expressions.get(4).toOriginalString());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {
@@ -266,14 +286,14 @@ public class ParserTest {
         }
     }
 
-    private void assertExpr(Set<Expression> expressions, String value, int parts, String typeInfo) {
+    private void assertExpr(List<Expression> expressions, String value, int parts, String typeInfo) {
         Expression expr = find(expressions, value);
         assertEquals(parts, expr.getParts().size());
         assertEquals(typeInfo,
                 expr.collectTypeInfo());
     }
 
-    private Expression find(Set<Expression> expressions, String val) {
+    private Expression find(List<Expression> expressions, String val) {
         return expressions.stream().filter(e -> e.toOriginalString().equals(val)).findAny().get();
     }
 

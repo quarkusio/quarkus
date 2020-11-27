@@ -68,7 +68,7 @@ public class SetSectionHelper implements SectionHelper {
                 Scope newScope = new Scope(previousScope);
                 for (Entry<String, String> entry : block.getParameters().entrySet()) {
                     Expression expr = block.addExpression(entry.getKey(), entry.getValue());
-                    newScope.put(entry.getKey(), expr.collectTypeInfo());
+                    newScope.putBinding(entry.getKey(), expr.collectTypeInfo());
                 }
                 return newScope;
             } else {

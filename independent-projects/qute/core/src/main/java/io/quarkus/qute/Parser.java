@@ -465,7 +465,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             int spaceIdx = content.indexOf(" ");
             String key = content.substring(spaceIdx + 1, content.length());
             String value = content.substring(1, spaceIdx);
-            currentScope.put(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
+            currentScope.putBinding(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
             sectionBlockStack.peek().addNode(new ParameterDeclarationNode(content, origin(0)));
 
         } else {
@@ -705,8 +705,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
-        for (String strPart : strParts) {
-            Part part = createPart(idGenerator, namespace, first, strPart, scope, origin);
+        Iterator<String> strPartsIterator = strParts.iterator();
+        while (strPartsIterator.hasNext()) {
+            Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin);
             if (!isValidIdentifier(part.getName())) {
                 StringBuilder builder = new StringBuilder("Invalid identifier found [");
                 builder.append(value).append("]");
@@ -724,8 +725,10 @@ class Parser implements Function<String, Expression>, ParserHelper {
         return new ExpressionImpl(idGenerator.get(), namespace, parts, Result.NOT_FOUND, origin);
     }
 
-    private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first, String value, Scope scope,
+    private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,
+            Iterator<String> strPartsIterator, Scope scope,
             Origin origin) {
+        String value = strPartsIterator.next();
         if (Expressions.isVirtualMethod(value)) {
             String name = Expressions.parseVirtualMethodName(value);
             List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value));
@@ -756,9 +759,14 @@ class Parser implements Function<String, Expression>, ParserHelper {
         if (namespace != null) {
             typeInfo = first != null ? value : namespace + NAMESPACE_SEPARATOR + value;
         } else if (first == null) {
-            typeInfo = scope.getBindingType(value);
+            // Try to find the binding type for the first part of the expression
+            typeInfo = scope.getBinding(value);
         } else if (first.getTypeInfo() != null) {
             typeInfo = value;
+        }
+        if (typeInfo != null && !strPartsIterator.hasNext() && scope.getLastPartHint() != null) {
+            // If type info present then append hint to the last part
+            typeInfo += scope.getLastPartHint();
         }
         return new ExpressionImpl.PartImpl(value, typeInfo);
     }
@@ -937,7 +945,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     public void addParameter(String name, String type) {
         // {@org.acme.Foo foo}
         Scope currentScope = scopeStack.peek();
-        currentScope.put(name, Expressions.TYPE_INFO_SEPARATOR + type + Expressions.TYPE_INFO_SEPARATOR);
+        currentScope.putBinding(name, Expressions.TYPE_INFO_SEPARATOR + type + Expressions.TYPE_INFO_SEPARATOR);
     }
 
     private static final SectionHelper ROOT_SECTION_HELPER = new SectionHelper() {

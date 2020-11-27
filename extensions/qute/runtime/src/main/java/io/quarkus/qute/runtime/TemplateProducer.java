@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -113,7 +112,7 @@ public class TemplateProducer {
         }
 
         @Override
-        public Set<Expression> getExpressions() {
+        public List<Expression> getExpressions() {
             throw new UnsupportedOperationException("Injected templates do not support getExpressions()");
         }
 

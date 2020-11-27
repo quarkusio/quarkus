@@ -89,6 +89,14 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             return getParameters().containsKey(name);
         }
 
+        /**
+         * Parse and register an expression for the specified parameter.
+         * 
+         * @param param
+         * @param value
+         * @return a new expression
+         * @see SectionInitContext#getExpression(String)
+         */
         Expression addExpression(String param, String value);
 
     }
@@ -98,6 +106,10 @@ public interface SectionHelperFactory<T extends SectionHelper> {
      */
     public interface SectionInitContext extends ParserDelegate {
 
+        /**
+         * 
+         * @return the parameters of the main block
+         */
         default public Map<String, String> getParameters() {
             return getBlocks().get(0).parameters;
         }
@@ -110,8 +122,20 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             return getParameters().get(name);
         }
 
+        /**
+         * 
+         * @param parameterName
+         * @return an expression registered for the specified param name, or {@code null}
+         * @see BlockInfo#addExpression(String, String)
+         */
         public Expression getExpression(String parameterName);
 
+        /**
+         * Parse the specified value. The expression is not registered in the template.
+         * 
+         * @param value
+         * @return a new expression
+         */
         public Expression parseValue(String value);
 
         public List<SectionBlock> getBlocks();

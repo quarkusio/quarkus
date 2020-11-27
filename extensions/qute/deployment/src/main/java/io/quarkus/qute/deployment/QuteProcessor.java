@@ -421,7 +421,10 @@ public class QuteProcessor {
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
-            BuildProducer<ImplicitValueResolverBuildItem> implicitClasses) {
+            BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
+            BeanRegistrationPhaseBuildItem registrationPhase,
+            // This producer is needed to ensure the correct ordering, ie. this build step must be executed before the ArC validation step
+            BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -431,20 +434,39 @@ public class QuteProcessor {
             }
         };
 
+        // IMPLEMENTATION NOTE: 
+        // We do not support injection of synthetic beans with names 
+        // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
+        Map<String, BeanInfo> namedBeans = registrationPhase.getContext().beans().withName()
+                .collect(toMap(BeanInfo::getName, Function.identity()));
+
         // Map implicit class -> set of used members
         Map<ClassInfo, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
-        for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
+        for (TemplateAnalysis templateAnalysis : templatesAnalysis.getAnalysis()) {
             // Maps an expression generated id to the last match of an expression (i.e. the type of the last part)
             Map<Integer, Match> generatedIdsToMatches = new HashMap<>();
-            for (Expression expression : analysis.expressions) {
-                if (skip(expression)) {
+
+            for (Expression expression : templateAnalysis.expressions) {
+                if (expression.isLiteral()) {
                     continue;
                 }
-                generatedIdsToMatches.put(expression.getGeneratedId(),
-                        validateNestedExpressions(analysis, null, new HashMap<>(), templateExtensionMethods, excludes,
-                                incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun,
-                                generatedIdsToMatches));
+                if (expression.hasNamespace()) {
+                    if (expression.getNamespace().equals(EngineProducer.INJECT_NAMESPACE)) {
+                        validateInjectExpression(templateAnalysis, expression, index, incorrectExpressions,
+                                templateExtensionMethods, excludes, namedBeans, generatedIdsToMatches,
+                                implicitClassToMembersUsed,
+                                templateIdToPathFun);
+                    } else {
+                        continue;
+                    }
+                } else {
+                    generatedIdsToMatches.put(expression.getGeneratedId(),
+                            validateNestedExpressions(templateAnalysis, null, new HashMap<>(), templateExtensionMethods,
+                                    excludes,
+                                    incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun,
+                                    generatedIdsToMatches));
+                }
             }
         }
 
@@ -514,19 +536,23 @@ public class QuteProcessor {
         Info root = iterator.next();
 
         if (rootClazz == null) {
-            // {foo.name} 
             if (root.isTypeInfo()) {
+                // E.g. |org.acme.Item|
                 match.clazz = root.asTypeInfo().rawClass;
                 match.type = root.asTypeInfo().resolvedType;
                 if (root.asTypeInfo().hint != null) {
-                    processHints(templateAnalysis, root.asTypeInfo().hint, match, index, expression, generatedIdsToMatches);
+                    processHints(templateAnalysis, root.asTypeInfo().hint, match, index, expression, generatedIdsToMatches,
+                            incorrectExpressions);
                 }
             } else {
                 if (root.isProperty() && root.asProperty().hint != null) {
                     // Root is not a type info but a property with hint
-                    // We need to reset the iterator
-                    processHints(templateAnalysis, root.asProperty().hint, match, index, expression, generatedIdsToMatches);
-                    iterator = parts.iterator();
+                    // E.g. 'it<loop#123>' and 'STATUS<when#123>'
+                    if (processHints(templateAnalysis, root.asProperty().hint, match, index, expression,
+                            generatedIdsToMatches, incorrectExpressions)) {
+                        // In some cases it's necessary to reset the iterator
+                        iterator = parts.iterator();
+                    }
                 } else {
                     // No type info available 
                     results.put(expression.toOriginalString(), match);
@@ -587,9 +613,6 @@ public class QuteProcessor {
                     break;
                 } else {
                     match.type = resolveType(member, match, index);
-                    if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
-                        break;
-                    }
                     if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
                         match.clazz = index.getClassByName(match.type.name());
                     }
@@ -597,8 +620,12 @@ public class QuteProcessor {
                         String hint = info.asProperty().hint;
                         if (hint != null) {
                             // For example a loop section needs to validate the type of an element
-                            processHints(templateAnalysis, hint, match, index, expression, generatedIdsToMatches);
+                            processHints(templateAnalysis, hint, match, index, expression, generatedIdsToMatches,
+                                    incorrectExpressions);
                         }
+                    }
+                    if (match.type != null && match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
+                        break;
                     }
                 }
             } else {
@@ -699,81 +726,43 @@ public class QuteProcessor {
                 priority, namespace));
     }
 
-    @BuildStep
-    void validateInjectNamespaceExpressions(TemplatesAnalysisBuildItem analysis, BeanArchiveIndexBuildItem beanArchiveIndex,
+    private void validateInjectExpression(TemplateAnalysis templateAnalysis, Expression expression, IndexView index,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
-            List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
-            List<TypeCheckExcludeBuildItem> excludes,
-            BeanRegistrationPhaseBuildItem registrationPhase,
-            // This producer is needed to ensure the correct ordering, ie. this build step must be executed before the ArC validation step
-            BuildProducer<BeanConfiguratorBuildItem> configurators,
-            BuildProducer<ImplicitValueResolverBuildItem> implicitClasses) {
+            List<TemplateExtensionMethodBuildItem> templateExtensionMethods, List<TypeCheckExcludeBuildItem> excludes,
+            Map<String, BeanInfo> namedBeans, Map<Integer, Match> generatedIdsToMatches,
+            Map<ClassInfo, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun) {
+        Expression.Part firstPart = expression.getParts().get(0);
+        if (firstPart.isVirtualMethod()) {
+            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                    "The inject: namespace must be followed by a bean name",
+                    expression.getOrigin()));
+            return;
+        }
+        String beanName;
+        if (expression.hasNamespace()) {
+            beanName = firstPart.getName();
+        } else {
+            // inject:foo.labels<loop-element> => foo
+            String firstInfoPart = Expressions.splitTypeInfoParts(firstPart.getTypeInfo()).get(0);
+            beanName = firstInfoPart.substring(EngineProducer.INJECT_NAMESPACE.length() + 1,
+                    firstInfoPart.length());
+        }
 
-        IndexView index = beanArchiveIndex.getIndex();
-        Function<String, String> templateIdToPathFun = new Function<String, String>() {
-            @Override
-            public String apply(String id) {
-                return findTemplatePath(analysis, id);
+        BeanInfo bean = namedBeans.get(beanName);
+        if (bean != null) {
+            if (expression.getParts().size() == 1) {
+                // Only the bean needs to be validated
+                return;
             }
-        };
-        Map<TemplateAnalysis, Set<Expression>> injectExpressions = collectNamespaceExpressions(analysis,
-                EngineProducer.INJECT_NAMESPACE);
+            generatedIdsToMatches.put(expression.getGeneratedId(),
+                    validateNestedExpressions(templateAnalysis, bean.getImplClazz(), new HashMap<>(),
+                            templateExtensionMethods, excludes, incorrectExpressions, expression, index,
+                            implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches));
 
-        if (!injectExpressions.isEmpty()) {
-            // IMPLEMENTATION NOTE: 
-            // We do not support injection of synthetic beans with names 
-            // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
-            Map<String, BeanInfo> namedBeans = registrationPhase.getContext().beans().withName()
-                    .collect(toMap(BeanInfo::getName, Function.identity()));
-
-            // Map implicit class -> set of used members
-            Map<ClassInfo, Set<String>> implicitClassToMembersUsed = new HashMap<>();
-
-            for (Entry<TemplateAnalysis, Set<Expression>> entry : injectExpressions.entrySet()) {
-
-                Map<Integer, Match> generatedIdsToMatches = new HashMap<>();
-
-                for (Expression expression : entry.getValue()) {
-                    Expression.Part firstPart = expression.getParts().get(0);
-                    if (firstPart.isVirtualMethod()) {
-                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                "The inject: namespace must be followed by a bean name",
-                                expression.getOrigin()));
-                        continue;
-                    }
-                    String beanName;
-                    if (expression.hasNamespace()) {
-                        beanName = firstPart.getName();
-                    } else {
-                        // inject:foo.labels<for-element> => foo
-                        String firstInfoPart = Expressions.splitTypeInfoParts(firstPart.getTypeInfo()).get(0);
-                        beanName = firstInfoPart.substring(EngineProducer.INJECT_NAMESPACE.length() + 1,
-                                firstInfoPart.length());
-                    }
-
-                    BeanInfo bean = namedBeans.get(beanName);
-                    if (bean != null) {
-                        if (expression.getParts().size() == 1) {
-                            // Only the bean needs to be validated
-                            continue;
-                        }
-                        generatedIdsToMatches.put(expression.getGeneratedId(),
-                                validateNestedExpressions(entry.getKey(), bean.getImplClazz(), new HashMap<>(),
-                                        templateExtensionMethods, excludes, incorrectExpressions, expression, index,
-                                        implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches));
-
-                    } else {
-                        // User is injecting a non-existing bean
-                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                beanName, null, expression.getOrigin()));
-                    }
-                }
-            }
-
-            for (Entry<ClassInfo, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
-                implicitClasses.produce(new ImplicitValueResolverBuildItem(entry.getKey(),
-                        new TemplateDataBuilder().addIgnore(buildIgnorePattern(entry.getValue())).build()));
-            }
+        } else {
+            // User is injecting a non-existing bean
+            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                    beanName, null, expression.getOrigin()));
         }
     }
 
@@ -1078,35 +1067,58 @@ public class QuteProcessor {
         return matchType;
     }
 
-    static void processHints(TemplateAnalysis templateAnalysis, String helperHint, Match match, IndexView index,
-            Expression expression, Map<Integer, Match> generatedIdsToMatches) {
-        if (LoopSectionHelper.Factory.HINT.equals(helperHint)) {
+    /**
+     * 
+     * @param templateAnalysis
+     * @param helperHint
+     * @param match
+     * @param index
+     * @param expression
+     * @param generatedIdsToMatches
+     * @param incorrectExpressions
+     * @return {@code true} if it is necessary to reset the type info part iterator
+     */
+    static boolean processHints(TemplateAnalysis templateAnalysis, String helperHint, Match match, IndexView index,
+            Expression expression, Map<Integer, Match> generatedIdsToMatches,
+            BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
+        if (helperHint == null || helperHint.isEmpty()) {
+            return false;
+        }
+        if (helperHint.equals(LoopSectionHelper.Factory.HINT_ELEMENT)) {
             // Iterable<Item>, Stream<Item> => Item
             // Map<String,Long> => Entry<String,Long>
-            processLoopHint(match, index, expression);
-        } else if (helperHint != null && helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
+            processLoopElementHint(match, index, expression, incorrectExpressions);
+        } else if (helperHint.startsWith(LoopSectionHelper.Factory.HINT_PREFIX)) {
+            Integer iterableExprId = Integer
+                    .valueOf(helperHint.substring(LoopSectionHelper.Factory.HINT_PREFIX.length(), helperHint.length() - 1));
+            Expression valueExpr = templateAnalysis.findExpression(iterableExprId);
+            if (valueExpr != null) {
+                Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
+                if (valueExprMatch != null) {
+                    match.type = valueExprMatch.type;
+                    match.clazz = valueExprMatch.clazz;
+                }
+            }
+        } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
             // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
             // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
             Integer valueExprId = Integer
                     .valueOf(helperHint.substring(WhenSectionHelper.Factory.HINT_PREFIX.length(), helperHint.length() - 1));
-            Expression valueExpr = null;
-            for (Expression e : templateAnalysis.expressions) {
-                if (e.getGeneratedId() == valueExprId) {
-                    valueExpr = e;
-                    break;
-                }
-            }
+            Expression valueExpr = templateAnalysis.findExpression(valueExprId);
             if (valueExpr != null) {
                 Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
                 if (valueExprMatch != null && valueExprMatch.clazz.isEnum()) {
                     match.type = valueExprMatch.type;
                     match.clazz = valueExprMatch.clazz;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
-    static void processLoopHint(Match match, IndexView index, Expression expression) {
+    static void processLoopElementHint(Match match, IndexView index, Expression expression,
+            BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
         if (match.type.name().equals(DotNames.INTEGER)) {
             return;
         }
@@ -1146,7 +1158,7 @@ public class QuteProcessor {
             // CompletionStage<List<Item>> => List<Item>
             match.type = extractMatchType(closure, Names.COMPLETION_STAGE, firstParamType);
             match.clazz = index.getClassByName(match.type.name());
-            processLoopHint(match, index, expression);
+            processLoopElementHint(match, index, expression, incorrectExpressions);
             return;
         }
 
@@ -1154,10 +1166,10 @@ public class QuteProcessor {
             match.type = matchType;
             match.clazz = index.getClassByName(match.type.name());
         } else {
-            throw new TemplateException(expression.getOrigin(), String.format(
-                    "Unsupported iterable type found in [%s]\n\t- matching type: %s \n\t- found in template [%s] on line %s",
-                    expression.toOriginalString(),
-                    match.type, expression.getOrigin().getTemplateId(), expression.getOrigin().getLine()));
+            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                    "Unsupported iterable type found: " + match.type, expression.getOrigin()));
+            match.type = null;
+            match.clazz = null;
         }
     }
 
@@ -1536,18 +1548,6 @@ public class QuteProcessor {
             if (exclude.getPredicate().test(check)) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    private boolean skip(Expression expression) {
-        if (expression.hasNamespace() || expression.isLiteral()) {
-            return true;
-        }
-        String typeInfo = expression.getParts().get(0).getTypeInfo();
-        if (typeInfo != null && typeInfo.contains(":")) {
-            // An expression bound to a namespace expression
-            return true;
         }
         return false;
     }

@@ -564,15 +564,15 @@ To include those, make sure you invoke `mvn dependency:sources` first.
 This step is required in order to pull the sources for these dependencies,
 and get them included in the source cache.
 
-The location of source cache is `target/{project.name}-{project.version}-native-image-source-jar/sources` folder.
+The source cache is located in the `target/sources` folder.
 
 [TIP]
 ====
-To load the sources in `gdb`, run:
+If running `gdb` from a different directory than `target`, then the sources can be loaded by running:
 
 [source,shell]
 ----
-directory target/{project.name}-{project.version}-native-image-source-jar
+directory path/to/target
 ----
 
 in the `gdb` prompt.
@@ -581,13 +581,13 @@ Or start `gdb` with:
 
 [source,shell]
 ----
-gdb -ex 'directory target/{project.name}-{project.version}-native-image-source-jar' target/{project.name}-{project.version}-runner
+gdb -ex 'directory path/to/target' path/to/target/{project.name}-{project.version}-runner
 ----
 
 e.g.,
 [source,shell]
 ----
-gdb -ex 'directory target/getting-started-1.0-SNAPSHOT-native-image-source-jar' target/getting-started-1.0-SNAPSHOT-runner
+gdb -ex 'directory ./target' ./target/getting-started-1.0-SNAPSHOT-runner
 ----
 ====
 

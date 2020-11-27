@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class SortedSetConverter implements ParameterConverter {
 

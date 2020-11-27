@@ -16,6 +16,8 @@ public class ResourceInterceptor<T>
      */
     private Set<String> nameBindingNames = Collections.emptySet();
 
+    private String className;
+
     public void setFactory(BeanFactory<T> factory) {
         this.factory = factory;
     }
@@ -42,6 +44,15 @@ public class ResourceInterceptor<T>
 
     public void setNameBindingNames(Set<String> nameBindingNames) {
         this.nameBindingNames = nameBindingNames;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public ResourceInterceptor<T> setClassName(String className) {
+        this.className = className;
+        return this;
     }
 
     // spec says that writer interceptors are sorted in ascending order

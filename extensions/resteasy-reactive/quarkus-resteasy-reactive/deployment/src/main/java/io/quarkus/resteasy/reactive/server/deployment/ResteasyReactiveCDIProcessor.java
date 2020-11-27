@@ -16,11 +16,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusContextProducers;
-import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
-import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
-import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
-import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 
 public class ResteasyReactiveCDIProcessor {
@@ -33,7 +29,6 @@ public class ResteasyReactiveCDIProcessor {
                         .build());
         return new AutoInjectAnnotationBuildItem(ResteasyReactiveServerDotNames.CONTEXT,
                 DotName.createSimple(BeanParam.class.getName()));
-
     }
 
     @BuildStep
@@ -49,30 +44,11 @@ public class ResteasyReactiveCDIProcessor {
     }
 
     @BuildStep
-    void additionalBeans(List<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
-            List<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
-            List<DynamicFeatureBuildItem> additionalDynamicFeatures,
-            List<ExceptionMapperBuildItem> additionalExceptionMappers,
-            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+    void additionalBeans(List<DynamicFeatureBuildItem> additionalDynamicFeatures,
             List<JaxrsFeatureBuildItem> featureBuildItems,
-            List<ContextResolverBuildItem> contextResolverBuildItems) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
 
         AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
-        for (ContainerRequestFilterBuildItem requestFilter : additionalContainerRequestFilters) {
-            if (requestFilter.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(requestFilter.getClassName());
-            }
-        }
-        for (ContainerResponseFilterBuildItem responseFilter : additionalContainerResponseFilters) {
-            if (responseFilter.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(responseFilter.getClassName());
-            }
-        }
-        for (ExceptionMapperBuildItem exceptionMapper : additionalExceptionMappers) {
-            if (exceptionMapper.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(exceptionMapper.getClassName());
-            }
-        }
         for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
             if (dynamicFeature.isRegisterAsBean()) {
                 additionalProviders.addBeanClass(dynamicFeature.getClassName());
@@ -81,11 +57,6 @@ public class ResteasyReactiveCDIProcessor {
         for (JaxrsFeatureBuildItem dynamicFeature : featureBuildItems) {
             if (dynamicFeature.isRegisterAsBean()) {
                 additionalProviders.addBeanClass(dynamicFeature.getClassName());
-            }
-        }
-        for (ContextResolverBuildItem contextResolver : contextResolverBuildItems) {
-            if (contextResolver.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(contextResolver.getClassName());
             }
         }
         additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());

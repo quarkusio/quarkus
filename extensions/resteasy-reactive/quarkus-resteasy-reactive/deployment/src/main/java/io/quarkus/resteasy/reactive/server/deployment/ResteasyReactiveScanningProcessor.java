@@ -1,9 +1,9 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
-import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.*;
-import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.*;
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER;
+import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.ws.rs.Priorities;
 
@@ -23,8 +24,20 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
+import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.model.ContextResolvers;
+import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveContextResolverScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExceptionMappingScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -34,15 +47,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
-import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
-import io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor;
-import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
-import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
-import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationRedirectExceptionMapper;
-import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
-import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
@@ -53,11 +60,6 @@ import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ParamConverterBuildItem;
-import io.quarkus.security.AuthenticationCompletionException;
-import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.AuthenticationRedirectException;
-import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.UnauthorizedException;
 
 /**
  * Processor that handles scanning for types and turning them into build items
@@ -65,80 +67,80 @@ import io.quarkus.security.UnauthorizedException;
 public class ResteasyReactiveScanningProcessor {
 
     @BuildStep
-    public void scanForFilters(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
-            BuildProducer<ContainerRequestFilterBuildItem> requestFilterBuildItemBuildProducer,
-            BuildProducer<ContainerResponseFilterBuildItem> responseFilterBuildItemBuildProducer) {
-        IndexView index = combinedIndexBuildItem.getIndex();
-        //the quarkus version of these filters will not be in the index
-        //so you need an explicit check for both
-        Collection<ClassInfo> containerResponseFilters = new HashSet<>(index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER));
-        containerResponseFilters.addAll(index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.QUARKUS_REST_CONTAINER_RESPONSE_FILTER));
-        Collection<ClassInfo> containerRequestFilters = new HashSet<>(index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER));
-        containerRequestFilters.addAll(index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.QUARKUS_REST_CONTAINER_REQUEST_FILTER));
-        for (ClassInfo filterClass : containerRequestFilters) {
-            ResteasyReactiveCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
-                    requestFilterBuildItemBuildProducer, index, filterClass,
-                    ContainerRequestFilterBuildItem.Builder::new);
-        }
-        for (ClassInfo filterClass : containerResponseFilters) {
-            ResteasyReactiveCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
-                    responseFilterBuildItemBuildProducer, index, filterClass,
-                    ContainerResponseFilterBuildItem.Builder::new);
-        }
+    public ResourceInterceptorsContributorBuildItem scanForInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem) {
+        return new ResourceInterceptorsContributorBuildItem(new Consumer<ResourceInterceptors>() {
+            @Override
+            public void accept(ResourceInterceptors interceptors) {
+                ResteasyReactiveInterceptorScanner.scanForInterceptors(interceptors, combinedIndexBuildItem.getIndex(),
+                        applicationResultBuildItem.getResult());
+            }
+        });
     }
 
     @BuildStep
-    public void scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
+    public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
-            BuildProducer<ExceptionMapperBuildItem> exceptionMapperBuildItemBuildProducer) {
-
-        IndexView index = combinedIndexBuildItem.getComputingIndex();
-        Collection<ClassInfo> exceptionMappers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.EXCEPTION_MAPPER);
-        for (ClassInfo mapperClass : exceptionMappers) {
-            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
-                    .keepProvider(mapperClass);
-            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
-                        ResteasyReactiveDotNames.EXCEPTION_MAPPER,
-                        index);
-                DotName handledExceptionDotName = typeParameters.get(0).name();
-                AnnotationInstance priorityInstance = mapperClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
-                int priority = Priorities.USER;
-                if (priorityInstance != null) {
-                    priority = priorityInstance.value().asInt();
-                }
-                exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(mapperClass.name().toString(),
-                        handledExceptionDotName.toString(), priority, true));
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            List<ExceptionMapperBuildItem> mappers) {
+        AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+        ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
+                .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+        for (Map.Entry<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
+                .entrySet()) {
+            beanBuilder.addBeanClass(i.getValue().getClassName());
+        }
+        for (ExceptionMapperBuildItem additionalExceptionMapper : mappers) {
+            if (additionalExceptionMapper.isRegisterAsBean()) {
+                beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
+            }
+            int priority = Priorities.USER;
+            if (additionalExceptionMapper.getPriority() != null) {
+                priority = additionalExceptionMapper.getPriority();
+            }
+            ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
+            mapper.setPriority(priority);
+            mapper.setClassName(additionalExceptionMapper.getClassName());
+            try {
+                exceptions.addExceptionMapper((Class) Class.forName(additionalExceptionMapper.getHandledExceptionName(), false,
+                        Thread.currentThread().getContextClassLoader()), mapper);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(
+                        "Unable to load handled exception type " + additionalExceptionMapper.getHandledExceptionName(), e);
             }
         }
+        additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
+        return new ExceptionMappersBuildItem(exceptions);
+    }
 
-        // built-ins
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                AuthenticationCompletionExceptionMapper.class.getName(),
-                AuthenticationCompletionException.class.getName(),
-                Priorities.USER, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                AuthenticationFailedExceptionMapper.class.getName(),
-                AuthenticationFailedException.class.getName(),
-                Priorities.USER + 1, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                AuthenticationRedirectExceptionMapper.class.getName(),
-                AuthenticationRedirectException.class.getName(),
-                Priorities.USER, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                ForbiddenExceptionMapper.class.getName(),
-                ForbiddenException.class.getName(),
-                Priorities.USER + 1, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                UnauthorizedExceptionMapper.class.getName(),
-                UnauthorizedException.class.getName(),
-                Priorities.USER + 1, false));
+    @BuildStep
+    public ParamConverterProvidersBuildItem scanForParamConverters(CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            List<ParamConverterBuildItem> paramConverterBuildItems) {
+
+        AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+        ParamConverterProviders paramConverterProviders = ResteasyReactiveParamConverterScanner
+                .scanForParamConverters(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+        for (ResourceParamConverterProvider i : paramConverterProviders.getParamConverterProviders()) {
+            beanBuilder.addBeanClass(i.getClassName());
+        }
+        for (ParamConverterBuildItem additionalParamConverter : paramConverterBuildItems) {
+            if (additionalParamConverter.isRegisterAsBean()) {
+                beanBuilder.addBeanClass(additionalParamConverter.getClassName());
+            }
+            int priority = Priorities.USER;
+            if (additionalParamConverter.getPriority() != null) {
+                priority = additionalParamConverter.getPriority();
+            }
+            ResourceParamConverterProvider provider = new ResourceParamConverterProvider();
+            provider.setPriority(priority);
+            provider.setClassName(additionalParamConverter.getClassName());
+            paramConverterProviders.addParamConverterProviders(provider);
+        }
+        additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
+        return new ParamConverterProvidersBuildItem(paramConverterProviders);
+
     }
 
     @BuildStep
@@ -146,16 +148,11 @@ public class ResteasyReactiveScanningProcessor {
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<DynamicFeatureBuildItem> dynamicFeatureBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
-        Collection<ClassInfo> dynamicFeatures = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.DYNAMIC_FEATURE);
-
-        for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
-            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
-                    .keepProvider(dynamicFeatureClass);
-            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
-                dynamicFeatureBuildItemBuildProducer
-                        .produce(new DynamicFeatureBuildItem(dynamicFeatureClass.name().toString(), true));
-            }
+        Set<String> features = ResteasyReactiveFeatureScanner.scanForDynamicFeatures(index,
+                applicationResultBuildItem.getResult());
+        for (String dynamicFeatureClass : features) {
+            dynamicFeatureBuildItemBuildProducer
+                    .produce(new DynamicFeatureBuildItem(dynamicFeatureClass, true));
         }
     }
 
@@ -164,38 +161,44 @@ public class ResteasyReactiveScanningProcessor {
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<JaxrsFeatureBuildItem> featureBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
-        Collection<ClassInfo> dynamicFeatures = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.FEATURE);
-
-        for (ClassInfo dynamicFeatureClass : dynamicFeatures) {
-            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
-                    .keepProvider(dynamicFeatureClass);
-            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
-                featureBuildItemBuildProducer
-                        .produce(new JaxrsFeatureBuildItem(dynamicFeatureClass.name().toString(), true));
-            }
+        Set<String> features = ResteasyReactiveFeatureScanner.scanForFeatures(index, applicationResultBuildItem.getResult());
+        for (String feature : features) {
+            featureBuildItemBuildProducer
+                    .produce(new JaxrsFeatureBuildItem(feature, true));
         }
     }
 
     @BuildStep
-    public void scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
+    public ContextResolversBuildItem scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem,
-            BuildProducer<ContextResolverBuildItem> contextResolverBuildItemBuildProducer) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            List<ContextResolverBuildItem> additionalResolvers) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
-        Collection<ClassInfo> contextResolvers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTEXT_RESOLVER);
-
-        for (ClassInfo resolverClass : contextResolvers) {
-            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
-                    .keepProvider(resolverClass);
-            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
-                List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
-                        ResteasyReactiveDotNames.CONTEXT_RESOLVER,
-                        index);
-                contextResolverBuildItemBuildProducer.produce(new ContextResolverBuildItem(resolverClass.name().toString(),
-                        typeParameters.get(0).name().toString(), getProducesMediaTypes(resolverClass), true));
+        AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+        ContextResolvers resolvers = ResteasyReactiveContextResolverScanner.scanForContextResolvers(index,
+                applicationResultBuildItem.getResult());
+        for (Map.Entry<Class<?>, List<ResourceContextResolver>> entry : resolvers.getResolvers().entrySet()) {
+            for (ResourceContextResolver i : entry.getValue()) {
+                beanBuilder.addBeanClass(i.getClassName());
             }
         }
+        for (ContextResolverBuildItem i : additionalResolvers) {
+            if (i.isRegisterAsBean()) {
+                beanBuilder.addBeanClass(i.getClassName());
+            }
+            ResourceContextResolver resolver = new ResourceContextResolver();
+            resolver.setClassName(i.getClassName());
+            resolver.setMediaTypeStrings(i.getMediaTypes());
+            try {
+                resolvers.addContextResolver((Class) Class.forName(i.getProvidedType(), false,
+                        Thread.currentThread().getContextClassLoader()), resolver);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(
+                        "Unable to load handled exception type " + i.getProvidedType(), e);
+            }
+        }
+        additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
+        return new ContextResolversBuildItem(resolvers);
     }
 
     @BuildStep
@@ -207,9 +210,9 @@ public class ResteasyReactiveScanningProcessor {
                 .getAllKnownImplementors(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
 
         for (ClassInfo converterClass : paramConverterProviders) {
-            ApplicationResultBuildItem.KeepProviderResult keepProviderResult = applicationResultBuildItem
+            ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult()
                     .keepProvider(converterClass);
-            if (keepProviderResult != ApplicationResultBuildItem.KeepProviderResult.DISCARD) {
+            if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
                 AnnotationInstance priorityInstance = converterClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 paramConverterBuildItemBuildProducer.produce(new ParamConverterBuildItem(converterClass.name().toString(),
                         priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER, true));
@@ -298,7 +301,7 @@ public class ResteasyReactiveScanningProcessor {
         }
 
         Set<MethodInfo> classLevelExceptionMappers = new HashSet<>(resourceScanningResultBuildItem
-                .map(ResourceScanningResultBuildItem::getClassLevelExceptionMappers).orElse(Collections.emptyList()));
+                .map(s -> s.getResult().getClassLevelExceptionMappers()).orElse(Collections.emptyList()));
         for (AnnotationInstance instance : index
                 .getAnnotations(SERVER_EXCEPTION_MAPPER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
@@ -326,11 +329,4 @@ public class ResteasyReactiveScanningProcessor {
         additionalBean.produce(additionalBeans.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
     }
 
-    private List<String> getProducesMediaTypes(ClassInfo classInfo) {
-        AnnotationInstance produces = classInfo.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
-        if (produces == null) {
-            return Collections.emptyList();
-        }
-        return Arrays.asList(produces.value().asStringArray());
-    }
 }

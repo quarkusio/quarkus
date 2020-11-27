@@ -8,6 +8,7 @@ public class ResourceParamConverterProvider implements Comparable<ResourceParamC
 
     private BeanFactory<ParamConverterProvider> factory;
     private Integer priority = Priorities.USER;
+    private String className;
 
     public void setFactory(BeanFactory<ParamConverterProvider> factory) {
         this.factory = factory;
@@ -23,6 +24,15 @@ public class ResourceParamConverterProvider implements Comparable<ResourceParamC
 
     public void setPriority(Integer priority) {
         this.priority = priority;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public ResourceParamConverterProvider setClassName(String className) {
+        this.className = className;
+        return this;
     }
 
     @Override

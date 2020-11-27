@@ -58,8 +58,8 @@ public class ResteasyReactiveJacksonProcessor {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
-
-        Collection<ClassInfo> resourceClasses = resourceScanningResultBuildItem.get().getScannedResources().values();
+        Collection<ClassInfo> resourceClasses = resourceScanningResultBuildItem.get().getResult().getScannedResources()
+                .values();
         Set<String> classesNeedingReflectionOnMethods = new HashSet<>();
         for (ClassInfo resourceClass : resourceClasses) {
             if (resourceClass.annotations().containsKey(JSON_VIEW)) {

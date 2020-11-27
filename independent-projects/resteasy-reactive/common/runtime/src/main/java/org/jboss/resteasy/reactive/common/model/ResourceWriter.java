@@ -22,8 +22,9 @@ public class ResourceWriter {
     private volatile ServerMediaType serverMediaType;
     private volatile MessageBodyWriter<?> instance;
 
-    public void setFactory(BeanFactory<MessageBodyWriter<?>> factory) {
+    public ResourceWriter setFactory(BeanFactory<MessageBodyWriter<?>> factory) {
         this.factory = factory;
+        return this;
     }
 
     public BeanFactory<MessageBodyWriter<?>> getFactory() {

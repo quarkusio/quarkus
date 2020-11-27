@@ -40,6 +40,7 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         assertEquals(Arrays.asList(1, 2, 3, 4), dummyBean.getNumbers());
         assertEquals("default", dummyBean.getUnset());
         assertTrue(dummyBean.isBoolWithDefault());
+        assertFalse(dummyBean.isUnsetBoolean());
         assertTrue(dummyBean.getOptionalInt().isPresent());
         assertEquals(100, dummyBean.getOptionalInt().get());
         assertFalse(dummyBean.getOptionalString().isPresent());
@@ -69,6 +70,10 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
             return dummyProperties.boolWithDefault;
         }
 
+        boolean isUnsetBoolean() {
+            return dummyProperties.unsetBoolean;
+        }
+
         Optional<Integer> getOptionalInt() {
             return dummyProperties.optionalInt;
         }
@@ -92,6 +97,7 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         public String name;
         public String unset = "default";
         public boolean boolWithDefault = false;
+        public boolean unsetBoolean;
         public List<Integer> numbers;
         public Optional<Integer> optionalInt;
         public Optional<String> optionalString;

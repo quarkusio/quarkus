@@ -2,10 +2,10 @@ package io.quarkus.resteasy.reactive.client.runtime;
 
 import java.util.function.Supplier;
 
-import org.jboss.resteasy.reactive.client.ClientContext;
-import org.jboss.resteasy.reactive.client.ClientContextResolver;
-import org.jboss.resteasy.reactive.client.ClientProxies;
-import org.jboss.resteasy.reactive.client.DefaultClientContext;
+import org.jboss.resteasy.reactive.client.impl.ClientProxies;
+import org.jboss.resteasy.reactive.client.impl.DefaultClientContext;
+import org.jboss.resteasy.reactive.client.spi.ClientContext;
+import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 

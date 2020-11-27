@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.http.HttpClient;
 import java.net.URI;
@@ -24,20 +24,20 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
-public class QuarkusRestInvocationBuilder implements Invocation.Builder {
+public class InvocationBuilderImpl implements Invocation.Builder {
 
     final URI uri;
     final HttpClient httpClient;
-    final QuarkusRestWebTarget target;
+    final WebTargetImpl target;
     final RequestSpec requestSpec;
     final Map<String, Object> properties = new HashMap<>();
-    final QuarkusRestClient restClient;
+    final ClientImpl restClient;
     final ClientRestHandler[] handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
 
-    public QuarkusRestInvocationBuilder(URI uri, QuarkusRestClient restClient, HttpClient httpClient,
-            QuarkusRestWebTarget target,
+    public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient,
+            WebTargetImpl target,
             QuarkusRestConfiguration configuration, ClientRestHandler[] handlerChain,
             ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.uri = uri;
@@ -52,12 +52,12 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Invocation build(String method) {
-        return new QuarkusRestInvocation(method, async(), null);
+        return new InvocationImpl(method, async(), null);
     }
 
     @Override
     public Invocation build(String method, Entity<?> entity) {
-        return new QuarkusRestInvocation(method, async(), entity);
+        return new InvocationImpl(method, async(), entity);
     }
 
     @Override
@@ -81,8 +81,8 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     }
 
     @Override
-    public QuarkusRestAsyncInvoker async() {
-        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, requestSpec,
+    public AsyncInvokerImpl async() {
+        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec,
                 properties, handlerChain, abortHandlerChain, requestContext);
     }
 
@@ -154,14 +154,14 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public CompletionStageRxInvoker rx() {
-        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, requestSpec,
+        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec,
                 properties, handlerChain, abortHandlerChain, requestContext);
     }
 
     @Override
     public <T extends RxInvoker> T rx(Class<T> clazz) {
-        if (clazz == QuarkusRestMultiInvoker.class) {
-            return (T) new QuarkusRestMultiInvoker(target);
+        if (clazz == MultiInvoker.class) {
+            return (T) new MultiInvoker(target);
         }
         RxInvokerProvider<?> invokerProvider = requestSpec.configuration.getRxInvokerProvider(clazz);
         if (invokerProvider != null) {
@@ -313,7 +313,7 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
         return unwrap(async().method(name, entity, responseType));
     }
 
-    public QuarkusRestWebTarget getTarget() {
+    public WebTargetImpl getTarget() {
         return target;
     }
 

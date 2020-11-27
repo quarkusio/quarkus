@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -6,7 +6,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.sse.SseEventSource;
 import javax.ws.rs.sse.SseEventSource.Builder;
 
-public class QuarkusRestSseEventSourceBuilder extends SseEventSource.Builder {
+public class SseEventSourceBuilderImpl extends SseEventSource.Builder {
 
     private WebTarget endpoint;
     // defaults set by spec
@@ -31,7 +31,7 @@ public class QuarkusRestSseEventSourceBuilder extends SseEventSource.Builder {
 
     @Override
     public SseEventSource build() {
-        return new QuarkusRestSseEventSource((QuarkusRestWebTarget) endpoint, reconnectDelay, reconnectUnit);
+        return new SseEventSourceImpl((WebTargetImpl) endpoint, reconnectDelay, reconnectUnit);
     }
 
 }

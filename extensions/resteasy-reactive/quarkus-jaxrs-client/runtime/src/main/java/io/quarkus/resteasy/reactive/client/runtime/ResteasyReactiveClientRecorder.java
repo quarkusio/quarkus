@@ -10,8 +10,8 @@ import java.util.function.Supplier;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.WebTarget;
 
-import org.jboss.resteasy.reactive.client.ClientProxies;
-import org.jboss.resteasy.reactive.client.ClientSerialisers;
+import org.jboss.resteasy.reactive.client.impl.ClientProxies;
+import org.jboss.resteasy.reactive.client.impl.ClientSerialisers;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 

@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -20,7 +20,7 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
-public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
+public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker {
 
     public static final Buffer EMPTY_BUFFER = Buffer.buffer(new byte[0]);
 
@@ -28,12 +28,12 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     final URI uri;
     final RequestSpec requestSpec;
     final Map<String, Object> properties;
-    final QuarkusRestClient restClient;
+    final ClientImpl restClient;
     final ClientRestHandler[] handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
 
-    public QuarkusRestAsyncInvoker(QuarkusRestClient restClient, HttpClient httpClient, URI uri, RequestSpec requestSpec,
+    public AsyncInvokerImpl(ClientImpl restClient, HttpClient httpClient, URI uri, RequestSpec requestSpec,
             Map<String, Object> properties, ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain,
             ThreadSetupAction requestContext) {
         this.restClient = restClient;

@@ -1,9 +1,11 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.Vertx;
 import java.util.Collections;
 import java.util.function.Supplier;
 import javax.ws.rs.RuntimeType;
+import org.jboss.resteasy.reactive.client.spi.ClientContext;
+import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 

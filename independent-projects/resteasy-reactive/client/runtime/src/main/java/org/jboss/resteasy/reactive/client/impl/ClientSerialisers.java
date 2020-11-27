@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.buffer.Buffer;
 import java.io.ByteArrayOutputStream;
@@ -18,7 +18,6 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.client.providers.serialisers.ClientDefaultTextPlainBodyHandler;
-import org.jboss.resteasy.reactive.client.spi.QuarkusRestClientMessageBodyWriter;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.providers.serialisers.BooleanMessageBodyHandler;
@@ -84,23 +83,17 @@ public class ClientSerialisers extends Serialisers {
             MultivaluedMap<String, String> headerMap, MessageBodyWriter writer, WriterInterceptor[] writerInterceptors,
             Map<String, Object> properties, Serialisers serialisers, QuarkusRestConfiguration configuration)
             throws IOException {
-        if (writer instanceof QuarkusRestClientMessageBodyWriter && writerInterceptors == null) {
-            QuarkusRestClientMessageBodyWriter<Object> quarkusRestWriter = (QuarkusRestClientMessageBodyWriter<Object>) writer;
-            if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
-                return quarkusRestWriter.writeResponse(entityObject);
-            }
-        } else {
-            if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
-                if (writerInterceptors == null) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
-                            entity.getMediaType(), headerMap, baos);
-                    return Buffer.buffer(baos.toByteArray());
-                } else {
-                    return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),
-                            entity.getMediaType(), headerMap, writer, writerInterceptors, properties, serialisers,
-                            configuration);
-                }
+
+        if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
+            if (writerInterceptors == null) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
+                        entity.getMediaType(), headerMap, baos);
+                return Buffer.buffer(baos.toByteArray());
+            } else {
+                return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),
+                        entity.getMediaType(), headerMap, writer, writerInterceptors, properties, serialisers,
+                        configuration);
             }
         }
 
@@ -112,7 +105,7 @@ public class ClientSerialisers extends Serialisers {
             MultivaluedMap<String, String> headers, MessageBodyWriter writer,
             WriterInterceptor[] writerInterceptors, Map<String, Object> properties, Serialisers serialisers,
             QuarkusRestConfiguration configuration) throws IOException {
-        QuarkusRestClientWriterInterceptorContext wc = new QuarkusRestClientWriterInterceptorContext(writerInterceptors, writer,
+        ClientWriterInterceptorContextImpl wc = new ClientWriterInterceptorContextImpl(writerInterceptors, writer,
                 annotations, entityClass, entityType, entity, mediaType, headers, properties, serialisers, configuration);
         wc.proceed();
         return wc.getResult();
@@ -124,7 +117,7 @@ public class ClientSerialisers extends Serialisers {
             QuarkusRestConfiguration configuration)
             throws WebApplicationException, IOException {
         // FIXME: perhaps optimise for when we have no interceptor?
-        QuarkusRestClientReaderInterceptorContext context = new QuarkusRestClientReaderInterceptorContext(annotations,
+        ClientReaderInterceptorContextImpl context = new ClientReaderInterceptorContextImpl(annotations,
                 entityClass, entityType, mediaType,
                 properties, metadata, configuration, serialisers, in, interceptors);
         return context.proceed();

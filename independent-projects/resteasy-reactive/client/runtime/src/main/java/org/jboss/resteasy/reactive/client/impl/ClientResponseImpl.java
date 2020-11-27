@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +13,7 @@ import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
  * This is the Response class client response
  * object with more deserialising powers than user-created responses @{link {@link QuarkusRestResponse}.
  */
-public class QuarkusRestClientResponse extends QuarkusRestResponse {
+public class ClientResponseImpl extends QuarkusRestResponse {
 
     RestClientRequestContext restClientRequestContext;
 

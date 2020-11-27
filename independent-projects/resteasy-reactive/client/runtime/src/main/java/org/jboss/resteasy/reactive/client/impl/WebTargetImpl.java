@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.http.HttpClient;
 import java.net.URI;
@@ -16,18 +16,18 @@ import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestUriBuilder;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
-public class QuarkusRestWebTarget implements WebTarget {
+public class WebTargetImpl implements WebTarget {
 
     protected UriBuilder uriBuilder;
     private final HttpClient client;
     private final QuarkusRestConfiguration configuration;
     private boolean chunked = false;
-    private final QuarkusRestClient restClient;
+    private final ClientImpl restClient;
     final ClientRestHandler[] handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
 
-    public QuarkusRestWebTarget(QuarkusRestClient restClient, HttpClient client, UriBuilder uriBuilder,
+    public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration,
             ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.restClient = restClient;
@@ -56,7 +56,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     }
 
     @Override
-    public QuarkusRestWebTarget clone() {
+    public WebTargetImpl clone() {
         abortIfClosed();
         UriBuilder copy = uriBuilder.clone();
         return newInstance(client, copy, configuration);
@@ -81,7 +81,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     }
 
     @Override
-    public QuarkusRestWebTarget path(String path) throws NullPointerException {
+    public WebTargetImpl path(String path) throws NullPointerException {
         abortIfClosed();
         if (path == null)
             throw new NullPointerException("Param was null");
@@ -90,7 +90,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     }
 
     @Override
-    public QuarkusRestWebTarget resolveTemplate(String name, Object value) throws NullPointerException {
+    public WebTargetImpl resolveTemplate(String name, Object value) throws NullPointerException {
         abortIfClosed();
         if (name == null)
             throw new NullPointerException("Param was null");
@@ -98,12 +98,12 @@ public class QuarkusRestWebTarget implements WebTarget {
             throw new NullPointerException("Param was null");
         String val = configuration.toString(value);
         UriBuilder copy = uriBuilder.clone().resolveTemplate(name, val);
-        QuarkusRestWebTarget target = newInstance(client, copy, configuration);
+        WebTargetImpl target = newInstance(client, copy, configuration);
         return target;
     }
 
     @Override
-    public QuarkusRestWebTarget resolveTemplates(Map<String, Object> templateValues) throws NullPointerException {
+    public WebTargetImpl resolveTemplates(Map<String, Object> templateValues) throws NullPointerException {
         abortIfClosed();
         if (templateValues == null)
             throw new NullPointerException("Param was null");
@@ -117,12 +117,12 @@ public class QuarkusRestWebTarget implements WebTarget {
             vals.put(entry.getKey(), val);
         }
         UriBuilder copy = uriBuilder.clone().resolveTemplates(vals);
-        QuarkusRestWebTarget target = newInstance(client, copy, configuration);
+        WebTargetImpl target = newInstance(client, copy, configuration);
         return target;
     }
 
     @Override
-    public QuarkusRestWebTarget resolveTemplate(String name, Object value, boolean encodeSlashInPath)
+    public WebTargetImpl resolveTemplate(String name, Object value, boolean encodeSlashInPath)
             throws NullPointerException {
         abortIfClosed();
         if (name == null)
@@ -131,12 +131,12 @@ public class QuarkusRestWebTarget implements WebTarget {
             throw new NullPointerException("Param was null");
         String val = configuration.toString(value);
         UriBuilder copy = uriBuilder.clone().resolveTemplate(name, val, encodeSlashInPath);
-        QuarkusRestWebTarget target = newInstance(client, copy, configuration);
+        WebTargetImpl target = newInstance(client, copy, configuration);
         return target;
     }
 
     @Override
-    public QuarkusRestWebTarget resolveTemplateFromEncoded(String name, Object value) throws NullPointerException {
+    public WebTargetImpl resolveTemplateFromEncoded(String name, Object value) throws NullPointerException {
         abortIfClosed();
         if (name == null)
             throw new NullPointerException("Param was null");
@@ -144,12 +144,12 @@ public class QuarkusRestWebTarget implements WebTarget {
             throw new NullPointerException("Param was null");
         String val = configuration.toString(value);
         UriBuilder copy = uriBuilder.clone().resolveTemplateFromEncoded(name, val);
-        QuarkusRestWebTarget target = newInstance(client, copy, configuration);
+        WebTargetImpl target = newInstance(client, copy, configuration);
         return target;
     }
 
     @Override
-    public QuarkusRestWebTarget resolveTemplatesFromEncoded(Map<String, Object> templateValues) throws NullPointerException {
+    public WebTargetImpl resolveTemplatesFromEncoded(Map<String, Object> templateValues) throws NullPointerException {
         abortIfClosed();
         if (templateValues == null)
             throw new NullPointerException("Param was null");
@@ -163,12 +163,12 @@ public class QuarkusRestWebTarget implements WebTarget {
             vals.put(entry.getKey(), val);
         }
         UriBuilder copy = uriBuilder.clone().resolveTemplatesFromEncoded(vals);
-        QuarkusRestWebTarget target = newInstance(client, copy, configuration);
+        WebTargetImpl target = newInstance(client, copy, configuration);
         return target;
     }
 
     @Override
-    public QuarkusRestWebTarget resolveTemplates(Map<String, Object> templateValues, boolean encodeSlashInPath)
+    public WebTargetImpl resolveTemplates(Map<String, Object> templateValues, boolean encodeSlashInPath)
             throws NullPointerException {
         abortIfClosed();
         if (templateValues == null)
@@ -183,12 +183,12 @@ public class QuarkusRestWebTarget implements WebTarget {
             vals.put(entry.getKey(), val);
         }
         UriBuilder copy = uriBuilder.clone().resolveTemplates(vals, encodeSlashInPath);
-        QuarkusRestWebTarget target = newInstance(client, copy, configuration);
+        WebTargetImpl target = newInstance(client, copy, configuration);
         return target;
     }
 
     @Override
-    public QuarkusRestWebTarget matrixParam(String name, Object... values) throws NullPointerException {
+    public WebTargetImpl matrixParam(String name, Object... values) throws NullPointerException {
         abortIfClosed();
         if (name == null)
             throw new NullPointerException("Param was null");
@@ -211,7 +211,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     }
 
     @Override
-    public QuarkusRestWebTarget queryParam(String name, Object... values) throws NullPointerException {
+    public WebTargetImpl queryParam(String name, Object... values) throws NullPointerException {
         abortIfClosed();
         if (name == null)
             throw new NullPointerException("Param was null");
@@ -225,7 +225,7 @@ public class QuarkusRestWebTarget implements WebTarget {
         return newInstance(client, copy, configuration);
     }
 
-    public QuarkusRestWebTarget queryParams(MultivaluedMap<String, Object> parameters)
+    public WebTargetImpl queryParams(MultivaluedMap<String, Object> parameters)
             throws IllegalArgumentException, NullPointerException {
         abortIfClosed();
         if (parameters == null)
@@ -238,7 +238,7 @@ public class QuarkusRestWebTarget implements WebTarget {
         return newInstance(client, copy, configuration);
     }
 
-    public QuarkusRestWebTarget queryParamNoTemplate(String name, Object... values) throws NullPointerException {
+    public WebTargetImpl queryParamNoTemplate(String name, Object... values) throws NullPointerException {
         abortIfClosed();
         if (name == null)
             throw new NullPointerException("Param was null");
@@ -260,16 +260,16 @@ public class QuarkusRestWebTarget implements WebTarget {
         return newInstance(client, copy, configuration);
     }
 
-    protected QuarkusRestWebTarget newInstance(HttpClient client, UriBuilder uriBuilder,
+    protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestWebTarget(restClient, client, uriBuilder, configuration, handlerChain, abortHandlerChain,
+        return new WebTargetImpl(restClient, client, uriBuilder, configuration, handlerChain, abortHandlerChain,
                 requestContext);
     }
 
     @Override
     public Invocation.Builder request() {
         abortIfClosed();
-        QuarkusRestInvocationBuilder builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
+        InvocationBuilderImpl builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
         builder.setChunked(chunked);
         return builder;
     }
@@ -277,7 +277,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     @Override
     public Invocation.Builder request(String... acceptedResponseTypes) {
         abortIfClosed();
-        QuarkusRestInvocationBuilder builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
+        InvocationBuilderImpl builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
         builder.getHeaders().accept(acceptedResponseTypes);
         builder.setChunked(chunked);
         return builder;
@@ -286,7 +286,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     @Override
     public Invocation.Builder request(MediaType... acceptedResponseTypes) {
         abortIfClosed();
-        QuarkusRestInvocationBuilder builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
+        InvocationBuilderImpl builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
         builder.getHeaders().accept(acceptedResponseTypes);
         builder.setChunked(chunked);
         return builder;
@@ -296,14 +296,14 @@ public class QuarkusRestWebTarget implements WebTarget {
         restClient.abortIfClosed();
     }
 
-    protected QuarkusRestInvocationBuilder createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
+    protected InvocationBuilderImpl createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestInvocationBuilder(uri.build(), restClient, client, this, configuration, handlerChain,
+        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration, handlerChain,
                 abortHandlerChain, requestContext);
     }
 
     @Override
-    public QuarkusRestWebTarget property(String name, Object value) {
+    public WebTargetImpl property(String name, Object value) {
         abortIfClosed();
         if (name == null)
             throw new NullPointerException("Param was null");
@@ -312,62 +312,62 @@ public class QuarkusRestWebTarget implements WebTarget {
     }
 
     @Override
-    public QuarkusRestWebTarget register(Class<?> componentClass) {
+    public WebTargetImpl register(Class<?> componentClass) {
         abortIfClosed();
         configuration.register(componentClass);
         return this;
     }
 
     @Override
-    public QuarkusRestWebTarget register(Class<?> componentClass, int priority) {
+    public WebTargetImpl register(Class<?> componentClass, int priority) {
         abortIfClosed();
         configuration.register(componentClass, priority);
         return this;
     }
 
     @Override
-    public QuarkusRestWebTarget register(Class<?> componentClass, Class<?>... contracts) {
+    public WebTargetImpl register(Class<?> componentClass, Class<?>... contracts) {
         abortIfClosed();
         configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
-    public QuarkusRestWebTarget register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+    public WebTargetImpl register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
         abortIfClosed();
         configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
-    public QuarkusRestWebTarget register(Object component) {
+    public WebTargetImpl register(Object component) {
         abortIfClosed();
         configuration.register(component);
         return this;
     }
 
     @Override
-    public QuarkusRestWebTarget register(Object component, int priority) {
+    public WebTargetImpl register(Object component, int priority) {
         abortIfClosed();
         configuration.register(component, priority);
         return this;
     }
 
     @Override
-    public QuarkusRestWebTarget register(Object component, Class<?>... contracts) {
+    public WebTargetImpl register(Object component, Class<?>... contracts) {
         abortIfClosed();
         configuration.register(component, contracts);
         return this;
     }
 
     @Override
-    public QuarkusRestWebTarget register(Object component, Map<Class<?>, Integer> contracts) {
+    public WebTargetImpl register(Object component, Map<Class<?>, Integer> contracts) {
         abortIfClosed();
         configuration.register(component, contracts);
         return this;
     }
 
-    public QuarkusRestWebTarget setChunked(boolean chunked) {
+    public WebTargetImpl setChunked(boolean chunked) {
         this.chunked = chunked;
         return this;
     }
@@ -376,7 +376,7 @@ public class QuarkusRestWebTarget implements WebTarget {
         return restClient.getClientContext().getClientProxies().get(clazz, this);
     }
 
-    QuarkusRestClient getRestClient() {
+    ClientImpl getRestClient() {
         return restClient;
     }
 

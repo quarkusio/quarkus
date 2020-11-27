@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -7,29 +7,29 @@ import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponseBuilder;
 
-public class QuarkusRestClientResponseBuilder extends QuarkusRestResponseBuilder { //TODO: should not extend the server version
+public class ClientResponseBuilderImpl extends QuarkusRestResponseBuilder { //TODO: should not extend the server version
 
     InputStream entityStream;
     RestClientRequestContext restClientRequestContext;
 
-    public QuarkusRestClientResponseBuilder invocationState(RestClientRequestContext restClientRequestContext) {
+    public ClientResponseBuilderImpl invocationState(RestClientRequestContext restClientRequestContext) {
         this.restClientRequestContext = restClientRequestContext;
         return this;
     }
 
-    public QuarkusRestClientResponseBuilder entityStream(InputStream entityStream) {
+    public ClientResponseBuilderImpl entityStream(InputStream entityStream) {
         this.entityStream = entityStream;
         return this;
     }
 
     @Override
     protected QuarkusRestResponseBuilder doClone() {
-        return new QuarkusRestClientResponseBuilder();
+        return new ClientResponseBuilderImpl();
     }
 
     @Override
     public QuarkusRestResponse build() {
-        QuarkusRestClientResponse response = new QuarkusRestClientResponse();
+        ClientResponseImpl response = new ClientResponseImpl();
         populateResponse(response);
         response.restClientRequestContext = restClientRequestContext;
         response.setEntityStream(entityStream);

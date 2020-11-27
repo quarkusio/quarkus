@@ -7,8 +7,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.client.ClientBuilder;
 
-import org.jboss.resteasy.reactive.client.QuarkusRestClient;
-import org.jboss.resteasy.reactive.client.QuarkusRestWebTarget;
+import org.jboss.resteasy.reactive.client.impl.ClientImpl;
+import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
@@ -30,7 +30,7 @@ public class MultipleAcceptHeaderTest {
 
     private TestInterfaceClient service;
 
-    private QuarkusRestClient client;
+    private ClientImpl client;
 
     @RegisterExtension
     static QuarkusUnitTest testExtension = new QuarkusUnitTest()
@@ -93,8 +93,8 @@ public class MultipleAcceptHeaderTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        client = (QuarkusRestClient) ClientBuilder.newClient();
-        QuarkusRestWebTarget target = (QuarkusRestWebTarget) client.target(generateBaseUrl());
+        client = (ClientImpl) ClientBuilder.newClient();
+        WebTargetImpl target = (WebTargetImpl) client.target(generateBaseUrl());
         service = target.proxy(TestInterfaceClient.class);
     }
 

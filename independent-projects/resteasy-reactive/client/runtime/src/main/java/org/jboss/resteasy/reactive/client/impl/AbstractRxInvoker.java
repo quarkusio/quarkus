@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.RxInvoker;

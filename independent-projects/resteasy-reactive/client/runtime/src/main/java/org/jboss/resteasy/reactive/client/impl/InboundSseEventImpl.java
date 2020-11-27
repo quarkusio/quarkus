@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import javax.ws.rs.sse.SseEvent;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
-public class QuarkusRestInboundSseEvent implements InboundSseEvent {
+public class InboundSseEventImpl implements InboundSseEvent {
 
     private String id;
     private String name;
@@ -24,7 +24,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
     private Serialisers serialisers;
     private QuarkusRestConfiguration configuration;
 
-    public QuarkusRestInboundSseEvent(QuarkusRestConfiguration configuration, Serialisers serialisers) {
+    public InboundSseEventImpl(QuarkusRestConfiguration configuration, Serialisers serialisers) {
         this.configuration = configuration;
         this.serialisers = serialisers;
     }
@@ -33,7 +33,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
         return mediaType;
     }
 
-    public QuarkusRestInboundSseEvent setMediaType(MediaType mediaType) {
+    public InboundSseEventImpl setMediaType(MediaType mediaType) {
         this.mediaType = mediaType;
         return this;
     }
@@ -43,7 +43,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
         return id;
     }
 
-    public QuarkusRestInboundSseEvent setId(String id) {
+    public InboundSseEventImpl setId(String id) {
         this.id = id;
         return this;
     }
@@ -53,7 +53,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
         return name;
     }
 
-    public QuarkusRestInboundSseEvent setName(String name) {
+    public InboundSseEventImpl setName(String name) {
         this.name = name;
         return this;
     }
@@ -63,7 +63,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
         return comment;
     }
 
-    public QuarkusRestInboundSseEvent setComment(String comment) {
+    public InboundSseEventImpl setComment(String comment) {
         this.comment = comment;
         return this;
     }
@@ -78,7 +78,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
         return reconnectDelay != -1;
     }
 
-    public QuarkusRestInboundSseEvent setReconnectDelay(long reconnectDelay) {
+    public InboundSseEventImpl setReconnectDelay(long reconnectDelay) {
         this.reconnectDelay = reconnectDelay;
         return this;
     }
@@ -93,7 +93,7 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
         return data;
     }
 
-    public QuarkusRestInboundSseEvent setData(String data) {
+    public InboundSseEventImpl setData(String data) {
         this.data = data;
         return this;
     }
@@ -151,9 +151,9 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
             return true;
         if (obj == null)
             return false;
-        if (obj instanceof QuarkusRestInboundSseEvent == false)
+        if (obj instanceof InboundSseEventImpl == false)
             return false;
-        QuarkusRestInboundSseEvent other = (QuarkusRestInboundSseEvent) obj;
+        InboundSseEventImpl other = (InboundSseEventImpl) obj;
         return Objects.equals(getComment(), other.getComment())
                 && Objects.equals(getMediaType(), other.getMediaType())
                 && Objects.equals(getId(), other.getId())

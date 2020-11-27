@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
-import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
 /**

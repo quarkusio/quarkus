@@ -1,6 +1,7 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.spi;
 
 import java.util.ServiceLoader;
+import org.jboss.resteasy.reactive.client.impl.DefaultClientContext;
 
 public interface ClientContextResolver {
 

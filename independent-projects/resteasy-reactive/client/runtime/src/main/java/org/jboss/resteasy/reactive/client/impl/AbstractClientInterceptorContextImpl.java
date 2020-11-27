@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -9,7 +9,7 @@ import java.util.Objects;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.InterceptorContext;
 
-public abstract class QuarkusRestAbstractClientInterceptorContext implements InterceptorContext {
+public abstract class AbstractClientInterceptorContextImpl implements InterceptorContext {
 
     protected MediaType mediaType;
     protected Type entityType;
@@ -17,7 +17,7 @@ public abstract class QuarkusRestAbstractClientInterceptorContext implements Int
     protected Annotation[] annotations;
     protected Map<String, Object> properties;
 
-    public QuarkusRestAbstractClientInterceptorContext(Annotation[] annotations, Class<?> entityClass, Type entityType,
+    public AbstractClientInterceptorContextImpl(Annotation[] annotations, Class<?> entityClass, Type entityType,
             MediaType mediaType, Map<String, Object> properties) {
         this.annotations = annotations;
         this.entityClass = entityClass;

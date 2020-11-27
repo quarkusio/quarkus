@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 

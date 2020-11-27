@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +18,7 @@ import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
-public class QuarkusRestClientReaderInterceptorContext extends QuarkusRestAbstractClientInterceptorContext
+public class ClientReaderInterceptorContextImpl extends AbstractClientInterceptorContextImpl
         implements ReaderInterceptorContext {
 
     final QuarkusRestConfiguration configuration;
@@ -29,7 +29,7 @@ public class QuarkusRestClientReaderInterceptorContext extends QuarkusRestAbstra
     private final ReaderInterceptor[] interceptors;
     private final MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();
 
-    public QuarkusRestClientReaderInterceptorContext(Annotation[] annotations, Class<?> entityClass, Type entityType,
+    public ClientReaderInterceptorContextImpl(Annotation[] annotations, Class<?> entityClass, Type entityType,
             MediaType mediaType,
             Map<String, Object> properties, MultivaluedMap<String, String> headers,
             QuarkusRestConfiguration configuration, Serialisers serialisers, InputStream inputStream,

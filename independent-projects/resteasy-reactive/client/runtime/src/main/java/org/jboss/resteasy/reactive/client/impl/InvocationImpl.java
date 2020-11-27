@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -10,13 +10,13 @@ import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 
-public class QuarkusRestInvocation implements Invocation {
+public class InvocationImpl implements Invocation {
 
-    final QuarkusRestAsyncInvoker invoker;
+    final AsyncInvokerImpl invoker;
     final String method;
     final Entity<?> entity;
 
-    public QuarkusRestInvocation(String method, QuarkusRestAsyncInvoker invoker, Entity<?> entity) {
+    public InvocationImpl(String method, AsyncInvokerImpl invoker, Entity<?> entity) {
         this.invoker = invoker;
         this.method = method;
         this.entity = entity;

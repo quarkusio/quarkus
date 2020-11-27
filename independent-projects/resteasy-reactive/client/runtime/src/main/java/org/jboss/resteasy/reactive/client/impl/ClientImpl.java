@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.netty.channel.EventLoopGroup;
 import io.vertx.core.AsyncResult;
@@ -59,10 +59,11 @@ import org.jboss.resteasy.reactive.client.handlers.ClientErrorHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientRequestFiltersRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
-public class QuarkusRestClient implements Client {
+public class ClientImpl implements Client {
 
     final ClientContext clientContext;
     final boolean closeVertx;
@@ -75,7 +76,7 @@ public class QuarkusRestClient implements Client {
     final ClientRestHandler[] abortHandlerChain;
     final Vertx vertx;
 
-    public QuarkusRestClient(QuarkusRestConfiguration configuration, ClientContext clientContext,
+    public ClientImpl(QuarkusRestConfiguration configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext) {
         this.configuration = configuration != null ? configuration : new QuarkusRestConfiguration(RuntimeType.CLIENT);
@@ -139,7 +140,7 @@ public class QuarkusRestClient implements Client {
     public WebTarget target(UriBuilder uriBuilder) {
         abortIfClosed();
         Objects.requireNonNull(uriBuilder);
-        return new QuarkusRestWebTarget(this, httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), handlerChain,
+        return new WebTargetImpl(this, httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), handlerChain,
                 abortHandlerChain, null);
     }
 

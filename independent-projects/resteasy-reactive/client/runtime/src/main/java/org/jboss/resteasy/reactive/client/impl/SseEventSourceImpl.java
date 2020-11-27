@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -14,12 +14,12 @@ import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
 
-public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> {
+public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
 
     private TimeUnit reconnectUnit;
     private long reconnectDelay;
 
-    private QuarkusRestWebTarget webTarget;
+    private WebTargetImpl webTarget;
     // this tracks user request to open/close
     private volatile boolean isOpen;
     // this tracks whether we have a connection open
@@ -33,7 +33,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
     private long timerId = -1;
     private boolean receivedClientClose;
 
-    public QuarkusRestSseEventSource(QuarkusRestWebTarget webTarget, long reconnectDelay, TimeUnit reconnectUnit) {
+    public SseEventSourceImpl(WebTargetImpl webTarget, long reconnectDelay, TimeUnit reconnectUnit) {
         // tests set a null endpoint
         Objects.requireNonNull(reconnectUnit);
         if (reconnectDelay <= 0)
@@ -44,7 +44,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
         this.sseParser = new SseParser(this);
     }
 
-    QuarkusRestWebTarget getWebTarget() {
+    WebTargetImpl getWebTarget() {
         return webTarget;
     }
 
@@ -81,7 +81,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
         isInProgress = true;
         // ignore previous client closes
         receivedClientClose = false;
-        QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) webTarget.request().rx();
+        AsyncInvokerImpl invoker = (AsyncInvokerImpl) webTarget.request().rx();
         RestClientRequestContext restClientRequestContext = invoker.performRequestInternal("GET", null, null, false);
         restClientRequestContext.getResult().handle((response, throwable) -> {
             if (throwable != null)
@@ -193,7 +193,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> 
         }
     }
 
-    public synchronized void fireEvent(QuarkusRestInboundSseEvent event) {
+    public synchronized void fireEvent(InboundSseEventImpl event) {
         // spec says to do this
         if (event.isReconnectDelaySet()) {
             reconnectDelay = event.getReconnectDelay();

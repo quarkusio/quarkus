@@ -3,8 +3,8 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.util.List;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.ClientRequestFilter;
-import org.jboss.resteasy.reactive.client.QuarkusRestClientRequestContext;
-import org.jboss.resteasy.reactive.client.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
 public class ClientRequestFiltersRestHandler implements ClientRestHandler {
@@ -13,7 +13,7 @@ public class ClientRequestFiltersRestHandler implements ClientRestHandler {
 
         List<ClientRequestFilter> filters = context.getConfiguration().getRequestFilters();
         if (!filters.isEmpty()) {
-            QuarkusRestClientRequestContext requestContext = context.getOrCreateClientRequestContext();
+            ClientRequestContextImpl requestContext = context.getOrCreateClientRequestContext();
             for (ClientRequestFilter filter : filters) {
                 try {
                     filter.filter(requestContext);

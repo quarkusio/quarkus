@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
@@ -47,7 +47,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     Entity<?> entity;
     GenericType<?> responseType;
     private boolean responseTypeSpecified;
-    private final QuarkusRestClient restClient;
+    private final ClientImpl restClient;
     final ClientRequestHeaders requestHeaders;
     final QuarkusRestConfiguration configuration;
     private final boolean registerBodyHandler;
@@ -69,11 +69,11 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private int responseStatus;
     private String responseReasonPhrase;
     private MultivaluedMap<String, String> responseHeaders;
-    private QuarkusRestClientRequestContext clientRequestContext;
+    private ClientRequestContextImpl clientRequestContext;
     private InputStream responseEntityStream;
     private Response abortedWith;
 
-    public RestClientRequestContext(QuarkusRestClient restClient,
+    public RestClientRequestContext(ClientImpl restClient,
             HttpClient httpClient, String httpMethod, URI uri,
             QuarkusRestConfiguration configuration, ClientRequestHeaders requestHeaders,
             Entity<?> entity, GenericType<?> responseType, boolean registerBodyHandler, Map<String, Object> properties,
@@ -139,13 +139,13 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return httpClient;
     }
 
-    public QuarkusRestClientRequestContext getClientRequestContext() {
+    public ClientRequestContextImpl getClientRequestContext() {
         return clientRequestContext;
     }
 
-    public QuarkusRestClientRequestContext getOrCreateClientRequestContext() {
+    public ClientRequestContextImpl getOrCreateClientRequestContext() {
         if (clientRequestContext == null) {
-            clientRequestContext = new QuarkusRestClientRequestContext(this, this.getRestClient(), this.getConfiguration());
+            clientRequestContext = new ClientRequestContextImpl(this, this.getRestClient(), this.getConfiguration());
         }
         return clientRequestContext;
     }
@@ -239,7 +239,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return configuration;
     }
 
-    public QuarkusRestClient getRestClient() {
+    public ClientImpl getRestClient() {
         return restClient;
     }
 

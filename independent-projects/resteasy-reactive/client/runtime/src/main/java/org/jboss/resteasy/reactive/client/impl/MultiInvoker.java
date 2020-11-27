@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
@@ -14,11 +14,11 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
+public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
-    private QuarkusRestWebTarget target;
+    private WebTargetImpl target;
 
-    public QuarkusRestMultiInvoker(QuarkusRestWebTarget target) {
+    public MultiInvoker(WebTargetImpl target) {
         this.target = target;
     }
 
@@ -36,7 +36,7 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
     @Override
     public <R> Multi<R> method(String name, Entity<?> entity, GenericType<R> responseType) {
-        QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) target.request().rx();
+        AsyncInvokerImpl invoker = (AsyncInvokerImpl) target.request().rx();
         // FIXME: backpressure setting?
         return Multi.createFrom().emitter(emitter -> {
             RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity, responseType,
@@ -68,7 +68,7 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
         // For now we don't want multi to reconnect
-        QuarkusRestSseEventSource sseSource = new QuarkusRestSseEventSource(target, Integer.MAX_VALUE, TimeUnit.SECONDS);
+        SseEventSourceImpl sseSource = new SseEventSourceImpl(target, Integer.MAX_VALUE, TimeUnit.SECONDS);
         // FIXME: deal with cancellation
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or

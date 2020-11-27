@@ -9,7 +9,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 
 import org.hamcrest.Matchers;
-import org.jboss.resteasy.reactive.client.QuarkusRestMultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -74,7 +74,7 @@ public class StreamTestCase {
     public void testClientStreaming() throws Exception {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + "stream/text/stream");
-        Multi<String> multi = target.request().rx(QuarkusRestMultiInvoker.class).get(String.class);
+        Multi<String> multi = target.request().rx(MultiInvoker.class).get(String.class);
         List<String> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(5));
         Assertions.assertEquals(2, list.size());
         Assertions.assertEquals("foo", list.get(0));

@@ -38,7 +38,7 @@ import io.quarkus.rest.server.runtime.exceptionmappers.AuthenticationRedirectExc
 import io.quarkus.rest.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.rest.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
-import io.quarkus.resteasy.reactive.common.deployment.QuarkusRestCommonProcessor;
+import io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
@@ -76,12 +76,12 @@ public class ResteasyReactiveScanningProcessor {
         containerRequestFilters.addAll(index
                 .getAllKnownImplementors(ResteasyReactiveDotNames.QUARKUS_REST_CONTAINER_REQUEST_FILTER));
         for (ClassInfo filterClass : containerRequestFilters) {
-            QuarkusRestCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
+            ResteasyReactiveCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
                     requestFilterBuildItemBuildProducer, index, filterClass,
                     ContainerRequestFilterBuildItem.Builder::new);
         }
         for (ClassInfo filterClass : containerResponseFilters) {
-            QuarkusRestCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
+            ResteasyReactiveCommonProcessor.handleDiscoveredInterceptor(applicationResultBuildItem,
                     responseFilterBuildItemBuildProducer, index, filterClass,
                     ContainerResponseFilterBuildItem.Builder::new);
         }

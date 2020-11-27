@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -63,9 +63,9 @@ public class SseParser implements Handler<Buffer> {
      * The event connect time we're reading. Defaults to -1 and changes with "retry" fields (in ms)
      */
     private long eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
-    private QuarkusRestSseEventSource sseEventSource;
+    private SseEventSourceImpl sseEventSource;
 
-    public SseParser(QuarkusRestSseEventSource sseEventSource) {
+    public SseParser(SseEventSourceImpl sseEventSource) {
         this.sseEventSource = sseEventSource;
     }
 
@@ -144,14 +144,14 @@ public class SseParser implements Handler<Buffer> {
         // ignore empty events
         if (dataBuffer.length() == 0)
             return;
-        QuarkusRestWebTarget webTarget = sseEventSource.getWebTarget();
-        QuarkusRestInboundSseEvent event;
+        WebTargetImpl webTarget = sseEventSource.getWebTarget();
+        InboundSseEventImpl event;
         // tests don't set a web target, and we don't want them to end up starting vertx just to test parsing
         if (webTarget != null)
-            event = new QuarkusRestInboundSseEvent(webTarget.getConfiguration(),
+            event = new InboundSseEventImpl(webTarget.getConfiguration(),
                     webTarget.getSerialisers());
         else
-            event = new QuarkusRestInboundSseEvent(null, null);
+            event = new InboundSseEventImpl(null, null);
         // SSE spec says empty string is the default, but JAX-RS says null if not specified
         event.setComment(commentBuffer.length() == 0 ? null : commentBuffer.toString());
         // SSE spec says empty string is the default, but JAX-RS says null if not specified

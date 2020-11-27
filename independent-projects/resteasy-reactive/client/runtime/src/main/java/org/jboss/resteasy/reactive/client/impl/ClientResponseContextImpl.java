@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -19,11 +19,11 @@ import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.headers.LinkHeaders;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestStatusType;
 
-public class QuarkusRestClientResponseContext implements ClientResponseContext {
+public class ClientResponseContextImpl implements ClientResponseContext {
 
     private final RestClientRequestContext state;
 
-    public QuarkusRestClientResponseContext(RestClientRequestContext state) {
+    public ClientResponseContextImpl(RestClientRequestContext state) {
         this.state = state;
     }
 
@@ -31,12 +31,12 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
         return state.getResponseReasonPhrase();
     }
 
-    public QuarkusRestClientResponseContext setReasonPhrase(String reasonPhrase) {
+    public ClientResponseContextImpl setReasonPhrase(String reasonPhrase) {
         state.setResponseReasonPhrase(reasonPhrase);
         return this;
     }
 
-    public QuarkusRestClientResponseContext setHeaders(MultivaluedMap<String, String> headers) {
+    public ClientResponseContextImpl setHeaders(MultivaluedMap<String, String> headers) {
         state.setResponseHeaders(headers);
         return this;
     }

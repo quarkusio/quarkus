@@ -15,7 +15,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
 
-import org.jboss.resteasy.reactive.client.QuarkusRestMultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -85,7 +85,7 @@ public class SseTestCase {
     private void testMulti(String path) {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
-        Multi<String> multi = target.request().rx(QuarkusRestMultiInvoker.class).get(String.class);
+        Multi<String> multi = target.request().rx(MultiInvoker.class).get(String.class);
         List<String> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(30));
         Assertions.assertEquals(2, list.size());
         Assertions.assertEquals("hello", list.get(0));
@@ -106,7 +106,7 @@ public class SseTestCase {
     private void testJsonMulti(String path) {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
-        Multi<Message> multi = target.request().rx(QuarkusRestMultiInvoker.class).get(Message.class);
+        Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
         List<Message> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(30));
         Assertions.assertEquals(2, list.size());
         Assertions.assertEquals("hello", list.get(0).name);

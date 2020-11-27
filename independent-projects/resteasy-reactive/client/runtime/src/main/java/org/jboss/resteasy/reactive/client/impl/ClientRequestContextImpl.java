@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -23,14 +23,14 @@ import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
-public class QuarkusRestClientRequestContext implements ClientRequestContext {
+public class ClientRequestContextImpl implements ClientRequestContext {
 
     private final Client client;
     private final QuarkusRestConfiguration configuration;
     private OutputStream entityStream;
     private RestClientRequestContext restClientRequestContext;
 
-    public QuarkusRestClientRequestContext(RestClientRequestContext restClientRequestContext, QuarkusRestClient client,
+    public ClientRequestContextImpl(RestClientRequestContext restClientRequestContext, ClientImpl client,
             QuarkusRestConfiguration configuration) {
         this.restClientRequestContext = restClientRequestContext;
         this.client = client;

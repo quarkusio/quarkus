@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.buffer.Buffer;
 import java.io.ByteArrayOutputStream;
@@ -18,7 +18,7 @@ import javax.ws.rs.ext.WriterInterceptorContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
-public class QuarkusRestClientWriterInterceptorContext extends QuarkusRestAbstractClientInterceptorContext
+public class ClientWriterInterceptorContextImpl extends AbstractClientInterceptorContextImpl
         implements WriterInterceptorContext {
 
     private final ByteArrayOutputStream baos = new ByteArrayOutputStream(); //TODO: real bloocking IO
@@ -37,7 +37,7 @@ public class QuarkusRestClientWriterInterceptorContext extends QuarkusRestAbstra
 
     private Buffer result;
 
-    public QuarkusRestClientWriterInterceptorContext(WriterInterceptor[] writerInterceptors, MessageBodyWriter writer,
+    public ClientWriterInterceptorContextImpl(WriterInterceptor[] writerInterceptors, MessageBodyWriter writer,
             Annotation[] annotations, Class<?> entityClass, Type entityType, Object entity,
             MediaType mediaType, MultivaluedMap<String, String> headers, Map<String, Object> properties,
             Serialisers serialisers, QuarkusRestConfiguration configuration) {

@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 
-import org.jboss.resteasy.reactive.client.QuarkusRestInboundSseEvent;
-import org.jboss.resteasy.reactive.client.QuarkusRestSseEventSource;
-import org.jboss.resteasy.reactive.client.SseParser;
+import org.jboss.resteasy.reactive.client.impl.InboundSseEventImpl;
+import org.jboss.resteasy.reactive.client.impl.SseEventSourceImpl;
+import org.jboss.resteasy.reactive.client.impl.SseParser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -60,20 +60,20 @@ public class SseParserTest {
 
         // two events
         testParser(Arrays.asList("data:foo\n\ndata:bar\n\n"),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("foo"),
-                        new QuarkusRestInboundSseEvent(null, null)
+                        new InboundSseEventImpl(null, null)
                                 .setData("bar")));
         // two events with data
         testParser(Arrays.asList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n"
                 + "data:DATA2\nid:ID2\n:COMMENT2\nretry:232\nevent:NAME2\n\n"),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("DATA")
                         .setId("ID")
                         .setComment("COMMENT")
                         .setReconnectDelay(23)
                         .setName("NAME"),
-                        new QuarkusRestInboundSseEvent(null, null)
+                        new InboundSseEventImpl(null, null)
                                 .setData("DATA2")
                                 .setId("ID2")
                                 .setComment("COMMENT2")
@@ -82,43 +82,43 @@ public class SseParserTest {
         // two events with data, only ID is persistent
         testParser(Arrays.asList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n"
                 + "data:DATA2\n\n"),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("DATA")
                         .setId("ID")
                         .setComment("COMMENT")
                         .setReconnectDelay(23)
                         .setName("NAME"),
-                        new QuarkusRestInboundSseEvent(null, null)
+                        new InboundSseEventImpl(null, null)
                                 .setData("DATA2")
                                 .setId("ID")));
 
         // two events in two buffers
         testParser(Arrays.asList("data:foo\n\n", "data:bar\n\n"),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("foo"),
-                        new QuarkusRestInboundSseEvent(null, null)
+                        new InboundSseEventImpl(null, null)
                                 .setData("bar")));
         // two events in two buffers at awkward places
         testParser(Arrays.asList("data:foo\n\ndata:b", "ar\n\n"),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("foo"),
-                        new QuarkusRestInboundSseEvent(null, null)
+                        new InboundSseEventImpl(null, null)
                                 .setData("bar")));
         // one event in two buffers
         testParser(Arrays.asList("data:f", "oo\n\n"),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("foo")));
         // one event in two buffers within a utf-8 char
         testParserWithBytes(
                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b11000010 },
                         new byte[] { (byte) 0b10100010, '\n', '\n' }),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("¢")));
 
         // BOM
         testParserWithBytes(
                 Arrays.asList(new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' }),
-                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                Arrays.asList(new InboundSseEventImpl(null, null)
                         .setData("foo")));
 
         // invalid BOM location
@@ -128,7 +128,7 @@ public class SseParserTest {
                                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' },
                                         new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
                                                 '\n' }),
-                                Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+                                Arrays.asList(new InboundSseEventImpl(null, null)
                                         .setData("foo"))));
         // invalid UTF-8
         Assertions.assertThrows(IllegalStateException.class,
@@ -139,7 +139,7 @@ public class SseParserTest {
 
     private void testParser(String event, String data, String comment, String lastId, String name, long reconnectDelay) {
         if (data != null) {
-            testParser(Arrays.asList(event), Arrays.asList(new QuarkusRestInboundSseEvent(null, null)
+            testParser(Arrays.asList(event), Arrays.asList(new InboundSseEventImpl(null, null)
                     .setData(data)
                     .setComment(comment)
                     .setId(lastId)
@@ -156,7 +156,7 @@ public class SseParserTest {
     }
 
     private void testParserWithBytes(List<byte[]> events, List<InboundSseEvent> expectedEvents) {
-        QuarkusRestSseEventSource eventSource = new QuarkusRestSseEventSource(null, 500, TimeUnit.MILLISECONDS);
+        SseEventSourceImpl eventSource = new SseEventSourceImpl(null, 500, TimeUnit.MILLISECONDS);
         SseParser parser = eventSource.getSseParser();
         CountDownLatch latch = new CountDownLatch(expectedEvents.size());
         List<InboundSseEvent> receivedEvents = new ArrayList<>(expectedEvents.size());

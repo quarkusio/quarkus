@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client;
+package org.jboss.resteasy.reactive.client.impl;
 
 import java.security.KeyStore;
 import java.util.Map;
@@ -10,9 +10,10 @@ import javax.net.ssl.SSLContext;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
+import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
 
-public class QuarkusRestClientBuilder extends ClientBuilder {
+public class ClientBuilderImpl extends ClientBuilder {
 
     private ClientProxies clientProxies;
     private QuarkusRestConfiguration configuration;
@@ -75,7 +76,7 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
 
     @Override
     public Client build() {
-        return new QuarkusRestClient(configuration,
+        return new ClientImpl(configuration,
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()), hostnameVerifier,
                 sslContext);
 
@@ -93,49 +94,49 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Class<?> componentClass) {
+    public ClientBuilderImpl register(Class<?> componentClass) {
         configuration.register(componentClass);
         return this;
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Class<?> componentClass, int priority) {
+    public ClientBuilderImpl register(Class<?> componentClass, int priority) {
         configuration.register(componentClass, priority);
         return this;
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Class<?> componentClass, Class<?>... contracts) {
+    public ClientBuilderImpl register(Class<?> componentClass, Class<?>... contracts) {
         configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+    public ClientBuilderImpl register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
         configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Object component) {
+    public ClientBuilderImpl register(Object component) {
         configuration.register(component);
         return this;
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Object component, int priority) {
+    public ClientBuilderImpl register(Object component, int priority) {
         configuration.register(component, priority);
         return this;
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Object component, Class<?>... contracts) {
+    public ClientBuilderImpl register(Object component, Class<?>... contracts) {
         configuration.register(component, contracts);
         return this;
     }
 
     @Override
-    public QuarkusRestClientBuilder register(Object component, Map<Class<?>, Integer> contracts) {
+    public ClientBuilderImpl register(Object component, Map<Class<?>, Integer> contracts) {
         configuration.register(component, contracts);
         return this;
     }

@@ -8,12 +8,12 @@ import javax.ws.rs.core.Application;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.rest.server.servlet.runtime.ResteasyReactiveFilter;
-import io.quarkus.rest.server.servlet.runtime.ResteasyReactiveServlet;
-import io.quarkus.rest.server.servlet.runtime.ResteasyReactiveServletRecorder;
-import io.quarkus.rest.server.servlet.runtime.ServletRequestContextFactory;
 import io.quarkus.resteasy.reactive.server.deployment.RequestContextFactoryBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveDeploymentBuildItem;
+import io.quarkus.resteasy.reactive.server.servlet.runtime.ResteasyReactiveFilter;
+import io.quarkus.resteasy.reactive.server.servlet.runtime.ResteasyReactiveServlet;
+import io.quarkus.resteasy.reactive.server.servlet.runtime.ResteasyReactiveServletRecorder;
+import io.quarkus.resteasy.reactive.server.servlet.runtime.ServletRequestContextFactory;
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 

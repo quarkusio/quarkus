@@ -16,7 +16,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.jaxrs.ReaderInterceptorContextImpl;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class RequestDeserializeHandler implements ServerRestHandler {
@@ -81,8 +81,8 @@ public class RequestDeserializeHandler implements ServerRestHandler {
 
     private boolean isReadable(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext,
             MediaType requestType) {
-        if (reader instanceof ResteasyReactiveMessageBodyReader) {
-            return ((ResteasyReactiveMessageBodyReader<?>) reader).isReadable(type, type,
+        if (reader instanceof ServerMessageBodyReader) {
+            return ((ServerMessageBodyReader<?>) reader).isReadable(type, type,
                     requestContext.getTarget().getLazyMethod(),
                     requestType);
         }
@@ -92,8 +92,8 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     @SuppressWarnings("unchecked")
     public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext, MediaType requestType)
             throws IOException {
-        if (reader instanceof ResteasyReactiveMessageBodyReader) {
-            return ((ResteasyReactiveMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
+        if (reader instanceof ServerMessageBodyReader) {
+            return ((ServerMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
         }
         return reader.readFrom((Class) type, type, getAnnotations(requestContext), requestType,
                 requestContext.getHttpHeaders().getRequestHeaders(), requestContext.getInputStream());

@@ -18,7 +18,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.rest.server.runtime.ResteasyReactiveRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
 public class QuarkusInvokerFactory implements EndpointInvokerFactory {
 

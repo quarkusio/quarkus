@@ -45,7 +45,7 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link HttpHeaders}
  * <li>{@link Request}
  * <li>{@link ResourceInfo}
- * <li>{@link SimplifiedResourceInfo}
+ * <li>{@link SimpleResourceInfo}
  * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)

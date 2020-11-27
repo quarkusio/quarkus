@@ -26,15 +26,15 @@ import javax.ws.rs.container.ContainerResponseContext;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
-import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -144,11 +144,12 @@ final class CustomProviderGenerator {
                 } else if (RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
-                            ofMethod(RuntimeResource.class, "getLazyMethod", LazyMethod.class), runtimeResourceHandle);
+                            ofMethod(RuntimeResource.class, "getLazyMethod", ResteasyReactiveResourceInfo.class),
+                            runtimeResourceHandle);
                 } else if (SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
-                            ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
+                            ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimpleResourceInfo.class),
                             runtimeResourceHandle);
                 } else if (ROUTING_CONTEXT.equals(paramDotName)) {
                     targetMethodParamHandles[i] = GeneratorUtils.routingContextHandler(filterMethod, qrReqCtxHandle);
@@ -252,11 +253,12 @@ final class CustomProviderGenerator {
                 } else if (RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
-                            ofMethod(RuntimeResource.class, "getLazyMethod", LazyMethod.class), runtimeResourceHandle);
+                            ofMethod(RuntimeResource.class, "getLazyMethod", ResteasyReactiveResourceInfo.class),
+                            runtimeResourceHandle);
                 } else if (SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
                     ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, qrReqCtxHandle);
                     targetMethodParamHandles[i] = filterMethod.invokeVirtualMethod(
-                            ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
+                            ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimpleResourceInfo.class),
                             runtimeResourceHandle);
                 } else if (THROWABLE.equals(paramDotName)) {
                     GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, qrReqCtxHandle, targetMethodParamHandles, i,
@@ -283,8 +285,8 @@ final class CustomProviderGenerator {
         ResultHandle qrContainerReqCtxHandle = filter.checkCast(containerReqCtxHandle,
                 ResteasyReactiveContainerRequestContext.class);
         ResultHandle qrCtxHandle = filter.invokeInterfaceMethod(
-                ofMethod(ResteasyReactiveContainerRequestContext.class, "getQuarkusRestContext",
-                        ResteasyReactiveCallbackContext.class),
+                ofMethod(ResteasyReactiveContainerRequestContext.class, "getServerRequestContext",
+                        ServerRequestContext.class),
                 qrContainerReqCtxHandle);
         return filter.checkCast(qrCtxHandle, ResteasyReactiveRequestContext.class);
     }

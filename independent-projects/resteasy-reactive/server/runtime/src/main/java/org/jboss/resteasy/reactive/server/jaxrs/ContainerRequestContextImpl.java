@@ -14,9 +14,9 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
-import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 public class ContainerRequestContextImpl implements ResteasyReactiveContainerRequestContext {
 
@@ -202,7 +202,7 @@ public class ContainerRequestContextImpl implements ResteasyReactiveContainerReq
     }
 
     @Override
-    public ResteasyReactiveCallbackContext getQuarkusRestContext() {
+    public ServerRequestContext getServerRequestContext() {
         return quarkusRestContext;
     }
 

@@ -26,13 +26,14 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.gizmo.ClassCreator;
@@ -67,8 +68,8 @@ final class ClassLevelExceptionMapperGenerator {
      * public class GreetingResource$GeneratedExceptionHandlerFor$IllegalArgumentException$OfMethod$perClassMapper
      *         implements ResteasyReactiveExceptionMapper {
      *
-     *     public Response toResponse(IllegalArgumentException e, QuarkusRestRequestContext ctx) {
-     *         GreetingResource instance = (GreetingResource) ctx.getEndpointInstance();
+     *     public Response toResponse(IllegalArgumentException e, ServerRequestContext ctx) {
+     *         GreetingResource instance = (GreetingResource) ((ResteasyReactiveRequestContext) ctx).getEndpointInstance();
      *         return instance.perClassMapper(e, ctx.getRequest());
      *     }
      * }
@@ -115,11 +116,11 @@ final class ClassLevelExceptionMapperGenerator {
 
                 MethodDescriptor qrToResponseDescriptor = MethodDescriptor.ofMethod(generatedClassName, "toResponse",
                         Response.class.getName(),
-                        handledExceptionType.name().toString(), ResteasyReactiveRequestContext.class.getName());
+                        handledExceptionType.name().toString(), ServerRequestContext.class.getName());
 
-                // bridge toResponse(Throwable, QuarkusRestRequestContext) method
+                // bridge toResponse(Throwable, ServerRequestContext) method
                 MethodCreator bridgeQRToResponse = cc.getMethodCreator("toResponse", Response.class, Throwable.class,
-                        ResteasyReactiveRequestContext.class);
+                        ServerRequestContext.class);
                 ResultHandle bridgeQRExceptionParam = bridgeQRToResponse.getMethodParam(0);
                 ResultHandle bridgeQRContextParam = bridgeQRToResponse.getMethodParam(1);
                 ResultHandle castedBridgeQRMethodParam = bridgeQRToResponse.checkCast(bridgeQRExceptionParam,
@@ -130,7 +131,8 @@ final class ClassLevelExceptionMapperGenerator {
                 // Quarkus REST toResponse(...) method
                 MethodCreator qrToResponse = cc.getMethodCreator(qrToResponseDescriptor);
                 ResultHandle exceptionHandle = qrToResponse.getMethodParam(0);
-                ResultHandle contextHandle = qrToResponse.getMethodParam(1);
+                ResultHandle contextHandle = qrToResponse.checkCast(qrToResponse.getMethodParam(1),
+                        ResteasyReactiveRequestContext.class);
                 ResultHandle endpointInstanceHandle = qrToResponse.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class, "getEndpointInstance", Object.class),
                         contextHandle);
@@ -178,11 +180,12 @@ final class ClassLevelExceptionMapperGenerator {
                         } else if (RESOURCE_INFO.equals(paramDotName)) {
                             ResultHandle runtimeResourceHandle = runtimeResourceHandle(qrToResponse, contextHandle);
                             targetMethodParamHandles[i] = qrToResponse.invokeVirtualMethod(
-                                    ofMethod(RuntimeResource.class, "getLazyMethod", LazyMethod.class), runtimeResourceHandle);
+                                    ofMethod(RuntimeResource.class, "getLazyMethod", ResteasyReactiveResourceInfo.class),
+                                    runtimeResourceHandle);
                         } else if (ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
                             ResultHandle runtimeResourceHandle = runtimeResourceHandle(qrToResponse, contextHandle);
                             targetMethodParamHandles[i] = qrToResponse.invokeVirtualMethod(
-                                    ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimplifiedResourceInfo.class),
+                                    ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimpleResourceInfo.class),
                                     runtimeResourceHandle);
                         } else {
                             String parameterName = targetMethod.parameterName(i);

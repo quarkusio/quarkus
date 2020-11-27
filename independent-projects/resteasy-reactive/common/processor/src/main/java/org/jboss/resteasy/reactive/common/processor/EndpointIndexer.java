@@ -101,8 +101,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             ResteasyReactiveDotNames.SSE,
             ResteasyReactiveDotNames.SSE_EVENT_SINK,
             // extras
-            ResteasyReactiveDotNames.QUARKUS_REST_CONTEXT,
-            DotName.createSimple("org.jboss.resteasy.reactive.server.SimplifiedResourceInfo"), //TODO: fixme
+            ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT,
+            DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
             ResteasyReactiveDotNames.RESOURCE_INFO)));
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);

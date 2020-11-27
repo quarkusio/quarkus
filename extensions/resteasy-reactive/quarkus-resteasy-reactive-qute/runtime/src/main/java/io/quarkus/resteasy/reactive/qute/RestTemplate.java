@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.qute;
 
-import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
@@ -17,7 +17,7 @@ public final class RestTemplate {
 
     private static String getActionName() {
         ResteasyReactiveRequestContext otherHttpContextObject = CurrentRequestManager.get();
-        SimplifiedResourceInfo resourceMethod = otherHttpContextObject.getTarget().getSimplifiedResourceInfo();
+        SimpleResourceInfo resourceMethod = otherHttpContextObject.getTarget().getSimplifiedResourceInfo();
         return resourceMethod.getResourceClass().getSimpleName() + "/" + resourceMethod.getMethodName();
     }
 

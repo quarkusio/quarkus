@@ -13,13 +13,13 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
-import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
-import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 public class ContextParamExtractor implements ParameterExtractor {
 
@@ -36,7 +36,7 @@ public class ContextParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
         // NOTE: Same list for CDI at ContextProducers and in EndpointIndexer.CONTEXT_TYPES
-        if (type.equals(ResteasyReactiveCallbackContext.class)) {
+        if (type.equals(ServerRequestContext.class)) {
             return context;
         }
         if (type.equals(HttpHeaders.class)) {
@@ -70,7 +70,7 @@ public class ContextParamExtractor implements ParameterExtractor {
         if (type.equals(ResourceInfo.class)) {
             return context.getTarget().getLazyMethod();
         }
-        if (type.equals(SimplifiedResourceInfo.class)) {
+        if (type.equals(SimpleResourceInfo.class)) {
             return context.getTarget().getSimplifiedResourceInfo();
         }
         if (type.equals(Application.class)) {

@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
-public final class ResteasyReactiveSimplifiedResourceInfo implements SimplifiedResourceInfo {
+public final class ResteasyReactiveSimplifiedResourceInfo implements SimpleResourceInfo {
 
     private final String methodName;
     private final Class<?> resourceClass;

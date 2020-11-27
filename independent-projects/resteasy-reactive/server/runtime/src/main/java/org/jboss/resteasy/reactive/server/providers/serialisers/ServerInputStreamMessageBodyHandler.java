@@ -8,22 +8,22 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.InputStreamMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 @Provider
 public class ServerInputStreamMessageBodyHandler extends InputStreamMessageBodyHandler
-        implements ResteasyReactiveMessageBodyReader<InputStream> {
+        implements ServerMessageBodyReader<InputStream> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
         return true;
     }
 
     @Override
     public InputStream readFrom(Class<InputStream> type, Type genericType, MediaType mediaType,
-            ResteasyReactiveRequestContext context) throws WebApplicationException, IOException {
+            ServerRequestContext context) throws WebApplicationException, IOException {
         return context.getInputStream();
     }
 

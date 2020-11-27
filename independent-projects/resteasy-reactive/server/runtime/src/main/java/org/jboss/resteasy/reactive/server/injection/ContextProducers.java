@@ -14,12 +14,12 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
-import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
-import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 /**
  * Provides CDI producers for objects that can be injected via @Context
@@ -34,7 +34,7 @@ public class ContextProducers {
 
     @RequestScoped
     @Produces
-    ResteasyReactiveCallbackContext quarkusRestContext() {
+    ServerRequestContext quarkusRestContext() {
         return getContext();
     }
 
@@ -91,7 +91,7 @@ public class ContextProducers {
 
     @RequestScoped
     @Produces
-    SimplifiedResourceInfo simplifiedResourceInfo() {
+    SimpleResourceInfo simplifiedResourceInfo() {
         return getContext().getTarget().getSimplifiedResourceInfo();
     }
 

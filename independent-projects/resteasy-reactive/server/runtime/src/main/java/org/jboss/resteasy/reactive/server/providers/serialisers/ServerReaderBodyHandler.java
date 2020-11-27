@@ -9,19 +9,19 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.common.providers.serialisers.ReaderBodyHandler;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-public class ServerReaderBodyHandler extends ReaderBodyHandler implements ResteasyReactiveMessageBodyReader<Reader> {
+public class ServerReaderBodyHandler extends ReaderBodyHandler implements ServerMessageBodyReader<Reader> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, LazyMethod lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
         return type.equals(Reader.class);
     }
 
     @Override
-    public Reader readFrom(Class<Reader> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
+    public Reader readFrom(Class<Reader> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
         return new InputStreamReader(context.getInputStream(), MessageReaderUtil.charsetFromMediaType(mediaType));
     }

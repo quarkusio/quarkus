@@ -39,7 +39,7 @@ public class StreamingUtil {
         ServerSerialisers serialisers = context.getDeployment().getSerialisers();
         Class<?> entityClass = entity.getClass();
         Type entityType = context.getGenericReturnType();
-        MediaType mediaType = context.getResponseContentMediaType();
+        MediaType mediaType = context.getResponseMediaType();
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers

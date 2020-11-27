@@ -75,7 +75,6 @@ import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestSseElementType;
-import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 
 public final class ResteasyReactiveDotNames {
 
@@ -91,7 +90,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName SSE = DotName.createSimple(Sse.class.getName());
     public static final DotName SSE_EVENT_SINK = DotName.createSimple(SseEventSink.class.getName());
     public static final DotName RESOURCE_INFO = DotName.createSimple(ResourceInfo.class.getName());
-    public static final DotName QUARKUS_REST_CONTEXT = DotName.createSimple(ResteasyReactiveCallbackContext.class.getName());
+    public static final DotName SERVER_REQUEST_CONTEXT = DotName
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ServerRequestContext");
 
     public static final DotName REST_SSE_ELEMENT_TYPE = DotName.createSimple(RestSseElementType.class.getName());
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());

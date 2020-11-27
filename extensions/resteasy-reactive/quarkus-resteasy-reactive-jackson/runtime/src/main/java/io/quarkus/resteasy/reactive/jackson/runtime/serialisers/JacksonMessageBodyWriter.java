@@ -10,13 +10,13 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class JacksonMessageBodyWriter implements ResteasyReactiveMessageBodyWriter<Object> {
+public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object> {
 
     private final ObjectMapper mapper;
 
@@ -41,12 +41,12 @@ public class JacksonMessageBodyWriter implements ResteasyReactiveMessageBodyWrit
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return true;
     }
 
     @Override
-    public void writeResponse(Object o, ResteasyReactiveRequestContext context) throws WebApplicationException, IOException {
+    public void writeResponse(Object o, ServerRequestContext context) throws WebApplicationException, IOException {
         try (OutputStream stream = context.getOrCreateOutputStream()) {
             if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
                 stream.write(((String) o).getBytes());

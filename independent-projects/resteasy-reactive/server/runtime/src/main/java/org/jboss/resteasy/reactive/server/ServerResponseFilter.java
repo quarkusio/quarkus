@@ -41,7 +41,7 @@ import javax.ws.rs.container.ResourceInfo;
  * <li>{@link ContainerRequestContext}
  * <li>{@link ContainerResponseContext}
  * <li>{@link ResourceInfo}
- * <li>{@link SimplifiedResourceInfo}
+ * <li>{@link SimpleResourceInfo}
  * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown
  * </ul>
  */

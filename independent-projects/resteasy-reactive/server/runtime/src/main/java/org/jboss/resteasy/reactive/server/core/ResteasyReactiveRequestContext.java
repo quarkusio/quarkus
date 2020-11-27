@@ -42,12 +42,13 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public abstract class ResteasyReactiveRequestContext
         extends AbstractResteasyReactiveContext<ResteasyReactiveRequestContext, ServerRestHandler>
-        implements Closeable, ResteasyReactiveInjectionContext {
+        implements Closeable, ResteasyReactiveInjectionContext, ServerRequestContext {
 
     public static final Object[] EMPTY_ARRAY = new Object[0];
     protected final Deployment deployment;
@@ -446,6 +447,7 @@ public abstract class ResteasyReactiveRequestContext
      * explicit content type then this is used, otherwise it returns any content type
      * that has been explicitly set.
      */
+    @Override
     public EncodedMediaType getResponseContentType() {
         if (response != null) {
             if (response.isCreated()) {
@@ -458,7 +460,8 @@ public abstract class ResteasyReactiveRequestContext
         return responseContentType;
     }
 
-    public MediaType getResponseContentMediaType() {
+    @Override
+    public MediaType getResponseMediaType() {
         EncodedMediaType resp = getResponseContentType();
         if (resp == null) {
             return null;

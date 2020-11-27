@@ -50,9 +50,9 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerInputStrea
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 
 public class ServerSerialisers extends Serialisers {
 
@@ -163,12 +163,12 @@ public class ServerSerialisers extends Serialisers {
 
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
-        if (writer instanceof ResteasyReactiveMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
-            ResteasyReactiveMessageBodyWriter<Object> quarkusRestWriter = (ResteasyReactiveMessageBodyWriter<Object>) writer;
+        if (writer instanceof ServerMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
+            ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
             RuntimeResource target = context.getTarget();
             ServerSerialisers.encodeResponseHeaders(context);
             if (quarkusRestWriter.isWriteable(entity.getClass(), target == null ? null : target.getLazyMethod(),
-                    context.getResponseContentMediaType())) {
+                    context.getResponseMediaType())) {
                 if (mediaType != null) {
                     context.setResponseContentType(mediaType);
                 }
@@ -179,7 +179,7 @@ public class ServerSerialisers extends Serialisers {
             }
         } else {
             if (writer.isWriteable(entity.getClass(), context.getGenericReturnType(), context.getAllAnnotations(),
-                    context.getResponseContentMediaType())) {
+                    context.getResponseMediaType())) {
                 Response response = context.getResponse().get();
                 if (mediaType != null) {
                     context.setResponseContentType(mediaType);

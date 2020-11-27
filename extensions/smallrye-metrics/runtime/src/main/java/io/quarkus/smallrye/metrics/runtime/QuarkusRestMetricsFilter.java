@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.metrics.runtime;
 
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
-import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
 /**
  * Quarkus REST does not suffer from the limitations mentioned in {@link QuarkusRestEasyMetricsFilter} so we can
@@ -11,7 +11,7 @@ import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 public class QuarkusRestMetricsFilter {
 
     @ServerResponseFilter
-    public void filter(SimplifiedResourceInfo simplifiedResourceInfo) {
+    public void filter(SimpleResourceInfo simplifiedResourceInfo) {
         FilterUtil.finishRequest(System.nanoTime(), simplifiedResourceInfo.getResourceClass(),
                 simplifiedResourceInfo.getMethodName(),
                 simplifiedResourceInfo.parameterTypes());

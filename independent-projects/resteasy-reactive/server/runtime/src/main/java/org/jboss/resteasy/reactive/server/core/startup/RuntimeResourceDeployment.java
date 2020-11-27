@@ -74,8 +74,8 @@ import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
-import org.jboss.resteasy.reactive.server.spi.LazyMethod;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -183,7 +183,8 @@ public class RuntimeResourceDeployment {
         }
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
-        LazyMethod lazyMethod = new LazyMethod(method.getName(), resourceClass, parameterTypes);
+        ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
+                parameterTypes);
 
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
@@ -275,7 +276,7 @@ public class RuntimeResourceDeployment {
                             MessageBodyWriter<?> writer = buildTimeWriters.get(0);
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
                                     writer, serialisers)));
-                            if (writer instanceof ResteasyReactiveMessageBodyWriter)
+                            if (writer instanceof ServerMessageBodyWriter)
                                 score.add(ScoreSystem.Category.Writer,
                                         ScoreSystem.Diagnostic.WriterBuildTimeDirect(writer));
                             else

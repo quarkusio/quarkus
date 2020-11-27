@@ -185,4 +185,10 @@ public class JarResource implements ClassLoadingResource {
         close();
     }
 
+    @Override
+    public String toString() {
+        return "JarResource{" +
+                jarPath.getFileName() +
+                '}';
+    }
 }

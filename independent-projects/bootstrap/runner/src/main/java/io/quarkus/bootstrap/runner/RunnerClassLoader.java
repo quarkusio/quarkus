@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import java.io.IOException;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import java.util.function.Function;
 /**
  * Classloader used for production application, using the multi jar strategy
  */
-public class RunnerClassLoader extends ClassLoader {
+public final class RunnerClassLoader extends ClassLoader {
 
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
@@ -73,15 +72,15 @@ public class RunnerClassLoader extends ClassLoader {
             if (loaded != null) {
                 return loaded;
             }
-            ClassLoadingResource[] resources;
+            final ClassLoadingResource[] resources;
             if (packageName == null) {
                 resources = resourceDirectoryMap.get("");
             } else {
-                String dirName = packageName.replace(".", "/");
+                String dirName = packageName.replace('.', '/');
                 resources = resourceDirectoryMap.get(dirName);
             }
             if (resources != null) {
-                String classResource = name.replace(".", "/") + ".class";
+                String classResource = name.replace('.', '/') + ".class";
                 for (ClassLoadingResource resource : resources) {
                     byte[] data = resource.getResourceData(classResource);
                     if (data == null) {
@@ -120,14 +119,14 @@ public class RunnerClassLoader extends ClassLoader {
         return null;
     }
 
-    private String sanitizeName(String name) {
-        if (name.startsWith("/")) {
+    private String sanitizeName(final String name) {
+        if (name.charAt(0) == '/') {
             return name.substring(1);
         }
         return name;
     }
 
-    private ClassLoadingResource[] getClassLoadingResources(String name) {
+    private ClassLoadingResource[] getClassLoadingResources(final String name) {
         ClassLoadingResource[] resources = directlyIndexedResourcesIndexMap.get(name);
         if (resources != null) {
             return resources;
@@ -150,7 +149,7 @@ public class RunnerClassLoader extends ClassLoader {
     }
 
     @Override
-    protected Enumeration<URL> findResources(String name) throws IOException {
+    protected Enumeration<URL> findResources(String name) {
         name = sanitizeName(name);
         if (nonExistentResources.contains(name)) {
             return Collections.emptyEnumeration();

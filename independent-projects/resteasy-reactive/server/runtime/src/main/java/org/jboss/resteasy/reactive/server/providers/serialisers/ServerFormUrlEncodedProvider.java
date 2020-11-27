@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import javax.ws.rs.ConstrainedTo;
@@ -38,8 +37,8 @@ public class ServerFormUrlEncodedProvider extends FormUrlEncodedProvider
 
     @Override
     public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, MediaType mediaType,
-            InputStream entityStream) throws WebApplicationException, IOException {
-        return doReadFrom(mediaType, entityStream);
+            ResteasyReactiveRequestContext context) throws WebApplicationException, IOException {
+        return doReadFrom(mediaType, context.getInputStream());
     }
 
     @Override

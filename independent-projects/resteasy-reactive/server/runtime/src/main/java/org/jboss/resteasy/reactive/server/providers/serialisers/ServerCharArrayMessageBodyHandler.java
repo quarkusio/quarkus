@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -34,8 +33,8 @@ public class ServerCharArrayMessageBodyHandler extends CharArrayMessageBodyHandl
     }
 
     @Override
-    public char[] readFrom(Class<char[]> type, Type genericType, MediaType mediaType, InputStream entityStream)
+    public char[] readFrom(Class<char[]> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
             throws WebApplicationException, IOException {
-        return MessageReaderUtil.readString(entityStream, mediaType).toCharArray();
+        return MessageReaderUtil.readString(context.getInputStream(), mediaType).toCharArray();
     }
 }

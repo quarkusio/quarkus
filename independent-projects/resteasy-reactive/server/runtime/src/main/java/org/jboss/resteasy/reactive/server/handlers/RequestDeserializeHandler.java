@@ -93,8 +93,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext, MediaType requestType)
             throws IOException {
         if (reader instanceof ResteasyReactiveMessageBodyReader) {
-            return ((ResteasyReactiveMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType,
-                    requestContext.getInputStream());
+            return ((ResteasyReactiveMessageBodyReader<?>) reader).readFrom((Class) type, type, requestType, requestContext);
         }
         return reader.readFrom((Class) type, type, getAnnotations(requestContext), requestType,
                 requestContext.getHttpHeaders().getRequestHeaders(), requestContext.getInputStream());

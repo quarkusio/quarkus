@@ -1,12 +1,12 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.BooleanMessageBodyHandler;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
@@ -19,8 +19,8 @@ public class ServerBooleanMessageBodyHandler extends BooleanMessageBodyHandler
     }
 
     @Override
-    public Boolean readFrom(Class<Boolean> type, Type genericType, MediaType mediaType, InputStream entityStream)
+    public Boolean readFrom(Class<Boolean> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
             throws WebApplicationException, IOException {
-        return Boolean.valueOf(super.readFrom(entityStream, false));
+        return Boolean.valueOf(super.readFrom(context.getInputStream(), false));
     }
 }

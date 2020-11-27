@@ -19,6 +19,20 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk8</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk7</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-reflect</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-common</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                    <runnerParentFirstArtifacts>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk8</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk7</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-reflect</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-common</runnerParentFirstArtifact>
+                    </runnerParentFirstArtifacts>
                     <lesserPriorityArtifacts>
                         <!--
                         see https://github.com/quarkusio/quarkus/issues/8405
@@ -29,4 +43,14 @@
             </plugin>
         </plugins>
     </build>
+    <dependencies>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
+        </dependency>
+    </dependencies>
 </project>

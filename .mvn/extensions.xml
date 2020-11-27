@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extensions>
+  <extension>
+    <groupId>org.srcdeps.mvn</groupId>
+    <artifactId>srcdeps-maven-local-repository</artifactId>
+    <version>4.0.0</version>
+  </extension>
+  <extension>
+    <groupId>org.srcdeps.mvn</groupId>
+    <artifactId>srcdeps-maven-enforcer</artifactId>
+    <version>4.0.0</version>
+  </extension>
+</extensions>

@@ -60,6 +60,7 @@ public class ClassTransformingBuildStep {
         Map<String, Set<String>> constScanning = new HashMap<>();
         Set<String> eager = new HashSet<>();
         Set<String> nonCacheable = new HashSet<>();
+        Map<String, Integer> classReaderOptions = new HashMap<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i.getVisitorFunction());
@@ -75,6 +76,7 @@ public class ClassTransformingBuildStep {
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
             }
+            classReaderOptions.put(i.getClassToTransform(), i.getClassReaderOptions());
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
@@ -132,7 +134,8 @@ public class ClassTransformingBuildStep {
                                 for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                                     visitor = i.apply(className, visitor);
                                 }
-                                cr.accept(visitor, 0);
+                                int parsingOptions = classReaderOptions.getOrDefault(className, 0);
+                                cr.accept(visitor, parsingOptions);
                                 byte[] data = writer.toByteArray();
                                 if (BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR != null) {
                                     File debugPath = new File(BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR);

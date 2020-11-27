@@ -32,6 +32,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     final boolean cacheable;
 
+    final int classReaderOptions;
+
     public BytecodeTransformerBuildItem(String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
         this(classToTransform, visitorFunction, null);
@@ -49,22 +51,23 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     public BytecodeTransformerBuildItem(boolean eager, String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction, boolean cacheable) {
-        this(eager, classToTransform, visitorFunction, null, cacheable);
+        this(eager, classToTransform, visitorFunction, null, cacheable, 0);
     }
 
     public BytecodeTransformerBuildItem(boolean eager, String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction, Set<String> requireConstPoolEntry) {
-        this(eager, classToTransform, visitorFunction, requireConstPoolEntry, false);
+        this(eager, classToTransform, visitorFunction, requireConstPoolEntry, false, 0);
     }
 
     public BytecodeTransformerBuildItem(boolean eager, String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction, Set<String> requireConstPoolEntry,
-            boolean cacheable) {
+            boolean cacheable, int classReaderOptions) {
         this.eager = eager;
         this.classToTransform = classToTransform;
         this.visitorFunction = visitorFunction;
         this.requireConstPoolEntry = requireConstPoolEntry;
         this.cacheable = cacheable;
+        this.classReaderOptions = classReaderOptions;
     }
 
     public String getClassToTransform() {
@@ -85,5 +88,9 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     public boolean isCacheable() {
         return cacheable;
+    }
+
+    public int getClassReaderOptions() {
+        return classReaderOptions;
     }
 }

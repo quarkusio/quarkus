@@ -77,6 +77,29 @@ class SimpleBean {
 
 NOTE: The logger instances are cached internally. Therefore, a logger injected e.g. into a `@RequestScoped` bean is shared for all bean instances to avoid possible performance penalty associated with logger instantiation.
 
+=== Logging with Panache
+
+Instead of declaring or injecting an `org.jboss.logging.Logger`, you can use the simplified logging API:
+
+[source,java]
+----
+import io.quarkus.runtime.logging.Log; // <1>
+
+class MyService { // <2>
+    public void doSomething() {
+        Log.info("Simple!"); // <3>
+    }
+}
+----
+<1> The `io.quarkus.runtime.logging.Log` class mirrors the JBoss Logging API, except all methods are `static`.
+<2> Note that the class doesn't declare a logger field.
+    This is because during application build, a `private static final org.jboss.logging.Logger` field is created automatically, in each class that uses the `Log` API.
+    The fully quallified name of the class that calls the `Log` methods is used as a logger name.
+<3> Finally, during application build, all calls to `Log` methods are rewritten to regular JBoss Logging calls on the logger field.
+
+WARNING: Only use the `Log` API in application classes, not in external dependencies.
+         `Log` method calls that are not processed by Quarkus at build time will throw an exception.
+
 === What about Apache Log4j ?
 
 link:https://logging.apache.org/log4j/2.x/[Log4j] is a logging implementation: it contains a logging backend and a logging facade.

@@ -177,6 +177,12 @@ public final class BeanArchives {
             return this.index.getAnnotationsWithRepeatable(annotationName, index);
         }
 
+        @Override
+        public Collection<ClassInfo> getKnownUsers(DotName className) {
+            // TODO additionalClasses?
+            return index.getKnownUsers(className);
+        }
+
         private void getAllKnownSubClasses(DotName className, Set<ClassInfo> allKnown, Set<DotName> processedClasses) {
             final Set<DotName> subClassesToProcess = new HashSet<DotName>();
             subClassesToProcess.add(className);

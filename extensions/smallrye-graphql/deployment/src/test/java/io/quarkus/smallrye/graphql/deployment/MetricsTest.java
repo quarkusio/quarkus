@@ -36,7 +36,7 @@ public class MetricsTest {
     public void testQuery() {
         MetricRegistry metricRegistry = MetricRegistries.get(MetricRegistry.Type.VENDOR);
         SimpleTimer metric = metricRegistry.getSimpleTimers()
-                .get(new MetricID("mp_graphql", new Tag("type", "Query"), new Tag("name", "ping")));
+                .get(new MetricID("mp_graphql", new Tag("type", "QUERY"), new Tag("name", "ping"), new Tag("source", "false")));
         assertNotNull(metric, "Metrics should be registered eagerly");
 
         String pingRequest = getPayload("{\n" +

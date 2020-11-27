@@ -387,6 +387,8 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
         <description>My customer entities</description>
 
         <properties>
+            <property name="hibernate.archive.autodetection" value="class" /> <1>
+        
             <!-- Connection specific -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
 
@@ -405,6 +407,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
     </persistence-unit>
 </persistence>
 ----
+<1> Enable automatic scanning of the entity classes.
 
 When using the `persistence.xml` configuration you are configuring Hibernate ORM directly,
 so in this case the appropriate reference is the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations[documentation on hibernate.org].
@@ -421,6 +424,12 @@ If the entities come from external projects
 or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
 
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
+
+[NOTE]
+====
+If you configure your persistence unit in a `persistence.xml` file and want to enable entity scanning,
+set the `hibernate.archive.autodetection` property to `class` in the `persistence.xml`.
+====
 
 == Hibernate ORM in development mode
 

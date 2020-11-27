@@ -29,7 +29,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
      * Generate JAX-RS UPDATE method that exposes {@link RestDataResource#update(Object, Object)}.
      * Expose {@link RestDataResource#update(Object, Object)} via JAX-RS method.
      * Generated code looks more or less like this:
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;Transactional
@@ -69,7 +69,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
 
         // Add method annotations
         addPathAnnotation(methodCreator,
-                appendToPath(resourceProperties.getMethodPath(RESOURCE_UPDATE_METHOD_NAME), "{id}"));
+                appendToPath(resourceProperties.getPath(RESOURCE_UPDATE_METHOD_NAME), "{id}"));
         addTransactionalAnnotation(methodCreator);
         addPutAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");

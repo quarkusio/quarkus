@@ -1,9 +1,7 @@
 package io.quarkus.rest.data.panache.deployment.properties;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -34,10 +32,16 @@ public class ResourcePropertiesProvider {
     public ResourceProperties getForInterface(String resourceInterface) {
         DotName resourceInterfaceName = DotName.createSimple(resourceInterface);
         AnnotationInstance annotation = findResourcePropertiesAnnotation(resourceInterfaceName);
+        Map<String, MethodProperties> methodProperties = new HashMap<>();
+        collectMethodProperties(resourceInterfaceName, methodProperties);
 
-        return new ResourceProperties(isHal(annotation), getPath(annotation, resourceInterface),
-                isPaged(annotation), getHalCollectionName(annotation, resourceInterface),
-                getMethodPropertiesInfoMap(resourceInterfaceName));
+        return new ResourceProperties(
+                isExposed(annotation),
+                getPath(annotation, resourceInterface),
+                isPaged(annotation),
+                isHal(annotation),
+                getHalCollectionName(annotation, resourceInterface),
+                methodProperties);
     }
 
     private AnnotationInstance findResourcePropertiesAnnotation(DotName className) {
@@ -54,37 +58,22 @@ public class ResourcePropertiesProvider {
         return null;
     }
 
-    private Map<String, MethodProperties> getMethodPropertiesInfoMap(DotName className) {
-        Set<String> methodNames = new HashSet<>();
-        Map<String, AnnotationInstance> annotations = new HashMap<>();
-        collectMethods(className, methodNames, annotations);
-
-        Map<String, MethodProperties> methodPropertiesInfoMap = new HashMap<>();
-        for (String methodName : methodNames) {
-            methodPropertiesInfoMap.put(methodName, getMethodPropertiesInfo(annotations.get(methodName)));
-        }
-
-        return methodPropertiesInfoMap;
-    }
-
-    private void collectMethods(DotName className, Set<String> methodNames,
-            Map<String, AnnotationInstance> annotations) {
+    private void collectMethodProperties(DotName className, Map<String, MethodProperties> properties) {
         ClassInfo classInfo = index.getClassByName(className);
         if (classInfo == null) {
             return;
         }
         for (MethodInfo method : classInfo.methods()) {
-            if (method.hasAnnotation(METHOD_PROPERTIES_ANNOTATION)) {
-                annotations.putIfAbsent(method.name(), method.annotation(METHOD_PROPERTIES_ANNOTATION));
+            if (!properties.containsKey(method.name()) && method.hasAnnotation(METHOD_PROPERTIES_ANNOTATION)) {
+                properties.put(method.name(), getMethodProperties(method.annotation(METHOD_PROPERTIES_ANNOTATION)));
             }
-            methodNames.add(method.name());
         }
         if (classInfo.superName() != null) {
-            collectMethods(classInfo.superName(), methodNames, annotations);
+            collectMethodProperties(classInfo.superName(), properties);
         }
     }
 
-    private MethodProperties getMethodPropertiesInfo(AnnotationInstance annotation) {
+    private MethodProperties getMethodProperties(AnnotationInstance annotation) {
         return new MethodProperties(isExposed(annotation), getPath(annotation));
     }
 

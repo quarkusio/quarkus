@@ -41,7 +41,9 @@ public class RestDataProcessor {
             ResourceMetadata resourceMetadata = resourceBuildItem.getResourceMetadata();
             ResourceProperties resourceProperties = getResourceProperties(resourcePropertiesProvider,
                     resourceMetadata, resourcePropertiesBuildItems);
-            jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties);
+            if (resourceProperties.isExposed()) {
+                jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties);
+            }
         }
     }
 

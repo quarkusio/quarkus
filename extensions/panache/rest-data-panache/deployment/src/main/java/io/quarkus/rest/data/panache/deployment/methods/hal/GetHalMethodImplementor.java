@@ -22,7 +22,7 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
     /**
      * Expose {@link RestDataResource#get(Object)} via HAL JAX-RS method.
      * Generated code looks more or less like this:
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;GET
@@ -46,7 +46,7 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
                 resourceMetadata.getIdType());
 
         // Add method annotations
-        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getMethodPath(RESOURCE_METHOD_NAME), "{id}"));
+        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");

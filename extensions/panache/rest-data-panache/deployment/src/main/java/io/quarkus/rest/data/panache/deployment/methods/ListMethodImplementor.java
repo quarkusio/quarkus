@@ -87,7 +87,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
         // Add method annotations
         addGetAnnotation(methodCreator);
-        addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
+        addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
         addSortQueryParamValidatorAnnotation(methodCreator);
@@ -127,7 +127,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
         // Add method annotations
         addGetAnnotation(methodCreator);
-        addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
+        addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");

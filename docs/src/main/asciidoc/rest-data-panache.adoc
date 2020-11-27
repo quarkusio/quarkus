@@ -163,13 +163,14 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 `@ResourceProperties`
 
-* `hal` - in addition to the standard `application/json` responses, generates additional methods that can return `application/hal+json` responses if requested via an `Accept` header.
-Default is `false`.
+* `exposed` - whether resource could be exposed. A global resource property that can be overridden for each method. Default is `true`.
 * `path` - resource base path. Default path is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
 * `paged` - whether collection responses should be paged or not.
 First, last, previous and next page URIs are included in the response headers if they exist.
 Request page index and size are taken from the `page` and `size` query parameters that default to `0` and `20` respectively.
 Default is `true`.
+* `hal` - in addition to the standard `application/json` responses, generates additional methods that can return `application/hal+json` responses if requested via an `Accept` header.
+Default is `false`.
 
 `@MethodProperties`
 

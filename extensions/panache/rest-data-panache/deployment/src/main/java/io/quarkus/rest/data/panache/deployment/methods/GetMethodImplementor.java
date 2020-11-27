@@ -23,7 +23,7 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
     /**
      * Generate JAX-RS GET method that exposes {@link RestDataResource#get(Object)}.
      * Generated code looks more or less like this:
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;GET
@@ -51,7 +51,7 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
                 resourceMetadata.getIdType());
 
         // Add method annotations
-        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getMethodPath(RESOURCE_METHOD_NAME), "{id}"));
+        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");

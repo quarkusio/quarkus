@@ -48,7 +48,7 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
                 resourceMetadata.getIdType());
 
         // Add method annotations
-        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getMethodPath(RESOURCE_METHOD_NAME), "{id}"));
+        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
         addTransactionalAnnotation(methodCreator);
         addDeleteAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");

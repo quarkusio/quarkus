@@ -14,7 +14,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.HasPriority;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
@@ -52,12 +52,12 @@ public class RuntimeInterceptorDeployment {
     private final InterceptorHandler globalInterceptorHandler;
     private final DeploymentInfo info;
     private final Consumer<Closeable> closeTaskHandler;
-    private final QuarkusRestConfiguration quarkusRestConfiguration;
+    private final ConfigurationImpl configurationImpl;
 
-    public RuntimeInterceptorDeployment(DeploymentInfo info, QuarkusRestConfiguration quarkusRestConfiguration,
+    public RuntimeInterceptorDeployment(DeploymentInfo info, ConfigurationImpl configurationImpl,
             Consumer<Closeable> closeTaskHandler) {
         this.info = info;
-        this.quarkusRestConfiguration = quarkusRestConfiguration;
+        this.configurationImpl = configurationImpl;
         this.closeTaskHandler = closeTaskHandler;
         ResourceInterceptors interceptors = info.getInterceptors();
         globalRequestInterceptorsMap = createInterceptorInstances(
@@ -205,7 +205,7 @@ public class RuntimeInterceptorDeployment {
 
                 DynamicFeatureResourceInfo dynamicFeatureResourceInfo = new DynamicFeatureResourceInfo(clazz, method); // TODO: look into using LazyMethod
                 DynamicFeatureContext context = new DynamicFeatureContext(
-                        dynamicallyConfiguredInterceptors, quarkusRestConfiguration, info.getFactoryCreator());
+                        dynamicallyConfiguredInterceptors, configurationImpl, info.getFactoryCreator());
                 for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {
                     DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
                     feature.configure(dynamicFeatureResourceInfo, context);

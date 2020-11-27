@@ -13,7 +13,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 
 @Path("/")
 public class AsyncRequestFilterResource {
@@ -21,7 +21,7 @@ public class AsyncRequestFilterResource {
     private static final Logger LOG = Logger.getLogger(AsyncRequestFilterResource.class);
 
     @GET
-    public Response threeSyncRequestFilters(@Context QuarkusRestContext ctx,
+    public Response threeSyncRequestFilters(@Context ResteasyReactiveCallbackContext ctx,
             @HeaderParam("Filter1") @DefaultValue("") String filter1,
             @HeaderParam("Filter2") @DefaultValue("") String filter2,
             @HeaderParam("Filter3") @DefaultValue("") String filter3,
@@ -41,7 +41,7 @@ public class AsyncRequestFilterResource {
 
     @Path("non-response")
     @GET
-    public String threeSyncRequestFiltersNonResponse(@Context QuarkusRestContext ctx,
+    public String threeSyncRequestFiltersNonResponse(@Context ResteasyReactiveCallbackContext ctx,
             @HeaderParam("Filter1") @DefaultValue("") String filter1,
             @HeaderParam("Filter2") @DefaultValue("") String filter2,
             @HeaderParam("Filter3") @DefaultValue("") String filter3,

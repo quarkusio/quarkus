@@ -13,13 +13,13 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
-import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestSse;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestSseEventSink;
 import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
 
 public class ContextParamExtractor implements ParameterExtractor {
 
@@ -36,7 +36,7 @@ public class ContextParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
         // NOTE: Same list for CDI at ContextProducers and in EndpointIndexer.CONTEXT_TYPES
-        if (type.equals(QuarkusRestContext.class)) {
+        if (type.equals(ResteasyReactiveCallbackContext.class)) {
             return context;
         }
         if (type.equals(HttpHeaders.class)) {
@@ -54,7 +54,7 @@ public class ContextParamExtractor implements ParameterExtractor {
             return response;
         }
         if (type.equals(SseEventSink.class)) {
-            QuarkusRestSseEventSink sink = new QuarkusRestSseEventSink(context);
+            SseEventSinkImpl sink = new SseEventSinkImpl(context);
             context.setSseEventSink(sink);
             return sink;
         }
@@ -65,7 +65,7 @@ public class ContextParamExtractor implements ParameterExtractor {
             return context.getProviders();
         }
         if (type.equals(Sse.class)) {
-            return QuarkusRestSse.INSTANCE;
+            return SseImpl.INSTANCE;
         }
         if (type.equals(ResourceInfo.class)) {
             return context.getTarget().getLazyMethod();

@@ -75,7 +75,7 @@ import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestSseElementType;
-import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 
 public final class ResteasyReactiveDotNames {
 
@@ -91,7 +91,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName SSE = DotName.createSimple(Sse.class.getName());
     public static final DotName SSE_EVENT_SINK = DotName.createSimple(SseEventSink.class.getName());
     public static final DotName RESOURCE_INFO = DotName.createSimple(ResourceInfo.class.getName());
-    public static final DotName QUARKUS_REST_CONTEXT = DotName.createSimple(QuarkusRestContext.class.getName());
+    public static final DotName QUARKUS_REST_CONTEXT = DotName.createSimple(ResteasyReactiveCallbackContext.class.getName());
 
     public static final DotName REST_SSE_ELEMENT_TYPE = DotName.createSimple(RestSseElementType.class.getName());
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
@@ -198,9 +198,9 @@ public final class ResteasyReactiveDotNames {
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
     public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_FILTER = DotName
-            .createSimple("org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerResponseFilter");
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerResponseFilter");
     public static final DotName QUARKUS_REST_CONTAINER_REQUEST_FILTER = DotName
-            .createSimple("org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestFilter");
+            .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter");
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.

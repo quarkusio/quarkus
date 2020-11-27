@@ -11,12 +11,12 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 public class ClientBuilderImpl extends ClientBuilder {
 
     private ClientProxies clientProxies;
-    private QuarkusRestConfiguration configuration;
+    private ConfigurationImpl configuration;
     private SSLContext sslContext;
     private KeyStore trustStore;
     private KeyStore keyStore;
@@ -26,7 +26,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     @Override
     public ClientBuilder withConfig(Configuration config) {
-        this.configuration = new QuarkusRestConfiguration(config);
+        this.configuration = new ConfigurationImpl(config);
         return this;
     }
 

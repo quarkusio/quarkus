@@ -17,8 +17,8 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.DelegatingP
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
-import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionContext;
-import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionTarget;
+import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
+import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -40,10 +40,10 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             .replace('.', '/');
     private static final String PARAMETER_CONVERTER_DESCRIPTOR = "L" + PARAMETER_CONVERTER_BINARY_NAME + ";";
 
-    private static final String QUARKUS_REST_INJECTION_TARGET_BINARY_NAME = QuarkusRestInjectionTarget.class.getName()
+    private static final String QUARKUS_REST_INJECTION_TARGET_BINARY_NAME = ResteasyReactiveInjectionTarget.class.getName()
             .replace('.', '/');
 
-    private static final String QUARKUS_REST_INJECTION_CONTEXT_BINARY_NAME = QuarkusRestInjectionContext.class.getName()
+    private static final String QUARKUS_REST_INJECTION_CONTEXT_BINARY_NAME = ResteasyReactiveInjectionContext.class.getName()
             .replace('.', '/');
     private static final String QUARKUS_REST_INJECTION_CONTEXT_DESCRIPTOR = "L" + QUARKUS_REST_INJECTION_CONTEXT_BINARY_NAME
             + ";";

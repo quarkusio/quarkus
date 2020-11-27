@@ -17,7 +17,7 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response.StatusType;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.headers.LinkHeaders;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestStatusType;
+import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
 
 public class ClientResponseContextImpl implements ClientResponseContext {
 
@@ -53,7 +53,7 @@ public class ClientResponseContextImpl implements ClientResponseContext {
 
     @Override
     public StatusType getStatusInfo() {
-        return new QuarkusRestStatusType(state.getResponseStatus(), state.getResponseReasonPhrase());
+        return new StatusTypeImpl(state.getResponseStatus(), state.getResponseReasonPhrase());
     }
 
     @Override

@@ -15,13 +15,13 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.ReaderInterceptorContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 public class ClientReaderInterceptorContextImpl extends AbstractClientInterceptorContextImpl
         implements ReaderInterceptorContext {
 
-    final QuarkusRestConfiguration configuration;
+    final ConfigurationImpl configuration;
     final Serialisers serialisers;
     InputStream inputStream;
     boolean done = false;
@@ -32,7 +32,7 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
     public ClientReaderInterceptorContextImpl(Annotation[] annotations, Class<?> entityClass, Type entityType,
             MediaType mediaType,
             Map<String, Object> properties, MultivaluedMap<String, String> headers,
-            QuarkusRestConfiguration configuration, Serialisers serialisers, InputStream inputStream,
+            ConfigurationImpl configuration, Serialisers serialisers, InputStream inputStream,
             ReaderInterceptor[] interceptors) {
         super(annotations, entityClass, entityType, mediaType, properties);
         this.configuration = configuration;

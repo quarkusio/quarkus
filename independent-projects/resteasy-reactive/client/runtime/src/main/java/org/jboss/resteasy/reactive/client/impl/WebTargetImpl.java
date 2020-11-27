@@ -12,15 +12,15 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestUriBuilder;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class WebTargetImpl implements WebTarget {
 
     protected UriBuilder uriBuilder;
     private final HttpClient client;
-    private final QuarkusRestConfiguration configuration;
+    private final ConfigurationImpl configuration;
     private boolean chunked = false;
     private final ClientImpl restClient;
     final ClientRestHandler[] handlerChain;
@@ -28,7 +28,7 @@ public class WebTargetImpl implements WebTarget {
     final ThreadSetupAction requestContext;
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
-            QuarkusRestConfiguration configuration,
+            ConfigurationImpl configuration,
             ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.client = client;
@@ -48,11 +48,11 @@ public class WebTargetImpl implements WebTarget {
      * @return
      */
     private static UriBuilder uriBuilderFromUri(URI uri) {
-        return new QuarkusRestUriBuilder().uri(uri);
+        return new UriBuilderImpl().uri(uri);
     }
 
     private static UriBuilder uriBuilderFromUri(String uri) {
-        return new QuarkusRestUriBuilder().uri(uri);
+        return new UriBuilderImpl().uri(uri);
     }
 
     @Override
@@ -75,7 +75,7 @@ public class WebTargetImpl implements WebTarget {
     }
 
     @Override
-    public QuarkusRestConfiguration getConfiguration() {
+    public ConfigurationImpl getConfiguration() {
         abortIfClosed();
         return configuration;
     }
@@ -249,11 +249,11 @@ public class WebTargetImpl implements WebTarget {
         }
 
         String[] stringValues = toStringValues(values);
-        QuarkusRestUriBuilder copy;
-        if (uriBuilder instanceof QuarkusRestUriBuilder) {
-            copy = (QuarkusRestUriBuilder) uriBuilder.clone();
+        UriBuilderImpl copy;
+        if (uriBuilder instanceof UriBuilderImpl) {
+            copy = (UriBuilderImpl) uriBuilder.clone();
         } else {
-            copy = QuarkusRestUriBuilder.fromTemplate(uriBuilder.toTemplate());
+            copy = UriBuilderImpl.fromTemplate(uriBuilder.toTemplate());
         }
 
         copy.clientQueryParam(name, (Object[]) stringValues);
@@ -261,7 +261,7 @@ public class WebTargetImpl implements WebTarget {
     }
 
     protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder,
-            QuarkusRestConfiguration configuration) {
+            ConfigurationImpl configuration) {
         return new WebTargetImpl(restClient, client, uriBuilder, configuration, handlerChain, abortHandlerChain,
                 requestContext);
     }
@@ -297,7 +297,7 @@ public class WebTargetImpl implements WebTarget {
     }
 
     protected InvocationBuilderImpl createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
-            QuarkusRestConfiguration configuration) {
+            ConfigurationImpl configuration) {
         return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration, handlerChain,
                 abortHandlerChain, requestContext);
     }

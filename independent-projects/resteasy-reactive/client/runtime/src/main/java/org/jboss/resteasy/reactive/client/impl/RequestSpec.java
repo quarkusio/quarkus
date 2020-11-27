@@ -1,14 +1,14 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 public class RequestSpec {
-    final QuarkusRestConfiguration configuration;
+    final ConfigurationImpl configuration;
     final ClientRequestHeaders headers;
 
     boolean chunked;
 
-    public RequestSpec(QuarkusRestConfiguration configuration) {
+    public RequestSpec(ConfigurationImpl configuration) {
         this.configuration = configuration;
         headers = new ClientRequestHeaders(configuration);
     }

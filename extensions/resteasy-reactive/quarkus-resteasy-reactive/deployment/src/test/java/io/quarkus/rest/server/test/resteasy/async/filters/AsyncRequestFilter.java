@@ -7,11 +7,11 @@ import java.util.concurrent.Executors;
 import javax.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
-import org.jboss.resteasy.reactive.server.spi.QuarkusRestContainerRequestFilter;
+import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter;
 
-public abstract class AsyncRequestFilter implements QuarkusRestContainerRequestFilter {
+public abstract class AsyncRequestFilter implements ResteasyReactiveContainerRequestFilter {
 
     private final String name;
     private volatile String callbackException;
@@ -48,7 +48,7 @@ public abstract class AsyncRequestFilter implements QuarkusRestContainerRequestF
             ctx.abortWith(Response.ok(name).build());
         } else if ("async-throw-late".equals(action)) {
             ctx.suspend();
-            QuarkusRestContext quarkusRestContext = ctx.getQuarkusRestContext();
+            ResteasyReactiveCallbackContext resteasyReactiveCallbackContext = ctx.getQuarkusRestContext();
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.submit(() -> {
                 try {
@@ -57,7 +57,7 @@ public abstract class AsyncRequestFilter implements QuarkusRestContainerRequestF
                     // TODO Auto-generated catch block
                     LOG.error("Error:", e);
                 }
-                quarkusRestContext.registerCompletionCallback((t) -> {
+                resteasyReactiveCallbackContext.registerCompletionCallback((t) -> {
                     if (callbackException != null)
                         throw new RuntimeException("Callback called twice");
                     callbackException = Objects.toString(t);

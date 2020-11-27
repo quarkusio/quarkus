@@ -27,7 +27,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -89,7 +88,7 @@ import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestConfig;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
@@ -185,7 +184,7 @@ public class ResteasyReactiveProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     public void setupEndpoints(Capabilities capabilities, BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
-            QuarkusRestConfig config,
+            ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
@@ -268,7 +267,8 @@ public class ResteasyReactiveProcessor {
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
                     .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
                     .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths)
-                    .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
+                    .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
+                            config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
                     .setAdditionalReaders(additionalReaders)
                     .setHttpAnnotationToMethod(resourceScanningResultBuildItem.get().getHttpAnnotationToMethod())
                     .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters)
@@ -437,7 +437,8 @@ public class ResteasyReactiveProcessor {
             Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
             RuntimeValue<Deployment> deployment = recorder.createDeployment(new DeploymentInfo()
                     .setInterceptors(interceptors.sort())
-                    .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
+                    .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
+                            config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
                     .setExceptionMapping(exceptionMapping)
                     .setCtxResolvers(ctxResolvers)
                     .setFeatures(feats)

@@ -29,14 +29,14 @@ import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
-import org.jboss.resteasy.reactive.server.injection.QuarkusRestInjectionContext;
+import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerResponseContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestSseEventSink;
 import org.jboss.resteasy.reactive.server.jaxrs.RequestImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -47,7 +47,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public abstract class ResteasyReactiveRequestContext
         extends AbstractResteasyReactiveContext<ResteasyReactiveRequestContext, ServerRestHandler>
-        implements Closeable, QuarkusRestInjectionContext {
+        implements Closeable, ResteasyReactiveInjectionContext {
 
     public static final Object[] EMPTY_ARRAY = new Object[0];
     protected final Deployment deployment;
@@ -124,7 +124,7 @@ public abstract class ResteasyReactiveRequestContext
     private List<UriMatch> matchedURIs;
 
     private AsyncResponseImpl asyncResponse;
-    private QuarkusRestSseEventSink sseEventSink;
+    private SseEventSinkImpl sseEventSink;
     private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
     private WriterInterceptor[] writerInterceptors;
@@ -657,11 +657,11 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
-    public QuarkusRestSseEventSink getSseEventSink() {
+    public SseEventSinkImpl getSseEventSink() {
         return sseEventSink;
     }
 
-    public void setSseEventSink(QuarkusRestSseEventSink sseEventSink) {
+    public void setSseEventSink(SseEventSinkImpl sseEventSink) {
         this.sseEventSink = sseEventSink;
     }
 

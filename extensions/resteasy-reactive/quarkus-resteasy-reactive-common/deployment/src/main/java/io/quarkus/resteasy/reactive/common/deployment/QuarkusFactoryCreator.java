@@ -5,14 +5,14 @@ import java.util.function.Function;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
 
 public class QuarkusFactoryCreator implements Function<String, BeanFactory<Object>> {
 
-    final QuarkusRestCommonRecorder recorder;
+    final ResteasyReactiveCommonRecorder recorder;
     final BeanContainer beanContainer;
 
-    public QuarkusFactoryCreator(QuarkusRestCommonRecorder recorder, BeanContainer beanContainer) {
+    public QuarkusFactoryCreator(ResteasyReactiveCommonRecorder recorder, BeanContainer beanContainer) {
         this.recorder = recorder;
         this.beanContainer = beanContainer;
     }

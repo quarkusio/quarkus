@@ -18,7 +18,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.UnmanagedBeanFactory;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
@@ -33,12 +33,12 @@ public class FeatureContextImpl implements FeatureContext {
     protected final ResourceInterceptors interceptors;
     private final ExceptionMapping exceptionMapping;
     private final Function<Class<?>, BeanFactory<?>> beanFactoryCreator;
-    private final QuarkusRestConfiguration configuration;
+    private final ConfigurationImpl configuration;
 
     private boolean filtersNeedSorting = false;
 
     public FeatureContextImpl(ResourceInterceptors interceptors, ExceptionMapping exceptionMapping,
-            QuarkusRestConfiguration configuration, Function<Class<?>, BeanFactory<?>> beanFactoryCreator) {
+            ConfigurationImpl configuration, Function<Class<?>, BeanFactory<?>> beanFactoryCreator) {
         this.interceptors = interceptors;
         this.exceptionMapping = exceptionMapping;
         this.configuration = configuration;

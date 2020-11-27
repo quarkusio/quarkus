@@ -22,7 +22,7 @@ import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
-import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -34,7 +34,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
 import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -47,7 +47,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
-public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
+public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
 
     public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
         @Override
@@ -114,7 +114,7 @@ public class ResteasyReactiveRecorder extends QuarkusRestCommonRecorder {
 
     public Handler<RoutingContext> handler(RuntimeValue<Deployment> deploymentRuntimeValue) {
         Deployment deployment = deploymentRuntimeValue.getValue();
-        QuarkusRestInitialHandler initialHandler = new QuarkusRestInitialHandler(deployment);
+        RestInitialHandler initialHandler = new RestInitialHandler(deployment);
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {

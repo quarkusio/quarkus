@@ -21,17 +21,17 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 public class ClientRequestContextImpl implements ClientRequestContext {
 
     private final Client client;
-    private final QuarkusRestConfiguration configuration;
+    private final ConfigurationImpl configuration;
     private OutputStream entityStream;
     private RestClientRequestContext restClientRequestContext;
 
     public ClientRequestContextImpl(RestClientRequestContext restClientRequestContext, ClientImpl client,
-            QuarkusRestConfiguration configuration) {
+            ConfigurationImpl configuration) {
         this.restClientRequestContext = restClientRequestContext;
         this.client = client;
         this.configuration = configuration;

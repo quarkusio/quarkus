@@ -5,7 +5,7 @@ import java.util.Map;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.RuntimeDelegate;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestLinkBuilder;
+import org.jboss.resteasy.reactive.common.jaxrs.LinkBuilderImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 /**
@@ -22,7 +22,7 @@ public class LinkDelegate implements RuntimeDelegate.HeaderDelegate<Link> {
 
         Parser(final String value) {
             this.value = value;
-            builder = new QuarkusRestLinkBuilder();
+            builder = new LinkBuilderImpl();
         }
 
         public Link getLink() {

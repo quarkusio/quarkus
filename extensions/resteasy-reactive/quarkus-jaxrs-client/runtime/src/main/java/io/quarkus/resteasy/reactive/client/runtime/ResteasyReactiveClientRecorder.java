@@ -15,13 +15,13 @@ import org.jboss.resteasy.reactive.client.impl.ClientSerialisers;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
-public class ResteasyReactiveClientRecorder extends QuarkusRestCommonRecorder {
+public class ResteasyReactiveClientRecorder extends ResteasyReactiveCommonRecorder {
 
     public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
         @Override

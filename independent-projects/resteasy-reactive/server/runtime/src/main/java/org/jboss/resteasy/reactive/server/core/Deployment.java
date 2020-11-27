@@ -10,14 +10,14 @@ import java.util.function.Supplier;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeParameterConverter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
-import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
@@ -31,21 +31,21 @@ public class Deployment {
     private final EntityWriter dynamicEntityWriter;
     private final String prefix;
     private final ParamConverterProviders paramConverterProviders;
-    private final QuarkusRestConfiguration configuration;
+    private final ConfigurationImpl configuration;
     private final Supplier<Application> applicationSupplier;
     private final ThreadSetupAction threadSetupAction;
     private final RequestContextFactory requestContextFactory;
     private final List<ResourceRequestFilterHandler> preMatchHandlers;
-    private final List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers;
+    private final List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
 
     public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
             ServerRestHandler[] abortHandlerChain,
             EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,
-            QuarkusRestConfiguration configuration, Supplier<Application> applicationSupplier,
+            ConfigurationImpl configuration, Supplier<Application> applicationSupplier,
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
             List<ResourceRequestFilterHandler> preMatchHandlers,
-            List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers) {
+            List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -65,7 +65,7 @@ public class Deployment {
         return applicationSupplier;
     }
 
-    public QuarkusRestConfiguration getConfiguration() {
+    public ConfigurationImpl getConfiguration() {
         return configuration;
     }
 
@@ -106,7 +106,7 @@ public class Deployment {
         return preMatchHandlers;
     }
 
-    public List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> getClassMappers() {
+    public List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> getClassMappers() {
         return classMappers;
     }
 

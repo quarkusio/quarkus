@@ -21,7 +21,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class InvocationBuilderImpl implements Invocation.Builder {
@@ -38,7 +38,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient,
             WebTargetImpl target,
-            QuarkusRestConfiguration configuration, ClientRestHandler[] handlerChain,
+            ConfigurationImpl configuration, ClientRestHandler[] handlerChain,
             ClientRestHandler[] abortHandlerChain, ThreadSetupAction requestContext) {
         this.uri = uri;
         this.restClient = restClient;

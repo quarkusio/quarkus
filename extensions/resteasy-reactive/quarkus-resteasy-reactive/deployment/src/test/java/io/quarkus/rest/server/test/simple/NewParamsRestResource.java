@@ -22,7 +22,7 @@ import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestMatrix;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
-import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
 import org.junit.jupiter.api.Assertions;
 
@@ -62,7 +62,7 @@ public class NewParamsRestResource {
             // Extras
             ResourceInfo resourceInfo,
             SimplifiedResourceInfo simplifiedResourceInfo,
-            QuarkusRestContext restContext,
+            ResteasyReactiveCallbackContext restContext,
             HttpServerRequest httpServerRequest,
             HttpServerResponse httpServerResponse) {
         Assertions.assertNotNull(uriInfo);

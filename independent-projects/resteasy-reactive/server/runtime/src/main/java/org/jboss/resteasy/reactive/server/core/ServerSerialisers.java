@@ -29,7 +29,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
@@ -37,7 +37,7 @@ import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestWriterInterceptorContext;
+import org.jboss.resteasy.reactive.server.jaxrs.WriterInterceptorContextImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerBooleanMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerByteArrayMessageBodyHandler;
@@ -202,7 +202,7 @@ public class ServerSerialisers extends Serialisers {
 
     public static void runWriterInterceptors(ResteasyReactiveRequestContext context, Object entity, MessageBodyWriter writer,
             Response response, WriterInterceptor[] writerInterceptor, ServerSerialisers serialisers) throws IOException {
-        QuarkusRestWriterInterceptorContext wc = new QuarkusRestWriterInterceptorContext(context, writerInterceptor, writer,
+        WriterInterceptorContextImpl wc = new WriterInterceptorContextImpl(context, writerInterceptor, writer,
                 context.getAllAnnotations(), entity.getClass(), context.getGenericReturnType(), entity, response.getMediaType(),
                 response.getHeaders(), serialisers);
         wc.proceed();
@@ -221,7 +221,7 @@ public class ServerSerialisers extends Serialisers {
      * This is probably more complex than it needs to be, but some RESTEasy tests show that the response type
      * is influenced by the provider's weight of the media types
      */
-    public BestMatchingServerWriterResult findBestMatchingServerWriter(QuarkusRestConfiguration configuration,
+    public BestMatchingServerWriterResult findBestMatchingServerWriter(ConfigurationImpl configuration,
             Class<?> entityType, ServerHttpRequest request) {
         // TODO: refactor to have use common code from findWriters
         Class<?> klass = entityType;

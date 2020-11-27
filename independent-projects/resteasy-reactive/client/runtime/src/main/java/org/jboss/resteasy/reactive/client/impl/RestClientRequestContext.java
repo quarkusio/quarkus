@@ -28,8 +28,8 @@ import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -49,12 +49,12 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private boolean responseTypeSpecified;
     private final ClientImpl restClient;
     final ClientRequestHeaders requestHeaders;
-    final QuarkusRestConfiguration configuration;
+    final ConfigurationImpl configuration;
     private final boolean registerBodyHandler;
     // will be used to check if we need to throw a WebApplicationException
     // see Javadoc of javax.ws.rs.client.Invocation or javax.ws.rs.client.SyncInvoker
     private final boolean checkSuccessfulFamily;
-    private final CompletableFuture<QuarkusRestResponse> result;
+    private final CompletableFuture<ResponseImpl> result;
     /**
      * Only initialised if we have request or response filters
      */
@@ -75,7 +75,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public RestClientRequestContext(ClientImpl restClient,
             HttpClient httpClient, String httpMethod, URI uri,
-            QuarkusRestConfiguration configuration, ClientRequestHeaders requestHeaders,
+            ConfigurationImpl configuration, ClientRequestHeaders requestHeaders,
             Entity<?> entity, GenericType<?> responseType, boolean registerBodyHandler, Map<String, Object> properties,
             ClientRestHandler[] handlerChain,
             ClientRestHandler[] abortHandlerChain,
@@ -181,7 +181,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         this.entity = Entity.entity(entity, mediaType, annotations);
     }
 
-    public CompletableFuture<QuarkusRestResponse> getResult() {
+    public CompletableFuture<ResponseImpl> getResult() {
         return result;
     }
 
@@ -235,7 +235,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         result.completeExceptionally(throwable);
     }
 
-    public QuarkusRestConfiguration getConfiguration() {
+    public ConfigurationImpl getConfiguration() {
         return configuration;
     }
 

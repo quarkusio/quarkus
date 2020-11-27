@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.util;
 import java.util.List;
 import java.util.Map;
 import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
-import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.spi.RestHandler;
@@ -20,11 +20,11 @@ public interface RuntimeResourceVisitor {
     }
 
     public static void visitRuntimeResources(
-            List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers,
+            List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
             RuntimeResourceVisitor visitor) {
-        for (RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch> classMapper : classMappers) {
+        for (RequestMapper.RequestPath<RestInitialHandler.InitialMatch> classMapper : classMappers) {
             String template = classMapper.template.template;
-            QuarkusRestInitialHandler.InitialMatch initialMatch = classMapper.value;
+            RestInitialHandler.InitialMatch initialMatch = classMapper.value;
             if ((initialMatch.handlers == null) || initialMatch.handlers.length == 0) {
                 continue;
             }

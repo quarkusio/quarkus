@@ -12,7 +12,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
-import org.jboss.resteasy.reactive.client.impl.ClientResponseBuilderImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientResponseBuilderImplImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
@@ -45,7 +45,7 @@ public class ClientResponseRestHandler implements ClientRestHandler {
                 }
             }
         }
-        ClientResponseBuilderImpl builder = new ClientResponseBuilderImpl();
+        ClientResponseBuilderImplImpl builder = new ClientResponseBuilderImplImpl();
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
         builder.invocationState(context);

@@ -11,7 +11,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 /**
@@ -20,9 +20,9 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
  */
 public class ClientRequestHeaders {
     protected CaseInsensitiveMap<Object> headers = new CaseInsensitiveMap<Object>();
-    protected QuarkusRestConfiguration configuration;
+    protected ConfigurationImpl configuration;
 
-    public ClientRequestHeaders(final QuarkusRestConfiguration configuration) {
+    public ClientRequestHeaders(final ConfigurationImpl configuration) {
         this.configuration = configuration;
     }
 

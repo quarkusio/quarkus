@@ -36,9 +36,9 @@ public class SseBroadcasterImpl implements SseBroadcaster {
     public synchronized void register(SseEventSink sseEventSink) {
         Objects.requireNonNull(sseEventSink);
         checkClosed();
-        if (sseEventSink instanceof QuarkusRestSseEventSink == false)
+        if (sseEventSink instanceof SseEventSinkImpl == false)
             throw new IllegalArgumentException("Can only work with Quarkus-REST instances: " + sseEventSink);
-        ((QuarkusRestSseEventSink) sseEventSink).register(this);
+        ((SseEventSinkImpl) sseEventSink).register(this);
         sinks.add(sseEventSink);
     }
 
@@ -70,13 +70,13 @@ public class SseBroadcasterImpl implements SseBroadcaster {
         }
     }
 
-    synchronized void fireClose(QuarkusRestSseEventSink sseEventSink) {
+    synchronized void fireClose(SseEventSinkImpl sseEventSink) {
         for (Consumer<SseEventSink> listener : onCloseListeners) {
             listener.accept(sseEventSink);
         }
     }
 
-    synchronized void fireException(QuarkusRestSseEventSink sseEventSink, Throwable t) {
+    synchronized void fireException(SseEventSinkImpl sseEventSink, Throwable t) {
         for (BiConsumer<SseEventSink, Throwable> listener : onErrorListeners) {
             listener.accept(sseEventSink, t);
         }

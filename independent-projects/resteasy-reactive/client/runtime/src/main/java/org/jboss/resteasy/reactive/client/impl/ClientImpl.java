@@ -61,14 +61,14 @@ import org.jboss.resteasy.reactive.client.handlers.ClientResponseRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 public class ClientImpl implements Client {
 
     final ClientContext clientContext;
     final boolean closeVertx;
     final HttpClient httpClient;
-    final QuarkusRestConfiguration configuration;
+    final ConfigurationImpl configuration;
     final HostnameVerifier hostnameVerifier;
     final SSLContext sslContext;
     private boolean isClosed;
@@ -76,10 +76,10 @@ public class ClientImpl implements Client {
     final ClientRestHandler[] abortHandlerChain;
     final Vertx vertx;
 
-    public ClientImpl(QuarkusRestConfiguration configuration, ClientContext clientContext,
+    public ClientImpl(ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext) {
-        this.configuration = configuration != null ? configuration : new QuarkusRestConfiguration(RuntimeType.CLIENT);
+        this.configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
         this.clientContext = clientContext;
         this.hostnameVerifier = hostnameVerifier;
         this.sslContext = sslContext;
@@ -140,7 +140,7 @@ public class ClientImpl implements Client {
     public WebTarget target(UriBuilder uriBuilder) {
         abortIfClosed();
         Objects.requireNonNull(uriBuilder);
-        return new WebTargetImpl(this, httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), handlerChain,
+        return new WebTargetImpl(this, httpClient, uriBuilder, new ConfigurationImpl(configuration), handlerChain,
                 abortHandlerChain, null);
     }
 
@@ -174,7 +174,7 @@ public class ClientImpl implements Client {
     }
 
     @Override
-    public QuarkusRestConfiguration getConfiguration() {
+    public ConfigurationImpl getConfiguration() {
         abortIfClosed();
         return configuration;
     }

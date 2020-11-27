@@ -19,7 +19,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.client.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.providers.serialisers.BooleanMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.ByteArrayMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.CharArrayMessageBodyHandler;
@@ -81,7 +81,7 @@ public class ClientSerialisers extends Serialisers {
     // FIXME: pass InvocationState to wrap args?
     public static Buffer invokeClientWriter(Entity<?> entity, Object entityObject, Class<?> entityClass, Type entityType,
             MultivaluedMap<String, String> headerMap, MessageBodyWriter writer, WriterInterceptor[] writerInterceptors,
-            Map<String, Object> properties, Serialisers serialisers, QuarkusRestConfiguration configuration)
+            Map<String, Object> properties, Serialisers serialisers, ConfigurationImpl configuration)
             throws IOException {
 
         if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
@@ -104,7 +104,7 @@ public class ClientSerialisers extends Serialisers {
             Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> headers, MessageBodyWriter writer,
             WriterInterceptor[] writerInterceptors, Map<String, Object> properties, Serialisers serialisers,
-            QuarkusRestConfiguration configuration) throws IOException {
+            ConfigurationImpl configuration) throws IOException {
         ClientWriterInterceptorContextImpl wc = new ClientWriterInterceptorContextImpl(writerInterceptors, writer,
                 annotations, entityClass, entityType, entity, mediaType, headers, properties, serialisers, configuration);
         wc.proceed();
@@ -114,7 +114,7 @@ public class ClientSerialisers extends Serialisers {
     public static Object invokeClientReader(Annotation[] annotations, Class<?> entityClass, Type entityType,
             MediaType mediaType, Map<String, Object> properties,
             MultivaluedMap metadata, Serialisers serialisers, InputStream in, ReaderInterceptor[] interceptors,
-            QuarkusRestConfiguration configuration)
+            ConfigurationImpl configuration)
             throws WebApplicationException, IOException {
         // FIXME: perhaps optimise for when we have no interceptor?
         ClientReaderInterceptorContextImpl context = new ClientReaderInterceptorContextImpl(annotations,

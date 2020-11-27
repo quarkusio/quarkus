@@ -15,7 +15,7 @@ import org.jboss.resteasy.reactive.spi.RestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasyReactiveContext<T, H>, H extends RestHandler<T>>
-        implements Runnable, Closeable, QuarkusRestContext {
+        implements Runnable, Closeable, ResteasyReactiveCallbackContext {
     protected static final Logger log = Logger.getLogger(AbstractResteasyReactiveContext.class);
     protected H[] handlers;
     protected H[] abortHandlerChain;

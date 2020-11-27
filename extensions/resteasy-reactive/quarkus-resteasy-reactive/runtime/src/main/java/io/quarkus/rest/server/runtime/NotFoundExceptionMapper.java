@@ -35,7 +35,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
-import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
@@ -52,7 +52,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private final static Variant JSON_VARIANT = new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null);
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
-    static volatile List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers;
+    static volatile List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
 
     private volatile static String httpRoot = "";
     private volatile static List<String> servletMappings = Collections.emptyList();
@@ -292,7 +292,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         }
 
         public static List<ResourceDescription> fromClassMappers(
-                List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers) {
+                List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers) {
             Map<String, ResourceDescription> descriptions = new HashMap<>();
             RuntimeResourceVisitor.visitRuntimeResources(classMappers, new RuntimeResourceVisitor() {
 

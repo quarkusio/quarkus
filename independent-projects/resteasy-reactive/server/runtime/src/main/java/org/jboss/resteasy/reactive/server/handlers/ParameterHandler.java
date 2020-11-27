@@ -6,7 +6,6 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
-import org.jboss.resteasy.reactive.common.util.QuarkusRestUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
@@ -121,7 +120,11 @@ public class ParameterHandler implements ServerRestHandler {
                 requestContext.resume(toThrow);
             }
         } else if (toThrow != null) {
-            throw QuarkusRestUtil.sneakyThrow(toThrow);
+            throw sneakyThrow(toThrow);
         }
+    }
+
+    public static <E extends Throwable> RuntimeException sneakyThrow(Throwable e) throws E {
+        throw (E) e;
     }
 }

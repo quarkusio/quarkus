@@ -26,7 +26,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.core.QuarkusRestContext;
+import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.SimplifiedResourceInfo;
@@ -283,7 +283,8 @@ final class CustomProviderGenerator {
         ResultHandle qrContainerReqCtxHandle = filter.checkCast(containerReqCtxHandle,
                 ResteasyReactiveContainerRequestContext.class);
         ResultHandle qrCtxHandle = filter.invokeInterfaceMethod(
-                ofMethod(ResteasyReactiveContainerRequestContext.class, "getQuarkusRestContext", QuarkusRestContext.class),
+                ofMethod(ResteasyReactiveContainerRequestContext.class, "getQuarkusRestContext",
+                        ResteasyReactiveCallbackContext.class),
                 qrContainerReqCtxHandle);
         return filter.checkCast(qrCtxHandle, ResteasyReactiveRequestContext.class);
     }

@@ -15,7 +15,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestReaderInterceptorContext;
+import org.jboss.resteasy.reactive.server.jaxrs.ReaderInterceptorContextImpl;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
@@ -59,7 +59,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                         if (interceptors == null) {
                             result = readFrom(reader, requestContext, requestType);
                         } else {
-                            result = new QuarkusRestReaderInterceptorContext(requestContext,
+                            result = new ReaderInterceptorContextImpl(requestContext,
                                     getAnnotations(requestContext),
                                     type, type, requestType, reader, requestContext.getInputStream(), interceptors, serialisers)
                                             .proceed();

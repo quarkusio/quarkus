@@ -16,7 +16,7 @@ import javax.ws.rs.RuntimeType;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Feature;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
@@ -31,11 +31,11 @@ import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
 import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
 import org.jboss.resteasy.reactive.server.handlers.ExceptionHandler;
-import org.jboss.resteasy.reactive.server.handlers.QuarkusRestInitialHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.FeatureContextImpl;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
@@ -79,9 +79,9 @@ public class RuntimeDeploymentManager {
 
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
-        QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping);
+        ConfigurationImpl configurationImpl = configureFeatures(features, interceptors, exceptionMapping);
 
-        RuntimeInterceptorDeployment interceptorDeployment = new RuntimeInterceptorDeployment(info, quarkusRestConfiguration,
+        RuntimeInterceptorDeployment interceptorDeployment = new RuntimeInterceptorDeployment(info, configurationImpl,
                 closeTaskHandler);
         ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler(
                 new Function<Class<?>, BeanFactory.BeanInstance<?>>() {
@@ -128,7 +128,7 @@ public class RuntimeDeploymentManager {
             }
 
         }
-        List<RequestMapper.RequestPath<QuarkusRestInitialHandler.InitialMatch>> classMappers = new ArrayList<>();
+        List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers = new ArrayList<>();
         for (Map.Entry<URITemplate, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> entry : mappers
                 .entrySet()) {
             URITemplate classTemplate = entry.getKey();
@@ -146,7 +146,7 @@ public class RuntimeDeploymentManager {
                 }
             }
             classMappers.add(new RequestMapper.RequestPath<>(true, classTemplate,
-                    new QuarkusRestInitialHandler.InitialMatch(new ServerRestHandler[] { classRoutingHandler },
+                    new RestInitialHandler.InitialMatch(new ServerRestHandler[] { classRoutingHandler },
                             maxMethodTemplateNameCount + classTemplateNameCount)));
         }
 
@@ -185,17 +185,17 @@ public class RuntimeDeploymentManager {
 
         Deployment deployment = new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
-                prefix, paramConverterProviders, quarkusRestConfiguration, applicationSupplier,
+                prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers);
 
         return deployment;
     }
 
     //TODO: this needs plenty more work to support all possible types and provide all information the FeatureContext allows
-    private QuarkusRestConfiguration configureFeatures(Features features, ResourceInterceptors interceptors,
+    private ConfigurationImpl configureFeatures(Features features, ResourceInterceptors interceptors,
             ExceptionMapping exceptionMapping) {
 
-        QuarkusRestConfiguration configuration = new QuarkusRestConfiguration(RuntimeType.SERVER);
+        ConfigurationImpl configuration = new ConfigurationImpl(RuntimeType.SERVER);
         if (features.getResourceFeatures().isEmpty()) {
             return configuration;
         }

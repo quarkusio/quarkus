@@ -18,7 +18,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
@@ -55,7 +54,7 @@ import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestConfig;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.runtime.RuntimeValue;
@@ -72,7 +71,7 @@ public class JaxrsClientProcessor {
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             ResourceScanningResultBuildItem resourceScanningResultBuildItem,
-            QuarkusRestConfig config,
+            ResteasyReactiveConfig config,
             RecorderContext recorderContext,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer) {
@@ -96,7 +95,8 @@ public class JaxrsClientProcessor {
                 .setIndex(index)
                 .setExistingConverters(new HashMap<>())
                 .setScannedResourcePaths(resourceScanningResultBuildItem.getScannedResourcePaths())
-                .setConfig(new ResteasyReactiveConfig(config.inputBufferSize.asLongValue(), config.singleDefaultProduces))
+                .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(config.inputBufferSize.asLongValue(),
+                        config.singleDefaultProduces))
                 .setAdditionalReaders(additionalReaders)
                 .setHttpAnnotationToMethod(resourceScanningResultBuildItem.getHttpAnnotationToMethod())
                 .setInjectableBeans(new HashMap<>())

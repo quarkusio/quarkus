@@ -11,7 +11,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestConfiguration;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 public class InboundSseEventImpl implements InboundSseEvent {
 
@@ -22,9 +22,9 @@ public class InboundSseEventImpl implements InboundSseEvent {
     private MediaType mediaType;
     private long reconnectDelay = SseEvent.RECONNECT_NOT_SET;
     private Serialisers serialisers;
-    private QuarkusRestConfiguration configuration;
+    private ConfigurationImpl configuration;
 
-    public InboundSseEventImpl(QuarkusRestConfiguration configuration, Serialisers serialisers) {
+    public InboundSseEventImpl(ConfigurationImpl configuration, Serialisers serialisers) {
         this.configuration = configuration;
         this.serialisers = serialisers;
     }

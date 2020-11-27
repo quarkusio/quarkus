@@ -11,14 +11,14 @@ import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.resteasy.reactive.common.runtime.QuarkusRestCommonRecorder;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.RuntimeTypeItem;
 
 public class SerializersUtil {
 
-    public static void setupSerializers(QuarkusRestCommonRecorder recorder,
+    public static void setupSerializers(ResteasyReactiveCommonRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,

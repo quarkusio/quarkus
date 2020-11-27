@@ -3,11 +3,11 @@ package org.jboss.resteasy.reactive.server.handlers;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.common.jaxrs.QuarkusRestResponse;
+import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.QuarkusRestResponseBuilderImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
@@ -34,11 +34,11 @@ public class ResponseHandler implements ServerRestHandler {
                     requestContext.setGenericReturnType(existing.getEntity().getClass());
                 //TODO: super inefficent
                 responseBuilder = Response.fromResponse((Response) result);
-                if ((result instanceof QuarkusRestResponse)) {
+                if ((result instanceof ResponseImpl)) {
                     // needed in order to preserve entity annotations
-                    QuarkusRestResponse quarkusRestResponse = (QuarkusRestResponse) result;
-                    if (quarkusRestResponse.getEntityAnnotations() != null) {
-                        requestContext.setAdditionalAnnotations(quarkusRestResponse.getEntityAnnotations());
+                    ResponseImpl responseImpl = (ResponseImpl) result;
+                    if (responseImpl.getEntityAnnotations() != null) {
+                        requestContext.setAdditionalAnnotations(responseImpl.getEntityAnnotations());
                     }
                 }
             }
@@ -50,11 +50,11 @@ public class ResponseHandler implements ServerRestHandler {
             if (!mediaTypeAlreadyExists && produces != null) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
-            if ((responseBuilder instanceof QuarkusRestResponseBuilderImpl)) {
+            if ((responseBuilder instanceof ResponseBuilderImpl)) {
                 // avoid unnecessary copying of HTTP headers from the Builder to the Response
                 requestContext
                         .setResponse(
-                                new LazyResponse.Existing(((QuarkusRestResponseBuilderImpl) responseBuilder).build(false)));
+                                new LazyResponse.Existing(((ResponseBuilderImpl) responseBuilder).build(false)));
             } else {
                 requestContext.setResponse(new LazyResponse.Existing(responseBuilder.build()));
             }
@@ -70,21 +70,21 @@ public class ResponseHandler implements ServerRestHandler {
                         if (result instanceof GenericEntity) {
                             GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                             requestContext.setGenericReturnType(genericEntity.getType());
-                            responseBuilder = QuarkusRestResponse.ok(genericEntity.getEntity());
+                            responseBuilder = ResponseImpl.ok(genericEntity.getEntity());
                         } else if (result == null) {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = QuarkusRestResponse.noContent();
+                            responseBuilder = ResponseImpl.noContent();
                         } else {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = QuarkusRestResponse.ok(result);
+                            responseBuilder = ResponseImpl.ok(result);
                         }
                         EncodedMediaType produces = requestContext.getResponseContentType();
                         if (produces != null) {
                             responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
                         }
-                        if ((responseBuilder instanceof QuarkusRestResponseBuilderImpl)) {
+                        if ((responseBuilder instanceof ResponseBuilderImpl)) {
                             // avoid unnecessary copying of HTTP headers from the Builder to the Response
-                            response = ((QuarkusRestResponseBuilderImpl) responseBuilder).build(false);
+                            response = ((ResponseBuilderImpl) responseBuilder).build(false);
                         } else {
                             response = responseBuilder.build();
                         }

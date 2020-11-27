@@ -225,7 +225,7 @@ class HibernateValidatorProcessor {
                 allConsideredAnnotations));
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
-        Map<DotName, Set<SimpleMethodSignatureKey>> inheritedAnnotationsToBeValidated = new HashMap<>();
+        Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation = new HashMap<>();
         Set<String> detectedBuiltinConstraints = new HashSet<>();
 
         for (DotName consideredAnnotation : allConsideredAnnotations) {
@@ -254,7 +254,7 @@ class HibernateValidatorProcessor {
                     reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             annotation.target().asMethod().returnType());
-                    contributeMethodsWithInheritedValidation(inheritedAnnotationsToBeValidated, indexView,
+                    contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
                             annotation.target().asMethod());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                     contributeClass(classNamesToBeValidated, indexView,
@@ -264,7 +264,7 @@ class HibernateValidatorProcessor {
                             // FIXME this won't work in the case of synthetic parameters
                             annotation.target().asMethodParameter().method().parameters()
                                     .get(annotation.target().asMethodParameter().position()));
-                    contributeMethodsWithInheritedValidation(inheritedAnnotationsToBeValidated, indexView,
+                    contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
                             annotation.target().asMethodParameter().method());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
@@ -285,7 +285,7 @@ class HibernateValidatorProcessor {
                 .produce(new AnnotationsTransformerBuildItem(
                         new MethodValidatedAnnotationsTransformer(allConsideredAnnotations,
                                 jaxRsMethods,
-                                inheritedAnnotationsToBeValidated)));
+                                methodsWithInheritedValidation)));
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
         for (DotName className : classNamesToBeValidated) {
@@ -363,13 +363,23 @@ class HibernateValidatorProcessor {
     }
 
     private static void contributeMethodsWithInheritedValidation(
-            Map<DotName, Set<SimpleMethodSignatureKey>> inheritedAnnotationsToBeValidated,
+            Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation,
             IndexView indexView, MethodInfo method) {
         ClassInfo clazz = method.declaringClass();
+
+        methodsWithInheritedValidation.computeIfAbsent(clazz.name(), k -> new HashSet<>())
+                .add(new SimpleMethodSignatureKey(method));
+
         if (Modifier.isInterface(clazz.flags())) {
-            // Remember annotated interface methods that must be validated
-            inheritedAnnotationsToBeValidated.computeIfAbsent(clazz.name(), k -> new HashSet<>())
-                    .add(new SimpleMethodSignatureKey(method));
+            for (ClassInfo implementor : indexView.getAllKnownImplementors(clazz.name())) {
+                methodsWithInheritedValidation.computeIfAbsent(implementor.name(), k -> new HashSet<>())
+                        .add(new SimpleMethodSignatureKey(method));
+            }
+        } else {
+            for (ClassInfo subclass : indexView.getAllKnownSubclasses(clazz.name())) {
+                methodsWithInheritedValidation.computeIfAbsent(subclass.name(), k -> new HashSet<>())
+                        .add(new SimpleMethodSignatureKey(method));
+            }
         }
     }
 
@@ -397,6 +407,18 @@ class HibernateValidatorProcessor {
                     MethodInfo method = annotation.target().asMethod();
                     jaxRsMethods.computeIfAbsent(method.declaringClass().name(), k -> new HashSet<>())
                             .add(new SimpleMethodSignatureKey(method));
+
+                    if (Modifier.isInterface(method.declaringClass().flags())) {
+                        for (ClassInfo implementor : indexView.getAllKnownImplementors(method.declaringClass().name())) {
+                            jaxRsMethods.computeIfAbsent(implementor.name(), k -> new HashSet<>())
+                                    .add(new SimpleMethodSignatureKey(method));
+                        }
+                    } else {
+                        for (ClassInfo subclass : indexView.getAllKnownSubclasses(method.declaringClass().name())) {
+                            jaxRsMethods.computeIfAbsent(subclass.name(), k -> new HashSet<>())
+                                    .add(new SimpleMethodSignatureKey(method));
+                        }
+                    }
                 }
             }
         }

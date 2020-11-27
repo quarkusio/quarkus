@@ -31,6 +31,8 @@ public class JarResource implements ClassLoadingResource {
     private final Lock readLock;
     private final Lock writeLock;
 
+    private volatile ProtectionDomain protectionDomain;
+
     //Guarded by the read/write lock; open/close operations on the JarFile require the exclusive lock,
     //while using an existing open reference can use the shared lock.
     //If a lock is acquired, and as long as it's owned, we ensure that the zipFile reference
@@ -45,6 +47,22 @@ public class JarResource implements ClassLoadingResource {
         final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
         this.readLock = readWriteLock.readLock();
         this.writeLock = readWriteLock.writeLock();
+    }
+
+    @Override
+    public void init(ClassLoader runnerClassLoader) {
+        final URL url;
+        try {
+            String path = jarPath.toAbsolutePath().toString();
+            if (!path.startsWith("/")) {
+                path = '/' + path;
+            }
+            URI uri = new URI("file", null, path, null);
+            url = uri.toURL();
+        } catch (URISyntaxException | MalformedURLException e) {
+            throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
+        }
+        this.protectionDomain = new ProtectionDomain(new CodeSource(url, (Certificate[]) null), null, runnerClassLoader, null);
     }
 
     @Override
@@ -106,20 +124,8 @@ public class JarResource implements ClassLoadingResource {
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
-        final URL url;
-        try {
-            String path = jarPath.toAbsolutePath().toString();
-            if (!path.startsWith("/")) {
-                path = '/' + path;
-            }
-            URI uri = new URI("file", null, path, null);
-            url = uri.toURL();
-        } catch (URISyntaxException | MalformedURLException e) {
-            throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
-        }
-        CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        return new ProtectionDomain(codesource, null, classLoader, null);
+    public ProtectionDomain getProtectionDomain() {
+        return protectionDomain;
     }
 
     private JarFile readLockAcquireAndGetJarReference() {

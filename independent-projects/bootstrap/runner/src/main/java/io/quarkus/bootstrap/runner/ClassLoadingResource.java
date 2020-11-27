@@ -5,13 +5,22 @@ import java.security.ProtectionDomain;
 
 public interface ClassLoadingResource {
 
+    /**
+     * A lifecycle hook that should be called when the ClassLoader to which this resource belongs to
+     * is constructed
+     */
+    void init(ClassLoader runnerClassLoader);
+
     byte[] getResourceData(String resource);
 
     URL getResourceURL(String resource);
 
     ManifestInfo getManifestInfo();
 
-    ProtectionDomain getProtectionDomain(ClassLoader runnerClassLoader);
+    /**
+     * This can only be called after {@code init} has been called
+     */
+    ProtectionDomain getProtectionDomain();
 
     void close();
 

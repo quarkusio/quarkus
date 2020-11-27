@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -77,6 +78,11 @@ class TemplateImpl implements Template {
                             emitter.fail(f);
                         }
                     }));
+        }
+
+        @Override
+        public Uni<String> createUni() {
+            return Uni.createFrom().completionStage(this::renderAsync);
         }
 
         @Override

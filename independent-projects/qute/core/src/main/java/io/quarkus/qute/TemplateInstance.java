@@ -1,9 +1,9 @@
 package io.quarkus.qute;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-import org.reactivestreams.Publisher;
 
 /**
  * Represents an instance of {@link Template}.
@@ -76,23 +76,25 @@ public interface TemplateInstance {
     CompletionStage<String> renderAsync();
 
     /**
-     * Each subscription triggers rendering.
+     * Create a new {@link Multi} that can be used to consume chunks of the rendered template. In particular, each item
+     * represents a part of the rendered template.
+     * <p>
+     * This operation does not trigger rendering. Instead, each subscription triggers a new rendering of the template.
      * 
-     * @return a publisher that can be used to consume chunks of the rendered template
-     * @throws UnsupportedOperationException If no {@link PublisherFactory} service provider is found
-     * @deprecated Use {@link #createMulti()} instead
-     */
-    @Deprecated
-    default Publisher<String> publisher() {
-        return createMulti();
-    }
-
-    /**
-     * Each subscription triggers rendering.
-     * 
-     * @return a Multi that can be used to consume chunks of the rendered template
+     * @return a new Multi
+     * @see Multi#subscribe()
      */
     Multi<String> createMulti();
+
+    /**
+     * Create a new {@link Uni} that can be used to consume the rendered template.
+     * <p>
+     * This operation does not trigger rendering. Instead, each subscription triggers a new rendering of the template.
+     * 
+     * @return a new Uni
+     * @see Uni#subscribe()
+     */
+    Uni<String> createUni();
 
     /**
      * Triggers rendering.

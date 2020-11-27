@@ -19,12 +19,15 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
+import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.gizmo.Gizmo;
 
 public class JavaCompilationProvider implements CompilationProvider {
+
+    private static final Logger log = Logger.getLogger(JavaCompilationProvider.class);
 
     // -g is used to make the java compiler generate all debugging info
     // -parameters is used to generate metadata for reflection on method parameters
@@ -71,12 +74,14 @@ public class JavaCompilationProvider implements CompilationProvider {
             }
 
             for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
-                System.out.format("%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
+                log.logf(diagnostic.getKind() == Diagnostic.Kind.ERROR ? Logger.Level.ERROR : Logger.Level.WARN,
+                        "%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
                         diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
             }
             if (!fileManagerDiagnostics.getDiagnostics().isEmpty()) {
                 for (Diagnostic<? extends JavaFileObject> diagnostic : fileManagerDiagnostics.getDiagnostics()) {
-                    System.out.format("%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
+                    log.logf(diagnostic.getKind() == Diagnostic.Kind.ERROR ? Logger.Level.ERROR : Logger.Level.WARN,
+                            "%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
                             diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
                 }
                 fileManager.close();

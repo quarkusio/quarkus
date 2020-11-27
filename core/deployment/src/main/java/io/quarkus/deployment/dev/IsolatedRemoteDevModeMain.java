@@ -142,7 +142,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
         return null;
     }
 
-    void regenerateApplication(Set<String> ignore) {
+    void regenerateApplication(Set<String> ignore, ClassScanResult ignore2) {
         generateApplication();
     }
 
@@ -256,7 +256,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             boolean scanResult = RuntimeUpdatesProcessor.INSTANCE.doScan(true);
             if (!scanResult && !copiedStaticResources.isEmpty()) {
                 scanResult = true;
-                regenerateApplication(Collections.emptySet());
+                regenerateApplication(Collections.emptySet(), new ClassScanResult());
             }
             copiedStaticResources.clear();
             if (scanResult) {

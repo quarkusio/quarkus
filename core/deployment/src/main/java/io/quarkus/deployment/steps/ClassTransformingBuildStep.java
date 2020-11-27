@@ -31,16 +31,26 @@ import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.index.ConstPoolScanner;
+import io.quarkus.runtime.LaunchMode;
 
 public class ClassTransformingBuildStep {
 
     private static final Logger log = Logger.getLogger(ClassTransformingBuildStep.class);
 
+    /**
+     * Cache used for dev mode to save the result for classes that have not changed.
+     */
+    private static final Map<String, TransformedClassesBuildItem.TransformedClass> transformedClassesCache = new ConcurrentHashMap<>();
+
     @BuildStep
     TransformedClassesBuildItem handleClassTransformation(List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems,
-            ApplicationArchivesBuildItem appArchives) throws ExecutionException, InterruptedException {
+            ApplicationArchivesBuildItem appArchives, LiveReloadBuildItem liveReloadBuildItem,
+            LaunchModeBuildItem launchModeBuildItem)
+            throws ExecutionException, InterruptedException {
         if (bytecodeTransformerBuildItems.isEmpty()) {
             return new TransformedClassesBuildItem(Collections.emptyMap());
         }
@@ -49,6 +59,7 @@ public class ClassTransformingBuildStep {
         Set<String> noConstScanning = new HashSet<>();
         Map<String, Set<String>> constScanning = new HashMap<>();
         Set<String> eager = new HashSet<>();
+        Set<String> nonCacheable = new HashSet<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i.getVisitorFunction());
@@ -61,6 +72,9 @@ public class ClassTransformingBuildStep {
             if (i.isEager()) {
                 eager.add(i.getClassToTransform());
             }
+            if (!i.isCacheable()) {
+                nonCacheable.add(i.getClassToTransform());
+            }
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
@@ -69,11 +83,23 @@ public class ClassTransformingBuildStep {
         // when we copy these archives we will remove the problematic classes
         final ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed = new ConcurrentLinkedDeque<>();
+        final Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
         try {
             ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
             for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : bytecodeTransformers
                     .entrySet()) {
                 String className = entry.getKey();
+                boolean cacheable = !nonCacheable.contains(className);
+                if (cacheable && transformedClassesCache.containsKey(className)) {
+                    if (liveReloadBuildItem.getChangeInformation() != null) {
+                        if (!liveReloadBuildItem.getChangeInformation().getChangedClasses().contains(className)) {
+                            //we can use the cached transformation
+                            handleTransformedClass(transformedToArchive, transformedClassesByJar,
+                                    transformedClassesCache.get(className));
+                            continue;
+                        }
+                    }
+                }
                 String classFileName = className.replace(".", "/") + ".class";
                 List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                 if (!archives.isEmpty()) {
@@ -122,8 +148,13 @@ public class ClassTransformingBuildStep {
                                     }
                                     log.infof("Wrote transformed class to %s", classFile.getAbsolutePath());
                                 }
-                                return new TransformedClassesBuildItem.TransformedClass(className, data,
+                                TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
+                                        className, data,
                                         classFileName, eager.contains(className));
+                                if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+                                    transformedClassesCache.put(className, transformedClass);
+                                }
+                                return transformedClass;
                             } finally {
                                 Thread.currentThread().setContextClassLoader(old);
                             }
@@ -138,17 +169,22 @@ public class ClassTransformingBuildStep {
         } finally {
             executorPool.shutdown();
         }
-        Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
         if (!transformed.isEmpty()) {
             for (Future<TransformedClassesBuildItem.TransformedClass> i : transformed) {
                 final TransformedClassesBuildItem.TransformedClass res = i.get();
                 if (res != null) {
-                    transformedClassesByJar.computeIfAbsent(transformedToArchive.get(res.getFileName()), (a) -> new HashSet<>())
-                            .add(res);
+                    handleTransformedClass(transformedToArchive, transformedClassesByJar, res);
                 }
             }
         }
         return new TransformedClassesBuildItem(transformedClassesByJar);
+    }
+
+    private void handleTransformedClass(Map<String, Path> transformedToArchive,
+            Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar,
+            TransformedClassesBuildItem.TransformedClass res) {
+        transformedClassesByJar.computeIfAbsent(transformedToArchive.get(res.getFileName()), (a) -> new HashSet<>())
+                .add(res);
     }
 
 }

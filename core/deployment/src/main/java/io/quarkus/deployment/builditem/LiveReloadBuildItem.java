@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
@@ -18,6 +19,7 @@ public final class LiveReloadBuildItem extends SimpleBuildItem {
     private final boolean liveReload;
     private final Set<String> changedResources;
     private final Map<Class<?>, Object> reloadContext;
+    private final ClassChangeInformation changeInformation;
 
     /**
      * This constructor should only be used if live reload is not possible
@@ -26,12 +28,15 @@ public final class LiveReloadBuildItem extends SimpleBuildItem {
         liveReload = false;
         changedResources = Collections.emptySet();
         this.reloadContext = new ConcurrentHashMap<>();
+        this.changeInformation = null;
     }
 
-    public LiveReloadBuildItem(boolean liveReload, Set<String> changedResources, Map<Class<?>, Object> reloadContext) {
+    public LiveReloadBuildItem(boolean liveReload, Set<String> changedResources, Map<Class<?>, Object> reloadContext,
+            ClassChangeInformation changeInformation) {
         this.liveReload = liveReload;
         this.changedResources = changedResources;
         this.reloadContext = reloadContext;
+        this.changeInformation = changeInformation;
     }
 
     /**
@@ -70,5 +75,16 @@ public final class LiveReloadBuildItem extends SimpleBuildItem {
      */
     public <T> void setContextObject(Class<T> type, T val) {
         reloadContext.put(type, val);
+    }
+
+    /**
+     * Returns the change information from the last successful restart.
+     *
+     * Will be null if Quarkus has not previously successfully started, or if the
+     * previous attempt to start was a failure.
+     *
+     */
+    public ClassChangeInformation getChangeInformation() {
+        return changeInformation;
     }
 }

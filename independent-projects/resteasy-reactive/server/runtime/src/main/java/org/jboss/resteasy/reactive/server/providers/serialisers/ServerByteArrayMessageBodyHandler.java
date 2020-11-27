@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -33,8 +34,8 @@ public class ServerByteArrayMessageBodyHandler extends ByteArrayMessageBodyHandl
     }
 
     @Override
-    public byte[] readFrom(Class<byte[]> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
+    public byte[] readFrom(Class<byte[]> type, Type genericType, MediaType mediaType, InputStream entityStream)
             throws WebApplicationException, IOException {
-        return MessageReaderUtil.readBytes(context.getInputStream());
+        return MessageReaderUtil.readBytes(entityStream);
     }
 }

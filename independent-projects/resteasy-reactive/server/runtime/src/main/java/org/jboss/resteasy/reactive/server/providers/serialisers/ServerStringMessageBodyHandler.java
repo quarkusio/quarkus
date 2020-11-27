@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -32,8 +33,8 @@ public class ServerStringMessageBodyHandler extends StringMessageBodyHandler
     }
 
     @Override
-    public String readFrom(Class<String> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
+    public String readFrom(Class<String> type, Type genericType, MediaType mediaType, InputStream entityStream)
             throws WebApplicationException, IOException {
-        return readFrom(context.getInputStream(), true);
+        return readFrom(entityStream, true);
     }
 }

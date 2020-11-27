@@ -1,12 +1,12 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.CharacterMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
@@ -21,9 +21,9 @@ public class ServerCharacterMessageBodyHandler extends CharacterMessageBodyHandl
 
     @Override
     public Character readFrom(Class<Character> type, Type genericType, MediaType mediaType,
-            ResteasyReactiveRequestContext context)
+            InputStream entityStream)
             throws WebApplicationException, IOException {
-        return doReadFrom(context.getInputStream());
+        return doReadFrom(entityStream);
     }
 
 }

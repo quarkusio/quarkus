@@ -12,7 +12,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
@@ -42,9 +41,9 @@ public class JsonbMessageBodyReader implements ResteasyReactiveMessageBodyReader
     }
 
     @Override
-    public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
+    public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, InputStream entityStream)
             throws WebApplicationException, IOException {
-        return doReadFrom(type, genericType, context.getInputStream());
+        return doReadFrom(type, genericType, entityStream);
     }
 
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) {

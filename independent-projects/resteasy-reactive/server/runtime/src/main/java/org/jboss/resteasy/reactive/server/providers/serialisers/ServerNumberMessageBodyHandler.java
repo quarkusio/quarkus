@@ -1,12 +1,12 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.NumberMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.LazyMethod;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveMessageBodyReader;
 
@@ -20,9 +20,9 @@ public class ServerNumberMessageBodyHandler extends NumberMessageBodyHandler
     }
 
     @Override
-    public Number readFrom(Class<Number> type, Type genericType, MediaType mediaType, ResteasyReactiveRequestContext context)
+    public Number readFrom(Class<Number> type, Type genericType, MediaType mediaType, InputStream entityStream)
             throws WebApplicationException, IOException {
-        return doReadFrom(type, context.getInputStream());
+        return doReadFrom(type, entityStream);
     }
 
 }

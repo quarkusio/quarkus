@@ -51,6 +51,32 @@ public class ExampleResource {
 
 NOTE: If you use JBoss Logging but one of your libraries uses a different logging API, you may need to configure a link:#logging-adapters[Logging Adapter].
 
+You can also inject a configured `org.jboss.logging.Logger` instance in your beans and resource classes.
+
+[source, java]
+----
+import org.jboss.logging.Logger;
+
+@ApplicationScoped
+class SimpleBean {
+
+   @Inject
+   Logger log; <1>
+
+   @LoggerName("foo")
+   Logger fooLog; <2>
+
+   public void ping() {
+     log.info("Simple!");
+     fooLog.info("Goes to _foo_ logger!");
+   }
+}
+----
+<1> The FQCN of the declaring class is used as a logger name, i.e. `org.jboss.logging.Logger.getLogger(SimpleBean.class)` will be used.
+<2> In this case, the name _foo_ is used as a logger name, i.e. `org.jboss.logging.Logger.getLogger("foo")` will be used.
+
+NOTE: The logger instances are cached internally. Therefore, a logger injected e.g. into a `@RequestScoped` bean is shared for all bean instances to avoid possible performance penalty associated with logger instantiation.
+
 === What about Apache Log4j ?
 
 link:https://logging.apache.org/log4j/2.x/[Log4j] is a logging implementation: it contains a logging backend and a logging facade.

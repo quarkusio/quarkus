@@ -121,6 +121,22 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldNotListWithInvalidSortParam() {
+        given().accept("application/json")
+                .when().get("/items?sort=1name")
+                .then().statusCode(400)
+                .and().body(is(equalTo("Invalid sort parameter '1name'")));
+    }
+
+    @Test
+    void shouldNotListHalWithInvalidSortParam() {
+        given().accept("application/hal+json")
+                .when().get("/items?sort=1name")
+                .then().statusCode(400)
+                .and().body(is(equalTo("Invalid sort parameter '1name'")));
+    }
+
+    @Test
     void shouldListComplexObjects() {
         given().accept("application/json")
                 .when().get("/collections")

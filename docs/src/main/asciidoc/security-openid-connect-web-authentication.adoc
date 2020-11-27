@@ -362,6 +362,17 @@ You can have this process further optimized by having a simple JavaScript functi
 
 Note this user session can not be extended forever - the returning user with the expired ID token will have to re-authenticate at the OIDC provider endpoint once the refresh token has expired.
 
+=== TokenStateManager
+
+OIDC `CodeAuthenticationMechanism` is using the default `io.quarkus.oidc.TokenStateManager' interface implementation to keep the ID, access and refresh tokens returned in the authorization code or refresh grant responses in a session cookie. It makes Quarkus OIDC endpoints completely stateless.
+
+If all of these tokens are JWT tokens then combining them may produce a session cookie value larger than 4KB and the browsers may not keep this cookie.
+In such cases, you can use `quarkus.oidc.token-state-manager.split-tokens=true` to have a unique session token per each of these three tokens.
+
+Alternatively, if having an ID token only is sufficient for your Quarkus endpoint and no access or refresh tokens are used then set `quarkus.oidc.state-session-manager.stategy=id-token`.
+
+Register your own `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean if you need to customize the way the tokens are associated with the session cookie. For example, you may want to keep the tokens in a database and have only a database pointer stored in a session cookie. Note though that it may present some challenges in making the tokens available across multiple microservices nodes.
+
 == Listening to important authentication events
 
 One can register `@ApplicationScoped` bean which will observe important OIDC authentication events. The listener will be updated when a user has logged in for the first time or re-authenticated, as well as when the session has been refreshed. More events may be reported in the future. For example:

@@ -361,6 +361,55 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
 The `OidcTenantConfig` returned from this method is the same used to parse the `oidc` namespace configuration from the `application.properties`. You can populate it using any of the settings supported by the `quarkus-oidc` extension.
 
+== Tenant Resolution for OIDC 'web-app' applications
+
+Several options are available for selecting the tenant configuration which should be used to secure the current HTTP request for both `service` and `web-app` OIDC applications, such as:
+
+- Check URL paths, for example, a `tenant-service` configuration has to be used for the "/service" paths, while a `tenant-manage` configuration - for the "/management" paths
+- Check HTTP headers, for example, with a URL path always being '/service', a header such as "Realm: service" or "Realm: management" can help selecting between the `tenant-service` and `tenant-manage` configurations
+- Check URL query parameters - it can work similarly to the way the headers are used to select the tenant configuration
+
+All these options can be easily implemented with the custom `TenantResolver` and `TenantConfigResolver` implementations for the OIDC `service` applications.
+
+However, due to an HTTP redirect required to complete the code authentication flow for the OIDC `web-app` applications, a custom HTTP cookie may be needed to select the same tenant configuration before and after this redirect request because:
+
+- URL path may not be the same after the redirect request if a single redirect URL has been registered in the OIDC Provider - the original request path can be restored but after the the tenant configuration is resolved
+- HTTP headers used during the original request are not available after the redirect
+- Custom URL query parameters are restored after the redirect but after the tenant configuration is resolved
+
+One option to ensure the information for resolving the tenant configurations for `web-app` applications is available before and after the redirect is to use a cookie, for example:
+
+[source,java]
+----
+package org.acme.quickstart.oidc;
+
+import java.util.List;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.oidc.TenantResolver;
+import io.vertx.core.http.Cookie;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomTenantResolver implements TenantResolver {
+
+    @Override
+    public String resolve(RoutingContext context) {
+        List<String> tenantIdQuery = context.queryParam("tenantId");
+        if (!tenantIdQuery.isEmpty()) {
+            String tenantId = tenantIdQuery.get(0);
+            context.addCookie(Cookie.cookie("tenant", tenantId));
+            return tenantId;
+        } else if (context.cookieMap().containsKey("tenant")) {
+            return context.getCookie("tenant").getValue();
+        }
+
+        return null;
+    }
+}
+----
+
 [[disable-tenant]]
 == Disabling Tenant Configurations
 

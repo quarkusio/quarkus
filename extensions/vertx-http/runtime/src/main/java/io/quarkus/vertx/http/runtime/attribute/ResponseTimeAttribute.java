@@ -2,6 +2,8 @@ package io.quarkus.vertx.http.runtime.attribute;
 
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.ext.web.RoutingContext;
 
@@ -11,6 +13,8 @@ import io.vertx.ext.web.RoutingContext;
  * This will only work if {@link io.quarkus.vertx.http.runtime.HttpConfiguration#recordRequestStartTime} has been set
  */
 public class ResponseTimeAttribute implements ExchangeAttribute {
+
+    private static final Logger log = Logger.getLogger(ResponseTimeAttribute.class);
 
     private static final String FIRST_RESPONSE_TIME_NANOS = ResponseTimeAttribute.class.getName() + ".first-response-time";
 
@@ -30,6 +34,7 @@ public class ResponseTimeAttribute implements ExchangeAttribute {
     public String readAttribute(RoutingContext exchange) {
         Long requestStartTime = exchange.get(VertxHttpRecorder.REQUEST_START_TIME);
         if (requestStartTime == null) {
+            log.warn("Response time for request cannot be computed since the request start time hasn't been recorded");
             return null;
         }
         final long nanos;

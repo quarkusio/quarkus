@@ -1,6 +1,6 @@
 package io.quarkus.vault.runtime.config;
 
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_USE_KUBERNETES_CACERT;
+import static io.quarkus.vault.runtime.config.VaultBootstrapConfig.DEFAULT_TLS_USE_KUBERNETES_CACERT;
 
 import java.util.Optional;
 

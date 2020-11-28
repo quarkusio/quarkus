@@ -7,27 +7,34 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.inject.Singleton;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 
+@Singleton
 public class VaultDbManager {
 
     private static final Logger log = Logger.getLogger(VaultDbManager.class.getName());
 
     ConcurrentHashMap<String, VaultDynamicDatabaseCredentials> credentialsCache = new ConcurrentHashMap<>();
-    private VaultAuthManager vaultAuthManager;
     private VaultClient vaultClient;
-    private VaultRuntimeConfig serverConfig;
+    private VaultAuthManager vaultAuthManager;
+    private VaultConfigHolder vaultConfigHolder;
 
-    public VaultDbManager(VaultAuthManager vaultAuthManager, VaultClient vaultClient, VaultRuntimeConfig serverConfig) {
+    public VaultDbManager(VaultConfigHolder vaultConfigHolder, VaultAuthManager vaultAuthManager, VaultClient vaultClient) {
+        this.vaultConfigHolder = vaultConfigHolder;
         this.vaultAuthManager = vaultAuthManager;
         this.vaultClient = vaultClient;
-        this.serverConfig = serverConfig;
+    }
+
+    private VaultBootstrapConfig getConfig() {
+        return vaultConfigHolder.getVaultBootstrapConfig();
     }
 
     public Map<String, String> getDynamicDbCredentials(String databaseCredentialsRole) {
@@ -53,12 +60,13 @@ public class VaultDbManager {
         }
 
         // extend lease if necessary
-        if (credentials != null && credentials.shouldExtend(serverConfig.renewGracePeriod)) {
+        if (credentials != null && credentials.shouldExtend(getConfig().renewGracePeriod)) {
             credentials = extend(credentials, clientToken, databaseCredentialsRole);
         }
 
         // create lease if necessary
-        if (credentials == null || credentials.isExpired() || credentials.expiresSoon(serverConfig.renewGracePeriod)) {
+        if (credentials == null || credentials.isExpired()
+                || credentials.expiresSoon(getConfig().renewGracePeriod)) {
             credentials = create(clientToken, databaseCredentialsRole);
         }
 
@@ -87,7 +95,7 @@ public class VaultDbManager {
                 currentCredentials.password);
         sanityCheck(credentials, databaseCredentialsRole);
         log.debug("extended " + databaseCredentialsRole + " credentials with: "
-                + credentials.getConfidentialInfo(serverConfig.logConfidentialityLevel));
+                + credentials.getConfidentialInfo(getConfig().logConfidentialityLevel));
         return credentials;
     }
 
@@ -100,13 +108,12 @@ public class VaultDbManager {
                 vaultDatabaseCredentials.data.username,
                 vaultDatabaseCredentials.data.password);
         log.debug("generated " + databaseCredentialsRole + " credentials: "
-                + credentials.getConfidentialInfo(serverConfig.logConfidentialityLevel));
+                + credentials.getConfidentialInfo(getConfig().logConfidentialityLevel));
         sanityCheck(credentials, databaseCredentialsRole);
         return credentials;
     }
 
     private void sanityCheck(VaultDynamicDatabaseCredentials credentials, String databaseCredentialsRole) {
-        credentials.leaseDurationSanityCheck(databaseCredentialsRole, serverConfig.renewGracePeriod);
+        credentials.leaseDurationSanityCheck(databaseCredentialsRole, getConfig().renewGracePeriod);
     }
-
 }

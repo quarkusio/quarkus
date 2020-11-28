@@ -3,6 +3,9 @@ package io.quarkus.vault.runtime;
 import java.util.Collections;
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import io.quarkus.vault.VaultKubernetesAuthService;
 import io.quarkus.vault.auth.VaultKubernetesAuthConfig;
 import io.quarkus.vault.auth.VaultKubernetesAuthRole;
@@ -11,15 +14,13 @@ import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthConfigData;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthRoleData;
 
+@ApplicationScoped
 public class VaultKubernetesAuthManager implements VaultKubernetesAuthService {
 
-    private final VaultAuthManager vaultAuthManager;
-    private final VaultClient vaultClient;
-
-    public VaultKubernetesAuthManager(VaultAuthManager vaultAuthManager, VaultClient vaultClient) {
-        this.vaultAuthManager = vaultAuthManager;
-        this.vaultClient = vaultClient;
-    }
+    @Inject
+    VaultAuthManager vaultAuthManager;
+    @Inject
+    VaultClient vaultClient;
 
     @Override
     public void configure(VaultKubernetesAuthConfig config) {

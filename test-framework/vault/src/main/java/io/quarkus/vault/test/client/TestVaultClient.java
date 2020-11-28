@@ -1,10 +1,10 @@
 package io.quarkus.vault.test.client;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.TlsConfig;
-import io.quarkus.vault.runtime.VaultManager;
+import io.quarkus.vault.runtime.VaultConfigHolder;
 import io.quarkus.vault.runtime.client.OkHttpVaultClient;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRandomBody;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.test.client.dto.VaultAppRoleRoleId;
 import io.quarkus.vault.test.client.dto.VaultAppRoleSecretId;
 import io.quarkus.vault.test.client.dto.VaultTransitHash;
@@ -13,12 +13,17 @@ import io.quarkus.vault.test.client.dto.VaultTransitRandom;
 
 public class TestVaultClient extends OkHttpVaultClient {
 
-    public TestVaultClient() {
-        this(VaultManager.getInstance().getServerConfig(), VaultManager.getInstance().getTlsConfig());
+    private static VaultConfigHolder getConfigHolder() {
+        return Arc.container().instance(VaultConfigHolder.class).get();
     }
 
-    public TestVaultClient(VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
-        super(serverConfig, tlsConfig);
+    public TestVaultClient() {
+        this(getConfigHolder());
+    }
+
+    public TestVaultClient(VaultConfigHolder configHolder) {
+        super(configHolder, new TlsConfig());
+        init();
     }
 
     public VaultAppRoleSecretId generateAppRoleSecretId(String token, String roleName) {

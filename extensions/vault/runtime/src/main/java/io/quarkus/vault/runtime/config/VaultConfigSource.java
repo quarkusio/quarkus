@@ -2,7 +2,6 @@ package io.quarkus.vault.runtime.config;
 
 import static io.quarkus.vault.runtime.config.VaultCacheEntry.tryReturnLastKnownValue;
 import static java.util.Collections.emptyMap;
-import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.HashMap;
@@ -13,25 +12,26 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
-import io.quarkus.vault.runtime.VaultManager;
+import io.quarkus.arc.Arc;
+import io.quarkus.vault.VaultKVSecretEngine;
 
 public class VaultConfigSource implements ConfigSource {
 
     private static final Logger log = Logger.getLogger(VaultConfigSource.class);
 
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
-    private VaultRuntimeConfig serverConfig;
+    private VaultBootstrapConfig vaultBootstrapConfig;
 
     private int ordinal;
 
-    public VaultConfigSource(int ordinal, VaultRuntimeConfig vaultRuntimeConfig) {
+    public VaultConfigSource(int ordinal, VaultBootstrapConfig vaultBootstrapConfig) {
         this.ordinal = ordinal;
-        this.serverConfig = vaultRuntimeConfig;
+        this.vaultBootstrapConfig = vaultBootstrapConfig;
     }
 
     @Override
     public String getName() {
-        return VaultRuntimeConfig.NAME;
+        return VaultBootstrapConfig.NAME;
     }
 
     @Override
@@ -51,13 +51,13 @@ public class VaultConfigSource implements ConfigSource {
 
     @Override
     public String getValue(String propertyName) {
-        return serverConfig.url.isPresent() ? getSecretConfig().get(propertyName) : null;
+        return vaultBootstrapConfig.url.isPresent() ? getSecretConfig().get(propertyName) : null;
     }
 
     private Map<String, String> getSecretConfig() {
 
         VaultCacheEntry<Map<String, String>> cacheEntry = cache.get();
-        if (cacheEntry != null && cacheEntry.youngerThan(serverConfig.secretConfigCachePeriod)) {
+        if (cacheEntry != null && cacheEntry.youngerThan(vaultBootstrapConfig.secretConfigCachePeriod)) {
             return cacheEntry.getValue();
         }
 
@@ -65,10 +65,10 @@ public class VaultConfigSource implements ConfigSource {
 
         try {
             // default kv paths
-            serverConfig.secretConfigKvPath.ifPresent(strings -> fetchSecrets(strings, null, properties));
+            vaultBootstrapConfig.secretConfigKvPath.ifPresent(strings -> fetchSecrets(strings, null, properties));
 
             // prefixed kv paths
-            serverConfig.secretConfigKvPathPrefix.forEach((key, value) -> fetchSecrets(value.paths, key, properties));
+            vaultBootstrapConfig.secretConfigKvPathPrefix.forEach((key, value) -> fetchSecrets(value.paths, key, properties));
 
             log.debug("loaded " + properties.size() + " properties from vault");
         } catch (RuntimeException e) {
@@ -85,7 +85,11 @@ public class VaultConfigSource implements ConfigSource {
     }
 
     private Map<String, String> fetchSecrets(String path, String prefix) {
-        return prefixMap(VaultManager.getInstance().getVaultKvManager().readSecret(path), prefix);
+        return prefixMap(getVaultKVSecretEngine().readSecret(path), prefix);
+    }
+
+    private VaultKVSecretEngine getVaultKVSecretEngine() {
+        return Arc.container().instance(VaultKVSecretEngine.class).get();
     }
 
     private Map<String, String> prefixMap(Map<String, String> map, String prefix) {

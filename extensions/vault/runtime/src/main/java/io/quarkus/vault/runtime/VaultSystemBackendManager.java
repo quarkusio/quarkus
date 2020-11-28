@@ -2,6 +2,9 @@ package io.quarkus.vault.runtime;
 
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import io.quarkus.vault.VaultSystemBackendEngine;
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.dto.sys.VaultHealthResult;
@@ -14,25 +17,20 @@ import io.quarkus.vault.sys.VaultHealthStatus;
 import io.quarkus.vault.sys.VaultInit;
 import io.quarkus.vault.sys.VaultSealStatus;
 
+@ApplicationScoped
 public class VaultSystemBackendManager implements VaultSystemBackendEngine {
 
-    private VaultClient vaultClient;
-    private VaultBuildTimeConfig buildTimeConfig;
-    private VaultAuthManager vaultAuthManager;
-
-    public VaultSystemBackendManager(VaultBuildTimeConfig buildTimeConfig, VaultAuthManager vaultAuthManager,
-            VaultClient vaultClient) {
-        this.vaultClient = vaultClient;
-        this.buildTimeConfig = buildTimeConfig;
-        this.vaultAuthManager = vaultAuthManager;
-    }
+    @Inject
+    VaultClient vaultClient;
+    @Inject
+    VaultBuildTimeConfig buildTimeConfig;
+    @Inject
+    VaultAuthManager vaultAuthManager;
 
     @Override
     public VaultInit init(int secretShares, int secretThreshold) {
         final VaultInitResponse init = this.vaultClient.init(secretShares, secretThreshold);
-
-        final VaultInit vaultInit = new VaultInit(init.keys, init.keysBase64, init.rootToken);
-        return vaultInit;
+        return new VaultInit(init.keys, init.keysBase64, init.rootToken);
     }
 
     @Override

@@ -46,19 +46,16 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.OutputFrame;
 
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
-import io.quarkus.vault.runtime.VaultManager;
+import io.quarkus.vault.runtime.VaultConfigHolder;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultPolicyBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
-import io.quarkus.vault.runtime.config.HealthConfig;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
-import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.test.client.TestVaultClient;
 
@@ -115,7 +112,7 @@ public class VaultTestExtension {
     public String passwordKvv2WrappingToken = null;
     public String anotherPasswordKvv2WrappingToken = null;
 
-    private VaultManager vaultManager = createVaultManager();
+    private TestVaultClient vaultClient = createVaultClient();
 
     private String db_default_ttl = "1m";
     private String db_max_ttl = "10m";
@@ -165,22 +162,17 @@ public class VaultTestExtension {
         return new TreeMap<>(secret).toString();
     }
 
-    private static VaultManager createVaultManager() {
-        VaultRuntimeConfig serverConfig = new VaultRuntimeConfig();
-        serverConfig.tls = new VaultTlsConfig();
-        serverConfig.url = getVaultUrl();
-        serverConfig.tls.skipVerify = Optional.of(true);
-        serverConfig.tls.caCert = Optional.empty();
-        serverConfig.connectTimeout = Duration.ofSeconds(5);
-        serverConfig.readTimeout = Duration.ofSeconds(1);
-        serverConfig.authentication = new VaultAuthenticationConfig();
-        serverConfig.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
-
-        VaultBuildTimeConfig buildTimeConfig = new VaultBuildTimeConfig();
-        buildTimeConfig.health = new HealthConfig();
-        TlsConfig tlsConfig = new TlsConfig();
-
-        return new VaultManager(buildTimeConfig, serverConfig, new TestVaultClient(serverConfig, tlsConfig), tlsConfig);
+    private static TestVaultClient createVaultClient() {
+        VaultBootstrapConfig vaultBootstrapConfig = new VaultBootstrapConfig();
+        vaultBootstrapConfig.tls = new VaultTlsConfig();
+        vaultBootstrapConfig.url = getVaultUrl();
+        vaultBootstrapConfig.tls.skipVerify = Optional.of(true);
+        vaultBootstrapConfig.tls.caCert = Optional.empty();
+        vaultBootstrapConfig.connectTimeout = Duration.ofSeconds(5);
+        vaultBootstrapConfig.readTimeout = Duration.ofSeconds(1);
+        vaultBootstrapConfig.authentication = new VaultAuthenticationConfig();
+        vaultBootstrapConfig.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
+        return new TestVaultClient(new VaultConfigHolder().setVaultBootstrapConfig(vaultBootstrapConfig));
     }
 
     private static Optional<URL> getVaultUrl() {
@@ -249,7 +241,6 @@ public class VaultTestExtension {
 
     private void initVault() throws InterruptedException, IOException, URISyntaxException {
 
-        TestVaultClient vaultClient = (TestVaultClient) vaultManager.getVaultClient();
         VaultInitResponse vaultInit = vaultClient.init(1, 1);
         String unsealKey = vaultInit.keys.get(0);
         rootToken = vaultInit.rootToken;
@@ -461,7 +452,7 @@ public class VaultTestExtension {
             postgresContainer.stop();
         }
 
-        VaultManager.getInstance().reset();
+        // VaultManager.getInstance().reset();
     }
 
 }

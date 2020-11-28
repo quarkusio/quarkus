@@ -3,7 +3,7 @@ package io.quarkus.vault.runtime.client;
 import static io.quarkus.vault.runtime.client.CertificateHelper.createSslContext;
 import static io.quarkus.vault.runtime.client.CertificateHelper.createTrustManagers;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.KUBERNETES;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.KUBERNETES_CACERT;
+import static io.quarkus.vault.runtime.config.VaultBootstrapConfig.KUBERNETES_CACERT;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -20,7 +20,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.vault.VaultException;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 
@@ -28,11 +28,11 @@ public class OkHttpClientFactory {
 
     private static final Logger log = Logger.getLogger(OkHttpClientFactory.class.getName());
 
-    public static OkHttpClient createHttpClient(VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
+    public static OkHttpClient createHttpClient(VaultBootstrapConfig vaultBootstrapConfig, TlsConfig tlsConfig) {
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
-                .connectTimeout(serverConfig.connectTimeout)
-                .readTimeout(serverConfig.readTimeout);
+                .connectTimeout(vaultBootstrapConfig.connectTimeout)
+                .readTimeout(vaultBootstrapConfig.readTimeout);
         if (!JavaVersionUtil.isJava11OrHigher()) {
             // for Java versions lesser than Java 11, we explicitly use HTTP/1.1
             // to prevent HTTP/2 being included by default since there are known issues
@@ -41,12 +41,14 @@ public class OkHttpClientFactory {
         }
 
         try {
-            boolean trustAll = serverConfig.tls.skipVerify.isPresent() ? serverConfig.tls.skipVerify.get() : tlsConfig.trustAll;
+            boolean trustAll = vaultBootstrapConfig.tls.skipVerify.isPresent() ? vaultBootstrapConfig.tls.skipVerify.get()
+                    : tlsConfig.trustAll;
             if (trustAll) {
                 skipVerify(builder);
-            } else if (serverConfig.tls.caCert.isPresent()) {
-                cacert(builder, serverConfig.tls.caCert.get());
-            } else if (serverConfig.getAuthenticationType() == KUBERNETES && serverConfig.tls.useKubernetesCaCert) {
+            } else if (vaultBootstrapConfig.tls.caCert.isPresent()) {
+                cacert(builder, vaultBootstrapConfig.tls.caCert.get());
+            } else if (vaultBootstrapConfig.getAuthenticationType() == KUBERNETES
+                    && vaultBootstrapConfig.tls.useKubernetesCaCert) {
                 cacert(builder, KUBERNETES_CACERT);
             }
         } catch (GeneralSecurityException | IOException e) {

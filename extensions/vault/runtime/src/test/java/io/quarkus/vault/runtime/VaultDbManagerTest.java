@@ -23,22 +23,23 @@ import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.config.VaultAppRoleAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.runtime.config.VaultUserpassAuthenticationConfig;
 
 public class VaultDbManagerTest {
 
-    VaultRuntimeConfig config = createConfig();
+    VaultBootstrapConfig config = createConfig();
     TlsConfig tlsConfig = new TlsConfig();
     VaultDatabaseCredentials credentials = new VaultDatabaseCredentials();
     VaultLeasesLookup vaultLeasesLookup = new VaultLeasesLookup();
     AtomicBoolean lookupLeaseShouldReturn400 = new AtomicBoolean(false);
     VaultRenewLease vaultRenewLease = new VaultRenewLease();
+    VaultConfigHolder vaultConfigHolder = new VaultConfigHolder().setVaultBootstrapConfig(config);
     OkHttpVaultClient vaultClient = createVaultClient();
-    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultClient, config);
-    VaultDbManager vaultDbManager = new VaultDbManager(vaultAuthManager, vaultClient, config);
+    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder, vaultClient);
+    VaultDbManager vaultDbManager = new VaultDbManager(vaultConfigHolder, vaultAuthManager, vaultClient);
     String mydbrole = "mydbrole";
     String mylease = "mylease";
 
@@ -95,9 +96,9 @@ public class VaultDbManagerTest {
         assertEquals("sinclair5", properties.get(PASSWORD_PROPERTY_NAME), "reaching max-ttl");
     }
 
-    private VaultRuntimeConfig createConfig() {
+    private VaultBootstrapConfig createConfig() {
         try {
-            VaultRuntimeConfig config = new VaultRuntimeConfig();
+            VaultBootstrapConfig config = new VaultBootstrapConfig();
             config.tls = new VaultTlsConfig();
             config.authentication = new VaultAuthenticationConfig();
             config.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
@@ -125,7 +126,7 @@ public class VaultDbManagerTest {
     }
 
     private OkHttpVaultClient createVaultClient() {
-        return new OkHttpVaultClient(config, tlsConfig) {
+        OkHttpVaultClient okHttpVaultClient = new OkHttpVaultClient(vaultConfigHolder, tlsConfig) {
             @Override
             public VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole) {
                 return credentials;
@@ -144,6 +145,7 @@ public class VaultDbManagerTest {
                 return vaultRenewLease;
             }
         };
+        okHttpVaultClient.init();
+        return okHttpVaultClient;
     }
-
 }

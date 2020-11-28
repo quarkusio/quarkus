@@ -21,8 +21,8 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vault.runtime.LogConfidentialityLevel;
 
-@ConfigRoot(name = VaultRuntimeConfig.NAME, phase = ConfigPhase.BOOTSTRAP)
-public class VaultRuntimeConfig {
+@ConfigRoot(name = VaultBootstrapConfig.NAME, phase = ConfigPhase.BOOTSTRAP)
+public class VaultBootstrapConfig {
 
     public static final String NAME = "vault";
     public static final String DEFAULT_KUBERNETES_JWT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";

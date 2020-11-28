@@ -196,4 +196,13 @@ public class HibernateValidatorFunctionalityTest {
                 .then()
                 .statusCode(500);
     }
+
+    @Test
+    public void testInheritance() {
+        RestAssured.given()
+                .get("/books/science")
+                .then()
+                .statusCode(400)
+                .body(containsString("must not be null"));
+    }
 }

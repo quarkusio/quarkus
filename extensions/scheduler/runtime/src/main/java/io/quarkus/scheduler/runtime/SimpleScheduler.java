@@ -122,6 +122,7 @@ public class SimpleScheduler implements Scheduler {
     void checkTriggers() {
         if (!running) {
             LOGGER.trace("Skip all triggers - scheduler paused");
+            return;
         }
         ZonedDateTime now = ZonedDateTime.now();
         for (ScheduledTask task : scheduledTasks) {

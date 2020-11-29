@@ -6,10 +6,11 @@ import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.test.junit.NativeImageTest;
 
 @NativeImageTest
-public class BouncyCastleJsseITCase extends BouncyCastleJsseTestCase {
+public class BouncyCastleFipsJsseITCase extends BouncyCastleFipsJsseTestCase {
+
     @Test
     @Override
-    public void testListProviders() {
+    public void testListProviders() throws Exception {
         if (!JavaVersionUtil.isJava11OrHigher()) {
             LOG.trace("Skipping BouncyCastleJsseITCase, Java version is older than 11");
             return;

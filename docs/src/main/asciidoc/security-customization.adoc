@@ -245,35 +245,40 @@ If you need to register an `org.bouncycastle.jce.provider.BouncyCastleProvider` 
 quarkus.security.security-providers=BC
 ----
 
-and add the latest BouncyCastle provider dependency:
+and add the BouncyCastle provider dependency:
 
 [source,xml]
 ----
 <dependency>
   <groupId>org.bouncycastle</groupId>
   <artifactId>bcprov-jdk15on</artifactId>
-  <version>${bouncycastle.version}</version>
 </dependency>
 ----
 
 === BouncyCastle JSSE
 
-If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use in instead of the default SunJSSE provider then please set a `BCJSSE` provider name:
+If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use it instead of the default SunJSSE provider then please set a `BCJSSE` provider name:
 
 .Example Security Providers BouncyCastle JSSE Configuration
 [source,properties]
 ----
 quarkus.security.security-providers=BCJSSE
+
+quarkus.http.ssl.client-auth=REQUIRED
+
+quarkus.http.ssl.certificate.key-store-file=server-keystore.jks
+quarkus.http.ssl.certificate.key-store-password=password
+quarkus.http.ssl.certificate.trust-store-file=server-truststore.jks
+quarkus.http.ssl.certificate.trust-store-password=password
 ----
 
-and add the latest BouncyCastle TLS dependency:
+and add the BouncyCastle TLS dependency:
 
 [source,xml]
 ----
 <dependency>
   <groupId>org.bouncycastle</groupId>
   <artifactId>bctls-jdk15on</artifactId>
-  <version>${bouncycastle.version}</version>
 </dependency>
 ----
 
@@ -287,19 +292,59 @@ If you need to register an `org.bouncycastle.jcajce.provider.BouncyCastleFipsPro
 quarkus.security.security-providers=BCFIPS
 ----
 
-and add the latest BouncyCastle FIPS provider dependency:
+and add the BouncyCastle FIPS provider dependency:
 
 [source,xml]
 ----
 <dependency>
   <groupId>org.bouncycastle</groupId>
   <artifactId>bc-fips</artifactId>
-  <version>${bouncycastle.fips.version}</version>
 </dependency>
 ----
 
-At the moment this provider can only be used for performing the cryptographic operations directly in Quarkus service endpoints.
-Securing mutual TLS connections with this provider will be supported as soon as possible.
+=== BouncyCastle JSSE FIPS
+
+If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use it in combination with `org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider` instead of the default SunJSSE provider then please set a `BCFIPSJSSE` provider name:
+
+.Example Security Providers BouncyCastle FIPS JSSE Configuration
+[source,properties]
+----
+quarkus.security.security-providers=BCFIPSJSSE
+
+quarkus.http.ssl.client-auth=REQUIRED
+
+quarkus.http.ssl.certificate.key-store-file=server-keystore.jks
+quarkus.http.ssl.certificate.key-store-password=password
+quarkus.http.ssl.certificate.key-store-file-type=BCFKS
+quarkus.http.ssl.certificate.key-store-provider=BCFIPS
+quarkus.http.ssl.certificate.trust-store-file=server-truststore.jks
+quarkus.http.ssl.certificate.trust-store-password=password
+quarkus.http.ssl.certificate.trust-store-file-type=BCFKS
+quarkus.http.ssl.certificate.trust-store-provider=BCFIPS
+----
+
+and the BouncyCastle TLS dependency optimized for using the BouncyCastle FIPS provider:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bctls-fips</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.bouncycastle</groupId>
+  <artifactId>bc-fips</artifactId>
+</dependency>
+----
+
+Note that the keystore and truststore type and provider are set to `BCFKS` and `BCFIPS`.
+One can generate a keystore with this type and provider like this:
+
+[source,shell]
+----
+keytool -genkey -alias server -keyalg RSA -keystore server-keystore.jks -keysize 2048 -keypass password -provider org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider -providerpath $PATH_TO_BC_FIPS_JAR -storetype BCFKS
+----
 
 == Reactive Security
 

@@ -696,6 +696,9 @@ public class DevMojo extends AbstractMojo {
 
         modifyDevModeContext(builder);
 
+        if (argsString != null) {
+            builder.applicationArgs(argsString);
+        }
         propagateUserProperties(builder);
 
         return builder.build();

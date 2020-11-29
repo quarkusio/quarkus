@@ -884,7 +884,7 @@ public class ValueResolverGenerator {
         } else if (targetPackage.startsWith("java")) {
             return "io/quarkus/qute" + "/" + baseName + suffix;
         } else {
-            return targetPackage.replace('.', '/') + "/" + baseName + suffix;
+            return (targetPackage.isEmpty() ? "" : targetPackage.replace('.', '/') + "/") + baseName + suffix;
         }
     }
 

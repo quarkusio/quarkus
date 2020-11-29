@@ -6,8 +6,10 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -54,6 +56,33 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         runAndCheck("-Dgreeting=\"1 2 3\"");
         final String greeting = DevModeTestUtils.getHttpResponse("/app/hello/greeting");
         assertThat(greeting).isEqualTo("1 2 3");
+    }
+
+    @Test
+    public void testCommandModeApplicationArguments() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/basic-command-mode", "projects/command-mode-app-args");
+        run(false, "-Dquarkus.args='1 2'");
+
+        // Wait until this file exists
+        final File done = new File(testDir, "target/done.txt");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(20, TimeUnit.MINUTES).until(() -> done.exists());
+
+        // read the log and check the passed in args
+        final File log = new File(testDir, "build-command-mode-app-args.log");
+        assertThat(log).exists();
+        String loggedArgs = null;
+        try (BufferedReader reader = new BufferedReader(new FileReader(log))) {
+            String s;
+            while ((s = reader.readLine()) != null) {
+                if (s.startsWith("ARGS: ")) {
+                    loggedArgs = s;
+                    break;
+                }
+            }
+        }
+        assertThat(loggedArgs).isEqualTo("ARGS: [1, 2]");
     }
 
     @Test

@@ -529,7 +529,7 @@ public class MessageBundleProcessor {
         }
 
         String targetPackage = DotNames.packageName(bundleInterface.name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + SUFFIX;
+        String generatedName = (targetPackage.isEmpty() ? "" : targetPackage.replace('.', '/') + "/") + baseName + SUFFIX;
 
         // MyMessages_Bundle implements MyMessages, Resolver
         Builder builder = ClassCreator.builder().classOutput(classOutput).className(generatedName)

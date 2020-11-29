@@ -42,7 +42,7 @@ abstract class AbstractGenerator {
         if (targetPackage == null || targetPackage.isEmpty()) {
             return baseName + suffix;
         } else {
-            return targetPackage.replace('.', '/') + "/" + baseName + suffix;
+            return (targetPackage.isEmpty() ? "" : targetPackage.replace('.', '/') + "/") + baseName + suffix;
         }
     }
 

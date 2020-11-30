@@ -40,6 +40,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
@@ -854,6 +855,11 @@ public abstract class ResteasyReactiveRequestContext
             return outputStream = underlyingOutputStream = serverResponse().createResponseOutputStream();
         }
         return outputStream;
+    }
+
+    @Override
+    public ResteasyReactiveResourceInfo getResteasyReactiveResourceInfo() {
+        return target == null ? null : target.getLazyMethod();
     }
 
     @Override

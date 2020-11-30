@@ -184,7 +184,7 @@ public class RuntimeResourceDeployment {
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterTypes);
+                parameterTypes, method.getMethodAnnotationNames());
 
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];

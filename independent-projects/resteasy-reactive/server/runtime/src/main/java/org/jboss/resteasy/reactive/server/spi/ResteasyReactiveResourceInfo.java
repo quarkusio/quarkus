@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.spi;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Set;
 import javax.ws.rs.container.ResourceInfo;
 
 /**
@@ -16,14 +17,17 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
     private final String name;
     private final Class<?> declaringClass;
     private final Class[] parameterTypes;
+    private final Set<String> methodAnnotationNames;
     private volatile Method method;
     private volatile Annotation[] annotations;
     private volatile Type returnType;
 
-    public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes) {
+    public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
+            Set<String> methodAnnotationNames) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
+        this.methodAnnotationNames = methodAnnotationNames;
     }
 
     public String getName() {
@@ -32,6 +36,10 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
 
     public Class[] getParameterTypes() {
         return parameterTypes;
+    }
+
+    public Set<String> getMethodAnnotationNames() {
+        return methodAnnotationNames;
     }
 
     public Method getMethod() {

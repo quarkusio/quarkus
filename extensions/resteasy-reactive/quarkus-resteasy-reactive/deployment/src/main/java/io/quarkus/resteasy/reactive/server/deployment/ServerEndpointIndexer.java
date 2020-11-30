@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -267,6 +268,12 @@ public class ServerEndpointIndexer
     @Override
     protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
         method.setInvoker(endpointInvokerFactory.create(method, currentClassInfo, info));
+        Set<String> methodAnnotationNames = new HashSet<>();
+        List<AnnotationInstance> instances = info.annotations();
+        for (AnnotationInstance instance : instances) {
+            methodAnnotationNames.add(instance.name().toString());
+        }
+        method.setMethodAnnotationNames(methodAnnotationNames);
     }
 
     protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo,

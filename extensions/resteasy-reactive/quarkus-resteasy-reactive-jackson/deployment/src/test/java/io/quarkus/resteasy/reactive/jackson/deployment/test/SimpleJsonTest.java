@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+
 import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
@@ -19,7 +22,7 @@ public class SimpleJsonTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Person.class, SimpleJsonResource.class);
+                            .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class);
                 }
             });
 
@@ -97,5 +100,24 @@ public class SimpleJsonTest {
     public void testAsyncJson() {
         RestAssured.get("/simple/async-person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
+    }
+
+    // when there is no view defined, Jackson will serialize all fields
+    @Test
+    public void testUserWithoutView() {
+        RestAssured.get("/simple/user-without-view")
+                .then().body(containsString("1"), containsString("test"));
+    }
+
+    @Test
+    public void testUserWithPublicView() {
+        RestAssured.get("/simple/user-with-public-view")
+                .then().body(not(containsString("1")), containsString("test"));
+    }
+
+    @Test
+    public void testUserWithPrivateView() {
+        RestAssured.get("/simple/user-with-private-view")
+                .then().body(containsString("1"), containsString("test"));
     }
 }

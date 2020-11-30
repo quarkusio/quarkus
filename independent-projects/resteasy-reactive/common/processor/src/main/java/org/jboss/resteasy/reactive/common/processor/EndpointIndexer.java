@@ -48,6 +48,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,6 +59,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MediaType;
@@ -159,6 +161,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final boolean defaultBlocking;
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
+    private final Consumer<Map.Entry<MethodInfo, ResourceMethod>> resourceMethodCallback;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -173,6 +176,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.defaultBlocking = builder.defaultBlocking;
         this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
         this.factoryCreator = builder.factoryCreator;
+        this.resourceMethodCallback = builder.resourceMethodCallback;
     }
 
     public ResourceClass createEndpoints(ClassInfo classInfo) {
@@ -470,6 +474,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         }
                     }));
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, info);
+            if (resourceMethodCallback != null) {
+                resourceMethodCallback.accept(new AbstractMap.SimpleEntry<>(info, method));
+            }
             return method;
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
@@ -885,6 +892,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private AdditionalWriters additionalWriters;
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
+        private Consumer<Map.Entry<MethodInfo, ResourceMethod>> resourceMethodCallback;
 
         public B setDefaultBlocking(boolean defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
@@ -943,6 +951,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setClassLevelExceptionMappers(Map<DotName, Map<String, String>> classLevelExceptionMappers) {
             this.classLevelExceptionMappers = classLevelExceptionMappers;
+            return (B) this;
+        }
+
+        public B setResourceMethodCallback(Consumer<Map.Entry<MethodInfo, ResourceMethod>> resourceMethodCallback) {
+            this.resourceMethodCallback = resourceMethodCallback;
             return (B) this;
         }
 

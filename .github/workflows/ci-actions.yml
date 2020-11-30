@@ -468,7 +468,6 @@ jobs:
         with:
           repository: quarkusio/quarkus-rest-testsuite
           path: quarkus-rest-testsuite
-          ref: resteasy-reactive
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
         working-directory: ./tcks

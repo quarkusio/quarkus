@@ -49,10 +49,10 @@ public class EngineProducer {
     private final String basePath;
     private final String tagPath;
 
-    public EngineProducer(QuteContext context, Event<EngineBuilder> builderReady, Event<Engine> engineReady,
-            ContentTypes contentTypes) {
+    public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
+            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes) {
         this.contentTypes = contentTypes;
-        this.suffixes = context.getConfig().suffixes;
+        this.suffixes = config.suffixes;
         this.basePath = "templates/";
         this.tagPath = basePath + TAGS;
         this.tags = context.getTags();
@@ -76,6 +76,22 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.logicalAndResolver());
         builder.addValueResolver(ValueResolvers.logicalOrResolver());
 
+        // If needed use a specific result mapper for the selected strategy  
+        switch (runtimeConfig.propertyNotFoundStrategy) {
+            case THROW_EXCEPTION:
+                builder.addResultMapper(new PropertyNotFoundThrowException());
+                break;
+            case NOOP:
+                builder.addResultMapper(new PropertyNotFoundNoop());
+                break;
+            case OUTPUT_ORIGINAL:
+                builder.addResultMapper(new PropertyNotFoundOutputOriginal());
+                break;
+            default:
+                // Use the default strategy
+                break;
+        }
+
         // Escape some characters for HTML templates
         builder.addResultMapper(new HtmlEscaper());
 
@@ -83,7 +99,7 @@ public class EngineProducer {
         builder.addValueResolver(new ReflectionValueResolver());
 
         // Remove standalone lines if desired
-        builder.removeStandaloneLines(context.getConfig().removeStandaloneLines);
+        builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines);
 
         // Allow anyone to customize the builder
         builderReady.fire(builder);

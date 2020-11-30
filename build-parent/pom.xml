@@ -75,7 +75,7 @@
         <antlr.version>4.7.2</antlr.version>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>7.9.2</elasticsearch-server.version>
+        <elasticsearch-server.version>7.10.0</elasticsearch-server.version>
         <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
 

@@ -17,4 +17,5 @@ public interface ServerRequestContext extends ResteasyReactiveCallbackContext {
 
     OutputStream getOrCreateOutputStream();
 
+    ResteasyReactiveResourceInfo getResteasyReactiveResourceInfo();
 }

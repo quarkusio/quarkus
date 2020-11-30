@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.server.deployment;
 import java.util.List;
 
 import javax.ws.rs.BeanParam;
-import javax.ws.rs.core.Context;
 
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -32,7 +31,7 @@ public class ResteasyReactiveCDIProcessor {
         additionalBeanBuildItemBuildProducer
                 .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
                         .build());
-        return new AutoInjectAnnotationBuildItem(DotName.createSimple(Context.class.getName()),
+        return new AutoInjectAnnotationBuildItem(ResteasyReactiveServerDotNames.CONTEXT,
                 DotName.createSimple(BeanParam.class.getName()));
 
     }

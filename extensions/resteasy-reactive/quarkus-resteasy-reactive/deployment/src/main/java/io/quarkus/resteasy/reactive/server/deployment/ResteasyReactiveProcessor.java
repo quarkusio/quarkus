@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Priorities;
@@ -22,11 +23,13 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -39,6 +42,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
@@ -77,6 +81,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -207,6 +212,7 @@ public class ResteasyReactiveProcessor {
             Optional<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers,
             BuildProducer<ResteasyReactiveDeploymentBuildItem> quarkusRestDeploymentBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<RouteBuildItem> routes,
             ApplicationResultBuildItem applicationResultBuildItem) throws NoSuchMethodException {
 
@@ -277,6 +283,53 @@ public class ResteasyReactiveProcessor {
                     .setClassLevelExceptionMappers(
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
                                     : Collections.emptyMap())
+                    .setResourceMethodCallback(new Consumer<Map.Entry<MethodInfo, ResourceMethod>>() {
+                        @Override
+                        public void accept(Map.Entry<MethodInfo, ResourceMethod> entry) {
+                            MethodInfo method = entry.getKey();
+                            String source = ResteasyReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
+                                    + "[" + method + "]";
+
+                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(method.returnType())
+                                    .index(index)
+                                    .ignoreTypePredicate(ResteasyReactiveServerDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                    .ignoreFieldPredicate(ResteasyReactiveServerDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                    .ignoreMethodPredicate(
+                                            ResteasyReactiveServerDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                    .source(source)
+                                    .build());
+
+                            for (short i = 0; i < method.parameters().size(); i++) {
+                                Type parameterType = method.parameters().get(i);
+                                if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
+                                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                            .type(parameterType)
+                                            .index(index)
+                                            .ignoreTypePredicate(
+                                                    ResteasyReactiveServerDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                            .ignoreFieldPredicate(
+                                                    ResteasyReactiveServerDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                            .ignoreMethodPredicate(
+                                                    ResteasyReactiveServerDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                            .source(source)
+                                            .build());
+                                }
+                            }
+                        }
+
+                        private boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {
+                            for (AnnotationInstance annotationInstance : method.annotations()) {
+                                AnnotationTarget target = annotationInstance.target();
+                                if (target != null && target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                                        && target.asMethodParameter().position() == paramPosition
+                                        && annotationInstance.name().equals(annotation)) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                    })
                     .setInitConverters(initConverters).build();
 
             if (selectedAppClass != null) {

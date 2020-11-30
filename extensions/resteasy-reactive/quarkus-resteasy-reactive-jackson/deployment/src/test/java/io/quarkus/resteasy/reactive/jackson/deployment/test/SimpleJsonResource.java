@@ -10,6 +10,8 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 
+import com.fasterxml.jackson.annotation.JsonView;
+
 import io.quarkus.runtime.BlockingOperationControl;
 
 @Path("/simple")
@@ -81,4 +83,30 @@ public class SimpleJsonResource {
         }).start();
     }
 
+    @GET
+    @Path("/user-without-view")
+    public User userWithoutView() {
+        return testUser();
+    }
+
+    @JsonView(Views.Public.class)
+    @GET
+    @Path("/user-with-public-view")
+    public User userWithPublicView() {
+        return testUser();
+    }
+
+    @JsonView(Views.Private.class)
+    @GET
+    @Path("/user-with-private-view")
+    public User userWithPrivateView() {
+        return testUser();
+    }
+
+    private User testUser() {
+        User user = new User();
+        user.id = 1;
+        user.name = "test";
+        return user;
+    }
 }

@@ -367,7 +367,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * The minimal cluster status required.
          */
         // We can't set an actual default value here: see comment on this class.
-        @ConfigItem(defaultValueDocumentation = "green")
+        @ConfigItem(defaultValueDocumentation = "yellow")
         Optional<IndexStatus> requiredStatus;
 
         /**

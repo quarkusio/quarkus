@@ -40,7 +40,8 @@ public class JBangIntegration {
 
                         @Override
                         protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                            if (name.startsWith("org.") && !(name.startsWith("org.xml.") || name.startsWith("org.w3c."))) {
+                            if (name.startsWith("org.") && !(name.startsWith("org.xml.") || name.startsWith("org.w3c.")
+                                    || name.startsWith("org.jboss."))) {
                                 //jbang has some but not all of the maven resolver classes we need on its
                                 //class path. These all start with org. so we filter them out to make sure
                                 //we get a complete class path
@@ -51,7 +52,8 @@ public class JBangIntegration {
 
                         @Override
                         public URL getResource(String name) {
-                            if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/"))) {
+                            if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/")
+                                    || name.startsWith("org/jboss/"))) {
                                 //jbang has some but not all of the maven resolver classes we need on its
                                 //class path. These all start with org. so we filter them out to make sure
                                 //we get a complete class path
@@ -62,7 +64,8 @@ public class JBangIntegration {
 
                         @Override
                         public Enumeration<URL> getResources(String name) throws IOException {
-                            if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/"))) {
+                            if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/")
+                                    || name.startsWith("org/jboss/"))) {
                                 //jbang has some but not all of the maven resolver classes we need on its
                                 //class path. These all start with org. so we filter them out to make sure
                                 //we get a complete class path

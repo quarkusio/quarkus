@@ -162,7 +162,7 @@ final class Methods {
             } else {
                 Collection<AnnotationInstance> methodAnnnotations = beanDeployment.getAnnotations(method);
                 List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
-                        .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
+                        .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())
                         .collect(Collectors.toList());
                 merged.addAll(methodLevelBindings);
                 for (AnnotationInstance classLevelBinding : classLevelBindings) {

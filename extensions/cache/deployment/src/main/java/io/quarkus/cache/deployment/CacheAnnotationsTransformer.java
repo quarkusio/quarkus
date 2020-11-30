@@ -5,10 +5,13 @@ import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALID
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE_ALL_LIST;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE_LIST;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_KEY;
-import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_KEY_PARAMETER_POSITIONS_PARAM;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_KEY_PARAMETER_POSITIONS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_NAME_PARAM;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_RESULT;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.LOCK_TIMEOUT_PARAM;
+import static org.jboss.jandex.AnnotationInstance.create;
+import static org.jboss.jandex.AnnotationValue.createArrayValue;
+import static org.jboss.jandex.AnnotationValue.createShortValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +60,24 @@ public class CacheAnnotationsTransformer implements AnnotationsTransformer {
                 }
             }
         }
+        if (requiresCacheKeyParameterPositionsInterceptorBinding(method)) {
+            List<AnnotationValue> positions = new ArrayList<>();
+            for (AnnotationInstance annotation : method.annotations(CACHE_KEY)) {
+                positions.add(createShortValue("", annotation.target().asMethodParameter().position()));
+            }
+            if (!positions.isEmpty()) {
+                AnnotationValue annotationValue = createArrayValue("value", toArray(positions));
+                AnnotationInstance binding = create(CACHE_KEY_PARAMETER_POSITIONS, method,
+                        new AnnotationValue[] { annotationValue });
+                interceptorBindings.add(binding);
+            }
+        }
         context.transform().addAll(interceptorBindings).done();
+    }
+
+    private boolean requiresCacheKeyParameterPositionsInterceptorBinding(MethodInfo method) {
+        return method.hasAnnotation(CACHE_KEY) && (method.hasAnnotation(CACHE_INVALIDATE)
+                || method.hasAnnotation(CACHE_INVALIDATE_LIST) || method.hasAnnotation(CACHE_RESULT));
     }
 
     private AnnotationInstance createCacheInvalidateAllBinding(AnnotationInstance annotation, AnnotationTarget target) {
@@ -68,7 +88,6 @@ public class CacheAnnotationsTransformer implements AnnotationsTransformer {
             AnnotationTarget target) {
         List<AnnotationValue> parameters = new ArrayList<>();
         parameters.add(getCacheName(annotation));
-        findCacheKeyParameters(method).ifPresent(parameters::add);
         return createBinding(CacheInvalidateInterceptorBinding.class, target, toArray(parameters));
     }
 
@@ -76,7 +95,6 @@ public class CacheAnnotationsTransformer implements AnnotationsTransformer {
             AnnotationTarget target) {
         List<AnnotationValue> parameters = new ArrayList<>();
         parameters.add(getCacheName(annotation));
-        findCacheKeyParameters(method).ifPresent(parameters::add);
         findLockTimeout(annotation).ifPresent(parameters::add);
         return createBinding(CacheResultInterceptorBinding.class, target, toArray(parameters));
     }
@@ -87,19 +105,6 @@ public class CacheAnnotationsTransformer implements AnnotationsTransformer {
 
     private AnnotationValue getCacheName(AnnotationInstance annotation) {
         return annotation.value(CACHE_NAME_PARAM);
-    }
-
-    private Optional<AnnotationValue> findCacheKeyParameters(MethodInfo method) {
-        List<AnnotationValue> parameters = new ArrayList<>();
-        for (AnnotationInstance annotation : method.annotations()) {
-            if (annotation.target().kind() == Kind.METHOD_PARAMETER && CACHE_KEY.equals(annotation.name())) {
-                parameters.add(AnnotationValue.createShortValue("", annotation.target().asMethodParameter().position()));
-            }
-        }
-        if (parameters.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(AnnotationValue.createArrayValue(CACHE_KEY_PARAMETER_POSITIONS_PARAM, toArray(parameters)));
     }
 
     private Optional<AnnotationValue> findLockTimeout(AnnotationInstance annotation) {

@@ -1,5 +1,5 @@
 ---
-name: "Quarkus RESTEasy Reactive Qute"
+name: "RESTEasy Reactive Qute"
 metadata:
   keywords:
     - "templating"
@@ -7,5 +7,6 @@ metadata:
     - "rest"
   categories:
     - "web"
+    - "reactive"
   status: "experimental"
 

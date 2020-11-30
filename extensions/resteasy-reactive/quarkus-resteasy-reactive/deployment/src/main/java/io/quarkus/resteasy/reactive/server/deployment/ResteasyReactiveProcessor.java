@@ -116,7 +116,7 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
-        return new FeatureBuildItem(Feature.QUARKUS_REST);
+        return new FeatureBuildItem(Feature.RESTEASY_REACTIVE);
     }
 
     @BuildStep

@@ -7,6 +7,10 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -49,6 +53,7 @@ public class JBangBuilderImpl {
                     .setMavenArtifactResolver(quarkusResolver)
                     .setProjectRoot(pomFile.getParent())
                     .setTargetDirectory(target)
+                    .setManagingProject(new AppArtifact("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
                     .setForcedDependencies(dependencies.stream().map(s -> {
                         String[] parts = s.getKey().split(":");
                         AppArtifact artifact;
@@ -78,6 +83,20 @@ public class JBangBuilderImpl {
             app.runInAugmentClassLoader("io.quarkus.deployment.jbang.JBangAugmentorImpl", output);
             return output;
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String getQuarkusVersion() {
+        try (InputStream in = JBangBuilderImpl.class.getClassLoader().getResourceAsStream("quarkus-version.txt")) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buf = new byte[10];
+            int r;
+            while ((r = in.read(buf)) > 0) {
+                out.write(buf, 0, r);
+            }
+            return new String(out.toByteArray(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

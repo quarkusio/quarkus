@@ -19,11 +19,12 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {
         Object key = null;
+        short[] cacheKeyParameterPositions = getCacheKeyParameterPositions(context);
         for (CacheInvalidateInterceptorBinding binding : getInterceptorBindings(context,
                 CacheInvalidateInterceptorBinding.class)) {
             CaffeineCache cache = cacheRepository.getCache(binding.cacheName());
             if (key == null) {
-                key = getCacheKey(cache, binding.cacheKeyParameterPositions(), context.getParameters());
+                key = getCacheKey(cache, cacheKeyParameterPositions, context.getParameters());
             }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debugf("Invalidating entry with key [%s] from cache [%s]", key, cache.getName());

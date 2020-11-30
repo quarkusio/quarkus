@@ -20,9 +20,6 @@ public @interface CacheInvalidateInterceptorBinding {
     @Nonbinding
     String cacheName() default "";
 
-    @Nonbinding
-    short[] cacheKeyParameterPositions() default {};
-
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     @interface List {

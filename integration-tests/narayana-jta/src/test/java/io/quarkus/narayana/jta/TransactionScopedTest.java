@@ -54,6 +54,8 @@ class TransactionScopedTest {
 
     @Test
     void scopeEventsAreEmitted() {
+        beanEvents.cleanCounts();
+
         beanEvents.doInTransaction(true);
 
         try {

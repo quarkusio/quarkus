@@ -21,6 +21,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
+import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamValidator;
 
 /**
  * A standard JAX-RS method implementor.
@@ -101,6 +102,10 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected void addContextAnnotation(AnnotatedElement element) {
         element.addAnnotation(Context.class);
+    }
+
+    protected void addSortQueryParamValidatorAnnotation(AnnotatedElement element) {
+        element.addAnnotation(SortQueryParamValidator.class);
     }
 
     protected String appendToPath(String path, String suffix) {

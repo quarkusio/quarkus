@@ -88,6 +88,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        addSortQueryParamValidatorAnnotation(methodCreator);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
         addDefaultValueAnnotation(methodCreator.getParameterAnnotations(1), Integer.toString(DEFAULT_PAGE_INDEX));

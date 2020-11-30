@@ -39,7 +39,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
      * Generate JAX-RS GET method that exposes {@link RestDataResource#list(Page, Sort)}.
      * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
      * query parameters are skipped and null {@link Page} instance is used.
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;GET
@@ -90,6 +90,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addSortQueryParamValidatorAnnotation(methodCreator);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
         addDefaultValueAnnotation(methodCreator.getParameterAnnotations(1), Integer.toString(DEFAULT_PAGE_INDEX));

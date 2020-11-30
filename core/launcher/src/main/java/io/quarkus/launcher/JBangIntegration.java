@@ -3,6 +3,7 @@ package io.quarkus.launcher;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -15,7 +16,7 @@ public class JBangIntegration {
     public static final String CONFIG = "//Q:CONFIG";
 
     public static Map<String, Object> postBuild(Path appClasses, Path pomFile, List<Map.Entry<String, String>> repositories,
-            List<Map.Entry<String, Path>> dependencies,
+            List<Map.Entry<String, Path>> originalDeps,
             List<String> comments, boolean nativeImage) {
         for (String comment : comments) {
             //we allow config to be provided via //Q:CONFIG name=value
@@ -26,6 +27,17 @@ public class JBangIntegration {
                     throw new RuntimeException("invalid config  " + comment);
                 }
                 System.setProperty(conf.substring(0, equals), conf.substring(equals + 1));
+            }
+        }
+
+        //huge hack
+        //jbang does not consider the pom when resolving dependencies
+        //so can get the wrong version of asm
+        //we remove it from the deps list so we can use the correct one
+        List<Map.Entry<String, Path>> dependencies = new ArrayList<>();
+        for (Map.Entry<String, Path> i : originalDeps) {
+            if (!i.getKey().startsWith("org.ow2.asm:asm:")) {
+                dependencies.add(i);
             }
         }
 

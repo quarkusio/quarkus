@@ -43,7 +43,6 @@ import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.version.Version;
 
 /**
- *
  * @author Alexey Loubyansky
  */
 public class BootstrapAppModelResolver implements AppModelResolver {
@@ -142,7 +141,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     @Override
     public AppModel resolveModel(AppArtifact appArtifact, List<AppDependency> directDeps) throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, directDeps, null, Collections.emptySet());
+        return resolveManagedModel(appArtifact, directDeps,
+                null, Collections.emptySet());
     }
 
     @Override

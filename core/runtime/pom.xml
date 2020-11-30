@@ -129,8 +129,6 @@
                         <parentFirstArtifact>org.jboss.slf4j:slf4j-jboss-logmanager</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
-                        <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>
-                        <parentFirstArtifact>org.ow2.asm:asm-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
                         <parentFirstArtifact>org.codehaus.plexus:plexus-utils</parentFirstArtifact>
                         <parentFirstArtifact>xml-apis:xml-apis</parentFirstArtifact>

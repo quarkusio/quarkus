@@ -66,6 +66,8 @@ public class BeanDeployment {
 
     private final Map<DotName, ClassInfo> interceptorBindings;
 
+    private final Map<DotName, ClassInfo> repeatingInterceptorBindingAnnotations;
+
     private final Map<DotName, Set<String>> nonBindingFields;
 
     private final Map<DotName, Set<AnnotationInstance>> transitiveInterceptorBindings;
@@ -151,6 +153,7 @@ public class BeanDeployment {
                 }
             }
         }
+        this.repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings, this.beanArchiveIndex);
         buildContextPut(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
 
         this.stereotypes = findStereotypes(this.beanArchiveIndex, interceptorBindings, beanDefiningAnnotations, customContexts,
@@ -411,22 +414,40 @@ public class BeanDeployment {
     /**
      * Extracts qualifiers from given annotation instance.
      * This returns a collection because in case of repeating qualifiers there can be multiple.
-     * For most instances this will be a singleton instance (if given annotatation is a qualifier) or an empty list for
+     * For most instances this will be a singleton instance (if given annotation is a qualifier) or an empty list for
      * cases where the annotation is not a qualifier.
      *
-     * @param annotation instance to be inspected
+     * @param annotation annotation to be inspected
      * @return a collection of qualifiers or an empty collection
      */
     Collection<AnnotationInstance> extractQualifiers(AnnotationInstance annotation) {
+        return extractAnnotations(annotation, qualifiers, repeatingQualifierAnnotations);
+    }
+
+    /**
+     * Extracts interceptor bindings from given annotation instance.
+     * This returns a collection because in case of repeating interceptor bindings there can be multiple.
+     * For most instances this will be a singleton instance (if given annotation is an interceptor binding) or
+     * an empty list for cases where the annotation is not an interceptor binding.
+     *
+     * @param annotation annotation to be inspected
+     * @return a collection of interceptor bindings or an empty collection
+     */
+    Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {
+        return extractAnnotations(annotation, interceptorBindings, repeatingInterceptorBindingAnnotations);
+    }
+
+    private static Collection<AnnotationInstance> extractAnnotations(AnnotationInstance annotation,
+            Map<DotName, ClassInfo> singulars, Map<DotName, ClassInfo> repeatables) {
         DotName annotationName = annotation.name();
-        if (qualifiers.get(annotationName) != null) {
+        if (singulars.get(annotationName) != null) {
             return Collections.singleton(annotation);
         } else {
-            if (repeatingQualifierAnnotations.get(annotationName) != null) {
-                // container annotation, we need to extract actual qualifiers
+            if (repeatables.get(annotationName) != null) {
+                // repeatable, we need to extract actual annotations
                 return new ArrayList<>(Arrays.asList(annotation.value().asNestedArray()));
             } else {
-                // neither qualifier, nor container annotation, return empty collection
+                // neither singular nor repeatable, return empty collection
                 return Collections.emptyList();
             }
         }
@@ -500,13 +521,13 @@ public class BeanDeployment {
         return qualifiers;
     }
 
-    private static Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> qualifiers, IndexView index) {
+    private static Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations, IndexView index) {
         Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
-        for (ClassInfo qualifier : qualifiers.values()) {
-            AnnotationInstance instance = qualifier.classAnnotation(DotNames.REPEATABLE);
-            if (instance != null) {
-                DotName annotationName = instance.value().asClass().name();
-                containerAnnotations.put(annotationName, getClassByName(index, annotationName));
+        for (ClassInfo annotation : annotations.values()) {
+            AnnotationInstance repeatableMetaAnnotation = annotation.classAnnotation(DotNames.REPEATABLE);
+            if (repeatableMetaAnnotation != null) {
+                DotName containerAnnotationName = repeatableMetaAnnotation.value().asClass().name();
+                containerAnnotations.put(containerAnnotationName, getClassByName(index, containerAnnotationName));
             }
         }
         return containerAnnotations;

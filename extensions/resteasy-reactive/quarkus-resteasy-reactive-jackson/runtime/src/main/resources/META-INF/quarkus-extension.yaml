@@ -1,7 +1,7 @@
 ---
-name: "Quarkus RESTEasy Reactive Jackson"
+name: "RESTEasy Reactive Jackson"
 metadata:
-  short-name: "quarkus-resteasy-reactive-jackson"
+  short-name: "resteasy-reactive-jackson"
   keywords:
     - "rest-jackson"
     - "quarkus-resteasy-reactive-json"
@@ -12,4 +12,5 @@ metadata:
     - "jackson"
   categories:
   - "web"
+  - "reactive"
   status: "experimental"

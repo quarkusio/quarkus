@@ -1,7 +1,7 @@
 ---
-name: "Quarkus RESTEasy Reactive JSON-B"
+name: "RESTEasy Reactive JSON-B"
 metadata:
-  short-name: "quarkus-resteasy-reactive-jsonb"
+  short-name: "resteasy-reactive-jsonb"
   keywords:
     - "rest-jsonb"
     - "resteasy-reactive-json"
@@ -12,4 +12,5 @@ metadata:
     - "jsonb"
   categories:
   - "web"
+  - "reactive"
   status: "experimental"

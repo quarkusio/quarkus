@@ -170,7 +170,7 @@ public final class HibernateReactiveProcessor {
 
     /**
      * This is mostly copied from
-     * {@link io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor#handleHibernateORMWithNoPersistenceXml}
+     * io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor#handleHibernateORMWithNoPersistenceXml
      * Key differences are:
      * - Always produces a persistence unit descriptor, since we assume there always 1 reactive persistence unit
      * - Any JDBC-only configuration settings are removed

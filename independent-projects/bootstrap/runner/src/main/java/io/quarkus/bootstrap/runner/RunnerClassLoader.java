@@ -1,16 +1,12 @@
 package io.quarkus.bootstrap.runner;
 
 import java.net.URL;
-import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 
 /**
  * Classloader used for production application, using the multi jar strategy
@@ -28,8 +24,6 @@ public final class RunnerClassLoader extends ClassLoader {
     // in order for the resource loading to work properly
     private final Set<String> fullyIndexedDirectories;
     private final Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap;
-
-    private final ConcurrentMap<ClassLoadingResource, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
 
     static {
         registerAsParallelCapable();
@@ -87,13 +81,7 @@ public final class RunnerClassLoader extends ClassLoader {
                         continue;
                     }
                     definePackage(packageName, resources);
-                    return defineClass(name, data, 0, data.length,
-                            protectionDomains.computeIfAbsent(resource, new Function<ClassLoadingResource, ProtectionDomain>() {
-                                @Override
-                                public ProtectionDomain apply(ClassLoadingResource ce) {
-                                    return ce.getProtectionDomain(RunnerClassLoader.this);
-                                }
-                            }));
+                    return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
                 }
             }
         }

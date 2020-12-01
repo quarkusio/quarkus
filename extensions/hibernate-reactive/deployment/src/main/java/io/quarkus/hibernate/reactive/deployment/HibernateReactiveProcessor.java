@@ -147,7 +147,11 @@ public final class HibernateReactiveProcessor {
                     dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles);
 
-            persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU, true, false));
+            //Some constant arguments to the following method:
+            // - this is Reactive
+            // - we don't support starting Hibernate Reactive from a persistence.xml
+            // - we don't support Hibernate Envers with Hibernate Reactive
+            persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU, true, false, false));
         }
 
     }

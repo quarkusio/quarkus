@@ -26,7 +26,7 @@ public class HealthUnitTest {
         // the health check does not set a content type so we need to force the parser
         try {
             RestAssured.defaultParser = Parser.JSON;
-            RestAssured.when().get("/health/live").then()
+            RestAssured.when().get("/q/health/live").then()
                     .body("status", is("UP"),
                             "checks.status", contains("UP"),
                             "checks.name", contains("basic"));

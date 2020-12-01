@@ -69,7 +69,6 @@ import io.quarkus.smallrye.openapi.runtime.OpenApiRuntimeConfig;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -169,7 +168,12 @@ public class SmallRyeOpenApiProcessor {
         }
 
         Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
-        return new RouteBuildItem(openApiConfig.path, handler, HandlerType.BLOCKING);
+        return new RouteBuildItem.Builder()
+                .route(openApiConfig.path)
+                .handler(handler)
+                .blockingRoute()
+                .nonApplicationRoute()
+                .build();
     }
 
     @BuildStep

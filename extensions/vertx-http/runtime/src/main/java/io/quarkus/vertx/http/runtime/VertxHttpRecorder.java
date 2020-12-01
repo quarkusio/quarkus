@@ -250,6 +250,11 @@ public class VertxHttpRecorder {
         }
     }
 
+    public void mountFrameworkRouter(RuntimeValue<Router> mainRouter, RuntimeValue<Router> frameworkRouter,
+            String frameworkPath) {
+        mainRouter.getValue().mountSubRouter(frameworkPath, frameworkRouter.getValue());
+    }
+
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig,

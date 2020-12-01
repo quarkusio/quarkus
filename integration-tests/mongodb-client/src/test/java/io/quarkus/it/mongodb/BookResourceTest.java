@@ -43,7 +43,7 @@ public class BookResourceTest {
 
     @Test
     public void health() throws Exception {
-        RestAssured.when().get("/health/ready").then()
+        RestAssured.when().get("/q/health/ready").then()
                 .body("status", is("UP"),
                         "checks.data", containsInAnyOrder(hasKey(MongoHealthCheck.CLIENT_DEFAULT)),
                         "checks.data", containsInAnyOrder(hasKey(MongoHealthCheck.CLIENT_DEFAULT_REACTIVE)),

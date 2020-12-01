@@ -74,7 +74,7 @@ public class OpenshiftWithHealthTest {
                             assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
                                 assertThat(p.getPeriodSeconds()).isEqualTo(10);
                                 assertThat(p.getHttpGet()).satisfies(h1 -> {
-                                    assertThat(h1.getPath()).isEqualTo("/health/ready");
+                                    assertThat(h1.getPath()).isEqualTo("/q/health/ready");
                                 });
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {

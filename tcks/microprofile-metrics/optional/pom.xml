@@ -22,6 +22,8 @@
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <quarkus.resteasy.metrics.enabled>true</quarkus.resteasy.metrics.enabled>
+                        <!-- Change metrics endpoint to be /metrics -->
+                        <quarkus.http.framework-root-path>/</quarkus.http.framework-root-path>
                         <context.root/>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using

@@ -47,7 +47,7 @@ class MPMetricsTest {
     @Order(4)
     void validateMetricsOutput_1() {
         given()
-                .when().get("/metrics")
+                .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
 
@@ -84,7 +84,7 @@ class MPMetricsTest {
     @Order(6)
     void validateMetricsOutput_2() {
         given()
-                .when().get("/metrics")
+                .when().get("/q/metrics")
                 .then()
                 .log().body()
                 .statusCode(200)
@@ -103,7 +103,7 @@ class MPMetricsTest {
     void validateJsonOutput() {
         given()
                 .header("Accept", "application/json")
-                .when().get("/metrics")
+                .when().get("/q/metrics")
                 .then()
                 .log().body()
                 .statusCode(200)

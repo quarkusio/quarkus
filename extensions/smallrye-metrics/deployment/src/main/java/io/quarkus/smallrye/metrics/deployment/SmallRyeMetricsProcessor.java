@@ -77,10 +77,9 @@ import io.quarkus.smallrye.metrics.deployment.spi.MetricsConfigurationBuildItem;
 import io.quarkus.smallrye.metrics.runtime.MetadataHolder;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
 import io.quarkus.smallrye.metrics.runtime.TagHolder;
-import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.FrameworkRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.MetricsRequestHandler;
@@ -154,7 +153,7 @@ public class SmallRyeMetricsProcessor {
     @Record(STATIC_INIT)
     void createRoute(BuildProducer<RouteBuildItem> routes,
             SmallRyeMetricsRecorder recorder,
-            HttpRootPathBuildItem httpRoot,
+            FrameworkRootPathBuildItem frameworkRoot,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             LaunchModeBuildItem launchModeBuildItem) {
         Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
@@ -164,8 +163,18 @@ public class SmallRyeMetricsProcessor {
         if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(metrics.path));
         }
-        routes.produce(new RouteBuildItem(route, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
-        routes.produce(new RouteBuildItem(slash, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
+        routes.produce(new RouteBuildItem.Builder()
+                .routeFunction(route)
+                .handler(recorder.handler(frameworkRoot.adjustPath(metrics.path)))
+                .blockingRoute()
+                .nonApplicationRoute()
+                .build());
+        routes.produce(new RouteBuildItem.Builder()
+                .routeFunction(slash)
+                .handler(recorder.handler(frameworkRoot.adjustPath(metrics.path)))
+                .blockingRoute()
+                .nonApplicationRoute()
+                .build());
     }
 
     @BuildStep

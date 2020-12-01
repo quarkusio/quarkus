@@ -59,10 +59,18 @@ public class PrometheusRegistryProcessor {
         log.debug("PROMETHEUS CONFIG: " + pConfig);
 
         // Exact match for resources matched to the root path
-        routes.produce(new RouteBuildItem(recorder.route(pConfig.path), recorder.getHandler()));
+        routes.produce(new RouteBuildItem.Builder()
+                .routeFunction(recorder.route(pConfig.path))
+                .handler(recorder.getHandler())
+                .nonApplicationRoute()
+                .build());
 
         // Match paths that begin with the deployment path
         String matchPath = pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*");
-        routes.produce(new RouteBuildItem(recorder.route(matchPath), recorder.getHandler()));
+        routes.produce(new RouteBuildItem.Builder()
+                .routeFunction(recorder.route(matchPath))
+                .handler(recorder.getHandler())
+                .nonApplicationRoute()
+                .build());
     }
 }

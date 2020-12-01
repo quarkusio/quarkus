@@ -41,7 +41,11 @@ public class JsonRegistryProcessor {
                 .addBeanClass(JsonMeterRegistryProvider.class)
                 .setUnremovable().build());
         registryProviders.produce(new MicrometerRegistryProviderBuildItem(JsonMeterRegistry.class));
-        routes.produce(new RouteBuildItem(recorder.route(config.export.json.path), recorder.getHandler()));
+        routes.produce(new RouteBuildItem.Builder()
+                .routeFunction(recorder.route(config.export.json.path))
+                .handler(recorder.getHandler())
+                .nonApplicationRoute()
+                .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder("org.HdrHistogram.Histogram",
                         "org.HdrHistogram.DoubleHistogram",

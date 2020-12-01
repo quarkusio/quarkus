@@ -18,6 +18,6 @@ public class DisabledTest {
 
     @Test
     public void shouldUseDefaultConfig() {
-        RestAssured.when().get("/health-ui").then().statusCode(404);
+        RestAssured.when().get("/q/health-ui").then().statusCode(404);
     }
 }

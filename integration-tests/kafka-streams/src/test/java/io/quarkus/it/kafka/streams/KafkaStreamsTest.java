@@ -147,42 +147,42 @@ public class KafkaStreamsTest {
 
     private void testMetricsPresent() {
         // Look for kafka consumer metrics (add .log().all() to examine what they are
-        RestAssured.when().get("/metrics").then()
+        RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)
                 .body(containsString("kafka_stream_"));
     }
 
     public void testKafkaStreamsNotAliveAndNotReady() throws Exception {
-        RestAssured.get("/health/ready").then()
+        RestAssured.get("/q/health/ready").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
                 .body("checks[0].status", CoreMatchers.is("DOWN"))
                 .body("checks[0].data.missing_topics", CoreMatchers.is("streams-test-customers,streams-test-categories"));
 
-        RestAssured.when().get("/health/live").then()
+        RestAssured.when().get("/q/health/live").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams state health check"))
                 .body("checks[0].status", CoreMatchers.is("DOWN"))
                 .body("checks[0].data.state", CoreMatchers.is("CREATED"));
 
-        RestAssured.when().get("/health").then()
+        RestAssured.when().get("/q/health").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
     }
 
     public void testKafkaStreamsAliveAndReady() throws Exception {
-        RestAssured.get("/health/ready").then()
+        RestAssured.get("/q/health/ready").then()
                 .statusCode(HttpStatus.SC_OK)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
                 .body("checks[0].status", CoreMatchers.is("UP"))
                 .body("checks[0].data.available_topics", CoreMatchers.is("streams-test-categories,streams-test-customers"));
 
-        RestAssured.when().get("/health/live").then()
+        RestAssured.when().get("/q/health/live").then()
                 .statusCode(HttpStatus.SC_OK)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams state health check"))
                 .body("checks[0].status", CoreMatchers.is("UP"))
                 .body("checks[0].data.state", CoreMatchers.is("RUNNING"));
 
-        RestAssured.when().get("/health").then()
+        RestAssured.when().get("/q/health").then()
                 .statusCode(HttpStatus.SC_OK);
     }
 

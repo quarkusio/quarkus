@@ -25,7 +25,7 @@ public class SwaggerAndOpenAPIWithCommonPrefixTest {
     @Test
     public void shouldWorkEvenWithCommonPrefix() {
         RestAssured.when().get("/swagger-ui/index.html").then().statusCode(200).body(containsString("/swagger"));
-        RestAssured.when().get("/swagger").then().statusCode(200)
+        RestAssured.when().get("/q/swagger").then().statusCode(200)
                 .body(containsString("/resource"), containsString("QUERY_PARAM_1"));
     }
 }

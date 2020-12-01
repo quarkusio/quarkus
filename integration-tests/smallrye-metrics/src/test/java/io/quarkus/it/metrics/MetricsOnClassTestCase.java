@@ -23,12 +23,12 @@ public class MetricsOnClassTestCase {
     }
 
     private void assertMetricExactValue(String scope, String name, String expectedNameInOutput, String val) {
-        RestAssured.when().get("/metrics/" + scope + "/" + name).then()
+        RestAssured.when().get("/q/metrics/" + scope + "/" + name).then()
                 .body(containsString(expectedNameInOutput + " " + val));
     }
 
     private void assertMetricExists(String scope, String name, String expectedNameInOutput) {
-        RestAssured.when().get("/metrics/" + scope + "/" + name).then()
+        RestAssured.when().get("/q/metrics/" + scope + "/" + name).then()
                 .body(containsString(expectedNameInOutput + " "));
     }
 

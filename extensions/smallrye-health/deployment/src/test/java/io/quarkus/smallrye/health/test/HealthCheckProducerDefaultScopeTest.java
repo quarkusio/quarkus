@@ -33,11 +33,11 @@ public class HealthCheckProducerDefaultScopeTest {
         // the health check does not set a content type so we need to force the parser
         try {
             RestAssured.defaultParser = Parser.JSON;
-            when().get("/health/ready").then()
+            when().get("/q/health/ready").then()
                     .body("status", is("UP"),
                             "checks.status", contains("UP", "UP"),
                             "checks.name", containsInAnyOrder("alpha1", "bravo1"));
-            when().get("/health/ready").then()
+            when().get("/q/health/ready").then()
                     .body("status", is("UP"),
                             "checks.status", contains("UP", "UP"),
                             "checks.name", containsInAnyOrder("alpha1", "bravo2"));

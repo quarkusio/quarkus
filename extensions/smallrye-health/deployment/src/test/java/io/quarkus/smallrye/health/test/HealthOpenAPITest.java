@@ -13,7 +13,7 @@ import io.restassured.RestAssured;
 
 public class HealthOpenAPITest {
 
-    private static final String OPEN_API_PATH = "/openapi";
+    private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

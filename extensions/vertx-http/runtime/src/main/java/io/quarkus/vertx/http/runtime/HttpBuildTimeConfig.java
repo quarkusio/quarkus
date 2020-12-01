@@ -35,4 +35,13 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "/quarkus")
     public String consolePath;
+
+    /**
+     * The HTTP root path for framework endpoints. Various endpoints such as metrics, health,
+     * and open api are deployed under this path.
+     * Setting the value to "/" disables the separate framework root,
+     * resulting in all framework endpoints being served from "/" along with the application.
+     */
+    @ConfigItem(defaultValue = "/q")
+    public String frameworkRootPath;
 }

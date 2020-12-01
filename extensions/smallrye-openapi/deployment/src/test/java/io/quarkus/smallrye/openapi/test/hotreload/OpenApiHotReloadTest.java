@@ -20,7 +20,7 @@ public class OpenApiHotReloadTest {
 
     @Test
     public void testAddingAndDeletingEndpoint() {
-        RestAssured.get("/openapi").then()
+        RestAssured.get("/q/openapi").then()
                 .statusCode(200)
                 .body(containsString("/api"));
 
@@ -30,14 +30,14 @@ public class OpenApiHotReloadTest {
                         + " return \"bonjour\"; "
                         + "}"));
 
-        RestAssured.get("/openapi").then()
+        RestAssured.get("/q/openapi").then()
                 .statusCode(200)
                 .body(containsString("/api"))
                 .body(containsString("/api/foo"));
 
         TEST.modifySourceFile("MyResource.java", s -> s.replace("foo", "bar"));
 
-        RestAssured.get("/openapi").then()
+        RestAssured.get("/q/openapi").then()
                 .statusCode(200)
                 .body(containsString("/api"))
                 .body(not(containsString("/api/foo")))
@@ -45,7 +45,7 @@ public class OpenApiHotReloadTest {
 
         TEST.modifySourceFile("MyResource.java", s -> s.replace("@GET @Path(\"bar\")", ""));
 
-        RestAssured.get("/openapi").then()
+        RestAssured.get("/q/openapi").then()
                 .statusCode(200)
                 .body(containsString("/api"))
                 .body(not(containsString("/api/foo")))
@@ -54,20 +54,20 @@ public class OpenApiHotReloadTest {
 
     @Test
     public void testAddingAndUpdatingResource() {
-        RestAssured.get("/openapi").then()
+        RestAssured.get("/q/openapi").then()
                 .statusCode(200)
                 .body(containsString("/api"));
 
         TEST.addSourceFile(MySecondResource.class);
 
-        RestAssured.get("/openapi").then()
+        RestAssured.get("/q/openapi").then()
                 .statusCode(200)
                 .body(containsString("/api"))
                 .body(containsString("/my-second-api"));
 
         TEST.modifySourceFile("MySecondResource.java", s -> s.replace("my-second-api", "/foo"));
 
-        RestAssured.get("/openapi").then()
+        RestAssured.get("/q/openapi").then()
                 .statusCode(200)
                 .body(containsString("/api"))
                 .body(not(containsString("/my-second-api")))

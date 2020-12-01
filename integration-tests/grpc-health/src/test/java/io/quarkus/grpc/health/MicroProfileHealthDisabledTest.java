@@ -23,7 +23,7 @@ public class MicroProfileHealthDisabledTest {
     public void shouldNotGetMpHealthInfoWhenDisabled() {
         // @formatter:off
         when()
-                .get("/health")
+                .get("/q/health")
         .then()
                 .statusCode(200)
                 .body("checks.size()", Matchers.equalTo(0));

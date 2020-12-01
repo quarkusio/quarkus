@@ -40,7 +40,7 @@ public class KafkaConsumerTest {
     @Test
     public void metrics() throws Exception {
         // Look for kafka consumer metrics (add .log().all() to examine what they are
-        RestAssured.when().get("/metrics").then()
+        RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)
                 .body(containsString("kafka_consumer_"));
     }

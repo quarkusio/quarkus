@@ -60,7 +60,7 @@ public class FruitResourceTest {
 
     @Test
     public void testHealth() {
-        RestAssured.when().get("/health/ready").then()
+        RestAssured.when().get("/q/health/ready").then()
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
                         "checks.name", containsInAnyOrder("Elasticsearch cluster health check"));

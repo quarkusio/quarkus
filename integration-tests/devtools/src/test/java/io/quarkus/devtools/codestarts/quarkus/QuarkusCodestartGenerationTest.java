@@ -76,7 +76,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve(".mvnw")).doesNotExist();
         assertThat(projectDir.resolve(".dockerignore")).doesNotExist();
 
-        checkNoExample(projectDir);
+        assertThat(projectDir.resolve("src/main/java")).exists().isEmptyDirectory();
     }
 
     @Test
@@ -574,12 +574,6 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .exists()
                 .satisfies(checkContains("uses: eskatos/gradle-command-action@v1"))
                 .satisfies(checkContains("arguments: build"));
-    }
-
-    private void checkNoExample(Path projectDir) {
-        assertThat(projectDir.resolve("src/main/java")).doesNotExist();
-        assertThat(projectDir.resolve("src/main/kotlin")).doesNotExist();
-        assertThat(projectDir.resolve("src/main/scala")).doesNotExist();
     }
 
     private void checkDockerfiles(Path projectDir, BuildTool buildTool) {

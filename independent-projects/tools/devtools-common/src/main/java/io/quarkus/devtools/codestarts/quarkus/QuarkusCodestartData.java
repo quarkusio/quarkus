@@ -30,14 +30,11 @@ public final class QuarkusCodestartData {
         JAVA_VERSION("java.version"),
 
         RESTEASY_EXAMPLE_RESOURCE_PATH("resteasy-example.resource.path"),
-        RESTEASY_EXAMPLE_PACKAGE_NAME("resteasy-example.package-name"),
         RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-example.resource.class-name"),
 
         SPRING_WEB_EXAMPLE_RESOURCE_PATH("spring-web-example.resource.path"),
-        SPRING_WEB_EXAMPLE_PACKAGE_NAME("spring-web-example.package-name"),
         SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME("spring-web-example.resource.class-name"),
 
-        COMMANDMODE_EXAMPLE_PACKAGE_NAME("commandmode-example.package-name"),
         COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME("commandmode-example.main.class-name"),
 
         NO_EXAMPLES("quarkus-project.no-examples"),
@@ -72,11 +69,9 @@ public final class QuarkusCodestartData {
         JAVA_VERSION("java_target"),
 
         RESTEASY_EXAMPLE_RESOURCE_PATH("path"),
-        RESTEASY_EXAMPLE_PACKAGE_NAME(QuarkusCodestartData::convertPackageName),
         RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
 
         SPRING_WEB_EXAMPLE_RESOURCE_PATH("path"),
-        SPRING_WEB_EXAMPLE_PACKAGE_NAME(QuarkusCodestartData::convertPackageName),
         SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName);
 
         private final String key;
@@ -113,23 +108,6 @@ public final class QuarkusCodestartData {
                 return className;
             }
             return className.substring(idx + 1);
-        }
-        return null;
-    }
-
-    private static String convertPackageName(final Map<String, Object> legacyData) {
-        Optional<String> packageNameValue = NestedMaps.getValue(legacyData, "package_name");
-        if (packageNameValue.isPresent()) {
-            return packageNameValue.get();
-        }
-        // TODO remove this block when class_name is removed
-        Optional<String> classNameValue = NestedMaps.getValue(legacyData, "class_name");
-        if (classNameValue.isPresent()) {
-            final String className = classNameValue.get();
-            int idx = className.lastIndexOf('.');
-            if (idx >= 0) {
-                return className.substring(0, idx);
-            }
         }
         return null;
     }

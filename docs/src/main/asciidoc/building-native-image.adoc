@@ -578,6 +578,25 @@ To generate debug symbols,
 add `-Dquarkus.native.debug.enabled=true` flag when generating the native executable.
 You will find the debug symbols for the native executable in a `.debug` file next to the native executable.
 
+[NOTE]
+====
+The generation of the `.debug` file depends on `objcopy`.
+On common Linux distributions and macOS you will need to install the `binutils` package:
+
+[source,bash]
+----
+# dnf (rpm-based)
+sudo dnf install binutils
+# Debian-based distributions
+sudo apt-get install binutils
+# macOS
+brew install binutils
+export PATH=/usr/local/opt/binutils/bin:$PATH
+----
+
+When `objcopy` is not available debug symbols are embedded in the executable.
+====
+
 Aside from debug symbols,
 setting `-Dquarkus.native.debug.enabled=true` flag generates a cache of source files
 for any JDK runtime classes, GraalVM classes and application classes resolved during native executable generation.

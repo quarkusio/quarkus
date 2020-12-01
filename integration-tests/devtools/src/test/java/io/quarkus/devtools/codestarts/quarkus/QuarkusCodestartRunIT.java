@@ -98,7 +98,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     @Test
     public void generateCustomizedRESTEasyProjectRun() throws Exception {
         final HashMap<String, Object> data = new HashMap<>();
-        data.put(DataKey.RESTEASY_EXAMPLE_PACKAGE_NAME.getKey(), "com.test.andy");
+        data.put(DataKey.PROJECT_PACKAGE_NAME.getKey(), "com.test.andy");
         data.put(DataKey.RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "AndyEndpoint");
         data.put(DataKey.RESTEASY_EXAMPLE_RESOURCE_PATH.getKey(), "/andy");
         final String buildTool = "maven";
@@ -111,7 +111,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     @Test
     public void generateCustomizedSpringWebProjectRun() throws Exception {
         final HashMap<String, Object> data = new HashMap<>();
-        data.put(DataKey.SPRING_WEB_EXAMPLE_PACKAGE_NAME.getKey(), "com.test.spring.web");
+        data.put(DataKey.PROJECT_PACKAGE_NAME.getKey(), "com.test.spring.web");
         data.put(DataKey.SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "SpringWebEndpoint");
         data.put(DataKey.SPRING_WEB_EXAMPLE_RESOURCE_PATH.getKey(), "/springweb");
         final String buildTool = "maven";
@@ -124,7 +124,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     @Test
     public void generateCustomizedCommandModeProjectRun() throws Exception {
         final HashMap<String, Object> data = new HashMap<>();
-        data.put(DataKey.COMMANDMODE_EXAMPLE_PACKAGE_NAME.getKey(), "com.test.andy");
+        data.put(DataKey.PROJECT_PACKAGE_NAME.getKey(), "com.test.andy");
         data.put(DataKey.COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "AndyCommando");
         final String buildTool = "maven";
         final String language = "java";

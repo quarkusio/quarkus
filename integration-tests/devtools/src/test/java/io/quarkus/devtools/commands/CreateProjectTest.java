@@ -41,24 +41,24 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final Path projectDir = file.toPath();
         ProjectTestUtil.delete(file);
         assertCreateProject(newCreateProject(projectDir)
-                .groupId("io.foo")
+                .groupId("org.acme.foo")
                 .artifactId("resteasy-app")
                 .version("1.0.0-FOO")
-                .className("my.project.resteasy.FooResource")
+                .className("org.acme.getting.started.GreetingResource")
                 .resourcePath("/foo")
                 .extensions(Collections.singleton("resteasy")));
 
         assertThat(projectDir.resolve(".gitignore"))
                 .exists()
                 .satisfies(checkMatches("(?s).*target/\\R.*"));
-        assertThat(projectDir.resolve("src/main/java/io/foo/FooResource.java"))
+        assertThat(projectDir.resolve("src/main/java/org/acme/getting/started/GreetingResource.java"))
                 .exists()
-                .satisfies(checkContains("package io.foo;"))
-                .satisfies(checkContains("class FooResource"))
+                .satisfies(checkContains("package org.acme.getting.started;"))
+                .satisfies(checkContains("class GreetingResource"))
                 .satisfies(checkContains("@Path(\"/foo\")"));
         assertThat(projectDir.resolve("pom.xml"))
                 .exists()
-                .satisfies(checkContains("<groupId>io.foo</groupId>"))
+                .satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
                 .satisfies(checkContains("<artifactId>resteasy-app</artifactId>"))
                 .satisfies(checkContains("<version>1.0.0-FOO</version>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
@@ -74,8 +74,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final Path projectDir = file.toPath();
         ProjectTestUtil.delete(file);
         assertCreateProject(newCreateProject(projectDir)
-                .groupId("io.bar")
-                .packageName("my.project.spring")
+                .groupId("org.acme.bar")
+                .packageName("org.acme.bar.spr")
                 .artifactId("spring-web-app")
                 .version("1.0.0-BAR")
                 .className("BarController")
@@ -83,13 +83,14 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .extensions(Collections.singleton("spring-web")));
         assertThat(projectDir.resolve("pom.xml"))
                 .exists()
-                .satisfies(checkContains("<groupId>io.bar</groupId>"))
+                .satisfies(checkContains("<groupId>org.acme.bar</groupId>"))
                 .satisfies(checkContains("<artifactId>spring-web-app</artifactId>"))
                 .satisfies(checkContains("<version>1.0.0-BAR</version>"))
                 .satisfies(checkContains("<artifactId>quarkus-spring-web</artifactId>"));
 
-        assertThat(projectDir.resolve("src/main/java/my/project/spring/BarController.java"))
+        assertThat(projectDir.resolve("src/main/java/org/acme/bar/spr/BarController.java"))
                 .exists()
+                .satisfies(checkContains("package org.acme.bar.spr"))
                 .satisfies(checkContains("@RestController"))
                 .satisfies(checkContains("class BarController"))
                 .satisfies(checkContains("@RequestMapping(\"/bar\")"));
@@ -191,13 +192,13 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    @Timeout(2)
+    @Timeout(3)
     @DisplayName("Should create correctly multiple times in parallel with multiple threads")
     void createMultipleTimes() throws InterruptedException {
         final ExecutorService executorService = Executors.newFixedThreadPool(4);
-        final CountDownLatch latch = new CountDownLatch(20);
+        final CountDownLatch latch = new CountDownLatch(15);
 
-        List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
+        List<Callable<Void>> collect = IntStream.range(0, 15).boxed().map(i -> (Callable<Void>) () -> {
             File tempDir = Files.createTempDirectory("test").toFile();
             FileProjectWriter write = new FileProjectWriter(tempDir);
             final QuarkusCommandOutcome result = new CreateProject(tempDir.toPath(), getPlatformDescriptor())

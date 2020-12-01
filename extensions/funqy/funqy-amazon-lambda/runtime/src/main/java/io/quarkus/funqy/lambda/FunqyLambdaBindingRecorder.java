@@ -14,6 +14,10 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.quarkus.amazon.lambda.runtime.AbstractLambdaPollLoop;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaContext;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaMapperRecorder;
+import io.quarkus.amazon.lambda.runtime.JacksonInputReader;
+import io.quarkus.amazon.lambda.runtime.JacksonOutputWriter;
+import io.quarkus.amazon.lambda.runtime.LambdaInputReader;
+import io.quarkus.amazon.lambda.runtime.LambdaOutputWriter;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.runtime.FunctionConstructor;
@@ -34,8 +38,8 @@ public class FunqyLambdaBindingRecorder {
 
     private static FunctionInvoker invoker;
     private static BeanContainer beanContainer;
-    private static ObjectReader reader;
-    private static ObjectWriter writer;
+    private static LambdaInputReader reader;
+    private static LambdaOutputWriter writer;
 
     public void init(BeanContainer bc) {
         beanContainer = bc;
@@ -69,10 +73,10 @@ public class FunqyLambdaBindingRecorder {
             invoker = FunctionRecorder.registry.invokers().iterator().next();
         }
         if (invoker.hasInput()) {
-            reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
+            reader = new JacksonInputReader((ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName()));
         }
         if (invoker.hasOutput()) {
-            writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+            writer = new JacksonOutputWriter((ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName()));
         }
 
     }
@@ -111,12 +115,12 @@ public class FunqyLambdaBindingRecorder {
             }
 
             @Override
-            protected ObjectReader getInputReader() {
+            protected LambdaInputReader getInputReader() {
                 return reader;
             }
 
             @Override
-            protected ObjectWriter getOutputWriter() {
+            protected LambdaOutputWriter getOutputWriter() {
                 return writer;
             }
 

@@ -119,4 +119,19 @@ public class RegistryBuilder implements IndexVisitor {
         String getQuarkusVersion();
     }
 
+    @Override
+    public void visitExtensionRelease(String groupId, String artifactId, Release release) {
+        ArtifactKey extensionKey = ImmutableArtifactKey.of(groupId, artifactId);
+        ArtifactCoords coords = ImmutableArtifactCoords.of(extensionKey, release.getVersion());
+        ArtifactCoordsTuple key = ImmutableArtifactCoordsTuple.builder().coords(coords)
+                .quarkusVersion(release.getQuarkusCore())
+                .build();
+        ModifiableExtensionRelease releaseBuilder = releases.computeIfAbsent(key,
+                appArtifactCoords -> ModifiableExtensionRelease.create()
+                        .setRelease(Release.builder()
+                                .version(appArtifactCoords.getCoords().getVersion())
+                                .quarkusCore(appArtifactCoords.getQuarkusVersion())
+                                .build()));
+        releaseBuilder.setRelease(release);
+    }
 }

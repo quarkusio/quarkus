@@ -2,6 +2,7 @@ package io.quarkus.registry.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.List;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.immutables.value.Value;
 
@@ -14,6 +15,9 @@ public interface Release extends Comparable<Release> {
     @Nullable
     @JsonProperty("quarkus-core")
     String getQuarkusCore();
+
+    @JsonProperty("compatible-quarkus-core")
+    List<String> getCompatibleQuarkusCore();
 
     @Nullable
     @JsonProperty("repository-url")

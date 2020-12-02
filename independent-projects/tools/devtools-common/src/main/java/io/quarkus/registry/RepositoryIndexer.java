@@ -38,6 +38,7 @@ public class RepositoryIndexer {
                 io.quarkus.dependencies.Extension ext = artifactResolver.resolveExtension(extension, release);
                 if (ext != null) {
                     visitor.visitExtension(ext, release.getQuarkusCore());
+                    visitor.visitExtensionRelease(ext.getGroupId(), ext.getArtifactId(), release);
                 }
             }
         }

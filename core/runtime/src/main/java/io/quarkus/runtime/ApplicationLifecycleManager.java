@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.lock.Locks;
 
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
 import sun.misc.Signal;
@@ -161,6 +162,8 @@ public class ApplicationLifecycleManager {
                                 .info("Use 'netstat -anop | grep " + port + "' to identify the process occupying the port.");
                         applicationLogger.info("You can try to kill it with 'kill -9 <pid>'.");
                     }
+                } else if (rootCause instanceof ConfigurationException) {
+                    System.err.println(rootCause.getMessage());
                 } else {
                     applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
                             ProfileManager.getActiveProfile());

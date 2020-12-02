@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.test.perclassexception;
+package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -25,6 +25,8 @@ public class FirstResource {
             throw new IllegalArgumentException();
         } else if (name.startsWith("IllegalState")) {
             throw new IllegalStateException("IllegalState");
+        } else if (name.startsWith("MyOther")) {
+            throw new MyOtherException();
         } else if (name.startsWith("My")) {
             throw new MyException();
         }
@@ -37,7 +39,7 @@ public class FirstResource {
     }
 
     @ServerExceptionMapper(MyException.class)
-    public Response handleMy(SimpleResourceInfo simplifiedResourceInfo, MyException myException,
+    public Response handleMyException(SimpleResourceInfo simplifiedResourceInfo, MyException myException,
             ContainerRequestContext containerRequestContext, UriInfo uriInfo, HttpHeaders httpHeaders, Request request,
             HttpServerRequest httpServerRequest) {
         return Response.status(410).entity(uriInfo.getPath() + "->" + simplifiedResourceInfo.getMethodName()).build();

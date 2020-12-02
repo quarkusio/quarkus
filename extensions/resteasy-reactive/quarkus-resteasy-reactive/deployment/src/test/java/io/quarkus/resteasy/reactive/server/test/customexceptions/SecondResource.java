@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.test.perclassexception;
+package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -11,5 +11,12 @@ public class SecondResource {
     @Produces("text/plain")
     public String throwsMyException() {
         throw new MyException();
+    }
+
+    @GET
+    @Path("other")
+    @Produces("text/plain")
+    public String throwsMyOtherException() {
+        throw new MyOtherException();
     }
 }

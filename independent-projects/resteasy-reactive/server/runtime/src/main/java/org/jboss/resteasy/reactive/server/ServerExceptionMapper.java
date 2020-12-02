@@ -11,8 +11,15 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
 /**
- * Annotation for handling exceptions in specific resource classes.
+ * When used on a method, then an implementation of {@link javax.ws.rs.ext.ExceptionMapper} is generated
+ * that calls the annotated method with the proper arguments.
  *
+ * When the annotation is placed on a method that is not a JAX-RS Resource class, the method handles exceptions in global
+ * fashion
+ * (as do regular JAX-RS {@code ExceptionMapper} implementations).
+ * However, when it is placed on a method of a JAX-RS Resource class, the method is only used to handle exceptions originating
+ * from
+ * that JAX-RS Resource class.
  * Methods in a JAX-RS class annotated with this annotation will be used first when determining how to handle a thrown
  * exception.
  * This means that these methods take precedence over the global {@link javax.ws.rs.ext.ExceptionMapper} classes.

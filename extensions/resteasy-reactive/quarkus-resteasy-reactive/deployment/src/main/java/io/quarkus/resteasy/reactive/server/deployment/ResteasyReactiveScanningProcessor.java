@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.*;
 import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.*;
 
 import java.util.Arrays;
@@ -7,6 +8,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.ws.rs.Priorities;
@@ -33,6 +36,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -44,6 +48,7 @@ import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
@@ -214,19 +219,23 @@ public class ResteasyReactiveScanningProcessor {
     }
 
     @BuildStep
-    public void handleCustomProviders(
+    public void handleCustomAnnotatedMethods(
+            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             List<CustomContainerRequestFilterBuildItem> customContainerRequestFilters,
             List<CustomContainerResponseFilterBuildItem> customContainerResponseFilters,
+            List<CustomExceptionMapperBuildItem> customExceptionMappers,
             BuildProducer<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
             BuildProducer<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
+            BuildProducer<ExceptionMapperBuildItem> additionalExceptionMappers,
             BuildProducer<AdditionalBeanBuildItem> additionalBean) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         AdditionalBeanBuildItem.Builder additionalBeans = AdditionalBeanBuildItem.builder();
 
         // if we have custom filters, we need to index these classes
-        if (!customContainerRequestFilters.isEmpty() || !customContainerResponseFilters.isEmpty()) {
+        if (!customContainerRequestFilters.isEmpty() || !customContainerResponseFilters.isEmpty()
+                || !customExceptionMappers.isEmpty()) {
             Indexer indexer = new Indexer();
             Set<DotName> additionalIndex = new HashSet<>();
             //we have to use the non-computing index here
@@ -237,6 +246,10 @@ public class ResteasyReactiveScanningProcessor {
             }
             for (CustomContainerResponseFilterBuildItem filter : customContainerResponseFilters) {
                 IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
+                        Thread.currentThread().getContextClassLoader());
+            }
+            for (CustomExceptionMapperBuildItem mapper : customExceptionMappers) {
+                IndexingUtil.indexClass(mapper.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
                         Thread.currentThread().getContextClassLoader());
             }
             index = CompositeIndex.create(index, indexer.complete());
@@ -282,6 +295,32 @@ public class ResteasyReactiveScanningProcessor {
                 builder.setPriority(priorityValue.asInt());
             }
             additionalContainerResponseFilters.produce(builder.build());
+        }
+
+        Set<MethodInfo> classLevelExceptionMappers = new HashSet<>(resourceScanningResultBuildItem
+                .map(ResourceScanningResultBuildItem::getClassLevelExceptionMappers).orElse(Collections.emptyList()));
+        for (AnnotationInstance instance : index
+                .getAnnotations(SERVER_EXCEPTION_MAPPER)) {
+            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            MethodInfo methodInfo = instance.target().asMethod();
+            if (classLevelExceptionMappers.contains(methodInfo)) { // methods annotated with @ServerExceptionMapper that exist inside a Resource Class are handled differently
+                continue;
+            }
+            // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+            additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
+            Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
+                    new GeneratedBeanGizmoAdaptor(generatedBean));
+            for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
+                ExceptionMapperBuildItem.Builder builder = new ExceptionMapperBuildItem.Builder(entry.getValue(),
+                        entry.getKey()).setRegisterAsBean(false);// it has already been made a bean
+                AnnotationValue priorityValue = instance.value("priority");
+                if (priorityValue != null) {
+                    builder.setPriority(priorityValue.asInt());
+                }
+                additionalExceptionMappers.produce(builder.build());
+            }
         }
 
         additionalBean.produce(additionalBeans.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());

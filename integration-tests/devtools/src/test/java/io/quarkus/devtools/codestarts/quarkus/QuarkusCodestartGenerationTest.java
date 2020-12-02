@@ -312,6 +312,47 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
+    void generateMavenPicocliJava() throws IOException {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-picocli"))
+                .addData(getTestInputData())
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-picocli-java");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("src/main/java/org/acme/picocli/EntryCommand.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/picocli/GoodbyeCommand.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/picocli/HelloCommand.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/picocli/GreetingService.java")).exists();
+    }
+
+    @Test
+    void generateMavenPicocliKotlin() throws IOException {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-picocli"))
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
+                .addData(getTestInputData())
+                .build();
+        final Path projectDir = testDirPath.resolve("maven-picocli-kotlin");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkMaven(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir, BuildTool.MAVEN);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/picocli/EntryCommand.kt")).exists();
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/picocli/GoodbyeCommand.kt")).exists();
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/picocli/HelloCommand.kt")).exists();
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/picocli/GreetingService.kt")).exists();
+    }
+
+    @Test
     void generateMavenConfigYamlJava() throws IOException {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))

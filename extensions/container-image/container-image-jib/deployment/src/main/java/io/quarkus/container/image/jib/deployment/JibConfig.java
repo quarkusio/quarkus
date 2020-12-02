@@ -104,4 +104,10 @@ public class JibConfig {
      */
     @ConfigItem(defaultValue = "8080")
     public List<Integer> ports;
+
+    /**
+     * The user to use in generated image
+     */
+    @ConfigItem
+    public Optional<String> user;
 }

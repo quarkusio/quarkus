@@ -99,6 +99,7 @@ public class JibProcessor {
             throw new IllegalArgumentException(
                     "Package type '" + packageType + "' is not supported by the container-image-jib extension");
         }
+        setUser(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
         containerize(containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
@@ -128,6 +129,7 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
                 nativeImage, containerImageLabels);
+        setUser(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
         containerize(containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
@@ -261,6 +263,10 @@ public class JibProcessor {
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void setUser(JibConfig jibConfig, JibContainerBuilder jibContainerBuilder) {
+        jibConfig.user.ifPresent(jibContainerBuilder::setUser);
     }
 
     private JibContainerBuilder createContainerBuilderFromLegacyJar(JibConfig jibConfig,

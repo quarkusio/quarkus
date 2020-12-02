@@ -1,24 +1,17 @@
 package io.quarkus.resteasy.reactive.server.runtime.exceptionmappers;
 
-import static io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ExceptionMapperUtil.responseFromAuthenticator;
-
 import javax.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.server.spi.AsyncExceptionMapperContext;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
-import io.quarkus.resteasy.reactive.server.runtime.QuarkusResteasyReactiveRequestContext;
 import io.quarkus.security.UnauthorizedException;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
 
-public class UnauthorizedExceptionMapper implements ResteasyReactiveAsyncExceptionMapper<UnauthorizedException> {
+public class UnauthorizedExceptionMapper {
 
-    @Override
-    public Response toResponse(UnauthorizedException exception) {
-        throw new IllegalStateException("This should never have been called");
-    }
-
-    @Override
-    public void asyncResponse(UnauthorizedException exception, AsyncExceptionMapperContext ctx) {
-        responseFromAuthenticator((QuarkusResteasyReactiveRequestContext) ctx.serverRequestContext());
+    @ServerExceptionMapper(UnauthorizedException.class)
+    public Uni<Response> handle(RoutingContext routingContext) {
+        return SecurityExceptionMapperUtil.handleWithAuthenticator(routingContext);
     }
 }

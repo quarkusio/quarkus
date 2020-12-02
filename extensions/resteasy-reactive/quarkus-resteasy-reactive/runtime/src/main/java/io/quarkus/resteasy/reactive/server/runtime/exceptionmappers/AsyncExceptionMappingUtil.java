@@ -23,6 +23,9 @@ public final class AsyncExceptionMappingUtil {
     private static final Response DEFAULT_RESPONSE = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
             .entity("Internal Server Error").build();
 
+    static final Response DEFAULT_UNAUTHORIZED_RESPONSE = Response.status(Response.Status.UNAUTHORIZED)
+            .entity("Not Authenticated").build();
+
     private AsyncExceptionMappingUtil() {
     }
 

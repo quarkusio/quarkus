@@ -2,26 +2,17 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
@@ -35,7 +26,7 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -62,6 +53,12 @@ public class NativeImageAutoFeatureStep {
     private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
+    private static final MethodDescriptor RESOURCES_REGISTRY_ADD_RESOURCES = ofMethod(
+            "com.oracle.svm.core.configure.ResourcesRegistry",
+            "addResources", void.class, String.class);
+    private static final MethodDescriptor RESOURCES_REGISTRY_IGNORE_RESOURCES = ofMethod(
+            "com.oracle.svm.core.configure.ResourcesRegistry",
+            "ignoreResources", void.class, String.class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
@@ -69,37 +66,12 @@ public class NativeImageAutoFeatureStep {
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
 
     @BuildStep
-    List<NativeImageResourceBuildItem> registerPackageResources(
-            List<NativeImageResourceDirectoryBuildItem> nativeImageResourceDirectories)
-            throws IOException, URISyntaxException {
-        List<NativeImageResourceBuildItem> resources = new ArrayList<>();
-
-        for (NativeImageResourceDirectoryBuildItem nativeImageResourceDirectory : nativeImageResourceDirectories) {
-            String path = Thread.currentThread().getContextClassLoader().getResource(nativeImageResourceDirectory.getPath())
-                    .getPath();
-            File resourceFile = Paths.get(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
-            try (JarFile jarFile = new JarFile(resourceFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    String resourceName = entry.getName();
-                    if (!entry.isDirectory() && resourceName.startsWith(nativeImageResourceDirectory.getPath())
-                            && !resourceName.endsWith(".class")) {
-                        resources.add(new NativeImageResourceBuildItem(resourceName));
-                    }
-                }
-            }
-        }
-
-        return resources;
-    }
-
-    @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
             List<NativeImageProxyDefinitionBuildItem> proxies,
             List<NativeImageResourceBuildItem> resources,
+            List<NativeImageResourcePatternsBuildItem> resourcePatterns,
             List<NativeImageResourceBundleBuildItem> resourceBundles,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<ReflectiveFieldBuildItem> reflectiveFields,
@@ -199,6 +171,23 @@ public class NativeImageAutoFeatureStep {
                 overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
                         overallCatch.load(j));
             }
+        }
+
+        /* Resource includes and excludes */
+        if (!resourcePatterns.isEmpty()) {
+            ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                    overallCatch.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"));
+            TryBlock tc = overallCatch.tryBlock();
+            for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
+                for (String pattern : resourcePatternsItem.getIncludePatterns()) {
+                    tc.invokeInterfaceMethod(
+                            RESOURCES_REGISTRY_ADD_RESOURCES,
+                            resourcesRegistrySingleton,
+                            tc.load(pattern));
+                }
+            }
+            CatchBlockCreator cc = tc.addCatch(Throwable.class);
+            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {

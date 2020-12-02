@@ -28,7 +28,7 @@ public class KafkaStreamsRuntimeConfig {
     /**
      * A unique identifier of this application instance, typically in the form host:port.
      */
-    @ConfigItem
+    @ConfigItem(defaultValueDocumentation = "qualifiedHostname:${quarkus.http.port} or qualifiedHostname:${quarkus.http.sslPort} if ssl enabled")
     public Optional<String> applicationServer;
 
     /**

@@ -33,5 +33,6 @@ public class KafkaStreamsPropertiesTest {
         Assertions.assertEquals("20", originals.get(SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS));
         Assertions.assertEquals("http://localhost:8080", originals.get("apicurio.registry.url"));
         Assertions.assertEquals("dummy", originals.get("some-property"));
+        Assertions.assertNotNull(originals.get("application.server"));
     }
 }

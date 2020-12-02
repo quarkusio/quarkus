@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.test.perclassexception;
+package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -13,6 +13,7 @@ import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 @Path("first")
@@ -25,8 +26,12 @@ public class FirstResource {
             throw new IllegalArgumentException();
         } else if (name.startsWith("IllegalState")) {
             throw new IllegalStateException("IllegalState");
+        } else if (name.startsWith("MyOther")) {
+            throw new MyOtherException();
         } else if (name.startsWith("My")) {
             throw new MyException();
+        } else if (name.startsWith("Uni")) {
+            throw new UniException();
         }
         throw new RuntimeException();
     }
@@ -37,9 +42,15 @@ public class FirstResource {
     }
 
     @ServerExceptionMapper(MyException.class)
-    public Response handleMy(SimpleResourceInfo simplifiedResourceInfo, MyException myException,
+    public Response handleMyException(SimpleResourceInfo simplifiedResourceInfo, MyException myException,
             ContainerRequestContext containerRequestContext, UriInfo uriInfo, HttpHeaders httpHeaders, Request request,
             HttpServerRequest httpServerRequest) {
         return Response.status(410).entity(uriInfo.getPath() + "->" + simplifiedResourceInfo.getMethodName()).build();
+    }
+
+    @ServerExceptionMapper(UniException.class)
+    public Uni<Response> handleUniException(UniException e, UriInfo uriInfo, SimpleResourceInfo simplifiedResourceInfo) {
+        return Uni.createFrom().item(
+                () -> Response.status(412).entity(uriInfo.getPath() + "->" + simplifiedResourceInfo.getMethodName()).build());
     }
 }

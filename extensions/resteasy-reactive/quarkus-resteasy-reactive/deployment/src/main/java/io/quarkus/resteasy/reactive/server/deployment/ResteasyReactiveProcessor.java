@@ -94,10 +94,13 @@ import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxBufferMessageBodyWriter;
+import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
+import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
@@ -155,7 +158,7 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
-    void handleCustomExceptionMapper(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+    void handleClassLevelExceptionMappers(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers) {
@@ -169,7 +172,8 @@ public class ResteasyReactiveProcessor {
         GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         final Map<DotName, Map<String, String>> resultingMappers = new HashMap<>(methodExceptionMapper.size());
         for (MethodInfo methodInfo : methodExceptionMapper) {
-            Map<String, String> generationResult = ClassLevelExceptionMapperGenerator.generate(methodInfo, classOutput);
+            Map<String, String> generationResult = ServerExceptionMapperGenerator.generatePerClassMapper(methodInfo,
+                    classOutput);
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, false, false, generationResult.values().toArray(new String[0])));
             Map<String, String> classMappers;
@@ -183,6 +187,12 @@ public class ResteasyReactiveProcessor {
             classMappers.putAll(generationResult);
         }
         classLevelExceptionMappers.produce(new ClassLevelExceptionMappersBuildItem(resultingMappers));
+    }
+
+    @BuildStep
+    void registerCustomExceptionMappers(BuildProducer<CustomExceptionMapperBuildItem> customExceptionMapper) {
+        customExceptionMapper.produce(new CustomExceptionMapperBuildItem(AuthenticationFailedExceptionMapper.class.getName()));
+        customExceptionMapper.produce(new CustomExceptionMapperBuildItem(UnauthorizedExceptionMapper.class.getName()));
     }
 
     @BuildStep

@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.test.perclassexception;
+package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
 import java.util.function.Supplier;
 
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class PerClassExceptionTest {
+public class CustomExceptionMappersTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -20,7 +20,9 @@ public class PerClassExceptionTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(FirstResource.class, SecondResource.class,
-                                    MyException.class);
+                                    MyException.class, MyOtherException.class, UniException.class, ExtendsUniException.class,
+                                    MyOtherExceptionMapper.class, UniExceptionMapper.class,
+                                    SomeBean.class);
                 }
             });
 
@@ -32,19 +34,23 @@ public class PerClassExceptionTest {
                 .then().statusCode(409);
         RestAssured.get("/first?name=My")
                 .then().statusCode(410).body(Matchers.equalTo("/first->throwsVariousExceptions"));
+        RestAssured.get("/first?name=MyOther")
+                .then().statusCode(411);
+        RestAssured.get("/first?name=Uni")
+                .then().statusCode(412).body(Matchers.equalTo("/first->throwsVariousExceptions"));
         RestAssured.get("/first?name=Other")
                 .then().statusCode(500);
     }
 
     @Test
     public void testResourceWithoutExceptionMapper() {
-        RestAssured.get("/second?name=IllegalState")
+        RestAssured.get("/second")
                 .then().statusCode(500);
-        RestAssured.get("/second?name=IllegalArgument")
-                .then().statusCode(500);
-        RestAssured.get("/second?name=My")
-                .then().statusCode(500);
-        RestAssured.get("/second?name=Other")
-                .then().statusCode(500);
+        RestAssured.get("/second/other")
+                .then().statusCode(411);
+        RestAssured.get("/second/uni")
+                .then().statusCode(413);
+        RestAssured.get("/second/extendsUni")
+                .then().statusCode(414);
     }
 }

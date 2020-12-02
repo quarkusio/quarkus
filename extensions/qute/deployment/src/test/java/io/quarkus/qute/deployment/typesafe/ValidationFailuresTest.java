@@ -34,7 +34,8 @@ public class ValidationFailuresTest {
                             + "{movie.toNumber(age)}"
                             + "{#each movie.mainCharacters}{it.boom(1)}{/}"
                             // Template extension method must accept one param
-                            + "{movie.toNumber}"),
+                            + "{movie.toNumber}"
+                            + "{#each movie}{it}{/each}"),
                             "templates/movie.html"))
             .assertException(t -> {
                 Throwable e = t;
@@ -47,7 +48,7 @@ public class ValidationFailuresTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (8)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found template problems (9)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.foo"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.getName('foo')"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.findService(age)"), te.getMessage());
@@ -56,6 +57,9 @@ public class ValidationFailuresTest {
                 assertTrue(te.getMessage().contains("movie.toNumber(age)"), te.getMessage());
                 assertTrue(te.getMessage().contains("it.boom(1)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.toNumber"), te.getMessage());
+                assertTrue(
+                        te.getMessage().contains("Unsupported iterable type found: io.quarkus.qute.deployment.typesafe.Movie"),
+                        te.getMessage());
             });
 
     @Test

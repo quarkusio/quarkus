@@ -127,24 +127,34 @@ public class WhenSectionHelper implements SectionHelper {
                 Expression valueExpr = block.addExpression(VALUE, value);
                 if (valueExpr.hasTypeInfo()) {
                     // If type info is available we do add the expression id 
-                    previousScope.setAttribute(VALUE_EXPR_ID, valueExpr.getGeneratedId());
+                    previousScope.putAttribute(VALUE_EXPR_ID, valueExpr.getGeneratedId());
                 }
             } else if (ELSE.equals(block.getLabel())) {
                 // No special handling required for "else"
             } else if (IS.equals(block.getLabel()) || CASE.equals(block.getLabel())) {
                 Object valueExprId = previousScope.getAttribute(VALUE_EXPR_ID);
-                for (String param : block.getParameters().values()) {
+                int added = 0;
+                Iterator<String> it = block.getParameters().values().iterator();
+                while (it.hasNext()) {
+                    String param = it.next();
+                    if (added == 0 && it.hasNext()) {
+                        // Skip the operator param
+                        continue;
+                    }
+                    added++;
                     if (valueExprId != null) {
                         // This could be an enum switch - we need to add a hint in order to validate the enum constants properly 
-                        String binding = previousScope.getBindingType(param);
-                        if (binding == null) {
-                            binding = param;
+                        String previousBinding = previousScope.getBinding(param);
+                        String newBinding = previousBinding;
+                        if (newBinding == null) {
+                            newBinding = param;
                         }
                         // Append hint to the existing binding if needed
                         // E.g. ON -> ON<when:12345>
-                        binding += HINT_PREFIX + valueExprId + ">";
-                        previousScope.put(param, binding);
+                        newBinding += HINT_PREFIX + valueExprId + ">";
+                        previousScope.putBinding(param, newBinding);
                         block.addExpression(param, param);
+                        previousScope.putBinding(param, previousBinding);
                     } else {
                         block.addExpression(param, param);
                     }

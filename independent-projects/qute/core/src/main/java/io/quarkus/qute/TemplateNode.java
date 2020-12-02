@@ -1,8 +1,8 @@
 package io.quarkus.qute;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -19,10 +19,10 @@ public interface TemplateNode {
 
     /**
      * 
-     * @return a set of expressions
+     * @return a list of expressions
      */
-    default Set<Expression> getExpressions() {
-        return Collections.emptySet();
+    default List<Expression> getExpressions() {
+        return Collections.emptyList();
     }
 
     /**

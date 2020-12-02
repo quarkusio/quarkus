@@ -66,12 +66,13 @@ final class TypeInfos {
                 return new TypeInfo(typeInfo, part, helperHint(typeInfo.substring(endIdx, typeInfo.length())), resolvedType,
                         rawClass);
             }
-        } else if (part.isVirtualMethod()) {
-            return new VirtualMethodInfo(typeInfo, part.asVirtualMethod());
         } else {
             String hint = helperHint(typeInfo);
             if (hint != null) {
                 typeInfo = typeInfo.substring(0, typeInfo.indexOf(LEFT_ANGLE));
+            }
+            if (part.isVirtualMethod() || Expressions.isVirtualMethod(typeInfo)) {
+                return new VirtualMethodInfo(typeInfo, part.asVirtualMethod());
             }
             return new PropertyInfo(typeInfo, part, hint);
         }

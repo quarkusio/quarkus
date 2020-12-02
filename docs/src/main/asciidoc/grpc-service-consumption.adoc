@@ -160,12 +160,16 @@ Don't forget to replace it with the name you used in in the `@GrpcService` annot
 
 === Enabling TLS
 
-To enable TLS, use the following configuration:
+To enable TLS, use the following configuration.
+Note that all paths in the configuration may either specify a resource on the classpath
+(typically from `src/main/resources` or its subfolder) or an external file.
 
-[source]
+[source,properties]
 ----
 quarkus.grpc.clients.hello.host=localhost
-quarkus.grpc.clients.hello.ssl.trust-store=src/main/resources/tls/ca.pem
+
+# either a path to a classpath resource or to a file:
+quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 ----
 
 NOTE: When SSL/TLS is configured, `plain-text` is automatically disabled.
@@ -174,11 +178,13 @@ NOTE: When SSL/TLS is configured, `plain-text` is automatically disabled.
 
 To use TLS with mutual authentication, use the following configuration:
 
-[source]
+[source,properties]
 ----
 quarkus.grpc.clients.hello.host=localhost
 quarkus.grpc.clients.hello.plain-text=false
-quarkus.grpc.clients.hello.ssl.certificate=src/main/resources/tls/client.pem
-quarkus.grpc.clients.hello.ssl.key=src/main/resources/tls/client.key
-quarkus.grpc.clients.hello.ssl.trust-store=src/main/resources/tls/ca.pem
+
+# all the following may use either a path to a classpath resource or to a file:
+quarkus.grpc.clients.hello.ssl.certificate=tls/client.pem
+quarkus.grpc.clients.hello.ssl.key=tls/client.key
+quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 ----

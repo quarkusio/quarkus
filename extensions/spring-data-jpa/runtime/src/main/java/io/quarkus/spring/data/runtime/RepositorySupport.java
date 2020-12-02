@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.persistence.EntityManager;
+
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
@@ -39,5 +41,15 @@ public final class RepositorySupport {
 
     public static Object getOne(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass, Object id) {
         return operations.getEntityManager().getReference(entityClass, id);
+    }
+
+    public static void clear(Class<?> clazz) {
+        EntityManager em = AbstractJpaOperations.getEntityManager(clazz);
+        em.clear();
+    }
+
+    public static void flush(Class<?> clazz) {
+        EntityManager em = AbstractJpaOperations.getEntityManager(clazz);
+        em.flush();
     }
 }

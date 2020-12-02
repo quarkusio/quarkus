@@ -12,14 +12,18 @@ import java.util.stream.Stream;
 
 import javax.persistence.NoResultException;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.jpa.repository.Modifying;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -28,6 +32,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.spring.data.deployment.DotNames;
+import io.quarkus.spring.data.runtime.RepositorySupport;
 import io.quarkus.spring.data.runtime.TypesConverter;
 
 public abstract class AbstractMethodsAdder {
@@ -218,6 +223,36 @@ public abstract class AbstractMethodsAdder {
             throw new IllegalArgumentException(
                     "Return type of method " + methodName + " of Repository " + repositoryClassInfo
                             + " does not match find query type");
+        }
+    }
+
+    /**
+     * Flush the underlying persistence context before executing the modifying query if enabled by {@link Modifying}
+     * annotation.
+     */
+    protected void handleFlushAutomatically(AnnotationInstance modifyingAnnotation, MethodCreator methodCreator,
+            FieldDescriptor entityClassFieldDescriptor) {
+        final AnnotationValue flushAutomatically = modifyingAnnotation != null ? modifyingAnnotation.value("flushAutomatically")
+                : null;
+        if (flushAutomatically != null && flushAutomatically.asBoolean()) {
+            methodCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(RepositorySupport.class, "flush", void.class, Class.class),
+                    methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()));
+        }
+    }
+
+    /**
+     * Clear the underlying persistence context after executing the modifying query if enabled by {@link Modifying}
+     * annotation.
+     */
+    protected void handleClearAutomatically(AnnotationInstance modifyingAnnotation, MethodCreator methodCreator,
+            FieldDescriptor entityClassFieldDescriptor) {
+        final AnnotationValue clearAutomatically = modifyingAnnotation != null ? modifyingAnnotation.value("clearAutomatically")
+                : null;
+        if (clearAutomatically != null && clearAutomatically.asBoolean()) {
+            methodCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(RepositorySupport.class, "clear", void.class, Class.class),
+                    methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()));
         }
     }
 

@@ -12,7 +12,7 @@ public class QueryReturningCustomTypeBadAliasTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("import.sql")
+                    .addAsResource("import_books.sql", "import.sql")
                     .addClasses(Book.class, BookRepositoryBadAlias.class))
             .withConfigurationResource("application.properties")
             .setExpectedException(IllegalArgumentException.class);

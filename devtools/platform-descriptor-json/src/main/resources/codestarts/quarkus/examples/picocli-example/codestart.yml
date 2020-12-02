@@ -1,0 +1,9 @@
+name: picocli-example
+ref: picocli
+type: code
+tags: example
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-picocli
+

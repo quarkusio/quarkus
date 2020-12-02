@@ -63,8 +63,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -129,7 +129,7 @@ public class ArcProcessor {
             ArcConfig arcConfig,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             CombinedIndexBuildItem combinedIndex,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationIndexBuildItem applicationIndex,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
             List<ObserverTransformerBuildItem> observerTransformers,
@@ -172,7 +172,7 @@ public class ArcProcessor {
         Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
         IndexView index = beanArchiveIndex.getIndex();
         BeanProcessor.Builder builder = BeanProcessor.builder();
-        IndexView applicationClassesIndex = applicationArchivesBuildItem.getRootArchive().getIndex();
+        IndexView applicationClassesIndex = applicationIndex.getIndex();
         builder.setApplicationClassPredicate(new AbstractCompositeApplicationClassesPredicate<DotName>(
                 applicationClassesIndex, generatedClassNames, applicationClassPredicates, testClassPredicate) {
             @Override

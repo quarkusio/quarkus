@@ -110,6 +110,8 @@ public class StockMethodsAdder {
         generateDelete(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult);
         generateDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult);
         generateDeleteAll(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult);
+        generateDeleteAllInBatch(classCreator, entityClassFieldDescriptor, generatedClassName,
+                allMethodsToBeImplementedToResult);
 
         handleUnimplementedMethods(classCreator, allMethodsToBeImplementedToResult);
     }
@@ -919,6 +921,27 @@ public class StockMethodsAdder {
                 }
             }
             allMethodsToBeImplementedToResult.put(deleteAllDescriptor, true);
+        }
+    }
+
+    private void generateDeleteAllInBatch(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+
+        MethodDescriptor deleteAllInBatchDescriptor = MethodDescriptor.ofMethod(generatedClassName, "deleteAllInBatch",
+                void.class);
+
+        if (allMethodsToBeImplementedToResult.containsKey(deleteAllInBatchDescriptor)) {
+            if (!classCreator.getExistingMethods().contains(deleteAllInBatchDescriptor)) {
+                try (MethodCreator deleteAll = classCreator.getMethodCreator(deleteAllInBatchDescriptor)) {
+                    deleteAll.addAnnotation(Transactional.class);
+                    ResultHandle result = deleteAll.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "deleteAll", long.class, Class.class),
+                            deleteAll.readStaticField(operationsField),
+                            deleteAll.readInstanceField(entityClassFieldDescriptor, deleteAll.getThis()));
+                    deleteAll.returnValue(result);
+                }
+            }
+            allMethodsToBeImplementedToResult.put(deleteAllInBatchDescriptor, true);
         }
     }
 

@@ -359,10 +359,21 @@ triage:
         - integration-tests/reactive-pg-client/
     - labels: [area/resteasy]
       directories:
-        - extensions/resteasy
+        - extensions/resteasy/
+        - extensions/resteasy-common/
+        - extensions/resteasy-jackson/
+        - extensions/resteasy-jsonb/
+        - extensions/resteasy-jaxb/
+        - extensions/resteasy-multipart/
+        - extensions/resteasy-server-common/
         - integration-tests/resteasy-jackson/
         - integration-tests/elytron-resteasy/
         - integration-tests/virtual-http-resteasy/
+    - labels: [area/resteasy-reactive]
+      title: resteasy.reactive
+      notify: [geoand, FroMage, stuartwdouglas]
+      directories:
+        - extensions/resteasy-reactive/
     - labels: [area/scala]
       directories:
         - extensions/scala/

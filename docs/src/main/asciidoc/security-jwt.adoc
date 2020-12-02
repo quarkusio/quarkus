@@ -34,7 +34,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=security-jwt-quickstart \
     -DclassName="org.acme.security.jwt.TokenSecuredResource" \
     -Dpath="/secured" \
-    -Dextensions="resteasy-jackson, jwt"
+    -Dextensions="resteasy-jackson, smallrye-jwt, smallrye-jwt-build"
 cd security-jwt-quickstart
 ----
 
@@ -45,7 +45,7 @@ to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="smallrye-jwt"
+./mvnw quarkus:add-extension -Dextensions="smallrye-jwt, smallrye-jwt-build"
 ----
 
 This will add the following to your `pom.xml`:
@@ -55,6 +55,10 @@ This will add the following to your `pom.xml`:
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-jwt</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-jwt-build</artifactId>
 </dependency>
 ----
 
@@ -812,8 +816,8 @@ SmallRye JWT provides an API for securing the JWT claims using all of these opti
 [source,xml]
 ----
 <dependency>
-  <groupId>io.smallrye</groupId>
-  <artifactId>smallrye-jwt-build</artifactId>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-smallrye-jwt-build</artifactId>
 </dependency>
 ----
 

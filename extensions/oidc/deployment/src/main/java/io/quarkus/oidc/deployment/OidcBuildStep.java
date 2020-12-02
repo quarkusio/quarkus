@@ -41,7 +41,6 @@ import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
-import io.smallrye.jwt.build.impl.JwtProviderImpl;
 
 public class OidcBuildStep {
     public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
@@ -79,8 +78,6 @@ public class OidcBuildStep {
                 .addBeanClass(DefaultTenantConfigResolver.class)
                 .addBeanClass(DefaultTokenStateManager.class);
         additionalBeans.produce(builder.build());
-
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, JwtProviderImpl.class));
     }
 
     @BuildStep(onlyIf = IsEnabled.class)

@@ -973,6 +973,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-jwt-build</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-jwt-build-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-context-propagation</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2950,6 +2960,14 @@
                     <exclusion>
                         <groupId>javax</groupId>
                         <artifactId>javaee-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.smallrye</groupId>
+                        <artifactId>smallrye-jwt-build</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

@@ -19,4 +19,18 @@ public class SecondResource {
     public String throwsMyOtherException() {
         throw new MyOtherException();
     }
+
+    @GET
+    @Path("uni")
+    @Produces("text/plain")
+    public String throwsUniException() {
+        throw new UniException();
+    }
+
+    @GET
+    @Path("extendsUni")
+    @Produces("text/plain")
+    public String throwsExtendsUniException() {
+        throw new ExtendsUniException();
+    }
 }

@@ -19,8 +19,10 @@ public class CustomExceptionMappersTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FirstResource.class, SecondResource.class, MyOtherExceptionMapper.class,
-                                    MyException.class, MyOtherException.class, SomeBean.class);
+                            .addClasses(FirstResource.class, SecondResource.class,
+                                    MyException.class, MyOtherException.class, UniException.class, ExtendsUniException.class,
+                                    MyOtherExceptionMapper.class, UniExceptionMapper.class,
+                                    SomeBean.class);
                 }
             });
 
@@ -34,6 +36,8 @@ public class CustomExceptionMappersTest {
                 .then().statusCode(410).body(Matchers.equalTo("/first->throwsVariousExceptions"));
         RestAssured.get("/first?name=MyOther")
                 .then().statusCode(411);
+        RestAssured.get("/first?name=Uni")
+                .then().statusCode(412).body(Matchers.equalTo("/first->throwsVariousExceptions"));
         RestAssured.get("/first?name=Other")
                 .then().statusCode(500);
     }
@@ -44,5 +48,9 @@ public class CustomExceptionMappersTest {
                 .then().statusCode(500);
         RestAssured.get("/second/other")
                 .then().statusCode(411);
+        RestAssured.get("/second/uni")
+                .then().statusCode(413);
+        RestAssured.get("/second/extendsUni")
+                .then().statusCode(414);
     }
 }

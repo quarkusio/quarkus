@@ -34,6 +34,8 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link ResourceInfo}
  * <li>{@link SimpleResourceInfo}
  * </ul>
+ *
+ * The return type of the method must be either be of type {@code Response} or {@code Uni<Response>}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

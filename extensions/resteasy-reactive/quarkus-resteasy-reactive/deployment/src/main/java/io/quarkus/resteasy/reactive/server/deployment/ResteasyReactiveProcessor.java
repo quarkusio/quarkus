@@ -223,7 +223,7 @@ public class ResteasyReactiveProcessor {
 
         if (capabilities.isPresent(Capability.RESTEASY)) {
             throw new IllegalStateException(
-                    "The 'quarkus-rest' and 'quarkus-resteasy' extensions cannot be used at the same time.");
+                    "The 'quarkus-resteasy-reactive' and 'quarkus-resteasy' extensions cannot be used at the same time.");
         }
 
         recorderContext.registerNonDefaultConstructor(

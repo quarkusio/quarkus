@@ -295,6 +295,9 @@ public class NativeImageBuildStep {
                 }
                 // Strip debug symbols regardless, because the underlying JDK might contain them
                 objcopy("--strip-debug", finalPath.toString());
+            } else {
+                log.warn("objcopy executable not found in PATH. Debug symbols will not be separated from executable.");
+                log.warn("That will result in a larger native image with debug symbols embedded in it.");
             }
 
             return new NativeImageBuildItem(finalPath);
@@ -652,7 +655,6 @@ public class NativeImageBuildStep {
             }
         }
 
-        log.debug("Cannot find executable (objcopy) to separate symbols from executable.");
         return false;
     }
 

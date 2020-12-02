@@ -140,7 +140,9 @@ final class CodestartProcessor {
                     this.files.get(processedRelativeTargetPath)
                             .add(new TargetFile(processedRelativeTargetPath, content.get()));
                 } else {
-                    log.debug("ignoring file: %s", source.absolutePath());
+                    final Path targetPath = targetDirectory.resolve(processedRelativeTargetPath);
+                    Files.createDirectories(targetPath.getParent());
+                    log.debug("ignoring file (but creating directory): %s", source.absolutePath());
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

@@ -3,48 +3,24 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-smallrye-jwt-parent</artifactId>
+        <artifactId>quarkus-smallrye-jwt-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-jwt</artifactId>
-    <name>Quarkus - SmallRye JWT - Runtime</name>
-    <description>Secure your applications with JSON Web Token</description>
+    <artifactId>quarkus-smallrye-jwt-build</artifactId>
+    <name>Quarkus - SmallRye JWT Token Build - Runtime</name>
+    <description>Create JSON Web Token with SmallRye JWT Build API</description>
 
     <dependencies>
         <dependency>
             <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-jwt</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
+            <artifactId>smallrye-jwt-build</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-json-p-provider</artifactId>
         </dependency>
     </dependencies>
 

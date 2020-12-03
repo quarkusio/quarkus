@@ -467,7 +467,11 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T unwrap(Class<T> cls) {
+        if (cls.isAssignableFrom(Session.class)) {
+            return (T) this;
+        }
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.unwrap(cls);

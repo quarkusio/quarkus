@@ -4,7 +4,6 @@ import java.security.BasicPermission;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.security.auth.AuthPermission;
@@ -30,14 +29,11 @@ public class ProtectedResource {
     @GET
     public Uni<List<Permission>> permissions() {
         return identity.checkPermission(new AuthPermission("Permission Resource")).onItem()
-                .apply(new Function<Boolean, List<Permission>>() {
-                    @Override
-                    public List<Permission> apply(Boolean granted) {
-                        if (granted) {
-                            return identity.getAttribute("permissions");
-                        }
-                        throw new ForbiddenException();
+                .transform(granted -> {
+                    if (granted) {
+                        return identity.getAttribute("permissions");
                     }
+                    throw new ForbiddenException();
                 });
     }
 
@@ -50,14 +46,11 @@ public class ProtectedResource {
                 return scope;
             }
         }).onItem()
-                .apply(new Function<Boolean, List<Permission>>() {
-                    @Override
-                    public List<Permission> apply(Boolean granted) {
-                        if (granted) {
-                            return identity.getAttribute("permissions");
-                        }
-                        throw new ForbiddenException();
+                .transform(granted -> {
+                    if (granted) {
+                        return identity.getAttribute("permissions");
                     }
+                    throw new ForbiddenException();
                 });
     }
 

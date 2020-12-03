@@ -6,6 +6,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.arc.Arc;
@@ -40,7 +41,12 @@ public class TenantResource {
         String name = getNameServiceType();
         if ("tenant-d".equals(tenant) || "tenant-b-no-discovery".equals(tenant)) {
             UserInfo userInfo = getUserInfo();
-            name = name + "." + userInfo.getString("preferred_username");
+            if (!userInfo.contains(Claims.sub.name())) {
+                throw new OIDCException("UserInfo returned from Keycloak must contain 'sub'");
+            }
+            if (userInfo.getPropertyNames().contains(Claims.preferred_username.name())) {
+                name = name + "." + userInfo.getString(Claims.preferred_username.name());
+            }
         }
         return tenant + ":" + name;
     }

@@ -318,7 +318,7 @@ public class ProtectedResource {
     @GET
     public CompletionStage<List<Permission>> get() {
         return identity.checkPermission(new AuthPermission("{resource_name}"))
-                .thenCompose(granted -> {
+                .transform(granted -> {
                     if (granted) {
                         return CompletableFuture.completedFuture(doGetState());
                     }

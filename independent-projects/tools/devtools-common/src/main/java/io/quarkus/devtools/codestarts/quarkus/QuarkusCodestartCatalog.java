@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<QuarkusCodestartProjectInput> {
@@ -69,13 +70,17 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             QuarkusPlatformDescriptor platformDescriptor, Collection<Path> directories)
             throws IOException {
         final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
-        final ArrayList<Codestart> codestarts = new ArrayList<>(
-                CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR));
+        final Map<String, Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR)
+                .stream()
+                .collect(Collectors.toMap(Codestart::getName, Function.identity()));
         for (Path directory : directories) {
-            codestarts.addAll(CodestartCatalogLoader.loadUserDirectoryCodestarts(directory));
+            final Map<String, Codestart> dirCodestarts = CodestartCatalogLoader.loadUserDirectoryCodestarts(directory).stream()
+                    .collect(Collectors.toMap(Codestart::getName, Function.identity()));
+            // On duplicates, directories override platform codestarts
+            codestarts.putAll(dirCodestarts);
         }
         final Map<String, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
-        return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
+        return new QuarkusCodestartCatalog(codestarts.values(), extensionCodestartMapping);
     }
 
     @Override
@@ -157,7 +162,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     public static boolean isExample(Codestart codestart) {
         return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.getKey());
-    };
+    }
 
     interface KeySupplier {
         default String getKey() {
@@ -170,5 +175,4 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .filter(e -> e.getCodestart() != null)
                 .collect(Collectors.toMap(Extensions::toGA, Extension::getCodestart));
     }
-
 }

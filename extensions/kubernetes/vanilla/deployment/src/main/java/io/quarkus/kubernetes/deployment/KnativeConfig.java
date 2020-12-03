@@ -132,6 +132,12 @@ public class KnativeConfig implements PlatformConfiguration {
     ProbeConfig readinessProbe;
 
     /**
+     * Prometheus configuration
+     */
+    @ConfigItem
+    PrometheusConfig prometheus;
+
+    /**
      * Volume mounts
      */
     @ConfigItem
@@ -279,6 +285,10 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public ProbeConfig getReadinessProbe() {
         return readinessProbe;
+    }
+
+    public PrometheusConfig getPrometheusConfig() {
+        return prometheus;
     }
 
     public Map<String, MountConfig> getMounts() {

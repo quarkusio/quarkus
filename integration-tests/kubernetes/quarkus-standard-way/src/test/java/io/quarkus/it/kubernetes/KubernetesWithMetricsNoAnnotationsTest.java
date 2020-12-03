@@ -24,7 +24,7 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithMetricsTest {
+public class KubernetesWithMetricsNoAnnotationsTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -33,7 +33,7 @@ public class KubernetesWithMetricsTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics.properties")
+            .withConfigurationResource("kubernetes-with-metrics-no-annotations.properties")
             .setForcedDependencies(
                     Collections.singletonList(
                             new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion())));
@@ -72,7 +72,8 @@ public class KubernetesWithMetricsTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getMetadata()).satisfies(meta -> {
-                        assertThat(meta.getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
+                        // Annotations should not have been created in this configuration.
+                        assertThat(meta.getAnnotations()).doesNotContain(entry("prometheus.io/scrape", "true"),
                                 entry("prometheus.io/path", "/met"), entry("prometheus.io/port", "9090"),
                                 entry("prometheus.io/scheme", "http"));
                     });

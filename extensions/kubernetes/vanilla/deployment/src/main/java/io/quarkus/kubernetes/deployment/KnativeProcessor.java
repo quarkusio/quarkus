@@ -110,7 +110,8 @@ public class KnativeProcessor {
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, outputTarget, packageConfig);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config, metricsConfiguration, annotations,
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config,
+                metricsConfiguration, annotations,
                 labels, command,
                 ports, livenessPath, readinessPath, roles, roleBindings));
 

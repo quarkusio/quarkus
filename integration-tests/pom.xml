@@ -85,6 +85,7 @@
         <module>amazon-services</module>
         <module>test-extension</module>
         <module>amazon-lambda</module>
+        <module>amazon-lambda-s3event</module>
         <module>amazon-lambda-stream-handler</module>
         <module>amazon-lambda-http</module>
         <module>amazon-lambda-http-resteasy</module>

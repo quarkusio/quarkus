@@ -14,7 +14,6 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ShutdownContext;
@@ -144,9 +143,9 @@ public abstract class AbstractLambdaPollLoop {
     protected abstract void processRequest(InputStream input, OutputStream output, AmazonLambdaContext context)
             throws Exception;
 
-    protected abstract ObjectReader getInputReader();
+    protected abstract LambdaInputReader getInputReader();
 
-    protected abstract ObjectWriter getOutputWriter();
+    protected abstract LambdaOutputWriter getOutputWriter();
 
     protected AmazonLambdaContext createContext(HttpURLConnection requestConnection) throws IOException {
         return new AmazonLambdaContext(requestConnection, cognitoIdReader, clientCtxReader);

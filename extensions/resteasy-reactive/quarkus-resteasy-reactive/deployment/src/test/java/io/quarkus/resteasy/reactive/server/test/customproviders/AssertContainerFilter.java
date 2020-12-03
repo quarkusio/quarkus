@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Request;
@@ -17,6 +18,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.RequestImpl;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 
+import io.quarkus.resteasy.reactive.server.runtime.filters.PreventAbortResteasyReactiveContainerRequestContext;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
@@ -36,13 +38,15 @@ public class AssertContainerFilter {
     @ServerRequestFilter
     public void whatever(Request request, HttpServerRequest httpServerRequest, SimpleResourceInfo simplifiedResourceInfo,
             ResourceInfo resourceInfo, ResteasyReactiveContainerRequestContext resteasyReactiveContainerRequestContext,
-            RoutingContext routingContext) {
+            ContainerRequestContext containerRequestContext, RoutingContext routingContext) {
         assertNotNull(someBean);
         assertTrue(RequestImpl.class.isAssignableFrom(request.getClass()));
         assertNotNull(httpServerRequest);
         assertTrue(ResteasyReactiveSimplifiedResourceInfo.class.isAssignableFrom(simplifiedResourceInfo.getClass()));
         assertTrue(ResteasyReactiveResourceInfo.class.isAssignableFrom(resourceInfo.getClass()));
         assertNotNull(resteasyReactiveContainerRequestContext);
+        assertTrue(
+                PreventAbortResteasyReactiveContainerRequestContext.class.isAssignableFrom(containerRequestContext.getClass()));
         assertNotNull(routingContext);
         COUNT.incrementAndGet();
     }

@@ -44,6 +44,16 @@ import javax.ws.rs.container.ResourceInfo;
  * <li>{@link SimpleResourceInfo}
  * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown
  * </ul>
+ *
+ * The return type of the method must be either be of type {@code void} or {@code Uni<Void>}.
+ * <ul>
+ * <li>{@code void} should be used when filtering does not need to perform any blocking operations.
+ * <li>{@code Uni<Void>} should be used when filtering needs to perform a blocking operations.
+ * </ul>
+ *
+ * Another important thing to note is that if {@link ContainerRequestContext} is used as a request parameter, calling
+ * {@code abortWith}
+ * is prohibited by the JAX-RS specification.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

@@ -10,5 +10,5 @@ public interface ResteasyReactiveContainerRequestFilter extends ContainerRequest
         filter((ResteasyReactiveContainerRequestContext) requestContext);
     }
 
-    public void filter(ResteasyReactiveContainerRequestContext requestContext);
+    void filter(ResteasyReactiveContainerRequestContext requestContext);
 }

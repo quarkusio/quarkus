@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 public class QuarkusLauncher {
 
     public static void launch(String callingClass, String quarkusApplication, String... args) {
+        final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
         try {
             String classResource = callingClass.replace(".", "/") + ".class";
             URL resource = Thread.currentThread().getContextClassLoader().getResource(classResource);
@@ -57,6 +58,7 @@ public class QuarkusLauncher {
             throw new RuntimeException(e);
         } finally {
             System.clearProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
+            Thread.currentThread().setContextClassLoader(originalCl);
         }
     }
 

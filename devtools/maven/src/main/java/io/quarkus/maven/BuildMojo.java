@@ -77,7 +77,6 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     @Override
     protected void doExecute() throws MojoExecutionException {
 
-        boolean clear = false;
         try {
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
 
@@ -110,10 +109,6 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to build quarkus application", e);
-        } finally {
-            if (clear) {
-                System.clearProperty(QUARKUS_PACKAGE_UBER_JAR);
-            }
         }
     }
 

@@ -35,6 +35,18 @@ public class PackageIT extends MojoTestBase {
     private File testDir;
 
     @Test
+    public void testUberJarMavenPluginConfiguration()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/uberjar-maven-plugin-config");
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        verifyUberJar();
+    }
+
+    @Test
     public void testPackageWorksWhenUberjarIsFalse()
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/uberjar-check", "projects/project-uberjar-false");
@@ -126,6 +138,10 @@ public class PackageIT extends MojoTestBase {
                 Collections.emptyMap(), p);
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
+        verifyUberJar();
+    }
+
+    private void verifyUberJar() throws IOException {
         final File targetDir = getTargetDir();
         List<File> jars = getFilesEndingWith(targetDir, ".jar");
         assertThat(jars).hasSize(1);

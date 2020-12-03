@@ -39,14 +39,14 @@ download() {
   fi
 }
 
-abs_jbang_path=/usr/local/Cellar/jbang/0.51.1/libexec/bin/jbang.jar
+abs_jbang_path=$(resolve_symlink $(absolute_path $0))
 
 case "$(uname -s)" in
   Linux*)
     os=linux;;
   Darwin*)
     os=mac;;
-  CYGWIN*|MINGW*)
+  CYGWIN*|MINGW*|MSYS*)
     os=windows;;
   *)        echo "Unsupported Operating System: $(uname -s)" 1>&2; exit 1;;
 esac
@@ -58,6 +58,8 @@ case "$(uname -m)" in
     arch=x64;;
   aarch64)
     arch=aarch64;;
+  armv7l)
+    arch=arm;;
   *)
     echo "Unsupported Architecture: $(uname -m)" 1>&2; exit 1;;
 esac
@@ -87,8 +89,9 @@ else
     rm -rf "$TDIR/urls/jbang"
     tar xf "$TDIR/urls/jbang.tar" -C "$TDIR/urls"
     if [ $retval -ne 0 ]; then echo "Error installing JBang" 1>&2; exit $retval; fi
-    rm -rf "$JBDIR/bin"
-    mv "$TDIR/urls/jbang/bin" "$JBDIR"
+    mkdir -p "$JBDIR/bin"
+    rm -f "$JBDIR/bin/jbang" "$JBDIR/bin"/jbang.*
+    cp -f "$TDIR/urls/jbang/bin"/* "$JBDIR/bin"
   fi
   eval "exec $JBDIR/bin/jbang $*"
 fi
@@ -152,7 +155,9 @@ output=$(CLICOLOR_FORCE=1 ${JAVA_EXEC} ${JBANG_JAVA_OPTIONS} -classpath ${jarPat
 err=$?
 if [ $err -eq 255 ]; then
   eval "exec $output"
-else
+elif [ ! -z "$output" ]; then
   echo "$output"
+  exit $err
+else
   exit $err
 fi

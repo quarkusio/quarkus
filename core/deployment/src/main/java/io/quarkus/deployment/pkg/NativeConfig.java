@@ -136,7 +136,7 @@ public class NativeConfig {
      * a container build is always done.
      */
     @ConfigItem
-    public Optional<String> containerRuntime;
+    public Optional<ContainerRuntime> containerRuntime;
 
     /**
      * Options to pass to the container runtime
@@ -279,5 +279,17 @@ public class NativeConfig {
          */
         @ConfigItem
         public boolean enabled;
+    }
+
+    /**
+     * Supported Container runtimes
+     */
+    public static enum ContainerRuntime {
+        DOCKER,
+        PODMAN;
+
+        public String getExecutableName() {
+            return this.name().toLowerCase();
+        }
     }
 }

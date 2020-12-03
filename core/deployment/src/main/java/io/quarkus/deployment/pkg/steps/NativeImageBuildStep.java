@@ -38,6 +38,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.NativeConfig.ContainerRuntime;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -343,7 +344,9 @@ public class NativeImageBuildStep {
     public static List<String> setupContainerBuild(NativeConfig nativeConfig,
             Optional<ProcessInheritIODisabled> processInheritIODisabled, Path outputDir) {
         List<String> nativeImage;
-        String containerRuntime = nativeConfig.containerRuntime.orElse("docker");
+        final ContainerRuntime containerRuntime = nativeConfig.containerRuntime
+                .orElseGet(NativeImageBuildStep::detectContainerRuntime);
+        log.infof("Using %s to run the native image builder", containerRuntime.getExecutableName());
         // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
         nativeImage = new ArrayList<>();
 
@@ -351,7 +354,7 @@ public class NativeImageBuildStep {
         if (SystemUtils.IS_OS_WINDOWS) {
             outputPath = FileUtil.translateToVolumePath(outputPath);
         }
-        Collections.addAll(nativeImage, containerRuntime, "run", "-v",
+        Collections.addAll(nativeImage, containerRuntime.getExecutableName(), "run", "-v",
                 outputPath + ":" + CONTAINER_BUILD_VOLUME_PATH + ":z", "--env", "LANG=C");
 
         if (SystemUtils.IS_OS_LINUX) {
@@ -359,7 +362,7 @@ public class NativeImageBuildStep {
             String gid = getLinuxID("-gr");
             if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
                 Collections.addAll(nativeImage, "--user", uid + ":" + gid);
-                if ("podman".equals(containerRuntime)) {
+                if (containerRuntime == ContainerRuntime.PODMAN) {
                     // Needed to avoid AccessDeniedExceptions
                     nativeImage.add("--userns=keep-id");
                 }
@@ -372,7 +375,7 @@ public class NativeImageBuildStep {
         }
         Collections.addAll(nativeImage, "--rm", nativeConfig.builderImage);
 
-        if ("docker".equals(containerRuntime) || "podman".equals(containerRuntime)) {
+        if (containerRuntime == ContainerRuntime.DOCKER || containerRuntime == ContainerRuntime.PODMAN) {
             // we pull the docker image in order to give users an indication of which step the process is at
             // it's not strictly necessary we do this, however if we don't the subsequent version command
             // will appear to block and no output will be shown
@@ -380,7 +383,7 @@ public class NativeImageBuildStep {
             Process pullProcess = null;
             try {
                 final ProcessBuilder pb = new ProcessBuilder(
-                        Arrays.asList(containerRuntime, "pull", nativeConfig.builderImage));
+                        Arrays.asList(containerRuntime.getExecutableName(), "pull", nativeConfig.builderImage));
                 pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled.isPresent());
                 pullProcess.waitFor();
             } catch (IOException | InterruptedException e) {
@@ -392,6 +395,51 @@ public class NativeImageBuildStep {
             }
         }
         return nativeImage;
+    }
+
+    /**
+     * @return {@link ContainerRuntime#PODMAN} if the podman executable exists in the environment or if the docker executable
+     *         is an alias to podman, else returns {@link ContainerRuntime#DOCKER} if it's available
+     * @throws IllegalStateException if no container runtime was found to build the image
+     */
+    private static ContainerRuntime detectContainerRuntime() {
+        // Docker version 19.03.14, build 5eb3275d40
+        String dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
+        boolean dockerAvailable = dockerVersionOutput.contains("Docker version");
+        // Check if Podman is installed
+        // podman version 2.1.1
+        String podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
+        boolean podmanAvailable = podmanVersionOutput.startsWith("podman version");
+        if (dockerAvailable) {
+            // Check if "docker" is an alias to "podman"
+            if (dockerVersionOutput.equals(podmanVersionOutput)) {
+                return ContainerRuntime.PODMAN;
+            }
+            return ContainerRuntime.DOCKER;
+        } else if (podmanAvailable) {
+            return ContainerRuntime.PODMAN;
+        } else {
+            throw new IllegalStateException("No container runtime was found to run the native image builder");
+        }
+    }
+
+    private static String getVersionOutputFor(ContainerRuntime containerRuntime) {
+        Process versionProcess = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(containerRuntime.getExecutableName(), "--version")
+                    .redirectErrorStream(true);
+            versionProcess = pb.start();
+            versionProcess.waitFor();
+            return new String(FileUtil.readFileContents(versionProcess.getInputStream()), StandardCharsets.UTF_8);
+        } catch (IOException | InterruptedException e) {
+            // If an exception is thrown in the process, just return an empty String
+            log.debugf(e, "Failure to read version output from %s", containerRuntime.getExecutableName());
+            return "";
+        } finally {
+            if (versionProcess != null) {
+                versionProcess.destroy();
+            }
+        }
     }
 
     private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,
@@ -448,8 +496,9 @@ public class NativeImageBuildStep {
 
         final Path targetSrc = targetDirectory.resolve(Paths.get(APP_SOURCES));
         final File targetSrcFile = targetSrc.toFile();
-        if (!targetSrcFile.exists())
+        if (!targetSrcFile.exists()) {
             targetSrcFile.mkdirs();
+        }
 
         final Path javaSourcesPath = outputTargetBuildItem.getOutputDirectory().resolve(
                 Paths.get("..", "src", "main", "java"));

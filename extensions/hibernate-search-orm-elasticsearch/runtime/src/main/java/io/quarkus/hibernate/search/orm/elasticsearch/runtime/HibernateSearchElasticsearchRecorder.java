@@ -7,18 +7,27 @@ import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSea
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
+import javax.enterprise.inject.literal.NamedLiteral;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchBackendSettings;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexSettings;
 import org.hibernate.search.engine.cfg.BackendSettings;
 import org.hibernate.search.engine.cfg.EngineSettings;
+import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBooter;
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmMapperSpiSettings;
 import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmReflectionStrategyName;
+import org.hibernate.search.mapper.orm.mapping.SearchMapping;
+import org.hibernate.search.mapper.orm.session.SearchSession;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
@@ -38,6 +47,38 @@ public class HibernateSearchElasticsearchRecorder {
 
     public void setRuntimeConfig(HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
         HibernateSearchElasticsearchRecorder.runtimeConfig = runtimeConfig;
+    }
+
+    public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+        return new Supplier<SearchMapping>() {
+            @Override
+            public SearchMapping get() {
+                SessionFactory sessionFactory;
+                if (isDefaultPersistenceUnit) {
+                    sessionFactory = Arc.container().instance(SessionFactory.class).get();
+                } else {
+                    sessionFactory = Arc.container().instance(
+                            SessionFactory.class, NamedLiteral.of(persistenceUnitName)).get();
+                }
+                return Search.mapping(sessionFactory);
+            }
+        };
+    }
+
+    public Supplier<SearchSession> searchSessionSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+        return new Supplier<SearchSession>() {
+            @Override
+            public SearchSession get() {
+                Session session;
+                if (isDefaultPersistenceUnit) {
+                    session = Arc.container().instance(Session.class).get();
+                } else {
+                    session = Arc.container().instance(
+                            Session.class, NamedLiteral.of(persistenceUnitName)).get();
+                }
+                return Search.session(session);
+            }
+        };
     }
 
     private static final class HibernateSearchIntegrationListener implements HibernateOrmIntegrationListener {

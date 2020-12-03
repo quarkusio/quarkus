@@ -76,31 +76,19 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     private String[] ignoredEntries;
 
     private AppArtifactKey projectId;
-    private boolean clearUberJarProp;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (!beforeExecute()) {
             return;
         }
-        try {
-            doExecute();
-        } finally {
-            if (clearUberJarProp) {
-                System.clearProperty(BuildMojo.QUARKUS_PACKAGE_UBER_JAR);
-                clearUberJarProp = false;
-            }
-        }
+        doExecute();
     }
 
     @Override
     public void setLog(Log log) {
         super.setLog(log);
         MojoLogger.delegate = log;
-    }
-
-    protected void clearUberJarProp() {
-        this.clearUberJarProp = true;
     }
 
     /**

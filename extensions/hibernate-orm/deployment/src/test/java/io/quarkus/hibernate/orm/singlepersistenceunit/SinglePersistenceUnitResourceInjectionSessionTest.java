@@ -2,10 +2,10 @@ package io.quarkus.hibernate.orm.singlepersistenceunit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.transaction.Transactional;
 
+import org.hibernate.Session;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SinglePersistenceUnitResourceInjectionTest {
+public class SinglePersistenceUnitResourceInjectionSessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -22,15 +22,15 @@ public class SinglePersistenceUnitResourceInjectionTest {
                     .addAsResource("application.properties"));
 
     @PersistenceContext
-    EntityManager entityManager;
+    Session session;
 
     @Test
     @Transactional
     public void test() {
         DefaultEntity entity = new DefaultEntity("gsmet");
-        entityManager.persist(entity);
+        session.persist(entity);
 
-        DefaultEntity savedEntity = entityManager.find(DefaultEntity.class, entity.getId());
+        DefaultEntity savedEntity = session.get(DefaultEntity.class, entity.getId());
         assertEquals(entity.getName(), savedEntity.getName());
     }
 

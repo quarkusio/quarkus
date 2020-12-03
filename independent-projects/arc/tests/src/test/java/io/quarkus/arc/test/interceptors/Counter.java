@@ -8,15 +8,15 @@ public class Counter {
 
     private AtomicInteger counter = new AtomicInteger();
 
-    int incrementAndGet() {
+    public int incrementAndGet() {
         return counter.incrementAndGet();
     }
 
-    void reset() {
+    public void reset() {
         counter.set(0);
     }
 
-    int get() {
+    public int get() {
         return counter.get();
     }
 

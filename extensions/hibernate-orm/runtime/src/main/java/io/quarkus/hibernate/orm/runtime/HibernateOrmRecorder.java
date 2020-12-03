@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-
 import org.hibernate.MultiTenancyStrategy;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
 import org.jboss.logging.Logger;
@@ -18,8 +17,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
-import io.quarkus.hibernate.orm.runtime.entitymanager.ForwardingEntityManager;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.session.ForwardingSession;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -86,33 +85,33 @@ public class HibernateOrmRecorder {
         beanContainer.instance(JPAConfig.class).startAll();
     }
 
-    public Supplier<EntityManagerFactory> entityManagerFactorySupplier(String persistenceUnitName) {
-        return new Supplier<EntityManagerFactory>() {
-
+    public Supplier<SessionFactory> sessionFactorySupplier(String persistenceUnitName) {
+        return new Supplier<SessionFactory>() {
             @Override
-            public EntityManagerFactory get() {
-                EntityManagerFactory entityManagerFactory = Arc.container().instance(JPAConfig.class).get()
-                        .getEntityManagerFactory(persistenceUnitName);
+            public SessionFactory get() {
+                SessionFactory sessionFactory = Arc.container().instance(JPAConfig.class).get()
+                        .getEntityManagerFactory(persistenceUnitName)
+                        .unwrap(SessionFactory.class);
 
-                return entityManagerFactory;
+                return sessionFactory;
             }
         };
     }
 
-    public Supplier<EntityManager> entityManagerSupplier(String persistenceUnitName) {
-        return new Supplier<EntityManager>() {
+    public Supplier<Session> sessionSupplier(String persistenceUnitName) {
+        return new Supplier<Session>() {
             @Override
-            public EntityManager get() {
-                TransactionEntityManagers transactionEntityManagers = Arc.container()
-                        .instance(TransactionEntityManagers.class).get();
-                ForwardingEntityManager entityManager = new ForwardingEntityManager() {
+            public Session get() {
+                TransactionSessions transactionSessions = Arc.container()
+                        .instance(TransactionSessions.class).get();
+                ForwardingSession session = new ForwardingSession() {
 
                     @Override
-                    protected EntityManager delegate() {
-                        return transactionEntityManagers.getEntityManager(persistenceUnitName);
+                    protected Session delegate() {
+                        return transactionSessions.getSession(persistenceUnitName);
                     }
                 };
-                return entityManager;
+                return session;
             }
         };
     }

@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.app;
 
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
@@ -85,6 +86,7 @@ public class QuarkusBootstrap implements Serializable {
     private final AppModel existingModel;
     private final boolean rebuild;
     private final Set<AppArtifactKey> localArtifacts;
+    private final List<ClassLoaderEventListener> classLoadListeners;
 
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
@@ -113,6 +115,7 @@ public class QuarkusBootstrap implements Serializable {
         this.existingModel = builder.existingModel;
         this.rebuild = builder.rebuild;
         this.localArtifacts = new HashSet<>(builder.localArtifacts);
+        this.classLoadListeners = builder.classLoadListeners;
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -219,7 +222,12 @@ public class QuarkusBootstrap implements Serializable {
         return rebuild;
     }
 
+    public List<ClassLoaderEventListener> getClassLoaderEventListeners() {
+        return this.classLoadListeners;
+    }
+
     public static class Builder {
+        public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
         boolean rebuild;
         PathsCollection applicationRoot;
         String baseName;
@@ -431,6 +439,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setRebuild(boolean value) {
             this.rebuild = value;
+            return this;
+        }
+
+        public Builder addClassLoaderEventListeners(List<ClassLoaderEventListener> classLoadListeners) {
+            this.classLoadListeners.addAll(classLoadListeners);
             return this;
         }
     }

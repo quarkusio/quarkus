@@ -27,10 +27,7 @@ import java.util.jar.Manifest;
 import org.jboss.logging.Logger;
 
 /**
- * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode). Production
- * applications use a flat classpath so just use the system class loader.
- *
- *
+ * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode).
  */
 public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
@@ -54,6 +51,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private final List<ClassPathElement> bannedElements;
     private final List<ClassPathElement> parentFirstElements;
     private final List<ClassPathElement> lesserPriorityElements;
+    private final List<ClassLoaderEventListener> classLoaderEventListeners;
 
     /**
      * The element that holds resettable in-memory classses.
@@ -107,6 +105,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.resettableElement = builder.resettableElement;
         this.transformedClasses = new MemoryClassPathElement(builder.transformedClasses);
         this.aggregateParentResources = builder.aggregateParentResources;
+        this.classLoaderEventListeners = builder.classLoaderEventListeners.isEmpty() ? Collections.emptyList()
+                : builder.classLoaderEventListeners;
     }
 
     public static Builder builder(String name, ClassLoader parent, boolean parentFirst) {
@@ -140,6 +140,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Enumeration<URL> getResources(String unsanitisedName) throws IOException {
+        classLoaderEventListeners.forEach(l -> l.enumeratingResourceURLs(unsanitisedName, this.name));
         boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         ClassLoaderState state = getState();
         String name = sanitizeName(unsanitisedName);
@@ -269,9 +270,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     @Override
-    public URL getResource(String unsantisedName) {
-        boolean endsWithTrailingSlash = unsantisedName.endsWith("/");
-        String name = sanitizeName(unsantisedName);
+    public URL getResource(String unsanitisedName) {
+        classLoaderEventListeners.forEach(l -> l.gettingURLFromResource(unsanitisedName, this.name));
+        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
+        String name = sanitizeName(unsanitisedName);
         ClassLoaderState state = getState();
         if (state.bannedResources.contains(name)) {
             return null;
@@ -305,11 +307,12 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 }
             }
         }
-        return parent.getResource(unsantisedName);
+        return parent.getResource(unsanitisedName);
     }
 
     @Override
     public InputStream getResourceAsStream(String unsanitisedName) {
+        classLoaderEventListeners.forEach(l -> l.openResourceStream(unsanitisedName, this.name));
         String name = sanitizeName(unsanitisedName);
         ClassLoaderState state = getState();
         if (state.bannedResources.contains(name)) {
@@ -362,11 +365,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
+        classLoaderEventListeners.forEach(l -> l.loadClass(name, this.name));
         return loadClass(name, false);
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        classLoaderEventListeners.forEach(l -> l.loadClass(name, this.name));
         if (name.startsWith(JAVA)) {
             return parent.loadClass(name);
         }
@@ -529,6 +534,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         MemoryClassPathElement resettableElement;
         private Map<String, byte[]> transformedClasses = Collections.emptyMap();
         boolean aggregateParentResources;
+        private final ArrayList<ClassLoaderEventListener> classLoaderEventListeners = new ArrayList<>(5);
 
         public Builder(String name, ClassLoader parent, boolean parentFirst) {
             this.name = name;
@@ -639,6 +645,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             return this;
         }
 
+        public Builder addClassLoaderEventListeners(List<ClassLoaderEventListener> classLoadListeners) {
+            this.classLoaderEventListeners.addAll(classLoadListeners);
+            return this;
+        }
+
         /**
          * Builds the class loader
          *
@@ -650,8 +661,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     elements.add(0, resettableElement);
                 }
             }
+            this.classLoaderEventListeners.trimToSize();
             return new QuarkusClassLoader(this);
         }
+
     }
 
     public ClassLoader parent() {

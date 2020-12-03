@@ -174,6 +174,7 @@ public class CuratedApplication implements Serializable, Closeable {
             //first run, we need to build all the class loaders
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Augmentation Class Loader",
                     quarkusBootstrap.getBaseClassLoader(), !quarkusBootstrap.isIsolateDeployment());
+            builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
             //we want a class loader that can load the deployment artifacts and all their dependencies, but not
             //any of the runtime artifacts, or user classes
             //this will load any deployment artifacts from the parent CL if they are present
@@ -202,6 +203,7 @@ public class CuratedApplication implements Serializable, Closeable {
         if (baseRuntimeClassLoader == null) {
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Quarkus Base Runtime ClassLoader",
                     quarkusBootstrap.getBaseClassLoader(), false);
+            builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
             if (quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST) {
                 //in test mode we have everything in the base class loader
                 //there is no need to restart so there is no need for an additional CL
@@ -250,6 +252,7 @@ public class CuratedApplication implements Serializable, Closeable {
         //first run, we need to build all the class loaders
         QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Deployment Class Loader",
                 getAugmentClassLoader(), false)
+                .addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners())
                 .setAggregateParentResources(true);
 
         for (Path root : quarkusBootstrap.getApplicationRoot()) {

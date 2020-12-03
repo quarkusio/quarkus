@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>resteasy-reactive-parent-aggregator</artifactId>
+    <artifactId>quarkus-resteasy-reactive-parent-aggregator</artifactId>
     <name>Quarkus - RESTEasy Reactive - Parent - Aggregator</name>
     <packaging>pom</packaging>
     <modules>

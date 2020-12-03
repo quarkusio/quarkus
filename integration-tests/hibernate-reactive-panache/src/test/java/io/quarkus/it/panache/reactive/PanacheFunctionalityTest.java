@@ -4,9 +4,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.StringWriter;
-import java.time.Duration;
 
-import javax.enterprise.context.control.ActivateRequestContext;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.transaction.Transactional;
@@ -15,7 +13,6 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -40,14 +37,6 @@ public class PanacheFunctionalityTest {
      */
     @SuppressWarnings("unused")
     Person p = new Person();
-
-    @ActivateRequestContext
-    @Transactional
-    @BeforeAll
-    public static void before() {
-        Dog.deleteAll().await().atMost(Duration.ofSeconds(2));
-        Person.deleteAll().await().atMost(Duration.ofSeconds(2));
-    }
 
     @Test
     public void testPanacheFunctionality() throws Exception {

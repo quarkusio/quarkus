@@ -87,6 +87,7 @@ public class ContainerImageConfig {
     /**
      * Since user.name which is default value can be uppercase and uppercase values are not allowed
      * in the repository part of image references, we need to make the username lowercase.
+     * If spaces exist in the user name, we replace them with the dash character.
      *
      * We purposely don't change the value of an explicitly set group.
      */
@@ -94,7 +95,7 @@ public class ContainerImageConfig {
         if (group.isPresent()) {
             String originalGroup = group.get();
             if (originalGroup.equals(System.getProperty("user.name"))) {
-                return Optional.of(originalGroup.toLowerCase());
+                return Optional.of(originalGroup.toLowerCase().replace(' ', '-'));
             }
         }
         return group;

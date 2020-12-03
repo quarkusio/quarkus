@@ -146,7 +146,11 @@ public final class HibernateReactiveProcessor {
                     dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles);
 
-            persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU, true, false));
+            //Some constant arguments to the following method:
+            // - this is Reactive
+            // - we don't support starting Hibernate Reactive from a persistence.xml
+            // - we don't support Hibernate Envers with Hibernate Reactive
+            persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU, true, false, false));
         }
 
     }
@@ -169,7 +173,7 @@ public final class HibernateReactiveProcessor {
 
     /**
      * This is mostly copied from
-     * {@link io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor#handleHibernateORMWithNoPersistenceXml}
+     * io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor#handleHibernateORMWithNoPersistenceXml
      * Key differences are:
      * - Always produces a persistence unit descriptor, since we assume there always 1 reactive persistence unit
      * - Any JDBC-only configuration settings are removed

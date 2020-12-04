@@ -398,8 +398,8 @@ public class NativeImageBuildStep {
     }
 
     /**
-     * @return {@link ContainerRuntime#PODMAN} if the podman executable exists in the environment or if the docker executable
-     *         is an alias to podman, else returns {@link ContainerRuntime#DOCKER} if it's available
+     * @return {@link ContainerRuntime#DOCKER} if it's available, or {@link ContainerRuntime#PODMAN} if the podman
+     *         executable exists in the environment or if the docker executable is an alias to podman
      * @throws IllegalStateException if no container runtime was found to build the image
      */
     private static ContainerRuntime detectContainerRuntime() {

@@ -504,7 +504,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             //all resources are closed, however the CL can still be used
             //but after close no resources will be held past the scope of an operation
             try (ClassPathElement ignored = element) {
-
+                //the close() operation is implied by the try-with syntax
             } catch (Exception e) {
                 log.error("Failed to close " + element, e);
             }

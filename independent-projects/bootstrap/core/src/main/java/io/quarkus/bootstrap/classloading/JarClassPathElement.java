@@ -49,9 +49,11 @@ public class JarClassPathElement implements ClassPathElement {
 
     private static final Logger log = Logger.getLogger(JarClassPathElement.class);
     public static final String META_INF_VERSIONS = "META-INF/versions/";
+
     private final File file;
     private final URL jarPath;
     private final Path root;
+
     private JarFile jarFile;
     private boolean closed;
 
@@ -192,7 +194,7 @@ public class JarClassPathElement implements ClassPathElement {
 
     @Override
     public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
-        URL url = null;
+        final URL url;
         try {
             URI uri = new URI("file", null, jarPath.getPath(), null);
             url = uri.toURL();

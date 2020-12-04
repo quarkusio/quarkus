@@ -41,6 +41,7 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -427,7 +428,7 @@ public class DevMojo extends AbstractMojo {
                         pluginManager));
     }
 
-    private Xpp3Dom getPluginConfig(Plugin plugin, String goal) {
+    private Xpp3Dom getPluginConfig(Plugin plugin, String goal) throws MojoExecutionException {
         Xpp3Dom mergedConfig = null;
         if (!plugin.getExecutions().isEmpty()) {
             for (PluginExecution exec : plugin.getExecutions()) {
@@ -445,15 +446,31 @@ public class DevMojo extends AbstractMojo {
 
         final Xpp3Dom configuration = configuration();
         if (mergedConfig != null) {
+            Set<String> supportedParams = null;
             // Filter out `test*` configurations
             for (Xpp3Dom child : mergedConfig.getChildren()) {
-                if (!child.getName().startsWith("test")) {
+                if (child.getName().startsWith("test")) {
+                    continue;
+                }
+                if (supportedParams == null) {
+                    supportedParams = getMojoDescriptor(plugin, goal).getParameterMap().keySet();
+                }
+                if (supportedParams.contains(child.getName())) {
                     configuration.addChild(child);
                 }
             }
         }
 
         return configuration;
+    }
+
+    private MojoDescriptor getMojoDescriptor(Plugin plugin, String goal) throws MojoExecutionException {
+        try {
+            return pluginManager.getMojoDescriptor(plugin, goal, repos, repoSession);
+        } catch (Exception e) {
+            throw new MojoExecutionException(
+                    "Failed to obtain descriptor for Maven plugin " + plugin.getId() + " goal " + goal, e);
+        }
     }
 
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {

@@ -59,7 +59,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
-    public void testCommandModeApplicationArguments() throws MavenInvocationException, IOException {
+    public void testCommandModeAppSystemPropArguments() throws MavenInvocationException, IOException {
         testDir = initProject("projects/basic-command-mode", "projects/command-mode-app-args");
         run(false, "-Dquarkus.args='1 2'");
 
@@ -83,6 +83,33 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
             }
         }
         assertThat(loggedArgs).isEqualTo("ARGS: [1, 2]");
+    }
+
+    @Test
+    public void testCommandModeAppPomConfigArguments() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/command-mode-app-args-plugin-config", "projects/command-mode-app-pom-args");
+        run(false);
+
+        // Wait until this file exists
+        final File done = new File(testDir, "target/done.txt");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(20, TimeUnit.MINUTES).until(() -> done.exists());
+
+        // read the log and check the passed in args
+        final File log = new File(testDir, "build-command-mode-app-pom-args.log");
+        assertThat(log).exists();
+        String loggedArgs = null;
+        try (BufferedReader reader = new BufferedReader(new FileReader(log))) {
+            String s;
+            while ((s = reader.readLine()) != null) {
+                if (s.startsWith("ARGS: ")) {
+                    loggedArgs = s;
+                    break;
+                }
+            }
+        }
+        assertThat(loggedArgs).isEqualTo("ARGS: [plugin, pom, config]");
     }
 
     @Test

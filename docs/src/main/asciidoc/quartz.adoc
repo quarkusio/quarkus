@@ -353,7 +353,7 @@ services:
       - tasks-network
 
   postgres: <3>
-    image: postgres:11.3
+    image: postgres:13.1
     container_name: quarkus_test
     environment:
       - POSTGRES_USER=quarkus_test

@@ -14,14 +14,14 @@ import java.util.stream.Stream
  *
  * @param Entity The entity type being queried
  */
-interface PanacheQuery<Entity> {
+interface PanacheQuery<Entity: Any> {
     /**
      * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
      * retrieved from the database.
      *
      * @return a new query with the same state as the previous one (params, page, range, ...).
      */
-    fun <Entity> project(type: Class<Entity>): PanacheQuery<Entity>
+    fun <NewEntity: Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
 
     /**
      * Sets the current page.

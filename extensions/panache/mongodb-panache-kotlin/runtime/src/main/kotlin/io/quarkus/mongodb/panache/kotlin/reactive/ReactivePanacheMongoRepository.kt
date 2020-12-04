@@ -10,4 +10,4 @@ import org.bson.types.ObjectId
  *
  * @param Entity The type of entity to operate on
  */
-interface ReactivePanacheMongoRepository<Entity> : ReactivePanacheMongoRepositoryBase<Entity, ObjectId>
+interface ReactivePanacheMongoRepository<Entity: Any> : ReactivePanacheMongoRepositoryBase<Entity, ObjectId>

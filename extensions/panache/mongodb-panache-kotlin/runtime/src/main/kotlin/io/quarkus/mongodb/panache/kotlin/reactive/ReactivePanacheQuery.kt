@@ -28,8 +28,7 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @param page the new page
      * @return this query, modified
-     * @see .page
-     * @see .page
+     * @see [page]
      */
     fun page(page: Page): ReactivePanacheQuery<Entity>
 
@@ -39,8 +38,7 @@ interface ReactivePanacheQuery<Entity> {
      * @param pageIndex the page index
      * @param pageSize the page size
      * @return this query, modified
-     * @see .page
-     * @see .page
+     * @see [page]
      */
     fun page(pageIndex: Int, pageSize: Int): ReactivePanacheQuery<Entity>
 
@@ -49,7 +47,7 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .previousPage
+     * @see [previousPage]
      */
     fun nextPage(): ReactivePanacheQuery<Entity>
 
@@ -58,7 +56,7 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .nextPage
+     * @see [nextPage]
      */
     fun previousPage(): ReactivePanacheQuery<Entity>
 
@@ -67,7 +65,7 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .lastPage
+     * @see [lastPage]
      */
     fun firstPage(): ReactivePanacheQuery<Entity>
 
@@ -76,8 +74,8 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .firstPage
-     * @see .count
+     * @see [firstPage]
+     * @see [count]
      */
     fun lastPage(): Uni<ReactivePanacheQuery<Entity>>
 
@@ -87,8 +85,8 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return true if there is another page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .hasPreviousPage
-     * @see .count
+     * @see [hasPreviousPage]
+     * @see [count]
      */
     fun hasNextPage(): Uni<Boolean>
 
@@ -97,7 +95,7 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return true if there is a previous page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .hasNextPage
+     * @see [hasNextPage]
      */
     fun hasPreviousPage(): Boolean
 
@@ -115,8 +113,7 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return the current page
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .page
-     * @see .page
+     * @see [page]
      */
     fun page(): Page
 
@@ -151,8 +148,7 @@ interface ReactivePanacheQuery<Entity> {
      * Returns the current page of results as a [List].
      *
      * @return the current page of results as a [List].
-     * @see .page
-     * @see .page
+     * @see [page]
      */
     fun list(): Uni<List<Entity>>
 
@@ -160,9 +156,8 @@ interface ReactivePanacheQuery<Entity> {
      * Returns the current page of results as a [Stream].
      *
      * @return the current page of results as a [Stream].
-     * @see .list
-     * @see .page
-     * @see .page
+     * @see [list]
+     * @see [page]
      */
     fun stream(): Multi<Entity>
 
@@ -171,7 +166,7 @@ interface ReactivePanacheQuery<Entity> {
      * a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
-     * @see .singleResult
+     * @see [singleResult]
      */
     fun firstResult(): Uni<Entity?>
 
@@ -180,7 +175,7 @@ interface ReactivePanacheQuery<Entity> {
      *
      * @return the single result.
      * @throws io.quarkus.panache.common.exception.PanacheQueryException if there are more than one result.
-     * @see .firstResult
+     * @see [firstResult]
      */
     fun singleResult(): Uni<Entity?>
 }

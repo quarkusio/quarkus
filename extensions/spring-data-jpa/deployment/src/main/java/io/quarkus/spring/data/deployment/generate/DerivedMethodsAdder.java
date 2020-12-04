@@ -8,6 +8,7 @@ import java.util.List;
 
 import javax.transaction.Transactional;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -33,10 +34,12 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
     private final IndexView index;
     private final String operationsName;
+    private final FieldDescriptor operationsField;
 
     public DerivedMethodsAdder(IndexView index, TypeBundle typeBundle) {
         this.index = index;
         operationsName = typeBundle.operations().dotName().toString();
+        operationsField = of(operationsName, "INSTANCE", operationsName);
     }
 
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
@@ -142,7 +145,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     ResultHandle panacheQuery = methodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AbstractJpaOperations.class, "find", Object.class,
                                     Class.class, String.class, io.quarkus.panache.common.Sort.class, Object[].class),
-                            methodCreator.readStaticField(of(operationsName, "INSTANCE", operationsName)),
+                            methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(finalQuery), sort, paramsArray);
 
@@ -166,7 +169,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     ResultHandle count = methodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AbstractJpaOperations.class, "count", long.class,
                                     Class.class, String.class, Object[].class),
-                            methodCreator.readStaticField(of(operationsName, "INSTANCE", operationsName)),
+                            methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(parseResult.getQuery()), paramsArray);
 
@@ -189,7 +192,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     ResultHandle exists = methodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AbstractJpaOperations.class, "exists", boolean.class,
                                     Class.class, String.class, Object[].class),
-                            methodCreator.readStaticField(of(operationsName, "INSTANCE", operationsName)),
+                            methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(parseResult.getQuery()), paramsArray);
 
@@ -210,13 +213,18 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     }
                     methodCreator.addAnnotation(Transactional.class);
 
+                    AnnotationInstance modifyingAnnotation = method.annotation(DotNames.SPRING_DATA_MODIFYING);
+                    handleFlushAutomatically(modifyingAnnotation, methodCreator, entityClassFieldDescriptor);
+
                     // call JpaOperations.delete()
                     ResultHandle delete = methodCreator.invokeStaticMethod(
                             MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "deleteWithCascade",
                                     long.class, AbstractJpaOperations.class, Class.class, String.class, Object[].class),
-                            methodCreator.readStaticField(of(operationsName, "INSTANCE", operationsName)),
+                            methodCreator.readStaticField(operationsField),
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(parseResult.getQuery()), paramsArray);
+
+                    handleClearAutomatically(modifyingAnnotation, methodCreator, entityClassFieldDescriptor);
 
                     if (DotNames.VOID.equals(returnType.name())) {
                         methodCreator.returnValue(null);

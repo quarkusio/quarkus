@@ -14,12 +14,6 @@ We will also explore how you can can query your Elasticsearch cluster using the 
 
 include::./status-include.adoc[]
 
-[WARNING]
-====
-This extension is based on a beta version of Hibernate Search.
-While APIs are quite stable and the code is of production quality and thoroughly tested, some features are still missing, performance might not be optimal and some APIs or configuration properties might change as the extension matures.
-====
-
 == Prerequisites
 
 To complete this guide, you need:
@@ -683,7 +677,7 @@ This couldn't be done in the 5.x code base so we decided to go with the in-progr
 
 === Can I really use it?
 
-While Hibernate Search 6 is still at Beta stage, the code is of production quality and can be relied on.
+Hibernate Search 6 is currently in the Candidate Release phase: the code is of production quality and can be relied on.
 
 What we don't guarantee is that there might be API changes along the way to the final release of Hibernate Search 6 and you might have to adapt your code.
 

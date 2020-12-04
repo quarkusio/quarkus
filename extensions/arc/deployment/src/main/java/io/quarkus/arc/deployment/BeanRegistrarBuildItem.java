@@ -8,7 +8,12 @@ import io.quarkus.builder.item.MultiBuildItem;
  * specify a synthetic bean through series of configuration methods (scope, type, qualifiers, ...).
  *
  * This is a build time alternative to CDI BeanConfigurator API.
+ * 
+ * This build item will be removed at some point post Quarkus 1.11.
+ * 
+ * @deprecated Use {@link SyntheticBeanBuildItem} instead
  */
+@Deprecated
 public final class BeanRegistrarBuildItem extends MultiBuildItem {
 
     private final BeanRegistrar beanRegistrar;

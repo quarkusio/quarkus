@@ -8,7 +8,12 @@ import io.quarkus.builder.item.MultiBuildItem;
  * specify a synthetic observer through series of configuration methods.
  *
  * This is a build time alternative to CDI ObserverMethodConfigurator API.
+ * 
+ * This build item will be removed at some point post Quarkus 1.11.
+ * 
+ * @deprecated Use {@link ObserverRegistrationPhaseBuildItem} instead
  */
+@Deprecated
 public final class ObserverRegistrarBuildItem extends MultiBuildItem {
 
     private final ObserverRegistrar observerRegistrar;

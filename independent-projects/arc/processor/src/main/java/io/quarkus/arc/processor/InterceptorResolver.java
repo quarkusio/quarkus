@@ -10,7 +10,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 
-public class InterceptorResolver {
+public final class InterceptorResolver {
 
     private final BeanDeployment beanDeployment;
 

@@ -122,9 +122,11 @@ public class BeanProcessor {
     /**
      *
      * @param bytecodeTransformerConsumer Used to register a bytecode transformation
+     * @param additionalUnusedBeanExclusions Additional predicates to exclude unused beans
      */
-    public void initialize(Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
-        beanDeployment.init(bytecodeTransformerConsumer);
+    public void initialize(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
+        beanDeployment.init(bytecodeTransformerConsumer, additionalUnusedBeanExclusions);
     }
 
     /**
@@ -242,7 +244,7 @@ public class BeanProcessor {
         registerScopes();
         registerBeans();
         registerSyntheticObservers();
-        initialize(unsupportedBytecodeTransformer);
+        initialize(unsupportedBytecodeTransformer, Collections.emptyList());
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);
         generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, true);
@@ -444,7 +446,7 @@ public class BeanProcessor {
          * </ul>
          *
          * @param removeUnusedBeans
-         * @return
+         * @return self
          */
         public Builder setRemoveUnusedBeans(boolean removeUnusedBeans) {
             this.removeUnusedBeans = removeUnusedBeans;
@@ -452,13 +454,14 @@ public class BeanProcessor {
         }
 
         /**
+         * Exclude unused beans that match the given predicate from removal.
          *
-         * @param exclusion
+         * @param predicate
          * @return self
          * @see #setRemoveUnusedBeans(boolean)
          */
-        public Builder addRemovalExclusion(Predicate<BeanInfo> exclusion) {
-            this.removalExclusions.add(exclusion);
+        public Builder addRemovalExclusion(Predicate<BeanInfo> predicate) {
+            this.removalExclusions.add(predicate);
             return this;
         }
 

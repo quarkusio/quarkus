@@ -27,6 +27,8 @@ import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -107,6 +109,13 @@ public class BeanRegistrarTest {
                     .creator(StringCreator.class).addQualifier().annotation(NextQualifier.class).addValue("name", "Roman")
                     .addValue("age", 42)
                     .addValue("classes", new Class[] { String.class }).done().unremovable().done();
+
+            uselessBean = context.beans()
+                    .assignableTo(
+                            Type.create(DotName.createSimple(UselessBean.class.getName()), org.jboss.jandex.Type.Kind.CLASS))
+                    .firstResult();
+            assertTrue(uselessBean.isPresent());
+            assertEquals(UselessBean.class.getName(), uselessBean.get().getBeanClass().toString());
         }
 
     }

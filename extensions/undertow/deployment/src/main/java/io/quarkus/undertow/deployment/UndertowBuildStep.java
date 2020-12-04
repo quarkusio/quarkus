@@ -77,9 +77,10 @@ import org.jboss.metadata.web.spec.WebResourceCollectionMetaData;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
+import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
+import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -182,20 +183,24 @@ public class UndertowBuildStep {
 
     @BuildStep
     void integrateCdi(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ContextRegistrarBuildItem> contextRegistrars,
             BuildProducer<ListenerBuildItem> listeners,
             Capabilities capabilities) {
         additionalBeans.produce(new AdditionalBeanBuildItem(ServletProducer.class));
         if (capabilities.isPresent(Capability.SECURITY)) {
             additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ServletHttpSecurityPolicy.class));
         }
-        contextRegistrars.produce(new ContextRegistrarBuildItem(new ContextRegistrar() {
-            @Override
-            public void register(RegistrationContext registrationContext) {
-                registrationContext.configure(SessionScoped.class).normal().contextClass(HttpSessionContext.class).done();
-            }
-        }, SessionScoped.class));
         listeners.produce(new ListenerBuildItem(HttpSessionContext.class.getName()));
+    }
+
+    @BuildStep
+    ContextConfiguratorBuildItem registerContext(ContextRegistrationPhaseBuildItem phase) {
+        return new ContextConfiguratorBuildItem(
+                phase.getContext().configure(SessionScoped.class).normal().contextClass(HttpSessionContext.class));
+    }
+
+    @BuildStep
+    CustomScopeBuildItem customScope() {
+        return new CustomScopeBuildItem(DotName.createSimple(SessionScoped.class.getName()));
     }
 
     /**

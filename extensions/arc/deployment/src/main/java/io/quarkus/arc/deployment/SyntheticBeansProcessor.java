@@ -11,6 +11,7 @@ import javax.enterprise.inject.CreationException;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -34,8 +35,8 @@ public class SyntheticBeansProcessor {
         Map<String, Supplier<?>> suppliersMap = new HashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
-            if (bean.isStaticInit()) {
-                initSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
+            if (bean.hasRecorderInstance() && bean.isStaticInit()) {
+                configureSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
             }
         }
         // Init the map of bean instances
@@ -51,27 +52,40 @@ public class SyntheticBeansProcessor {
         Map<String, Supplier<?>> suppliersMap = new HashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
-            if (!bean.isStaticInit()) {
-                initSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
+            if (bean.hasRecorderInstance() && !bean.isStaticInit()) {
+                configureSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
             }
         }
         recorder.initRuntimeSupplierBeans(suppliersMap);
         return new ServiceStartBuildItem("runtime-bean-init");
     }
 
-    private void initSyntheticBean(ArcRecorder recorder, Map<String, Supplier<?>> suppliersMap,
+    @BuildStep
+    void initRegular(List<SyntheticBeanBuildItem> syntheticBeans,
+            BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
+
+        for (SyntheticBeanBuildItem bean : syntheticBeans) {
+            if (!bean.hasRecorderInstance()) {
+                configureSyntheticBean(null, null, beanRegistration, bean);
+            }
+        }
+    }
+
+    private void configureSyntheticBean(ArcRecorder recorder, Map<String, Supplier<?>> suppliersMap,
             BeanRegistrationPhaseBuildItem beanRegistration, SyntheticBeanBuildItem bean) {
         DotName implClazz = bean.configurator().getImplClazz();
         String name = createName(implClazz.toString(), bean.configurator().getQualifiers().toString());
-        if (bean.configurator().runtimeValue != null) {
-            suppliersMap.put(name, recorder.createSupplier(bean.configurator().runtimeValue));
-        } else {
-            suppliersMap.put(name, bean.configurator().supplier);
+        if (bean.configurator().getRuntimeValue() != null) {
+            suppliersMap.put(name, recorder.createSupplier(bean.configurator().getRuntimeValue()));
+        } else if (bean.configurator().getSupplier() != null) {
+            suppliersMap.put(name, bean.configurator().getSupplier());
         }
-        beanRegistration.getContext().configure(implClazz)
-                .read(bean.configurator())
-                .creator(creator(name, bean))
-                .done();
+        BeanConfigurator<?> configurator = beanRegistration.getContext().configure(implClazz)
+                .read(bean.configurator());
+        if (bean.hasRecorderInstance()) {
+            configurator.creator(creator(name, bean));
+        }
+        configurator.done();
     }
 
     private String createName(String beanClass, String qualifiers) {

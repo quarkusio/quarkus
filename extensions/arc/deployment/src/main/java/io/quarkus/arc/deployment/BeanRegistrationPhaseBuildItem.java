@@ -1,12 +1,15 @@
 package io.quarkus.arc.deployment;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
+import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -34,6 +37,10 @@ public final class BeanRegistrationPhaseBuildItem extends SimpleBuildItem {
 
     public RegistrationContext getContext() {
         return context;
+    }
+
+    public Collection<InjectionPointInfo> getInjectionPoints() {
+        return getContext().get(BuildExtension.Key.INJECTION_POINTS);
     }
 
     public BeanProcessor getBeanProcessor() {

@@ -7,7 +7,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.processor.BeanRegistrar;
-import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigBeanCreator;
@@ -70,14 +68,14 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    void analyzeConfigPropertyInjectionPoints(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+    void analyzeConfigPropertyInjectionPoints(BeanDiscoveryFinishedBuildItem beanDiscovery,
             BuildProducer<ConfigPropertyBuildItem> configProperties,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<BeanConfiguratorBuildItem> beanConfigurators) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         Set<Type> customBeanTypes = new HashSet<>();
 
-        for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+        for (InjectionPointInfo injectionPoint : beanDiscovery.getInjectionPoints()) {
             if (injectionPoint.hasDefaultedQualifier()) {
                 // Defaulted qualifier means no @ConfigProperty
                 continue;
@@ -131,13 +129,14 @@ public class ConfigBuildStep {
                 // Implicit converters are most likely used
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
             }
-            beanConfigurators.produce(new BeanConfiguratorBuildItem(beanRegistrationPhase.getContext().configure(
-                    type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName()) : type.name())
+            DotName implClazz = type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName())
+                    : type.name();
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(implClazz)
                     .creator(ConfigBeanCreator.class)
                     .providerType(type)
                     .types(type)
-                    .qualifiers(AnnotationInstance.create(CONFIG_PROPERTY_NAME, null, Collections.emptyList()))
-                    .param("requiredType", type.name().toString())));
+                    .addQualifier(CONFIG_PROPERTY_NAME)
+                    .param("requiredType", type.name().toString()).done());
         }
     }
 

@@ -78,7 +78,7 @@ public class BeanDeployment {
 
     private final List<ObserverInfo> observers;
 
-    private final BeanResolver beanResolver;
+    final BeanResolverImpl beanResolver;
 
     private final InterceptorResolver interceptorResolver;
 
@@ -166,7 +166,7 @@ public class BeanDeployment {
         this.beans = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
 
-        this.beanResolver = new BeanResolver(this);
+        this.beanResolver = new BeanResolverImpl(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
         this.jtaCapabilities = builder.jtaCapabilities;
@@ -224,7 +224,8 @@ public class BeanDeployment {
         return registerSyntheticBeans(beanRegistrars, buildContext);
     }
 
-    void init(Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+    void init(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
         long start = System.currentTimeMillis();
 
         // Collect dependency resolution errors
@@ -239,6 +240,10 @@ public class BeanDeployment {
             interceptor.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
         }
         processErrors(errors);
+        List<Predicate<BeanInfo>> allUnusedExclusions = new ArrayList<>(additionalUnusedBeanExclusions);
+        if (unusedExclusions != null) {
+            allUnusedExclusions.addAll(unusedExclusions);
+        }
 
         if (removeUnusedBeans) {
             long removalStart = System.currentTimeMillis();
@@ -264,7 +269,7 @@ public class BeanDeployment {
                     continue test;
                 }
                 // Custom exclusions
-                for (Predicate<BeanInfo> exclusion : unusedExclusions) {
+                for (Predicate<BeanInfo> exclusion : allUnusedExclusions) {
                     if (exclusion.test(bean)) {
                         continue test;
                     }
@@ -355,12 +360,16 @@ public class BeanDeployment {
         return Collections.unmodifiableCollection(interceptorBindings.values());
     }
 
+    public Collection<InjectionPointInfo> getInjectionPoints() {
+        return Collections.unmodifiableList(injectionPoints);
+    }
+
     public Collection<ObserverInfo> getObservers() {
-        return observers;
+        return Collections.unmodifiableList(observers);
     }
 
     public Collection<InterceptorInfo> getInterceptors() {
-        return interceptors;
+        return Collections.unmodifiableList(interceptors);
     }
 
     /**
@@ -383,12 +392,12 @@ public class BeanDeployment {
         return applicationIndex;
     }
 
-    boolean hasApplicationIndex() {
-        return applicationIndex != null;
+    public BeanResolver getBeanResolver() {
+        return beanResolver;
     }
 
-    BeanResolver getBeanResolver() {
-        return beanResolver;
+    boolean hasApplicationIndex() {
+        return applicationIndex != null;
     }
 
     public InterceptorResolver getInterceptorResolver() {
@@ -423,6 +432,10 @@ public class BeanDeployment {
         }
     }
 
+    BeanResolverImpl beanResolver() {
+        return beanResolver;
+    }
+
     ClassInfo getInterceptorBinding(DotName name) {
         return interceptorBindings.get(name);
     }
@@ -451,7 +464,7 @@ public class BeanDeployment {
         return annotationStore.getAnnotations(target);
     }
 
-    AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
+    public AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
         return annotationStore.getAnnotation(target, name);
     }
 

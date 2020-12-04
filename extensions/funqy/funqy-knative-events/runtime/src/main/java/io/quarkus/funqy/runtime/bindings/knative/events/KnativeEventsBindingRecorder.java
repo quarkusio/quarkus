@@ -61,10 +61,10 @@ public class KnativeEventsBindingRecorder {
             }
 
             if (invoker.hasInput()) {
-                JavaType javaInputType = objectMapper.constructType(invoker.getInputGenericType());
+                JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
                 ObjectReader reader = objectMapper.readerFor(javaInputType);
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
-                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType(), invoker.getInputGenericType());
+                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType());
                 invoker.getBindingContext().put(QueryReader.class.getName(), queryReader);
             }
             if (invoker.hasOutput()) {

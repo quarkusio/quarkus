@@ -1,5 +1,6 @@
 package io.quarkus.funqy.runtime.query;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -72,6 +73,18 @@ public class QueryObjectMapper {
 
     public <T> QueryReader<T> readerFor(Class<T> clz) {
         return readerFor(clz, null);
+    }
+
+    public QueryReader readerFor(Type type) {
+        Class<?> clazz = null;
+        if (type instanceof Class) {
+            clazz = (Class<?>) type;
+        } else if (type instanceof ParameterizedType) {
+            clazz = (Class<?>) ((ParameterizedType) type).getRawType();
+        } else {
+            throw new RuntimeException("Cannot get QueryReader for: " + type);
+        }
+        return readerFor(clazz, type);
     }
 
     public <T> QueryReader<T> readerFor(Class<T> clz, Type genericType) {

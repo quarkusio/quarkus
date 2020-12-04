@@ -39,9 +39,9 @@ public class FunqyHttpBindingRecorder {
         queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
-                JavaType javaInputType = objectMapper.constructType(invoker.getInputGenericType());
+                JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
                 ObjectReader reader = objectMapper.readerFor(javaInputType);
-                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType(), invoker.getInputGenericType());
+                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType());
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
                 invoker.getBindingContext().put(QueryReader.class.getName(), queryReader);
             }

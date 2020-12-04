@@ -48,7 +48,7 @@ public class FunqyLambdaBindingRecorder {
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
-                JavaType javaInputType = objectMapper.constructType(invoker.getInputGenericType());
+                JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
                 ObjectReader reader = objectMapper.readerFor(javaInputType);
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
             }

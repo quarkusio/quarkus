@@ -411,7 +411,7 @@ public class DevMojo extends AbstractMojo {
 
     private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
         final Plugin plugin = project.getPlugin(pluginGroupId + ":" + pluginArtifactId);
-        if (plugin == null) {
+        if (plugin == null || plugin.getExecutions().stream().noneMatch(exec -> exec.getGoals().contains(goal))) {
             return;
         }
         executeMojo(

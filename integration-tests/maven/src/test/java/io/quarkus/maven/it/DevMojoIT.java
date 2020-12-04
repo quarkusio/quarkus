@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -72,16 +73,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // read the log and check the passed in args
         final File log = new File(testDir, "build-command-mode-app-args.log");
         assertThat(log).exists();
-        String loggedArgs = null;
-        try (BufferedReader reader = new BufferedReader(new FileReader(log))) {
-            String s;
-            while ((s = reader.readLine()) != null) {
-                if (s.startsWith("ARGS: ")) {
-                    loggedArgs = s;
-                    break;
-                }
-            }
-        }
+        String loggedArgs = extractLoggedArgs(log);
         assertThat(loggedArgs).isEqualTo("ARGS: [1, 2]");
     }
 
@@ -99,17 +91,24 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // read the log and check the passed in args
         final File log = new File(testDir, "build-command-mode-app-pom-args.log");
         assertThat(log).exists();
+        String loggedArgs = extractLoggedArgs(log);
+        assertThat(loggedArgs).isEqualTo("ARGS: [plugin, pom, config]");
+    }
+
+    private String extractLoggedArgs(final File log) throws IOException, FileNotFoundException {
         String loggedArgs = null;
         try (BufferedReader reader = new BufferedReader(new FileReader(log))) {
             String s;
             while ((s = reader.readLine()) != null) {
-                if (s.startsWith("ARGS: ")) {
-                    loggedArgs = s;
+                // not startsWith() because line might start with ANSI escape sequence (which must be stripped)
+                int indexOfARGS = s.indexOf("ARGS: ");
+                if (indexOfARGS > -1) {
+                    loggedArgs = s.substring(indexOfARGS);
                     break;
                 }
             }
         }
-        assertThat(loggedArgs).isEqualTo("ARGS: [plugin, pom, config]");
+        return loggedArgs;
     }
 
     @Test
@@ -904,5 +903,17 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     public void testThatDependencyInParentIsEvaluated() throws IOException, MavenInvocationException {
         testDir = initProject("projects/multimodule-parent-dep");
         runAndCheck();
+    }
+
+    @Test
+    public void testThatGenerateCodeGoalIsNotTriggeredIfNotConfigured() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/classic-no-generate");
+        // the skip parameter triggers a log statement by the generate goal,
+        // otherwise there would be no way to tell from the logfile that the goal was invoked
+        runAndCheck(false, "-Dquarkus.generate-code.skip=true");
+
+        assertThat(running.log()).doesNotContain("Skipping Quarkus code generation");
+        assertThat(running.log()).contains("Copying 1 resource"); // maven-resource-plugin
+        assertThat(running.log()).contains("Compiling 2 source files"); // maven-compiler-plugin
     }
 }

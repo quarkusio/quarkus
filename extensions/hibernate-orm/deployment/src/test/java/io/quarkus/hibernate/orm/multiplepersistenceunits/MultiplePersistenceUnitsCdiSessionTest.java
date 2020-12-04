@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.inject.Inject;
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
+import org.hibernate.Session;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultiplePersistenceUnitsCdiTest {
+public class MultiplePersistenceUnitsCdiSessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -29,23 +29,23 @@ public class MultiplePersistenceUnitsCdiTest {
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Inject
-    EntityManager defaultEntityManager;
+    Session defaultSession;
 
     @Inject
     @PersistenceUnit("users")
-    EntityManager usersEntityManager;
+    Session usersSession;
 
     @Inject
     @PersistenceUnit("inventory")
-    EntityManager inventoryEntityManager;
+    Session inventorySession;
 
     @Test
     @Transactional
     public void testDefault() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        defaultEntityManager.persist(defaultEntity);
+        defaultSession.persist(defaultEntity);
 
-        DefaultEntity savedDefaultEntity = defaultEntityManager.find(DefaultEntity.class, defaultEntity.getId());
+        DefaultEntity savedDefaultEntity = defaultSession.get(DefaultEntity.class, defaultEntity.getId());
         assertEquals(defaultEntity.getName(), savedDefaultEntity.getName());
     }
 
@@ -53,9 +53,9 @@ public class MultiplePersistenceUnitsCdiTest {
     @Transactional
     public void testUser() {
         User user = new User("gsmet");
-        usersEntityManager.persist(user);
+        usersSession.persist(user);
 
-        User savedUser = usersEntityManager.find(User.class, user.getId());
+        User savedUser = usersSession.get(User.class, user.getId());
         assertEquals(user.getName(), savedUser.getName());
     }
 
@@ -63,17 +63,17 @@ public class MultiplePersistenceUnitsCdiTest {
     @Transactional
     public void testPlane() {
         Plane plane = new Plane("Airbus A380");
-        inventoryEntityManager.persist(plane);
+        inventorySession.persist(plane);
 
-        Plane savedPlane = inventoryEntityManager.find(Plane.class, plane.getId());
+        Plane savedPlane = inventorySession.get(Plane.class, plane.getId());
         assertEquals(plane.getName(), savedPlane.getName());
     }
 
     @Test
     @Transactional
-    public void testUserInInventoryEntityManager() {
+    public void testUserInInventorySession() {
         User user = new User("gsmet");
-        assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> inventorySession.persist(user)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown entity");
     }
 }

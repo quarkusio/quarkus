@@ -3,10 +3,10 @@ package io.quarkus.hibernate.orm.multiplepersistenceunits;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.transaction.Transactional;
 
+import org.hibernate.Session;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultiplePersistenceResourceInjectionUnitsTest {
+public class MultiplePersistenceUnitsResourceInjectionSessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -26,18 +26,18 @@ public class MultiplePersistenceResourceInjectionUnitsTest {
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @PersistenceContext(unitName = "users")
-    EntityManager usersEntityManager;
+    Session usersSession;
 
     @PersistenceContext(unitName = "inventory")
-    EntityManager inventoryEntityManager;
+    Session inventorySession;
 
     @Test
     @Transactional
     public void testUser() {
         User user = new User("gsmet");
-        usersEntityManager.persist(user);
+        usersSession.persist(user);
 
-        User savedUser = usersEntityManager.find(User.class, user.getId());
+        User savedUser = usersSession.get(User.class, user.getId());
         assertEquals(user.getName(), savedUser.getName());
     }
 
@@ -45,17 +45,17 @@ public class MultiplePersistenceResourceInjectionUnitsTest {
     @Transactional
     public void testPlane() {
         Plane plane = new Plane("Airbus A380");
-        inventoryEntityManager.persist(plane);
+        inventorySession.persist(plane);
 
-        Plane savedPlane = inventoryEntityManager.find(Plane.class, plane.getId());
+        Plane savedPlane = inventorySession.get(Plane.class, plane.getId());
         assertEquals(plane.getName(), savedPlane.getName());
     }
 
     @Test
     @Transactional
-    public void testUserInInventoryEntityManager() {
+    public void testUserInInventorySession() {
         User user = new User("gsmet");
-        assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> inventorySession.persist(user)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown entity");
     }
 

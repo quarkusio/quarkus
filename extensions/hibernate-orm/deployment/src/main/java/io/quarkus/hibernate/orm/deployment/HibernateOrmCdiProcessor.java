@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -8,6 +9,8 @@ import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -30,12 +33,17 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 public class HibernateOrmCdiProcessor {
 
+    private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(
+            DotName.createSimple(EntityManagerFactory.class.getName()),
+            DotName.createSimple(SessionFactory.class.getName()));
+    private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(
+            DotName.createSimple(EntityManager.class.getName()),
+            DotName.createSimple(Session.class.getName()));
+
     private static final DotName PERSISTENCE_UNIT_QUALIFIER = DotName.createSimple(PersistenceUnit.class.getName());
 
-    private static final DotName ENTITY_MANAGER_FACTORY = DotName.createSimple(EntityManagerFactory.class.getName());
     private static final DotName JPA_PERSISTENCE_UNIT = DotName.createSimple(javax.persistence.PersistenceUnit.class.getName());
 
-    private static final DotName ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
     private static final DotName JPA_PERSISTENCE_CONTEXT = DotName
             .createSimple(javax.persistence.PersistenceContext.class.getName());
 
@@ -56,7 +64,9 @@ public class HibernateOrmCdiProcessor {
             public void transform(TransformationContext transformationContext) {
                 FieldInfo field = transformationContext.getTarget().asField();
 
-                if (!ENTITY_MANAGER.equals(field.type().name()) && !ENTITY_MANAGER_FACTORY.equals(field.type().name())) {
+                DotName fieldTypeName = field.type().name();
+                if (!SESSION_EXPOSED_TYPES.contains(fieldTypeName)
+                        && !SESSION_FACTORY_EXPOSED_TYPES.contains(fieldTypeName)) {
                     return;
                 }
 
@@ -118,15 +128,15 @@ public class HibernateOrmCdiProcessor {
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
                             true,
-                            EntityManagerFactory.class,
-                            recorder.entityManagerFactorySupplier(persistenceUnitName),
+                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES,
+                            recorder.sessionFactorySupplier(persistenceUnitName),
                             true));
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
                             true,
-                            EntityManager.class,
-                            recorder.entityManagerSupplier(persistenceUnitName),
+                            Session.class, SESSION_EXPOSED_TYPES,
+                            recorder.sessionSupplier(persistenceUnitName),
                             false));
 
             return;
@@ -138,26 +148,30 @@ public class HibernateOrmCdiProcessor {
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
                             PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
-                            EntityManagerFactory.class,
-                            recorder.entityManagerFactorySupplier(persistenceUnitName),
+                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES,
+                            recorder.sessionFactorySupplier(persistenceUnitName),
                             true));
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
                             PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
-                            EntityManager.class,
-                            recorder.entityManagerSupplier(persistenceUnitName),
+                            Session.class, SESSION_EXPOSED_TYPES,
+                            recorder.sessionSupplier(persistenceUnitName),
                             false));
         }
     }
 
     private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName, boolean isDefaultPersistenceUnit,
-            Class<T> type, Supplier<T> supplier, boolean defaultBean) {
+            Class<T> type, List<DotName> allExposedTypes, Supplier<T> supplier, boolean defaultBean) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
                 .scope(Singleton.class)
                 .unremovable()
                 .supplier(supplier);
+
+        for (DotName exposedType : allExposedTypes) {
+            configurator.addType(exposedType);
+        }
 
         if (defaultBean) {
             configurator.defaultBean();

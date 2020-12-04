@@ -114,8 +114,8 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfigSupport;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
-import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
-import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
+import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
+import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
@@ -460,9 +460,9 @@ public final class HibernateOrmProcessor {
         unremovableClasses.add(JPAConfig.class);
         if (capabilities.isPresent(Capability.TRANSACTIONS)) {
             unremovableClasses.add(TransactionManager.class);
-            unremovableClasses.add(TransactionEntityManagers.class);
+            unremovableClasses.add(TransactionSessions.class);
         }
-        unremovableClasses.add(RequestScopedEntityManagerHolder.class);
+        unremovableClasses.add(RequestScopedSessionHolder.class);
 
         additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))

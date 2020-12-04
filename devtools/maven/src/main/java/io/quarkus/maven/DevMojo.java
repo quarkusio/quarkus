@@ -48,6 +48,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.apache.maven.toolchain.Toolchain;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -623,7 +624,7 @@ public class DevMojo extends AbstractMojo {
                 .deleteDevJar(deleteDevJar);
 
         if (jvmArgs != null) {
-            builder.jvmArgs(jvmArgs);
+            builder.jvmArgs(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
         }
 
         builder.projectDir(project.getFile().getParentFile());

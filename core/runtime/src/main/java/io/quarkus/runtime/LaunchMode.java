@@ -22,6 +22,10 @@ public enum LaunchMode {
         return this != NORMAL;
     }
 
+    public boolean isRemoteDev() {
+        return (current() == DEVELOPMENT) && "true".equals(System.getenv("QUARKUS_LAUNCH_DEVMODE"));
+    }
+
     private final String defaultProfile;
 
     LaunchMode(String defaultProfile) {

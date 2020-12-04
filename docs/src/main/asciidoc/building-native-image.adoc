@@ -375,13 +375,14 @@ The easiest way of accomplishing this task is to execute:
 
 [TIP]
 ====
-You can also select the container runtime to use with:
+By default Quarkus automatically detects the container runtime.
+If you want to explicitely select the container runtime, you can do it with:
 [source,bash]
 ----
 # Docker
-./mvnw package -Pnative -Dquarkus.native.container-runtime=docker
+./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=docker
 # Podman
-./mvnw package -Pnative -Dquarkus.native.container-runtime=podman
+./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=podman
 ----
 
 These are normal Quarkus config properties, so if you always want to build in a container

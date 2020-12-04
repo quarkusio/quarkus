@@ -34,13 +34,13 @@ public class AzureMonitorRegistryProcessor {
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, AzureMonitorEnabled.class })
-    MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
+    protected MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
         log.info("The Azure Monitor meter registry does not support running in native mode.");
         return null;
     }
 
     @BuildStep(onlyIf = AzureMonitorEnabled.class, onlyIfNot = NativeBuild.class)
-    MicrometerRegistryProviderBuildItem createAzureMonitorRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    protected MicrometerRegistryProviderBuildItem createAzureMonitorRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the AzureMonitor Registry Producer
         additionalBeans.produce(

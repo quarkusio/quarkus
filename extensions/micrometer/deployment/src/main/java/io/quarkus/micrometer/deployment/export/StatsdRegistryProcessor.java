@@ -34,13 +34,13 @@ public class StatsdRegistryProcessor {
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, StatsdRegistryEnabled.class })
-    MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
+    protected MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
         log.info("The StatsD meter registry does not support running in native mode.");
         return null;
     }
 
     @BuildStep(onlyIf = StatsdRegistryEnabled.class, onlyIfNot = NativeBuild.class)
-    MicrometerRegistryProviderBuildItem createStatsdRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    protected MicrometerRegistryProviderBuildItem createStatsdRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Statsd Registry Producer
         additionalBeans.produce(

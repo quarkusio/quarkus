@@ -37,7 +37,7 @@ public class PrometheusRegistryProcessor {
     }
 
     @BuildStep(onlyIf = PrometheusEnabled.class)
-    MicrometerRegistryProviderBuildItem createPrometheusRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    protected MicrometerRegistryProviderBuildItem createPrometheusRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Prometheus Registry Producer
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
@@ -50,7 +50,7 @@ public class PrometheusRegistryProcessor {
 
     @BuildStep(onlyIf = PrometheusEnabled.class)
     @Record(value = ExecutionTime.STATIC_INIT)
-    void createPrometheusRoute(BuildProducer<RouteBuildItem> routes,
+    protected void createPrometheusRoute(BuildProducer<RouteBuildItem> routes,
             MicrometerConfig mConfig,
             PrometheusRecorder recorder) {
 

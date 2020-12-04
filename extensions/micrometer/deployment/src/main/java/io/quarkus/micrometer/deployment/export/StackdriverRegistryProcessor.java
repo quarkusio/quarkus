@@ -25,7 +25,7 @@ public class StackdriverRegistryProcessor {
     static final String REGISTRY_CLASS_NAME = "io.micrometer.stackdriver.StackdriverMeterRegistry";
     static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
-    static class StackdriverEnabled implements BooleanSupplier {
+    public static class StackdriverEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
@@ -34,14 +34,14 @@ public class StackdriverRegistryProcessor {
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, StackdriverEnabled.class })
-    MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
+    protected MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
         log.info("The Stackdriver meter registry does not support running in native mode.");
         return null;
     }
 
     /** Stackdriver does not work with GraalVM */
     @BuildStep(onlyIf = StackdriverEnabled.class, onlyIfNot = NativeBuild.class)
-    MicrometerRegistryProviderBuildItem createStackdriverRegistry(CombinedIndexBuildItem index,
+    protected MicrometerRegistryProviderBuildItem createStackdriverRegistry(CombinedIndexBuildItem index,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Stackdriver Registry Producer

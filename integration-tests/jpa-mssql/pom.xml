@@ -16,7 +16,7 @@
     <properties>
         <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
         <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
-        <mssqldb.image>microsoft/mssql-server-linux:2017-CU13</mssqldb.image>
+        <mssqldb.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssqldb.image>
     </properties>
 
     <dependencies>

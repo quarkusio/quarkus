@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server;
 
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.safer.annotations.TargetMethod;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -11,7 +12,9 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
 /**
  * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerRequestFilter} is generated
@@ -48,6 +51,9 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link Request}
  * <li>{@link ResourceInfo}
  * <li>{@link SimpleResourceInfo}
+ * <li>{@link ResteasyReactiveContainerRequestContext}
+ * <li><tt>io.vertx.ext.web.RoutingContext</tt>
+ * <li><tt>io.vertx.core.http.HttpServerRequest</tt>
  * </ul>
  *
  * The return type of the method must be either be of type {@code void}, {@code Response}, {@code Optional<Response>},
@@ -74,6 +80,10 @@ import javax.ws.rs.core.UriInfo;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
+@TargetMethod(returnTypes = { void.class, Response.class, UniResponse.class, UniVoid.class,
+        OptionalResponse.class }, parameterTypes = {
+                ContainerRequestContext.class, UriInfo.class, HttpHeaders.class, Request.class,
+                ResourceInfo.class, SimpleResourceInfo.class, ResteasyReactiveContainerRequestContext.class })
 public @interface ServerRequestFilter {
 
     /**

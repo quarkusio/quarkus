@@ -21,6 +21,7 @@ public class IDELauncherImpl {
 
     public static void launch(Path projectRoot, Map<String, Object> context) {
 
+        CuratedApplication app = null;
         try {
             //todo : proper support for everything
             final QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
@@ -52,12 +53,15 @@ public class IDELauncherImpl {
                 }
             }
 
-            CuratedApplication app = builder
-                    .build().bootstrap();
+            app = builder.build().bootstrap();
 
             app.runInAugmentClassLoader("io.quarkus.deployment.dev.IDEDevModeMain", context);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            if (app != null) {
+                app.close();
+            }
         }
     }
 

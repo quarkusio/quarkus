@@ -70,12 +70,12 @@ class ReactivePersonRepositoryResource {
     @Path("/{id}")
     fun deletePerson(@PathParam("id") id: String): Uni<Void> {
         return reactivePersonRepository.findById(id.toLong())
-                .flatMap { person -> reactivePersonRepository.delete(person) }
+                .flatMap { person -> person?.let { reactivePersonRepository.delete(it) } }
     }
 
     @GET
     @Path("/{id}")
-    fun getPerson(@PathParam("id") id: String): Uni<Person> = reactivePersonRepository.findById(id.toLong())
+    fun getPerson(@PathParam("id") id: String) = reactivePersonRepository.findById(id.toLong())
 
     @GET
     @Path("/count")

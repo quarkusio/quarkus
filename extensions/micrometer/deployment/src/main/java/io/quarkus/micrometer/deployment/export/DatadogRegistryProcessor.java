@@ -20,7 +20,7 @@ public class DatadogRegistryProcessor {
     static final String REGISTRY_CLASS_NAME = "io.micrometer.datadog.DatadogMeterRegistry";
     static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
-    static class DatadogEnabled implements BooleanSupplier {
+    public static class DatadogEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
@@ -29,7 +29,7 @@ public class DatadogRegistryProcessor {
     }
 
     @BuildStep(onlyIf = DatadogEnabled.class)
-    MicrometerRegistryProviderBuildItem createDatadogRegistry(CombinedIndexBuildItem index,
+    protected MicrometerRegistryProviderBuildItem createDatadogRegistry(CombinedIndexBuildItem index,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Datadog Registry Producer

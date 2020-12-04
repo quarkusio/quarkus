@@ -34,13 +34,13 @@ public class SignalFxRegistryProcessor {
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, SignalFxRegistryEnabled.class })
-    MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
+    protected MicrometerRegistryProviderBuildItem nativeModeNotSupported() {
         log.info("The SignalFx meter registry does not support running in native mode.");
         return null;
     }
 
     @BuildStep(onlyIf = SignalFxRegistryEnabled.class, onlyIfNot = NativeBuild.class)
-    MicrometerRegistryProviderBuildItem createSignalFxRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    protected MicrometerRegistryProviderBuildItem createSignalFxRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the SignalFx Registry Producer
         additionalBeans.produce(

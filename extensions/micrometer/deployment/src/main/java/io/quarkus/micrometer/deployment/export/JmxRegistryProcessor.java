@@ -25,7 +25,7 @@ public class JmxRegistryProcessor {
     static final String REGISTRY_CLASS_NAME = "io.micrometer.jmx.JmxMeterRegistry";
     static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
-    static class JmxEnabled implements BooleanSupplier {
+    public static class JmxEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
@@ -34,14 +34,14 @@ public class JmxRegistryProcessor {
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, JmxEnabled.class })
-    MicrometerRegistryProviderBuildItem createJmxRegistry(CombinedIndexBuildItem index) {
+    protected MicrometerRegistryProviderBuildItem createJmxRegistry(CombinedIndexBuildItem index) {
         log.info("JMX Meter Registry does not support running in native mode.");
         return null;
     }
 
     /** Jmx does not work with GraalVM */
     @BuildStep(onlyIf = JmxEnabled.class, onlyIfNot = NativeBuild.class)
-    MicrometerRegistryProviderBuildItem createJmxRegistry(CombinedIndexBuildItem index,
+    protected MicrometerRegistryProviderBuildItem createJmxRegistry(CombinedIndexBuildItem index,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Jmx Registry Producer

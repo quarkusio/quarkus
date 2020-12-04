@@ -232,9 +232,7 @@ public class ResteasyReactiveCommonProcessor {
                         if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                             continue;
                         }
-                        if ((instance.value() != null) && (instance.value().asClassArray().length > 0)) {
-                            methodExceptionMappers.add(instance.target().asMethod());
-                        }
+                        methodExceptionMappers.add(instance.target().asMethod());
                     }
                 }
             }

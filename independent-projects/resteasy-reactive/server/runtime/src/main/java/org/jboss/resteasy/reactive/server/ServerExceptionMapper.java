@@ -24,8 +24,8 @@ import javax.ws.rs.core.UriInfo;
  * exception.
  * This means that these methods take precedence over the global {@link javax.ws.rs.ext.ExceptionMapper} classes.
  *
- * In addition to the exception being handled, an annotated method can also be declare can declare any of the following
- * parameters (in any order)
+ * In addition to the exception being handled, an annotated method can also declare any of the following
+ * parameters (in any order):
  * <ul>
  * <li>{@link ContainerRequestContext}
  * <li>{@link UriInfo}
@@ -35,11 +35,14 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link SimpleResourceInfo}
  * </ul>
  *
+ * When {@code value} is not set, then the handled Exception type is deduced by the Exception type used in the method parameters
+ * (there must be exactly one Exception type in this case).
+ *
  * The return type of the method must be either be of type {@code Response} or {@code Uni<Response>}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ServerExceptionMapper {
 
-    Class<? extends Throwable>[] value();
+    Class<? extends Throwable>[] value() default {};
 }

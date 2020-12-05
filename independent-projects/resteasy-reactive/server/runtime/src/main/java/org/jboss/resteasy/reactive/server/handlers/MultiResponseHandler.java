@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import io.smallrye.mutiny.Multi;
+import java.util.function.BiFunction;
 import javax.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -22,16 +23,19 @@ public class MultiResponseHandler implements ServerRestHandler {
         @Override
         public void onNext(Object item) {
             OutboundSseEventImpl event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
-            SseUtil.send(requestContext, event).handle((v, t) -> {
-                if (t != null) {
-                    // need to cancel because the exception didn't come from the Multi
-                    subscription.cancel();
-                    handleException(requestContext, t);
-                } else {
-                    // send in the next item
-                    subscription.request(1);
+            SseUtil.send(requestContext, event).handle(new BiFunction<Object, Throwable, Object>() {
+                @Override
+                public Object apply(Object v, Throwable t) {
+                    if (t != null) {
+                        // need to cancel because the exception didn't come from the Multi
+                        subscription.cancel();
+                        handleException(requestContext, t);
+                    } else {
+                        // send in the next item
+                        subscription.request(1);
+                    }
+                    return null;
                 }
-                return null;
             });
         }
     }
@@ -44,20 +48,23 @@ public class MultiResponseHandler implements ServerRestHandler {
 
         @Override
         public void onNext(Object item) {
-            StreamingUtil.send(requestContext, item).handle((v, t) -> {
-                if (t != null) {
-                    // need to cancel because the exception didn't come from the Multi
-                    try {
-                        subscription.cancel();
-                    } catch (Throwable t2) {
-                        t2.printStackTrace();
+            StreamingUtil.send(requestContext, item).handle(new BiFunction<Object, Throwable, Object>() {
+                @Override
+                public Object apply(Object v, Throwable t) {
+                    if (t != null) {
+                        // need to cancel because the exception didn't come from the Multi
+                        try {
+                            subscription.cancel();
+                        } catch (Throwable t2) {
+                            t2.printStackTrace();
+                        }
+                        handleException(requestContext, t);
+                    } else {
+                        // send in the next item
+                        subscription.request(1);
                     }
-                    handleException(requestContext, t);
-                } else {
-                    // send in the next item
-                    subscription.request(1);
+                    return null;
                 }
-                return null;
             });
         }
     }

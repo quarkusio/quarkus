@@ -80,9 +80,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <!--suppress MavenModelInspection -->
-                        <maven.home>${maven.home}</maven.home>
-                        <maven.repo>${settings.localRepository}</maven.repo>
                         <project.version>${project.version}</project.version>
                     </systemPropertyVariables>
                 </configuration>
@@ -101,9 +98,6 @@
                 </executions>
                 <configuration>
                     <systemPropertyVariables>
-                        <!--suppress MavenModelInspection -->
-                        <maven.home>${maven.home}</maven.home>
-                        <maven.repo>${settings.localRepository}</maven.repo>
                         <project.version>${project.version}</project.version>
                     </systemPropertyVariables>
                 </configuration>
@@ -141,9 +135,6 @@
                         </executions>
                         <configuration>
                             <systemPropertyVariables>
-                                <!--suppress MavenModelInspection -->
-                                <maven.home>${maven.home}</maven.home>
-                                <maven.repo>${settings.localRepository}</maven.repo>
                                 <project.version>${project.version}</project.version>
 
                                 <!-- add a system property that can be used by JUnit to determine whether a native image can be built -->

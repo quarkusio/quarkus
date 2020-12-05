@@ -114,6 +114,11 @@ public class SmallRyeOpenApiProcessor {
     private static final String SPRING = "Spring";
     private static final String VERT_X = "Vert.x";
 
+    static {
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_PRODUCES, "application/json");
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_CONSUMES, "application/json");
+    }
+
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.SMALLRYE_OPENAPI);
@@ -485,7 +490,6 @@ public class SmallRyeOpenApiProcessor {
         }
         document.modelFromReader(readerModel);
         document.modelFromStaticFile(staticModel);
-        document.filter(filter(openApiConfig));
         for (AddToOpenAPIDefinitionBuildItem openAPIBuildItem : openAPIBuildItems) {
             OASFilter otherExtensionFilter = openAPIBuildItem.getOASFilter();
             document.filter(otherExtensionFilter);
@@ -499,10 +503,5 @@ public class SmallRyeOpenApiProcessor {
         document.reset();
         document.config(openApiConfig);
         return document;
-    }
-
-    private OASFilter filter(OpenApiConfig openApiConfig) {
-        return OpenApiProcessor.getFilter(openApiConfig,
-                Thread.currentThread().getContextClassLoader());
     }
 }

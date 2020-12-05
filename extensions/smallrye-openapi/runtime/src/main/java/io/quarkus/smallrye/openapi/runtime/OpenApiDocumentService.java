@@ -41,7 +41,7 @@ public class OpenApiDocumentService {
                     OpenApiDocument document = OpenApiDocument.INSTANCE;
                     document.reset();
                     document.config(openApiConfig);
-                    document.modelFromStaticFile(io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile));
+                    document.modelFromStaticFile(OpenApiProcessor.modelFromStaticFile(staticFile));
                     document.filter(OpenApiProcessor.getFilter(openApiConfig, cl));
                     document.initialize();
 

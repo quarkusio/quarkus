@@ -17,7 +17,8 @@ public class HotDeploymentConfigFileBuildStep {
         if (processor != null) {
             Map<String, Boolean> watchedFilePaths = files.stream()
                     .collect(Collectors.toMap(HotDeploymentWatchedFileBuildItem::getLocation,
-                            HotDeploymentWatchedFileBuildItem::isRestartNeeded));
+                            HotDeploymentWatchedFileBuildItem::isRestartNeeded,
+                            (isRestartNeeded1, isRestartNeeded2) -> isRestartNeeded1 || isRestartNeeded2));
             processor.setWatchedFilePaths(watchedFilePaths);
         }
         return null;

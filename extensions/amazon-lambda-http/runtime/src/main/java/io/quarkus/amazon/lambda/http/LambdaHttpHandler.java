@@ -30,6 +30,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
@@ -176,6 +177,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         quarkusHeaders.setContextObject(Context.class, context);
+        quarkusHeaders.setContextObject(AwsProxyRequestContext.class, request.getRequestContext());
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getHttpMethod()), path, quarkusHeaders);
         if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent

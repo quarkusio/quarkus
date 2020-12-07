@@ -4,6 +4,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -38,13 +39,15 @@ public class FunqyHttpBindingRecorder {
         queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
-                ObjectReader reader = objectMapper.readerFor(invoker.getInputType());
-                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType(), invoker.getInputGenericType());
+                JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
+                ObjectReader reader = objectMapper.readerFor(javaInputType);
+                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType());
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
                 invoker.getBindingContext().put(QueryReader.class.getName(), queryReader);
             }
             if (invoker.hasOutput()) {
-                ObjectWriter writer = objectMapper.writerFor(invoker.getOutputType());
+                JavaType javaOutputType = objectMapper.constructType(invoker.getOutputType());
+                ObjectWriter writer = objectMapper.writerFor(javaOutputType);
                 invoker.getBindingContext().put(ObjectWriter.class.getName(), writer);
             }
         }

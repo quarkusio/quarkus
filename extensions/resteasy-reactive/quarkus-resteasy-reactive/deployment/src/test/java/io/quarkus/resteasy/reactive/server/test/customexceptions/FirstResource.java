@@ -41,7 +41,7 @@ public class FirstResource {
         return Response.status(409).build();
     }
 
-    @ServerExceptionMapper(MyException.class)
+    @ServerExceptionMapper
     public Response handleMyException(SimpleResourceInfo simplifiedResourceInfo, MyException myException,
             ContainerRequestContext containerRequestContext, UriInfo uriInfo, HttpHeaders httpHeaders, Request request,
             HttpServerRequest httpServerRequest) {

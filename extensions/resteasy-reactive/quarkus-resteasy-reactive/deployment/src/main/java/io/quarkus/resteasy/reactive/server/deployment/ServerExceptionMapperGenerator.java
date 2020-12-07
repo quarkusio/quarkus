@@ -27,7 +27,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Response;
 
-import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -109,9 +109,7 @@ final class ServerExceptionMapperGenerator {
         checkModifiers(targetMethod);
 
         ClassInfo targetClass = targetMethod.declaringClass();
-        AnnotationInstance exceptionMapperInstance = targetMethod
-                .annotation(SERVER_EXCEPTION_MAPPER);
-        Type[] handledExceptionTypes = exceptionMapperInstance.value().asClassArray();
+        Type[] handledExceptionTypes = getHandledExceptionTypes(targetMethod);
         Map<String, String> result = new HashMap<>();
         for (Type handledExceptionType : handledExceptionTypes) {
             String generatedClassName = getGeneratedClassName(targetMethod, handledExceptionType);
@@ -226,8 +224,7 @@ final class ServerExceptionMapperGenerator {
         checkModifiers(targetMethod);
 
         ClassInfo targetClass = targetMethod.declaringClass();
-        AnnotationInstance exceptionMapperInstance = targetMethod.annotation(SERVER_EXCEPTION_MAPPER);
-        Type[] handledExceptionTypes = exceptionMapperInstance.value().asClassArray();
+        Type[] handledExceptionTypes = getHandledExceptionTypes(targetMethod);
         Map<String, String> result = new HashMap<>();
         for (Type handledExceptionType : handledExceptionTypes) {
             String generatedClassName = getGeneratedClassName(targetMethod, handledExceptionType);
@@ -283,6 +280,46 @@ final class ServerExceptionMapperGenerator {
             result.put(handledExceptionType.name().toString(), generatedClassName);
         }
         return result;
+    }
+
+    private static Type[] getHandledExceptionTypes(MethodInfo targetMethod) {
+        AnnotationValue annotationValue = targetMethod.annotation(SERVER_EXCEPTION_MAPPER).value();
+        // handle the case where 'value' is set
+        if (annotationValue != null) {
+            Type[] valueArray = annotationValue.asClassArray();
+            if ((valueArray != null) && (valueArray.length > 0)) {
+                return valueArray;
+            }
+        }
+
+        // handle the case where we deduce the type of exception handler by the Throwable defined in method parameters
+        Type deducedHandledExceptionType = null;
+        List<Type> methodParameters = targetMethod.parameters();
+        for (Type methodParameter : methodParameters) {
+            if (methodParameter.kind() == Type.Kind.CLASS) {
+                try {
+                    Class<?> methodParameterClass = Class.forName(methodParameter.name().toString(), false,
+                            Thread.currentThread().getContextClassLoader());
+                    if (Throwable.class.isAssignableFrom(methodParameterClass)) {
+                        if (deducedHandledExceptionType != null) {
+                            throw new IllegalArgumentException(
+                                    "Multiple method parameters found that extend 'Throwable'. When using '@ServerExceptionMapper', only one parameter can be of type 'Throwable'. Offending method is '"
+                                            + targetMethod.name() + "' of class '"
+                                            + targetMethod.declaringClass().name().toString() + "'");
+                        }
+                        deducedHandledExceptionType = methodParameter;
+                    }
+                } catch (ClassNotFoundException ignored) {
+
+                }
+            }
+        }
+        if (deducedHandledExceptionType == null) {
+            throw new IllegalArgumentException(
+                    "When '@ServerExceptionMapper' is used without a value, then the annotated method must contain a method parameter that extends 'Throwable'. Offending method is '"
+                            + targetMethod.name() + "' of class '" + targetMethod.declaringClass().name().toString() + "'");
+        }
+        return new Type[] { deducedHandledExceptionType };
     }
 
     private static MethodDescriptor toResponseDescriptor(Type handledExceptionType, String generatedClassName) {

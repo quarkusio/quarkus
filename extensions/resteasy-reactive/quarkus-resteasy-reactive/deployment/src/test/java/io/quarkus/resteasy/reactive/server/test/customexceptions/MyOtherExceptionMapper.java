@@ -15,7 +15,7 @@ public class MyOtherExceptionMapper {
         this.someBean = someBean;
     }
 
-    @ServerExceptionMapper(MyOtherException.class)
+    @ServerExceptionMapper
     public Response handleMyOtherException(RoutingContext routingContext, MyOtherException myOtherException,
             SimpleResourceInfo simplifiedResourceInfo) {
         return Response.status(411).build();

@@ -9,6 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.amazon.lambda.test.LambdaClient;
@@ -137,6 +138,16 @@ public class AmazonLambdaSimpleTestCase {
         Assertions.assertEquals(out.getStatusCode(), 200);
         Assertions.assertEquals(body(out), "\"Make it funqy Bill\"");
         Assertions.assertTrue(out.getMultiValueHeaders().getFirst("Content-Type").startsWith("application/json"));
+    }
+
+    @Test
+    public void testProxyRequestContext() throws Exception {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setRequestContext(new AwsProxyRequestContext());
+        request.setHttpMethod("GET");
+        request.setPath("/hello/proxyRequestContext");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 204);
     }
 
 }

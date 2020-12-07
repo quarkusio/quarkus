@@ -13,6 +13,7 @@ public final class PersistenceProviderSetup {
 
     public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
         javax.persistence.spi.PersistenceProviderResolverHolder
-                .setPersistenceProviderResolver(new FastBootHibernatePersistenceProviderResolver(hibernateOrmRuntimeConfig));
+                .setPersistenceProviderResolver(new SingletonPersistenceProviderResolver(
+                        new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig)));
     }
 }

@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.extest.runtime.FinalFieldReflectionObject;
 import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.RuntimeXmlConfigService;
@@ -67,6 +68,7 @@ import io.quarkus.extest.runtime.config.TestConfigRoot;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.XmlConfig;
 import io.quarkus.extest.runtime.logging.AdditionalLogHandlerValueFactory;
+import io.quarkus.extest.runtime.runtimeinitializedpackage.RuntimeInitializedClass;
 import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
 import io.quarkus.extest.runtime.subst.KeyProxy;
 import io.quarkus.runtime.RuntimeValue;
@@ -466,6 +468,11 @@ public final class TestProcessor {
         if (!Objects.equals("1234", bt.mapMap.get("outer-key").get("inner-key"))) {
             throw new AssertionError("BT map map failed");
         }
+    }
+
+    @BuildStep
+    RuntimeInitializedPackageBuildItem runtimeInitializedPackage() {
+        return new RuntimeInitializedPackageBuildItem(RuntimeInitializedClass.class.getPackage().getName());
     }
 
     @BuildStep(onlyIf = Never.class)

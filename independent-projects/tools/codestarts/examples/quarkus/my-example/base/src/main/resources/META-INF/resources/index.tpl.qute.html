@@ -1,0 +1,16 @@
+<div class="example">
+    <div class="example-header">
+        <h4>{title}</h4>
+        <a href="{guide}" target="_blank" class="guide-link">Guide</a>
+    </div>
+    <div class="example-description">
+        {description}
+    </div>
+    <div class="example-paths">
+    {#if paths}
+        {#for item in paths}
+        <a href="{item.path}" class="path-link" target="_blank">{item.method} {item.path}</a>
+        {/for}
+    {/if}
+    </div>
+</div>

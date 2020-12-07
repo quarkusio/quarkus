@@ -1,0 +1,17 @@
+name: my-example-codestart
+ref: my-example
+type: code
+tags: example
+language:
+  base:
+    data:
+      title: My Hello example
+      description: |
+        <p>This is an example Hello Quarkus codestart</p>
+        <p><b>Some catch phrase!</b></p>
+      guide: https://github.com/ia3andy/quarkus/blob/cs-doc/independent-projects/tools/codestarts/README.adoc
+      paths:
+        - method: GET
+          path: /my-hello-example
+    dependencies:
+      - io.quarkus:quarkus-resteasy

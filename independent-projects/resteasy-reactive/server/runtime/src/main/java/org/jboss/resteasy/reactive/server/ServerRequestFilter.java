@@ -47,6 +47,28 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@link ResourceInfo}
  * <li>{@link SimpleResourceInfo}
  * </ul>
+ *
+ * The return type of the method must be either be of type {@code void}, {@code Response}, {@code Optional<Response>},
+ * {@code Uni<Void>} or
+ * {@code Uni<Response>}.
+ * <ul>
+ * <li>{@code void} should be used when filtering does not need to perform any blocking operations and the filter cannot abort
+ * processing.
+ * <li>{@code Response} should be used when filtering does not need to perform any blocking operations and the filter cannot
+ * abort
+ * processing - in this case the processing will be aborted if the response is not {@code null}.
+ * <li>{@code Optional<Response>} should be used when filtering does not need to perform any blocking operations but the filter
+ * might abort processing - in this case processing is aborted when the {@code Optional} contains a {@code Response} payload.
+ * <li>{@code Uni<Void>} should be used when filtering needs to perform a blocking operations but the filter cannot abort
+ * processing.
+ * Note that {@code Uni<Void>} can easily be produced using: {@code Uni.createFrom().nullItem()}
+ * <li>{@code Uni<Response>} should be used when filtering needs to perform a blocking operations and the filter
+ * might abort processing - in this case processing is aborted when the {@code Uni} contains a {@code Response} payload.
+ * </ul>
+ *
+ * Another important thing to note is that if {@link ContainerRequestContext} is used as a request parameter, calling
+ * {@code abortWith}
+ * is not allowed. You should use the proper response type if aborting processing is necessary.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CompletionStage;
@@ -168,6 +169,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName CHARACTER = DotName.createSimple(Character.class.getName());
     public static final DotName BIG_DECIMAL = DotName.createSimple(BigDecimal.class.getName());
     public static final DotName BIG_INTEGER = DotName.createSimple(BigInteger.class.getName());
+    public static final DotName VOID = DotName.createSimple(Void.class.getName());
+    public static final DotName OPTIONAL = DotName.createSimple(Optional.class.getName());
 
     public static final DotName PRIMITIVE_INTEGER = DotName.createSimple(int.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());

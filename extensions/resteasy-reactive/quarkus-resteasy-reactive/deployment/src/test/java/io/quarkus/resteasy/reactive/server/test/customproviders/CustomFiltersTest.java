@@ -15,7 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.Headers;
 
-public class CustomProvidersTest {
+public class CustomFiltersTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -23,7 +23,7 @@ public class CustomProvidersTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(CustomContainerRequestFilter.class, CustomProvidersResource.class,
+                            .addClasses(CustomContainerRequestFilter.class, CustomFiltersResource.class,
                                     CustomContainerResponseFilter.class, AssertContainerFilter.class, SomeBean.class);
                 }
             });

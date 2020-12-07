@@ -263,7 +263,7 @@ public class ResteasyReactiveScanningProcessor {
             MethodInfo methodInfo = instance.target().asMethod();
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
-            String generatedClassName = CustomProviderGenerator.generateContainerRequestFilter(methodInfo,
+            String generatedClassName = CustomFilterGenerator.generateContainerRequestFilter(methodInfo,
                     new GeneratedBeanGizmoAdaptor(generatedBean));
 
             ContainerRequestFilterBuildItem.Builder builder = new ContainerRequestFilterBuildItem.Builder(generatedClassName)
@@ -286,7 +286,7 @@ public class ResteasyReactiveScanningProcessor {
             MethodInfo methodInfo = instance.target().asMethod();
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
-            String generatedClassName = CustomProviderGenerator.generateContainerResponseFilter(methodInfo,
+            String generatedClassName = CustomFilterGenerator.generateContainerResponseFilter(methodInfo,
                     new GeneratedBeanGizmoAdaptor(generatedBean));
             ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(generatedClassName)
                     .setRegisterAsBean(false);// it has already been made a bean

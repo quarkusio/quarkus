@@ -410,7 +410,7 @@ final class ServerExceptionMapperGenerator {
         List<Type> parameters = targetMethod.parameters();
         ResultHandle[] targetMethodParamHandles = new ResultHandle[parameters.size()];
         String[] parameterTypes = new String[parameters.size()];
-        // TODO: we probably want to refactor this and remove duplicate code that also exists in CustomProviderGenerator
+        // TODO: we probably want to refactor this and remove duplicate code that also exists in CustomFilterGenerator
         for (int i = 0; i < parameters.size(); i++) {
             Type parameter = parameters.get(i);
             DotName paramDotName = parameter.name();

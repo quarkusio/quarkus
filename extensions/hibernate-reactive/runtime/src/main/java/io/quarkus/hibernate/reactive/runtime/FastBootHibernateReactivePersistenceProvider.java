@@ -55,10 +55,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     private volatile FastBootHibernatePersistenceProvider delegate;
 
     private final HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig;
-    private final List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners;
+    private final Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> integrationRuntimeInitListeners;
 
     public FastBootHibernateReactivePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
-            List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
+            Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> integrationRuntimeInitListeners) {
         this.hibernateOrmRuntimeConfig = hibernateOrmRuntimeConfig;
         this.integrationRuntimeInitListeners = integrationRuntimeInitListeners;
     }
@@ -139,7 +139,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 injectRuntimeConfiguration(persistenceUnitName, hibernateOrmRuntimeConfig, runtimeSettingsBuilder);
             }
 
-            for (HibernateOrmIntegrationRuntimeInitListener listener : integrationRuntimeInitListeners) {
+            for (HibernateOrmIntegrationRuntimeInitListener listener : integrationRuntimeInitListeners
+                    .getOrDefault(persistenceUnitName, Collections.emptyList())) {
                 if (listener == null) {
                     continue;
                 }

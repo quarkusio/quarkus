@@ -1,5 +1,6 @@
 package io.quarkus.deployment.dev;
 
+import java.io.Closeable;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -20,10 +21,11 @@ import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 
-@SuppressWarnings("unused")
-public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String, Object>> {
+public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String, Object>>, Closeable {
 
     private static final Logger log = Logger.getLogger(IDEDevModeMain.class.getName());
+
+    private IsolatedDevModeMain delegate;
 
     @Override
     public void accept(CuratedApplication curatedApplication, Map<String, Object> stringObjectMap) {
@@ -58,8 +60,21 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             log.error("Failed to load workspace, hot reload will not be available", e);
         }
 
-        new IsolatedDevModeMain().accept(curatedApplication,
+        terminateIfRunning();
+        delegate = new IsolatedDevModeMain();
+        delegate.accept(curatedApplication,
                 Collections.singletonMap(DevModeContext.class.getName(), devModeContext));
+    }
+
+    @Override
+    public void close() {
+        terminateIfRunning();
+    }
+
+    private void terminateIfRunning() {
+        if (delegate != null) {
+            delegate.close();
+        }
     }
 
     private DevModeContext.ModuleInfo toModule(WorkspaceModule module) throws BootstrapGradleException {

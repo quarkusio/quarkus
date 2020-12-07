@@ -40,6 +40,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.ElasticsearchVersionSubstitution;
@@ -64,6 +65,7 @@ class HibernateSearchElasticsearchProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     public void build(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrations,
             BuildProducer<FeatureBuildItem> feature) {
@@ -92,8 +94,11 @@ class HibernateSearchElasticsearchProcessor {
                 String.class, ElasticsearchVersionSubstitution.class);
 
         // Register the Hibernate Search integration
-        integrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                recorder.createStaticInitListener(buildTimeConfig)));
+        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            // TODO per-PU configuration
+            integrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    puDescriptor.getPersistenceUnitName(), recorder.createStaticInitListener(buildTimeConfig)));
+        }
 
         // Register the required reflection declarations
         registerReflection(index, reflectiveClass);
@@ -103,9 +108,13 @@ class HibernateSearchElasticsearchProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                recorder.createRuntimeInitListener(runtimeConfig)));
+        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            // TODO per-PU configuration
+            runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    puDescriptor.getPersistenceUnitName(), recorder.createRuntimeInitListener(runtimeConfig)));
+        }
     }
 
     private static void checkConfig(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,

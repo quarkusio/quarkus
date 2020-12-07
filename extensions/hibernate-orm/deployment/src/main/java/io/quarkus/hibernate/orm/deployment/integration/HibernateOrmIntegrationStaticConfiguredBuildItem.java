@@ -1,7 +1,9 @@
 package io.quarkus.hibernate.orm.deployment.integration;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
@@ -9,18 +11,28 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStati
 public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends MultiBuildItem {
 
     private final String name;
+    private final String persistenceUnitName;
     private final HibernateOrmIntegrationStaticInitListener listener;
 
-    public HibernateOrmIntegrationStaticConfiguredBuildItem(String name, HibernateOrmIntegrationStaticInitListener listener) {
+    public HibernateOrmIntegrationStaticConfiguredBuildItem(String name, String persistenceUnitName,
+            HibernateOrmIntegrationStaticInitListener listener) {
         if (name == null) {
             throw new IllegalArgumentException("name cannot be null");
         }
         this.name = name;
+        if (persistenceUnitName == null) {
+            throw new IllegalArgumentException("persistenceUnitName cannot be null");
+        }
+        this.persistenceUnitName = persistenceUnitName;
         this.listener = listener;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getPersistenceUnitName() {
+        return persistenceUnitName;
     }
 
     public HibernateOrmIntegrationStaticInitListener getListener() {
@@ -34,11 +46,12 @@ public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends Mult
                 .toString();
     }
 
-    public static List<HibernateOrmIntegrationStaticInitListener> collectListeners(
+    public static Map<String, List<HibernateOrmIntegrationStaticInitListener>> collectListeners(
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> items) {
-        List<HibernateOrmIntegrationStaticInitListener> listeners = new ArrayList<>();
+        Map<String, List<HibernateOrmIntegrationStaticInitListener>> listeners = new HashMap<>();
         for (HibernateOrmIntegrationStaticConfiguredBuildItem item : items) {
-            listeners.add(item.getListener());
+            listeners.computeIfAbsent(item.getPersistenceUnitName(), ignored -> new ArrayList<>())
+                    .add(item.getListener());
         }
         return listeners;
     }

@@ -158,10 +158,14 @@ public final class HibernateReactiveProcessor {
 
     @BuildStep
     void waitForVertxPool(List<VertxPoolBuildItem> vertxPool,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
-        // when HibernateORM starts its persistence units
-        runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_REACTIVE, null));
+        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
+            // when HibernateORM starts its persistence units
+            runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_REACTIVE,
+                    puDescriptor.getPersistenceUnitName(), null));
+        }
     }
 
     @BuildStep

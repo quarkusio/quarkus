@@ -41,6 +41,7 @@ public enum Capability {
     SECURITY_ELYTRON_LDAP,
     SECURITY_JPA,
     QUARTZ,
+    KUBERNETES_SERVICE_BINDING,
     /**
      * @deprecated
      * @see io.quarkus.deployment.metrics.MetricsCapabilityBuildItem

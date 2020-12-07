@@ -28,25 +28,33 @@ import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchIndexBuildTimeConfig;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchBackendRuntimeConfig;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchIndexRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchBackendBuildTimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchIndexBuildTimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchBackendRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
-            HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
+            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig) {
         return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig);
     }
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
-        return new HibernateSearchIntegrationRuntimeInitListener(runtimeConfig);
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName) {
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
+                .isDefaultPersistenceUnit(persistenceUnitName)
+                        ? runtimeConfig.defaultPersistenceUnit
+                        : runtimeConfig.persistenceUnits.get(persistenceUnitName);
+        if (puConfig == null) {
+            return null;
+        }
+        return new HibernateSearchIntegrationRuntimeInitListener(puConfig);
     }
 
     public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
@@ -84,9 +92,10 @@ public class HibernateSearchElasticsearchRecorder {
     private static final class HibernateSearchIntegrationStaticInitListener
             implements HibernateOrmIntegrationStaticInitListener {
 
-        private final HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
+        private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
 
-        private HibernateSearchIntegrationStaticInitListener(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
+        private HibernateSearchIntegrationStaticInitListener(
+                HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig) {
             this.buildTimeConfig = buildTimeConfig;
         }
 
@@ -150,9 +159,10 @@ public class HibernateSearchElasticsearchRecorder {
     private static final class HibernateSearchIntegrationRuntimeInitListener
             implements HibernateOrmIntegrationRuntimeInitListener {
 
-        private final HibernateSearchElasticsearchRuntimeConfig runtimeConfig;
+        private final HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig;
 
-        private HibernateSearchIntegrationRuntimeInitListener(HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
+        private HibernateSearchIntegrationRuntimeInitListener(
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig) {
             this.runtimeConfig = runtimeConfig;
         }
 

@@ -9,7 +9,6 @@ import javax.inject.Singleton;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
-import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -17,7 +16,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.hibernate.orm.PersistenceUnit;
-import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 
@@ -26,11 +24,10 @@ public class HibernateSearchElasticsearchCdiProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void generateSearchBeans(HibernateSearchElasticsearchRecorder recorder,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            List<JdbcDataSourceBuildItem> jdbcDataSources, // just make sure the datasources are initialized
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
-            String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
+        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem persistenceUnit : configuredPersistenceUnits) {
+            String persistenceUnitName = persistenceUnit.getPersistenceUnitName();
 
             boolean isDefaultPersistenceUnit = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
             syntheticBeanBuildItemBuildProducer

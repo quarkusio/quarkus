@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb.panache.person;
+package io.quarkus.it.mongodb.panache.person.resources;
 
 import java.net.URI;
 import java.util.HashSet;
@@ -8,6 +8,9 @@ import java.util.Set;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.it.mongodb.panache.person.PersonEntity;
+import io.quarkus.it.mongodb.panache.person.PersonName;
+import io.quarkus.it.mongodb.panache.person.Status;
 import io.quarkus.panache.common.Sort;
 
 @Path("/persons/entity")

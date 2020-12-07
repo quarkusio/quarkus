@@ -22,7 +22,6 @@ import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.swaggerui.runtime.SwaggerUiRuntimeConfig;
-import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
@@ -54,7 +53,6 @@ public class SwaggerUiProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer,
             BuildProducer<SwaggerUiBuildItem> swaggerUiBuildProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            HttpRootPathBuildItem httpRootPathBuildItem,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode,
@@ -77,7 +75,7 @@ public class SwaggerUiProcessor {
                 WebJarUtil.updateFile(tempPath.resolve("index.html"), generateIndexHtml(openApiPath, swaggerUiConfig));
 
                 swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(tempPath.toAbsolutePath().toString(),
-                        httpRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
+                        nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
                 displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(swaggerUiConfig.path + "/"));
             } else {
                 Map<String, byte[]> files = WebJarUtil.production(curateOutcomeBuildItem, artifact, SWAGGER_UI_WEBJAR_PREFIX);
@@ -98,7 +96,7 @@ public class SwaggerUiProcessor {
                     }
                 }
                 swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(SWAGGER_UI_FINAL_DESTINATION,
-                        httpRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
+                        nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
             }
         }
     }

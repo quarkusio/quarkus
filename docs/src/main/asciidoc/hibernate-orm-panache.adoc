@@ -341,9 +341,9 @@ Once you have written your repository, here are the most common operations you w
 ----
 // creating a person
 Person person = new Person();
-person.name = "Stef";
-person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
-person.status = Status.Alive;
+person.setName("Stef");
+person.setBirth(LocalDate.of(1910, Month.FEBRUARY, 1));
+person.setStatus(Status.Alive);
 
 // persist it
 personRepository.persist(person);

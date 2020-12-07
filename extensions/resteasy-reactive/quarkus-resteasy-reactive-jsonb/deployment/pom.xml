@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-validator</artifactId>
+            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

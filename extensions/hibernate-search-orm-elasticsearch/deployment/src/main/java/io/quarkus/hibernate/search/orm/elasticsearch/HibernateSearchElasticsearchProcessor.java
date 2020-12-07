@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -38,8 +39,10 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
@@ -59,11 +62,11 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void build(HibernateSearchElasticsearchRecorder recorder,
+    public void build(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<HibernateOrmIntegrationBuildItem> integrations,
-            BuildProducer<FeatureBuildItem> feature) throws Exception {
+            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrations,
+            BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_SEARCH_ELASTICSEARCH));
 
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -84,14 +87,16 @@ class HibernateSearchElasticsearchProcessor {
 
         checkConfig(buildTimeConfig, defaultBackendIsUsed);
 
+        // Make it possible to record the ElasticsearchVersion as bytecode:
+        recorderContext.registerSubstitution(ElasticsearchVersion.class,
+                String.class, ElasticsearchVersionSubstitution.class);
+
         // Register the Hibernate Search integration
-        integrations.produce(new HibernateOrmIntegrationBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH));
+        integrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                recorder.createStaticInitListener(buildTimeConfig)));
 
         // Register the required reflection declarations
         registerReflection(index, reflectiveClass);
-
-        // Register the Hibernate Search integration listener
-        recorder.registerHibernateSearchIntegration(buildTimeConfig);
     }
 
     @BuildStep
@@ -99,9 +104,8 @@ class HibernateSearchElasticsearchProcessor {
     void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        recorder.setRuntimeConfig(runtimeConfig);
-
-        runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH));
+        runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                recorder.createRuntimeInitListener(runtimeConfig)));
     }
 
     private static void checkConfig(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,

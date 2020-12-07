@@ -388,7 +388,7 @@ I.e. if you wanted to add the `smallrye-openapi` and `swagger-ui` extensions and
 //Q:CONFIG quarkus.swagger-ui.always-include=true
 ----
 
-Now during build the `quarkus.swagger-ui.always-include` will be generated into the resulting jar and `http://0.0.0.0:8080/swagger-ui` will be available when run.
+Now during build the `quarkus.swagger-ui.always-include` will be generated into the resulting jar and `http://0.0.0.0:8080/q/swagger-ui` will be available when run.
 
 == Running as a native application
 

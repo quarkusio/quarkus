@@ -184,7 +184,7 @@ For more details, check out the
 https://github.com/grpc/grpc/blob/v1.28.1/doc/health-checking.md[gRPC documentation]
 
 Additionally, if Quarkus SmallRye Health is added to the application, a readiness check for
-the state of the gRPC services will be added to the MicroProfile Health endpoint response, that is `/health`.
+the state of the gRPC services will be added to the MicroProfile Health endpoint response, that is `/q/health`.
 
 == Reflection Service
 

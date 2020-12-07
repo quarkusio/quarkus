@@ -408,7 +408,7 @@ boolean valid = vaultTOTPSecretEngine.validateCode("my_key_2", keyCode); // <4>
 If you are using the `quarkus-smallrye-health` extension, `quarkus-vault` can add a readiness health check
 to validate the connection to the Vault server. This is disabled by default.
 
-If enabled, when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+If enabled, when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be enabled by setting the `quarkus.vault.health.enabled` property to `true` in your `application.properties`.
 

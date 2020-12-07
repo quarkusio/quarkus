@@ -12,7 +12,7 @@ public class SwaggerUITestCase {
 
     @Test
     public void testSwaggerUi() {
-        RestAssured.when().get("/swagger-ui").then()
+        RestAssured.when().get("/q/swagger-ui").then()
                 .body(containsString("#swagger-ui"))
                 .body(containsString("/openapi"));
     }

@@ -548,7 +548,7 @@ You can now interact with your reactive REST service:
 If you are using the `quarkus-smallrye-health` extension, `cassandra-quarkus` will automatically
 add a readiness health check to validate the connection to the cluster.
 
-So when you access the `/health/ready` endpoint of your application you will have information about
+So when you access the `/q/health/ready` endpoint of your application you will have information about
 the connection validation status.
 
 TIP: This behavior can be disabled by setting the `quarkus.cassandra.health.enabled` property to
@@ -583,7 +583,7 @@ For the full list of available metrics, please refer to the
 link:https://docs.datastax.com/en/developer/java-driver/latest/manual/core/configuration/reference/[driver settings reference]
 and the `advanced.metrics` section.
 
-When metrics are properly enabled and when you access the `/metrics` endpoint of your application,
+When metrics are properly enabled and when you access the `/q/metrics` endpoint of your application,
 you will see metric reports for all enabled metrics.
 
 == Building a native executable

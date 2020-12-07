@@ -176,7 +176,7 @@ The application will respond that 629521085409773 is a prime number.
 If you want, try some more calls with numbers of your choice.
 
 === Review the generated metrics
-To view the metrics, execute `curl -H"Accept: application/json" localhost:8080/metrics/application`
+To view the metrics, execute `curl -H"Accept: application/json" localhost:8080/q/metrics/application`
 You will receive a response such as:
 
 [source,json]

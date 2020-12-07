@@ -79,8 +79,8 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    FrameworkRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
-        return new FrameworkRootPathBuildItem(httpBuildTimeConfig.frameworkRootPath);
+    NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
+        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.frameworkRootPath);
     }
 
     @BuildStep
@@ -122,8 +122,8 @@ class VertxHttpProcessor {
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
             CoreVertxBuildItem vertx,
             List<RouteBuildItem> routes,
-            FrameworkRootPathBuildItem frameworkRootPath,
-            BuildProducer<VertxFrameworkRouterBuildItem> frameworkRouterBuildProducer,
+            NonApplicationRootPathBuildItem frameworkRootPath,
+            BuildProducer<VertxNonApplicationRouterBuildItem> frameworkRouterBuildProducer,
             ShutdownContextBuildItem shutdown) {
 
         RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx());
@@ -140,7 +140,7 @@ class VertxHttpProcessor {
         }
 
         if (frameworkRouterFound) {
-            frameworkRouterBuildProducer.produce(new VertxFrameworkRouterBuildItem(frameworkRouter));
+            frameworkRouterBuildProducer.produce(new VertxNonApplicationRouterBuildItem(frameworkRouter));
         }
 
         return new VertxWebRouterBuildItem(router);
@@ -159,8 +159,8 @@ class VertxHttpProcessor {
             LaunchModeBuildItem launchMode,
             List<DefaultRouteBuildItem> defaultRoutes, List<FilterBuildItem> filters,
             VertxWebRouterBuildItem router,
-            Optional<VertxFrameworkRouterBuildItem> frameworkRouter,
-            FrameworkRootPathBuildItem frameworkRootPathBuildItem,
+            Optional<VertxNonApplicationRouterBuildItem> frameworkRouter,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
@@ -198,7 +198,7 @@ class VertxHttpProcessor {
         if (frameworkRouter.isPresent()) {
             recorder.mountFrameworkRouter(router.getRouter(),
                     frameworkRouter.get().getRouter(),
-                    frameworkRootPathBuildItem.getFrameworkRootPath());
+                    nonApplicationRootPathBuildItem.getFrameworkRootPath());
         }
 
         recorder.finalizeRouter(beanContainer.getValue(),

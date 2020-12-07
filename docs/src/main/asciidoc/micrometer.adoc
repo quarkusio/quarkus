@@ -190,7 +190,7 @@ If you want, try some more calls with numbers of your choice.
 
 === Review the generated metrics
 
-To view the metrics, execute `curl localhost:8080/metrics/`
+To view the metrics, execute `curl localhost:8080/q/metrics/`
 
 Prometheus-formatted metrics will be returned in plain text in no particular order.
 

@@ -536,7 +536,7 @@ Once the build is finished, you can run the executable with:
 If you are using the `quarkus-smallrye-health` extension, `quarkus-vertx-redis` will automatically add a readiness health check
 to validate the connection to the Redis server.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
 

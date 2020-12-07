@@ -24,7 +24,7 @@ public class SwaggerOptionsTest {
 
     @Test
     public void customOptions() {
-        RestAssured.when().get("/swagger-ui").then().statusCode(200)
+        RestAssured.when().get("/q/swagger-ui").then().statusCode(200)
                 .body(
                         containsString("Testing title"),
                         containsString("/openapi"),

@@ -27,7 +27,7 @@ To complete this guide, you need:
 == Architecture
 
 In this guide, we build a simple REST application that exposes MicroProfile Health 
-functionalities at the `/health/live` and `/health/ready` endpoints according to the 
+functionalities at the `/q/health/live` and `/q/health/ready` endpoints according to the
 specification.
 
 == Solution
@@ -79,15 +79,15 @@ This will add the following to your `pom.xml`:
 
 Importing the `smallrye-health` extension directly exposes three REST endpoints:
 
-- `/health/live` - The application is up and running.
-- `/health/ready` - The application is ready to serve requests.
-- `/health` - Accumulating all health check procedures in the application.
+- `/q/health/live` - The application is up and running.
+- `/q/health/ready` - The application is ready to serve requests.
+- `/q/health` - Accumulating all health check procedures in the application.
  
 To check that the `smallrye-health` extension is working as expected:
 
 * start your Quarkus application with `./mvnw compile quarkus:dev`
-* access the `http://localhost:8080/health/live` endpoint using your browser or 
-`curl http://localhost:8080/health/live`
+* access the `http://localhost:8080/q/health/live` endpoint using your browser or
+`curl http://localhost:8080/q/health/live`
 
 All of the health REST endpoints return a simple JSON object with two fields:
 
@@ -129,16 +129,16 @@ public class SimpleHealthCheck implements HealthCheck {
 
 As you can see, the health check procedures are defined as CDI beans that implement the `HealthCheck` interface and are annotated with one of the health check qualifiers, such as: 
 
-- `@Liveness` - the liveness check accessible at `/health/live`
-- `@Readiness` - the readiness check accessible at `/health/ready`
+- `@Liveness` - the liveness check accessible at `/q/health/live`
+- `@Readiness` - the readiness check accessible at `/q/health/ready`
 
 `HealthCheck` is a functional interface whose single method `call` returns a 
 `HealthCheckResponse` object which can be easily constructed by the fluent builder 
 API shown in the example.
 
 As we have started our Quarkus application in dev mode simply repeat the request 
-to `http://localhost:8080/health/live` by refreshing your browser window or by 
-using `curl http://localhost:8080/health/live`. Because we defined our health check 
+to `http://localhost:8080/q/health/live` by refreshing your browser window or by
+using `curl http://localhost:8080/q/health/live`. Because we defined our health check
 to be a liveness procedure (with `@Liveness` qualifier) the new health check procedure 
 is now present in the `checks` array.
 
@@ -180,15 +180,15 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
 
 ----
 
-If you now rerun the health check at `http://localhost:8080/health/live` the `checks` 
+If you now rerun the health check at `http://localhost:8080/q/health/live` the `checks`
 array will contain only the previously defined `SimpleHealthCheck` as it is the only 
 check defined with the `@Liveness` qualifier. However, if you access 
-`http://localhost:8080/health/ready` (in the browser or with 
-`curl http://localhost:8080/health/ready`) you will see only the 
+`http://localhost:8080/q/health/ready` (in the browser or with
+`curl http://localhost:8080/q/health/ready`) you will see only the
 `Database connection health check` as it is the only health check defined with the 
 `@Readiness` qualifier as the readiness health check procedure.
 
-NOTE: If you access `http://localhost:8080/health` you will get back both checks.
+NOTE: If you access `http://localhost:8080/q/health` you will get back both checks.
 
 More information about which health check procedures should be used in which situation 
 is detailed in the MicroProfile Health specification. Generally, the liveness 
@@ -253,9 +253,9 @@ through the `HealthCheckResponse#up(String)` (there is also
 From now on, we utilize the full builder capabilities provided by the
 `HealthCheckResponseBuilder` class.
 
-If you now rerun the readiness health check (at `http://localhost:8080/health/ready`) 
+If you now rerun the readiness health check (at `http://localhost:8080/q/health/ready`)
 the overall `status` should be DOWN. You can also check the liveness check at 
-`http://localhost:8080/health/live` which will return the overall `status` UP because 
+`http://localhost:8080/q/health/live` which will return the overall `status` UP because
 it isn't influenced by the readiness checks.
 
 As we shouldn't leave this application with a readiness check in a DOWN state and 
@@ -300,7 +300,7 @@ public class DataHealthCheck implements HealthCheck {
 }
 ----
 
-If you rerun the liveness health check procedure by accessing the `/health/live` 
+If you rerun the liveness health check procedure by accessing the `/q/health/live`
 endpoint you can see that the new health check `Health check with data` is present 
 in the `checks` array. This check contains a new attribute called `data` which is a 
 JSON object consisting of the properties we have defined in our health check procedure.
@@ -338,7 +338,7 @@ NOTE: Experimental - not included in the MicroProfile specification
 
 The Quarkus `smallrye-health` extension ships with `health-ui` and enables it by default in dev and test modes, but it can also be explicitly configured for production mode as well.
 
-`health-ui` can be accessed from http://localhost:8080/health-ui/ .
+`health-ui` can be accessed from http://localhost:8080/q/health-ui/ .
 
 image:health-ui-screenshot01.png[alt=Health UI]
 

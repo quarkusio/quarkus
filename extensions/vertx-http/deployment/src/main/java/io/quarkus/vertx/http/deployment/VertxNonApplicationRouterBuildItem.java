@@ -4,11 +4,11 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.vertx.ext.web.Router;
 
-public final class VertxFrameworkRouterBuildItem extends SimpleBuildItem {
+public final class VertxNonApplicationRouterBuildItem extends SimpleBuildItem {
 
     private RuntimeValue<Router> router;
 
-    VertxFrameworkRouterBuildItem(RuntimeValue<Router> router) {
+    VertxNonApplicationRouterBuildItem(RuntimeValue<Router> router) {
         this.router = router;
     }
 

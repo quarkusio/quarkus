@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.elasticsearch.test;
+package io.quarkus.hibernate.search.elasticsearch.test.configuration;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 

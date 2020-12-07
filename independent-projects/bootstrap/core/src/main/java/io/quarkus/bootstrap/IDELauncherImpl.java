@@ -7,6 +7,8 @@ import io.quarkus.bootstrap.resolver.model.QuarkusModel;
 import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -17,11 +19,9 @@ import java.util.Map;
  * into the jar file, then uses a custom class loader load them.
  *
  */
-public class IDELauncherImpl {
+public class IDELauncherImpl implements Closeable {
 
-    public static void launch(Path projectRoot, Map<String, Object> context) {
-
-        CuratedApplication app = null;
+    public static Closeable launch(Path projectRoot, Map<String, Object> context) {
         try {
             //todo : proper support for everything
             final QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
@@ -53,16 +53,33 @@ public class IDELauncherImpl {
                 }
             }
 
-            app = builder.build().bootstrap();
-
-            app.runInAugmentClassLoader("io.quarkus.deployment.dev.IDEDevModeMain", context);
+            final CuratedApplication curatedApp = builder.build().bootstrap();
+            final Object appInstance = curatedApp.runInAugmentClassLoader("io.quarkus.deployment.dev.IDEDevModeMain", context);
+            return new IDELauncherImpl(curatedApp,
+                    appInstance == null ? null : appInstance instanceof Closeable ? (Closeable) appInstance : null);
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            if (app != null) {
-                app.close();
-            }
         }
     }
 
+    private final CuratedApplication curatedApp;
+    private final Closeable runningApp;
+
+    private IDELauncherImpl(CuratedApplication curatedApp, Closeable runningApp) {
+        this.curatedApp = curatedApp;
+        this.runningApp = runningApp;
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            if (runningApp != null) {
+                runningApp.close();
+            }
+        } finally {
+            if (curatedApp != null) {
+                curatedApp.close();
+            }
+        }
+    }
 }

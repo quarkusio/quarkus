@@ -1,5 +1,6 @@
 package io.quarkus.launcher;
 
+import java.io.Closeable;
 import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -22,7 +23,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
  */
 public class QuarkusLauncher {
 
-    public static void launch(String callingClass, String quarkusApplication, String... args) {
+    public static Closeable launch(String callingClass, String quarkusApplication, String... args) {
         final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
         try {
             String classResource = callingClass.replace(".", "/") + ".class";
@@ -52,8 +53,7 @@ public class QuarkusLauncher {
             Thread.currentThread().setContextClassLoader(loader);
 
             Class<?> launcher = loader.loadClass("io.quarkus.bootstrap.IDELauncherImpl");
-            launcher.getDeclaredMethod("launch", Path.class, Map.class).invoke(null, appClasses, context);
-
+            return (Closeable) launcher.getDeclaredMethod("launch", Path.class, Map.class).invoke(null, appClasses, context);
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -61,5 +61,4 @@ public class QuarkusLauncher {
             Thread.currentThread().setContextClassLoader(originalCl);
         }
     }
-
 }

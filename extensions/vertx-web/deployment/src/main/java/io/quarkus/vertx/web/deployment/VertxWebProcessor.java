@@ -793,7 +793,7 @@ class VertxWebProcessor {
 
     private static final List<DotName> TYPES_IGNORED_FOR_REFLECTION = Arrays
             .asList(io.quarkus.arc.processor.DotNames.STRING,
-                    DotNames.BUFFER, DotNames.JSON_ARRAY, DotNames.JSON_OBJECT);
+                    DotNames.BUFFER, DotNames.RX_BUFFER, DotNames.JSON_ARRAY, DotNames.JSON_OBJECT);
 
     private static void registerForReflection(Type contentType,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
@@ -1476,7 +1476,7 @@ class VertxWebProcessor {
 
         static class Builder {
 
-            // An injector could provide either a custom predicate or match/skip types and required annotations 
+            // An injector could provide either a custom predicate or match/skip types and required annotations
             TriPredicate<Type, Set<AnnotationInstance>, IndexView> predicate;
             List<Type> matchTypes;
             List<Type> skipTypes;
@@ -1570,8 +1570,8 @@ class VertxWebProcessor {
 
     static void convertPrimitiveAndSet(AssignableResultHandle paramHandle, Type paramType, BytecodeCreator invoke,
             MethodInfo method, int position) {
-        // For example: 
-        // if(param != null) { 
+        // For example:
+        // if(param != null) {
         //    try {
         //       param = Long.valueOf(param);
         //    } catch(Throwable e) {

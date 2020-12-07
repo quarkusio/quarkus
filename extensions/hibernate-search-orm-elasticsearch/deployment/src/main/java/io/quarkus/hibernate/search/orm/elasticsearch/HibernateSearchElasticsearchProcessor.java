@@ -47,7 +47,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 
 class HibernateSearchElasticsearchProcessor {
 
-    private static final String HIBERNATE_SEARCH_ELASTICSEARCH = "Hibernate Search Elasticsearch";
+    private static final String HIBERNATE_SEARCH_ELASTICSEARCH = "Hibernate Search ORM + Elasticsearch";
 
     HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
 

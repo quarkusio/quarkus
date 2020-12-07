@@ -6,19 +6,17 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.envers.configuration.EnversSettings;
 
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationListener;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateEnversRecorder {
 
-    public void registerHibernateEnversIntegration(HibernateEnversBuildTimeConfig buildTimeConfig) {
-        HibernateOrmIntegrations.registerListener(new HibernateEnversIntegrationListener(buildTimeConfig));
+    public HibernateOrmIntegrationStaticInitListener createStaticInitListener(HibernateEnversBuildTimeConfig buildTimeConfig) {
+        return new HibernateEnversIntegrationListener(buildTimeConfig);
     }
 
-    private static final class HibernateEnversIntegrationListener implements HibernateOrmIntegrationListener {
-
+    private static final class HibernateEnversIntegrationListener implements HibernateOrmIntegrationStaticInitListener {
         private HibernateEnversBuildTimeConfig buildTimeConfig;
 
         private HibernateEnversIntegrationListener(HibernateEnversBuildTimeConfig buildTimeConfig) {
@@ -37,10 +35,6 @@ public class HibernateEnversRecorder {
         @Override
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
                 BiConsumer<String, Object> propertyCollector) {
-        }
-
-        @Override
-        public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
         }
     }
 }

@@ -25,7 +25,7 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
@@ -42,9 +42,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
     private final ProviderUtil providerUtil = new ProviderUtil();
 
     private final HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig;
+    private final List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners;
 
-    public FastBootHibernatePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+    public FastBootHibernatePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+            List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
         this.hibernateOrmRuntimeConfig = hibernateOrmRuntimeConfig;
+        this.integrationRuntimeInitListeners = integrationRuntimeInitListeners;
     }
 
     @SuppressWarnings("rawtypes")
@@ -173,7 +176,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 injectRuntimeConfiguration(persistenceUnitName, hibernateOrmRuntimeConfig, runtimeSettingsBuilder);
             }
 
-            HibernateOrmIntegrations.contributeRuntimeProperties((k, v) -> runtimeSettingsBuilder.put(k, v));
+            for (HibernateOrmIntegrationRuntimeInitListener listener : integrationRuntimeInitListeners) {
+                if (listener == null) {
+                    continue;
+                }
+                listener.contributeRuntimeProperties(runtimeSettingsBuilder::put);
+            }
 
             // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
             runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults", "true");

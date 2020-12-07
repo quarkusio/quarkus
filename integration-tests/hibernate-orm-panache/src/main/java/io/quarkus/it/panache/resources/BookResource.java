@@ -1,4 +1,4 @@
-package io.quarkus.it.panache;
+package io.quarkus.it.panache.resources;
 
 import java.util.List;
 
@@ -7,6 +7,9 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+
+import io.quarkus.it.panache.Book;
+import io.quarkus.it.panache.BookDao;
 
 @Path("/book")
 public class BookResource {

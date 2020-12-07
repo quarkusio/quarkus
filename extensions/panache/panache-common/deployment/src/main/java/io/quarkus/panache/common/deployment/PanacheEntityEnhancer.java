@@ -16,6 +16,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
     public static final DotName DOTNAME_GENERATE_BRIDGE = DotName.createSimple(GenerateBridge.class.getName());
 
     public static final String JAXB_ANNOTATION_PREFIX = "Ljavax/xml/bind/annotation/";
+    public static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
     private static final String JAXB_TRANSIENT_BINARY_NAME = "javax/xml/bind/annotation/XmlTransient";
     public static final String JAXB_TRANSIENT_SIGNATURE = "L" + JAXB_TRANSIENT_BINARY_NAME + ";";
 

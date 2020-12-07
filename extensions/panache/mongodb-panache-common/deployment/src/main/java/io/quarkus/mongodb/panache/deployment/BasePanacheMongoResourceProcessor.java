@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.panache.deployment;
 
 import static io.quarkus.deployment.util.JandexUtil.resolveTypeParameters;
+import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.META_INF_PANACHE_ARCHIVE_MARKER;
 import static org.jboss.jandex.DotName.createSimple;
 
 import java.util.Collection;
@@ -27,6 +28,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -34,7 +37,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -49,8 +51,10 @@ import io.quarkus.mongodb.panache.PanacheMongoRecorder;
 import io.quarkus.mongodb.panache.ProjectionFor;
 import io.quarkus.mongodb.panache.jackson.ObjectIdDeserializer;
 import io.quarkus.mongodb.panache.jackson.ObjectIdSerializer;
+import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
+import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
@@ -65,7 +69,7 @@ public abstract class BasePanacheMongoResourceProcessor {
     public static final DotName PROJECTION_FOR = createSimple(ProjectionFor.class.getName());
 
     @BuildStep
-    public void buildImperative(CombinedIndexBuildItem index, ApplicationIndexBuildItem applicationIndex,
+    public void buildImperative(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
@@ -235,7 +239,8 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     protected void processEntities(CombinedIndexBuildItem index,
-            BuildProducer<BytecodeTransformerBuildItem> transformers, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
             PanacheEntityEnhancer<?> entityEnhancer, TypeBundle typeBundle) {
 
@@ -263,6 +268,39 @@ public abstract class BasePanacheMongoResourceProcessor {
 
             // Register for building the property mapping cache
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));
+        }
+
+        replaceFieldAccesses(transformers, entityEnhancer, modelClasses);
+    }
+
+    private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers,
+            PanacheEntityEnhancer<?> entityEnhancer, Set<String> modelClasses) {
+        MetamodelInfo<?> modelInfo = entityEnhancer.getModelInfo();
+        Set<String> modelClassNamesInternal = new HashSet<>();
+        for (String entityClassName : modelClasses) {
+            modelClassNamesInternal.add(entityClassName.replace(".", "/"));
+        }
+
+        if (modelInfo.hasEntities()) {
+            PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
+            QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+            Set<String> produced = new HashSet<>();
+
+            for (ClassPathElement i : tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER)) {
+                for (String res : i.getProvidedResources()) {
+                    if (res.endsWith(".class")) {
+                        String cn = res.replace("/", ".").substring(0, res.length() - 6);
+                        if (produced.contains(cn)) {
+                            continue;
+                        }
+                        if (!modelClasses.contains(cn)) {
+                            produced.add(cn);
+                            transformers.produce(
+                                    new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
+                        }
+                    }
+                }
+            }
         }
     }
 

@@ -1,5 +1,8 @@
-package io.quarkus.it.mongodb.panache.person
+package io.quarkus.it.mongodb.panache.person.resources
 
+import io.quarkus.it.mongodb.panache.person.PersonEntity
+import io.quarkus.it.mongodb.panache.person.PersonName
+import io.quarkus.it.mongodb.panache.person.Status
 import io.quarkus.panache.common.Sort
 import java.net.URI
 import javax.ws.rs.DELETE

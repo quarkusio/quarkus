@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb.panache.reactive.person;
+package io.quarkus.it.mongodb.panache.reactive.person.resources;
 
 import java.net.URI;
 import java.util.HashSet;
@@ -11,6 +11,7 @@ import javax.ws.rs.core.Response;
 
 import io.quarkus.it.mongodb.panache.person.Person;
 import io.quarkus.it.mongodb.panache.person.PersonName;
+import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonRepository;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 

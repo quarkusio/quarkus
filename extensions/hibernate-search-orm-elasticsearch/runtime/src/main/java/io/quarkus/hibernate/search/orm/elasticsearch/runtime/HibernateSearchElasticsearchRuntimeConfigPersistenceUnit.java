@@ -8,11 +8,11 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
+import org.hibernate.search.engine.cfg.spi.ParseUtils;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategyNames;
 import org.hibernate.search.mapper.orm.schema.management.SchemaManagementStrategyName;
 import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
 import org.hibernate.search.util.common.SearchException;
-import org.hibernate.search.util.common.impl.StringHelper;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -163,7 +163,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         HTTPS("https");
 
         public static ElasticsearchClientProtocol of(String value) {
-            return StringHelper.parseDiscreteValues(
+            return ParseUtils.parseDiscreteValues(
                     values(),
                     ElasticsearchClientProtocol::getHibernateSearchString,
                     (invalidValue, validValues) -> new SearchException(

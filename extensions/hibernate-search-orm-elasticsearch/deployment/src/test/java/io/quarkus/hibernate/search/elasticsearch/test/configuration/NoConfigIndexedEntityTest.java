@@ -14,7 +14,8 @@ public class NoConfigIndexedEntityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class)
+                    .addAsResource("application-nohsearchconfig.properties", "application.properties"))
             .setExpectedException(ConfigurationError.class);
 
     @Test

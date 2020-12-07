@@ -753,7 +753,7 @@ public final class RunTimeConfigurationGenerator {
             // throw the proper exception
             final ResultHandle finalErrorMessageBuilder = isError.newInstance(SB_NEW);
             isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, isError
-                    .load("One or more configuration errors has prevented the application from starting. The errors are:\n"));
+                    .load("One or more configuration errors have prevented the application from starting. The errors are:\n"));
             isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, niceErrorMessage);
             final ResultHandle finalErrorMessage = isError.invokeVirtualMethod(OBJ_TO_STRING, finalErrorMessageBuilder);
             final ResultHandle configurationException = isError

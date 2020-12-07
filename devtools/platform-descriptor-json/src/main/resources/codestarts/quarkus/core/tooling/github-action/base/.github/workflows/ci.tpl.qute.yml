@@ -23,5 +23,5 @@ jobs:
           with:
             arguments: {buildtool.cmd.build-ci}
         {#else}
-          run: {buildtool.cli} {buildtool.cmd.build-ci}
+        run: {buildtool.cli} {buildtool.cmd.build-ci}
         {/if}

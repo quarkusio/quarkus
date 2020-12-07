@@ -160,9 +160,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                 }
             }
             if (mojo.uberJar() && System.getProperty(BuildMojo.QUARKUS_PACKAGE_UBER_JAR) == null) {
-                System.setProperty(BuildMojo.QUARKUS_PACKAGE_UBER_JAR, "true");
-                mojo.clearUberJarProp();
+                effectiveProperties.setProperty(BuildMojo.QUARKUS_PACKAGE_UBER_JAR, "true");
             }
+
             effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
 

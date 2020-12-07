@@ -105,16 +105,16 @@ You can also let Maven control the deployment of your application using the App 
 
 First, add the plugin to your `pom.xml`:
 
-[source, xml]
+[source,xml]
 ----
 <plugin>
     <groupId>com.google.cloud.tools</groupId>
     <artifactId>appengine-maven-plugin</artifactId>
     <version>2.4.0</version>
     <configuration>
-        <projectId>GCLOUD_CONFIG</projectId> <!-- <1> -->
+        <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>
-        <artifact>${project.build.directory}/getting-started-${project.version}-runner.jar</artifact> <!-- <2> -->
+        <artifact>${project.build.directory}/getting-started-${project.version}-runner.jar</artifact> <2>
     </configuration>
 </plugin>
 ----
@@ -194,7 +194,6 @@ In this example, I only exclude the `src` directory:
 ----
 src/
 ----
-[source]
 
 Then, use Cloud Build to build your image, it will upload to a Google Cloud Storage bucket all the files of your application (except the ones ignored by the `.gcloudignore`file),
 build your Docker image and push it to Google Container Registry (GCR).

@@ -56,7 +56,7 @@ This guide also covers the testing of the endpoint.
 
 == Solution
 
-We recommend that you follow the instructions from <<bootstrapping-the-project,Boostrapping project>> and onwards to create the application step by step.
+We recommend that you follow the instructions from <<bootstrapping-the-project,Bootstrapping project>> and onwards to create the application step by step.
 
 However, you can go right to the completed example.
 
@@ -432,7 +432,7 @@ property called `test.url` that is set to the base test URL for situations where
 
 == Working with multi-module project or external modules
 
-Quarkus heavily utilizes https://github.com/wildfly/jandex[Jandex] at build time, to discover various classes or annotations. One immediately recongizable application of this, is CDI bean discovery.
+Quarkus heavily utilizes https://github.com/wildfly/jandex[Jandex] at build time, to discover various classes or annotations. One immediately recognizable application of this, is CDI bean discovery.
 As a result, most of the Quarkus extensions will not work properly if this build time discovery isn't properly setup.
 
 This index is created by default on the project on which Quarkus is configured for, thanks to our Maven and Gradle plugins.

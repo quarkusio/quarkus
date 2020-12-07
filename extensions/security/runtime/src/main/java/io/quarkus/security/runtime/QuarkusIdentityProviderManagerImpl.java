@@ -86,15 +86,19 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
      * @return The first identity provider that was registered with this type
      */
     public Uni<SecurityIdentity> authenticate(AuthenticationRequest request) {
-        List<IdentityProvider> providers = this.providers.get(request.getClass());
-        if (providers == null) {
-            return Uni.createFrom().failure(new IllegalArgumentException(
-                    "No IdentityProviders were registered to handle AuthenticationRequest " + request));
+        try {
+            List<IdentityProvider> providers = this.providers.get(request.getClass());
+            if (providers == null) {
+                return Uni.createFrom().failure(new IllegalArgumentException(
+                        "No IdentityProviders were registered to handle AuthenticationRequest " + request));
+            }
+            if (providers.size() == 1) {
+                return handleSingleProvider(providers.get(0), request);
+            }
+            return handleProvider(0, (List) providers, request, blockingRequestContext);
+        } catch (Throwable t) {
+            return Uni.createFrom().failure(t);
         }
-        if (providers.size() == 1) {
-            return handleSingleProvider(providers.get(0), request);
-        }
-        return handleProvider(0, (List) providers, request, blockingRequestContext);
     }
 
     private Uni<SecurityIdentity> handleSingleProvider(IdentityProvider identityProvider, AuthenticationRequest request) {

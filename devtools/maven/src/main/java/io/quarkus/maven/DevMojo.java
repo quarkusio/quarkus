@@ -35,17 +35,20 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.apache.maven.toolchain.Toolchain;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -409,7 +412,7 @@ public class DevMojo extends AbstractMojo {
 
     private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal) throws MojoExecutionException {
         final Plugin plugin = project.getPlugin(pluginGroupId + ":" + pluginArtifactId);
-        if (plugin == null) {
+        if (plugin == null || plugin.getExecutions().stream().noneMatch(exec -> exec.getGoals().contains(goal))) {
             return;
         }
         executeMojo(
@@ -419,25 +422,56 @@ public class DevMojo extends AbstractMojo {
                         version(plugin.getVersion()),
                         plugin.getDependencies()),
                 goal(goal),
-                getPluginConfig(plugin),
+                getPluginConfig(plugin, goal),
                 executionEnvironment(
                         project,
                         session,
                         pluginManager));
     }
 
-    private Xpp3Dom getPluginConfig(Plugin plugin) {
-        Xpp3Dom configuration = configuration();
-        Xpp3Dom pluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
-        if (pluginConfiguration != null) {
-            //Filter out `test*` configurations
-            for (Xpp3Dom child : pluginConfiguration.getChildren()) {
-                if (!child.getName().startsWith("test")) {
+    private Xpp3Dom getPluginConfig(Plugin plugin, String goal) throws MojoExecutionException {
+        Xpp3Dom mergedConfig = null;
+        if (!plugin.getExecutions().isEmpty()) {
+            for (PluginExecution exec : plugin.getExecutions()) {
+                if (exec.getConfiguration() != null && exec.getGoals().contains(goal)) {
+                    mergedConfig = mergedConfig == null ? (Xpp3Dom) exec.getConfiguration()
+                            : Xpp3Dom.mergeXpp3Dom(mergedConfig, (Xpp3Dom) exec.getConfiguration(), true);
+                }
+            }
+        }
+
+        if ((Xpp3Dom) plugin.getConfiguration() != null) {
+            mergedConfig = mergedConfig == null ? (Xpp3Dom) plugin.getConfiguration()
+                    : Xpp3Dom.mergeXpp3Dom(mergedConfig, (Xpp3Dom) plugin.getConfiguration(), true);
+        }
+
+        final Xpp3Dom configuration = configuration();
+        if (mergedConfig != null) {
+            Set<String> supportedParams = null;
+            // Filter out `test*` configurations
+            for (Xpp3Dom child : mergedConfig.getChildren()) {
+                if (child.getName().startsWith("test")) {
+                    continue;
+                }
+                if (supportedParams == null) {
+                    supportedParams = getMojoDescriptor(plugin, goal).getParameterMap().keySet();
+                }
+                if (supportedParams.contains(child.getName())) {
                     configuration.addChild(child);
                 }
             }
         }
+
         return configuration;
+    }
+
+    private MojoDescriptor getMojoDescriptor(Plugin plugin, String goal) throws MojoExecutionException {
+        try {
+            return pluginManager.getMojoDescriptor(plugin, goal, repos, repoSession);
+        } catch (Exception e) {
+            throw new MojoExecutionException(
+                    "Failed to obtain descriptor for Maven plugin " + plugin.getId() + " goal " + goal, e);
+        }
     }
 
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {
@@ -590,7 +624,7 @@ public class DevMojo extends AbstractMojo {
                 .deleteDevJar(deleteDevJar);
 
         if (jvmArgs != null) {
-            builder.jvmArgs(jvmArgs);
+            builder.jvmArgs(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
         }
 
         builder.projectDir(project.getFile().getParentFile());

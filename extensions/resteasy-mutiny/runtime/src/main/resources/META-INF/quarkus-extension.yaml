@@ -5,6 +5,7 @@ metadata:
     - "resteasy-mutiny"
     - "resteasy"
     - "mutiny"
+  guide: "https://quarkus.io/guides/getting-started-reactive#mutiny"
   categories:
     - "web"
     - "reactive"

@@ -6,13 +6,16 @@ import java.util.List;
 
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 
 public class LifecycleEventsBuildStep {
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep
     @Record(RUNTIME_INIT)
     ApplicationStartBuildItem startupEvent(ArcRecorder recorder,

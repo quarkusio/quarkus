@@ -12,6 +12,7 @@ public class TestLambda implements RequestHandler<InputObject, OutputObject> {
     @Inject
     ProcessingService service;
 
+    @Count
     @Override
     public OutputObject handleRequest(InputObject input, Context context) {
         return service.proces(input).setRequestId(context.getAwsRequestId());

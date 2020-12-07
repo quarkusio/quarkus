@@ -76,7 +76,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve(".mvnw")).doesNotExist();
         assertThat(projectDir.resolve(".dockerignore")).doesNotExist();
 
-        checkNoExample(projectDir);
+        assertThat(projectDir.resolve("src/main/java")).exists().isEmptyDirectory();
     }
 
     @Test
@@ -102,7 +102,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addCodestart("commandmode")
                 .addData(getTestInputData())
-                .putData(COMMANDMODE_EXAMPLE_PACKAGE_NAME.getKey(), "com.test.andy")
+                .putData(PROJECT_PACKAGE_NAME.getKey(), "com.test.andy")
                 .putData(COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "AndyCommando")
                 .build();
         final Path projectDir = testDirPath.resolve("commandmode-custom");
@@ -123,7 +123,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
-                .putData(RESTEASY_EXAMPLE_PACKAGE_NAME.getKey(), "com.andy")
+                .putData(PROJECT_PACKAGE_NAME.getKey(), "com.andy")
                 .putData(RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "BonjourResource")
                 .putData(RESTEASY_EXAMPLE_RESOURCE_PATH.getKey(), "/bonjour")
                 .build();
@@ -214,7 +214,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
-                .putData(RESTEASY_EXAMPLE_PACKAGE_NAME.getKey(), "com.andy")
+                .putData(PROJECT_PACKAGE_NAME.getKey(), "com.andy")
                 .putData(RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "BonjourResource")
                 .putData(RESTEASY_EXAMPLE_RESOURCE_PATH.getKey(), "/bonjour")
                 .build();
@@ -247,7 +247,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
-                .putData(RESTEASY_EXAMPLE_PACKAGE_NAME.getKey(), "com.andy")
+                .putData(PROJECT_PACKAGE_NAME.getKey(), "com.andy")
                 .putData(RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME.getKey(), "BonjourResource")
                 .putData(RESTEASY_EXAMPLE_RESOURCE_PATH.getKey(), "/bonjour")
                 .build();
@@ -574,12 +574,6 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .exists()
                 .satisfies(checkContains("uses: eskatos/gradle-command-action@v1"))
                 .satisfies(checkContains("arguments: build"));
-    }
-
-    private void checkNoExample(Path projectDir) {
-        assertThat(projectDir.resolve("src/main/java")).doesNotExist();
-        assertThat(projectDir.resolve("src/main/kotlin")).doesNotExist();
-        assertThat(projectDir.resolve("src/main/scala")).doesNotExist();
     }
 
     private void checkDockerfiles(Path projectDir, BuildTool buildTool) {

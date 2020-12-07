@@ -450,9 +450,7 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                         // ... in the same timeslot ...
                         Joiners.equal(Lesson::getTimeslot),
                         // ... in the same room ...
-                        Joiners.equal(Lesson::getRoom),
-                        // ... and the pair is unique (different id, no reverse pairs)
-                        Joiners.lessThan(Lesson::getId))
+                        Joiners.equal(Lesson::getRoom))
                 // then penalize each pair with a hard weight.
                 .penalize("Room conflict", HardSoftScore.ONE_HARD);
     }
@@ -504,7 +502,7 @@ import java.util.List;
 import org.optaplanner.core.api.domain.solution.PlanningEntityCollectionProperty;
 import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
-import org.optaplanner.core.api.domain.solution.drools.ProblemFactCollectionProperty;
+import org.optaplanner.core.api.domain.solution.ProblemFactCollectionProperty;
 import org.optaplanner.core.api.domain.valuerange.ValueRangeProvider;
 import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 
@@ -880,6 +878,7 @@ import org.acme.optaplanner.domain.Room;
 import org.acme.optaplanner.domain.TimeTable;
 import org.acme.optaplanner.domain.Timeslot;
 import org.optaplanner.core.api.score.ScoreManager;
+import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 import org.optaplanner.core.api.solver.SolverManager;
 import org.optaplanner.core.api.solver.SolverStatus;
 
@@ -893,7 +892,7 @@ public class TimeTableResource {
     @Inject
     SolverManager<TimeTable, Long> solverManager;
     @Inject
-    ScoreManager<TimeTable> scoreManager;
+    ScoreManager<TimeTable, HardSoftScore> scoreManager;
 
     // To try, open http://localhost:8080/timeTable
     @GET

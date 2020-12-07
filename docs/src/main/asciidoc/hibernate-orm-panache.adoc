@@ -785,11 +785,11 @@ public class PanacheFunctionalityTest {
         Assertions.assertEquals(0, Person.count());
 
         // Now let's specify the return value
-        Mockito.when(Person.count()).thenReturn(23l);
+        Mockito.when(Person.count()).thenReturn(23L);
         Assertions.assertEquals(23, Person.count());
 
         // Now let's change the return value
-        Mockito.when(Person.count()).thenReturn(42l);
+        Mockito.when(Person.count()).thenReturn(42L);
         Assertions.assertEquals(42, Person.count());
 
         // Now let's call the original method
@@ -801,13 +801,13 @@ public class PanacheFunctionalityTest {
 
         // Mock only with specific parameters
         Person p = new Person();
-        Mockito.when(Person.findById(12l)).thenReturn(p);
-        Assertions.assertSame(p, Person.findById(12l));
-        Assertions.assertNull(Person.findById(42l));
+        Mockito.when(Person.findById(12L)).thenReturn(p);
+        Assertions.assertSame(p, Person.findById(12L));
+        Assertions.assertNull(Person.findById(42L));
 
         // Mock throwing
-        Mockito.when(Person.findById(12l)).thenThrow(new WebApplicationException());
-        Assertions.assertThrows(WebApplicationException.class, () -> Person.findById(12l));
+        Mockito.when(Person.findById(12L)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> Person.findById(12L));
 
         // We can even mock your custom methods
         Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
@@ -904,11 +904,11 @@ public class PanacheFunctionalityTest {
         Assertions.assertEquals(0, personRepository.count());
 
         // Now let's specify the return value
-        Mockito.when(personRepository.count()).thenReturn(23l);
+        Mockito.when(personRepository.count()).thenReturn(23L);
         Assertions.assertEquals(23, personRepository.count());
 
         // Now let's change the return value
-        Mockito.when(personRepository.count()).thenReturn(42l);
+        Mockito.when(personRepository.count()).thenReturn(42L);
         Assertions.assertEquals(42, personRepository.count());
 
         // Now let's call the original method
@@ -920,13 +920,13 @@ public class PanacheFunctionalityTest {
 
         // Mock only with specific parameters
         Person p = new Person();
-        Mockito.when(personRepository.findById(12l)).thenReturn(p);
-        Assertions.assertSame(p, personRepository.findById(12l));
-        Assertions.assertNull(personRepository.findById(42l));
+        Mockito.when(personRepository.findById(12L)).thenReturn(p);
+        Assertions.assertSame(p, personRepository.findById(12L));
+        Assertions.assertNull(personRepository.findById(42L));
 
         // Mock throwing
-        Mockito.when(personRepository.findById(12l)).thenThrow(new WebApplicationException());
-        Assertions.assertThrows(WebApplicationException.class, () -> personRepository.findById(12l));
+        Mockito.when(personRepository.findById(12L)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> personRepository.findById(12L));
 
         Mockito.when(personRepository.findOrdered()).thenReturn(Collections.emptyList());
         Assertions.assertTrue(personRepository.findOrdered().isEmpty());

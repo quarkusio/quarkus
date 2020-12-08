@@ -45,6 +45,10 @@ public class HibernateSearchElasticsearchRecorder {
         return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig);
     }
 
+    public HibernateOrmIntegrationStaticInitListener createDisabledListener() {
+        return new HibernateSearchIntegrationDisabledListener();
+    }
+
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName) {
         HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
@@ -87,6 +91,22 @@ public class HibernateSearchElasticsearchRecorder {
                 return Search.session(session);
             }
         };
+    }
+
+    private static final class HibernateSearchIntegrationDisabledListener
+            implements HibernateOrmIntegrationStaticInitListener {
+        private HibernateSearchIntegrationDisabledListener() {
+        }
+
+        @Override
+        public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
+            propertyCollector.accept(HibernateOrmMapperSettings.ENABLED, false);
+        }
+
+        @Override
+        public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
+                BiConsumer<String, Object> propertyCollector) {
+        }
     }
 
     private static final class HibernateSearchIntegrationStaticInitListener

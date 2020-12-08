@@ -1107,7 +1107,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
         if (param instanceof Collection) {
             //if this is a collection we want to serialize every element
             for (Object i : (Collection) param) {
-                DeferredParameter val = loadObjectInstance(i, existing, i.getClass(), relaxedValidation);
+                DeferredParameter val = i != null
+                        ? loadObjectInstance(i, existing, i.getClass(), relaxedValidation)
+                        : loadObjectInstance(null, existing, Object.class, relaxedValidation);
                 setupSteps.add(new SerialzationStep() {
                     @Override
                     public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {

@@ -484,10 +484,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             if (SESSION_COOKIE_NAME.equals(cookieName)) {
                 resolver.getTokenStateManager().deleteTokens(context, configContext.oidcConfig, cookie.getValue());
             }
+            removeCookie(cookie, configContext.oidcConfig);
+        }
+    }
 
+    static void removeCookie(ServerCookie cookie, OidcTenantConfig oidcConfig) {
+        if (cookie != null) {
             cookie.setValue("");
             cookie.setMaxAge(0);
-            Authentication auth = configContext.oidcConfig.getAuthentication();
+            Authentication auth = oidcConfig.getAuthentication();
             if (auth.cookiePath.isPresent()) {
                 cookie.setPath(auth.cookiePath.get());
             }

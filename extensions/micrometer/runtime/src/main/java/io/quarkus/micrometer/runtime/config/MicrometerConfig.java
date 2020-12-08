@@ -116,14 +116,8 @@ public final class MicrometerConfig {
     /** Build / static runtime config for exporters */
     @ConfigGroup
     public static class ExportConfig {
-        public AzureMonitorConfig azuremonitor;
-        public DatadogConfig datadog;
-        public JmxConfig jmx;
         public JsonConfig json;
         public PrometheusConfig prometheus;
-        public SignalFxConfig signalfx;
-        public StackdriverConfig stackdriver;
-        public StatsdConfig statsd;
     }
 
     public static interface CapabilityEnabled {

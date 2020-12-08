@@ -362,12 +362,16 @@ public final class HibernateOrmProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
-        Set<String> entitiesToGenerateProxiesFor = new HashSet<>(domainObjects.getEntityClassNames());
+        Set<String> managedClassAndPackageNames = new HashSet<>(domainObjects.getEntityClassNames());
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
-            entitiesToGenerateProxiesFor.addAll(pud.getManagedClassNames());
+            // Note: getManagedClassNames() can also return *package* names
+            // See the source code of Hibernate ORM for proof:
+            // org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
+            // is used for packages too, and it relies (indirectly) on getManagedClassNames().
+            managedClassAndPackageNames.addAll(pud.getManagedClassNames());
         }
-        PreGeneratedProxies proxyDefinitions = generatedProxies(entitiesToGenerateProxiesFor, indexBuildItem.getIndex(),
-                generatedClassBuildItemBuildProducer, liveReloadBuildItem);
+        PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
+                indexBuildItem.getIndex(), generatedClassBuildItemBuildProducer, liveReloadBuildItem);
         return new ProxyDefinitionsBuildItem(proxyDefinitions);
     }
 
@@ -1183,7 +1187,7 @@ public final class HibernateOrmProcessor {
         return multiTenancyStrategy;
     }
 
-    private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, IndexView combinedIndex,
+    private PreGeneratedProxies generatedProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
         ProxyCache proxyCache = liveReloadBuildItem.getContextObject(ProxyCache.class);
@@ -1209,24 +1213,27 @@ public final class HibernateOrmProcessor {
             proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
         }
         try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(Thread.currentThread().getContextClassLoader())) {
-            for (String entity : entityClassNames) {
+            for (String managedClassOrPackageName : managedClassAndPackageNames) {
                 CachedProxy result;
-                if (proxyCache.cache.containsKey(entity) && !isModified(entity, changedClasses, combinedIndex)) {
-                    result = proxyCache.cache.get(entity);
+                if (proxyCache.cache.containsKey(managedClassOrPackageName) && !isModified(managedClassOrPackageName, changedClasses, combinedIndex)) {
+                    result = proxyCache.cache.get(managedClassOrPackageName);
                 } else {
                     Set<Class<?>> proxyInterfaces = new HashSet<>();
                     proxyInterfaces.add(HibernateProxy.class); //always added
-                    Class<?> mappedClass = proxyHelper.uninitializedClass(entity);
-                    String proxy = proxyAnnotations.get(entity);
-                    if (proxy != null) {
-                        proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
-                    } else if (!proxyHelper.isProxiable(mappedClass)) {
-                        //if there is no @Proxy we need to make sure the actual class is proxiable
-                        continue;
+                    String proxy = proxyAnnotations.get(managedClassOrPackageName);
+                    if (proxy == null) {
+                        if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
+                            //if there is no @Proxy we need to make sure the actual class is proxiable
+                            continue;
+                        }
                     }
-                    for (ClassInfo subclass : combinedIndex.getAllKnownSubclasses(DotName.createSimple(entity))) {
+                    else {
+                        proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                    }
+                    Class<?> mappedClass = proxyHelper.uninitializedClass(managedClassOrPackageName);
+                    for (ClassInfo subclass : combinedIndex.getAllKnownSubclasses(DotName.createSimple(managedClassOrPackageName))) {
                         String subclassName = subclass.name().toString();
-                        if (!entityClassNames.contains(subclassName)) {
+                        if (!managedClassAndPackageNames.contains(subclassName)) {
                             //not an entity
                             continue;
                         }
@@ -1239,13 +1246,13 @@ public final class HibernateOrmProcessor {
                             toArray(proxyInterfaces));
                     result = new CachedProxy(unloaded,
                             proxyInterfaces.stream().map(Class::getName).collect(Collectors.toSet()));
-                    proxyCache.cache.put(entity, result);
+                    proxyCache.cache.put(managedClassOrPackageName, result);
                 }
                 for (Entry<TypeDescription, byte[]> i : result.proxyDef.getAllTypes().entrySet()) {
                     generatedClassBuildItemBuildProducer
                             .produce(new GeneratedClassBuildItem(true, i.getKey().getName(), i.getValue()));
                 }
-                preGeneratedProxies.getProxies().put(entity,
+                preGeneratedProxies.getProxies().put(managedClassOrPackageName,
                         new PreGeneratedProxies.ProxyClassDetailsHolder(result.proxyDef.getTypeDescription().getName(),
                                 result.interfaces));
             }

@@ -75,6 +75,9 @@ final class JpaJandexScavenger {
         final Set<String> javaTypeCollector = new HashSet<>();
         final Set<DotName> unindexedClasses = new TreeSet<>();
 
+        for (DotName packageAnnotation : HibernateOrmAnnotations.PACKAGE_ANNOTATIONS) {
+            enlistJPAModelAnnotatedPackages(indexView, domainObjectCollector, packageAnnotation);
+        }
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector, JPA_ENTITY,
                 unindexedClasses);
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector, EMBEDDABLE,
@@ -170,6 +173,30 @@ final class JpaJandexScavenger {
         }
     }
 
+    private void enlistJPAModelAnnotatedPackages(IndexView index, JpaEntitiesBuildItem domainObjectCollector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            if (annotation.target().kind() != AnnotationTarget.Kind.CLASS) {
+                continue; // Annotation on field, method, etc.
+            }
+            ClassInfo klass = annotation.target().asClass();
+            if (!klass.simpleName().equals("package-info")) {
+                continue; // Annotation on an actual class, not a package.
+            }
+            DotName targetDotName = klass.name();
+            // ignore non-jpa model classes that we think belong to JPA
+            if (nonJpaModelClasses.contains(targetDotName.toString())) {
+                continue;
+            }
+            collectPackage(domainObjectCollector, klass);
+        }
+    }
+
     private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
             Set<String> enumTypeCollector, Set<String> javaTypeCollector, DotName dotName, Set<DotName> unindexedClasses) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
@@ -238,6 +265,12 @@ final class JpaJandexScavenger {
                     interfaceDotName,
                     unindexedClasses);
         }
+    }
+
+    private static void collectPackage(JpaEntitiesBuildItem domainObjectCollector, ClassInfo classOrPackageInfo) {
+        String classOrPackageInfoName = classOrPackageInfo.name().toString();
+        String packageName = classOrPackageInfoName.substring(0, classOrPackageInfoName.lastIndexOf('.'));
+        domainObjectCollector.addModelPackage(packageName);
     }
 
     private static void collectDomainObject(JpaEntitiesBuildItem domainObjectCollector, ClassInfo modelClass) {

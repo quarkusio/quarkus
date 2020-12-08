@@ -41,6 +41,7 @@ import javax.transaction.TransactionManager;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
+import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.DB297Dialect;
@@ -662,9 +663,9 @@ public final class HibernateOrmProcessor {
                 && hibernateOrmConfig.persistenceUnits.isEmpty())
                 || hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet();
 
-        Map<String, Set<String>> modelClassesPerPersistencesUnits = getModelClassesPerPersistenceUnits(hibernateOrmConfig,
-                jpaEntities, index.getIndex(), enableDefaultPersistenceUnit);
-        Set<String> modelClassesForDefaultPersistenceUnit = modelClassesPerPersistencesUnits
+        Map<String, Set<String>> modelClassesAndPackagesPerPersistencesUnits = getModelClassesAndPackagesPerPersistenceUnits(
+                hibernateOrmConfig, jpaEntities, index.getIndex(), enableDefaultPersistenceUnit);
+        Set<String> modelClassesAndPackagesForDefaultPersistenceUnit = modelClassesAndPackagesPerPersistencesUnits
                 .getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet());
 
         Set<String> storageEngineCollector = new HashSet<>();
@@ -673,11 +674,11 @@ public final class HibernateOrmProcessor {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit,
-                    modelClassesForDefaultPersistenceUnit,
+                    modelClassesAndPackagesForDefaultPersistenceUnit,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     storageEngineCollector);
-        } else if (!modelClassesForDefaultPersistenceUnit.isEmpty()
+        } else if (!modelClassesAndPackagesForDefaultPersistenceUnit.isEmpty()
                 && (!hibernateOrmConfig.defaultPersistenceUnit.datasource.isPresent()
                         || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit.datasource.get()))
                 && !defaultJdbcDataSource.isPresent()) {
@@ -689,7 +690,8 @@ public final class HibernateOrmProcessor {
                 .entrySet()) {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
-                    modelClassesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(), Collections.emptySet()),
+                    modelClassesAndPackagesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(),
+                            Collections.emptySet()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     storageEngineCollector);
@@ -705,7 +707,7 @@ public final class HibernateOrmProcessor {
             HibernateOrmConfig hibernateOrmConfig,
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
-            Set<String> modelClasses,
+            Set<String> modelClassesAndPackages,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
@@ -756,10 +758,20 @@ public final class HibernateOrmProcessor {
         descriptor.setName(persistenceUnitName);
 
         descriptor.setExcludeUnlistedClasses(true);
-        if (modelClasses.isEmpty()) {
+        if (modelClassesAndPackages.isEmpty()) {
             LOG.warnf("Could not find any entities affected to the persistence unit '%s'.", persistenceUnitName);
         } else {
-            descriptor.addClasses(new ArrayList<>(modelClasses));
+            // That's right, we're pushing both class names and package names
+            // to a method called "addClasses".
+            // It's a misnomer: while the method populates the set that backs getManagedClasses(),
+            // that method is also poorly named because it can actually return both class names
+            // and package names.
+            // See for proof:
+            // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
+            //   is used for packages too, even though it relies (indirectly) on getManagedClassNames().
+            // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
+            //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
+            descriptor.addClasses(new ArrayList<>(modelClassesAndPackages));
         }
 
         descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
@@ -959,16 +971,17 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private static Map<String, Set<String>> getModelClassesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
+    private static Map<String, Set<String>> getModelClassesAndPackagesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
             JpaEntitiesBuildItem jpaEntities, IndexView index, boolean enableDefaultPersistenceUnit) {
         if (hibernateOrmConfig.persistenceUnits.isEmpty()) {
             // no named persistence units, all the entities will be associated with the default one
             // so we don't need to split them
-            return Collections.singletonMap(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                    jpaEntities.getAllModelClassNames());
+            Set<String> allModelClassesAndPackages = new HashSet<>(jpaEntities.getAllModelClassNames());
+            allModelClassesAndPackages.addAll(jpaEntities.getAllModelPackageNames());
+            return Collections.singletonMap(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, allModelClassesAndPackages);
         }
 
-        Map<String, Set<String>> modelClassesPerPersistenceUnits = new HashMap<>();
+        Map<String, Set<String>> modelClassesAndPackagesPerPersistenceUnits = new HashMap<>();
 
         boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
         Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = getPackageLevelPersistenceUnitAnnotations(
@@ -1046,14 +1059,14 @@ public final class HibernateOrmProcessor {
             for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
                 if (modelClassName.startsWith(packageRuleEntry.getKey())) {
                     for (String persistenceUnitName : packageRuleEntry.getValue()) {
-                        modelClassesPerPersistenceUnits.putIfAbsent(persistenceUnitName, new HashSet<>());
-                        modelClassesPerPersistenceUnits.get(persistenceUnitName).add(modelClassName);
+                        modelClassesAndPackagesPerPersistenceUnits.putIfAbsent(persistenceUnitName, new HashSet<>());
+                        modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).add(modelClassName);
 
                         // also add the hierarchy to the persistence unit
                         // we would need to add all the underlying model to it but adding the hierarchy
                         // is necessary for Panache as we need to add PanacheEntity to the PU
                         for (String relatedModelClassName : relatedModelClassNames) {
-                            modelClassesPerPersistenceUnits.get(persistenceUnitName).add(relatedModelClassName);
+                            modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).add(relatedModelClassName);
                         }
                     }
                 }
@@ -1066,7 +1079,7 @@ public final class HibernateOrmProcessor {
                     String.join("\n\t- ", modelClassesWithPersistenceUnitAnnotations)));
         }
 
-        Set<String> affectedModelClasses = modelClassesPerPersistenceUnits.values().stream().flatMap(Set::stream)
+        Set<String> affectedModelClasses = modelClassesAndPackagesPerPersistenceUnits.values().stream().flatMap(Set::stream)
                 .collect(Collectors.toSet());
         Set<String> unaffectedModelClasses = jpaEntities.getAllModelClassNames().stream()
                 .filter(c -> !affectedModelClasses.contains(c))
@@ -1076,7 +1089,18 @@ public final class HibernateOrmProcessor {
                     String.join("\n\t- ", unaffectedModelClasses));
         }
 
-        return modelClassesPerPersistenceUnits;
+        for (String modelPackageName : jpaEntities.getAllModelPackageNames()) {
+            Set<String> persistenceUnitNames = packageRules.get(modelPackageName);
+            if (persistenceUnitNames == null) {
+                continue;
+            }
+            for (String persistenceUnitName : persistenceUnitNames) {
+                modelClassesAndPackagesPerPersistenceUnits.putIfAbsent(persistenceUnitName, new HashSet<>());
+                modelClassesAndPackagesPerPersistenceUnits.get(persistenceUnitName).add(modelPackageName);
+            }
+        }
+
+        return modelClassesAndPackagesPerPersistenceUnits;
     }
 
     private static Set<String> getRelatedModelClassNames(IndexView index, Set<String> knownModelClassNames,
@@ -1165,9 +1189,15 @@ public final class HibernateOrmProcessor {
      */
     public static QuarkusScanner buildQuarkusScanner(JpaEntitiesBuildItem domainObjects) {
         QuarkusScanner scanner = new QuarkusScanner();
+        Set<PackageDescriptor> packageDescriptors = new HashSet<>();
+        for (String packageName : domainObjects.getAllModelPackageNames()) {
+            QuarkusScanner.PackageDescriptorImpl desc = new QuarkusScanner.PackageDescriptorImpl(packageName);
+            packageDescriptors.add(desc);
+        }
+        scanner.setPackageDescriptors(packageDescriptors);
         Set<ClassDescriptor> classDescriptors = new HashSet<>();
-        for (String i : domainObjects.getAllModelClassNames()) {
-            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
+        for (String className : domainObjects.getAllModelClassNames()) {
+            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(className,
                     ClassDescriptor.Categorization.MODEL);
             classDescriptors.add(desc);
         }
@@ -1215,7 +1245,8 @@ public final class HibernateOrmProcessor {
         try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(Thread.currentThread().getContextClassLoader())) {
             for (String managedClassOrPackageName : managedClassAndPackageNames) {
                 CachedProxy result;
-                if (proxyCache.cache.containsKey(managedClassOrPackageName) && !isModified(managedClassOrPackageName, changedClasses, combinedIndex)) {
+                if (proxyCache.cache.containsKey(managedClassOrPackageName)
+                        && !isModified(managedClassOrPackageName, changedClasses, combinedIndex)) {
                     result = proxyCache.cache.get(managedClassOrPackageName);
                 } else {
                     Set<Class<?>> proxyInterfaces = new HashSet<>();
@@ -1226,12 +1257,12 @@ public final class HibernateOrmProcessor {
                             //if there is no @Proxy we need to make sure the actual class is proxiable
                             continue;
                         }
-                    }
-                    else {
+                    } else {
                         proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
                     }
                     Class<?> mappedClass = proxyHelper.uninitializedClass(managedClassOrPackageName);
-                    for (ClassInfo subclass : combinedIndex.getAllKnownSubclasses(DotName.createSimple(managedClassOrPackageName))) {
+                    for (ClassInfo subclass : combinedIndex
+                            .getAllKnownSubclasses(DotName.createSimple(managedClassOrPackageName))) {
                         String subclassName = subclass.name().toString();
                         if (!managedClassAndPackageNames.contains(subclassName)) {
                             //not an entity

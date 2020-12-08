@@ -15,8 +15,13 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
  */
 public final class JpaEntitiesBuildItem extends SimpleBuildItem {
 
+    private final Set<String> allModelPackageNames = new HashSet<String>();
     private final Set<String> entityClassNames = new HashSet<String>();
     private final Set<String> allModelClassNames = new HashSet<String>();
+
+    public void addModelPackage(String packageName) {
+        allModelPackageNames.add(packageName);
+    }
 
     void addEntityClass(final String className) {
         entityClassNames.add(className);
@@ -31,6 +36,13 @@ public final class JpaEntitiesBuildItem extends SimpleBuildItem {
         for (String className : allModelClassNames) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
         }
+    }
+
+    /**
+     * @return the list of packages annotated with a JPA annotation.
+     */
+    public Set<String> getAllModelPackageNames() {
+        return allModelPackageNames;
     }
 
     /**

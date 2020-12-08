@@ -23,11 +23,20 @@ import org.hibernate.boot.archive.spi.InputStreamAccess;
  */
 public class QuarkusScanner implements Scanner {
 
+    private Set<PackageDescriptor> packageDescriptors;
     private Set<ClassDescriptor> classDescriptors;
 
     @Override
     public ScanResult scan(ScanEnvironment scanEnvironment, ScanOptions scanOptions, ScanParameters scanParameters) {
-        return new Result(classDescriptors, scanEnvironment, scanOptions);
+        return new Result(packageDescriptors, classDescriptors, scanEnvironment, scanOptions);
+    }
+
+    public Set<PackageDescriptor> getPackageDescriptors() {
+        return packageDescriptors;
+    }
+
+    public void setPackageDescriptors(Set<PackageDescriptor> packageDescriptors) {
+        this.packageDescriptors = packageDescriptors;
     }
 
     public Set<ClassDescriptor> getClassDescriptors() {
@@ -40,10 +49,20 @@ public class QuarkusScanner implements Scanner {
 
     public static class Result implements ScanResult {
 
+        private final Set<PackageDescriptor> selectedPackageDescriptors;
         private final Set<ClassDescriptor> selectedClassDescriptors;
 
-        Result(Set<ClassDescriptor> classDescriptors, ScanEnvironment scanEnvironment, ScanOptions scanOptions) {
+        Result(Set<PackageDescriptor> packageDescriptors, Set<ClassDescriptor> classDescriptors,
+                ScanEnvironment scanEnvironment, ScanOptions scanOptions) {
+            this.selectedPackageDescriptors = new HashSet<>();
             this.selectedClassDescriptors = new HashSet<>();
+
+            for (PackageDescriptor packageDescriptor : packageDescriptors) {
+                if (scanOptions.canDetectUnlistedClassesInRoot() ||
+                        scanEnvironment.getExplicitlyListedClassNames().contains(packageDescriptor.getName())) {
+                    this.selectedPackageDescriptors.add(packageDescriptor);
+                }
+            }
 
             for (ClassDescriptor classDescriptor : classDescriptors) {
                 if (scanOptions.canDetectUnlistedClassesInRoot() ||
@@ -55,8 +74,7 @@ public class QuarkusScanner implements Scanner {
 
         @Override
         public Set<PackageDescriptor> getLocatedPackages() {
-            //todo: handle packages
-            return Collections.emptySet();
+            return selectedPackageDescriptors;
         }
 
         @Override
@@ -68,6 +86,33 @@ public class QuarkusScanner implements Scanner {
         public Set<MappingFileDescriptor> getLocatedMappingFiles() {
             //TODO: handle hbm files
             return Collections.emptySet();
+        }
+    }
+
+    public static class PackageDescriptorImpl implements PackageDescriptor {
+
+        private String name;
+
+        public PackageDescriptorImpl(String name) {
+            this.name = name;
+        }
+
+        public PackageDescriptorImpl() {
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public InputStreamAccess getStreamAccess() {
+            return new UrlInputStreamAccess(
+                    Thread.currentThread().getContextClassLoader().getResource(name.replace('.', '/') + "/package-info.class"));
         }
     }
 

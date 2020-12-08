@@ -22,7 +22,7 @@ public final class AddHalMethodImplementor extends HalMethodImplementor {
     /**
      * Expose {@link RestDataResource#add(Object)} via HAL JAX-RS method.
      * Generated code looks more or less like this:
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;Transactional
@@ -53,7 +53,7 @@ public final class AddHalMethodImplementor extends HalMethodImplementor {
                 resourceMetadata.getEntityType());
 
         // Add method annotations
-        addPathAnnotation(methodCreator, resourceProperties.getMethodPath(RESOURCE_METHOD_NAME));
+        addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addTransactionalAnnotation(methodCreator);
         addPostAnnotation(methodCreator);
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);

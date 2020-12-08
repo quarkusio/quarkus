@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Assertions;
  */
 public class TestUtil {
 
-    protected static Logger logger;
+    protected static Logger LOG;
 
     private static String baseResourcePath = new StringBuilder()
             .append("src").append(File.separator)
@@ -40,7 +40,7 @@ public class TestUtil {
      */
     static {
         try {
-            logger = Logger.getLogger(TestUtil.class.getName());
+            LOG = Logger.getLogger(TestUtil.class.getName());
         } catch (NoClassDefFoundError e) {
             // unable to initialize logger, finishContainerPrepare method could not be used
         }
@@ -109,7 +109,7 @@ public class TestUtil {
             for (Map.Entry<String, String> entry : contextParams.entrySet()) {
                 String paramName = entry.getKey();
                 String paramValue = entry.getValue();
-                logger.info("Context param " + paramName + " value " + paramValue);
+                LOG.debug("Context param " + paramName + " value " + paramValue);
 
                 webXml.append("<context-param>\n");
                 webXml.append("<param-name>" + paramName + "</param-name>\n");

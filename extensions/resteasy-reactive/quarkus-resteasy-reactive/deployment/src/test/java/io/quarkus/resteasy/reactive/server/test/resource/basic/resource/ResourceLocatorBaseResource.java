@@ -20,16 +20,16 @@ public class ResourceLocatorBaseResource {
 
     @Path("base/{param}/resources")
     public Object getSubresource(@PathParam("param") String param, @Context UriInfo uri) {
-        LOG.info("Here in BaseResource");
+        LOG.debug("Here in BaseResource");
         Assertions.assertEquals("1", param);
         List<String> matchedURIs = uri.getMatchedURIs();
         Assertions.assertEquals(2, matchedURIs.size());
         Assertions.assertEquals("base/1/resources", matchedURIs.get(0));
         Assertions.assertEquals("", matchedURIs.get(1));
         for (String ancestor : matchedURIs)
-            LOG.info("   " + ancestor);
+            LOG.debug("   " + ancestor);
 
-        LOG.info("Uri Ancesstors Object for Subresource.doGet():");
+        LOG.debug("Uri Ancestors Object for Subresource.doGet():");
         Assertions.assertEquals(1, uri.getMatchedResources().size());
         Assertions.assertEquals(ResourceLocatorBaseResource.class, uri.getMatchedResources().get(0).getClass());
         return new ResourceLocatorSubresource();

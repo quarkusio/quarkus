@@ -16,7 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ReponseInfoResource;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResponseInfoResource;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -48,7 +48,7 @@ public class ReponseInfoTest {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClasses(PortProviderUtil.class, ReponseInfoTest.class);
                     // Use of PortProviderUtil in the deployment
-                    war.addClasses(ReponseInfoResource.class);
+                    war.addClasses(ResponseInfoResource.class);
                     return war;
                 }
             });

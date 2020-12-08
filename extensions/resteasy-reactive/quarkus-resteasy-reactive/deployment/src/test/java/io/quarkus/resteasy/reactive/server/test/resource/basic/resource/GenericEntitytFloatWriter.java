@@ -20,7 +20,7 @@ import org.jboss.logging.Logger;
 @Produces("*/*")
 public class GenericEntitytFloatWriter implements MessageBodyWriter<List<Float>> {
 
-    private static Logger logger = Logger.getLogger(GenericEntitytFloatWriter.class);
+    private static final Logger LOG = Logger.getLogger(GenericEntitytFloatWriter.class);
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         if (!List.class.isAssignableFrom(type)) {
@@ -31,7 +31,7 @@ public class GenericEntitytFloatWriter implements MessageBodyWriter<List<Float>>
         }
         ParameterizedType pt = (ParameterizedType) genericType;
         boolean result = pt.getActualTypeArguments()[0].equals(Float.class);
-        logger.info("FloatWriter result!!!: " + result);
+        LOG.debug("FloatWriter result!!!: " + result);
         return result;
     }
 

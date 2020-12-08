@@ -34,7 +34,7 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
         callbackException = null;
 
         String action = requestContext.getHeaderString(name);
-        LOG.error("Filter response for " + name + " with action: " + action);
+        LOG.debug("Filter response for " + name + " with action: " + action);
         if ("sync-pass".equals(action)) {
             // do nothing
         } else if ("sync-fail".equals(action)) {
@@ -60,8 +60,7 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    LOG.error("Error:", e);
+                    LOG.debug("Error:", e);
                 }
                 ctx.setEntity(name);
                 requestContext.resume();
@@ -80,8 +79,7 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    LOG.error("Error:", e);
+                    LOG.debug("Error:", e);
                 }
                 ctx.setEntity(name);
                 resteasyReactiveCallbackContext.registerCompletionCallback((t) -> {
@@ -95,7 +93,7 @@ public abstract class AsyncResponseFilter implements ResteasyReactiveContainerRe
                     requestContext.resume(new Throwable("ouch"));
             });
         }
-        LOG.error("Filter response for " + name + " with action: " + action + " done");
+        LOG.debug("Filter response for " + name + " with action: " + action + " done");
     }
 
     @SuppressWarnings("unchecked")

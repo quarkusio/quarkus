@@ -350,7 +350,7 @@ You can inject the `EntityManagerFactory` of a named persistence unit using the 
 [source,java]
 ----
 @Inject
-@PersistenceUnit("users") <1>
+@PersistenceUnit("users")
 EntityManagerFactory entityManagerFactory;
 ----
 

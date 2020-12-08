@@ -104,7 +104,9 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrations) {
         if (indexedAnnotationsForPU.isEmpty()) {
-            // we don't have any indexed entity, we can bail out
+            // we don't have any indexed entity, we can disable Hibernate Search
+            integrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    persistenceUnitName, recorder.createDisabledListener()));
             return;
         }
 

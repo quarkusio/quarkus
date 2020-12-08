@@ -2,28 +2,22 @@ package io.quarkus.deployment.index;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
 
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.Index;
-import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
@@ -54,11 +48,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class ApplicationArchiveBuildStep {
 
     private static final Logger LOGGER = Logger.getLogger(ApplicationArchiveBuildStep.class);
-
-    private static final String JANDEX_INDEX = "META-INF/jandex.idx";
-
-    // At least Jandex 2.1 is needed
-    private static final int REQUIRED_INDEX_VERSION = 8;
 
     IndexDependencyConfiguration config;
 
@@ -125,7 +114,7 @@ public class ApplicationArchiveBuildStep {
 
         //get paths that are included via marker files
         Set<String> markers = new HashSet<>(applicationArchiveFiles);
-        markers.add(JANDEX_INDEX);
+        markers.add(IndexingUtil.JANDEX_INDEX);
         addMarkerFilePaths(markers, root, curateOutcomeBuildItem, indexedPaths, appArchives, buildCloseables, classLoader,
                 indexCache);
 
@@ -271,45 +260,17 @@ public class ApplicationArchiveBuildStep {
         return indexer.complete();
     }
 
-    private static Index handleJarPath(Path path, IndexCache indexCache) throws IOException {
+    private static Index handleJarPath(Path path, IndexCache indexCache) {
         return indexCache.cache.computeIfAbsent(path, new Function<Path, Index>() {
             @Override
             public Index apply(Path path) {
-                try (JarFile file = new JarFile(path.toFile())) {
-                    ZipEntry existing = file.getEntry(JANDEX_INDEX);
-                    if (existing != null) {
-                        try (InputStream in = file.getInputStream(existing)) {
-                            IndexReader reader = new IndexReader(in);
-                            if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                                LOGGER.warnf(
-                                        "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
-                                        path);
-                                return indexJar(file);
-                            } else {
-                                return reader.read();
-                            }
-                        }
-                    }
-                    return indexJar(file);
+                try {
+                    return IndexingUtil.indexJar(path);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to process " + path, e);
                 }
             }
         });
-    }
-
-    private static Index indexJar(JarFile file) throws IOException {
-        Indexer indexer = new Indexer();
-        Enumeration<JarEntry> e = file.entries();
-        while (e.hasMoreElements()) {
-            JarEntry entry = e.nextElement();
-            if (entry.getName().endsWith(".class")) {
-                try (InputStream inputStream = file.getInputStream(entry)) {
-                    indexer.index(inputStream);
-                }
-            }
-        }
-        return indexer.complete();
     }
 
     /**

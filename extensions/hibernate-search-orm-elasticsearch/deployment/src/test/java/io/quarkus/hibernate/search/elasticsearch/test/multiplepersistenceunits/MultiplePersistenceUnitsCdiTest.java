@@ -1,16 +1,22 @@
 package io.quarkus.hibernate.search.elasticsearch.test.multiplepersistenceunits;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import javax.enterprise.context.control.ActivateRequestContext;
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
+import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.hibernate.search.util.common.SearchException;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -20,6 +26,7 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.search.elasticsearch.test.multiplepersistenceunits.defaultpu.DefaultPUEntity;
 import io.quarkus.hibernate.search.elasticsearch.test.multiplepersistenceunits.pu1.PU1Entity;
 import io.quarkus.hibernate.search.elasticsearch.test.multiplepersistenceunits.pu2.PU2Entity;
+import io.quarkus.hibernate.search.elasticsearch.test.multiplepersistenceunits.pu3.PU3Entity;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MultiplePersistenceUnitsCdiTest {
@@ -30,6 +37,7 @@ public class MultiplePersistenceUnitsCdiTest {
                     .addPackage(DefaultPUEntity.class.getPackage())
                     .addPackage(PU1Entity.class.getPackage())
                     .addPackage(PU2Entity.class.getPackage())
+                    .addPackage(PU3Entity.class.getPackage())
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Inject
@@ -53,6 +61,10 @@ public class MultiplePersistenceUnitsCdiTest {
     @Inject
     @PersistenceUnit("pu2")
     SearchSession pu2Session;
+
+    @Inject
+    @PersistenceUnit("pu3")
+    EntityManager pu3EntityManager;
 
     @Inject
     UserTransaction transaction;
@@ -118,6 +130,33 @@ public class MultiplePersistenceUnitsCdiTest {
                         .hasSize(1)
                         .element(0)
                         .returns(entity.getId(), PU2Entity::getId));
+    }
+
+    @Test
+    public void testPU3Mapping() {
+        // There are no indexed entities in PU3: Hibernate Search should be disabled
+
+        Instance<SearchMapping> pu3MappingInstance = CDI.current().getBeanManager().createInstance()
+                .select(SearchMapping.class, new PersistenceUnit.PersistenceUnitLiteral("pu3"));
+        assertThat(pu3MappingInstance.isUnsatisfied()).isTrue();
+
+        assertThatThrownBy(() -> Search.mapping(pu3EntityManager.getEntityManagerFactory()))
+                .isInstanceOf(SearchException.class)
+                .hasMessageContaining("Hibernate Search was not initialized");
+    }
+
+    @Test
+    @ActivateRequestContext
+    public void testPU3Session() {
+        // There are no indexed entities in PU3: Hibernate Search should be disabled
+
+        Instance<SearchSession> pu3SessionInstance = CDI.current().getBeanManager().createInstance()
+                .select(SearchSession.class, new PersistenceUnit.PersistenceUnitLiteral("pu3"));
+        assertThat(pu3SessionInstance.isUnsatisfied()).isTrue();
+
+        inTransaction(() -> assertThatThrownBy(() -> Search.session(pu3EntityManager).search(PU3Entity.class))
+                .isInstanceOf(SearchException.class)
+                .hasMessageContaining("Hibernate Search was not initialized"));
     }
 
     private void inTransaction(Runnable runnable) {

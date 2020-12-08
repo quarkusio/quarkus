@@ -74,7 +74,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             boolean augmentDone = false;
             //ok, we have resolved all the deps
             try {
-                StartupActionImpl start = (StartupActionImpl) augmentAction.createInitialRuntimeApplication();
+                StartupAction start = (StartupActionImpl) augmentAction.createInitialRuntimeApplication();
                 //this is a bit yuck, but we need replace the default
                 //exit handler in the runtime class loader
                 //TODO: look at implementing a common core classloader, that removes the need for this sort of crappy hack

@@ -295,7 +295,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     ClassScanResult checkForChangedClasses() throws IOException {
-        boolean hasChanges = false;
         ClassScanResult classScanResult = new ClassScanResult();
         boolean ignoreFirstScanChanges = !firstScanDone;
 
@@ -348,8 +347,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private void checkForClassFilesChangesInModule(DevModeContext.ModuleInfo module, List<Path> moduleChangedSourceFiles,
             boolean isInitialRun, ClassScanResult classScanResult) {
-        boolean hasChanges = !moduleChangedSourceFiles.isEmpty();
-
         if (module.getClassesPath() == null) {
             return;
         }
@@ -545,6 +542,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private boolean classFileWasAdded(final Path classFilePath, boolean ignoreFirstScanChanges) {
         final Long lastRecordedChange = classFileChangeTimeStamps.get(classFilePath);
+        if (lastRecordedChange == null) {
+            try {
+                classFileChangeTimeStamps.put(classFilePath, Files.getLastModifiedTime(classFilePath).toMillis());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
         return lastRecordedChange == null && !ignoreFirstScanChanges;
     }
 

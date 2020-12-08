@@ -154,7 +154,7 @@ public class FastBootMetadataBuilder {
         }
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
-        addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);
+        // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning
 
         this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources
                 .getMetadataBuilder(standardServiceRegistry);
@@ -184,13 +184,6 @@ public class FastBootMetadataBuilder {
         }
         this.multiTenancyStrategy = strategy;
 
-    }
-
-    private void addPUManagedClassNamesToMetadataSources(PersistenceUnitDescriptor persistenceUnit,
-            MetadataSources metadataSources) {
-        for (String className : persistenceUnit.getManagedClassNames()) {
-            metadataSources.addAnnotatedClassName(className);
-        }
     }
 
     /**

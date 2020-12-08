@@ -27,7 +27,7 @@ public abstract class AsyncRequestFilter implements ResteasyReactiveContainerReq
         callbackException = null;
 
         String action = ctx.getHeaderString(name);
-        LOG.error("Filter request for " + name + " with action: " + action);
+        LOG.debug("Filter request for " + name + " with action: " + action);
         if ("sync-pass".equals(action)) {
             // do nothing
         } else if ("sync-fail".equals(action)) {
@@ -54,8 +54,7 @@ public abstract class AsyncRequestFilter implements ResteasyReactiveContainerReq
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    LOG.error("Error:", e);
+                    LOG.debug("Error:", e);
                 }
                 resteasyReactiveCallbackContext.registerCompletionCallback((t) -> {
                     if (callbackException != null)
@@ -68,7 +67,7 @@ public abstract class AsyncRequestFilter implements ResteasyReactiveContainerReq
                     ctx.resume(new Throwable("ouch"));
             });
         }
-        LOG.error("Filter request for " + name + " with action: " + action + " done");
+        LOG.debug("Filter request for " + name + " with action: " + action + " done");
     }
 
 }

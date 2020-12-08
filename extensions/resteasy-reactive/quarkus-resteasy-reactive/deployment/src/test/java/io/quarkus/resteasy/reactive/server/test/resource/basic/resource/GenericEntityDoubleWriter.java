@@ -20,21 +20,21 @@ import org.jboss.logging.Logger;
 @Produces("*/*")
 public class GenericEntityDoubleWriter implements MessageBodyWriter<List<Double>> {
 
-    private static Logger logger = Logger.getLogger(GenericEntityDoubleWriter.class);
+    private static final Logger LOG = Logger.getLogger(GenericEntityDoubleWriter.class);
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        logger.info("DoubleWriter type: " + type.getName());
+        LOG.debug("DoubleWriter type: " + type.getName());
         if (!List.class.isAssignableFrom(type)) {
             return false;
         }
-        logger.info("DoubleWriter: " + genericType);
+        LOG.debug("DoubleWriter: " + genericType);
         if (!(genericType instanceof ParameterizedType)) {
             return false;
         }
-        logger.info("DoubleWriter");
+        LOG.debug("DoubleWriter");
         ParameterizedType pt = (ParameterizedType) genericType;
         boolean result = pt.getActualTypeArguments()[0].equals(Double.class);
-        logger.info("Doublewriter result!!!: " + result);
+        LOG.debug("Doublewriter result!!!: " + result);
         return result;
     }
 

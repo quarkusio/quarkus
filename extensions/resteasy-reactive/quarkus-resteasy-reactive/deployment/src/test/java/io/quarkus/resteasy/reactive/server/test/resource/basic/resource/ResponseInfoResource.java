@@ -14,13 +14,13 @@ import org.junit.jupiter.api.Assertions;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 
 @Path("/")
-public class ReponseInfoResource {
-    private static Logger logger = Logger.getLogger(ReponseInfoResource.class);
+public class ResponseInfoResource {
+    private static Logger LOG = Logger.getLogger(ResponseInfoResource.class);
 
     @Path("/simple")
     @GET
     public String get(@QueryParam("abs") String abs) {
-        logger.info("abs query: " + abs);
+        LOG.debug("abs query: " + abs);
         URI base;
         if (abs == null) {
             base = PortProviderUtil.createURI("/new/one");
@@ -29,7 +29,7 @@ public class ReponseInfoResource {
         }
         Response response = Response.temporaryRedirect(URI.create("new/one")).build();
         URI uri = (URI) response.getMetadata().getFirst(HttpHeaders.LOCATION);
-        logger.info("Location uri: " + uri);
+        LOG.debug("Location uri: " + uri);
         Assertions.assertEquals(base.getPath(), uri.getPath());
         return "CONTENT";
     }

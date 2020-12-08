@@ -3,7 +3,7 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 import org.jboss.logging.Logger;
 
 public class ParameterSubResSubImpl<T extends Number> implements ParameterSubResSub, ParameterSubResInternalInterface<T> {
-    private static Logger logger = Logger.getLogger(ParameterSubResSubImpl.class);
+    private static Logger LOG = Logger.getLogger(ParameterSubResSubImpl.class);
 
     private final String path;
 
@@ -18,7 +18,7 @@ public class ParameterSubResSubImpl<T extends Number> implements ParameterSubRes
 
     @Override
     public void foo(T value) {
-        logger.info("foo: " + value);
+        LOG.debug("foo: " + value);
     }
 
 }

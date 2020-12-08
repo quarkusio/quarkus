@@ -15,14 +15,14 @@ import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 
 @Path("/UriInfoSimpleResource")
 public class UriInfoSimpleResource {
-    private static Logger logger = Logger.getLogger(UriInfoSimpleResource.class);
+    private static Logger LOG = Logger.getLogger(UriInfoSimpleResource.class);
     @Context
     UriInfo myInfo;
 
     @Path("/simple")
     @GET
     public String get(@Context UriInfo info, @QueryParam("abs") String abs) {
-        logger.info("abs query: " + abs);
+        LOG.debug("abs query: " + abs);
         URI base = null;
         if (abs == null) {
             base = PortProviderUtil.createURI("/");
@@ -30,9 +30,9 @@ public class UriInfoSimpleResource {
             base = PortProviderUtil.createURI("/" + abs + "/");
         }
 
-        logger.info("BASE URI: " + info.getBaseUri());
-        logger.info("Request URI: " + info.getRequestUri());
-        logger.info("Absolute URI: " + info.getAbsolutePath());
+        LOG.debug("BASE URI: " + info.getBaseUri());
+        LOG.debug("Request URI: " + info.getRequestUri());
+        LOG.debug("Absolute URI: " + info.getAbsolutePath());
         Assertions.assertEquals(base.getPath(), info.getBaseUri().getPath());
         Assertions.assertEquals("/UriInfoSimpleResource/simple", info.getPath());
         return "CONTENT";
@@ -41,7 +41,7 @@ public class UriInfoSimpleResource {
     @Path("/simple/fromField")
     @GET
     public String getField(@QueryParam("abs") String abs) {
-        logger.info("abs query: " + abs);
+        LOG.debug("abs query: " + abs);
         URI base = null;
         if (abs == null) {
             base = PortProviderUtil.createURI("/");
@@ -49,8 +49,8 @@ public class UriInfoSimpleResource {
             base = PortProviderUtil.createURI("/" + abs + "/");
         }
 
-        logger.info("BASE URI: " + myInfo.getBaseUri());
-        logger.info("Request URI: " + myInfo.getRequestUri());
+        LOG.debug("BASE URI: " + myInfo.getBaseUri());
+        LOG.debug("Request URI: " + myInfo.getRequestUri());
         Assertions.assertEquals(base.getPath(), myInfo.getBaseUri().getPath());
         Assertions.assertEquals("/UriInfoSimpleResource/simple/fromField", myInfo.getPath());
         return "CONTENT";

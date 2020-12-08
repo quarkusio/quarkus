@@ -15,7 +15,7 @@ import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 
 @Path("UriInfoSimpleSingletonResource")
 public class UriInfoSimpleSingletonResource {
-    private static Logger logger = Logger.getLogger(UriInfoSimpleSingletonResource.class);
+    private static Logger LOG = Logger.getLogger(UriInfoSimpleSingletonResource.class);
 
     @Context
     UriInfo myInfo;
@@ -23,7 +23,7 @@ public class UriInfoSimpleSingletonResource {
     @Path("/simple")
     @GET
     public String get(@Context UriInfo info, @QueryParam("abs") String abs) {
-        logger.info("abs query: " + abs);
+        LOG.debug("abs query: " + abs);
         URI base = null;
         if (abs == null) {
             base = PortProviderUtil.createURI("/");
@@ -31,8 +31,8 @@ public class UriInfoSimpleSingletonResource {
             base = PortProviderUtil.createURI("/" + abs + "/");
         }
 
-        logger.info("BASE URI: " + info.getBaseUri());
-        logger.info("Request URI: " + info.getRequestUri());
+        LOG.debug("BASE URI: " + info.getBaseUri());
+        LOG.debug("Request URI: " + info.getRequestUri());
         Assertions.assertEquals(base.getPath(), info.getBaseUri().getPath());
         Assertions.assertEquals("/simple", info.getPath());
         return "CONTENT";
@@ -41,7 +41,7 @@ public class UriInfoSimpleSingletonResource {
     @Path("/simple/fromField")
     @GET
     public String get(@QueryParam("abs") String abs) {
-        logger.info("abs query: " + abs);
+        LOG.debug("abs query: " + abs);
         URI base = null;
         if (abs == null) {
             base = PortProviderUtil.createURI("/");
@@ -49,8 +49,8 @@ public class UriInfoSimpleSingletonResource {
             base = PortProviderUtil.createURI("/" + abs + "/");
         }
 
-        logger.info("BASE URI: " + myInfo.getBaseUri());
-        logger.info("Request URI: " + myInfo.getRequestUri());
+        LOG.debug("BASE URI: " + myInfo.getBaseUri());
+        LOG.debug("Request URI: " + myInfo.getRequestUri());
         Assertions.assertEquals(base.getPath(), myInfo.getBaseUri().getPath());
         Assertions.assertEquals("/simple/fromField", myInfo.getPath());
         return "CONTENT";

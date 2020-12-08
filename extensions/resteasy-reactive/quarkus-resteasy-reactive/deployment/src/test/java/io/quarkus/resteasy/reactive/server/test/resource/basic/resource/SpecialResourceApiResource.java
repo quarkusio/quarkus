@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions;
 
 @Path("/{api:(?i:api)}")
 public class SpecialResourceApiResource {
-    private static Logger logger = Logger.getLogger(SpecialResourceApiResource.class);
+    private static Logger LOG = Logger.getLogger(SpecialResourceApiResource.class);
 
     @Path("/{func:(?i:func)}")
     @GET
@@ -23,7 +23,7 @@ public class SpecialResourceApiResource {
 
     @PUT
     public void put(@Context HttpHeaders headers, String val) {
-        logger.info(headers.getMediaType());
+        LOG.debug(headers.getMediaType());
         Assertions.assertEquals("Wrong request content", val, "hello");
     }
 }

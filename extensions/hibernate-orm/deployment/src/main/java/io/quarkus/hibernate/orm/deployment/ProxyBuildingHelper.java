@@ -43,7 +43,15 @@ final class ProxyBuildingHelper implements AutoCloseable {
         }
     }
 
-    public boolean isProxiable(Class<?> mappedClass) {
+    public boolean isProxiable(String managedClassOrPackageName) {
+        Class<?> mappedClass;
+        try {
+            mappedClass = Class.forName(managedClassOrPackageName, false, contextClassLoader);
+        } catch (ClassNotFoundException e) {
+            // Probably a package name - consider it's not proxiable.
+            return false;
+        }
+
         if (Modifier.isFinal(mappedClass.getModifiers())) {
             return false;
         }

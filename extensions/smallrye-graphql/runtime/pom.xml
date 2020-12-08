@@ -35,6 +35,10 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-graphql-cdi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

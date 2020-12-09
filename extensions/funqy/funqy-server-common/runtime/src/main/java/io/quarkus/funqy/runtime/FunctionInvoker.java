@@ -55,7 +55,7 @@ public class FunctionInvoker {
                             "Uni must be used with type parameter (e.g. Uni<String>).");
                 }
             } else {
-                outputType = returnType;
+                outputType = method.getGenericReturnType();
             }
         }
     }

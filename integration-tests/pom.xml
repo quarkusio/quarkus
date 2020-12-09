@@ -143,9 +143,7 @@
         <module>ide-launcher</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
-        <module>micrometer-jmx</module>
         <module>micrometer-mp-metrics</module>
-        <module>micrometer-native</module>
         <module>micrometer-prometheus</module>
         <module>logging-json</module>
         <module>jaxp</module>

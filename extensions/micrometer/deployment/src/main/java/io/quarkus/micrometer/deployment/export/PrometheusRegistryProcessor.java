@@ -37,7 +37,8 @@ public class PrometheusRegistryProcessor {
     }
 
     @BuildStep(onlyIf = PrometheusEnabled.class)
-    MicrometerRegistryProviderBuildItem createPrometheusRegistry(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    MicrometerRegistryProviderBuildItem createPrometheusRegistry(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add the Prometheus Registry Producer
         additionalBeans.produce(AdditionalBeanBuildItem.builder()

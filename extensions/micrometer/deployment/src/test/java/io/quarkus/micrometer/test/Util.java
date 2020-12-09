@@ -1,4 +1,4 @@
-package io.quarkus.micrometer.deployment.export;
+package io.quarkus.micrometer.test;
 
 import java.util.Arrays;
 import java.util.List;

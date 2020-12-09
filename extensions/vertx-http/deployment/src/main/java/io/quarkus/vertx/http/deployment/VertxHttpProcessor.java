@@ -122,7 +122,7 @@ class VertxHttpProcessor {
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
             CoreVertxBuildItem vertx,
             List<RouteBuildItem> routes,
-            NonApplicationRootPathBuildItem frameworkRootPath,
+            NonApplicationRootPathBuildItem nonApplicationRootPath,
             BuildProducer<VertxNonApplicationRouterBuildItem> frameworkRouterBuildProducer,
             ShutdownContextBuildItem shutdown) {
 
@@ -131,7 +131,7 @@ class VertxHttpProcessor {
         boolean frameworkRouterFound = false;
 
         for (RouteBuildItem route : routes) {
-            if (frameworkRootPath.isSeparateRoot() && route.isFrameworkRoute()) {
+            if (nonApplicationRootPath.isSeparateRoot() && route.isFrameworkRoute()) {
                 frameworkRouterFound = true;
                 recorder.addRoute(frameworkRouter, route.getRouteFunction(), route.getHandler(), route.getType());
             } else {
@@ -139,7 +139,10 @@ class VertxHttpProcessor {
             }
         }
 
-        if (frameworkRouterFound) {
+        if (frameworkRouterFound && nonApplicationRootPath.isSeparateRoot()) {
+            // Handle redirects from old paths to new non application endpoint root
+            recorder.addNonApplicationPathRedirect(router, frameworkRouter, nonApplicationRootPath.getFrameworkRootPath());
+
             frameworkRouterBuildProducer.produce(new VertxNonApplicationRouterBuildItem(frameworkRouter));
         }
 

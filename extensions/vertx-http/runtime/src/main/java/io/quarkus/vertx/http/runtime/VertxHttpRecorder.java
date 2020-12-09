@@ -798,6 +798,30 @@ public class VertxHttpRecorder {
         }
     }
 
+    public void addNonApplicationPathRedirect(RuntimeValue<Router> mainRouter, RuntimeValue<Router> nonApplicationRouter,
+            String nonApplicationPath) {
+        List<Route> allRoutes = nonApplicationRouter.getValue().getRoutes();
+
+        Handler<RoutingContext> handler = new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext context) {
+                String absoluteURI = context.request().absoluteURI();
+                int pathStart = absoluteURI.indexOf(context.request().path());
+                String redirectTo = absoluteURI.substring(0, pathStart - 1) + nonApplicationPath
+                        + absoluteURI.substring(pathStart);
+
+                context.response()
+                        .setStatusCode(HttpResponseStatus.MOVED_PERMANENTLY.code())
+                        .putHeader(HttpHeaderNames.LOCATION, redirectTo)
+                        .end();
+            }
+        };
+
+        for (Route route : allRoutes) {
+            addRoute(mainRouter, router -> router.route(route.getPath()), handler, HandlerType.NORMAL);
+        }
+    }
+
     public GracefulShutdownFilter createGracefulShutdownHandler() {
         return new GracefulShutdownFilter();
     }

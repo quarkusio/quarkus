@@ -164,6 +164,7 @@
         <module>kubernetes-client</module>
         <module>kubernetes-config</module>
         <module>openshift-client</module>
+        <module>kubernetes-service-binding</module>
 
         <!-- Consul -->
         <module>consul-config</module>

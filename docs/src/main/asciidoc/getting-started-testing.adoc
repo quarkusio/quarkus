@@ -47,7 +47,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `getting-started-testing` directory.
+The solution is located in the `getting-started-testing` {quickstarts-tree-url}/getting-started-testing[directory].
 
 This guide assumes you already have the completed application from the `getting-started` directory.
 

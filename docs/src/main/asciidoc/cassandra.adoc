@@ -583,7 +583,7 @@ For the full list of available metrics, please refer to the
 link:https://docs.datastax.com/en/developer/java-driver/latest/manual/core/configuration/reference/[driver settings reference]
 and the `advanced.metrics` section.
 
-When metrics are properly enabled and when you access the `/q/metrics` endpoint of your application,
+When metrics are enabled and you access the `/q/metrics` endpoint of your application,
 you will see metric reports for all enabled metrics.
 
 == Building a native executable

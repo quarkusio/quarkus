@@ -445,7 +445,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 outputPath = rootPath;
                 doCopy = false;
             }
-            if (rootPath == null) {
+            if (rootPath == null || outputPath == null) {
                 continue;
             }
             Path root = Paths.get(rootPath);

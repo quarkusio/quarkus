@@ -27,3 +27,6 @@ nb-configuration.xml
 # patch
 *.orig
 *.rej
+
+# Local environment
+.env

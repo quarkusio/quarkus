@@ -80,7 +80,7 @@ class VertxHttpProcessor {
 
     @BuildStep
     NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
-        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.frameworkRootPath);
+        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.nonApplicationRootPath);
     }
 
     @BuildStep
@@ -122,6 +122,7 @@ class VertxHttpProcessor {
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
             CoreVertxBuildItem vertx,
             List<RouteBuildItem> routes,
+            HttpBuildTimeConfig httpBuildTimeConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath,
             BuildProducer<VertxNonApplicationRouterBuildItem> frameworkRouterBuildProducer,
             ShutdownContextBuildItem shutdown) {
@@ -141,7 +142,9 @@ class VertxHttpProcessor {
 
         if (frameworkRouterFound && nonApplicationRootPath.isSeparateRoot()) {
             // Handle redirects from old paths to new non application endpoint root
-            recorder.addNonApplicationPathRedirect(router, frameworkRouter, nonApplicationRootPath.getFrameworkRootPath());
+            if (httpBuildTimeConfig.redirectToNonApplicationRootPath) {
+                recorder.addNonApplicationPathRedirect(router, frameworkRouter, nonApplicationRootPath.getFrameworkRootPath());
+            }
 
             frameworkRouterBuildProducer.produce(new VertxNonApplicationRouterBuildItem(frameworkRouter));
         }

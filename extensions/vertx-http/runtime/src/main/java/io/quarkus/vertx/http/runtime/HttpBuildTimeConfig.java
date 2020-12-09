@@ -37,11 +37,19 @@ public class HttpBuildTimeConfig {
     public String consolePath;
 
     /**
-     * The HTTP root path for framework endpoints. Various endpoints such as metrics, health,
+     * The HTTP root path for non application endpoints. Various endpoints such as metrics, health,
      * and open api are deployed under this path.
-     * Setting the value to "/" disables the separate framework root,
-     * resulting in all framework endpoints being served from "/" along with the application.
+     * Setting the value to "/" disables the separate non application root,
+     * resulting in all non application endpoints being served from "/" along with the application.
      */
     @ConfigItem(defaultValue = "/q")
-    public String frameworkRootPath;
+    public String nonApplicationRootPath;
+
+    /**
+     * Whether to redirect non application endpoints from previous location off the root to the
+     * new non application root path.
+     * Enabled by default.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean redirectToNonApplicationRootPath;
 }

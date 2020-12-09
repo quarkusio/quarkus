@@ -54,10 +54,7 @@ While not absolute, here is some advice:
   you should affect this milestone to it so that we can be sure it stays on the radar.
 * If you think a pull request is worth mentioning in the release notes and/or
   the announcement blog post, add the `release/noteworthy-feature` label.
-* When merging a pull request, please affect the corresponding milestone to the pull request
-  and the resolved issues.
-  The current master branch is marked with ` - master` on GitHub.
-  Do NOT affect a PR to an old branch, see the <<backporting-process,backporting process>> for more details.
+* Do NOT affect a PR to an old branch, see the <<backporting-process,backporting process>> for more details.
 
 Obviously, each situation is different so use your own judgement,
 and if in doubt, just ask for advice, the other committers are here to help.
@@ -182,9 +179,6 @@ some of the "excluding" labels.
 
 Thus:
 
-* When you merge a pull request, please affect it with the current milestone marked with "master".
-* If the pull request has issues associated (i.e. if the pull request fixes some issues),
-  you should also affect the milestone assigned to the issues.
 * If you close a pull request because the committers have decided to not merge it,
   please add the appropriate `triage/` label: `triage/invalid`, `triage/out-of-date`,
   `triage/wontfix` are usually in order.

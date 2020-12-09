@@ -807,7 +807,7 @@ public class VertxHttpRecorder {
             public void handle(RoutingContext context) {
                 String absoluteURI = context.request().absoluteURI();
                 int pathStart = absoluteURI.indexOf(context.request().path());
-                String redirectTo = absoluteURI.substring(0, pathStart - 1) + nonApplicationPath
+                String redirectTo = absoluteURI.substring(0, pathStart) + nonApplicationPath
                         + absoluteURI.substring(pathStart);
 
                 context.response()

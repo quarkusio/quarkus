@@ -1,0 +1,17 @@
+name: jbang-picocli-code
+ref: picocli
+type: code
+language:
+  base:
+    data:
+      resource:
+        class-name: EntryCommand
+          hello-name: "hello"
+          hello-description: "Greet World!"
+          hello-message: "Hello World!"
+          goodbye-name: "goodbye"
+          goodbye-description: "Say goodbye to World!"
+          goodbye-message: "Goodbye World!"
+    dependencies:
+      - io.quarkus:quarkus-picocli
+

@@ -31,7 +31,19 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
 
         assertThat(projectDir.resolve("jbang")).exists();
         assertThat(projectDir.resolve("src/GreetingResource.java")).exists();
+    }
 
+    @Test
+    void generatePicocliProject() throws IOException {
+        final QuarkusJBangCodestartProjectInput input = QuarkusJBangCodestartProjectInput.builder()
+                .addCodestart("jbang-picocli-code")
+                .putData("quarkus.version", "999-SNAPSHOT")
+                .build();
+        final Path projectDir = testDirPath.resolve("picocli");
+        getCatalog().createProject(input).generate(projectDir);
+
+        assertThat(projectDir.resolve("jbang")).exists();
+        assertThat(projectDir.resolve("src/EntryCommand.java")).exists();
     }
 
     private QuarkusJBangCodestartCatalog getCatalog() throws IOException {

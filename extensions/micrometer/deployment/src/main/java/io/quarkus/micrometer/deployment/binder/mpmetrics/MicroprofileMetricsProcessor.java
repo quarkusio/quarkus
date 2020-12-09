@@ -86,8 +86,7 @@ public class MicroprofileMetricsProcessor {
         }
 
         if (!mpMetricsPresent) {
-            for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext()
-                    .get(BuildExtension.Key.INJECTION_POINTS)) {
+            for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getInjectionPoints()) {
                 if (injectionPoint.getRequiredType().name().equals(MetricDotNames.METRIC_REGISTRY)) {
                     mpMetricsPresent = true;
                     break;

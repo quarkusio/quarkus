@@ -49,13 +49,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -422,9 +420,7 @@ public class QuteProcessor {
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
-            BeanRegistrationPhaseBuildItem registrationPhase,
-            // This producer is needed to ensure the correct ordering, ie. this build step must be executed before the ArC validation step
-            BuildProducer<BeanConfiguratorBuildItem> configurators) {
+            BeanDiscoveryFinishedBuildItem beanDiscovery) {
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -437,7 +433,7 @@ public class QuteProcessor {
         // IMPLEMENTATION NOTE: 
         // We do not support injection of synthetic beans with names 
         // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
-        Map<String, BeanInfo> namedBeans = registrationPhase.getContext().beans().withName()
+        Map<String, BeanInfo> namedBeans = beanDiscovery.beanStream().withName()
                 .collect(toMap(BeanInfo::getName, Function.identity()));
 
         // Map implicit class -> set of used members
@@ -928,7 +924,7 @@ public class QuteProcessor {
             }
         }
 
-        for (InjectionPointInfo injectionPoint : validationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+        for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
 
             if (injectionPoint.getRequiredType().name().equals(Names.TEMPLATE)) {
 

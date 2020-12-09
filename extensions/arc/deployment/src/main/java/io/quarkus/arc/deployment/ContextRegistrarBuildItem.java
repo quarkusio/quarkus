@@ -18,7 +18,12 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * This information is then leveraged in {@link CustomScopeAnnotationsBuildItem} which allows consumers to browse
  * all known custom scoped within deployment even early in the build process.
+ * 
+ * This build item will be removed at some point post Quarkus 1.11.
+ * 
+ * @deprecated User {@link ContextRegistrationPhaseBuildItem} instead
  */
+@Deprecated
 public final class ContextRegistrarBuildItem extends MultiBuildItem {
 
     private static final Logger LOGGER = Logger.getLogger(ContextRegistrarBuildItem.class);

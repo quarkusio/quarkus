@@ -29,8 +29,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 /**
- *
- * @author Martin Kouba
+ * Represents a CDI bean at build time.
  */
 public class BeanInfo implements InjectionTargetInfo {
 
@@ -337,6 +336,22 @@ public class BeanInfo implements InjectionTargetInfo {
 
     public boolean isDefaultBean() {
         return defaultBean;
+    }
+
+    /**
+     * @param requiredType
+     * @param requiredQualifiers
+     * @return {@code true} if this bean is assignable to the required type and qualifiers
+     */
+    public boolean isAssignableTo(Type requiredType, AnnotationInstance... requiredQualifiers) {
+        Set<AnnotationInstance> qualifiers;
+        if (requiredQualifiers.length == 0) {
+            qualifiers = Collections.emptySet();
+        } else {
+            qualifiers = new HashSet<>();
+            Collections.addAll(qualifiers, requiredQualifiers);
+        }
+        return Beans.matches(this, requiredType, qualifiers);
     }
 
     Consumer<MethodCreator> getCreatorConsumer() {

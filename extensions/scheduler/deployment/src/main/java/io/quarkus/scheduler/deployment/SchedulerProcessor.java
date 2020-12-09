@@ -30,15 +30,14 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
-import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
@@ -98,30 +97,28 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods,
-            BuildProducer<BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem> beans) {
-
-        AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
+    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanDiscoveryFinishedBuildItem beanDiscovery,
+            TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         // We need to collect all business methods annotated with @Scheduled first
-        for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
-            collectScheduledMethods(beanArchives.getIndex(), annotationStore, bean,
+        for (BeanInfo bean : beanDiscovery.beanStream().classBeans()) {
+            collectScheduledMethods(beanArchives.getIndex(), transformedAnnotations, bean,
                     bean.getTarget().get().asClass(),
                     scheduledBusinessMethods);
         }
     }
 
-    private void collectScheduledMethods(IndexView index, AnnotationStore annotationStore, BeanInfo bean,
+    private void collectScheduledMethods(IndexView index, TransformedAnnotationsBuildItem transformedAnnotations, BeanInfo bean,
             ClassInfo beanClass, BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         for (MethodInfo method : beanClass.methods()) {
             List<AnnotationInstance> schedules = null;
-            AnnotationInstance scheduledAnnotation = annotationStore.getAnnotation(method, SCHEDULED_NAME);
+            AnnotationInstance scheduledAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULED_NAME);
             if (scheduledAnnotation != null) {
                 schedules = Collections.singletonList(scheduledAnnotation);
             } else {
-                AnnotationInstance schedulesAnnotation = annotationStore.getAnnotation(method, SCHEDULES_NAME);
+                AnnotationInstance schedulesAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULES_NAME);
                 if (schedulesAnnotation != null) {
                     schedules = new ArrayList<>();
                     for (AnnotationInstance scheduledInstance : schedulesAnnotation.value().asNestedArray()) {
@@ -141,7 +138,7 @@ public class SchedulerProcessor {
         if (superClassName != null) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                collectScheduledMethods(index, annotationStore, bean, superClass, scheduledBusinessMethods);
+                collectScheduledMethods(index, transformedAnnotations, bean, superClass, scheduledBusinessMethods);
             }
         }
     }

@@ -67,7 +67,7 @@ Download an {quickstarts-archive-url}[archive] or clone the git repository:
 git clone {quickstarts-clone-url}
 ----
 
-The solution is located in the `getting-started` directory.
+The solution is located in the `getting-started` {quickstarts-tree-url}/getting-started[directory].
 
 == Bootstrapping the project
 

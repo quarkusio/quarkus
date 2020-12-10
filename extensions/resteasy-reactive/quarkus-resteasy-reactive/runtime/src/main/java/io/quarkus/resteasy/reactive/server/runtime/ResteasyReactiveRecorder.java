@@ -14,7 +14,6 @@ import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
-import org.jboss.resteasy.reactive.server.core.ContextResolvers;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
@@ -24,10 +23,12 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
+import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
+import org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveVertxHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -115,12 +116,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
     public Handler<RoutingContext> handler(RuntimeValue<Deployment> deploymentRuntimeValue) {
         Deployment deployment = deploymentRuntimeValue.getValue();
         RestInitialHandler initialHandler = new RestInitialHandler(deployment);
-        return new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                initialHandler.beginProcessing(event);
-            }
-        };
+        return new ResteasyReactiveVertxHandler(initialHandler);
     }
 
     /**

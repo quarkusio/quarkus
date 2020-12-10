@@ -83,6 +83,7 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -880,7 +881,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
-        private Function<String, BeanFactory<Object>> factoryCreator;
+        private Function<String, BeanFactory<Object>> factoryCreator = new ReflectionBeanFactoryCreator();
         private boolean defaultBlocking;
         private IndexView index;
         private Map<String, String> existingConverters;

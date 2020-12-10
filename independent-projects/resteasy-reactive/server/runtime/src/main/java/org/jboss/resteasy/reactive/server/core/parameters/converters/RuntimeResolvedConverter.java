@@ -5,7 +5,7 @@ import java.lang.reflect.Type;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
-import org.jboss.resteasy.reactive.server.core.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class RuntimeResolvedConverter implements ParameterConverter {
 

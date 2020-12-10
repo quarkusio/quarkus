@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.core;
+package org.jboss.resteasy.reactive.server.model;
 
 import java.util.ArrayList;
 import java.util.List;

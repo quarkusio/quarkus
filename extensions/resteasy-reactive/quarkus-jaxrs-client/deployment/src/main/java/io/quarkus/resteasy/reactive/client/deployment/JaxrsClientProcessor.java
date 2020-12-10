@@ -30,6 +30,7 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -82,10 +83,12 @@ public class JaxrsClientProcessor {
                 messageBodyWriterBuildItems, beanContainerBuildItem, applicationResultBuildItem, serialisers,
                 RuntimeType.CLIENT);
 
-        if (resourceScanningResultBuildItem == null || resourceScanningResultBuildItem.getPathInterfaces().isEmpty()) {
+        if (resourceScanningResultBuildItem == null
+                || resourceScanningResultBuildItem.getResult().getPathInterfaces().isEmpty()) {
             recorder.setupClientProxies(new HashMap<>());
             return;
         }
+        ResourceScanningResult result = resourceScanningResultBuildItem.getResult();
 
         AdditionalReaders additionalReaders = new AdditionalReaders();
         AdditionalWriters additionalWriters = new AdditionalWriters();
@@ -94,19 +97,19 @@ public class JaxrsClientProcessor {
         ClientEndpointIndexer clientEndpointIndexer = new ClientEndpointIndexer.Builder()
                 .setIndex(index)
                 .setExistingConverters(new HashMap<>())
-                .setScannedResourcePaths(resourceScanningResultBuildItem.getScannedResourcePaths())
+                .setScannedResourcePaths(result.getScannedResourcePaths())
                 .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(config.inputBufferSize.asLongValue(),
                         config.singleDefaultProduces))
                 .setAdditionalReaders(additionalReaders)
-                .setHttpAnnotationToMethod(resourceScanningResultBuildItem.getHttpAnnotationToMethod())
+                .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
                 .setInjectableBeans(new HashMap<>())
                 .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                 .setAdditionalWriters(additionalWriters)
-                .setDefaultBlocking(applicationResultBuildItem.isBlocking())
+                .setDefaultBlocking(applicationResultBuildItem.getResult().isBlocking())
                 .setHasRuntimeConverters(false).build();
 
         List<RestClientInterface> clientDefinitions = new ArrayList<>();
-        for (Map.Entry<DotName, String> i : resourceScanningResultBuildItem.getPathInterfaces().entrySet()) {
+        for (Map.Entry<DotName, String> i : result.getPathInterfaces().entrySet()) {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
             //so we generate client proxies for them

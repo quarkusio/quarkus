@@ -52,6 +52,9 @@
         <mutiny.version>0.10.1</mutiny.version>
         <smallrye-common-annotation.version>1.5.0</smallrye-common-annotation.version>
         <vertx.version>3.9.3</vertx.version>
+        <rest-assured.version>4.3.2</rest-assured.version>
+        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+        <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
     </properties>
 
     <modules>
@@ -158,6 +161,13 @@
                 <type>pom</type>
             </dependency>
 
+            <dependency>
+                <groupId>org.jboss.shrinkwrap</groupId>
+                <artifactId>shrinkwrap-depchain</artifactId>
+                <type>pom</type>
+                <scope>test</scope>
+                <version>1.2.6</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -207,6 +217,46 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>io.rest-assured</groupId>
+                <artifactId>rest-assured</artifactId>
+                <version>${rest-assured.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>activation</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>javax.activation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <!-- https://github.com/quarkusio/quarkus/issues/1991 -->
+                        <groupId>com.sun.xml.bind</groupId>
+                        <artifactId>jaxb-osgi</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.xml.bind</groupId>
+                        <artifactId>jakarta.xml.bind-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>commons-logging-jboss-logging</artifactId>
+                <version>${commons-logging-jboss-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.spec.javax.xml.bind</groupId>
+                <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+                <version>${jboss-jaxb-api_2.3_spec.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
 
     </dependencyManagement>

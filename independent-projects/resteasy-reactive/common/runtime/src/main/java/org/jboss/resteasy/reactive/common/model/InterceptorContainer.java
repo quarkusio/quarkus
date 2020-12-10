@@ -3,6 +3,8 @@ package org.jboss.resteasy.reactive.common.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class InterceptorContainer<T> {
 
@@ -32,6 +34,19 @@ public class InterceptorContainer<T> {
 
     public ResourceInterceptor<T> create() {
         return new ResourceInterceptor<>();
+    }
+
+    public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
+        for (ResourceInterceptor<T> i : globalResourceInterceptors) {
+            if (i.getFactory() == null) {
+                i.setFactory((BeanFactory<T>) factoryCreator.apply(i.getClassName()));
+            }
+        }
+        for (ResourceInterceptor<T> i : nameResourceInterceptors) {
+            if (i.getFactory() == null) {
+                i.setFactory((BeanFactory<T>) factoryCreator.apply(i.getClassName()));
+            }
+        }
     }
 
     public static class Reversed<T> extends InterceptorContainer<T> {

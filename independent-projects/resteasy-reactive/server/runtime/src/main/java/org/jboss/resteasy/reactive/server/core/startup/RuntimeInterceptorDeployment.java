@@ -22,12 +22,12 @@ import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
-import org.jboss.resteasy.reactive.server.core.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureContext;
 import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureResourceInfo;
+import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 

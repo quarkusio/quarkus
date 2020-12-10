@@ -1,15 +1,17 @@
-package org.jboss.resteasy.reactive.server.core;
+package org.jboss.resteasy.reactive.server.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.jaxrs.ContextResolverDelegate;
+import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ContextResolvers {
 
@@ -76,5 +78,19 @@ public class ContextResolvers {
             return new ContextResolverDelegate<>(delegates);
         }
         return null;
+    }
+
+    public Map<Class<?>, List<ResourceContextResolver>> getResolvers() {
+        return resolvers;
+    }
+
+    public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
+        for (Map.Entry<Class<?>, List<ResourceContextResolver>> entry : resolvers.entrySet()) {
+            for (ResourceContextResolver i : entry.getValue()) {
+                if (i.getFactory() == null) {
+                    i.setFactory((BeanFactory) factoryCreator.apply(i.getClassName()));
+                }
+            }
+        }
     }
 }

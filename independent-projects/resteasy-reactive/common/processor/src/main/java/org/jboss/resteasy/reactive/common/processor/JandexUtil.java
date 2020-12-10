@@ -1,6 +1,10 @@
 package org.jboss.resteasy.reactive.common.processor;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,12 +12,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -27,6 +35,27 @@ public final class JandexUtil {
     public final static DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
 
     private JandexUtil() {
+    }
+
+    public static Index createIndex(Path path) {
+        Indexer indexer = new Indexer();
+        try (Stream<Path> files = Files.walk(path)) {
+            files.forEach(new Consumer<Path>() {
+                @Override
+                public void accept(Path path) {
+                    if (path.toString().endsWith(".class")) {
+                        try (InputStream in = Files.newInputStream(path)) {
+                            indexer.index(in);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return indexer.complete();
     }
 
     /**
@@ -266,7 +295,7 @@ public final class JandexUtil {
      * Returns the enclosing class of the given annotation instance. For field or method annotations this
      * will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
      * method. For classes it will return the class itself.
-     * 
+     *
      * @param annotationInstance the annotation whose enclosing class to look up.
      * @return the enclosing class.
      */
@@ -290,7 +319,7 @@ public final class JandexUtil {
     /**
      * Returns true if the given Jandex ClassInfo is a subclass of the given <tt>parentName</tt>. Note that this will
      * not check interfaces.
-     * 
+     *
      * @param index the index to use to look up super classes.
      * @param info the ClassInfo we want to check.
      * @param parentName the name of the superclass we want to find.

@@ -7,6 +7,10 @@ import javax.ws.rs.core.Application;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.server.model.ContextResolvers;
+import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
+import org.jboss.resteasy.reactive.server.model.Features;
+import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class DeploymentInfo {

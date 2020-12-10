@@ -154,7 +154,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
         } else {
             for (int j = 0; j < sourceLines.size(); j++) {
                 // [1,2,3]
-                realLines.add(j);
+                realLines.add(j + 1);
             }
         }
 

@@ -93,6 +93,7 @@ public class MavenArtifactResolver {
         return new Builder();
     }
 
+    protected final BootstrapMavenContext context;
     protected final RepositorySystem repoSystem;
     protected final RepositorySystemSession repoSession;
     protected final List<RemoteRepository> remoteRepos;
@@ -100,30 +101,35 @@ public class MavenArtifactResolver {
     protected final RemoteRepositoryManager remoteRepoManager;
 
     private MavenArtifactResolver(Builder builder) throws BootstrapMavenException {
-        final BootstrapMavenContext mvnSettings = new BootstrapMavenContext(builder);
-        this.repoSystem = mvnSettings.getRepositorySystem();
+        this.context = new BootstrapMavenContext(builder);
+        this.repoSystem = context.getRepositorySystem();
 
-        final RepositorySystemSession session = mvnSettings.getRepositorySystemSession();
+        final RepositorySystemSession session = context.getRepositorySystemSession();
         if (builder.localRepo != null && builder.reTryFailedResolutionsAgainstDefaultLocalRepo) {
             localRepoManager = new MavenLocalRepositoryManager(
                     repoSystem.newLocalRepositoryManager(session, new LocalRepository(builder.localRepo)),
-                    Paths.get(mvnSettings.getLocalRepo()));
+                    Paths.get(context.getLocalRepo()));
             this.repoSession = new DefaultRepositorySystemSession(session).setLocalRepositoryManager(localRepoManager);
         } else {
             this.repoSession = session;
             localRepoManager = null;
         }
 
-        this.remoteRepos = mvnSettings.getRemoteRepositories();
-        this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
+        this.remoteRepos = context.getRemoteRepositories();
+        this.remoteRepoManager = context.getRemoteRepositoryManager();
     }
 
     public MavenArtifactResolver(BootstrapMavenContext mvnSettings) throws BootstrapMavenException {
+        this.context = mvnSettings;
         this.repoSystem = mvnSettings.getRepositorySystem();
         this.repoSession = mvnSettings.getRepositorySystemSession();
         localRepoManager = null;
         this.remoteRepos = mvnSettings.getRemoteRepositories();
         this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
+    }
+
+    public BootstrapMavenContext getMavenContext() {
+        return context;
     }
 
     public RemoteRepositoryManager getRemoteRepositoryManager() {

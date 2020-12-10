@@ -203,6 +203,12 @@ public class BootstrapAppModelFactory {
         if (mvnContext != null) {
             return mvnContext;
         }
+        if (mavenArtifactResolver != null) {
+            mvnContext = mavenArtifactResolver.getMavenContext();
+            if (mvnContext != null) {
+                return mvnContext;
+            }
+        }
         final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config();
         if (offline != null) {
             config.setOffline(offline);

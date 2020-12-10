@@ -16,14 +16,18 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Id;
 import javax.persistence.Transient;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -34,6 +38,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
@@ -47,7 +52,8 @@ import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.TypeBundle;
 
 public final class KotlinPanacheResourceProcessor {
-
+    private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
+    private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     private static final Set<DotName> UNREMOVABLE_BEANS = singleton(createSimple(EntityManager.class.getName()));
     static final DotName TRANSIENT = DotName.createSimple(Transient.class.getName());
 
@@ -205,5 +211,22 @@ public final class KotlinPanacheResourceProcessor {
         // only useful for the index resolution: hibernate will register it to be transformed, but BuildMojo
         // only transforms classes from the application jar, so we do our own transforming
         return Collections.singletonList(new AdditionalJpaModelBuildItem(PanacheEntity.class));
+    }
+
+    @BuildStep
+    ValidationPhaseBuildItem.ValidationErrorBuildItem validate(ValidationPhaseBuildItem validationPhase,
+            CombinedIndexBuildItem index) throws BuildException {
+        // we verify that no ID fields are defined (via @Id) when extending PanacheEntity
+        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_ID)) {
+            ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
+            if (JandexUtil.isSubclassOf(index.getIndex(), info, DOTNAME_PANACHE_ENTITY)) {
+                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name() +
+                        "' but one is already provided by PanacheEntity, " +
+                        "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
+                        Collections.emptyList());
+                return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
+            }
+        }
+        return null;
     }
 }

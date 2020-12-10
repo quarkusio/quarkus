@@ -1,5 +1,6 @@
 package io.quarkus.it.mongodb.panache.person.resources
 
+import com.mongodb.ReadPreference
 import io.quarkus.it.mongodb.panache.person.MockablePersonRepository
 import io.quarkus.it.mongodb.panache.person.Person
 import io.quarkus.it.mongodb.panache.person.PersonName
@@ -39,6 +40,7 @@ class PersonRepositoryResource {
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
         return personRepository.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
                 .project(PersonName::class.java)
+                .withReadPreference(ReadPreference.primaryPreferred())
                 .list()
                 .toSet()
     }

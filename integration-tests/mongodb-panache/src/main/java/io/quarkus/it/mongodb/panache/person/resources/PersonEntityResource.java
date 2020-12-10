@@ -8,6 +8,8 @@ import java.util.Set;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
+import com.mongodb.ReadPreference;
+
 import io.quarkus.it.mongodb.panache.person.PersonEntity;
 import io.quarkus.it.mongodb.panache.person.PersonName;
 import io.quarkus.it.mongodb.panache.person.Status;
@@ -29,6 +31,7 @@ public class PersonEntityResource {
         Set<PersonName> uniqueNames = new HashSet<>();
         List<PersonName> lastnames = PersonEntity.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
                 .project(PersonName.class)
+                .withReadPreference(ReadPreference.primaryPreferred())
                 .list();
         lastnames.forEach(p -> uniqueNames.add(p));// this will throw if it's not the right type
         return uniqueNames;

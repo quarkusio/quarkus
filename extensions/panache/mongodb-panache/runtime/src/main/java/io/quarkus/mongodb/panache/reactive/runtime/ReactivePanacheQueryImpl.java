@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.bson.conversions.Bson;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
@@ -95,6 +96,12 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> withCollation(Collation collation) {
         delegate.withCollation(collation);
+        return (ReactivePanacheQuery<T>) this;
+    }
+
+    @Override
+    public <T extends Entity> ReactivePanacheQuery<T> withReadPreference(ReadPreference readPreference) {
+        delegate.withReadPreference(readPreference);
         return (ReactivePanacheQuery<T>) this;
     }
 

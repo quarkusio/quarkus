@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin
 
+import com.mongodb.ReadPreference
 import com.mongodb.client.model.Collation
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.exception.PanacheQueryException
@@ -137,6 +138,15 @@ interface PanacheQuery<Entity: Any> {
      * @return this query, modified
      */
     fun withCollation(collation: Collation): PanacheQuery<Entity>
+
+    /**
+     * Define the read preference used for this query.
+     *
+     * @param readPreference the read preference to be used for this query.
+     * @return this query, modified
+     */
+    fun withReadPreference(readPreference: ReadPreference?): PanacheQuery<Entity>
+
     // Results
     /**
      * Reads and caches the total number of entities this query operates on. This causes a database

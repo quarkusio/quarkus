@@ -7,6 +7,7 @@ import java.util.Set;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 
 import io.quarkus.mongodb.FindOptions;
@@ -140,6 +141,11 @@ public class CommonReactivePanacheQueryImpl<Entity> {
 
     public <T extends Entity> CommonReactivePanacheQueryImpl<T> withCollation(Collation collation) {
         this.collation = collation;
+        return (CommonReactivePanacheQueryImpl<T>) this;
+    }
+
+    public <T extends Entity> CommonReactivePanacheQueryImpl<T> withReadPreference(ReadPreference readPreference) {
+        this.collection = this.collection.withReadPreference(readPreference);
         return (CommonReactivePanacheQueryImpl<T>) this;
     }
 

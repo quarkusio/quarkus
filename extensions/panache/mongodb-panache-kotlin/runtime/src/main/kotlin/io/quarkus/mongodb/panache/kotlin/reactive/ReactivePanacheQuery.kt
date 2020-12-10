@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin.reactive
 
+import com.mongodb.ReadPreference
 import com.mongodb.client.model.Collation
 import io.quarkus.panache.common.Page
 import io.smallrye.mutiny.Multi
@@ -134,6 +135,14 @@ interface ReactivePanacheQuery<Entity> {
      * @return this query, modified
      */
     fun withCollation(collation: Collation): ReactivePanacheQuery<Entity>
+
+    /**
+     * Define the read preference used for this query.
+     *
+     * @param readPreference the read preference to be used for this query.
+     * @return this query, modified
+     */
+    fun withReadPreference(readPreference: ReadPreference): ReactivePanacheQuery<Entity>
 
     /**
      * Reads and caches the total number of entities this query operates on. This causes a database

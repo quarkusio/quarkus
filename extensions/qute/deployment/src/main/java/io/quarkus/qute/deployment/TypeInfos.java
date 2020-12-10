@@ -109,7 +109,7 @@ final class TypeInfos {
             String[] parts = value.substring(angleIdx + 1, value.length() - 1).split(",");
             Type[] arguments = new Type[parts.length];
             for (int i = 0; i < arguments.length; i++) {
-                arguments[i] = resolveType(parts[i]);
+                arguments[i] = resolveType(parts[i].trim());
             }
             return ParameterizedType.create(rawName, arguments, null);
         }

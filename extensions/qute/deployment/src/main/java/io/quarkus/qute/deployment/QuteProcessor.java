@@ -566,9 +566,13 @@ public class QuteProcessor {
             Info info = iterator.next();
             if (match.clazz != null) {
                 // By default, we only consider properties
-                Set<String> membersUsed = implicitClassToMembersUsed.computeIfAbsent(match.clazz, c -> new HashSet<>());
+                Set<String> membersUsed = implicitClassToMembersUsed.get(match.clazz);
+                if (membersUsed == null) {
+                    membersUsed = new HashSet<>();
+                    implicitClassToMembersUsed.put(match.clazz, membersUsed);
+                }
                 AnnotationTarget member = null;
-                // First try to find java members
+                // First try to find a java member
                 if (info.isVirtualMethod()) {
                     member = findMethod(info.part.asVirtualMethod(), match.clazz, expression, index, templateIdToPathFun,
                             results);
@@ -581,9 +585,10 @@ public class QuteProcessor {
                         membersUsed.add(member.kind() == Kind.FIELD ? member.asField().name() : member.asMethod().name());
                     }
                 }
-                // Java member not found - try extension methods
                 if (member == null) {
-                    member = findTemplateExtensionMethod(info, match.clazz, templateExtensionMethods, expression, index,
+                    // Then try to find an etension method
+                    member = findTemplateExtensionMethod(info, match.clazz, templateExtensionMethods, expression,
+                            index,
                             templateIdToPathFun, results);
                 }
 
@@ -1219,7 +1224,8 @@ public class QuteProcessor {
                 continue;
             }
             List<Type> parameters = extensionMethod.getMethod().parameters();
-            if (parameters.size() > 1 && !info.isVirtualMethod()) {
+            int realParamSize = parameters.size() - (TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1);
+            if (realParamSize > 0 && !info.isVirtualMethod()) {
                 // If method accepts additional params the info must be a virtual method
                 continue;
             }
@@ -1228,7 +1234,6 @@ public class QuteProcessor {
                 VirtualMethodPart virtualMethod = info.part.asVirtualMethod();
                 boolean isVarArgs = ValueResolverGenerator.isVarArgs(extensionMethod.getMethod());
                 int lastParamIdx = parameters.size() - 1;
-                int realParamSize = parameters.size() - (TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1);
 
                 if (isVarArgs) {
                     // For varargs methods match the minimal number of params
@@ -1259,8 +1264,8 @@ public class QuteProcessor {
                         } else {
                             paramType = parameters.get(idx);
                         }
-                        if (!Types.isAssignableFrom(result.type,
-                                paramType, index)) {
+                        if (!Types.isAssignableFrom(paramType,
+                                result.type, index)) {
                             matches = false;
                             break;
                         }
@@ -1376,8 +1381,8 @@ public class QuteProcessor {
                             } else {
                                 paramType = parameters.get(idx);
                             }
-                            if (!Types.isAssignableFrom(result.type,
-                                    paramType, index)) {
+                            if (!Types.isAssignableFrom(paramType,
+                                    result.type, index)) {
                                 matches = false;
                                 break;
                             }

@@ -303,9 +303,19 @@ public class CliTest {
     }
 
     @Test
-    public void testCreateJBang() throws Exception {
+    public void testCreateJBangRestEasy() throws Exception {
 
         execute("create-jbang", "--output-folder=my-jbang-project", "resteasy-jsonb");
+
+        Path project = workspace.resolve("my-jbang-project");
+        System.setProperty("user.dir", project.toFile().getAbsolutePath());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
+    }
+
+    @Test
+    public void testCreateJBangPicocli() throws Exception {
+
+        execute("create-jbang", "--output-folder=my-jbang-project", "quarkus-picocli");
 
         Path project = workspace.resolve("my-jbang-project");
         System.setProperty("user.dir", project.toFile().getAbsolutePath());

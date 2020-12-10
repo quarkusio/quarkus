@@ -6,12 +6,14 @@ language:
     data:
       resource:
         class-name: EntryCommand
-          hello-name: "hello"
-          hello-description: "Greet World!"
-          hello-message: "Hello World!"
-          goodbye-name: "goodbye"
-          goodbye-description: "Say goodbye to World!"
-          goodbye-message: "Goodbye World!"
+        subcommands: "{HelloCommand.class, GoodByeCommand.class}"
+        hello:
+          name: "hello"
+          description: "Greet World!"
+          message: "Hello World!"
+        goodbye:
+          name: "goodbye"
+          description: "Say goodbye to World!"
+          message: "Goodbye World!"
     dependencies:
       - io.quarkus:quarkus-picocli
-

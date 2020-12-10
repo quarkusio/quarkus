@@ -9,24 +9,24 @@ import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine;
 
 @TopCommand
-@CommandLine.Command(mixinStandardHelpOptions = true, subcommands = {HelloCommand.class, GoodByeCommand.class})
-public class EntryCommand {
+@CommandLine.Command(mixinStandardHelpOptions = true, subcommands = {resource.subcommands})
+public class {resource.class-name} {
 }
 
-@CommandLine.Command(name = "{resource.hello-name}", description = "{resource.hello-description}")
+@CommandLine.Command(name = "{resource.hello.name}", description = "{resource.hello.description}")
 class HelloCommand implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("{resource.hello-message");
+        System.out.println("{resource.hello.message}");
     }
 }
 
-@CommandLine.Command(name = "{resource.goodbye-name}", description = "{resource.goodbye-description}")
+@CommandLine.Command(name = "{resource.goodbye.name}", description = "{resource.goodbye.description}")
 class GoodByeCommand implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("{resource.goodbye-message}");
+        System.out.println("{resource.goodbye.message}");
     }
 }

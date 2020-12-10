@@ -246,6 +246,7 @@ You can point your persistence unit to the default datasource by setting it to `
 It is perfectly valid to have several persistence units pointing to the same datasource.
 ====
 
+[[multiple-persistence-units-attaching-model-classes]]
 ==== Attaching model classes to persistence units
 
 There are two ways to attach model classes to persistence units, and they should not be mixed:
@@ -350,7 +351,7 @@ You can inject the `EntityManagerFactory` of a named persistence unit using the 
 [source,java]
 ----
 @Inject
-@PersistenceUnit("users") <1>
+@PersistenceUnit("users")
 EntityManagerFactory entityManagerFactory;
 ----
 

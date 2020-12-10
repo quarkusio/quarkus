@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -17,6 +18,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.session.ForwardingSession;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
@@ -44,8 +46,9 @@ public class HibernateOrmRecorder {
         Hibernate.featureInit(enabled);
     }
 
-    public void setupPersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
-        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig);
+    public void setupPersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+            Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> integrationRuntimeInitListeners) {
+        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeInitListeners);
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,

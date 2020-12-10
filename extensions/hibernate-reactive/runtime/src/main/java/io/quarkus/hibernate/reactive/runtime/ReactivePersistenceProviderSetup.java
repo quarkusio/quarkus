@@ -1,6 +1,11 @@
 package io.quarkus.hibernate.reactive.runtime;
 
+import java.util.List;
+import java.util.Map;
+
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
+import io.quarkus.hibernate.orm.runtime.SingletonPersistenceProviderResolver;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 
 public final class ReactivePersistenceProviderSetup {
 
@@ -13,10 +18,13 @@ public final class ReactivePersistenceProviderSetup {
                 .setPersistenceProviderResolver(new StaticInitHibernateReactivePersistenceProviderResolver());
     }
 
-    public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+    public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+            Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> integrationRuntimeInitListeners) {
         javax.persistence.spi.PersistenceProviderResolverHolder
                 .setPersistenceProviderResolver(
-                        new FastBootHibernateReactivePersistenceProviderResolver(hibernateOrmRuntimeConfig));
+                        new SingletonPersistenceProviderResolver(
+                                new FastBootHibernateReactivePersistenceProvider(hibernateOrmRuntimeConfig,
+                                        integrationRuntimeInitListeners)));
     }
 
 }

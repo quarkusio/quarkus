@@ -13,7 +13,8 @@ public class NoConfigNoIndexedEntityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class));
+            () -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsResource("application-nohsearchconfig.properties", "application.properties"));
 
     @Test
     public void testNoConfig() throws SQLException {

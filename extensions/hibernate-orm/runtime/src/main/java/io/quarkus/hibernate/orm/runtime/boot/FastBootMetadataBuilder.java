@@ -71,7 +71,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -100,18 +100,20 @@ public class FastBootMetadataBuilder {
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
     private final boolean isEnversPresent;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
-        this.isEnversPresent = puDefinition.isEnversPresent();
         this.dataSource = puDefinition.getDataSource();
         this.isReactive = puDefinition.isReactive();
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
+        this.integrationStaticInitListeners = puDefinition.getIntegrationStaticInitListeners();
+        this.isEnversPresent = puDefinition.isEnversPresent();
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
         // integration, instance );
@@ -298,7 +300,12 @@ public class FastBootMetadataBuilder {
         cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
                 QuarkusInfinispanRegionFactory.class.getName());
 
-        HibernateOrmIntegrations.contributeBootProperties((k, v) -> cfg.put(k, v));
+        for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
+            if (listener == null) {
+                continue;
+            }
+            listener.contributeBootProperties(cfg::put);
+        }
 
         return mergedSettings;
     }
@@ -311,8 +318,14 @@ public class FastBootMetadataBuilder {
         );
 
         IntegrationSettings.Builder integrationSettingsBuilder = new IntegrationSettings.Builder();
-        HibernateOrmIntegrations.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
-                (k, v) -> integrationSettingsBuilder.put(k, v));
+
+        for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
+            if (listener == null) {
+                continue;
+            }
+            listener.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
+                    integrationSettingsBuilder::put);
+        }
 
         Dialect dialect = extractDialect();
         PrevalidatedQuarkusMetadata storeableMetadata = trimBootstrapMetadata(fullMeta);

@@ -483,8 +483,9 @@ In our existing `LibraryResource`, we just need to inject the `SearchSession`:
     SearchSession searchSession; // <1>
 ----
 <1> Inject a Hibernate Search session, which relies on the `EntityManager` under the hood.
-Applications with multiple persistence units can use a CDI qualifier to select the right one:
-either `@Named` or `@io.quarkus.hibernate.orm.PersistenceUnit`.
+Applications with multiple persistence units can use the CDI qualifier `@io.quarkus.hibernate.orm.PersistenceUnit`
+to select the right one:
+see <<multiple-persistence-units-attaching-cdi>>.
 
 And then we can add the following methods (and a few ``import``s):
 
@@ -636,6 +637,107 @@ You can now interact with your REST service:
  * create new authors and books and search for them too
 
 As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.
+
+[[multiple-persistence-units]]
+== Multiple persistence units
+
+=== Configuring multiple persistence units
+
+With the Hibernate ORM extension,
+link:hibernate-orm#multiple-persistence-units[you can set up multiple persistence units],
+each with its own datasource and configuration.
+
+If you do declare multiple persistence units,
+you will also configure Hibernate Search separately for each persistence unit.
+
+The properties at the root of the `quarkus.hibernate-search-orm.` namespace define the default persistence unit.
+For instance, the following snippet defines a default datasource and a default persistence unit,
+and sets the Elasticsearch host for that persistence unit to `es1.mycompany.com:9200`.
+
+[source,properties]
+----
+quarkus.datasource.db-kind=h2
+quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
+
+quarkus.hibernate-orm.dialect=org.hibernate.dialect.H2Dialect
+
+quarkus.hibernate-search-orm.elasticsearch.hosts=es1.mycompany.com:9200
+quarkus.hibernate-search-orm.elasticsearch.version=7
+quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=write-sync
+----
+
+Using a map based approach, it is also possible to configure named persistence units:
+
+[source,properties]
+----
+quarkus.datasource."users".db-kind=h2 <1>
+quarkus.datasource."users".jdbc.url=jdbc:h2:mem:users;DB_CLOSE_DELAY=-1
+
+quarkus.datasource."inventory".db-kind=h2 <2>
+quarkus.datasource."inventory".jdbc.url=jdbc:h2:mem:inventory;DB_CLOSE_DELAY=-1
+
+quarkus.hibernate-orm."users".datasource=users <3>
+quarkus.hibernate-orm."users".packages=org.acme.model.user
+
+quarkus.hibernate-orm."inventory".datasource=inventory <4>
+quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
+
+quarkus.hibernate-search-orm."users".elasticsearch.hosts=es1.mycompany.com:9200 <5>
+quarkus.hibernate-search-orm."users".elasticsearch.version=7
+quarkus.hibernate-search-orm."users".automatic-indexing.synchronization.strategy=write-sync
+
+quarkus.hibernate-search-orm."inventory".elasticsearch.hosts=es2.mycompany.com:9200 <6>
+quarkus.hibernate-search-orm."inventory".elasticsearch.version=7
+quarkus.hibernate-search-orm."inventory".automatic-indexing.synchronization.strategy=write-sync
+----
+<1> Define a datasource named `users`.
+<2> Define a datasource named `inventory`.
+<3> Define a persistence unit called `users` pointing to the `users` datasource.
+<4> Define a persistence unit called `inventory` pointing to the `inventory` datasource.
+<5> Configure Hibernate Search for the `users` persistence unit,
+setting the Elasticsearch host for that persistence unit to `es1.mycompany.com:9200`.
+<6> Configure Hibernate Search for the `inventory` persistence unit,
+setting the Elasticsearch host for that persistence unit to `es2.mycompany.com:9200`.
+
+[[multiple-persistence-units-attaching-model-classes]]
+=== Attaching model classes to persistence units
+
+For each persistence unit, Hibernate Search will only consider indexed entities that are attached to that persistence unit.
+Entities are attached to a persistence unit by
+link:hibernate-orm#multiple-persistence-units-attaching-model-classes[configuring the Hibernate ORM extension].
+
+[[multiple-persistence-units-attaching-cdi]]
+=== CDI integration
+
+You can inject Hibernate Search's main entry points, `SearchSession` and `SearchMapping`, using CDI:
+
+[source,java]
+----
+@Inject
+SearchSession searchSession;
+----
+
+This will inject the `SearchSession` of the default persistence unit.
+
+To inject the `SearchSession` of a named persistence unit (`users` in our example),
+just add a qualifier:
+
+[source,java]
+----
+@Inject
+@PersistenceUnit("users") <1>
+SearchSession searchSession;
+----
+<1> This is the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation.
+
+You can inject the `SearchMapping` of a named persistence unit using the exact same mechanism:
+
+[source,java]
+----
+@Inject
+@PersistenceUnit("users")
+SearchMapping searchMapping;
+----
 
 == Building a native executable
 

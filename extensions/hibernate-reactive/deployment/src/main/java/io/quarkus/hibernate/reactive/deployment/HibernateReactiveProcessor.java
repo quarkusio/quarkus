@@ -157,18 +157,24 @@ public final class HibernateReactiveProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    PersistenceProviderSetUpBuildItem setUpPersistenceProviderAndWaitForVertxPool(
-            HibernateReactiveRecorder recorder,
-            List<VertxPoolBuildItem> vertxPool,
-            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+    void waitForVertxPool(List<VertxPoolBuildItem> vertxPool,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        recorder.initializePersistenceProvider(hibernateOrmRuntimeConfig);
+        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
+            // when HibernateORM starts its persistence units
+            runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_REACTIVE,
+                    puDescriptor.getPersistenceUnitName(), null));
+        }
+    }
 
-        // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
-        // when HibernateORM starts its persistence units
-        runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_REACTIVE));
-
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    PersistenceProviderSetUpBuildItem setUpPersistenceProviderAndWaitForVertxPool(HibernateReactiveRecorder recorder,
+            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems) {
+        recorder.initializePersistenceProvider(hibernateOrmRuntimeConfig,
+                HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectListeners(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();
     }
 

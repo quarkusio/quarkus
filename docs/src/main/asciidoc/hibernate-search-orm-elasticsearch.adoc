@@ -198,8 +198,6 @@ Just copy this content in the `LibraryResource` file created by the Maven `creat
 ----
 package org.acme.hibernate.search.elasticsearch;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -216,9 +214,6 @@ import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 @Path("/library")
 public class LibraryResource {
-
-    @Inject
-    EntityManager em;
 
     @PUT
     @Path("book")

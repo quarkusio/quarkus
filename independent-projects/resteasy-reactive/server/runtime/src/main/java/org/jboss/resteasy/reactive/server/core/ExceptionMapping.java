@@ -58,8 +58,7 @@ public class ExceptionMapping {
         } else {
             log.error("Request failed ", throwable);
         }
-        // FIXME: configurable? stack trace?
-        context.setResult(Response.serverError().build());
+        context.handleUnmappedException(throwable);
     }
 
     /**

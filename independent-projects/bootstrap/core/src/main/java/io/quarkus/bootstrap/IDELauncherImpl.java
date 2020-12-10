@@ -28,7 +28,8 @@ public class IDELauncherImpl {
                     .setBaseClassLoader(IDELauncherImpl.class.getClassLoader())
                     .setProjectRoot(projectRoot)
                     .setIsolateDeployment(true)
-                    .setMode(QuarkusBootstrap.Mode.DEV);
+                    .setMode(QuarkusBootstrap.Mode.DEV)
+                    .setTargetDirectory(projectRoot.getParent());
 
             if (BuildToolHelper.isGradleProject(projectRoot)) {
                 final QuarkusModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(projectRoot);
@@ -39,7 +40,8 @@ public class IDELauncherImpl {
                 Path launchingModulePath = QuarkusModelHelper.getClassPath(launchingModule);
                 // Gradle uses a different output directory for classes, we override the one used by the IDE
                 builder.setProjectRoot(launchingModulePath)
-                        .setApplicationRoot(launchingModulePath);
+                        .setApplicationRoot(launchingModulePath)
+                        .setTargetDirectory(launchingModule.getBuildDir().toPath());
 
                 for (WorkspaceModule additionalModule : quarkusModel.getWorkspace().getAllModules()) {
                     if (!additionalModule.getArtifactCoords().equals(launchingModule.getArtifactCoords())) {

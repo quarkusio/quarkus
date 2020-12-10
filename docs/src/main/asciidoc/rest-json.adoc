@@ -557,6 +557,19 @@ https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi
 and https://docs.jboss.org/resteasy/docs/4.5.6.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteHost--[`getRemoteHost()`]
 to solve this problem.
 
+== RESTEasy and REST Client interactions
+
+In Quarkus, the RESTEasy extension and link:rest-client[the REST Client extension] share the same infrastructure.
+One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+
+For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
+which might not be the desired behavior.
+
+However, you can change this default behavior and constrain a provider to:
+
+* only consider *server* calls by adding the `@ConstrainedTo(RuntimeType.SERVER)` annotation to your provider;
+* only consider *client* calls by adding the `@ConstrainedTo(RuntimeType.CLIENT)` annotation to your provider.
+
 == What's Different from Jakarta EE Development
 
 === No Need for `Application` Class

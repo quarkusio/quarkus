@@ -1,13 +1,13 @@
-package io.quarkus.it.mongodb.panache.reactive.person
+package io.quarkus.it.mongodb.panache.reactive.person.resources
 
 
 import io.quarkus.it.mongodb.panache.person.Person
 import io.quarkus.it.mongodb.panache.person.PersonName
+import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonRepository
 import io.quarkus.panache.common.Sort
 import io.smallrye.mutiny.Uni
 import java.net.URI
 import javax.inject.Inject
-import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
 import javax.ws.rs.GET
 import javax.ws.rs.PATCH
@@ -15,9 +15,7 @@ import javax.ws.rs.POST
 import javax.ws.rs.PUT
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
-import javax.ws.rs.Produces
 import javax.ws.rs.QueryParam
-import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 @Path("/reactive/persons/repository")

@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
+import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.META_INF_PANACHE_ARCHIVE_MARKER;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,7 +65,6 @@ public final class PanacheHibernateResourceProcessor {
     private static final DotName DOTNAME_ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
-    protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {

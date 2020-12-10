@@ -2,6 +2,8 @@ package io.quarkus.qute.deployment.typesafe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Collections;
+
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -22,6 +24,7 @@ public class ValidationSuccessTest {
                     .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
                             + "{@java.lang.Long age}"
                             + "{@java.lang.String surname}"
+                            + "{@java.util.Map<String,String map}"
                             // Property found
                             + "{movie.name} "
                             // Built-in value resolvers
@@ -39,7 +42,9 @@ public class ValidationSuccessTest {
                             // Varargs extension method
                             + "{movie.toLong(1l,2l)} "
                             // Field access
-                            + "{#each movie.mainCharacters}{it.substring(1)}{/}"),
+                            + "{#each movie.mainCharacters}{it.substring(1)}{/} "
+                            // Method param assignability
+                            + "{map.get('foo')}"),
                             "templates/movie.html"));
 
     @Inject
@@ -48,8 +53,9 @@ public class ValidationSuccessTest {
     @Test
     public void testResult() {
         // Validation succeeded! Yay!
-        assertEquals("Jason Jason Mono 1 10 11 ok 43 3 ohn",
-                movie.data("movie", new Movie("John")).data("name", "Vasik").data("surname", "Hu").data("age", 10l).render());
+        assertEquals("Jason Jason Mono 1 10 11 ok 43 3 ohn bar",
+                movie.data("movie", new Movie("John"), "name", "Vasik", "surname", "Hu", "age", 10l, "map",
+                        Collections.singletonMap("foo", "bar")).render());
     }
 
 }

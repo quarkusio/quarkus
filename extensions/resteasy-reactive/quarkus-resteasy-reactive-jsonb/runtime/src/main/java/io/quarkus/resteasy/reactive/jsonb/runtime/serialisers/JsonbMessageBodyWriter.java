@@ -46,13 +46,50 @@ public class JsonbMessageBodyWriter implements ServerMessageBodyWriter<Object> {
 
     @Override
     public void writeResponse(Object o, ServerRequestContext context) throws WebApplicationException, IOException {
-        try (OutputStream stream = context.getOrCreateOutputStream()) {
-            if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
-                stream.write(((String) o).getBytes());
-            } else {
-                json.toJson(o, stream);
-            }
+        OutputStream originalStream = context.getOrCreateOutputStream();
+        OutputStream stream = new NoopCloseAndFlushOutputStream(originalStream);
+        if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
+            stream.write(((String) o).getBytes());
+        } else {
+            json.toJson(o, stream);
+        }
+        // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
+        originalStream.close();
+    }
+
+    /**
+     * This class is needed because Yasson doesn't give us a way to control if the output stream is going to be closed or not
+     */
+    private static class NoopCloseAndFlushOutputStream extends OutputStream {
+        private final OutputStream delegate;
+
+        public NoopCloseAndFlushOutputStream(OutputStream delegate) {
+            this.delegate = delegate;
         }
 
+        @Override
+        public void flush() {
+
+        }
+
+        @Override
+        public void close() {
+
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            delegate.write(b);
+        }
+
+        @Override
+        public void write(byte[] b) throws IOException {
+            delegate.write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            delegate.write(b, off, len);
+        }
     }
 }

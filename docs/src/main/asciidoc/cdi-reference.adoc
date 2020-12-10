@@ -735,6 +735,55 @@ class SharedService {
 <2> `@Lock(Lock.Type.READ)` overrides the value specified at class level. It means that any number of clients can invoke the method concurrently, unless the bean instance is locked by `@Lock(Lock.Type.WRITE)`. 
 <3> You can also specify the "wait time". If it's not possible to acquire the lock in the given time a `LockException` is thrown.
 
+=== Repeatable interceptor bindings
+
+Quarkus has limited support for `@Repeatable` interceptor binding annotations.
+
+When binding an interceptor to a component, you can declare multiple `@Repeatable` annotations on methods.
+Repeatable interceptor bindings declared on classes and stereotypes are not supported, because there are some open questions around interactions with the Interceptors specification.
+This might be added in the future.
+
+As an example, suppose we have an interceptor that clears a cache.
+The corresponding interceptor binding would be called `@CacheInvalidateAll` and would be declared as `@Repeatable`.
+If we wanted to clear two caches at the same time, we would add `@CacheInvalidateAll` twice:
+
+[source,java]
+----
+@ApplicationScoped
+class CachingService {
+  @CacheInvalidateAll(cacheName = "foo")
+  @CacheInvalidateAll(cacheName = "bar")
+  void heavyComputation() {
+    // ...
+    // some computation that updates a lot of data
+    // and requires 2 caches to be invalidated
+    // ...
+  }
+}
+----
+
+This is how interceptors are used.
+What about creating an interceptor?
+
+When declaring interceptor bindings of an interceptor, you can add multiple `@Repeatable` annotations to the interceptor class as usual.
+This is useless when the annotation members are `@Nonbinding`, as would be the case for the `@Cached` annotation, but is important otherwise.
+
+For example, suppose we have an interceptor that can automatically log method invocations to certain targets.
+The interceptor binding annotation `@Logged` would have a member called `target`, which specifies where to store the log.
+Our implementation could be restricted to console logging and file logging:
+
+[source,java]
+----
+@Interceptor
+@Logged(target = "console")
+@Logged(target = "file")
+class NaiveLoggingInterceptor {
+  // ...
+}
+----
+
+Other interceptors could be provided to log method invocations to different targets.
+
 [[build_time_apis]]
 == Build Time Extensions
 

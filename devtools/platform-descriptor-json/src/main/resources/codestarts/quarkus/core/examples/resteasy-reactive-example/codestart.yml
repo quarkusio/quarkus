@@ -1,0 +1,19 @@
+name: resteasy-reactive-example
+ref: resteasy-reactive
+type: code
+tags: example
+language:
+  base:
+    data:
+      title: RESTEasy Reactive
+      description: |
+        <p>A Hello World RESTEasy Reactive resource</p>
+      resource:
+        class-name: ReactiveGreetingResource
+        path: "/hello-resteasy-reactive"
+        response: "Hello RESTEasy Reactive"
+      guide: https://quarkus.io/guides/rest-json
+    dependencies:
+      - io.quarkus:quarkus-resteasy-reactive
+    test-dependencies:
+      - io.rest-assured:rest-assured

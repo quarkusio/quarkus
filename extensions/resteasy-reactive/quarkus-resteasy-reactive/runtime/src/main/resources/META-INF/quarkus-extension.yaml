@@ -10,3 +10,4 @@ metadata:
   - "web"
   - "reactive"
   status: "experimental"
+  codestart: "resteasy-reactive"

@@ -19,7 +19,7 @@ public abstract class CacheInterceptor {
     protected CacheRepository cacheRepository;
 
     @SuppressWarnings("unchecked")
-    protected <T> List<T> getInterceptorBindings(InvocationContext context, Class<T> bindingClass) {
+    protected <T extends Annotation> List<T> getInterceptorBindings(InvocationContext context, Class<T> bindingClass) {
         List<T> bindings = new ArrayList<>();
         for (Annotation binding : InterceptorBindings.getInterceptorBindings(context)) {
             if (bindingClass.isInstance(binding)) {
@@ -29,12 +29,21 @@ public abstract class CacheInterceptor {
         return bindings;
     }
 
-    protected <T> T getInterceptorBinding(InvocationContext context, Class<T> bindingClass) {
+    protected <T extends Annotation> T getInterceptorBinding(InvocationContext context, Class<T> bindingClass) {
         return getInterceptorBindings(context, bindingClass).get(0);
     }
 
+    protected short[] getCacheKeyParameterPositions(InvocationContext context) {
+        List<CacheKeyParameterPositions> bindings = getInterceptorBindings(context, CacheKeyParameterPositions.class);
+        if (bindings.isEmpty()) {
+            return new short[0];
+        } else {
+            return bindings.get(0).value();
+        }
+    }
+
     protected Object getCacheKey(CaffeineCache cache, short[] cacheKeyParameterPositions, Object[] methodParameterValues) {
-        if (methodParameterValues.length == 0) {
+        if (methodParameterValues == null || methodParameterValues.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();
         } else if (cacheKeyParameterPositions.length == 1) {

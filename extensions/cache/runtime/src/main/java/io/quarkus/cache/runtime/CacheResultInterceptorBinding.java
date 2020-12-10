@@ -17,8 +17,5 @@ public @interface CacheResultInterceptorBinding {
     String cacheName() default "";
 
     @Nonbinding
-    short[] cacheKeyParameterPositions() default {};
-
-    @Nonbinding
     long lockTimeout() default 0;
 }

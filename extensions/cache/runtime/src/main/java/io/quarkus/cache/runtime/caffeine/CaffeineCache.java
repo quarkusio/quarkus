@@ -75,13 +75,13 @@ public class CaffeineCache {
                 cache.asMap().remove(key, newCacheValue);
                 newCacheValue.complete(new CaffeineComputationThrowable(t));
             }
-            return unwrapCacheValueOrThrowable(key, newCacheValue);
+            return unwrapCacheValueOrThrowable(newCacheValue);
         } else {
-            return unwrapCacheValueOrThrowable(key, existingCacheValue);
+            return unwrapCacheValueOrThrowable(existingCacheValue);
         }
     }
 
-    private CompletableFuture<Object> unwrapCacheValueOrThrowable(Object key, CompletableFuture<Object> cacheValue) {
+    private CompletableFuture<Object> unwrapCacheValueOrThrowable(CompletableFuture<Object> cacheValue) {
         return cacheValue.thenApply(new Function<Object, Object>() {
             @Override
             public Object apply(Object value) {

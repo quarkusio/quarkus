@@ -337,7 +337,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                             expectedExtensionDeps.put(currentNode.gact, currentNode);
                             extDepsTotal.incrementAndGet();
                         }
-                    } catch (IOException e) {
+                    } catch (Throwable e) {
                         throw new IllegalStateException("Failed to read " + f, e);
                     }
                 }

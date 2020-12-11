@@ -25,6 +25,7 @@ import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
@@ -66,6 +67,7 @@ public class AugmentActionImpl implements AugmentAction {
     private final CuratedApplication curatedApplication;
     private final LaunchMode launchMode;
     private final List<Consumer<BuildChainBuilder>> chainCustomizers;
+    private final List<ClassLoaderEventListener> classLoadListeners;
 
     /**
      * A map that is shared between all re-runs of the same augment instance. This is
@@ -75,13 +77,25 @@ public class AugmentActionImpl implements AugmentAction {
     private final Map<Class<?>, Object> reloadContext = new ConcurrentHashMap<>();
 
     public AugmentActionImpl(CuratedApplication curatedApplication) {
-        this(curatedApplication, Collections.emptyList());
+        this(curatedApplication, Collections.emptyList(), Collections.emptyList());
     }
 
+    /**
+     * Leaving this here for backwards compatibility, even though this is only internal.
+     * 
+     * @Deprecated use one of the other constructors
+     */
+    @Deprecated
     public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers) {
+        this(curatedApplication, chainCustomizers, Collections.emptyList());
+    }
+
+    public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers,
+            List<ClassLoaderEventListener> classLoadListeners) {
         this.quarkusBootstrap = curatedApplication.getQuarkusBootstrap();
         this.curatedApplication = curatedApplication;
         this.chainCustomizers = chainCustomizers;
+        this.classLoadListeners = classLoadListeners;
         this.launchMode = quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.PROD ? LaunchMode.NORMAL
                 : quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST ? LaunchMode.TEST : LaunchMode.DEVELOPMENT;
     }

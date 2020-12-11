@@ -344,7 +344,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                             }).produces(ApplicationClassPredicateBuildItem.class).build();
                         }
-                    }));
+                    }),
+                    Collections.emptyList());
             List<CodeGenData> codeGens = new ArrayList<>();
             QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
 

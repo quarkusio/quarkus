@@ -140,7 +140,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Enumeration<URL> getResources(String unsanitisedName) throws IOException {
-        classLoaderEventListeners.forEach(l -> l.enumeratingResourceURLs(unsanitisedName, this.name));
+        for (ClassLoaderEventListener l : classLoaderEventListeners) {
+            l.enumeratingResourceURLs(unsanitisedName, this.name);
+        }
         boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         ClassLoaderState state = getState();
         String name = sanitizeName(unsanitisedName);
@@ -271,7 +273,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public URL getResource(String unsanitisedName) {
-        classLoaderEventListeners.forEach(l -> l.gettingURLFromResource(unsanitisedName, this.name));
+        for (ClassLoaderEventListener l : classLoaderEventListeners) {
+            l.gettingURLFromResource(unsanitisedName, this.name);
+        }
         boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         String name = sanitizeName(unsanitisedName);
         ClassLoaderState state = getState();
@@ -312,7 +316,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public InputStream getResourceAsStream(String unsanitisedName) {
-        classLoaderEventListeners.forEach(l -> l.openResourceStream(unsanitisedName, this.name));
+        for (ClassLoaderEventListener l : classLoaderEventListeners) {
+            l.openResourceStream(unsanitisedName, this.name);
+        }
         String name = sanitizeName(unsanitisedName);
         ClassLoaderState state = getState();
         if (state.bannedResources.contains(name)) {
@@ -365,13 +371,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        classLoaderEventListeners.forEach(l -> l.loadClass(name, this.name));
+        for (ClassLoaderEventListener l : classLoaderEventListeners) {
+            l.loadClass(name, this.name);
+        }
         return loadClass(name, false);
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        classLoaderEventListeners.forEach(l -> l.loadClass(name, this.name));
+        for (ClassLoaderEventListener l : classLoaderEventListeners) {
+            l.loadClass(name, this.name);
+        }
         if (name.startsWith(JAVA)) {
             return parent.loadClass(name);
         }

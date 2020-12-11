@@ -159,7 +159,7 @@
         <awaitility.version>4.0.3</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.6</jboss-logmanager.version>
-        <jgit.version>5.8.0.202006091008-r</jgit.version>
+        <jgit.version>5.9.0.202009080501-r</jgit.version>
         <flyway.version>7.3.1</flyway.version>
         <yasson.version>1.0.8</yasson.version>
         <liquibase.version>4.2.2</liquibase.version>

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -39,6 +40,8 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     private static final Set<String> EXCLUDED = Sets.newHashSet(
             "azure-functions-http-example", "commandmode-example");
 
+    private static final Set<String> RUN_ALONE = Sets.newHashSet("resteasy-reactive-example");
+
     @BeforeAll
     static void setUp() throws IOException {
         ProjectTestUtil.delete(testDirPath.toFile());
@@ -52,46 +55,56 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
         return QuarkusCodestartGenerationTest.getTestInputData(getPlatformDescriptor(), override);
     }
 
-    private Stream<Arguments> provideGenerateCombinations() throws IOException {
-        final List<Codestart> examples = getCatalog().getCodestarts().stream()
-                .filter(QuarkusCodestartCatalog::isExample)
-                .filter(c -> !EXCLUDED.contains(c.getName()))
-                .collect(Collectors.toList());
-        final List<List<String>> runAlone = examples.stream()
-                .filter(c -> c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()))
-                .map(Codestart::getName)
-                .map(Collections::singletonList)
-                .collect(Collectors.toList());
-        final List<String> runTogether = examples.stream()
-                .filter(c -> !c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()))
-                .map(Codestart::getName)
-                .collect(Collectors.toList());
-        return Stream.of("java", "kotlin", "scala")
-                .flatMap(l -> Stream.concat(Stream.of(runTogether), Stream.of(runAlone.toArray()))
-                        .map(c -> Arguments.of(l, c)));
+    @Test
+    public void testRunTogetherCodestartsJava() throws Exception {
+        generateProjectRunTests("maven", "java", getRunTogetherExamples(), Collections.emptyMap());
+    }
+
+    @Test
+    public void testRunTogetherCodestartsKotlin() throws Exception {
+        generateProjectRunTests("maven", "kotlin", getRunTogetherExamples(), Collections.emptyMap());
+    }
+
+    @Test
+    public void testRunTogetherCodestartsScala() throws Exception {
+        generateProjectRunTests("maven", "scala", getRunTogetherExamples(), Collections.emptyMap());
     }
 
     @ParameterizedTest
-    @MethodSource("provideGenerateCombinations")
-    public void generateMavenProjectRun(String language, List<String> codestarts) throws Exception {
-        generateProjectRunTests("maven", language, codestarts, Collections.emptyMap());
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideGenerateCombinations")
-    public void generateGradleProjectRun(String language, List<String> codestarts) throws Exception {
+    @MethodSource("provideLanguages")
+    public void testGradle(String language) throws Exception {
+        final List<String> codestarts = getRunTogetherExamples();
         generateProjectRunTests("gradle", language, codestarts, Collections.emptyMap());
     }
 
     @ParameterizedTest
-    @MethodSource("provideGenerateCombinations")
-    public void generateGradleKotlinProjectRun(String language, List<String> codestarts) throws Exception {
+    @MethodSource("provideLanguages")
+    public void testGradleKotlinDSL(String language) throws Exception {
+        final List<String> codestarts = getRunTogetherExamples();
         generateProjectRunTests("gradle-kotlin-dsl", language, codestarts, Collections.emptyMap());
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRunAloneExamples")
+    public void testRunAloneCodestartsJava(String codestart) throws Exception {
+        generateProjectRunTests("maven", "java", singletonList(codestart), Collections.emptyMap());
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRunAloneExamples")
+    public void testRunAloneCodestartsKotlin(String codestart) throws Exception {
+        generateProjectRunTests("maven", "kotlin", singletonList(codestart), Collections.emptyMap());
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRunAloneExamples")
+    public void testRunAloneCodestartsScala(String codestart) throws Exception {
+        generateProjectRunTests("maven", "scala", singletonList(codestart), Collections.emptyMap());
     }
 
     @Test
     public void generateAzureFunctionsHttpExampleProjectRun() throws Exception {
-        generateProjectRunTests("maven", "java", Collections.singletonList("azure-functions-http-example"),
+        generateProjectRunTests("maven", "java", singletonList("azure-functions-http-example"),
                 Collections.emptyMap());
     }
 
@@ -103,7 +116,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
         data.put(DataKey.RESTEASY_EXAMPLE_RESOURCE_PATH.getKey(), "/andy");
         final String buildTool = "maven";
         final String language = "java";
-        final List<String> codestarts = Collections.singletonList("resteasy-example");
+        final List<String> codestarts = singletonList("resteasy-example");
         generateProjectRunTests(buildTool, language, codestarts, data,
                 genName(buildTool, language, codestarts) + "-customized");
     }
@@ -116,7 +129,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
         data.put(DataKey.SPRING_WEB_EXAMPLE_RESOURCE_PATH.getKey(), "/springweb");
         final String buildTool = "maven";
         final String language = "java";
-        final List<String> codestarts = Collections.singletonList("spring-web-example");
+        final List<String> codestarts = singletonList("spring-web-example");
         generateProjectRunTests(buildTool, language, codestarts, data,
                 genName(buildTool, language, codestarts) + "-customized");
     }
@@ -175,5 +188,34 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {
         return QuarkusCodestartCatalog.fromQuarkusPlatformDescriptor(getPlatformDescriptor());
+    }
+
+    private List<String> getRunTogetherExamples() throws IOException {
+        return getAllExamples()
+                .filter(c -> !isRunAloneExample(c))
+                .map(Codestart::getName)
+                .collect(Collectors.toList());
+    }
+
+    private Stream<Arguments> provideRunAloneExamples() throws IOException {
+        return getAllExamples()
+                .filter(this::isRunAloneExample)
+                .map(Codestart::getName)
+                .map(Arguments::of);
+    }
+
+    private Stream<Arguments> provideLanguages() {
+        return Stream.of("java", "kotlin", "scala")
+                .map(Arguments::of);
+    }
+
+    private Stream<Codestart> getAllExamples() throws IOException {
+        return getCatalog().getCodestarts().stream()
+                .filter(QuarkusCodestartCatalog::isExample)
+                .filter(c -> !EXCLUDED.contains(c.getName()));
+    }
+
+    private boolean isRunAloneExample(Codestart c) {
+        return c.containsTag(Tag.SINGLETON_EXAMPLE.getKey()) || RUN_ALONE.contains(c.getName());
     }
 }

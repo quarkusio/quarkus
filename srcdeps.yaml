@@ -10,3 +10,11 @@ repositories:
     buildVersionPattern: .*-SNAPSHOT
     buildRef: branch-4.6.0-SNAPSHOT-config-patched
     skipTests: true
+  io.smallrye.jwt:
+    includes:
+      - io.smallrye:smallrye-jwt*
+    urls:
+      - git:https://github.com/smallrye/smallrye-jwt
+    buildVersionPattern: .*-SNAPSHOT
+    buildRef: branch-mpjwt12
+    skipTests: true

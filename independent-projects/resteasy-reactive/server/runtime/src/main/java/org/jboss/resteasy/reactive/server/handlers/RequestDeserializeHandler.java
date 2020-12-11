@@ -13,6 +13,7 @@ import javax.ws.rs.core.NoContentException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.jaxrs.ReaderInterceptorContextImpl;
@@ -20,6 +21,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class RequestDeserializeHandler implements ServerRestHandler {
+
+    private static final Logger log = Logger.getLogger(RequestDeserializeHandler.class);
 
     private final Class<?> type;
     private final MediaType mediaType;
@@ -68,6 +71,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                         throw new BadRequestException(e);
                     }
                 } catch (Exception e) {
+                    log.debug("Error occurred during deserialization of input", e);
                     requestContext.resume(e);
                     return;
                 }

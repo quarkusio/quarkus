@@ -8,7 +8,6 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.AsyncExceptionMapperContext;
 
-import io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMapper;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -18,7 +17,7 @@ import io.smallrye.mutiny.Uni;
  */
 public final class AsyncExceptionMappingUtil {
 
-    private static final Logger log = Logger.getLogger(NotFoundExceptionMapper.class);
+    private static final Logger log = Logger.getLogger(AsyncExceptionMappingUtil.class);
 
     private static final Response DEFAULT_RESPONSE = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
             .entity("Internal Server Error").build();

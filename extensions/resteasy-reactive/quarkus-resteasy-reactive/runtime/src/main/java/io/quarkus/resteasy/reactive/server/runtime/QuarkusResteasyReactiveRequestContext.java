@@ -57,4 +57,18 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         return new ResteasyReactiveSecurityContext(context);
     }
 
+    @Override
+    protected void handleUnrecoverableError(Throwable throwable) {
+        context.fail(throwable);
+        super.handleUnrecoverableError(throwable);
+    }
+
+    @Override
+    public void handleUnmappedException(Throwable throwable) {
+        throw sneakyThrow(throwable);
+    }
+
+    private <E extends Throwable> RuntimeException sneakyThrow(Throwable e) throws E {
+        throw (E) e;
+    }
 }

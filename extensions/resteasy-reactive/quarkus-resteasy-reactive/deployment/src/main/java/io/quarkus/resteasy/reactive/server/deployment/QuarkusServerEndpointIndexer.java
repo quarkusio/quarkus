@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.server.deployment;
 
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -91,13 +92,15 @@ public class QuarkusServerEndpointIndexer
             ClassInfo type = indexView.getClassByName(DotName.createSimple(elementType));
             if (type != null) {
                 for (MethodInfo i : type.methods()) {
-                    if (i.parameters().size() == 1) {
+                    boolean isStatic = ((i.flags() & Modifier.STATIC) != 0);
+                    boolean isNotPrivate = (i.flags() & Modifier.PRIVATE) == 0;
+                    if ((i.parameters().size() == 1) && isNotPrivate) {
                         if (i.parameters().get(0).name().equals(STRING)) {
                             if (i.name().equals("<init>")) {
                                 stringCtor = i;
-                            } else if (i.name().equals("valueOf")) {
+                            } else if (i.name().equals("valueOf") && isStatic) {
                                 valueOf = MethodDescriptor.of(i);
-                            } else if (i.name().equals("fromString")) {
+                            } else if (i.name().equals("fromString") && isStatic) {
                                 fromString = MethodDescriptor.of(i);
                             }
                         }

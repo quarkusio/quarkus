@@ -543,6 +543,54 @@ the heroes:
 
 <1> Here receive the films as a batch, allowing you to fetch the corresponding heroes.
 
+=== Reactive
+
+Queries can be made reactive by using `Uni`, or `CompletionStage` as a return type, for example:
+
+[source,java]
+----
+    @Query
+    @Description("Get a Films from a galaxy far far away")
+    public Uni<Film> getFilm(@Name("filmId") int id) {
+        // ...
+    }
+----
+
+NOTE: Due to the underlying library, graphql-java, `Uni` is creating a `CompletionStage` under the hood.
+
+Or you can use `CompletionStage`:
+
+[source,java]
+----
+    @Query
+    @Description("Get a Films from a galaxy far far away")
+    public CompletionStage<Film> getFilm(@Name("filmId") int id) {
+        // ...
+    }
+----
+ 
+Using `Uni` or `CompletionStage` means that when a request contains more than one query, they will be executed concurrently.
+
+For instance, the query below will fetch `film0` and `film1` concurrently:
+
+[source, graphql]
+----
+query getFilms {
+  film0: film(filmId: 0) {
+    title
+    director
+    releaseDate
+    episodeID
+  }
+  film1: film(filmId: 1) {
+    title
+    director
+    releaseDate
+    episodeID
+  }
+}
+----
+
 == Mutations
 
 Mutations are used when data is created, updated or deleted.

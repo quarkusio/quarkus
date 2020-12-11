@@ -68,7 +68,7 @@ public class MicroProfileHealthEnabledTest {
     private void checkHealthOk() {
         // @formatter:off
         when()
-                .get("/health")
+                .get("/q/health")
         .then()
                 .statusCode(200)
                 .body("checks[0].name", Matchers.equalTo("gRPC Server"))

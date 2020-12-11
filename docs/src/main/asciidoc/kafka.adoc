@@ -384,7 +384,7 @@ The new `Emitter.send` method returns a `CompletionStage` completed when the pro
 If you are using the `quarkus-smallrye-health` extension, `quarkus-kafka` can add a readiness health check
 to validate the connection to the broker. This is disabled by default.
 
-If enabled, when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+If enabled, when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be enabled by setting the `quarkus.kafka.health.enabled` property to `true` in your `application.properties`.
 

@@ -70,7 +70,7 @@ public class DevModeMetricsTest {
         when().get("/getvalue/mycounter").then().body(equalTo("2"));
 
         // jax-rs metrics are disabled
-        when().get("/metrics").then()
+        when().get("/q/metrics").then()
                 .body(not(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource")));
 
         // trigger a reload by adding a new metric (mycounter2)
@@ -95,7 +95,7 @@ public class DevModeMetricsTest {
         when().get("/getvalue/mycounter2").then().body(equalTo("1"));
 
         // jax-rs metrics are enabled
-        when().get("/metrics").then()
+        when().get("/q/metrics").then()
                 .body(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource"));
 
         // disable jax-rs metrics via quarkus.resteasy.metrics.enabled
@@ -111,7 +111,7 @@ public class DevModeMetricsTest {
                 .statusCode(204);
 
         // jax-rs metrics are disabled
-        when().get("/metrics").then()
+        when().get("/q/metrics").then()
                 .body(not(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource")));
 
         // enable jax-rs metrics via quarkus.resteasy.metrics.enabled
@@ -123,7 +123,7 @@ public class DevModeMetricsTest {
                 .statusCode(204);
 
         // jax-rs metrics are enabled
-        when().get("/metrics").then()
+        when().get("/q/metrics").then()
                 .body(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource"));
 
     }

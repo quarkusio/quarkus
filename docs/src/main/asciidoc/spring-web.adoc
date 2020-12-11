@@ -221,7 +221,7 @@ This is enough to generate a basic OpenAPI schema document from your REST Endpoi
 
 [source,bash]
 ----
-curl http://localhost:8080/openapi
+curl http://localhost:8080/q/openapi
 ----
 
 You will see the generated OpenAPI schema document:
@@ -371,7 +371,7 @@ components:
 Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally added to `Prod` mode.
 See link:https://quarkus.io/guides/openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
 
-Navigate to link:http://localhost:8080/swagger-ui/[localhost:8080/swagger-ui/] and you will see the Swagger UI screen:
+Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
 
 image:spring-web-guide-screenshot01.png[alt=Swagger UI]
 

@@ -1146,12 +1146,12 @@ If you are using the `quarkus-smallrye-health` extension, `quarkus-kafka-streams
 * a readiness health check to validate that all topics declared in the `quarkus.kafka-streams.topics` property are created,
 * a liveness health check based on the Kafka Streams state.
 
-So when you access the `/health` endpoint of your application you will have information about the state of the Kafka Streams and the available and/or missing topics.
+So when you access the `/q/health` endpoint of your application you will have information about the state of the Kafka Streams and the available and/or missing topics.
 
 This is an example of when the status is `DOWN`:
 [source, subs=attributes+]
 ----
-curl -i http://aggregator:8080/health
+curl -i http://aggregator:8080/q/health
 
 HTTP/1.1 503 Service Unavailable
 content-type: application/json; charset=UTF-8
@@ -1178,8 +1178,8 @@ content-length: 454
     ]
 }
 ----
-<1> Liveness health check. Also available at `/health/live` endpoint.
-<2> Readiness health check. Also available at `/health/ready` endpoint.
+<1> Liveness health check. Also available at `/q/health/live` endpoint.
+<2> Readiness health check. Also available at `/q/health/ready` endpoint.
 
 So as you can see, the status is `DOWN` as soon as one of the `quarkus.kafka-streams.topics` is missing or the Kafka Streams `state` is not `RUNNING`.
 
@@ -1188,7 +1188,7 @@ As well as if no topics are missing, the `missing_topics` key will not be presen
 
 You can of course disable the health check of the `quarkus-kafka-streams` extension by setting the `quarkus.kafka-streams.health.enabled` property to `false` in your `application.properties`.
 
-Obviously you can create your liveness and readiness probes based on the respective endpoints `/health/live` and `/health/ready`.
+Obviously you can create your liveness and readiness probes based on the respective endpoints `/q/health/live` and `/q/health/ready`.
 
 === Liveness health check
 
@@ -1196,7 +1196,7 @@ Here is an example of the liveness check:
 
 [source]
 ----
-curl -i http://aggregator:8080/health/live
+curl -i http://aggregator:8080/q/health/live
 
 HTTP/1.1 503 Service Unavailable
 content-type: application/json; charset=UTF-8
@@ -1223,7 +1223,7 @@ Here is an example of the readiness check:
 
 [source]
 ----
-curl -i http://aggregator:8080/health/ready
+curl -i http://aggregator:8080/q/health/ready
 
 HTTP/1.1 503 Service Unavailable
 content-type: application/json; charset=UTF-8

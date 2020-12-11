@@ -38,7 +38,7 @@ public class KafkaStreamsStartupFailureTest {
     @Timeout(5)
     public void testShutdownBeforeKStreamsStarted() throws Exception {
         assertEquals(State.CREATED, kafkaStreams.state());
-        RestAssured.get("/health/ready").then()
+        RestAssured.get("/q/health/ready").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
                 .body("checks[0].status", CoreMatchers.is("DOWN"))

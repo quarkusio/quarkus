@@ -29,7 +29,7 @@ public class FunctionTest {
     @Test
     public void testSwagger() {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
-        req.setUri(URI.create("https://foo.com/swagger-ui/"));
+        req.setUri(URI.create("https://foo.com/q/swagger-ui/"));
         req.setHttpMethod(HttpMethod.GET);
 
         // Invoke

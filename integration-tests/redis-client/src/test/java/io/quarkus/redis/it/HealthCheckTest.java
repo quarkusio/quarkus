@@ -15,7 +15,7 @@ import io.restassured.http.ContentType;
 public class HealthCheckTest {
     @Test
     public void testHealthCheck() {
-        RestAssured.when().get("/health").then()
+        RestAssured.when().get("/q/health").then()
                 .contentType(ContentType.JSON)
                 .header("Content-Type", containsString("charset=UTF-8"))
                 .body("status", is("UP"),

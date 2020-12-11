@@ -95,7 +95,7 @@ class PrometheusMetricsRegistryTest {
     @Order(10)
     void testPrometheusScrapeEndpoint() {
         given()
-                .when().get("/metrics")
+                .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
 

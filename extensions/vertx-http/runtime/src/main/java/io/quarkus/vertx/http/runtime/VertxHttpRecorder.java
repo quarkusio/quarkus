@@ -250,6 +250,11 @@ public class VertxHttpRecorder {
         }
     }
 
+    public void mountFrameworkRouter(RuntimeValue<Router> mainRouter, RuntimeValue<Router> frameworkRouter,
+            String frameworkPath) {
+        mainRouter.getValue().mountSubRouter(frameworkPath, frameworkRouter.getValue());
+    }
+
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig,
@@ -790,6 +795,30 @@ public class VertxHttpRecorder {
             vr.failureHandler(requestHandler);
         } else {
             vr.handler(requestHandler);
+        }
+    }
+
+    public void addNonApplicationPathRedirect(RuntimeValue<Router> mainRouter, RuntimeValue<Router> nonApplicationRouter,
+            String nonApplicationPath) {
+        List<Route> allRoutes = nonApplicationRouter.getValue().getRoutes();
+
+        Handler<RoutingContext> handler = new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext context) {
+                String absoluteURI = context.request().absoluteURI();
+                int pathStart = absoluteURI.indexOf(context.request().path());
+                String redirectTo = absoluteURI.substring(0, pathStart) + nonApplicationPath
+                        + absoluteURI.substring(pathStart);
+
+                context.response()
+                        .setStatusCode(HttpResponseStatus.MOVED_PERMANENTLY.code())
+                        .putHeader(HttpHeaderNames.LOCATION, redirectTo)
+                        .end();
+            }
+        };
+
+        for (Route route : allRoutes) {
+            addRoute(mainRouter, router -> router.route(route.getPath()), handler, HandlerType.NORMAL);
         }
     }
 

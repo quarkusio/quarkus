@@ -108,7 +108,7 @@ public class PolicyEnforcerTest {
     @Test
     public void testHealthCheck() {
         RestAssured.given()
-                .when().get("/health/live")
+                .when().get("/q/health/live")
                 .then()
                 .statusCode(200);
     }

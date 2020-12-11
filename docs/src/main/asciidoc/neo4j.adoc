@@ -395,7 +395,7 @@ Depending on your system, that will take some time.
 If you are using the `quarkus-smallrye-health` extension, `quarkus-neo4j` will automatically add a readiness health check
 to validate the connection to Neo4j.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be disabled by setting the `quarkus.neo4j.health.enabled` property to `false` in your `application.properties`.
 

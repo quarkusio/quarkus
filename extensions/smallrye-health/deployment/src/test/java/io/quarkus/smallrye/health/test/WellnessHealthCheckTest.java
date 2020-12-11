@@ -27,7 +27,7 @@ public class WellnessHealthCheckTest {
     public void testWellness() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            when().get("/health/well").then()
+            when().get("/q/health/well").then()
                     .body("status", is("UP"),
                             "checks.status", contains("UP"),
                             "checks.name", contains(WellnessHC.class.getName()));

@@ -406,7 +406,7 @@ AgroalDataSource inventoryDataSource;
 If you are using the `quarkus-smallrye-health` extension, the `quarkus-agroal` and reactive client extensions will automatically add a readiness health check
 to validate the datasource.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the datasource validation status.
+When you access the `/q/health/ready` endpoint of your application you will have information about the datasource validation status.
 If you have multiple datasources, all datasources will be checked and the status will be `DOWN` as soon as there is one datasource validation failure.
 
 This behavior can be disabled via the property `quarkus.datasource.health.enabled`.
@@ -414,13 +414,13 @@ This behavior can be disabled via the property `quarkus.datasource.health.enable
 == Datasource Metrics
 
 If you are using the `quarkus-micrometer` or `quarkus-smallrye-metrics` extension, `quarkus-agroal` can expose some data source metrics on the
-`/metrics` endpoint. This can be turned on by setting the property `quarkus.datasource.metrics.enabled` to true.
+`/q/metrics` endpoint. This can be turned on by setting the property `quarkus.datasource.metrics.enabled` to true.
 
 For the exposed metrics to contain any actual values, it is necessary that metric collection is enabled internally
 by Agroal mechanisms. By default, this metric collection mechanism gets turned on for all data sources if a metrics extension
 is present and metrics for the Agroal extension are enabled. If you want to disable metrics for a particular data source,
 this can be done by setting `quarkus.datasource.jdbc.enable-metrics` to `false` (or `quarkus.datasource.<datasource name>.jdbc.enable-metrics` for a named datasource).
-This disables collecting the metrics as well as exposing them in the `/metrics` endpoint,
+This disables collecting the metrics as well as exposing them in the `/q/metrics` endpoint,
 because it does not make sense to expose metrics if the mechanism to collect them is disabled.
 
 Conversely, setting `quarkus.datasource.jdbc.enable-metrics` to `true` (or `quarkus.datasource.<datasource name>.jdbc.enable-metrics` for a named datasource) explicitly can be used to enable collection of metrics even if

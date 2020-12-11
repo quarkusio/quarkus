@@ -18,6 +18,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <systemPropertyVariables>
+                        <!-- Change metrics endpoint to be /metrics -->
+                        <quarkus.http.non-application-root-path>/</quarkus.http.non-application-root-path>
+                    </systemPropertyVariables>
                     <suiteXmlFiles>
                         <suiteXmlFile>tck-suite.xml</suiteXmlFile>
                     </suiteXmlFiles>

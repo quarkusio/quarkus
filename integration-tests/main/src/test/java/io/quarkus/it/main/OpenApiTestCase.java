@@ -22,7 +22,7 @@ public class OpenApiTestCase {
 
     private static final String DEFAULT_MEDIA_TYPE = "application/json";
 
-    @TestHTTPResource("openapi")
+    @TestHTTPResource("q/openapi")
     URL uri;
 
     @Test

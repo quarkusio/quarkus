@@ -22,7 +22,7 @@ import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.swaggerui.runtime.SwaggerUiRuntimeConfig;
-import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.smallrye.openapi.ui.IndexCreator;
@@ -52,7 +52,7 @@ public class SwaggerUiProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer,
             BuildProducer<SwaggerUiBuildItem> swaggerUiBuildProducer,
-            HttpRootPathBuildItem httpRootPathBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode,
@@ -65,7 +65,7 @@ public class SwaggerUiProcessor {
                         "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
             }
 
-            String openApiPath = httpRootPathBuildItem.adjustPath(openapi.path);
+            String openApiPath = nonApplicationRootPathBuildItem.adjustPath(openapi.path);
             AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, SWAGGER_UI_WEBJAR_GROUP_ID,
                     SWAGGER_UI_WEBJAR_ARTIFACT_ID);
 
@@ -75,7 +75,7 @@ public class SwaggerUiProcessor {
                 WebJarUtil.updateFile(tempPath.resolve("index.html"), generateIndexHtml(openApiPath, swaggerUiConfig));
 
                 swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(tempPath.toAbsolutePath().toString(),
-                        httpRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
+                        nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
                 displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(swaggerUiConfig.path + "/"));
             } else {
                 Map<String, byte[]> files = WebJarUtil.production(curateOutcomeBuildItem, artifact, SWAGGER_UI_WEBJAR_PREFIX);
@@ -96,7 +96,7 @@ public class SwaggerUiProcessor {
                     }
                 }
                 swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(SWAGGER_UI_FINAL_DESTINATION,
-                        httpRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
+                        nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
             }
         }
     }
@@ -115,8 +115,18 @@ public class SwaggerUiProcessor {
                     finalDestinationBuildItem.getSwaggerUiPath(),
                     runtimeConfig);
 
-            routes.produce(new RouteBuildItem(swaggerUiConfig.path, handler));
-            routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*", handler));
+            routes.produce(
+                    new RouteBuildItem.Builder()
+                            .route(swaggerUiConfig.path)
+                            .handler(handler)
+                            .nonApplicationRoute()
+                            .build());
+            routes.produce(
+                    new RouteBuildItem.Builder()
+                            .route(swaggerUiConfig.path + "/*")
+                            .handler(handler)
+                            .nonApplicationRoute()
+                            .build());
         }
     }
 

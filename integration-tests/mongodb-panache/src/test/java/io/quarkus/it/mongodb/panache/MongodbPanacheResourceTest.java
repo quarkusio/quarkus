@@ -334,7 +334,7 @@ class MongodbPanacheResourceTest {
 
         // Test prometheus metrics gathered using micrometer metrics
         RestAssured.given()
-                .when().get("/metrics")
+                .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
                 .body(CoreMatchers.containsString("mongodb_driver_pool_checkedout"))

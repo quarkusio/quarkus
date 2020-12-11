@@ -391,7 +391,7 @@ If you're interested in it, you can read the link:hibernate-search-orm-elasticse
 If you are using the `quarkus-smallrye-health` extension, both the extension will automatically add a readiness health check
 to validate the health of the cluster.
 
-So when you access the `/health/ready` endpoint of your application you will have information about the cluster status.
+So when you access the `/q/health/ready` endpoint of your application you will have information about the cluster status.
 It uses the cluster health endpoint, the check will be down if the status of the cluster is **red**, or the cluster is not available.
 
 This behavior can be disabled by setting the `quarkus.elasticsearch.health.enabled` property to `false` in your `application.properties`.

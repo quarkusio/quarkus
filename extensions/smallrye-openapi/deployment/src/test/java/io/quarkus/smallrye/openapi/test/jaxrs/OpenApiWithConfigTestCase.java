@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class OpenApiWithConfigTestCase {
-    private static final String OPEN_API_PATH = "/openapi";
+    private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()

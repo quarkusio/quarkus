@@ -24,7 +24,7 @@ public class VaultTest {
 
     @Test
     public void testHealthCheck() {
-        RestAssured.when().get("/health/ready").then()
+        RestAssured.when().get("/q/health/ready").then()
                 .assertThat()
                 .body("status", equalTo("UP"))
                 .body("checks.size()", is(2));

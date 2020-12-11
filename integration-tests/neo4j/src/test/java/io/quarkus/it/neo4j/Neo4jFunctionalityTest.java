@@ -47,7 +47,7 @@ public class Neo4jFunctionalityTest {
 
     @Test
     public void health() {
-        RestAssured.when().get("/health/ready").then()
+        RestAssured.when().get("/q/health/ready").then()
                 .log().all()
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
@@ -68,7 +68,7 @@ public class Neo4jFunctionalityTest {
     private void assertMetricValue(String name, Matcher<Integer> valueMatcher) {
         RestAssured
                 .given().accept(ContentType.JSON)
-                .when().get("/metrics/vendor/" + name)
+                .when().get("/q/metrics/vendor/" + name)
                 .then()
                 .body("'" + name + "'", valueMatcher);
     }

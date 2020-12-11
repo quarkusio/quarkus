@@ -37,7 +37,7 @@ public class AmazonLambdaSimpleTestCase {
     @Test
     public void testSwaggerUi() throws Exception {
         // this tests the FileRegion support in the handler
-        AwsProxyRequest request = request("/swagger-ui/");
+        AwsProxyRequest request = request("/q/swagger-ui/");
         AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
         Assertions.assertTrue(body(out).contains("Swagger UI"));

@@ -64,14 +64,14 @@ public class KnativeWithHealthTest {
                                 });
                                 assertThat(c.getReadinessProbe()).isNotNull().satisfies(p -> {
                                     assertThat(p.getInitialDelaySeconds()).isEqualTo(0);
-                                    assertProbePath(p, "/health/ready");
+                                    assertProbePath(p, "/q/health/ready");
 
                                     assertNotNull(p.getHttpGet());
                                     assertNull(p.getHttpGet().getPort());
                                 });
                                 assertThat(c.getLivenessProbe()).isNotNull().satisfies(p -> {
                                     assertThat(p.getInitialDelaySeconds()).isEqualTo(20);
-                                    assertProbePath(p, "/health/live");
+                                    assertProbePath(p, "/q/health/live");
 
                                     assertNotNull(p.getHttpGet());
                                     assertNull(p.getHttpGet().getPort());

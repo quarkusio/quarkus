@@ -8,12 +8,15 @@ import org.jboss.jandex.DotName;
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.runtime.CacheKeyParameterPositions;
+import io.quarkus.cache.runtime.CacheProducer;
 
 public class CacheDeploymentConstants {
 
     // API annotations names.
+    public static final DotName CACHE_NAME = dotName(CacheName.class);
     public static final DotName CACHE_INVALIDATE_ALL = dotName(CacheInvalidateAll.class);
     public static final DotName CACHE_INVALIDATE_ALL_LIST = dotName(CacheInvalidateAll.List.class);
     public static final DotName CACHE_INVALIDATE = dotName(CacheInvalidate.class);
@@ -24,8 +27,8 @@ public class CacheDeploymentConstants {
             CACHE_RESULT, CACHE_INVALIDATE, CACHE_INVALIDATE_ALL);
     public static final List<DotName> API_METHODS_ANNOTATIONS_LISTS = Arrays.asList(
             CACHE_INVALIDATE_LIST, CACHE_INVALIDATE_ALL_LIST);
-    public static final DotName CACHE_KEY_PARAMETER_POSITIONS = DotName
-            .createSimple(CacheKeyParameterPositions.class.getName());
+    public static final DotName CACHE_KEY_PARAMETER_POSITIONS = dotName(CacheKeyParameterPositions.class);
+    public static final DotName CACHE_PRODUCER = dotName(CacheProducer.class);
 
     // Annotations parameters.
     public static final String CACHE_NAME_PARAM = "cacheName";

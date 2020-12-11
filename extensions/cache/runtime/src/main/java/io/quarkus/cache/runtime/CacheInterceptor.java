@@ -9,14 +9,14 @@ import javax.interceptor.Interceptor.Priority;
 import javax.interceptor.InvocationContext;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
-import io.quarkus.cache.runtime.caffeine.CaffeineCache;
+import io.quarkus.cache.CacheManager;
 
 public abstract class CacheInterceptor {
 
     public static final int BASE_PRIORITY = Priority.PLATFORM_BEFORE;
 
     @Inject
-    protected CacheRepository cacheRepository;
+    CacheManager cacheManager;
 
     @SuppressWarnings("unchecked")
     protected <T extends Annotation> List<T> getInterceptorBindings(InvocationContext context, Class<T> bindingClass) {
@@ -42,7 +42,7 @@ public abstract class CacheInterceptor {
         }
     }
 
-    protected Object getCacheKey(CaffeineCache cache, short[] cacheKeyParameterPositions, Object[] methodParameterValues) {
+    protected Object getCacheKey(AbstractCache cache, short[] cacheKeyParameterPositions, Object[] methodParameterValues) {
         if (methodParameterValues == null || methodParameterValues.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();

@@ -18,8 +18,7 @@ updates:
       - dependency-name: org.flywaydb:flyway-core
       - dependency-name: org.liquibase:liquibase-core
       - dependency-name: org.freemarker:freemarker
-      - dependency-name: org.eclipse.jgit:org.eclipse.jgit
-      - dependency-name: org.eclipse.jgit:org.eclipse.jgit.http.server
+      - dependency-name: org.eclipse.jgit:*
       - dependency-name: io.fabric8:kubernetes-client-bom
       - dependency-name: org.apache.httpcomponents:httpclient
       - dependency-name: org.apache.httpcomponents:httpasyncclient

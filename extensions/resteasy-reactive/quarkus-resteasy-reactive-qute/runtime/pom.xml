@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-reactive-qute</artifactId>
     <name>Quarkus - RESTEasy Reactive - Qute - Runtime</name>
-    <description>Qute Templating integration for Quarkus RESTEasy Reactive</description>
+    <description>Qute integration for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
 
     <dependencies>
         <dependency>

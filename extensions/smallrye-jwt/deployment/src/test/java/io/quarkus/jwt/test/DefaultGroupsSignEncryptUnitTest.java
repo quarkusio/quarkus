@@ -33,7 +33,7 @@ public class DefaultGroupsSignEncryptUnitTest {
 
     @BeforeEach
     public void generateToken() throws Exception {
-        token = Jwt.issuer("https://server.example.com").innerSign()
+        token = Jwt.issuer("https://server.example.com").upn("upn").innerSign()
                 .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP)
                 .encrypt();
     }

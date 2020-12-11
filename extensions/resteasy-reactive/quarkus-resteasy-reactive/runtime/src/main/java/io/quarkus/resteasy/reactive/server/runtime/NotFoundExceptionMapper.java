@@ -24,16 +24,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Context;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Variant;
-import javax.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
@@ -44,9 +44,8 @@ import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
-public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
+public class NotFoundExceptionMapper {
 
-    protected static final String META_INF_RESOURCES_SLASH = "META-INF/resources/";
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     private final static Variant JSON_VARIANT = new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null);
@@ -61,9 +60,6 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private volatile static List<RouteDescription> reactiveRoutes = Collections.emptyList();
 
     private static final Logger LOG = Logger.getLogger(NotFoundExceptionMapper.class);
-
-    @Context
-    private HttpHeaders headers;
 
     public static void setHttpRoot(String rootPath) {
         httpRoot = rootPath;
@@ -84,15 +80,15 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         }
     }
 
-    @Override
-    public Response toResponse(NotFoundException exception) {
+    @ServerExceptionMapper(value = NotFoundException.class, priority = Priorities.USER + 1)
+    public Response toResponse(HttpHeaders headers) {
         if ((classMappers == null) || classMappers.isEmpty()) {
-            return respond();
+            return respond(headers);
         }
-        return respond(ResourceDescription.fromClassMappers(classMappers));
+        return respond(ResourceDescription.fromClassMappers(classMappers), headers);
     }
 
-    private Response respond() {
+    private Response respond(HttpHeaders headers) {
         Variant variant = selectVariant(headers);
 
         if (variant == JSON_VARIANT) {
@@ -107,7 +103,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         return Response.status(Status.NOT_FOUND).build();
     }
 
-    private Response respond(List<ResourceDescription> descriptions) {
+    private Response respond(List<ResourceDescription> descriptions, HttpHeaders headers) {
         Variant variant = selectVariant(headers);
 
         if (variant == JSON_VARIANT) {

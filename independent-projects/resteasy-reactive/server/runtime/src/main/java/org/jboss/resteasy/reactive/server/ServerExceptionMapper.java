@@ -4,6 +4,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
@@ -45,4 +46,9 @@ import javax.ws.rs.core.UriInfo;
 public @interface ServerExceptionMapper {
 
     Class<? extends Throwable>[] value() default {};
+
+    /**
+     * The priority with which the exception mapper will be executed
+     */
+    int priority() default Priorities.USER;
 }

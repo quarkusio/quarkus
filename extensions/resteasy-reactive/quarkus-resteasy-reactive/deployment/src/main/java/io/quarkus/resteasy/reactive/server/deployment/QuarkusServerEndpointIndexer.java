@@ -118,7 +118,11 @@ public class QuarkusServerEndpointIndexer
         String baseName;
         ParameterConverterSupplier delegate;
         if (stringCtor != null || valueOf != null || fromString != null) {
-            baseName = prefix + elementType + "$quarkusrestparamConverter$";
+            String effectivePrefix = prefix + elementType;
+            if (effectivePrefix.startsWith("java")) {
+                effectivePrefix = effectivePrefix.replace("java", "javaq"); // generated classes can't start with the java package
+            }
+            baseName = effectivePrefix + "$quarkusrestparamConverter$";
             try (ClassCreator classCreator = new ClassCreator(
                     new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
                     Object.class.getName(), ParameterConverter.class.getName())) {

@@ -395,4 +395,10 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/simple/simplifiedResourceInfo")
                 .then().statusCode(200).body(Matchers.containsString("SimpleQuarkusRestResource#simplifiedResourceInfo-1"));
     }
+
+    @Test
+    public void bigDecimal() {
+        RestAssured.get("/simple/bigDecimal/1.0")
+                .then().statusCode(200).body(Matchers.equalTo("1.0"));
+    }
 }

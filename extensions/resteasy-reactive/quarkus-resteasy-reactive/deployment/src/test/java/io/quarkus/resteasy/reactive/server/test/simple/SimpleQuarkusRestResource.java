@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -336,5 +337,12 @@ public class SimpleQuarkusRestResource {
     public String simplifiedResourceInfo(@Context SimpleResourceInfo simplifiedResourceInfo) {
         return simplifiedResourceInfo.getResourceClass().getName() + "#" + simplifiedResourceInfo.getMethodName() + "-"
                 + simplifiedResourceInfo.parameterTypes().length;
+    }
+
+    @GET
+    @Path("bigDecimal/{val}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String bigDecimalConverter(BigDecimal val) {
+        return val.toString();
     }
 }

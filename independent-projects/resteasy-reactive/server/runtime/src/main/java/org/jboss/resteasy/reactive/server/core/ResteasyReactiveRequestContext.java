@@ -617,38 +617,46 @@ public abstract class ResteasyReactiveRequestContext
             //already saved
             return;
         }
-        URITemplate classPath = target.getClassPath();
-        if (classPath != null) {
-            //this is not great, but the alternative is to do path based matching on every request
-            //given that this method is likely to be called very infrequently it is better to have a small
-            //cost here than a cost applied to every request
-            int pos = classPath.stem.length();
-            String path = getPathWithoutPrefix();
-            //we already know that this template matches, we just need to find the matched bit
-            for (int i = 1; i < classPath.components.length; ++i) {
-                URITemplate.TemplateComponent segment = classPath.components[i];
-                if (segment.type == URITemplate.Type.LITERAL) {
-                    pos += segment.literalText.length();
-                } else if (segment.type == URITemplate.Type.DEFAULT_REGEX) {
-                    for (; pos < path.length(); ++pos) {
-                        if (path.charAt(pos) == '/') {
-                            --pos;
-                            break;
+        if (target != null) {
+            URITemplate classPath = target.getClassPath();
+            if (classPath != null) {
+                //this is not great, but the alternative is to do path based matching on every request
+                //given that this method is likely to be called very infrequently it is better to have a small
+                //cost here than a cost applied to every request
+                int pos = classPath.stem.length();
+                String path = getPathWithoutPrefix();
+                //we already know that this template matches, we just need to find the matched bit
+                for (int i = 1; i < classPath.components.length; ++i) {
+                    URITemplate.TemplateComponent segment = classPath.components[i];
+                    if (segment.type == URITemplate.Type.LITERAL) {
+                        pos += segment.literalText.length();
+                    } else if (segment.type == URITemplate.Type.DEFAULT_REGEX) {
+                        for (; pos < path.length(); ++pos) {
+                            if (path.charAt(pos) == '/') {
+                                --pos;
+                                break;
+                            }
+                        }
+                    } else {
+                        Matcher matcher = segment.pattern.matcher(path);
+                        if (matcher.find(pos) && matcher.start() == pos) {
+                            pos = matcher.end();
                         }
                     }
-                } else {
-                    Matcher matcher = segment.pattern.matcher(path);
-                    if (matcher.find(pos) && matcher.start() == pos) {
-                        pos = matcher.end();
-                    }
                 }
+                matchedURIs.add(new UriMatch(path.substring(1, pos), null, null));
             }
-            matchedURIs.add(new UriMatch(path.substring(1, pos), null, null));
         }
         // FIXME: this may be better as context.normalisedPath() or getPath()
+        // TODO: does this entry make sense when target is null ?
         String path = serverRequest().getRequestPath();
-        matchedURIs.add(0, new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
-                target, endpointInstance));
+        if (path.equals(remaining)) {
+            matchedURIs.add(0, new UriMatch(path.substring(1), target, endpointInstance));
+        } else {
+            matchedURIs.add(0, new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
+                    target, endpointInstance));
+        }
+
     }
 
     public List<UriMatch> getMatchedURIs() {

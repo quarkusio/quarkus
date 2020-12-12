@@ -61,6 +61,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.SseEventSink;
@@ -255,6 +256,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (!hasProperModifiers(info)) {
                         continue;
                     }
+                    validateHttpAnnotations(info);
                     String descriptor = methodDescriptor(info);
                     if (seenMethods.contains(descriptor)) {
                         continue;
@@ -321,6 +323,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         return ret;
+    }
+
+    private void validateHttpAnnotations(MethodInfo info) {
+        List<AnnotationInstance> annotationInstances = info.annotations();
+        Set<DotName> allMethodAnnotations = new HashSet<>(annotationInstances.size());
+        for (AnnotationInstance instance : annotationInstances) {
+            allMethodAnnotations.add(instance.name());
+        }
+        int httpAnnotationCount = 0;
+        for (DotName dotName : allMethodAnnotations) {
+            if (httpAnnotationToMethod.containsKey(dotName)) {
+                httpAnnotationCount++;
+            }
+            if (httpAnnotationCount > 1) {
+                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                        + "' contains multiple HTTP method annotations.");
+            }
+        }
     }
 
     private boolean hasProperModifiers(MethodInfo info) {

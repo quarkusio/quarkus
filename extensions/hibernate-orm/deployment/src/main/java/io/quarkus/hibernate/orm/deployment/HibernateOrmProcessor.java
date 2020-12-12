@@ -603,6 +603,8 @@ public final class HibernateOrmProcessor {
         if (hibernateOrmConfig.log.bindParam || hibernateOrmConfig.log.bindParameters) {
             categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
         }
+
+        categories.produce(new LogCategoryBuildItem("org.hibernate.engine.jdbc.spi.SqlExceptionHelper", Level.OFF));
     }
 
     @BuildStep(onlyIf = NativeBuild.class)

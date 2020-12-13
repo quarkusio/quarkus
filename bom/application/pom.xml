@@ -26,6 +26,7 @@
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
+        <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.0.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.0.1-alpha</opentelemetry-alpha.version>
         <jaeger.version>0.34.3</jaeger.version>
@@ -2829,6 +2830,11 @@
                 <groupId>io.opentracing.contrib</groupId>
                 <artifactId>opentracing-kafka-client</artifactId>
                 <version>${opentracing-kafka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.opentracing.contrib</groupId>
+                <artifactId>opentracing-mongo-common</artifactId>
+                <version>${opentracing-mongo.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rest-assured</groupId>

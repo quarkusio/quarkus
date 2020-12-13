@@ -45,7 +45,6 @@ import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseContainerProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
-import liquibase.change.Change;
 import liquibase.change.core.LoadDataChange;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.ChangeSet;
@@ -137,7 +136,10 @@ class LiquibaseProcessor {
                 liquibase.sqlgenerator.SqlGenerator.class,
                 liquibase.structure.DatabaseObject.class,
                 liquibase.hub.HubService.class)
-                .forEach(t -> addService(services, reflective, t));
+                .forEach(t -> addService(services, reflective, t, false));
+
+        // Register Precondition services, and the implementation class for reflection while also registering fields for reflection
+        addService(services, reflective, liquibase.precondition.Precondition.class, true);
 
         // liquibase XSD
         resource.produce(new NativeImageResourceBuildItem(
@@ -162,14 +164,16 @@ class LiquibaseProcessor {
     }
 
     private void addService(BuildProducer<ServiceProviderBuildItem> services,
-            BuildProducer<ReflectiveClassBuildItem> reflective, Class<?> serviceClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflective, Class<?> serviceClass,
+            boolean shouldRegisterFieldForReflection) {
         try {
             String service = "META-INF/services/" + serviceClass.getName();
             Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                     service);
             services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
 
-            reflective.produce(new ReflectiveClassBuildItem(true, true, false, implementations.toArray(new String[0])));
+            reflective.produce(new ReflectiveClassBuildItem(true, true, shouldRegisterFieldForReflection,
+                    implementations.toArray(new String[0])));
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
         }

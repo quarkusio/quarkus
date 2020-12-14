@@ -191,10 +191,11 @@ public class ServerEndpointIndexer
 
     protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
             Type paramType, ServerIndexedParameter parameterResult, String name, String defaultValue, ParameterType type,
-            String elementType, boolean single) {
+            String elementType, boolean single, String signature) {
         ParameterConverterSupplier converter = parameterResult.getConverter();
         return new ServerMethodParameter(name,
-                elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index), type, single,
+                elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index),
+                type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), encoded);
     }
 

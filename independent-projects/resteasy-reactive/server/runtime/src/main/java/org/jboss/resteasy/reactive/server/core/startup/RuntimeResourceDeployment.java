@@ -138,10 +138,6 @@ public class RuntimeResourceDeployment {
 
         handlers.addAll(interceptorDeployment.setupRequestFilterHandler());
 
-        Class<?>[] parameterTypes = new Class[method.getParameters().length];
-        for (int i = 0; i < method.getParameters().length; ++i) {
-            parameterTypes[i] = loadClass(method.getParameters()[i].declaredType);
-        }
         // some parameters need the body to be read
         MethodParameter[] parameters = method.getParameters();
         // body can only be in a parameter
@@ -165,7 +161,13 @@ public class RuntimeResourceDeployment {
         }
         // if we need the body, let's deserialise it
         if (bodyParameter != null) {
-            handlers.add(new RequestDeserializeHandler(loadClass(bodyParameter.type),
+            Class<Object> typeClass = loadClass(bodyParameter.type);
+            Type genericType = typeClass;
+            if ((bodyParameter.declaredType != null) && !bodyParameter.type.equals(bodyParameter.declaredType)) {
+                // we only need to parse the signature and create generic type when the declared type differs from the type
+                genericType = TypeSignatureParser.parse(bodyParameter.signature);
+            }
+            handlers.add(new RequestDeserializeHandler(typeClass, genericType,
                     consumesMediaTypes.isEmpty() ? null : consumesMediaTypes.get(0), serialisers, bodyParameterIndex));
         }
 
@@ -183,8 +185,12 @@ public class RuntimeResourceDeployment {
         }
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
+        Class<?>[] parameterClasses = new Class[method.getParameters().length];
+        for (int i = 0; i < method.getParameters().length; ++i) {
+            parameterClasses[i] = loadClass(method.getParameters()[i].declaredType);
+        }
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterTypes, method.getMethodAnnotationNames());
+                parameterClasses, method.getMethodAnnotationNames());
 
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
@@ -330,7 +336,7 @@ public class RuntimeResourceDeployment {
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
-                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterTypes,
+                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterClasses,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
                 pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());

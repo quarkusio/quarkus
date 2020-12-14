@@ -380,6 +380,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean sse = false;
             boolean formParamRequired = false;
             boolean hasBodyParam = false;
+            TypeArgMapper typeArgMapper = new TypeArgMapper(info.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 boolean encoded = anns.containsKey(ResteasyReactiveDotNames.ENCODED);
@@ -406,7 +407,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     defaultValue = "0";
                 }
                 methodParameters[i] = createMethodParameter(currentClassInfo, actualEndpointInfo, encoded, paramType,
-                        parameterResult, name, defaultValue, type, elementType, single);
+                        parameterResult, name, defaultValue, type, elementType, single,
+                        AsmUtil.getSignature(paramType, typeArgMapper));
 
                 if (type == ParameterType.BEAN) {
                     // transform the bean param
@@ -443,6 +445,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     blocking = true;
                 }
             }
+
             ResourceMethod method = createResourceMethod()
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
@@ -458,42 +461,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setParameters(methodParameters)
                     .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?
-                    .setReturnType(AsmUtil.getSignature(info.returnType(), new Function<String, String>() {
-                        @Override
-                        public String apply(String v) {
-                            //we attempt to resolve type variables
-                            ClassInfo declarer = info.declaringClass();
-                            int pos = -1;
-                            for (;;) {
-                                if (declarer == null) {
-                                    return null;
-                                }
-                                List<TypeVariable> typeParameters = declarer.typeParameters();
-                                for (int i = 0; i < typeParameters.size(); i++) {
-                                    TypeVariable tv = typeParameters.get(i);
-                                    if (tv.identifier().equals(v)) {
-                                        pos = i;
-                                    }
-                                }
-                                if (pos != -1) {
-                                    break;
-                                }
-                                declarer = index.getClassByName(declarer.superName());
-                            }
-                            Type type = JandexUtil
-                                    .resolveTypeParameters(info.declaringClass().name(), declarer.name(), index)
-                                    .get(pos);
-                            if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
-                                List<Type> bounds = type.asTypeVariable().bounds();
-                                if (bounds.isEmpty()) {
-                                    return "Ljava/lang/Object;";
-                                }
-                                return AsmUtil.getSignature(bounds.get(0), this);
-                            } else {
-                                return AsmUtil.getSignature(type, this);
-                            }
-                        }
-                    }));
+                    .setReturnType(AsmUtil.getSignature(info.returnType(), typeArgMapper));
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, info);
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(new AbstractMap.SimpleEntry<>(info, method));
@@ -517,7 +485,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected abstract MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
-            ParameterType type, String elementType, boolean single);
+            ParameterType type, String elementType, boolean single, String signature);
 
     private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
         if (produces != null && produces.length != 0)
@@ -981,5 +949,50 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         public abstract T build();
+    }
+
+    private static class TypeArgMapper implements Function<String, String> {
+        private final ClassInfo declaringClass;
+        private final IndexView index;
+
+        public TypeArgMapper(ClassInfo declaringClass, IndexView index) {
+            this.declaringClass = declaringClass;
+            this.index = index;
+        }
+
+        @Override
+        public String apply(String v) {
+            //we attempt to resolve type variables
+            ClassInfo declarer = declaringClass;
+            int pos = -1;
+            for (;;) {
+                if (declarer == null) {
+                    return null;
+                }
+                List<TypeVariable> typeParameters = declarer.typeParameters();
+                for (int i = 0; i < typeParameters.size(); i++) {
+                    TypeVariable tv = typeParameters.get(i);
+                    if (tv.identifier().equals(v)) {
+                        pos = i;
+                    }
+                }
+                if (pos != -1) {
+                    break;
+                }
+                declarer = index.getClassByName(declarer.superName());
+            }
+            Type type = JandexUtil
+                    .resolveTypeParameters(declaringClass.name(), declarer.name(), index)
+                    .get(pos);
+            if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
+                List<Type> bounds = type.asTypeVariable().bounds();
+                if (bounds.isEmpty()) {
+                    return "Ljava/lang/Object;";
+                }
+                return AsmUtil.getSignature(bounds.get(0), this);
+            } else {
+                return AsmUtil.getSignature(type, this);
+            }
+        }
     }
 }

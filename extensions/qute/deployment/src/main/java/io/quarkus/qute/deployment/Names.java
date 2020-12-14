@@ -17,6 +17,7 @@ import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.qute.i18n.MessageParam;
+import io.smallrye.mutiny.Uni;
 
 final class Names {
 
@@ -35,6 +36,7 @@ final class Names {
     static final DotName CHECKED_TEMPLATE = DotName.createSimple(CheckedTemplate.class.getName());
     static final DotName TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
+    static final DotName UNI = DotName.createSimple(Uni.class.getName());
 
     private Names() {
     }

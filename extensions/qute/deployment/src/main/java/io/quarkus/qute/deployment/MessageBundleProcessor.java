@@ -352,7 +352,7 @@ public class MessageBundleProcessor {
             if (!expressions.isEmpty()) {
 
                 // Map implicit class -> set of used members
-                Map<ClassInfo, Set<String>> implicitClassToMembersUsed = new HashMap<>();
+                Map<DotName, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
                 for (Entry<TemplateAnalysis, Set<Expression>> exprEntry : expressions.entrySet()) {
 
@@ -407,13 +407,13 @@ public class MessageBundleProcessor {
                                             incorrectExpressions, expression, index, implicitClassToMembersUsed,
                                             templateIdToPathFun, generatedIdsToMatches);
                                     Match match = results.get(param.toOriginalString());
-                                    if (match != null && !Types.isAssignableFrom(match.type,
+                                    if (match != null && !Types.isAssignableFrom(match.type(),
                                             methodParams.get(idx), index)) {
                                         incorrectExpressions
                                                 .produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                                                         "Message bundle method " + method.declaringClass().name() + "#" +
                                                                 method.name() + "() parameter [" + method.parameterName(idx)
-                                                                + "] does not match the type: " + match.type,
+                                                                + "] does not match the type: " + match.type(),
                                                         expression.getOrigin()));
                                     }
                                 }
@@ -423,9 +423,12 @@ public class MessageBundleProcessor {
                     }
                 }
 
-                for (Entry<ClassInfo, Set<String>> e : implicitClassToMembersUsed.entrySet()) {
-                    implicitClasses.produce(new ImplicitValueResolverBuildItem(e.getKey(),
-                            new TemplateDataBuilder().addIgnore(QuteProcessor.buildIgnorePattern(e.getValue())).build()));
+                for (Entry<DotName, Set<String>> e : implicitClassToMembersUsed.entrySet()) {
+                    ClassInfo clazz = index.getClassByName(e.getKey());
+                    if (clazz != null) {
+                        implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz,
+                                new TemplateDataBuilder().addIgnore(QuteProcessor.buildIgnorePattern(e.getValue())).build()));
+                    }
                 }
             }
         }

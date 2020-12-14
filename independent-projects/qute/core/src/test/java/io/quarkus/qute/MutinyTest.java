@@ -55,6 +55,15 @@ public class MutinyTest {
         assertEquals(IllegalStateException.class, synchronizer.poll(2, TimeUnit.SECONDS).getClass());
     }
 
+    @Test
+    public void testUniResolution() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        Template template = engine.parse("{foo.toLowerCase}::{#each items}{count}.{it}{#if hasNext},{/if}{/each}");
+        Uni<Object> fooUni = Uni.createFrom().item("FOO");
+        Uni<List<String>> itemsUni = Uni.createFrom().item(() -> Arrays.asList("foo", "bar", "baz"));
+        assertEquals("foo::1.foo,2.bar,3.baz", template.data("foo", fooUni, "items", itemsUni).render());
+    }
+
     private void assertMulti(Multi<String> multi, String expected) throws InterruptedException {
         StringBuilder builder = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);

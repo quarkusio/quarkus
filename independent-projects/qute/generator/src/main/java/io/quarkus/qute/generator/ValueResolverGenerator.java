@@ -890,12 +890,17 @@ public class ValueResolverGenerator {
 
     public static boolean hasCompletionStageInTypeClosure(ClassInfo classInfo,
             IndexView index) {
+        return hasClassInTypeClosure(classInfo, COMPLETION_STAGE, index);
+    }
+
+    public static boolean hasClassInTypeClosure(ClassInfo classInfo, DotName className,
+            IndexView index) {
 
         if (classInfo == null) {
             // TODO cannot perform analysis
             return false;
         }
-        if (classInfo.name().equals(COMPLETION_STAGE)) {
+        if (classInfo.name().equals(className)) {
             return true;
         }
         // Interfaces
@@ -908,7 +913,7 @@ public class ValueResolverGenerator {
         // Superclass
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = index.getClassByName(classInfo.superName());
-            if (superClassInfo != null && hasCompletionStageInTypeClosure(superClassInfo, index)) {
+            if (superClassInfo != null && hasClassInTypeClosure(superClassInfo, className, index)) {
                 return true;
             }
         }

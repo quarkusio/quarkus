@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.ExpressionImpl.PartImpl;
 import io.quarkus.qute.Results.Result;
+import io.smallrye.mutiny.Uni;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -39,7 +40,7 @@ class EvaluatorImpl implements Evaluator {
                 if (parts.hasNext()) {
                     return resolveReference(false, r, parts, resolutionContext);
                 } else {
-                    return CompletableFuture.completedFuture(r);
+                    return toCompletionStage(r);
                 }
             });
         } else {
@@ -80,7 +81,6 @@ class EvaluatorImpl implements Evaluator {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private CompletionStage<Object> resolve(EvalContextImpl evalContext, Iterator<ValueResolver> resolvers,
             boolean tryCachedResolver) {
 
@@ -92,11 +92,7 @@ class EvaluatorImpl implements Evaluator {
                     if (Result.NOT_FOUND.equals(r)) {
                         return resolve(evalContext, resolvers, false);
                     } else {
-                        if (r instanceof CompletionStage) {
-                            // If the result is a completion stage return it as is
-                            return (CompletionStage<Object>) r;
-                        }
-                        return CompletableFuture.completedFuture(r);
+                        return toCompletionStage(r);
                     }
                 });
             }
@@ -123,17 +119,25 @@ class EvaluatorImpl implements Evaluator {
                 } else {
                     // Cache the first resolver where a result is found
                     ((PartImpl) evalContext.part).setCachedResolver(resolver);
-                    if (r instanceof CompletionStage) {
-                        // If the result is a completion stage return it as is
-                        return (CompletionStage<Object>) r;
-                    }
-                    return CompletableFuture.completedFuture(r);
+                    return toCompletionStage(r);
                 }
             });
         } else {
             // Try the next resolver
             return resolve(evalContext, resolvers, false);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private CompletionStage<Object> toCompletionStage(Object result) {
+        if (result instanceof CompletionStage) {
+            // If the result is a completion stage return it as is
+            return (CompletionStage<Object>) result;
+        } else if (result instanceof Uni) {
+            // Subscribe to the Uni
+            return ((Uni<Object>) result).subscribeAsCompletionStage();
+        }
+        return CompletableFuture.completedFuture(result);
     }
 
     static class EvalContextImpl implements EvalContext {

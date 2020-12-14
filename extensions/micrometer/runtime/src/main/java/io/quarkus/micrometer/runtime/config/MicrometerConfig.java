@@ -91,6 +91,8 @@ public final class MicrometerConfig {
     /** Build / static runtime config for binders */
     @ConfigGroup
     public static class BinderConfig {
+        public HttpClientConfig httpClient;
+
         /**
          * Micrometer JVM metrics support.
          * <p>

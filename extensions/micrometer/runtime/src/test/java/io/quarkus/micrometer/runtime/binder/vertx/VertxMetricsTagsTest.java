@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.micrometer.core.instrument.Tag;
+import io.quarkus.micrometer.runtime.binder.HttpTags;
 import io.vertx.core.http.HttpServerResponse;
 
 /**
@@ -118,25 +119,25 @@ public class VertxMetricsTagsTest {
 
     @Test
     public void testStatus() {
-        Assertions.assertEquals(Tag.of("status", "200"), VertxMetricsTags.status(200));
-        Assertions.assertEquals(Tag.of("status", "301"), VertxMetricsTags.status(301));
-        Assertions.assertEquals(Tag.of("status", "304"), VertxMetricsTags.status(304));
-        Assertions.assertEquals(Tag.of("status", "404"), VertxMetricsTags.status(404));
+        Assertions.assertEquals(Tag.of("status", "200"), HttpTags.status(200));
+        Assertions.assertEquals(Tag.of("status", "301"), HttpTags.status(301));
+        Assertions.assertEquals(Tag.of("status", "304"), HttpTags.status(304));
+        Assertions.assertEquals(Tag.of("status", "404"), HttpTags.status(404));
     }
 
     @Test
     public void testUriRedirect() {
-        Assertions.assertEquals(VertxMetricsTags.URI_REDIRECTION, VertxMetricsTags.uri("/moved", 301));
-        Assertions.assertEquals(VertxMetricsTags.URI_REDIRECTION, VertxMetricsTags.uri("/moved", 302));
-        Assertions.assertEquals(VertxMetricsTags.URI_REDIRECTION, VertxMetricsTags.uri("/moved", 304));
+        Assertions.assertEquals(HttpTags.URI_REDIRECTION, HttpTags.uri("/moved", 301));
+        Assertions.assertEquals(HttpTags.URI_REDIRECTION, HttpTags.uri("/moved", 302));
+        Assertions.assertEquals(HttpTags.URI_REDIRECTION, HttpTags.uri("/moved", 304));
     }
 
     @Test
     public void testUriDefaults() {
-        Assertions.assertEquals(VertxMetricsTags.URI_ROOT, VertxMetricsTags.uri("/", 200));
-        Assertions.assertEquals(Tag.of("uri", "/known/ok"), VertxMetricsTags.uri("/known/ok", 200));
-        Assertions.assertEquals(VertxMetricsTags.URI_NOT_FOUND, VertxMetricsTags.uri("/invalid", 404));
-        Assertions.assertEquals(Tag.of("uri", "/known/bad/request"), VertxMetricsTags.uri("/known/bad/request", 400));
-        Assertions.assertEquals(Tag.of("uri", "/known/server/error"), VertxMetricsTags.uri("/known/server/error", 500));
+        Assertions.assertEquals(HttpTags.URI_ROOT, HttpTags.uri("/", 200));
+        Assertions.assertEquals(Tag.of("uri", "/known/ok"), HttpTags.uri("/known/ok", 200));
+        Assertions.assertEquals(HttpTags.URI_NOT_FOUND, HttpTags.uri("/invalid", 404));
+        Assertions.assertEquals(Tag.of("uri", "/known/bad/request"), HttpTags.uri("/known/bad/request", 400));
+        Assertions.assertEquals(Tag.of("uri", "/known/server/error"), HttpTags.uri("/known/server/error", 500));
     }
 }

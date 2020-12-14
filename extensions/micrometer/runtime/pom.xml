@@ -65,6 +65,13 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
             <optional>true</optional>
         </dependency>

@@ -161,9 +161,9 @@ public class RuntimeResourceDeployment {
         }
         // if we need the body, let's deserialise it
         if (bodyParameter != null) {
-            Class<Object> typeClass = loadClass(bodyParameter.type);
+            Class<Object> typeClass = loadClass(bodyParameter.declaredType);
             Type genericType = typeClass;
-            if ((bodyParameter.declaredType != null) && !bodyParameter.type.equals(bodyParameter.declaredType)) {
+            if (!bodyParameter.type.equals(bodyParameter.declaredType)) {
                 // we only need to parse the signature and create generic type when the declared type differs from the type
                 genericType = TypeSignatureParser.parse(bodyParameter.signature);
             }

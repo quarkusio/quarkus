@@ -1,6 +1,8 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.processor;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
@@ -32,6 +34,11 @@ public class ResteasyReactiveJsonbProcessor {
                 .setUnremovable().build());
 
         additionalReaders.produce(new MessageBodyReaderBuildItem(JsonbMessageBodyReader.class.getName(), Object.class.getName(),
+                Collections.singletonList(MediaType.APPLICATION_JSON)));
+        additionalReaders
+                .produce(new MessageBodyReaderBuildItem(JsonbMessageBodyReader.class.getName(), Collection.class.getName(),
+                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+        additionalReaders.produce(new MessageBodyReaderBuildItem(JsonbMessageBodyReader.class.getName(), Map.class.getName(),
                 Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters.produce(new MessageBodyWriterBuildItem(JsonbMessageBodyWriter.class.getName(), Object.class.getName(),
                 Collections.singletonList(MediaType.APPLICATION_JSON)));

@@ -57,6 +57,15 @@ public class SimpleJsonResource {
     }
 
     @POST
+    @Path("/strings")
+    public List<String> strings(List<String> strings) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return strings;
+    }
+
+    @POST
     @Path("/person-large")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)

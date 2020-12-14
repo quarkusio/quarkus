@@ -135,7 +135,7 @@ jobs:
       - name: Stop mysql
         shell: bash
         run: |
-          netstat -ln
+          ss -ln
           sudo service mysql stop || true
 
       - uses: actions/checkout@v2

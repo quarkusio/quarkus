@@ -551,6 +551,25 @@ To generate debug symbols,
 add `-Dquarkus.native.debug.enabled=true` flag when generating the native executable.
 You will find the debug symbols for the native executable in a `.debug` file next to the native executable.
 
+[NOTE]
+====
+The generation of the `.debug` file depends on `objcopy`.
+On common Linux distributions and macOS you will need to install the `binutils` package:
+
+[source,bash]
+----
+# dnf (rpm-based)
+sudo dnf install binutils
+# Debian-based distributions
+sudo apt-get install binutils
+# macOS
+brew install binutils
+export PATH=/usr/local/opt/binutils/bin:$PATH
+----
+
+When `objcopy` is not available debug symbols are embedded in the executable.
+====
+
 Aside from debug symbols,
 setting `-Dquarkus.native.debug.enabled=true` flag generates a cache of source files
 for any JDK runtime classes, GraalVM classes and application classes resolved during native executable generation.
@@ -564,7 +583,32 @@ To include those, make sure you invoke `mvn dependency:sources` first.
 This step is required in order to pull the sources for these dependencies,
 and get them included in the source cache.
 
-The location of source cache is `target/{project.name}-{project.version}-native-image-source-jar/sources` folder.
+The source cache is located in the `target/sources` folder.
+
+[TIP]
+====
+If running `gdb` from a different directory than `target`, then the sources can be loaded by running:
+
+[source,shell]
+----
+directory path/to/target
+----
+
+in the `gdb` prompt.
+
+Or start `gdb` with:
+
+[source,shell]
+----
+gdb -ex 'directory path/to/target' path/to/target/{project.name}-{project.version}-runner
+----
+
+e.g.,
+[source,shell]
+----
+gdb -ex 'directory ./target' ./target/getting-started-1.0-SNAPSHOT-runner
+----
+====
 
 [[configuration-reference]]
 == Configuring the Native Executable

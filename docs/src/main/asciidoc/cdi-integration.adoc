@@ -511,7 +511,7 @@ The built-in keys located in `io.quarkus.arc.processor.BuildExtension.Key` are:
 ANNOTATION_STORE:: Contains an `AnnotationStore` that keeps information about all `AnnotationTarget` annotations after application of annotation transformers
 INJECTION_POINTS:: `Collection<InjectionPointInfo>` containing all injection points
 BEANS:: `Collection<BeanInfo>` containing all beans
-REMOVED_BEANS:: `Collection<BeanInfo>` containing all the removed beans; see <<remove_unused_beans>> for more information
+REMOVED_BEANS:: `Collection<BeanInfo>` containing all the removed beans; see <<cdi-reference.adoc#remove_unused_beans,Removing unused beans>> for more information
 OBSERVERS:: `Collection<ObserverInfo>` containing all observers
 SCOPES:: `Collection<ScopeInfo>` containing all scopes, including custom ones
 QUALIFIERS:: `Map<DotName, ClassInfo>` containing all qualifiers

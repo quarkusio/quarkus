@@ -12,8 +12,8 @@ import io.smallrye.common.annotation.Blocking;
 
 @ApplicationScoped
 public class BeanReturningPayloadsUsingSmallRyeBlocking {
-    private AtomicInteger count = new AtomicInteger();
-    private List<String> threads = new CopyOnWriteArrayList<>();
+    private final AtomicInteger count = new AtomicInteger();
+    private final List<String> threads = new CopyOnWriteArrayList<>();
 
     @Blocking
     @Outgoing("infinite-producer-payload")

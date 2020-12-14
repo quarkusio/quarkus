@@ -17,8 +17,11 @@ public class SmallRyeReactiveMessagingLifecycle {
 
     void onApplicationStart(@Observes @Priority(javax.interceptor.Interceptor.Priority.LIBRARY_BEFORE) StartupEvent event) {
         try {
-            mediatorManager.initializeAndRun();
+            mediatorManager.start();
         } catch (Exception e) {
+            if (e instanceof DeploymentException) {
+                throw e;
+            }
             throw new DeploymentException(e);
         }
     }

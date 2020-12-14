@@ -212,7 +212,12 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     @Override
     public String methodAsString() {
-        return getBean().getBeanClass().getName() + "#" + getMethodName();
+        if (Arc.container() != null) {
+            return getBean().getBeanClass().getName() + "#" + getMethodName();
+        } else {
+            return getMethodName();
+        }
+
     }
 
     @Override

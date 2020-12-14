@@ -6,6 +6,9 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
+import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 
 import io.reactivex.Flowable;
 import io.smallrye.reactive.messaging.annotations.Channel;
@@ -14,7 +17,7 @@ import io.smallrye.reactive.messaging.annotations.Channel;
 public class DeprecatedChannelConsumer {
 
     @Inject
-    @Channel("source")
+    @Channel("source-channel")
     Flowable<Message<String>> sourceStream;
 
     public List<String> consume() {
@@ -22,6 +25,11 @@ public class DeprecatedChannelConsumer {
                 .map(Message::getPayload)
                 .toList()
                 .blockingGet();
+    }
+
+    @Outgoing("source-channel")
+    public PublisherBuilder<String> source() {
+        return ReactiveStreams.of("hello", "with", "SmallRye", "reactive", "message");
     }
 
 }

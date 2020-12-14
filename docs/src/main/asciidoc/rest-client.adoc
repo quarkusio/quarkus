@@ -466,6 +466,19 @@ You should see a JSON object containing some basic information about Greece.
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
+== REST Client and RESTEasy interactions
+
+In Quarkus, the REST Client extension and link:rest-json[the RESTEasy extension] share the same infrastructure.
+One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+
+For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
+which might not be the desired behavior.
+
+However, you can change this default behavior and constrain a provider to:
+
+* only consider *client* calls by adding the `@ConstrainedTo(RuntimeType.CLIENT)` annotation to your provider;
+* only consider *server* calls by adding the `@ConstrainedTo(RuntimeType.SERVER)` annotation to your provider.
+
 == Using a Mock HTTP Server for tests
 
 Setting up a mock HTTP server, against which tests are run, is a common testing pattern.

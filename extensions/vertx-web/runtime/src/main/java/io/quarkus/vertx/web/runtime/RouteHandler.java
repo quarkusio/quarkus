@@ -5,6 +5,7 @@ import javax.enterprise.event.Event;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -15,7 +16,7 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Handles invocation of a reactive route.
- * 
+ *
  * @see Route
  */
 public abstract class RouteHandler implements Handler<RoutingContext> {
@@ -23,6 +24,7 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
     private static final String REQUEST_CONTEXT_STATE = "__cdi_req_ctx";
 
     private final Event<SecurityIdentity> securityIdentityEvent;
+    private final CurrentIdentityAssociation currentIdentityAssociation;
     private final CurrentVertxRequest currentVertxRequest;
     private final ManagedContext requestContext;
 
@@ -30,11 +32,12 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
         this.securityIdentityEvent = Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
         this.currentVertxRequest = Arc.container().instance(CurrentVertxRequest.class).get();
         this.requestContext = Arc.container().requestContext();
+        this.currentIdentityAssociation = Arc.container().instance(CurrentIdentityAssociation.class).get();
     }
 
     /**
      * Invokes the route method.
-     * 
+     *
      * @param context
      */
     public abstract void invoke(RoutingContext context);
@@ -44,6 +47,14 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
         QuarkusHttpUser user = (QuarkusHttpUser) context.user();
         //todo: how should we handle non-proactive authentication here?
         if (requestContext.isActive()) {
+            if (currentIdentityAssociation != null) {
+                if (user != null) {
+                    SecurityIdentity identity = user.getSecurityIdentity();
+                    currentIdentityAssociation.setIdentity(identity);
+                } else {
+                    currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
+                }
+            }
             if (user != null) {
                 securityIdentityEvent.fire(user.getSecurityIdentity());
             }
@@ -59,6 +70,14 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
                 // Activate the context, i.e. set the thread locals, state can be null
                 requestContext.activate(state);
                 currentVertxRequest.setCurrent(context);
+                if (currentIdentityAssociation != null) {
+                    if (user != null) {
+                        SecurityIdentity identity = user.getSecurityIdentity();
+                        currentIdentityAssociation.setIdentity(identity);
+                    } else {
+                        currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
+                    }
+                }
                 if (user != null) {
                     securityIdentityEvent.fire(user.getSecurityIdentity());
                 }

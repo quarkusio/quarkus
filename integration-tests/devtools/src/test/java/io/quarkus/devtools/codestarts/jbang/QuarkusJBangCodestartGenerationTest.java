@@ -44,7 +44,7 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
         getCatalog().createProject(input).generate(projectDir);
 
         assertThat(projectDir.resolve("jbang")).exists();
-        assertThat(projectDir.resolve("src/EntryCommand.java")).exists();
+        assertThat(projectDir.resolve("src/GreetingCommand.java")).exists();
     }
 
     private QuarkusJBangCodestartCatalog getCatalog() throws IOException {

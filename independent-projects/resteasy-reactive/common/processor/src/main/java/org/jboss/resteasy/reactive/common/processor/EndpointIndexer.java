@@ -20,7 +20,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
@@ -684,7 +683,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         AnnotationInstance contextParam = anns.get(CONTEXT);
         AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
         AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
-        boolean convertable = false;
+        boolean convertible = false;
         if (defaultValueAnnotation != null) {
             builder.setDefaultValue(defaultValueAnnotation.value().asString());
         }
@@ -696,51 +695,51 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (pathParam != null) {
             builder.setName(pathParam.value().asString());
             builder.setType(ParameterType.PATH);
-            convertable = true;
+            convertible = true;
         } else if (restPathParam != null) {
             builder.setName(valueOrDefault(restPathParam.value(), sourceName));
             builder.setType(ParameterType.PATH);
-            convertable = true;
+            convertible = true;
         } else if (queryParam != null) {
             builder.setName(queryParam.value().asString());
             builder.setType(ParameterType.QUERY);
-            convertable = true;
+            convertible = true;
         } else if (restQueryParam != null) {
             builder.setName(valueOrDefault(restQueryParam.value(), sourceName));
             builder.setType(ParameterType.QUERY);
-            convertable = true;
+            convertible = true;
         } else if (cookieParam != null) {
             builder.setName(cookieParam.value().asString());
             builder.setType(ParameterType.COOKIE);
-            convertable = true;
+            convertible = true;
         } else if (restCookieParam != null) {
             builder.setName(valueOrDefault(restCookieParam.value(), sourceName));
             builder.setType(ParameterType.COOKIE);
-            convertable = true;
+            convertible = true;
         } else if (headerParam != null) {
             builder.setName(headerParam.value().asString());
             builder.setType(ParameterType.HEADER);
-            convertable = true;
+            convertible = true;
         } else if (restHeaderParam != null) {
             builder.setName(valueOrDefault(restHeaderParam.value(), sourceName));
             builder.setType(ParameterType.HEADER);
-            convertable = true;
+            convertible = true;
         } else if (formParam != null) {
             builder.setName(formParam.value().asString());
             builder.setType(ParameterType.FORM);
-            convertable = true;
+            convertible = true;
         } else if (restFormParam != null) {
             builder.setName(valueOrDefault(restFormParam.value(), sourceName));
             builder.setType(ParameterType.FORM);
-            convertable = true;
+            convertible = true;
         } else if (matrixParam != null) {
             builder.setName(matrixParam.value().asString());
             builder.setType(ParameterType.MATRIX);
-            convertable = true;
+            convertible = true;
         } else if (restMatrixParam != null) {
             builder.setName(valueOrDefault(restMatrixParam.value(), sourceName));
             builder.setType(ParameterType.MATRIX);
-            convertable = true;
+            convertible = true;
         } else if (contextParam != null) {
             //this is handled by CDI
             if (field) {
@@ -765,9 +764,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
-                convertable = true;
+                convertible = true;
             } else {
-                //unannoated field
+                //un-annotated field
                 //just ignore it
                 if (field) {
                     return builder;
@@ -780,33 +779,37 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         String elementType = null;
         final ParameterType type = builder.getType();
         if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-            typeHandled = true;
             ParameterizedType pt = paramType.asParameterizedType();
             if (pt.name().equals(LIST)) {
+                typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                if (convertible) {
+                    handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                }
             } else if (pt.name().equals(SET)) {
+                typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                if (convertible) {
+                    handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                }
             } else if (pt.name().equals(SORTED_SET)) {
+                typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
-            } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
-                elementType = pt.name().toString();
-                handleMultiMapParam(additionalReaders, builder);
-            } else if (convertable) {
+                if (convertible) {
+                    handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                }
+            } else if (convertible) {
                 throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
-            } else {
-                typeHandled = false;
             }
         } else if ((paramType.name().equals(PATH_SEGMENT)) && (type == ParameterType.PATH)) {
             elementType = paramType.name().toString();
             handlePathSegmentParam(builder);
             typeHandled = true;
         }
+
         if (!typeHandled) {
             elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
             addReaderForType(additionalReaders, paramType);
@@ -816,7 +819,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
             if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
-
                 builder.setSse(true);
             }
         }
@@ -832,9 +834,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             PARAM builder, String elementType) {
-    }
-
-    protected void handleMultiMapParam(AdditionalReaders additionalReaders, PARAM builder) {
     }
 
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,

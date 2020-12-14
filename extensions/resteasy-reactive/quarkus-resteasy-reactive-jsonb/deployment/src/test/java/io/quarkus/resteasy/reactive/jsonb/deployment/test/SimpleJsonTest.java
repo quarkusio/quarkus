@@ -41,6 +41,19 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .contentType("application/json")
                 .body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
+
+        RestAssured
+                .with()
+                .body("[{\"first\": \"Bob\", \"last\": \"Builder\"}, {\"first\": \"Bob2\", \"last\": \"Builder2\"}]")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/people")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[1].first", Matchers.equalTo("Bob"))
+                .body("[1].last", Matchers.equalTo("Builder"))
+                .body("[0].first", Matchers.equalTo("Bob2"))
+                .body("[0].last", Matchers.equalTo("Builder2"));
     }
 
     @Test

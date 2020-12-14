@@ -51,7 +51,6 @@ public class JsonbMessageBodyReader implements ServerMessageBodyReader<Object> {
         if (entityStream instanceof EmptyInputStream) {
             return null;
         }
-        Type runtimeType = genericType != null ? genericType : type;
-        return json.fromJson(entityStream, runtimeType);
+        return json.fromJson(entityStream, genericType != null ? genericType : type);
     }
 }

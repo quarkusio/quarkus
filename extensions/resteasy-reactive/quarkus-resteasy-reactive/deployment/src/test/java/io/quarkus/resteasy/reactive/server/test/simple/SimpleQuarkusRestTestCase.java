@@ -294,6 +294,7 @@ public class SimpleQuarkusRestTestCase {
                 .formParam("f2", "v2")
                 .post("/simple/form-map")
                 .then()
+                .statusCode(200)
                 .contentType("application/x-www-form-urlencoded")
                 .body(Matchers.equalTo("f1=v1&f2=v2"));
     }

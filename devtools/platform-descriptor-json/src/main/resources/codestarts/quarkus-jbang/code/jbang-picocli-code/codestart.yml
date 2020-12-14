@@ -4,8 +4,8 @@ type: code
 language:
   base:
     data:
-      resource:
-        class-name: EntryCommand
+      command:
+        class-name: GreetingCommand
         subcommands: "{HelloCommand.class, GoodByeCommand.class}"
         hello:
           name: "hello"

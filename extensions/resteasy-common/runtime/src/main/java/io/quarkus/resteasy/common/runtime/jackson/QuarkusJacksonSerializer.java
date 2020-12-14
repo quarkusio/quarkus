@@ -59,6 +59,7 @@ public class QuarkusJacksonSerializer extends ResteasyJackson2Provider {
             return false;
         }
         return mediaType.equals(MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                || mediaType.isWildcardType()
                 || super.isWriteable(type, genericType, annotations, mediaType);
     }
 

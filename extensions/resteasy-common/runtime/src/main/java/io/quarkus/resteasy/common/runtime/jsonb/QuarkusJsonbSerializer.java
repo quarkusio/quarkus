@@ -58,7 +58,8 @@ public class QuarkusJsonbSerializer extends JsonBindingProvider {
         if (BUILTIN_DEFAULTS.contains(type)) {
             return false;
         }
-        return isSupportedMediaType(mediaType) || mediaType.equals(MediaType.APPLICATION_OCTET_STREAM_TYPE);
+        return isSupportedMediaType(mediaType) || mediaType.equals(MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                || mediaType.isWildcardType();
     }
 
     @Override

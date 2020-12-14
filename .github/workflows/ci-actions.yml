@@ -487,11 +487,8 @@ jobs:
       - name: Run Quarkus REST TCK
         run: mvn -B --settings ../tcks/.github/mvn-settings.xml install
         working-directory: ./quarkus-rest-testsuite
-      - name: Build with Maven
-        run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks install
-        working-directory: ./tcks
       - name: Verify with Maven
-        run: mvn -B --settings .github/mvn-settings.xml -f tcks/pom.xml verify
+        run: mvn -B --settings .github/mvn-settings.xml -f tcks/pom.xml install
         working-directory: ./tcks
       - name: Prepare failure archive (if maven failed)
         if: failure()

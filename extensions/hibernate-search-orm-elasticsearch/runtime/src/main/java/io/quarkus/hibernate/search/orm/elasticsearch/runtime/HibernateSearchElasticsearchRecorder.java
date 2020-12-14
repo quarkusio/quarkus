@@ -149,8 +149,7 @@ public class HibernateSearchElasticsearchRecorder {
                     elasticsearchBackendConfig.version);
             addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.LAYOUT_STRATEGY,
-                    elasticsearchBackendConfig.layout.strategy,
-                    Optional::isPresent, c -> c.get().getName());
+                    elasticsearchBackendConfig.layout.strategy);
 
             // Index defaults at the backend level
             contributeBackendIndexBuildTimeProperties(propertyCollector, backendName, null,
@@ -169,8 +168,7 @@ public class HibernateSearchElasticsearchRecorder {
                 String backendName, String indexName, ElasticsearchIndexBuildTimeConfig indexConfig) {
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
-                    indexConfig.analysis.configurer,
-                    Optional::isPresent, c -> c.get().getName());
+                    indexConfig.analysis.configurer);
         }
     }
 

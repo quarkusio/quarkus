@@ -34,7 +34,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      * Must implement {@link org.hibernate.search.engine.reporting.FailureHandler}.
      */
     @ConfigItem
-    public Optional<Class<?>> backgroundFailureHandler;
+    public Optional<String> backgroundFailureHandler;
 
     @ConfigGroup
     public static class ElasticsearchNamedBackendsBuildTimeConfig {
@@ -99,7 +99,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers).
          */
         @ConfigItem
-        public Optional<Class<?>> configurer;
+        public Optional<String> configurer;
     }
 
     @ConfigGroup
@@ -108,6 +108,6 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * The class or the name of the bean used to configure layout (e.g. index names, index aliases).
          */
         @ConfigItem
-        public Optional<Class<?>> strategy;
+        public Optional<String> strategy;
     }
 }

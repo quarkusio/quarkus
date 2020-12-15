@@ -456,6 +456,68 @@ If you use a `CompletionStage`, you would need to call the service's method to r
 This difference comes from the laziness aspect of Mutiny and its subscription protocol.
 More details about this can be found in https://smallrye.io/smallrye-mutiny/#_uni_and_multi[the Mutiny documentation].
 
+== Custom headers support
+The MicroProfile REST client allows amending request headers by registering a `ClientHeadersFactory` with the `@RegisterClientHeaders` annotation.
+
+Let's see it in action by adding a `@RegisterClientHeaders` annotation pointing to a `RequestUUIDHeaderFactory` class in our `CountriesService` REST interface:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.util.concurrent.CompletionStage;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+@RegisterClientHeaders(RequestUUIDHeaderFactory.class)
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    Set<Country> getByName(@PathParam String name);
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    CompletionStage<Set<Country>> getByNameAsync(@PathParam String name);
+}
+----
+
+And the `RequestUUIDHeaderFactory` would look like:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
+import org.jboss.resteasy.specimpl.MultivaluedMapImpl;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.MultivaluedMap;
+import java.util.UUID;
+
+@ApplicationScoped
+public class RequestUUIDHeaderFactory implements ClientHeadersFactory {
+
+    @Override
+    public MultivaluedMap<String, String> update(MultivaluedMap<String, String> incomingHeaders, MultivaluedMap<String, String> clientOutgoingHeaders) {
+        MultivaluedMap<String, String> result = new MultivaluedMapImpl<>();
+        result.add("X-request-uuid", UUID.randomUUID().toString());
+        return result;
+    }
+}
+----
+
+Any CDI bean matching the declared factory class will be picked up and can of course benefit from the usual CDI infrastructure.
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.

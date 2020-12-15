@@ -24,6 +24,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
+import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
@@ -43,14 +44,19 @@ import io.quarkus.deployment.util.ExecUtil;
 public class DockerProcessor {
 
     private static final Logger log = Logger.getLogger(DockerProcessor.class);
+    private static final String DOCKER = "docker";
     private static final String DOCKERFILE_JVM = "Dockerfile.jvm";
     private static final String DOCKERFILE_FAST_JAR = "Dockerfile.fast-jar";
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
     private static final String DOCKER_DIRECTORY_NAME = "docker";
-
     static final String DOCKER_CONTAINER_IMAGE_NAME = "docker";
 
     private final DockerWorking dockerWorking = new DockerWorking();
+
+    @BuildStep
+    public AvailableContainerImageExtensionBuildItem availability() {
+        return new AvailableContainerImageExtensionBuildItem(DOCKER);
+    }
 
     @BuildStep(onlyIf = DockerBuild.class)
     public CapabilityBuildItem capability() {
@@ -81,10 +87,12 @@ public class DockerProcessor {
         log.info("Building docker image for jar.");
 
         ImageIdReader reader = new ImageIdReader();
-        createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader, false,
+        String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader,
+                false,
                 pushRequest.isPresent(), packageConfig);
 
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
+                Collections.singletonMap("container-image", builtContainerImage)));
     }
 
     @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class, DockerBuild.class })
@@ -116,12 +124,13 @@ public class DockerProcessor {
         log.info("Starting docker image build");
 
         ImageIdReader reader = new ImageIdReader();
-        createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
+        String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
                 pushRequest.isPresent(), packageConfig);
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
+                Collections.singletonMap("container-image", builtContainerImage)));
     }
 
-    private void createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,
+    private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,
             ContainerImageInfoBuildItem containerImageInfo,
             OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean pushRequested,
             PackageConfig packageConfig) {
@@ -165,6 +174,8 @@ public class DockerProcessor {
                 pushImage(imageToPush, dockerConfig);
             }
         }
+
+        return containerImageInfo.getImage();
     }
 
     private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, DockerConfig dockerConfig) {

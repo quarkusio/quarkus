@@ -12,11 +12,12 @@
 
     <artifactId>quarkus-container-image</artifactId>
     <name>Quarkus - Container Image - Runtime</name>
-    <description>
+    <description>Build container images of your application</description>
+    <!--
         Build container images of your application. Only needed to make sure that the container image
         configuration is generated from the io.quarkus.container.image.deployment.ContainerImageConfig.
         See https://github.com/quarkusio/quarkus/issues/12316#issuecomment-698287955 for more information.
-    </description>
+    -->
 
 
     <build>

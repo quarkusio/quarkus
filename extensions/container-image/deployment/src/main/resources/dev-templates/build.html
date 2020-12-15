@@ -1,0 +1,30 @@
+{#include main}
+{#style}
+.annotation {
+color: gray;
+}
+{/style}
+{#title}Build Container Image{/title}
+{#body}
+
+<form method="post"  enctype="application/x-www-form-urlencoded">
+    Build Type:
+    <select name="quarkus.build.package-type" required="false">
+        <option value="">Default</option>
+        <option value="jar">Jar</option>
+        <option value="mutable-jar">Mutable Jar</option>
+        <option value="fast-jar">Fast Jar</option>
+        <option value="native">Native</option>
+    </select>
+
+    Builder Type:
+    <select name="quarkus.container-image.builder" required="false">
+    {#for item in info:builder}
+        <option value="{item.name}">{item.name}</option>
+    {/for}
+    </select>
+ 
+    <input type="submit" value="Build" >
+</form>
+{/body}
+{/include}

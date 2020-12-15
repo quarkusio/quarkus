@@ -46,6 +46,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.ImageUtil;
+import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
@@ -77,6 +78,11 @@ public class OpenshiftProcessor {
     private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(OpenshiftProcessor.class);
+
+    @BuildStep
+    public AvailableContainerImageExtensionBuildItem availability() {
+        return new AvailableContainerImageExtensionBuildItem(OPENSHIFT);
+    }
 
     @BuildStep(onlyIf = OpenshiftBuild.class)
     public CapabilityBuildItem capability() {

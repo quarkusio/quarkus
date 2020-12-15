@@ -10,7 +10,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * A route for handling requests in the dev console.
  *
- * Routes are registered under /@dev/{groupId}.{artifactId}/
+ * Routes are registered under /q/dev/{groupId}.{artifactId}/
  * 
  * This handler executes in the deployment class loader.
  *

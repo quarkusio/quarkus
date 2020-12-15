@@ -54,6 +54,7 @@ import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
@@ -170,7 +171,7 @@ public class DevConsoleProcessor {
                 .handler(new DevConsole(engine));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route("/@dev/*").subRouter(router);
+        mainRouter.route("/q/dev/*").subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -220,6 +221,7 @@ public class DevConsoleProcessor {
     public void setupActions(List<DevConsoleRouteBuildItem> routes,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             List<DevTemplatePathBuildItem> devTemplatePaths,
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
         initializeVirtual();
         newRouter(buildEngine(devTemplatePaths, devTemplateVariants));
@@ -238,8 +240,18 @@ public class DevConsoleProcessor {
 
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         //must be last so the above routes have precedence
-        routeBuildItemBuildProducer.produce(new RouteBuildItem("/@dev/*", new DevConsoleFilter()));
-        routeBuildItemBuildProducer.produce(new RouteBuildItem("/@dev", new RedirectHandler()));
+        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
+                .route("/dev/*")
+                .handler(new DevConsoleFilter())
+                .nonApplicationRoute()
+                .build());
+        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
+                .route("/dev")
+                .handler(new RedirectHandler())
+                .nonApplicationRoute()
+                .build());
+
+        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem("/q/dev/"));
     }
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,

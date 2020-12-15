@@ -614,6 +614,27 @@ public class CodeFlowTest {
             Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-tokens");
             checkSingleTokenCookie(rtTokenCookie, "Refresh");
 
+            // verify all the cookies are cleared after the session timeout
+            webClient.getOptions().setRedirectEnabled(false);
+            webClient.getCache().clear();
+
+            await().atLeast(6, TimeUnit.SECONDS)
+                    .pollDelay(Duration.ofSeconds(6))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
+                            assertEquals(302, webResponse.getStatusCode());
+                            assertNull(getSessionCookie(webClient, null));
+                            return true;
+                        }
+                    });
+
+            assertNull(getSessionCookie(page.getWebClient(), "tenant-split-tokens"));
+            assertNull(getSessionAtCookie(page.getWebClient(), "tenant-split-tokens"));
+            assertNull(getSessionRtCookie(page.getWebClient(), "tenant-split-tokens"));
+
             webClient.getCookieManager().clearCookies();
         }
     }

@@ -238,9 +238,14 @@ public class OpenshiftProcessor {
         LOG.info("Performing openshift binary build with jar on server: " + kubernetesClient.getClient().getMasterUrl()
                 + " in namespace:" + namespace + ".");
 
-        createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", out.getOutputDirectory(),
-                jar.getPath(),
-                out.getOutputDirectory().resolve("lib"));
+        if (packageConfig.isFastJar()) {
+            createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", jar.getPath().getParent(),
+                    jar.getPath().getParent());
+        } else {
+            createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", jar.getPath().getParent(),
+                    jar.getPath(),
+                    jar.getLibraryDir());
+        }
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
 

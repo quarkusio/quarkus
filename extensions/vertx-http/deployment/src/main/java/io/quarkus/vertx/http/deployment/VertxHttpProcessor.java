@@ -130,22 +130,25 @@ class VertxHttpProcessor {
         RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx());
         RuntimeValue<Router> frameworkRouter = recorder.initializeRouter(vertx.getVertx());
         boolean frameworkRouterFound = false;
+        recorder.setNonApplicationRedirectHandler(nonApplicationRootPath.getFrameworkRootPath());
 
         for (RouteBuildItem route : routes) {
             if (nonApplicationRootPath.isSeparateRoot() && route.isFrameworkRoute()) {
                 frameworkRouterFound = true;
                 recorder.addRoute(frameworkRouter, route.getRouteFunction(), route.getHandler(), route.getType());
+
+                // Handle redirects from old paths to new non application endpoint root
+                if (httpBuildTimeConfig.redirectToNonApplicationRootPath) {
+                    recorder.addRoute(router, route.getRouteFunction(),
+                            recorder.getNonApplicationRedirectHandler(),
+                            route.getType());
+                }
             } else {
                 recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType());
             }
         }
 
-        if (frameworkRouterFound && nonApplicationRootPath.isSeparateRoot()) {
-            // Handle redirects from old paths to new non application endpoint root
-            if (httpBuildTimeConfig.redirectToNonApplicationRootPath) {
-                recorder.addNonApplicationPathRedirect(router, frameworkRouter, nonApplicationRootPath.getFrameworkRootPath());
-            }
-
+        if (frameworkRouterFound) {
             frameworkRouterBuildProducer.produce(new VertxNonApplicationRouterBuildItem(frameworkRouter));
         }
 

@@ -59,6 +59,11 @@ public abstract class ResteasyReactiveRequestContext
      */
     private Object[] parameters;
     private RuntimeResource target;
+    /**
+     * When a subresource has been located and the processing has been restarted (and thus target point to the new subresource),
+     * this field contains the target that resulted in the offloading to the new target
+     */
+    private RuntimeResource locatorTarget;
 
     /**
      * The parameter values extracted from the path.
@@ -75,6 +80,11 @@ public abstract class ResteasyReactiveRequestContext
      * Note: those are decoded.
      */
     private Object pathParamValues;
+    /**
+     * When a subresource has been located and the processing has been restarted (and thus target point to the new subresource),
+     * this field contains the pathParamValues of the target that resulted in the offloading to the new target
+     */
+    private Object locatorPathParamValues;
 
     private UriInfo uriInfo;
     /**
@@ -161,9 +171,17 @@ public abstract class ResteasyReactiveRequestContext
      * @param target The resource target
      */
     public void restart(RuntimeResource target) {
+        restart(target, false);
+    }
+
+    public void restart(RuntimeResource target, boolean setLocatorTarget) {
         this.handlers = target.getHandlerChain();
         position = 0;
         parameters = new Object[target.getParameterTypes().length];
+        if (setLocatorTarget) {
+            this.locatorTarget = this.target;
+            this.locatorPathParamValues = this.pathParamValues;
+        }
         this.target = target;
     }
 
@@ -202,6 +220,14 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public String getPathParam(int index) {
+        return doGetPathParam(index, pathParamValues);
+    }
+
+    public String getLocatorPathParam(int index) {
+        return doGetPathParam(index, locatorPathParamValues);
+    }
+
+    private String doGetPathParam(int index, Object pathParamValues) {
         if (pathParamValues instanceof String[]) {
             return ((String[]) pathParamValues)[index];
         }
@@ -293,6 +319,10 @@ public abstract class ResteasyReactiveRequestContext
 
     public RuntimeResource getTarget() {
         return target;
+    }
+
+    public RuntimeResource getLocatorTarget() {
+        return locatorTarget;
     }
 
     public void mapExceptionIfPresent() {

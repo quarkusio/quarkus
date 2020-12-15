@@ -39,6 +39,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.CookieParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.FormParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.LocatableResourcePathParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.MatrixParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
@@ -198,7 +199,8 @@ public class RuntimeResourceDeployment {
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
             boolean single = param.isSingle();
-            ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
+            ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param.parameterType,
+                    param.type, param.name,
                     single, param.encoded);
             ParameterConverter converter = null;
             ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
@@ -346,7 +348,8 @@ public class RuntimeResourceDeployment {
         return runtimeResource;
     }
 
-    public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, ParameterType type, String javaType,
+    public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, boolean locatableResource,
+            ParameterType type, String javaType,
             String name,
             boolean single, boolean encoded) {
         ParameterExtractor extractor;
@@ -360,7 +363,11 @@ public class RuntimeResourceDeployment {
             case PATH:
                 Integer index = pathParameterIndexes.get(name);
                 if (index == null) {
-                    extractor = new NullParamExtractor();
+                    if (locatableResource) {
+                        extractor = new LocatableResourcePathParamExtractor(name);
+                    } else {
+                        extractor = new NullParamExtractor();
+                    }
                 } else {
                     extractor = new PathParamExtractor(index, encoded);
                 }

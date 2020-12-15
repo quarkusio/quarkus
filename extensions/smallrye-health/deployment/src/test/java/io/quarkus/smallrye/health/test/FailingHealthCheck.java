@@ -29,8 +29,8 @@ public class FailingHealthCheck implements HealthCheck {
             }
 
             @Override
-            public State getState() {
-                return State.DOWN;
+            public Status getStatus() {
+                return Status.DOWN;
             }
 
             @Override

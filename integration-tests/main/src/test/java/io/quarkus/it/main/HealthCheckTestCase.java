@@ -22,6 +22,7 @@ public class HealthCheckTestCase {
 
     @Test
     public void testInjection() {
-        Assert.assertTrue(simpleHealthCheck.call().getState() == HealthCheckResponse.State.UP);
+        Assert.assertTrue(simpleHealthCheck.call().getStatus() == HealthCheckResponse.Status.UP);
+        Assert.assertTrue(simpleHealthCheck.call().getStatus() == HealthCheckResponse.Status.UP);
     }
 }

@@ -447,6 +447,10 @@ public class NativeImageBuildStep {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
         Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+        File libDirFile = libDir.toFile();
+        if (!libDirFile.exists()) {
+            libDirFile.mkdirs();
+        }
 
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
         for (AppDependency appDep : appDeps) {

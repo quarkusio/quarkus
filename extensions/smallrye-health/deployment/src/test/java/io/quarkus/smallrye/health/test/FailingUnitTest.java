@@ -45,6 +45,6 @@ public class FailingUnitTest {
             check.add(i);
         }
         assertEquals(1, check.size());
-        assertEquals(HealthCheckResponse.State.DOWN, check.get(0).call().getState());
+        assertEquals(HealthCheckResponse.Status.DOWN, check.get(0).call().getStatus());
     }
 }

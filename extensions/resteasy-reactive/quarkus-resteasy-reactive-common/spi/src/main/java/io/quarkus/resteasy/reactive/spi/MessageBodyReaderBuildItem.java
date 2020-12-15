@@ -15,7 +15,7 @@ public final class MessageBodyReaderBuildItem extends MultiBuildItem implements 
     private final boolean builtin;
 
     public MessageBodyReaderBuildItem(String className, String handledClassName, List<String> mediaTypeStrings) {
-        this(className, handledClassName, mediaTypeStrings, null, false);
+        this(className, handledClassName, mediaTypeStrings, null, true);
     }
 
     public MessageBodyReaderBuildItem(String className, String handledClassName, List<String> mediaTypeStrings,
@@ -42,5 +42,9 @@ public final class MessageBodyReaderBuildItem extends MultiBuildItem implements 
     @Override
     public RuntimeType getRuntimeType() {
         return runtimeType;
+    }
+
+    public boolean isBuiltin() {
+        return builtin;
     }
 }

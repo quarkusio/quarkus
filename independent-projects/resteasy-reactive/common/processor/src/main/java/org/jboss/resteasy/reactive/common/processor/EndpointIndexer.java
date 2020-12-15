@@ -20,7 +20,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
@@ -61,6 +60,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.SseEventSink;
@@ -255,6 +255,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (!hasProperModifiers(info)) {
                         continue;
                     }
+                    validateHttpAnnotations(info);
                     String descriptor = methodDescriptor(info);
                     if (seenMethods.contains(descriptor)) {
                         continue;
@@ -323,6 +324,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return ret;
     }
 
+    private void validateHttpAnnotations(MethodInfo info) {
+        List<AnnotationInstance> annotationInstances = info.annotations();
+        Set<DotName> allMethodAnnotations = new HashSet<>(annotationInstances.size());
+        for (AnnotationInstance instance : annotationInstances) {
+            allMethodAnnotations.add(instance.name());
+        }
+        int httpAnnotationCount = 0;
+        for (DotName dotName : allMethodAnnotations) {
+            if (httpAnnotationToMethod.containsKey(dotName)) {
+                httpAnnotationCount++;
+            }
+            if (httpAnnotationCount > 1) {
+                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                        + "' contains multiple HTTP method annotations.");
+            }
+        }
+    }
+
     private boolean hasProperModifiers(MethodInfo info) {
         if ((info.flags() & Modifier.PUBLIC) == 0) {
             log.warn("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
@@ -360,6 +379,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean sse = false;
             boolean formParamRequired = false;
             boolean hasBodyParam = false;
+            TypeArgMapper typeArgMapper = new TypeArgMapper(info.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 boolean encoded = anns.containsKey(ResteasyReactiveDotNames.ENCODED);
@@ -386,7 +406,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     defaultValue = "0";
                 }
                 methodParameters[i] = createMethodParameter(currentClassInfo, actualEndpointInfo, encoded, paramType,
-                        parameterResult, name, defaultValue, type, elementType, single);
+                        parameterResult, name, defaultValue, type, elementType, single,
+                        AsmUtil.getSignature(paramType, typeArgMapper));
 
                 if (type == ParameterType.BEAN) {
                     // transform the bean param
@@ -423,6 +444,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     blocking = true;
                 }
             }
+
             ResourceMethod method = createResourceMethod()
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
@@ -438,42 +460,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setParameters(methodParameters)
                     .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?
-                    .setReturnType(AsmUtil.getSignature(info.returnType(), new Function<String, String>() {
-                        @Override
-                        public String apply(String v) {
-                            //we attempt to resolve type variables
-                            ClassInfo declarer = info.declaringClass();
-                            int pos = -1;
-                            for (;;) {
-                                if (declarer == null) {
-                                    return null;
-                                }
-                                List<TypeVariable> typeParameters = declarer.typeParameters();
-                                for (int i = 0; i < typeParameters.size(); i++) {
-                                    TypeVariable tv = typeParameters.get(i);
-                                    if (tv.identifier().equals(v)) {
-                                        pos = i;
-                                    }
-                                }
-                                if (pos != -1) {
-                                    break;
-                                }
-                                declarer = index.getClassByName(declarer.superName());
-                            }
-                            Type type = JandexUtil
-                                    .resolveTypeParameters(info.declaringClass().name(), declarer.name(), index)
-                                    .get(pos);
-                            if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
-                                List<Type> bounds = type.asTypeVariable().bounds();
-                                if (bounds.isEmpty()) {
-                                    return "Ljava/lang/Object;";
-                                }
-                                return AsmUtil.getSignature(bounds.get(0), this);
-                            } else {
-                                return AsmUtil.getSignature(type, this);
-                            }
-                        }
-                    }));
+                    .setReturnType(AsmUtil.getSignature(info.returnType(), typeArgMapper));
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, info);
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(new AbstractMap.SimpleEntry<>(info, method));
@@ -497,7 +484,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected abstract MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
-            ParameterType type, String elementType, boolean single);
+            ParameterType type, String elementType, boolean single, String signature);
 
     private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
         if (produces != null && produces.length != 0)
@@ -696,7 +683,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         AnnotationInstance contextParam = anns.get(CONTEXT);
         AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
         AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
-        boolean convertable = false;
+        boolean convertible = false;
         if (defaultValueAnnotation != null) {
             builder.setDefaultValue(defaultValueAnnotation.value().asString());
         }
@@ -708,51 +695,51 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (pathParam != null) {
             builder.setName(pathParam.value().asString());
             builder.setType(ParameterType.PATH);
-            convertable = true;
+            convertible = true;
         } else if (restPathParam != null) {
             builder.setName(valueOrDefault(restPathParam.value(), sourceName));
             builder.setType(ParameterType.PATH);
-            convertable = true;
+            convertible = true;
         } else if (queryParam != null) {
             builder.setName(queryParam.value().asString());
             builder.setType(ParameterType.QUERY);
-            convertable = true;
+            convertible = true;
         } else if (restQueryParam != null) {
             builder.setName(valueOrDefault(restQueryParam.value(), sourceName));
             builder.setType(ParameterType.QUERY);
-            convertable = true;
+            convertible = true;
         } else if (cookieParam != null) {
             builder.setName(cookieParam.value().asString());
             builder.setType(ParameterType.COOKIE);
-            convertable = true;
+            convertible = true;
         } else if (restCookieParam != null) {
             builder.setName(valueOrDefault(restCookieParam.value(), sourceName));
             builder.setType(ParameterType.COOKIE);
-            convertable = true;
+            convertible = true;
         } else if (headerParam != null) {
             builder.setName(headerParam.value().asString());
             builder.setType(ParameterType.HEADER);
-            convertable = true;
+            convertible = true;
         } else if (restHeaderParam != null) {
             builder.setName(valueOrDefault(restHeaderParam.value(), sourceName));
             builder.setType(ParameterType.HEADER);
-            convertable = true;
+            convertible = true;
         } else if (formParam != null) {
             builder.setName(formParam.value().asString());
             builder.setType(ParameterType.FORM);
-            convertable = true;
+            convertible = true;
         } else if (restFormParam != null) {
             builder.setName(valueOrDefault(restFormParam.value(), sourceName));
             builder.setType(ParameterType.FORM);
-            convertable = true;
+            convertible = true;
         } else if (matrixParam != null) {
             builder.setName(matrixParam.value().asString());
             builder.setType(ParameterType.MATRIX);
-            convertable = true;
+            convertible = true;
         } else if (restMatrixParam != null) {
             builder.setName(valueOrDefault(restMatrixParam.value(), sourceName));
             builder.setType(ParameterType.MATRIX);
-            convertable = true;
+            convertible = true;
         } else if (contextParam != null) {
             //this is handled by CDI
             if (field) {
@@ -777,9 +764,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
-                convertable = true;
+                convertible = true;
             } else {
-                //unannoated field
+                //un-annotated field
                 //just ignore it
                 if (field) {
                     return builder;
@@ -792,33 +779,37 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         String elementType = null;
         final ParameterType type = builder.getType();
         if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-            typeHandled = true;
             ParameterizedType pt = paramType.asParameterizedType();
             if (pt.name().equals(LIST)) {
+                typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                if (convertible) {
+                    handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                }
             } else if (pt.name().equals(SET)) {
+                typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                if (convertible) {
+                    handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                }
             } else if (pt.name().equals(SORTED_SET)) {
+                typeHandled = true;
                 builder.setSingle(false);
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
-                handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
-            } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
-                elementType = pt.name().toString();
-                handleMultiMapParam(additionalReaders, builder);
-            } else if (convertable) {
+                if (convertible) {
+                    handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                }
+            } else if (convertible) {
                 throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
-            } else {
-                typeHandled = false;
             }
         } else if ((paramType.name().equals(PATH_SEGMENT)) && (type == ParameterType.PATH)) {
             elementType = paramType.name().toString();
             handlePathSegmentParam(builder);
             typeHandled = true;
         }
+
         if (!typeHandled) {
             elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
             addReaderForType(additionalReaders, paramType);
@@ -828,7 +819,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
             if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
-
                 builder.setSse(true);
             }
         }
@@ -844,9 +834,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             PARAM builder, String elementType) {
-    }
-
-    protected void handleMultiMapParam(AdditionalReaders additionalReaders, PARAM builder) {
     }
 
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
@@ -961,5 +948,50 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         public abstract T build();
+    }
+
+    private static class TypeArgMapper implements Function<String, String> {
+        private final ClassInfo declaringClass;
+        private final IndexView index;
+
+        public TypeArgMapper(ClassInfo declaringClass, IndexView index) {
+            this.declaringClass = declaringClass;
+            this.index = index;
+        }
+
+        @Override
+        public String apply(String v) {
+            //we attempt to resolve type variables
+            ClassInfo declarer = declaringClass;
+            int pos = -1;
+            for (;;) {
+                if (declarer == null) {
+                    return null;
+                }
+                List<TypeVariable> typeParameters = declarer.typeParameters();
+                for (int i = 0; i < typeParameters.size(); i++) {
+                    TypeVariable tv = typeParameters.get(i);
+                    if (tv.identifier().equals(v)) {
+                        pos = i;
+                    }
+                }
+                if (pos != -1) {
+                    break;
+                }
+                declarer = index.getClassByName(declarer.superName());
+            }
+            Type type = JandexUtil
+                    .resolveTypeParameters(declaringClass.name(), declarer.name(), index)
+                    .get(pos);
+            if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
+                List<Type> bounds = type.asTypeVariable().bounds();
+                if (bounds.isEmpty()) {
+                    return "Ljava/lang/Object;";
+                }
+                return AsmUtil.getSignature(bounds.get(0), this);
+            } else {
+                return AsmUtil.getSignature(type, this);
+            }
+        }
     }
 }

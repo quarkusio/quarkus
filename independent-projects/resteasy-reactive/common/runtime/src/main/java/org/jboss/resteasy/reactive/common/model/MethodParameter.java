@@ -9,6 +9,7 @@ public class MethodParameter {
      * will be the collection type
      */
     public String declaredType;
+    public String signature;
     public ParameterType parameterType;
     public boolean encoded;
     private boolean single;
@@ -18,14 +19,16 @@ public class MethodParameter {
     public MethodParameter() {
     }
 
-    public MethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
+    public MethodParameter(String name, String type, String declaredType, String signature, ParameterType parameterType,
+            boolean single,
             String defaultValue, boolean isObtainedAsCollection, boolean encoded) {
         this.name = name;
         this.type = type;
+        this.declaredType = declaredType;
+        this.signature = signature;
         this.parameterType = parameterType;
         this.single = single;
         this.defaultValue = defaultValue;
-        this.declaredType = declaredType;
         this.isObtainedAsCollection = isObtainedAsCollection;
         this.encoded = encoded;
     }

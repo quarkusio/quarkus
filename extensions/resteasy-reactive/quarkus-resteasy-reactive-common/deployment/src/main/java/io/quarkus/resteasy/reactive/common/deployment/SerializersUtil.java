@@ -44,7 +44,7 @@ public class SerializersUtil {
         for (MessageBodyReaderBuildItem additionalReader : RuntimeTypeItem.filter(messageBodyReaderBuildItems,
                 runtimeType)) {
             ResourceReader reader = new ResourceReader();
-            reader.setBuiltin(false);
+            reader.setBuiltin(additionalReader.isBuiltin());
             String readerClassName = additionalReader.getClassName();
             reader.setFactory(FactoryUtils.factory(readerClassName,
                     applicationResultBuildItem.getResult().getSingletonClasses(), recorder,

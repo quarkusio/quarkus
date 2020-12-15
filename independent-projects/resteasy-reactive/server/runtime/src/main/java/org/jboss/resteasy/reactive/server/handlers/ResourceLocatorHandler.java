@@ -80,7 +80,7 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         requestContext.setRemaining(res.remaining);
         requestContext.setEndpointInstance(locator);
         requestContext.setResult(null);
-        requestContext.restart(res.value);
+        requestContext.restart(res.value, true);
         requestContext.setMaxPathParams(res.pathParamValues.length);
         for (int i = 0; i < res.pathParamValues.length; ++i) {
             String pathParamValue = res.pathParamValues[i];

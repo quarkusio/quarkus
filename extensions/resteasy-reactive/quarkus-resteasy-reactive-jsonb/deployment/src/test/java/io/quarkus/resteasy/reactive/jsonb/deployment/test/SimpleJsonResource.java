@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -13,7 +16,7 @@ import javax.ws.rs.core.MediaType;
 import io.quarkus.runtime.BlockingOperationControl;
 
 @Path("/simple")
-public class SimpleJsonResource {
+public class SimpleJsonResource extends SuperClass<Person> {
 
     @GET
     @Path("/person")
@@ -34,6 +37,30 @@ public class SimpleJsonResource {
             throw new RuntimeException("should not have dispatched");
         }
         return person;
+    }
+
+    @POST
+    @Path("/people")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<Person> getPeople(List<Person> people) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        List<Person> reversed = new ArrayList<>(people.size());
+        for (Person person : people) {
+            reversed.add(0, person);
+        }
+        return reversed;
+    }
+
+    @POST
+    @Path("/strings")
+    public List<String> strings(List<String> strings) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return strings;
     }
 
     @POST

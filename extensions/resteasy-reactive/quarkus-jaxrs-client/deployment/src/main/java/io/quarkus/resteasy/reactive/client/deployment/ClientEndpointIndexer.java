@@ -79,9 +79,9 @@ public class ClientEndpointIndexer
 
     protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
             Type paramType, ClientIndexedParam parameterResult, String name, String defaultValue, ParameterType type,
-            String elementType, boolean single) {
+            String elementType, boolean single, String signature) {
         return new MethodParameter(name,
-                elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index), type, single,
+                elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index), signature, type, single,
                 defaultValue, parameterResult.isObtainedAsCollection(), encoded);
     }
 

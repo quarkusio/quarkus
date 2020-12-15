@@ -12,8 +12,9 @@ public class ServerMethodParameter extends MethodParameter {
     }
 
     public ServerMethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
+            String signature,
             ParameterConverterSupplier converter, String defaultValue, boolean isObtainedAsCollection, boolean encoded) {
-        super(name, type, declaredType, parameterType, single, defaultValue, isObtainedAsCollection, encoded);
+        super(name, type, declaredType, signature, parameterType, single, defaultValue, isObtainedAsCollection, encoded);
         this.converter = converter;
     }
 }

@@ -77,7 +77,11 @@ public abstract class Serialisers {
             }
             List<ResourceReader> goodTypeReaders = readers.get(klass);
             readerLookup(mediaType, runtimeType, mt, ret, goodTypeReaders);
-            klass = klass.getSuperclass();
+            if (klass.isInterface()) {
+                klass = Object.class;
+            } else {
+                klass = klass.getSuperclass();
+            }
         } while (klass != null);
 
         return ret;

@@ -294,6 +294,7 @@ public class SimpleQuarkusRestTestCase {
                 .formParam("f2", "v2")
                 .post("/simple/form-map")
                 .then()
+                .statusCode(200)
                 .contentType("application/x-www-form-urlencoded")
                 .body(Matchers.equalTo("f1=v1&f2=v2"));
     }
@@ -394,5 +395,11 @@ public class SimpleQuarkusRestTestCase {
     public void simplifiedResourceInfo() {
         RestAssured.get("/simple/simplifiedResourceInfo")
                 .then().statusCode(200).body(Matchers.containsString("SimpleQuarkusRestResource#simplifiedResourceInfo-1"));
+    }
+
+    @Test
+    public void bigDecimal() {
+        RestAssured.get("/simple/bigDecimal/1.0")
+                .then().statusCode(200).body(Matchers.equalTo("1.0"));
     }
 }

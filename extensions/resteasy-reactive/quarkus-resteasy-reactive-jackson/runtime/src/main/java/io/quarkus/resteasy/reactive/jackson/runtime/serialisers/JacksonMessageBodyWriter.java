@@ -51,6 +51,15 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             entityStream.write(((String) o).getBytes());
         } else {
+            if (annotations != null) {
+                for (Annotation annotation : annotations) {
+                    if (JsonView.class.equals(annotation.annotationType())) {
+                        if (handleJsonView(((JsonView) annotation), o, entityStream)) {
+                            return;
+                        }
+                    }
+                }
+            }
             entityStream.write(writer.writeValueAsBytes(o));
         }
     }
@@ -71,9 +80,7 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
             // where JsonView is not used
             if (context.getResteasyReactiveResourceInfo().getMethodAnnotationNames().contains(JSON_VIEW_NAME)) {
                 Method method = context.getResteasyReactiveResourceInfo().getMethod();
-                JsonView jsonView = method.getAnnotation(JsonView.class);
-                if ((jsonView != null) && (jsonView.value().length > 0)) {
-                    writer.withView(jsonView.value()[0]).writeValue(stream, o);
+                if (handleJsonView(method.getAnnotation(JsonView.class), o, stream)) {
                     return;
                 }
             }
@@ -81,5 +88,13 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
         }
         // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
         stream.close();
+    }
+
+    private boolean handleJsonView(JsonView jsonView, Object o, OutputStream stream) throws IOException {
+        if ((jsonView != null) && (jsonView.value().length > 0)) {
+            writer.withView(jsonView.value()[0]).writeValue(stream, o);
+            return true;
+        }
+        return false;
     }
 }

@@ -37,6 +37,6 @@ public class LiquibaseContainerProducer {
         LiquibaseFactory liquibaseFactory = new LiquibaseCreator(matchingRuntimeConfig, matchingBuildTimeConfig)
                 .createLiquibase(dataSource);
         return new LiquibaseContainer(liquibaseFactory, matchingRuntimeConfig.cleanAtStart,
-                matchingRuntimeConfig.migrateAtStart, matchingRuntimeConfig.validateOnMigrate);
+                matchingRuntimeConfig.migrateAtStart, matchingRuntimeConfig.validateOnMigrate, dataSourceName);
     }
 }

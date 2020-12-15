@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.quarkus.it.mongodb.panache.book.BookDetail
-import io.quarkus.it.mongodb.panache.bugs.Bug5885EntityRepository
 import io.quarkus.it.mongodb.panache.person.Person
 import io.quarkus.it.mongodb.panache.person.PersonEntity
 import io.quarkus.test.common.QuarkusTestResource
@@ -23,7 +22,6 @@ import java.util.Calendar
 import java.util.Collections
 import java.util.Date
 import java.util.GregorianCalendar
-import javax.inject.Inject
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
@@ -264,7 +262,6 @@ open class MongodbPanacheResourceTest {
         Assertions.assertEquals(202, response.statusCode())
 
         //check that the title has been updated
-        person3.id?.let { PersonEntity.findById(it) }
         person3 = get("$endpoint/${person3.id}").`as`(Person::class.java)
         Assertions.assertEquals(3L, person3.id ?: -1)
         Assertions.assertEquals("Webster", person3.lastname)

@@ -73,9 +73,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>\${quarkus-plugin.version}</version>
-                <configuration>
-                    <uberJar>true</uberJar>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>

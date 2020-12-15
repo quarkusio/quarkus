@@ -8,6 +8,7 @@ import java.lang.reflect.Type;
 
 import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -46,6 +47,7 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+        httpHeaders.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             entityStream.write(((String) o).getBytes());
         } else {
@@ -60,6 +62,7 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
 
     @Override
     public void writeResponse(Object o, ServerRequestContext context) throws WebApplicationException, IOException {
+        context.serverResponse().setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         OutputStream stream = context.getOrCreateOutputStream();
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             stream.write(((String) o).getBytes());

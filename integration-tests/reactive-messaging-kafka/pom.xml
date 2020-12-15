@@ -15,6 +15,8 @@
 
     <properties>
         <maven.compiler.parameters>true</maven.compiler.parameters>
+        <!-- needs to wait for smallrye-reactive-messaging-health to update MP health to 3.0 -->
+        <enforcer.skip>true</enforcer.skip>
     </properties>
 
     <dependencies>
@@ -239,61 +241,62 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>native-image-it-main</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skipTests>${native.surefire.skip}</skipTests>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner
-                                        </native.image.path>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>native-image</id>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <cleanupServer>true</cleanupServer>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableAllSecurityServices>true</enableAllSecurityServices>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
+        <!-- Needs to wait for the MP Health 3.0 update in the SR reactive messaging -->
+<!--        <profile>-->
+<!--            <id>native-image-it-main</id>-->
+<!--            <activation>-->
+<!--                <property>-->
+<!--                    <name>native</name>-->
+<!--                </property>-->
+<!--            </activation>-->
+<!--            <build>-->
+<!--                <plugins>-->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-surefire-plugin</artifactId>-->
+<!--                        <configuration>-->
+<!--                            <skipTests>${native.surefire.skip}</skipTests>-->
+<!--                        </configuration>-->
+<!--                    </plugin>-->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-failsafe-plugin</artifactId>-->
+<!--                        <executions>-->
+<!--                            <execution>-->
+<!--                                <goals>-->
+<!--                                    <goal>integration-test</goal>-->
+<!--                                    <goal>verify</goal>-->
+<!--                                </goals>-->
+<!--                                <configuration>-->
+<!--                                    <systemPropertyVariables>-->
+<!--                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner-->
+<!--                                        </native.image.path>-->
+<!--                                    </systemPropertyVariables>-->
+<!--                                </configuration>-->
+<!--                            </execution>-->
+<!--                        </executions>-->
+<!--                    </plugin>-->
+<!--                    <plugin>-->
+<!--                        <groupId>io.quarkus</groupId>-->
+<!--                        <artifactId>quarkus-maven-plugin</artifactId>-->
+<!--                        <executions>-->
+<!--                            <execution>-->
+<!--                                <id>native-image</id>-->
+<!--                                <goals>-->
+<!--                                    <goal>native-image</goal>-->
+<!--                                </goals>-->
+<!--                                <configuration>-->
+<!--                                    <cleanupServer>true</cleanupServer>-->
+<!--                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>-->
+<!--                                    <graalvmHome>${graalvmHome}</graalvmHome>-->
+<!--                                    <enableAllSecurityServices>true</enableAllSecurityServices>-->
+<!--                                </configuration>-->
+<!--                            </execution>-->
+<!--                        </executions>-->
+<!--                    </plugin>-->
+<!--                </plugins>-->
+<!--            </build>-->
+<!--        </profile>-->
     </profiles>
 
 

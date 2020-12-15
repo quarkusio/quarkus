@@ -40,7 +40,7 @@
         <microprofile-rest-client.version>1.4.1</microprofile-rest-client.version>
         <smallrye-common.version>1.5.0</smallrye-common.version>
         <smallrye-config.version>2.0.1</smallrye-config.version>
-        <smallrye-health.version>2.2.5</smallrye-health.version>
+        <smallrye-health.version>3.0.0-RC2</smallrye-health.version>
         <smallrye-metrics.version>3.0.0-RC2</smallrye-metrics.version>
         <smallrye-open-api.version>2.0.17</smallrye-open-api.version>
         <smallrye-graphql.version>1.1.0-RC1</smallrye-graphql.version>

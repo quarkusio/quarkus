@@ -164,7 +164,7 @@ public class SmallRyeOpenApiProcessor {
          */
         if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             recorder.setupClDevMode(shutdownContext);
-            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openApiConfig.path));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openApiConfig.path, "Open API"));
         }
 
         Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);

@@ -251,7 +251,7 @@ public class DevConsoleProcessor {
                 .nonApplicationRoute()
                 .build());
 
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem("/q/dev/"));
+        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem("/q/dev/", "Quarkus DEV Console"));
     }
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,

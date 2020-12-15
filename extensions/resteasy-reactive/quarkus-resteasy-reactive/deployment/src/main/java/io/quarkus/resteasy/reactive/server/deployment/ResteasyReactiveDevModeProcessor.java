@@ -18,6 +18,7 @@ import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
 public class ResteasyReactiveDevModeProcessor {
@@ -59,9 +60,9 @@ public class ResteasyReactiveDevModeProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void addAdditionalEndpointsExceptionMapper(List<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             ExceptionMapperRecorder recorder, HttpRootPathBuildItem httpRoot) {
-        List<String> endpoints = displayableEndpoints
+        List<AdditionalRouteDescription> endpoints = displayableEndpoints
                 .stream()
-                .map(NotFoundPageDisplayableEndpointBuildItem::getEndpoint)
+                .map(v -> new AdditionalRouteDescription(v.getEndpoint(), v.getDescription()))
                 .sorted()
                 .collect(Collectors.toList());
 

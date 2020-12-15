@@ -100,11 +100,13 @@ public class FastBootMetadataBuilder {
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final boolean isEnversPresent;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
+        this.isEnversPresent = puDefinition.isEnversPresent();
         this.dataSource = puDefinition.getDataSource();
         this.isReactive = puDefinition.isReactive();
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
@@ -248,10 +250,18 @@ public class FastBootMetadataBuilder {
         }
         cfg.put(WRAP_RESULT_SETS, "false");
 
-        if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-            LOG.warn("XML mapping is not supported. Setting " + XML_MAPPING_ENABLED + " to false.");
+        //Hibernate Envers requires XML_MAPPING_ENABLED to be activated, but we don't want to enable this for any other use:
+        if (isEnversPresent) {
+            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
+                LOG.warn(
+                        "XML mapping is not supported. It will be partially activated to allow compatibility with Hibernate Envers, but this support is temporary");
+            }
+        } else {
+            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
+                LOG.warn("XML mapping is not supported. Setting " + XML_MAPPING_ENABLED + " to false.");
+            }
+            cfg.put(XML_MAPPING_ENABLED, "false");
         }
-        cfg.put(XML_MAPPING_ENABLED, "false");
 
         // Note: this one is not a boolean, just having the property enables it
         if (cfg.containsKey(JACC_ENABLED)) {

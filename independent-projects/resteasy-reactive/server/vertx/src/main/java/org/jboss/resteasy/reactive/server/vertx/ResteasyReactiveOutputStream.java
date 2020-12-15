@@ -87,8 +87,11 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                     if (overflow == null) {
                         overflow = new ByteArrayOutputStream();
                     }
-                    overflow.write(data.array(), data.arrayOffset() + data.readerIndex(),
-                            data.arrayOffset() + data.writerIndex());
+                    if (data.hasArray()) {
+                        overflow.write(data.array(), data.arrayOffset() + data.readerIndex(), data.readableBytes());
+                    } else {
+                        data.getBytes(data.readerIndex(), overflow, data.readableBytes());
+                    }
                     if (last) {
                         closed = true;
                     }

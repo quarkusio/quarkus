@@ -19,8 +19,8 @@ public class SimpleHealthCheck implements HealthCheck {
             }
 
             @Override
-            public State getState() {
-                return State.UP;
+            public Status getStatus() {
+                return Status.UP;
             }
 
             @Override

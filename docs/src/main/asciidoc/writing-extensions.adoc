@@ -1819,7 +1819,7 @@ import java.util.List;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.health.Health;
+import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import io.quarkus.test.QuarkusUnitTest;
@@ -1842,7 +1842,7 @@ public class FailingUnitTest {
             );
 
     @Inject                                                                             // <3>
-    @Health
+    @Liveness
     Instance<HealthCheck> checks;
 
     @Test

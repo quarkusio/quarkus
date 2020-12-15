@@ -1,0 +1,12 @@
+{#if it.kind.name() == 'METHOD'}
+ <span title="{it.name.name}">{it.name.localName}</span>.{it.methodName}()
+{/if}
+{#if it.kind.name() == 'FIELD'}
+ <span title="{it.name.name}">{it.name.localName}</span>.{it.methodName}
+{/if}
+{#if it.kind.name() == 'CLASS'}
+ <span class="badge badge-secondary">Class</span>
+{/if}
+{#if it.kind.name() == 'SYNTHETIC'}
+ <span class="badge badge-secondary">Synthetic</span>
+{/if}

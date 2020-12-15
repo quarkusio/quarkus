@@ -437,7 +437,7 @@ public class QuteProcessor {
                 .collect(toMap(BeanInfo::getName, Function.identity()));
 
         // Map implicit class -> set of used members
-        Map<ClassInfo, Set<String>> implicitClassToMembersUsed = new HashMap<>();
+        Map<DotName, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
         for (TemplateAnalysis templateAnalysis : templatesAnalysis.getAnalysis()) {
             // Maps an expression generated id to the last match of an expression (i.e. the type of the last part)
@@ -466,9 +466,12 @@ public class QuteProcessor {
             }
         }
 
-        for (Entry<ClassInfo, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
-            implicitClasses.produce(new ImplicitValueResolverBuildItem(entry.getKey(),
-                    new TemplateDataBuilder().addIgnore(buildIgnorePattern(entry.getValue())).build()));
+        for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
+            ClassInfo clazz = index.getClassByName(entry.getKey());
+            if (clazz != null) {
+                implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz,
+                        new TemplateDataBuilder().addIgnore(buildIgnorePattern(entry.getValue())).build()));
+            }
         }
     }
 
@@ -504,7 +507,7 @@ public class QuteProcessor {
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions, Expression expression, IndexView index,
-            Map<ClassInfo, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
+            Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
             Map<Integer, Match> generatedIdsToMatches) {
 
         // First validate nested virtual methods
@@ -520,7 +523,7 @@ public class QuteProcessor {
             }
         }
         // Then validate the expression itself
-        Match match = new Match();
+        Match match = new Match(index);
         if (rootClazz == null && !expression.hasTypeInfo()) {
             // No type info available or a namespace expression
             results.put(expression.toOriginalString(), match);
@@ -534,8 +537,7 @@ public class QuteProcessor {
         if (rootClazz == null) {
             if (root.isTypeInfo()) {
                 // E.g. |org.acme.Item|
-                match.clazz = root.asTypeInfo().rawClass;
-                match.type = root.asTypeInfo().resolvedType;
+                match.setValues(root.asTypeInfo().rawClass, root.asTypeInfo().resolvedType);
                 if (root.asTypeInfo().hint != null) {
                     processHints(templateAnalysis, root.asTypeInfo().hint, match, index, expression, generatedIdsToMatches,
                             incorrectExpressions);
@@ -557,37 +559,36 @@ public class QuteProcessor {
             }
         } else {
             // The first part is skipped, e.g. for {inject:foo.name} the first part is the name of the bean
-            match.clazz = rootClazz;
-            match.type = Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS);
+            match.setValues(rootClazz, Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS));
         }
 
         while (iterator.hasNext()) {
             // Now iterate over all parts of the expression and check each part against the current "match class"
             Info info = iterator.next();
-            if (match.clazz != null) {
+            if (!match.isEmpty()) {
                 // By default, we only consider properties
-                Set<String> membersUsed = implicitClassToMembersUsed.get(match.clazz);
+                Set<String> membersUsed = implicitClassToMembersUsed.get(match.clazz().name());
                 if (membersUsed == null) {
                     membersUsed = new HashSet<>();
-                    implicitClassToMembersUsed.put(match.clazz, membersUsed);
+                    implicitClassToMembersUsed.put(match.clazz().name(), membersUsed);
                 }
                 AnnotationTarget member = null;
                 // First try to find a java member
                 if (info.isVirtualMethod()) {
-                    member = findMethod(info.part.asVirtualMethod(), match.clazz, expression, index, templateIdToPathFun,
+                    member = findMethod(info.part.asVirtualMethod(), match.clazz(), expression, index, templateIdToPathFun,
                             results);
                     if (member != null) {
                         membersUsed.add(member.asMethod().name());
                     }
                 } else if (info.isProperty()) {
-                    member = findProperty(info.asProperty().name, match.clazz, index);
+                    member = findProperty(info.asProperty().name, match.clazz(), index);
                     if (member != null) {
                         membersUsed.add(member.kind() == Kind.FIELD ? member.asField().name() : member.asMethod().name());
                     }
                 }
                 if (member == null) {
                     // Then try to find an etension method
-                    member = findTemplateExtensionMethod(info, match.clazz, templateExtensionMethods, expression,
+                    member = findTemplateExtensionMethod(info, match.clazz(), templateExtensionMethods, expression,
                             index,
                             templateIdToPathFun, results);
                 }
@@ -595,13 +596,14 @@ public class QuteProcessor {
                 if (member == null) {
                     // Test whether the validation should be skipped
                     TypeCheck check = new TypeCheck(info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
-                            match.clazz, info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
+                            match.clazz(),
+                            info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
                     if (isExcluded(check, excludes)) {
                         LOGGER.debugf(
                                 "Expression part [%s] excluded from validation of [%s] against class [%s]",
                                 info.value,
-                                expression.toOriginalString(), match.clazz);
-                        match.clear();
+                                expression.toOriginalString(), match.clazz());
+                        match.clearValues();
                         break;
                     }
                 }
@@ -609,14 +611,16 @@ public class QuteProcessor {
                 if (member == null) {
                     // No member found - incorrect expression
                     incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                            info.value, match.clazz.toString(), expression.getOrigin()));
-                    match.clear();
+                            info.value, match.clazz().toString(), expression.getOrigin()));
+                    match.clearValues();
                     break;
                 } else {
-                    match.type = resolveType(member, match, index);
-                    if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                        match.clazz = index.getClassByName(match.type.name());
+                    Type type = resolveType(member, match, index);
+                    ClassInfo clazz = null;
+                    if (type.kind() == Type.Kind.CLASS || type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                        clazz = index.getClassByName(type.name());
                     }
+                    match.setValues(clazz, type);
                     if (info.isProperty()) {
                         String hint = info.asProperty().hint;
                         if (hint != null) {
@@ -625,7 +629,7 @@ public class QuteProcessor {
                                     incorrectExpressions);
                         }
                     }
-                    if (match.type != null && match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
+                    if (match.isPrimitive()) {
                         break;
                     }
                 }
@@ -634,7 +638,7 @@ public class QuteProcessor {
                         "No match class available - skip further validation for [%s] in expression [%s] in template [%s] on line %s",
                         info.part, expression.toOriginalString(), expression.getOrigin().getTemplateId(),
                         expression.getOrigin().getLine());
-                match.clear();
+                match.clearValues();
                 break;
             }
         }
@@ -731,7 +735,7 @@ public class QuteProcessor {
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods, List<TypeCheckExcludeBuildItem> excludes,
             Map<String, BeanInfo> namedBeans, Map<Integer, Match> generatedIdsToMatches,
-            Map<ClassInfo, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun) {
+            Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun) {
         Expression.Part firstPart = expression.getParts().get(0);
         if (firstPart.isVirtualMethod()) {
             incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
@@ -1096,8 +1100,7 @@ public class QuteProcessor {
             if (valueExpr != null) {
                 Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
                 if (valueExprMatch != null) {
-                    match.type = valueExprMatch.type;
-                    match.clazz = valueExprMatch.clazz;
+                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
                 }
             }
         } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
@@ -1109,8 +1112,7 @@ public class QuteProcessor {
             if (valueExpr != null) {
                 Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
                 if (valueExprMatch != null && valueExprMatch.clazz.isEnum()) {
-                    match.type = valueExprMatch.type;
-                    match.clazz = valueExprMatch.clazz;
+                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
                     return true;
                 }
             }
@@ -1120,13 +1122,13 @@ public class QuteProcessor {
 
     static void processLoopElementHint(Match match, IndexView index, Expression expression,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
-        if (match.type.name().equals(DotNames.INTEGER)) {
+        if (match.type().name().equals(DotNames.INTEGER)) {
             return;
         }
         Type matchType = null;
-        if (match.type.kind() == Type.Kind.ARRAY) {
-            matchType = match.type.asArrayType().component();
-        } else if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+        if (match.isArray()) {
+            matchType = match.type().asArrayType().component();
+        } else if (match.isClass() || match.isParameterizedType()) {
             Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
                     match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
             Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
@@ -1151,26 +1153,12 @@ public class QuteProcessor {
             }
         }
 
-        // Handle CompletionStage specially
-        if (matchType == null && ValueResolverGenerator.hasCompletionStageInTypeClosure(match.clazz, index)) {
-            Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
-                    match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
-            Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
-            // CompletionStage<List<Item>> => List<Item>
-            match.type = extractMatchType(closure, Names.COMPLETION_STAGE, firstParamType);
-            match.clazz = index.getClassByName(match.type.name());
-            processLoopElementHint(match, index, expression, incorrectExpressions);
-            return;
-        }
-
         if (matchType != null) {
-            match.type = matchType;
-            match.clazz = index.getClassByName(match.type.name());
+            match.setValues(index.getClassByName(matchType.name()), matchType);
         } else {
             incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                     "Unsupported iterable type found: " + match.type, expression.getOrigin()));
-            match.type = null;
-            match.clazz = null;
+            match.clearValues();
         }
     }
 
@@ -1181,8 +1169,13 @@ public class QuteProcessor {
 
     static class Match {
 
-        ClassInfo clazz;
-        Type type;
+        private final IndexView index;
+        private ClassInfo clazz;
+        private Type type;
+
+        Match(IndexView index) {
+            this.index = index;
+        }
 
         List<Type> getParameterizedTypeArguments() {
             return type.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE ? type.asParameterizedType().arguments()
@@ -1193,13 +1186,58 @@ public class QuteProcessor {
             return clazz.typeParameters();
         }
 
-        void clear() {
+        ClassInfo clazz() {
+            return clazz;
+        }
+
+        Type type() {
+            return type;
+        }
+
+        boolean isPrimitive() {
+            return type != null && type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE;
+        }
+
+        boolean isArray() {
+            return type != null && type.kind() == org.jboss.jandex.Type.Kind.ARRAY;
+        }
+
+        boolean isParameterizedType() {
+            return type != null && type.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
+        }
+
+        boolean isClass() {
+            return type != null && type.kind() == org.jboss.jandex.Type.Kind.CLASS;
+        }
+
+        void setValues(ClassInfo clazz, Type type) {
+            this.clazz = clazz;
+            this.type = type;
+            autoExtractType();
+        }
+
+        void clearValues() {
             clazz = null;
             type = null;
         }
 
         boolean isEmpty() {
             return clazz == null;
+        }
+
+        void autoExtractType() {
+            boolean hasCompletionStage = ValueResolverGenerator.hasCompletionStageInTypeClosure(clazz, index);
+            boolean hasUni = hasCompletionStage ? false
+                    : ValueResolverGenerator.hasClassInTypeClosure(clazz, Names.UNI, index);
+            if (hasCompletionStage || hasUni) {
+                Set<Type> closure = Types.getTypeClosure(clazz, Types.buildResolvedMap(
+                        getParameterizedTypeArguments(), getTypeParameters(), new HashMap<>(), index), index);
+                Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
+                // CompletionStage<List<Item>> => List<Item>
+                // Uni<List<String>> => List<String>
+                this.type = extractMatchType(closure, hasCompletionStage ? Names.COMPLETION_STAGE : Names.UNI, firstParamType);
+                this.clazz = index.getClassByName(type.name());
+            }
         }
     }
 

@@ -440,6 +440,13 @@ Virtual method parameters can be "nested" virtual method invocations.
 ----
 <1> `item.calculateDiscount(10)` is evaluated first and then passed as an argument to `item.subtractPrice()`.
 
+==== Evaluation of `CompletionStage` and `Uni` Objects
+
+Objects that implement `java.util.concurrent.CompletionStage` and `io.smallrye.mutiny.Uni` are evaluated in a special way.
+If a part of an expression resolves to a `CompletionStage`, the resolution continues once this stage is completed and the next part of the expression (if any) is evaluated against the result of the completed stage.
+For example, if there is an expression `{foo.size}` and `foo` resolves to `CompletionStage<List<String>>` then `size` is resolved against the completed result, i.e. `List<String>`.
+If a part of an expression resolves to a `Uni`, a `CompletionStage` is first created from `Uni` using `Uni#subscribeAsCompletionStage()` and then evaluated as described above.
+
 [[sections]]
 === Sections
 

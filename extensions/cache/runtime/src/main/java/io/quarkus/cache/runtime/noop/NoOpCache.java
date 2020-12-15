@@ -14,7 +14,7 @@ public class NoOpCache extends AbstractCache {
     private static final String NAME = NoOpCache.class.getName();
 
     @Override
-    protected String getName() {
+    public String getName() {
         return NAME;
     }
 

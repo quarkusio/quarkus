@@ -11,7 +11,7 @@ public abstract class AbstractCache implements Cache {
 
     private Object defaultKey;
 
-    protected abstract String getName();
+    public abstract String getName();
 
     /**
      * Returns the unique and immutable default key for the current cache. This key is used by the annotations caching API when

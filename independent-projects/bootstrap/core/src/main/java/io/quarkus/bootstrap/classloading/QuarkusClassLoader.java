@@ -69,6 +69,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile MemoryClassPathElement resettableElement;
     private volatile MemoryClassPathElement transformedClasses;
     private volatile ClassLoaderState state;
+    private final List<Runnable> closeTasks = new ArrayList<>();
 
     static final ClassLoader PLATFORM_CLASS_LOADER;
 
@@ -494,6 +495,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return super.defineClass(name, b, off, len);
     }
 
+    public void addCloseTask(Runnable task) {
+        closeTasks.add(task);
+    }
+
     @Override
     public void close() {
         synchronized (this) {
@@ -501,6 +506,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 return;
             }
             closed = true;
+        }
+        for (Runnable i : closeTasks) {
+            try {
+                i.run();
+            } catch (Throwable t) {
+                log.error("Failed to run close task", t);
+            }
         }
         if (driverLoaded) {
             //DriverManager only lets you remove drivers with the same CL as the caller

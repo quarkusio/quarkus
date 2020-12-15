@@ -1,0 +1,44 @@
+{#include main}
+{#style}
+.annotation {
+color: gray;
+}
+{/style}
+{#title}Config Editor{/title}
+{#body}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Property</th>
+        <th scope="col">Value</th>
+        <th scope="col">Update</th>
+        <th scope="col">Default Value</th>
+        <th scope="col">Description</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for item in info:config}
+    <tr class="{item.appPropertiesValue ? 'table-info' : ''}">
+        <form method="post" enctype="application/x-www-form-urlencoded">
+            <input type="hidden" name="name" value="{item.propertyName}"/>
+            <td>
+                {item.propertyName}
+            </td>
+            <td>
+                <input type="text" name="value" value="{item.currentValue}"/>
+            </td>
+            <td>
+                <input type="submit" value="Update" >
+            </td>
+            <td>
+                {item.defaultValue}
+            </td>
+            <td>
+                {item.description}
+            </td>
+        </form>
+        {/for}
+    </tbody>
+</table>
+{/body}
+{/include}

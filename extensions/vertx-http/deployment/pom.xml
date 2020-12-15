@@ -25,6 +25,15 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-spi</artifactId>
         </dependency>
+        <!-- Used for the dev console. Note that there is no corresponding runtime dependency -->
+        <dependency>
+            <groupId>io.quarkus.qute</groupId>
+            <artifactId>qute-generator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

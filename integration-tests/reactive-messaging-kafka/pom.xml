@@ -13,6 +13,12 @@
     <name>Quarkus - Integration Tests - Reactive Messaging - Kafka</name>
     <description>The Kafka Reactive Messaging integration tests module</description>
 
+    <properties>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <!-- needs to wait for smallrye-reactive-messaging-health to update MP health to 3.0 -->
+        <enforcer.skip>true</enforcer.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -236,6 +242,8 @@
             </build>
         </profile>
 
+        <!-- Needs to wait for the MP Health 3.0 update in the SR reactive messaging -->
+        <!--
         <profile>
             <id>native-image</id>
             <activation>
@@ -243,11 +251,11 @@
                     <name>native</name>
                 </property>
             </activation>
-            <!-- add some custom config, the rest comes from parent -->
             <properties>
                 <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
             </properties>
         </profile>
+        -->
     </profiles>
 
 

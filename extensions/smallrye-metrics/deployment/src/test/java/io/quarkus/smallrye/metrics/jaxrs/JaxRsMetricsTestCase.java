@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.SimpleTimer;
 import org.eclipse.microprofile.metrics.Tag;
@@ -68,8 +69,14 @@ public class JaxRsMetricsTestCase {
         SimpleTimer metric = metricRegistry.simpleTimer("REST.request",
                 new Tag("class", METRIC_RESOURCE_CLASS_NAME),
                 new Tag("method", "exception"));
-        assertEquals(1, metric.getCount());
-        assertTrue(metric.getElapsedTime().toNanos() > 0);
+        assertEquals(0, metric.getCount());
+        assertEquals(0, metric.getElapsedTime().toNanos());
+
+        // calls throwing an unmapped exception should only be reflected in the REST.request.unmappedException.total metric
+        Counter exceptionCounter = metricRegistry.counter("REST.request.unmappedException.total",
+                new Tag("class", METRIC_RESOURCE_CLASS_NAME),
+                new Tag("method", "exception"));
+        assertEquals(1, exceptionCounter.getCount());
     }
 
     @Test

@@ -1,30 +1,64 @@
 package org.jboss.resteasy.reactive.server.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.spi.RestHandler;
 
 public class ScoreSystem {
 
+    public static class EndpointScores {
+
+        public final List<EndpointScore> endpoints;
+        public final int score;
+
+        public EndpointScores(int score, List<EndpointScore> endpoints) {
+            this.score = score;
+            this.endpoints = endpoints;
+        }
+
+    }
+
+    public static class EndpointScore {
+
+        public final String httpMethod;
+        public final String fullPath;
+        public final List<MediaType> produces;
+        public final List<MediaType> consumes;
+        public final Map<Category, List<Diagnostic>> diagnostics;
+        public final int score;
+
+        public EndpointScore(String httpMethod, String fullPath, List<MediaType> produces, List<MediaType> consumes,
+                Map<Category, List<Diagnostic>> diagnostics, int score) {
+            this.httpMethod = httpMethod;
+            this.fullPath = fullPath;
+            this.produces = produces;
+            this.consumes = consumes;
+            this.diagnostics = diagnostics;
+            this.score = score;
+        }
+
+    }
+
     public static class Diagnostic {
 
-        private String message;
-        private int percentageScore;
+        public final String message;
+        public final int score;
 
         public Diagnostic(String message, int percentageScore) {
             this.message = message;
-            this.percentageScore = percentageScore;
+            this.score = percentageScore;
         }
 
         @Override
         public String toString() {
-            return message + ": " + percentageScore + "/100";
+            return message + ": " + score + "/100";
         }
 
         public static Diagnostic ExecutionNonBlocking = new Diagnostic("Dispatched on the IO thread", 100);
@@ -56,9 +90,12 @@ public class ScoreSystem {
         Execution
     }
 
+    public static EndpointScores latestScores;
+
     public final static RuntimeResourceVisitor ScoreVisitor = new RuntimeResourceVisitor() {
         int overallScore = 0;
         int overallTotal = 0;
+        List<EndpointScore> endpoints = new ArrayList<>();
 
         @Override
         public void visitRuntimeResource(String httpMethod, String fullPath, RuntimeResource runtimeResource) {
@@ -70,28 +107,15 @@ public class ScoreSystem {
                     produces = Arrays.asList(serverMediaType.getSortedOriginalMediaTypes());
                 }
             }
-            System.err.println(httpMethod + " " + fullPath);
-            for (RestHandler handler : runtimeResource.getHandlerChain()) {
-                System.err.println(" " + handler);
-            }
-            if (!produces.isEmpty()) {
-                System.err.println(" Produces: " + produces);
-            }
             List<MediaType> consumes = runtimeResource.getConsumes();
-            if (!consumes.isEmpty()) {
-                System.err.println(" Consumes: " + consumes);
-            }
-            System.err.println(" Diagnostics:");
             if (runtimeResource.getScore() == null) {
-                System.err.println(" Unable to determine score");
                 return;
             }
             int score = 0;
             int total = 0;
             for (Entry<Category, List<Diagnostic>> scoreEntry : runtimeResource.getScore().entrySet()) {
-                System.err.println("  " + scoreEntry.getKey() + ": " + scoreEntry.getValue());
                 for (Diagnostic diagnostic : scoreEntry.getValue()) {
-                    score += diagnostic.percentageScore;
+                    score += diagnostic.score;
                 }
                 total += 100;
             }
@@ -99,7 +123,7 @@ public class ScoreSystem {
             score = (int) Math.floor(((float) score / (float) total) * 100f);
             overallScore += score;
             overallTotal += 100;
-            System.err.println(" Score: " + score + "/100");
+            endpoints.add(new EndpointScore(httpMethod, fullPath, produces, consumes, runtimeResource.getScore(), score));
         }
 
         @Override
@@ -110,7 +134,7 @@ public class ScoreSystem {
             }
             // let's bring it to 100
             overallScore = (int) Math.floor(((float) overallScore / (float) overallTotal) * 100f);
-            System.err.println("Overall Score: " + overallScore + "/100");
+            latestScores = new EndpointScores(overallScore, endpoints);
         }
     };
 }

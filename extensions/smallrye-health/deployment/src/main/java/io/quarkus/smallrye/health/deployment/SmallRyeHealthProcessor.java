@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
@@ -82,7 +81,6 @@ import io.vertx.ext.web.RoutingContext;
 class SmallRyeHealthProcessor {
     private static final Logger LOG = Logger.getLogger(SmallRyeHealthProcessor.class);
 
-    private static final DotName HEALTH = DotName.createSimple(Health.class.getName());
     private static final DotName LIVENESS = DotName.createSimple(Liveness.class.getName());
     private static final DotName READINESS = DotName.createSimple(Readiness.class.getName());
     private static final DotName HEALTH_GROUP = DotName.createSimple(HealthGroup.class.getName());
@@ -156,7 +154,6 @@ class SmallRyeHealthProcessor {
 
         // Discover the beans annotated with @Health, @Liveness, @Readiness, @HealthGroup,
         // @HealthGroups and @Wellness even if no scope is defined
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(LIVENESS));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(READINESS));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUP));
@@ -196,7 +193,6 @@ class SmallRyeHealthProcessor {
         // log a warning if users try to use MP Health annotations with JAX-RS @Path
         warnIfJaxRsPathUsed(index, LIVENESS);
         warnIfJaxRsPathUsed(index, READINESS);
-        warnIfJaxRsPathUsed(index, HEALTH);
         warnIfJaxRsPathUsed(index, WELLNESS);
 
         // Register the health handler
@@ -345,7 +341,6 @@ class SmallRyeHealthProcessor {
             }
         }
         List<DotName> healthAnnotations = new ArrayList<>(5);
-        healthAnnotations.add(HEALTH);
         healthAnnotations.add(LIVENESS);
         healthAnnotations.add(READINESS);
         healthAnnotations.add(HEALTH_GROUP);

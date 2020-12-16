@@ -72,7 +72,6 @@ public abstract class AbstractMethodsAdder {
         if (limit != null) {
             // create a custom page object that will limit the results by the limit size
             page = methodCreator.newInstance(MethodDescriptor.ofConstructor(Page.class, int.class), methodCreator.load(limit));
-
         } else if (pageableParameterIndex != null) {
             page = methodCreator.invokeStaticMethod(
                     MethodDescriptor.ofMethod(TypesConverter.class, "toPanachePage", Page.class, Pageable.class),
@@ -98,8 +97,10 @@ public abstract class AbstractMethodsAdder {
             ResultHandle singleResult = tryBlock.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
                     panacheQuery);
+
             ResultHandle casted = tryBlock.checkCast(singleResult, entityClassInfo.name().toString());
             tryBlock.returnValue(casted);
+
             CatchBlockCreator catchBlock = tryBlock.addCatch(NoResultException.class);
             catchBlock.returnValue(catchBlock.loadNull());
 
@@ -116,11 +117,24 @@ public abstract class AbstractMethodsAdder {
             ResultHandle singleResult = tryBlock.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
                     panacheQuery);
-            ResultHandle casted = tryBlock.checkCast(singleResult, entityClassInfo.name().toString());
-            ResultHandle optional = tryBlock.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
-                    casted);
-            tryBlock.returnValue(optional);
+
+            if (customResultType == null) {
+                ResultHandle casted = tryBlock.checkCast(singleResult, entityClassInfo.name().toString());
+                ResultHandle optional = tryBlock.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                        casted);
+                tryBlock.returnValue(optional);
+            } else {
+                ResultHandle customResult = tryBlock.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
+                                customResultType.toString(),
+                                Object[].class.getName()),
+                        singleResult);
+                ResultHandle optional = tryBlock.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                        customResult);
+                tryBlock.returnValue(optional);
+            }
             CatchBlockCreator catchBlock = tryBlock.addCatch(NoResultException.class);
             ResultHandle emptyOptional = catchBlock.invokeStaticMethod(
                     MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class));
@@ -134,13 +148,14 @@ public abstract class AbstractMethodsAdder {
                         MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
                         panacheQuery);
             } else {
+
                 ResultHandle stream = methodCreator.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(PanacheQuery.class, "stream", Stream.class),
                         panacheQuery);
 
                 // Function to convert Object[] to the custom type (using the generated static convert method)
-                FunctionCreator function = methodCreator.createFunction(Function.class);
-                BytecodeCreator funcBytecode = function.getBytecode();
+                FunctionCreator customResultMappingFunction = methodCreator.createFunction(Function.class);
+                BytecodeCreator funcBytecode = customResultMappingFunction.getBytecode();
                 ResultHandle obj = funcBytecode.invokeStaticMethod(
                         MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
                                 customResultType.toString(),
@@ -150,7 +165,7 @@ public abstract class AbstractMethodsAdder {
 
                 stream = methodCreator.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Stream.class, "map", Stream.class, Function.class),
-                        stream, function.getInstance());
+                        stream, customResultMappingFunction.getInstance());
 
                 // Re-collect the stream into a list
                 ResultHandle collector = methodCreator.invokeStaticMethod(
@@ -213,12 +228,32 @@ public abstract class AbstractMethodsAdder {
             }
 
             methodCreator.returnValue(sliceResult);
-
         } else if (isIntLongOrBoolean(returnType)) {
             ResultHandle singleResult = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(PanacheQuery.class, "singleResult", Object.class),
                     panacheQuery);
             methodCreator.returnValue(singleResult);
+        } else if (customResultType != null) {
+            // when limit is specified we don't want to fail when there are multiple results, we just want to return the first one
+            String panacheQueryMethodToUse = (limit != null) ? "firstResult" : "singleResult";
+
+            TryBlock tryBlock = methodCreator.tryBlock();
+            ResultHandle singleResult = tryBlock.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(PanacheQuery.class, panacheQueryMethodToUse, Object.class),
+                    panacheQuery);
+
+            ResultHandle customResult = tryBlock.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
+                            customResultType.toString(),
+                            Object[].class.getName()),
+                    singleResult);
+
+            tryBlock.returnValue(customResult);
+
+            CatchBlockCreator catchBlock = tryBlock.addCatch(NoResultException.class);
+            catchBlock.returnValue(catchBlock.loadNull());
+
+            tryBlock.returnValue(customResult);
         } else {
             throw new IllegalArgumentException(
                     "Return type of method " + methodName + " of Repository " + repositoryClassInfo

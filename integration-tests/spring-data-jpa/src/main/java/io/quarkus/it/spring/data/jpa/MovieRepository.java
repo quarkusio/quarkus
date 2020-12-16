@@ -2,6 +2,7 @@ package io.quarkus.it.spring.data.jpa;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,9 +62,21 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
     @Query("SELECT DISTINCT m.rating FROM Movie m where m.rating != null")
     List<String> findAllRatings();
 
+    @Query("SELECT title, rating from Movie where title = ?1")
+    Optional<MovieRating> findOptionalRatingByTitle(String title);
+
+    @Query("SELECT title, rating FROM Movie WHERE title = ?1")
+    MovieRating findRatingByTitle(String title);
+
     interface MovieCountByRating {
         String getRating();
 
         Long getCount();
+    }
+
+    interface MovieRating {
+        String getTitle();
+
+        String getRating();
     }
 }

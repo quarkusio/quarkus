@@ -68,10 +68,9 @@
 - Request Cookies are based on https://tools.ietf.org/html/rfc2109 which have the clients send cookie params to the server, using `$`-prefixed parameter names,
   but it was obsoleted in https://tools.ietf.org/html/rfc2965 and then in https://tools.ietf.org/html/rfc6265, which does not send cookie params to the server
   and those params are not `$`-prefixed anymore.
-- Should add HTTP status codes constants, without requiring to go via Response.Status.OK.getStatus() which is not a constant
-- Parameter-less `@*Param` annotations, make `@Context` optional for method parameters, same for `@PathParam`
+- Should add HTTP status codes integer constants, without requiring to go via Response.Status.OK.getStatus() which is not a constant
+- There are missing HTTP status codes
 - Turn `@BeanParam` into a type declaration
-- Support the new annotated filters
 - Spec should say when `CompletionCallback` run: is it after the request is sent, or before? ATM it can be before (that's how we do it
   but it leads in tests that get a response before the callbacks are run and a nightmare to test because the next request can be executed
   before the callbacks are run).
@@ -79,8 +78,19 @@
 
 *** Spec extensions proposed
 
-- We should disfavour ParamConverterProvider and allow `@Context` on `ParamConverter` since it has a type param, we could scan those at build time
+- We should disfavour `ParamConverterProvider` and allow `@Context` on `ParamConverter` since it has a type param, we could scan those at build time
   rather than do runtime-resolving.
+- API to support pluggable async types (on top of `CompletionStage`, so for `Uni`/`Multi`), like what RESTEasy has, but a bit different if we can, so
+  avoid double conversions just to register listeners.
+- SSE element types annotation: support being able to set content type of individual SSE elements via an annotation
+- Streaming with `Multi` (SSE or raw): a method can return a `Multi` and the content is streamed to the HTTP response, or via SSE
+- Support suspendable filters: add `suspend`/`resume` methods to `ContainerRequestContext`
+- Annotation-based filters, interceptors and exception mappers: @ServerResponseFilter on a method declares a filter, all parameters are injected automatically,
+  and the return type can be `Response`, `Optional<Response>` or `Uni<Response>`
+- Local annotation-based exception mappers: if declared in a JAX-RS endpoint, local to that endpoint
+- Add or generify `Response`: this allows scanners to know the type of a response and optimise or produce valid openapi.
+- Parameter-less `@*Param` annotations, make `@Context` optional for method parameters, same for `@PathParam` when there's a path param declared
+  with the same name.
 
 *** Not tested by the TCK (and not implemented)
 

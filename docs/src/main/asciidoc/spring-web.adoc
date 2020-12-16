@@ -286,7 +286,7 @@ example, adding the following to the class level of the `GreetingController`:
             email = "techsupport@example.com"),
         license = @License(
             name = "Apache 2.0",
-            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"))
 )
 ----
 
@@ -321,7 +321,7 @@ info:
     email: techsupport@example.com
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.1
 tags:
 - name: Hello

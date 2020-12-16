@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide covers the Quarkus DEV Console.
+This guide covers the Quarkus DEV Console for link:building-my-first-extension[extension authors].
 
 Quarkus now ships with a new experimental DEV Console, which is available in DEV mode (when you start
 quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] and will show you something like
@@ -35,7 +35,8 @@ page, like this:
 
 image:dev-console-embedded.png[alt=DEV Console embedded,role="center"]
 
-You have to add a file named `dev-templates/embedded.html` in your `deployment`
+You have to add a file named `dev-templates/embedded.html` in your 
+link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`]
 extension resources:
 
 image::dev-console-embedded-file.png[alt=DEV Console embedded.html]
@@ -148,7 +149,8 @@ There are two ways to make that information available, depending on whether it i
 build time or at run time.
 
 In both cases we advise that you add support for the DEV Console in your `{pkg}.deployment.devconsole`
-package in a `DevConsoleProcessor` class (in your extension's `deployment` module).
+package in a `DevConsoleProcessor` class (in your extension's 
+link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module).
 
 === Passing run-time information
 
@@ -170,10 +172,12 @@ public class DevConsoleProcessor {
     }
 }
 ----
-<1> Don't forget to make this build step conditional on being in DEV mode
+<1> Don't forget to make this link:building-my-first-extension#deploying-the-greeting-feature[build step]
+    conditional on being in DEV mode
 <2> Declare a run-time DEV `info:cacheInfos` template value
 
-This will map the `info:cacheInfos` value to this supplier in your extension's runtime module:
+This will map the `info:cacheInfos` value to this supplier in your extension's 
+link:building-my-first-extension#description-of-a-quarkus-extension[`runtime module`]:
 
 [source,java]
 ----
@@ -249,8 +253,9 @@ You can also add actions to your DEV templates:
 
 image::dev-console-interactive.png[alt=DEV Console interactive page]
 
-This can be done by adding another build step to
-declare the action in your extension's `deployment` module:
+This can be done by adding another link:building-my-first-extension#deploying-the-greeting-feature[build step] to
+declare the action in your extension's
+link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module:
 
 [source,java]
 ----
@@ -278,7 +283,8 @@ public class DevConsoleProcessor {
 
 Note: you can see <<action-example,how to invoke this action from your full page>>.
 
-Now all you have to do is implement the recorder in your extension's runtime module:
+Now all you have to do is implement the recorder in your extension's 
+link:building-my-first-extension#description-of-a-quarkus-extension[`runtime module`]:
 
 [source,java]
 ----

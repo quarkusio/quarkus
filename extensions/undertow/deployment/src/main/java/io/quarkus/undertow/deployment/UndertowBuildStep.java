@@ -26,6 +26,7 @@ import javax.enterprise.context.SessionScoped;
 import javax.inject.Inject;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.annotation.HandlesTypes;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.ServletSecurity;
@@ -57,6 +58,7 @@ import org.jboss.metadata.javaee.spec.SecurityRoleRefMetaData;
 import org.jboss.metadata.javaee.spec.SecurityRolesMetaData;
 import org.jboss.metadata.web.spec.AnnotationMetaData;
 import org.jboss.metadata.web.spec.AnnotationsMetaData;
+import org.jboss.metadata.web.spec.CookieConfigMetaData;
 import org.jboss.metadata.web.spec.DispatcherType;
 import org.jboss.metadata.web.spec.EmptyRoleSemanticType;
 import org.jboss.metadata.web.spec.FilterMappingMetaData;
@@ -71,6 +73,7 @@ import org.jboss.metadata.web.spec.ServletMappingMetaData;
 import org.jboss.metadata.web.spec.ServletMetaData;
 import org.jboss.metadata.web.spec.ServletSecurityMetaData;
 import org.jboss.metadata.web.spec.ServletsMetaData;
+import org.jboss.metadata.web.spec.SessionConfigMetaData;
 import org.jboss.metadata.web.spec.TransportGuaranteeType;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.metadata.web.spec.WebResourceCollectionMetaData;
@@ -120,6 +123,7 @@ import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.SecurityConstraint;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
+import io.undertow.servlet.api.ServletSessionConfig;
 import io.undertow.servlet.api.WebResourceCollection;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.vertx.core.Handler;
@@ -573,6 +577,25 @@ public class UndertowBuildStep {
 
             recorder.addServletContainerInitializer(deployment,
                     (Class<? extends ServletContainerInitializer>) context.classProxy(sci.sciClass), handlesTypes);
+        }
+        SessionConfigMetaData sessionConfig = webMetaData.getSessionConfig();
+        if (sessionConfig != null) {
+            if (sessionConfig.getSessionTimeoutSet()) {
+                recorder.setSessionTimeout(deployment, sessionConfig.getSessionTimeout());
+            }
+            CookieConfigMetaData cc = sessionConfig.getCookieConfig();
+            if (sessionConfig.getSessionTrackingModes() != null || cc != null) {
+                ServletSessionConfig config = recorder.sessionConfig(deployment);
+                if (sessionConfig.getSessionTrackingModes() != null) {
+                    recorder.setSessionTracking(config, sessionConfig.getSessionTrackingModes().stream()
+                            .map(s -> SessionTrackingMode.valueOf(s.toString())).collect(Collectors.toSet()));
+                }
+                if (cc != null) {
+                    recorder.setSessionCookieConfig(config, cc.getName(), cc.getPath(), cc.getComment(), cc.getDomain(),
+                            cc.getHttpOnlySet() ? cc.getHttpOnly() : null, cc.getMaxAgeSet() ? cc.getMaxAge() : null,
+                            cc.getSecureSet() ? cc.getSecure() : null);
+                }
+            }
         }
 
         return new ServletDeploymentManagerBuildItem(

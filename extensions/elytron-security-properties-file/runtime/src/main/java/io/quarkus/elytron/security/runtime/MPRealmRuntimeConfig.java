@@ -7,6 +7,8 @@ import org.wildfly.security.password.interfaces.DigestPassword;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 /**
  * Configuration information used to populate a {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
@@ -35,6 +37,7 @@ public class MPRealmRuntimeConfig {
      * See <a href="#embedded-users">Embedded Users</a>.
      */
     @ConfigItem(defaultValueDocumentation = "none")
+    @ConvertWith(TrimmedStringConverter.class)
     public Map<String, String> users;
 
     /**
@@ -42,6 +45,7 @@ public class MPRealmRuntimeConfig {
      * See <a href="#embedded-roles">Embedded Roles</a>.
      */
     @ConfigItem(defaultValueDocumentation = "none")
+    @ConvertWith(TrimmedStringConverter.class)
     public Map<String, String> roles;
 
 }

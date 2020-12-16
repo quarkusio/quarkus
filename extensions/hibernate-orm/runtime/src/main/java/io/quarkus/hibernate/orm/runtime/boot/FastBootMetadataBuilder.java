@@ -71,7 +71,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -100,7 +100,7 @@ public class FastBootMetadataBuilder {
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
-    private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
+    private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
@@ -111,7 +111,7 @@ public class FastBootMetadataBuilder {
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
-        this.integrationStaticInitListeners = puDefinition.getIntegrationStaticInitListeners();
+        this.integrationStaticDescriptors = puDefinition.getIntegrationStaticDescriptors();
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
         // integration, instance );
@@ -291,11 +291,8 @@ public class FastBootMetadataBuilder {
         cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
                 QuarkusInfinispanRegionFactory.class.getName());
 
-        for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
-            if (listener == null) {
-                continue;
-            }
-            listener.contributeBootProperties(cfg::put);
+        for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
+            descriptor.getInitListener().ifPresent(listener -> listener.contributeBootProperties(cfg::put));
         }
 
         return mergedSettings;
@@ -310,12 +307,10 @@ public class FastBootMetadataBuilder {
 
         IntegrationSettings.Builder integrationSettingsBuilder = new IntegrationSettings.Builder();
 
-        for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
-            if (listener == null) {
-                continue;
-            }
-            listener.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
-                    integrationSettingsBuilder::put);
+        for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
+            descriptor.getInitListener()
+                    .ifPresent(listener -> listener.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
+                            integrationSettingsBuilder::put));
         }
 
         Dialect dialect = extractDialect();

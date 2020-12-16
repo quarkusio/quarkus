@@ -164,7 +164,7 @@ public final class HibernateReactiveProcessor {
             // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
             // when HibernateORM starts its persistence units
             runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_REACTIVE,
-                    puDescriptor.getPersistenceUnitName(), null));
+                    puDescriptor.getPersistenceUnitName()));
         }
     }
 
@@ -174,7 +174,7 @@ public final class HibernateReactiveProcessor {
             HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems) {
         recorder.initializePersistenceProvider(hibernateOrmRuntimeConfig,
-                HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectListeners(integrationBuildItems));
+                HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();
     }
 

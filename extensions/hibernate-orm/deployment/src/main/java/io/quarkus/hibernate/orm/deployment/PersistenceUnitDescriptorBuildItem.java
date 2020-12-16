@@ -9,7 +9,7 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 
 /**
  * Not to be confused with PersistenceXmlDescriptorBuildItem, which holds
@@ -72,8 +72,8 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     }
 
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
-            List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+            List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, dataSource, multiTenancyStrategy, isReactive,
-                fromPersistenceXml, integrationStaticInitListeners);
+                fromPersistenceXml, integrationStaticDescriptors);
     }
 }

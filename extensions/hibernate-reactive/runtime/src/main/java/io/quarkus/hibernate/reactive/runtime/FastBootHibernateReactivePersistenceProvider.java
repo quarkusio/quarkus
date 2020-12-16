@@ -31,7 +31,7 @@ import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.reactive.runtime.boot.FastBootReactiveEntityManagerFactoryBuilder;
@@ -55,12 +55,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     private volatile FastBootHibernatePersistenceProvider delegate;
 
     private final HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig;
-    private final Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> integrationRuntimeInitListeners;
+    private final Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors;
 
     public FastBootHibernateReactivePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
-            Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> integrationRuntimeInitListeners) {
+            Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
         this.hibernateOrmRuntimeConfig = hibernateOrmRuntimeConfig;
-        this.integrationRuntimeInitListeners = integrationRuntimeInitListeners;
+        this.integrationRuntimeDescriptors = integrationRuntimeDescriptors;
     }
 
     @Override
@@ -139,12 +139,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 injectRuntimeConfiguration(persistenceUnitName, hibernateOrmRuntimeConfig, runtimeSettingsBuilder);
             }
 
-            for (HibernateOrmIntegrationRuntimeInitListener listener : integrationRuntimeInitListeners
+            for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
                     .getOrDefault(persistenceUnitName, Collections.emptyList())) {
-                if (listener == null) {
-                    continue;
-                }
-                listener.contributeRuntimeProperties(runtimeSettingsBuilder::put);
+                descriptor.getInitListener()
+                        .ifPresent(listener -> listener.contributeRuntimeProperties(runtimeSettingsBuilder::put));
             }
 
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
@@ -291,7 +289,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 localDelegate = this.delegate;
                 if (localDelegate == null) {
                     this.delegate = localDelegate = new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig,
-                            integrationRuntimeInitListeners);
+                            integrationRuntimeDescriptors);
                 }
             }
         }

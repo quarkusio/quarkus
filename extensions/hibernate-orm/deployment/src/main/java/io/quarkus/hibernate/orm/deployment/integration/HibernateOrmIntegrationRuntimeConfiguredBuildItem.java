@@ -4,55 +4,51 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 
 public final class HibernateOrmIntegrationRuntimeConfiguredBuildItem extends MultiBuildItem {
 
-    private final String name;
+    private final String integrationName;
     private final String persistenceUnitName;
-    private final HibernateOrmIntegrationRuntimeInitListener listener;
+    private HibernateOrmIntegrationRuntimeInitListener initListener;
 
-    public HibernateOrmIntegrationRuntimeConfiguredBuildItem(String name,
-            String persistenceUnitName, HibernateOrmIntegrationRuntimeInitListener listener) {
-        if (name == null) {
+    public HibernateOrmIntegrationRuntimeConfiguredBuildItem(String integrationName, String persistenceUnitName) {
+        if (integrationName == null) {
             throw new IllegalArgumentException("name cannot be null");
         }
-        this.name = name;
+        this.integrationName = integrationName;
         if (persistenceUnitName == null) {
             throw new IllegalArgumentException("persistenceUnitName cannot be null");
         }
         this.persistenceUnitName = persistenceUnitName;
-        this.listener = listener;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getPersistenceUnitName() {
-        return persistenceUnitName;
-    }
-
-    public HibernateOrmIntegrationRuntimeInitListener getListener() {
-        return listener;
+    public HibernateOrmIntegrationRuntimeConfiguredBuildItem setInitListener(
+            HibernateOrmIntegrationRuntimeInitListener initListener) {
+        this.initListener = initListener;
+        return this;
     }
 
     @Override
     public String toString() {
-        return new StringBuilder().append(HibernateOrmIntegrationRuntimeConfiguredBuildItem.class.getSimpleName())
-                .append(" [").append(name).append("]")
-                .toString();
+        return HibernateOrmIntegrationRuntimeConfiguredBuildItem.class.getSimpleName() + " [" + integrationName + "]";
     }
 
-    public static Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> collectListeners(
+    private HibernateOrmIntegrationRuntimeDescriptor toDescriptor() {
+        return new HibernateOrmIntegrationRuntimeDescriptor(integrationName, Optional.ofNullable(initListener));
+    }
+
+    public static Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> collectDescriptors(
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> items) {
-        Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> listeners = new HashMap<>();
+        Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> result = new HashMap<>();
         for (HibernateOrmIntegrationRuntimeConfiguredBuildItem item : items) {
-            listeners.computeIfAbsent(item.getPersistenceUnitName(), ignored -> new ArrayList<>())
-                    .add(item.getListener());
+            result.computeIfAbsent(item.persistenceUnitName, ignored -> new ArrayList<>())
+                    .add(item.toDescriptor());
         }
-        return listeners;
+        return result;
     }
 }

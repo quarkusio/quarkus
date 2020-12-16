@@ -15,6 +15,7 @@ public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends Mult
     private final String integrationName;
     private final String persistenceUnitName;
     private HibernateOrmIntegrationStaticInitListener initListener;
+    private boolean xmlMappingRequired = false;
 
     public HibernateOrmIntegrationStaticConfiguredBuildItem(String integrationName, String persistenceUnitName) {
         if (integrationName == null) {
@@ -38,8 +39,14 @@ public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends Mult
         return this;
     }
 
+    public HibernateOrmIntegrationStaticConfiguredBuildItem setXmlMappingRequired(boolean xmlMappingRequired) {
+        this.xmlMappingRequired = xmlMappingRequired;
+        return this;
+    }
+
     private HibernateOrmIntegrationStaticDescriptor toDescriptor() {
-        return new HibernateOrmIntegrationStaticDescriptor(integrationName, Optional.ofNullable(initListener));
+        return new HibernateOrmIntegrationStaticDescriptor(integrationName, Optional.ofNullable(initListener),
+                xmlMappingRequired);
     }
 
     public static Map<String, List<HibernateOrmIntegrationStaticDescriptor>> collectDescriptors(

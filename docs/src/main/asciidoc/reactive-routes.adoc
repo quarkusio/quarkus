@@ -663,7 +663,7 @@ example, adding header info, or specifying the return type on `void` methods mig
             email = "techsupport@example.com"),
         license = @License(
             name = "Apache 2.0",
-            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"))
 )
 @ApplicationScoped
 public class MyDeclarativeRoutes {
@@ -709,7 +709,7 @@ info:
     email: techsupport@example.com
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.1
 paths:
   /greetings:

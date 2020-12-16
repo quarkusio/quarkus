@@ -291,7 +291,7 @@ empty class can then be annotated with various OpenAPI annotations such as `@Ope
             email = "techsupport@example.com"),
         license = @License(
             name = "Apache 2.0",
-            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+            url = "https://www.apache.org/licenses/LICENSE-2.0.html"))
 )
 public class ExampleApiApplication extends Application {
 }
@@ -314,7 +314,7 @@ mp.openapi.extensions.smallrye.info.contact.email=techsupport@example.com
 mp.openapi.extensions.smallrye.info.contact.name=Example API Support
 mp.openapi.extensions.smallrye.info.contact.url=http://exampleurl.com/contact
 mp.openapi.extensions.smallrye.info.license.name=Apache 2.0
-mp.openapi.extensions.smallrye.info.license.url=http://www.apache.org/licenses/LICENSE-2.0.html
+mp.openapi.extensions.smallrye.info.license.url=https://www.apache.org/licenses/LICENSE-2.0.html
 ----
 
 This will give you similar information as the `@OpenAPIDefinition` example above.

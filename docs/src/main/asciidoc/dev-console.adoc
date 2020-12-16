@@ -37,7 +37,7 @@ image:dev-console-embedded.png[alt=DEV Console embedded,role="center"]
 
 You have to add a file named `dev-templates/embedded.html` in your 
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`]
-extension resources:
+extension module's resources:
 
 image::dev-console-embedded-file.png[alt=DEV Console embedded.html]
 
@@ -73,8 +73,9 @@ To add full pages for your DEV Console extension such as this one:
 
 image::dev-console-page.png[alt=DEV Console custom page]
 
-You need to place them in your `/dev-console` resource folder,
-like this page for the link:/guides/cache[`quarkus-cache` extension]:
+You need to place them in your extension's 
+link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module's 
+`/dev-templates` resource folder, like this page for the link:/guides/cache[`quarkus-cache` extension]:
 
 [[action-example]]
 [source,java]

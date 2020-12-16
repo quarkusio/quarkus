@@ -42,12 +42,12 @@ public class ServerFormUrlEncodedProvider extends FormUrlEncodedProvider
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return MultivaluedMap.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(MultivaluedMap o, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(MultivaluedMap o, Type genericType, ServerRequestContext context) throws WebApplicationException {
         try {
             // FIXME: use response encoding
             context.serverResponse().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));

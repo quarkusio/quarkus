@@ -16,12 +16,12 @@ public class ServerStringMessageBodyHandler extends StringMessageBodyHandler
         implements ServerMessageBodyWriter<Object>, ServerMessageBodyReader<String> {
 
     @Override
-    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return true;
     }
 
     @Override
-    public void writeResponse(Object o, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(Object o, Type genericType, ServerRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
         context.serverResponse().end(o.toString());
     }

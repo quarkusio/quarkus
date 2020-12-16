@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -167,12 +168,22 @@ public class ServerSerialisers extends Serialisers {
             ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
             RuntimeResource target = context.getTarget();
             ServerSerialisers.encodeResponseHeaders(context);
-            if (quarkusRestWriter.isWriteable(entity.getClass(), target == null ? null : target.getLazyMethod(),
+            Type genericType;
+            if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
+                genericType = context.getGenericReturnType();
+            } else {
+                genericType = target == null ? null : target.getReturnType();
+            }
+            Class<?> entityClass = entity.getClass();
+            if (quarkusRestWriter.isWriteable(
+                    entityClass,
+                    genericType,
+                    target == null ? null : target.getLazyMethod(),
                     context.getResponseMediaType())) {
                 if (mediaType != null) {
                     context.setResponseContentType(mediaType);
                 }
-                quarkusRestWriter.writeResponse(entity, context);
+                quarkusRestWriter.writeResponse(entity, genericType, context);
                 return true;
             } else {
                 return false;

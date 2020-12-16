@@ -65,12 +65,13 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return true;
     }
 
     @Override
-    public void writeResponse(Object o, ServerRequestContext context) throws WebApplicationException, IOException {
+    public void writeResponse(Object o, Type genericType, ServerRequestContext context)
+            throws WebApplicationException, IOException {
         context.serverResponse().setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         OutputStream stream = context.getOrCreateOutputStream();
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...

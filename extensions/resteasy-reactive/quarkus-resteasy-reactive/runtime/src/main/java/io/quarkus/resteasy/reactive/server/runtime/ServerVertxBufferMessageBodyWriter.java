@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
+import java.lang.reflect.Type;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
@@ -16,12 +18,12 @@ public class ServerVertxBufferMessageBodyWriter extends VertxBufferMessageBodyWr
         implements ServerMessageBodyWriter<Buffer> {
 
     @Override
-    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return true;
     }
 
     @Override
-    public void writeResponse(Buffer buffer, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(Buffer buffer, Type genericType, ServerRequestContext context) throws WebApplicationException {
         context.serverResponse().end(buffer.getBytes());
     }
 }

@@ -52,7 +52,10 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
             }
             builder.resourcesEnd();
         }
-        routingContext.response().putHeader("content-type", "text/html; charset=utf-8").end(builder.toString());
+        routingContext.response()
+                .setStatusCode(404)
+                .putHeader("content-type", "text/html; charset=utf-8")
+                .end(builder.toString());
     }
 
 }

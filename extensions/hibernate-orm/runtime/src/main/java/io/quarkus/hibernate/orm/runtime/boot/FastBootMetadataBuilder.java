@@ -101,7 +101,6 @@ public class FastBootMetadataBuilder {
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
     private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
-    private final boolean isEnversPresent;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
@@ -113,7 +112,6 @@ public class FastBootMetadataBuilder {
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
         this.integrationStaticInitListeners = puDefinition.getIntegrationStaticInitListeners();
-        this.isEnversPresent = puDefinition.isEnversPresent();
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
         // integration, instance );
@@ -246,16 +244,9 @@ public class FastBootMetadataBuilder {
         cfg.put(WRAP_RESULT_SETS, "false");
 
         //Hibernate Envers requires XML_MAPPING_ENABLED to be activated, but we don't want to enable this for any other use:
-        if (isEnversPresent) {
-            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-                LOG.warn(
-                        "XML mapping is not supported. It will be partially activated to allow compatibility with Hibernate Envers, but this support is temporary");
-            }
-        } else {
-            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-                LOG.warn("XML mapping is not supported. Setting " + XML_MAPPING_ENABLED + " to false.");
-            }
-            cfg.put(XML_MAPPING_ENABLED, "false");
+        if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
+            LOG.warn(
+                    "XML mapping is not supported. It will be partially activated to allow compatibility with Hibernate Envers, but this support is temporary");
         }
 
         // Note: this one is not a boolean, just having the property enables it

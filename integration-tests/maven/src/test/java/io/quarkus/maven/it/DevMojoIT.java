@@ -307,14 +307,18 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         runAndCheck();
 
         final List<String> extDepWarnings = Files.readAllLines(testDir.toPath().resolve("build-project-with-extension.log"))
-                .stream().filter(s -> s.startsWith("[WARNING] Local Quarkus extension dependency "))
+                .stream()
+                .filter(s -> s.startsWith(
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency "))
                 .collect(Collectors.toList());
         assertTrue(extDepWarnings
-                .contains("[WARNING] Local Quarkus extension dependency org.acme:acme-quarkus-ext will not be hot-reloadable"));
+                .contains(
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-quarkus-ext will not be hot-reloadable"));
         assertTrue(extDepWarnings
-                .contains("[WARNING] Local Quarkus extension dependency org.acme:acme-common will not be hot-reloadable"));
+                .contains(
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common will not be hot-reloadable"));
         assertTrue(extDepWarnings.contains(
-                "[WARNING] Local Quarkus extension dependency org.acme:acme-common-transitive will not be hot-reloadable"));
+                "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:acme-common-transitive will not be hot-reloadable"));
         assertEquals(3, extDepWarnings.size());
     }
 

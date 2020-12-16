@@ -460,7 +460,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setParameters(methodParameters)
                     .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?
-                    .setReturnType(AsmUtil.getSignature(info.returnType(), typeArgMapper));
+                    .setReturnType(determineReturnType(info, typeArgMapper, currentClassInfo, actualEndpointInfo, index));
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, info);
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(new AbstractMap.SimpleEntry<>(info, method));
@@ -469,6 +469,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    private String determineReturnType(MethodInfo info, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
+            ClassInfo actualEndpointInfo, IndexView index) {
+        Type type = info.returnType();
+        if (type.kind() == Type.Kind.TYPE_VARIABLE) {
+            type = resolveTypeVariable(type.asTypeVariable(), currentClassInfo, actualEndpointInfo, index);
+        }
+        return AsmUtil.getSignature(type, typeArgMapper);
     }
 
     protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info) {
@@ -609,27 +618,39 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (typeVariable.bounds().isEmpty()) {
                     return Object.class.getName();
                 }
-                int pos = -1;
-                for (int i = 0; i < currentClass.typeParameters().size(); ++i) {
-                    if (currentClass.typeParameters().get(i).identifier().equals(typeVariable.identifier())) {
-                        pos = i;
-                        break;
-                    }
-                }
-                if (pos != -1) {
-                    List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
-                            indexView);
 
-                    Type resolved = params.get(pos);
-                    if (resolved.kind() != Type.Kind.TYPE_VARIABLE
-                            || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier())) {
-                        return toClassName(resolved, currentClass, actualEndpointClass, indexView);
-                    }
-                }
-                return toClassName(typeVariable.bounds().get(0), currentClass, actualEndpointClass, indexView);
+                return toClassName(resolveTypeVariable(typeVariable, currentClass, actualEndpointClass, indexView),
+                        currentClass, actualEndpointClass, indexView);
             default:
                 throw new RuntimeException("Unknown parameter type " + indexType);
         }
+    }
+
+    private static Type resolveTypeVariable(TypeVariable typeVariable, ClassInfo currentClass, ClassInfo actualEndpointClass,
+            IndexView indexView) {
+        if (typeVariable.bounds().isEmpty()) {
+            return Type.create(DotName.createSimple(Object.class.getName()), Kind.CLASS);
+        }
+        int pos = -1;
+        List<TypeVariable> typeVariables = currentClass.typeParameters();
+        for (int i = 0; i < typeVariables.size(); ++i) {
+            if (typeVariables.get(i).identifier().equals(typeVariable.identifier())) {
+                pos = i;
+                break;
+            }
+        }
+        if (pos != -1) {
+            List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
+                    indexView);
+
+            Type resolved = params.get(pos);
+            if (resolved.kind() != Type.Kind.TYPE_VARIABLE
+                    || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier())) {
+                return resolved;
+            }
+        }
+
+        return typeVariable.bounds().get(0);
     }
 
     private static String appendPath(String prefix, String suffix) {

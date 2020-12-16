@@ -31,7 +31,7 @@ public class SetSectionHelper implements SectionHelper {
                 result.completeExceptionally(t);
             } else {
                 // Execute the main block with the params as the current context object
-                context.execute(context.resolutionContext().createChild(r, null, null)).whenComplete((r2, t2) -> {
+                context.execute(context.resolutionContext().createChild(r, null)).whenComplete((r2, t2) -> {
                     if (t2 != null) {
                         result.completeExceptionally(t2);
                     } else {

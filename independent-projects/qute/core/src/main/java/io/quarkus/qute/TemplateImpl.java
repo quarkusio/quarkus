@@ -100,7 +100,7 @@ class TemplateImpl implements Template {
             DataNamespaceResolver dataResolver = new DataNamespaceResolver();
             List<NamespaceResolver> namespaceResolvers = ImmutableList.<NamespaceResolver> builder()
                     .addAll(engine.getNamespaceResolvers()).add(dataResolver).build();
-            ResolutionContext rootContext = new ResolutionContextImpl(null, data, namespaceResolvers,
+            ResolutionContext rootContext = new ResolutionContextImpl(data, namespaceResolvers,
                     engine.getEvaluator(), null, this);
             dataResolver.rootContext = rootContext;
             // Async resolution

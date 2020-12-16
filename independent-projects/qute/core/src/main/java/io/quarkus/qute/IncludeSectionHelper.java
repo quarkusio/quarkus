@@ -30,7 +30,7 @@ public class IncludeSectionHelper implements SectionHelper {
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         if (parameters.isEmpty()) {
             return ((TemplateImpl) templateSupplier.get()).root
-                    .resolve(context.resolutionContext().createChild(null, null, extendingBlocks));
+                    .resolve(context.resolutionContext().createChild(null, extendingBlocks));
         } else {
             CompletableFuture<ResultNode> result = new CompletableFuture<>();
             evaluateParams(parameters, context.resolutionContext()).whenComplete((evaluatedParams, t1) -> {
@@ -41,7 +41,7 @@ public class IncludeSectionHelper implements SectionHelper {
                         // Execute the template with the params as the root context object
                         TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
                         tagTemplate.root
-                                .resolve(context.resolutionContext().createChild(evaluatedParams, null, extendingBlocks))
+                                .resolve(context.resolutionContext().createChild(evaluatedParams, extendingBlocks))
                                 .whenComplete((resultNode, t2) -> {
                                     if (t2 != null) {
                                         result.completeExceptionally(t2);

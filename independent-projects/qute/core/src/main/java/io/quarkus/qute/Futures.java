@@ -8,9 +8,6 @@ import java.util.concurrent.CompletionStage;
 
 public final class Futures {
 
-    @SuppressWarnings("unchecked")
-    static final CompletableFuture<ResultNode>[] EMPTY_RESULTS = new CompletableFuture[0];
-
     private Futures() {
     }
 

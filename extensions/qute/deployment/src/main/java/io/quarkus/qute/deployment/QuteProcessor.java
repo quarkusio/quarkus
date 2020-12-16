@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -330,7 +329,7 @@ public class QuteProcessor {
                     return new SectionHelper() {
                         @Override
                         public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-                            return CompletableFuture.completedFuture(ResultNode.NOOP);
+                            return ResultNode.NOOP;
                         }
                     };
                 }

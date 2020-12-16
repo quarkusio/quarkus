@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -9,24 +8,21 @@ import java.util.function.Consumer;
 public class SingleResultNode implements ResultNode {
 
     private final Object value;
-    private final ExpressionImpl expression;
-    private final List<ResultMapper> mappers;
+    private final ExpressionNode expressionNode;
 
     public SingleResultNode(Object value, ExpressionNode expressionNode) {
         this.value = value;
-        this.mappers = expressionNode.getEngine().getResultMappers().isEmpty() ? null
-                : expressionNode.getEngine().getResultMappers();
-        this.expression = this.mappers != null ? expressionNode.expression : null;
+        this.expressionNode = expressionNode.getEngine().getResultMappers().isEmpty() ? null : expressionNode;
     }
 
     @Override
     public void process(Consumer<String> consumer) {
         if (value != null) {
             String result = null;
-            if (mappers != null) {
-                for (ResultMapper mapper : mappers) {
-                    if (mapper.appliesTo(expression.getOrigin(), value)) {
-                        result = mapper.map(value, expression);
+            if (expressionNode != null) {
+                for (ResultMapper mapper : expressionNode.getEngine().getResultMappers()) {
+                    if (mapper.appliesTo(expressionNode.expression.getOrigin(), value)) {
+                        result = mapper.map(value, expressionNode.expression);
                         break;
                     }
                 }

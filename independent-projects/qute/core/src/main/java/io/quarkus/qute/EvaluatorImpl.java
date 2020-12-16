@@ -73,10 +73,10 @@ class EvaluatorImpl implements Evaluator {
         EvalContextImpl evalContext = new EvalContextImpl(tryParent, ref, part, resolutionContext);
         if (!parts.hasNext()) {
             // The last part - no need to compose
-            return resolve(evalContext, resolvers.iterator(), true);
+            return resolve(evalContext, null, true);
         } else {
             // Next part - no need to try the parent context/outer scope
-            return resolve(evalContext, resolvers.iterator(), true)
+            return resolve(evalContext, null, true)
                     .thenCompose(r -> resolveReference(false, r, parts, resolutionContext));
         }
     }
@@ -86,11 +86,11 @@ class EvaluatorImpl implements Evaluator {
 
         if (tryCachedResolver) {
             // Try the cached resolver first
-            ValueResolver cachedResolver = ((PartImpl) evalContext.part).cachedResolver;
+            ValueResolver cachedResolver = evalContext.getCachedResolver();
             if (cachedResolver != null && cachedResolver.appliesTo(evalContext)) {
                 return cachedResolver.resolve(evalContext).thenCompose(r -> {
                     if (Result.NOT_FOUND.equals(r)) {
-                        return resolve(evalContext, resolvers, false);
+                        return resolve(evalContext, null, false);
                     } else {
                         return toCompletionStage(r);
                     }
@@ -98,34 +98,43 @@ class EvaluatorImpl implements Evaluator {
             }
         }
 
-        if (!resolvers.hasNext()) {
+        if (resolvers == null) {
+            // Iterate the resolvers lazily 
+            resolvers = this.resolvers.iterator();
+        }
+
+        ValueResolver applicableResolver = null;
+        while (applicableResolver == null && resolvers.hasNext()) {
+            ValueResolver next = resolvers.next();
+            if (next.appliesTo(evalContext)) {
+                applicableResolver = next;
+            }
+        }
+        if (applicableResolver == null) {
             ResolutionContext parent = evalContext.resolutionContext.getParent();
             if (evalContext.tryParent && parent != null) {
                 // Continue with parent context
                 return resolve(
-                        new EvalContextImpl(true, parent.getData(), evalContext.name, evalContext.params, parent,
+                        new EvalContextImpl(true, parent.getData(), parent,
                                 evalContext.part),
-                        this.resolvers.iterator(), false);
+                        null, false);
             }
             LOGGER.tracef("Unable to resolve %s", evalContext);
             return Results.NOT_FOUND;
         }
-        ValueResolver resolver = resolvers.next();
-        if (resolver.appliesTo(evalContext)) {
-            return resolver.resolve(evalContext).thenCompose(r -> {
-                if (Result.NOT_FOUND.equals(r)) {
-                    // Result not found - try the next resolver
-                    return resolve(evalContext, resolvers, false);
-                } else {
-                    // Cache the first resolver where a result is found
-                    ((PartImpl) evalContext.part).setCachedResolver(resolver);
-                    return toCompletionStage(r);
-                }
-            });
-        } else {
-            // Try the next resolver
-            return resolve(evalContext, resolvers, false);
-        }
+
+        final Iterator<ValueResolver> remainingResolvers = resolvers;
+        final ValueResolver foundResolver = applicableResolver;
+        return applicableResolver.resolve(evalContext).thenCompose(r -> {
+            if (Result.NOT_FOUND.equals(r)) {
+                // Result not found - try the next resolver
+                return resolve(evalContext, remainingResolvers, false);
+            } else {
+                // Cache the first resolver where a result is found
+                evalContext.setCachedResolver(foundResolver);
+                return toCompletionStage(r);
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -144,25 +153,18 @@ class EvaluatorImpl implements Evaluator {
 
         final boolean tryParent;
         final Object base;
-        final String name;
-        final List<Expression> params;
         final ResolutionContext resolutionContext;
-        final Part part;
+        final PartImpl part;
 
         EvalContextImpl(boolean tryParent, Object base, Part part, ResolutionContext resolutionContext) {
-            this(tryParent, base, part.getName(),
-                    part.isVirtualMethod() ? part.asVirtualMethod().getParameters() : Collections.emptyList(),
-                    resolutionContext, part);
+            this(tryParent, base, resolutionContext, part);
         }
 
-        EvalContextImpl(boolean tryParent, Object base, String name, List<Expression> params,
-                ResolutionContext resolutionContext, Part part) {
+        EvalContextImpl(boolean tryParent, Object base, ResolutionContext resolutionContext, Part part) {
             this.tryParent = tryParent;
             this.base = base;
             this.resolutionContext = resolutionContext;
-            this.params = params;
-            this.name = name;
-            this.part = part;
+            this.part = (PartImpl) part;
         }
 
         @Override
@@ -172,12 +174,12 @@ class EvaluatorImpl implements Evaluator {
 
         @Override
         public String getName() {
-            return name;
+            return part.getName();
         }
 
         @Override
         public List<Expression> getParams() {
-            return params;
+            return part.isVirtualMethod() ? part.asVirtualMethod().getParameters() : Collections.emptyList();
         }
 
         @Override
@@ -195,11 +197,19 @@ class EvaluatorImpl implements Evaluator {
             return resolutionContext.getAttribute(key);
         }
 
+        ValueResolver getCachedResolver() {
+            return part.cachedResolver;
+        }
+
+        void setCachedResolver(ValueResolver valueResolver) {
+            part.cachedResolver = valueResolver;
+        }
+
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append("EvalContextImpl [tryParent=").append(tryParent).append(", base=").append(base).append(", name=")
-                    .append(name).append(", params=").append(params).append("]");
+                    .append(getBase()).append(", params=").append(getParams()).append("]");
             return builder.toString();
         }
 

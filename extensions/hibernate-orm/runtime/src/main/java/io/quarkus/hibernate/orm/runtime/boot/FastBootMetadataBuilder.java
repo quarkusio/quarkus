@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.persistence.PersistenceException;
 import javax.persistence.spi.PersistenceUnitTransactionType;
@@ -243,10 +244,22 @@ public class FastBootMetadataBuilder {
         }
         cfg.put(WRAP_RESULT_SETS, "false");
 
-        //Hibernate Envers requires XML_MAPPING_ENABLED to be activated, but we don't want to enable this for any other use:
-        if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-            LOG.warn(
-                    "XML mapping is not supported. It will be partially activated to allow compatibility with Hibernate Envers, but this support is temporary");
+        // Hibernate Envers (and others) require XML_MAPPING_ENABLED to be activated,
+        // but we don't want to enable this for any other use:
+        List<String> integrationsRequiringXmlMapping = integrationStaticDescriptors.stream()
+                .filter(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)
+                .map(HibernateOrmIntegrationStaticDescriptor::getIntegrationName).collect(Collectors.toList());
+        if (integrationStaticDescriptors.stream().anyMatch(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)) {
+            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
+                LOG.warnf(
+                        "XML mapping is not supported. It will be partially activated to allow compatibility with %s, but this support is temporary",
+                        integrationsRequiringXmlMapping);
+            }
+        } else {
+            if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
+                LOG.warn("XML mapping is not supported. Setting " + XML_MAPPING_ENABLED + " to false.");
+            }
+            cfg.put(XML_MAPPING_ENABLED, "false");
         }
 
         // Note: this one is not a boolean, just having the property enables it

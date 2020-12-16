@@ -22,8 +22,7 @@ public class JPAFastBootingTest {
     private static final ClassLoaderLimiter limitsChecker = ClassLoaderLimiter.builder()
             .neverLoadedResource("org/hibernate/jpa/orm_2_1.xsd")
             .neverLoadedResource("org/hibernate/jpa/orm_2_2.xsd")
-            // TODO Quarkus 1.11: re-enable this when we disable HBM by default
-            //.neverLoadedClassName("org.hibernate.boot.jaxb.internal.MappingBinder")
+            .neverLoadedClassName("org.hibernate.boot.jaxb.internal.MappingBinder")
             .build();
 
     @RegisterExtension

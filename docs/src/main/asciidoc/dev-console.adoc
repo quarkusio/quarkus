@@ -322,7 +322,8 @@ public class CacheDevConsoleRecorder {
     }
 }
 ----
-<1> While you can use any Vert.x handler, the `DevConsolePostHandler` superclass will handle your POST actions
+<1> While you can use https://vertx.io/docs/vertx-web/java/#_routing_by_http_method[any Vert.x handler], 
+    the `DevConsolePostHandler` superclass will handle your POST actions
     nicely, and auto-redirect to the `GET` URI right after your `POST` for optimal behaviour.
 <2> You can get the Vert.x `RoutingContext` as well as the `form` contents
 <3> Don't forget to add a message for the user to let them know everything went fine

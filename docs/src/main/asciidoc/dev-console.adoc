@@ -330,7 +330,7 @@ public class CacheDevConsoleRecorder {
 <3> Don't forget to add a message for the user to let them know everything went fine
 <4> You can also add error messages
 
-NOTE: the flash messages are handled by the `main` DEV template and will result in nice notifications for your
+NOTE: Flash messages are handled by the `main` DEV template and will result in nice notifications for your
 users:
 
 image::dev-console-message.png[alt=DEV Console message]

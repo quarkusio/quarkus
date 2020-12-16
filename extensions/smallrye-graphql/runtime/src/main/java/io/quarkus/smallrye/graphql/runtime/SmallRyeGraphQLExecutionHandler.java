@@ -20,6 +20,7 @@ import javax.json.JsonWriterFactory;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.graphql.execution.ExecutionService;
@@ -69,7 +70,13 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
 
     private void doHandle(final RoutingContext ctx) {
         if (currentIdentityAssociation != null) {
-            currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(ctx, null));
+            QuarkusHttpUser existing = (QuarkusHttpUser) ctx.user();
+            if (existing != null) {
+                SecurityIdentity identity = existing.getSecurityIdentity();
+                currentIdentityAssociation.setIdentity(identity);
+            } else {
+                currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(ctx, null));
+            }
         }
         currentVertxRequest.setCurrent(ctx);
 

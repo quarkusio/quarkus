@@ -24,6 +24,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.runtime.ContextUtil;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -104,7 +105,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         requestContext.activate();
         routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
         if (association != null) {
-            association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
+            QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
+            if (existing != null) {
+                SecurityIdentity identity = existing.getSecurityIdentity();
+                association.setIdentity(identity);
+            } else {
+                association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
+            }
         }
         currentVertxRequest.setCurrent(routingContext);
         try {

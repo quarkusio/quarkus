@@ -32,6 +32,7 @@ import org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveVertxHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
 import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
@@ -42,6 +43,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.Handler;
@@ -85,6 +87,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
                 shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(closeable));
             }
         };
+        CurrentIdentityAssociation currentIdentityAssociation = Arc.container().instance(CurrentIdentityAssociation.class)
+                .get();
         if (contextFactory == null) {
             contextFactory = new RequestContextFactory() {
                 @Override
@@ -94,7 +98,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
                     return new QuarkusResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
                             requestContext,
                             handlerChain,
-                            abortHandlerChain);
+                            abortHandlerChain, currentIdentityAssociation);
                 }
             };
         }

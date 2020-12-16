@@ -3,10 +3,10 @@ package io.quarkus.security.runtime;
 import java.security.Principal;
 
 import javax.enterprise.context.RequestScoped;
-import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -36,7 +36,7 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
     }
 
     @Override
-    public void setIdentity(@Observes SecurityIdentity identity) {
+    public void setIdentity(SecurityIdentity identity) {
         this.identity = identity;
         this.deferredIdentity = null;
     }
@@ -55,7 +55,14 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
     public SecurityIdentity getIdentity() {
         if (identity == null) {
             if (deferredIdentity != null) {
-                identity = deferredIdentity.await().indefinitely();
+                if (BlockingOperationControl.isBlockingAllowed()) {
+                    identity = deferredIdentity.await().indefinitely();
+                } else {
+                    throw new RuntimeException("Cannot call getIdentity() from the IO thread when lazy authentication " +
+                            "is in use, as resolving the identity may block the thread. Instead you should inject the " +
+                            "CurrentIdentityAssociation, call CurrentIdentityAssociation#getDeferredIdentity() and " +
+                            "subscribe to the Uni.");
+                }
             }
             if (identity == null) {
                 identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();

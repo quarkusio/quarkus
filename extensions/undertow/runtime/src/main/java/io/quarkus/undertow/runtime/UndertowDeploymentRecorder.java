@@ -47,6 +47,7 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -559,8 +560,13 @@ public class UndertowDeploymentRecorder {
                                 currentVertxRequest.setCurrent(rc);
 
                                 if (association != null) {
-                                    association
-                                            .setIdentity(QuarkusHttpUser.getSecurityIdentity(rc, null));
+                                    QuarkusHttpUser existing = (QuarkusHttpUser) rc.user();
+                                    if (existing != null) {
+                                        SecurityIdentity identity = existing.getSecurityIdentity();
+                                        association.setIdentity(identity);
+                                    } else {
+                                        association.setIdentity(QuarkusHttpUser.getSecurityIdentity(rc, null));
+                                    }
                                 }
 
                                 return action.call(exchange, context);

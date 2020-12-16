@@ -110,6 +110,18 @@ credential then that request will always be authenticated (even if the target pa
 This means that requests with an invalid credential will always be rejected, even for public pages. You can change
 this behavior and only authenticate when required by setting `quarkus.http.auth.proactive=false`.
 
+If you disable proactive authentication then the authentication process will only be run when an identity is requested,
+either because there are security rules that requires the user to be authenticated, or due to programatic access to the
+current identity.
+
+Note that if proactive authentication is in use accessing the `SecurityIdentity` is a blocking operation. This is because
+authentication may not have happened yet, and accessing it may require calls to external systems such as databases that
+may block. For blocking applications this is no problem, however if you are have disabled authentication in a reactive
+application this will fail (as you cannot do blocking operations on the IO thread). To work around this you need to
+`@Inject` an instance of `io.quarkus.security.identity.CurrentIdentityAssociation`, and call the
+`Uni<SecurityIdentity> getDeferredIdentity();` method. You can then subscribe to the resulting `Uni` and will be notified
+when authentication is complete and the identity is available.
+
 == References
 
 * link:security[Quarkus Security]

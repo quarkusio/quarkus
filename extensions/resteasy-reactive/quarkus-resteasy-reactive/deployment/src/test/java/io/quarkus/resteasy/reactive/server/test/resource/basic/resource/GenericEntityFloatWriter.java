@@ -18,9 +18,9 @@ import org.jboss.logging.Logger;
 
 @Provider
 @Produces("*/*")
-public class GenericEntitytFloatWriter implements MessageBodyWriter<List<Float>> {
+public class GenericEntityFloatWriter implements MessageBodyWriter<List<Float>> {
 
-    private static final Logger LOG = Logger.getLogger(GenericEntitytFloatWriter.class);
+    private static final Logger LOG = Logger.getLogger(GenericEntityFloatWriter.class);
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         if (!List.class.isAssignableFrom(type)) {
@@ -43,7 +43,7 @@ public class GenericEntitytFloatWriter implements MessageBodyWriter<List<Float>>
     public void writeTo(List<Float> floats, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for (Float f : floats) {
             buf.append(f.toString()).append("F ");
         }

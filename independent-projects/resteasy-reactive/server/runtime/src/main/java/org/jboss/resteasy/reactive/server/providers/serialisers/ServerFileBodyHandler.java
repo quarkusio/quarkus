@@ -29,12 +29,12 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return File.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(File o, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(File o, Type genericType, ServerRequestContext context) throws WebApplicationException {
         ServerHttpResponse vertxResponse = context.serverResponse();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {

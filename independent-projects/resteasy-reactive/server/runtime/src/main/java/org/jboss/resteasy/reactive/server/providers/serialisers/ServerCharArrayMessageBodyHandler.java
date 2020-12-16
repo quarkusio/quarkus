@@ -17,12 +17,12 @@ public class ServerCharArrayMessageBodyHandler extends CharArrayMessageBodyHandl
         implements ServerMessageBodyWriter<char[]>, ServerMessageBodyReader<char[]> {
 
     @Override
-    public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
         return true;
     }
 
     @Override
-    public void writeResponse(char[] o, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(char[] o, Type genericType, ServerRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
         context.serverResponse().end(new String(o));
     }

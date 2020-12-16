@@ -569,6 +569,10 @@ public abstract class ResteasyReactiveRequestContext
         this.additionalAnnotations = additionalAnnotations;
     }
 
+    public boolean hasGenericReturnType() {
+        return this.genericReturnType != null;
+    }
+
     public Type getGenericReturnType() {
         if (genericReturnType == null) {
             if (target == null) {

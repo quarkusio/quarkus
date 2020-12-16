@@ -46,7 +46,7 @@ public class GenericEntityDoubleWriter implements MessageBodyWriter<List<Double>
     public void writeTo(List<Double> floats, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for (Double f : floats) {
             buf.append(f.toString()).append("D ");
         }

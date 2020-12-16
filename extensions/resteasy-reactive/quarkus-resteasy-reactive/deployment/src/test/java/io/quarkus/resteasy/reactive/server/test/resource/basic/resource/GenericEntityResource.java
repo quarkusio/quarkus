@@ -31,4 +31,24 @@ public class GenericEntityResource {
         };
         return Response.ok(ge).build();
     }
+
+    @Path("integers")
+    @GET
+    public Response getIntegers() {
+        List<Integer> list = new ArrayList<>();
+        list.add(45);
+        list.add(50);
+        GenericEntity<List<Integer>> ge = new GenericEntity<List<Integer>>(list) {
+        };
+        return Response.ok(ge).build();
+    }
+
+    @Path("integers-no-response")
+    @GET
+    public List<Integer> getIntegersNoResponse() {
+        List<Integer> list = new ArrayList<>();
+        list.add(45);
+        list.add(50);
+        return list;
+    }
 }

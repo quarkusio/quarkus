@@ -17,8 +17,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityDoubleWriter;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityFloatWriter;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityIntegerServerMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntityResource;
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.GenericEntitytFloatWriter;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -39,7 +40,7 @@ public class GenericEntityTest {
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClasses(PortProviderUtil.class, GenericEntityResource.class, GenericEntityDoubleWriter.class,
-                            GenericEntitytFloatWriter.class);
+                            GenericEntityFloatWriter.class, GenericEntityIntegerServerMessageBodyWriter.class);
                     return war;
                 }
             });
@@ -90,6 +91,28 @@ public class GenericEntityTest {
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             String body = response.readEntity(String.class);
             Assertions.assertEquals("45.0F 50.0F ", body, "The response doesn't contain the expected entity");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testIntegers() {
+        doTestIntegers("/integers");
+    }
+
+    @Test
+    public void testIntegersNoResponse() {
+        doTestIntegers("/integers-no-response");
+    }
+
+    private void doTestIntegers(String path) {
+        WebTarget base = client.target(generateURL(path));
+        try {
+            Response response = base.request().get();
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+            String body = response.readEntity(String.class);
+            Assertions.assertEquals("45I 50I ", body, "The response doesn't contain the expected entity");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

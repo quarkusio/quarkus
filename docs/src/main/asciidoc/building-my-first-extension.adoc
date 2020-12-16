@@ -99,11 +99,11 @@ $ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -Dversion=1.0-SNAPSHOT \ #<3>
     -Dquarkus.nameBase="Greeting Extension" #<4>
 [INFO] Scanning for projects...
-[INFO] 
+[INFO]
 [INFO] ------------------< org.apache.maven:standalone-pom >-------------------
 [INFO] Building Maven Stub Project (No POM) 1
 [INFO] --------------------------------[ pom ]---------------------------------
-[INFO] 
+[INFO]
 [INFO] --- quarkus-maven-plugin:{quarkus-version}:create-extension (default-cli) @ standalone-pom ---
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
@@ -263,7 +263,7 @@ class GreetingProcessor {
 }
 ----
 
-NOTE: `FeatureBuildItem` represents a functionality provided by an extension. 
+NOTE: `FeatureBuildItem` represents a functionality provided by an extension.
 The name of the feature gets displayed in the log during application bootstrap.
 An extension should provide at most one feature.
 
@@ -633,19 +633,19 @@ $ mvn clean test
 [INFO]
 ...
 [INFO] --- maven-surefire-plugin:3.0.0-M4:test (default-test) @ quarkus-greeting-deployment ---
-[INFO] 
+[INFO]
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quarkus.greeting.deployment.GreetingTest
 2020-04-23 13:55:44,612 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.395s. Listening on: http://0.0.0.0:8081
-2020-04-23 13:55:44,614 INFO  [io.quarkus] (main) Profile test activated. 
+2020-04-23 13:55:44,614 INFO  [io.quarkus] (main) Profile test activated.
 2020-04-23 13:55:44,614 INFO  [io.quarkus] (main) Installed features: [cdi, quarkus-greeting, servlet]
 2020-04-23 13:55:45,876 INFO  [io.quarkus] (main) Quarkus stopped in 0.025s
 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.609 s - in org.acme.quarkus.greeting.deployment.GreetingTest
-[INFO] 
+[INFO]
 [INFO] Results:
-[INFO] 
+[INFO]
 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
 [INFO]
 [INFO] ------------------------------------------------------------------------
@@ -718,7 +718,7 @@ By default, Maven will wait for a connection on `localhost:5005`.
 
 === Extension publication
 
-Now that you just finished building your first extension you should be eager to use it in a Quarkus application! 
+Now that you just finished building your first extension you should be eager to use it in a Quarkus application!
 
 *Classic Maven publication*
 
@@ -736,7 +736,7 @@ $mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 
 `cd` into `greeting-app` and add the dependency on `quarkus-greeting` extension we created above.
 
-NOTE: `quarkus-greeting` extension has to be installed in the local Maven repository to be usable in the application. 
+NOTE: `quarkus-greeting` extension has to be installed in the local Maven repository to be usable in the application.
 
 [source, xml]
 ----
@@ -753,7 +753,7 @@ NOTE: `quarkus-greeting` extension has to be installed in the local Maven reposi
         <!-- the rest of the application dependencies -->
 ----
 
-Run the application and notice the `Install Features` list contains the `quarkus-greeting` extension.
+Run the application and notice the `Installed Features` list contains the `quarkus-greeting` extension.
 
 [source,shell,subs=attributes+]
 ----
@@ -777,10 +777,10 @@ $ mvn clean compile quarkus:dev
 [INFO]
 [INFO] --- quarkus-maven-plugin:{quarkus-version}:dev (default-cli) @ code-with-quarkus ---
 Listening for transport dt_socket at address: 5005
-__  ____  __  _____   ___  __ ____  ______ 
- --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
- -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
---\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2020-04-23 14:17:36,137 INFO  [io.quarkus] (Quarkus Main Thread) greeting-app 1.0-SNAPSHOT (powered by Quarkus {quarkus-version}) started in 0.985s. Listening on: http://0.0.0.0:8080
 2020-04-23 14:17:36,140 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
 2020-04-23 14:17:36,140 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, quarkus-greeting, resteasy, servlet]
@@ -805,9 +805,22 @@ If the extension solves a general problem, it is very handy for Quarkus users to
 But this comes with some responsibility for you, keeping it up to date with Quarkus minor releases (every month or so at the moment).
 When in doubt, have a conversation with the community in the https://groups.google.com/forum/#!forum/quarkus-dev[Quarkus Google Group]. We can make a collective decision.
 
-[NOTE]
-As for now, the process to propose a new extension is not defined yet.
-Your best chance is to present your extension on the https://groups.google.com/forum/#!forum/quarkus-dev[Quarkus Google Group] and wait for an official invitation to join the Quarkus Platform.
+If you want to contribute a new extension, we strongly suggest you to host it in the Quarkiverse Hub.
+
+*Quarkiverse Hub*
+
+link:https://github.com/quarkiverse[Quarkiverse Hub] is the GitHub organization that provides repository hosting (including build, CI and release publishing setup) for Quarkus extension projects contributed by the community.
+
+You can get started by creating an link:https://github.com/quarkusio/quarkus/issues/new/choose[Extension Request] issue (check first if one wasn't already submitted link:https://github.com/quarkusio/quarkus/labels/kind%2Fextension-proposal[here]) and asking to lead it.
+
+We'll take care of provisioning a new repository and set it up to:
+
+- Be supported by our tooling;
+- Publish the documentation you produce for your extension to the Quarkiverse website;
+- Configure your extension to use the link:https://github.com/quarkusio/quarkus-ecosystem-ci#quarkus-ecosystem-ci[Quarkus Ecosystem CI] to build against the latest Quarkus Core changes;
+- Give you the freedom to manage the project and release to Maven Central as you like.
+
+For more information, check link:https://github.com/quarkiverse/quarkiverse/wiki[the Quarkiverse Wiki] and link:https://quarkus.io/blog/quarkiverse/[this blog post].
 
 == Conclusion
 

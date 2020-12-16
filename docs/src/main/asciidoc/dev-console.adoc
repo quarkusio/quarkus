@@ -133,7 +133,7 @@ to them from your `embedded.html` file you can use the `urlbase` template parame
 
 [source,java]
 ----
-<a href="{urlbase}caches" class="badge badge-light">// <1>
+<a href="{urlbase}/caches" class="badge badge-light">// <1>
   <svg … ></svg>
   Caches <span class="badge badge-light">{info:cacheInfos.size()}</span></a>
 ----

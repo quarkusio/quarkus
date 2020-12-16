@@ -119,7 +119,7 @@ public class DevConsole implements Handler<RoutingContext> {
             if (hasConsoleEntry || hasGuide) {
                 if (hasConsoleEntry) {
                     Map<String, Object> data = new HashMap<>();
-                    data.put("urlbase", groupId + "." + artifactId + "/");
+                    data.put("urlbase", groupId + "." + artifactId);
                     String result = simpleTemplate.render(data);
                     loaded.put("_dev", result);
                     actionableExtensions.add(loaded);

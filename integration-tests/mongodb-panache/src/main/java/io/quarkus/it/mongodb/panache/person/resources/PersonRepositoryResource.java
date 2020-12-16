@@ -9,6 +9,8 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
+import com.mongodb.ReadPreference;
+
 import io.quarkus.it.mongodb.panache.person.MockablePersonRepository;
 import io.quarkus.it.mongodb.panache.person.Person;
 import io.quarkus.it.mongodb.panache.person.PersonName;
@@ -40,6 +42,7 @@ public class PersonRepositoryResource {
         Set<PersonName> uniqueNames = new HashSet<>();
         List<PersonName> lastnames = personRepository.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
                 .project(PersonName.class)
+                .withReadPreference(ReadPreference.primaryPreferred())
                 .list();
         lastnames.forEach(p -> uniqueNames.add(p));// this will throw if it's not the right type
         return uniqueNames;

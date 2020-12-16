@@ -1,6 +1,7 @@
 package io.quarkus.it.mongodb.panache.reactive.person.resources
 
 
+import com.mongodb.ReadPreference
 import io.quarkus.it.mongodb.panache.person.Person
 import io.quarkus.it.mongodb.panache.person.PersonName
 import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonRepository
@@ -36,6 +37,7 @@ class ReactivePersonRepositoryResource {
         val uniqueNames = mutableSetOf<PersonName>()
         val lastnames: List<PersonName> = reactivePersonRepository.find("lastname", name)
                 .project(PersonName::class.java)
+                .withReadPreference(ReadPreference.primaryPreferred())
                 .list()
                 .await()
                 .indefinitely()

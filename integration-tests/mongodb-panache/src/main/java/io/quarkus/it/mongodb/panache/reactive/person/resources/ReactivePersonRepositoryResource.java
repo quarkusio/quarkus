@@ -9,6 +9,8 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
+import com.mongodb.ReadPreference;
+
 import io.quarkus.it.mongodb.panache.person.Person;
 import io.quarkus.it.mongodb.panache.person.PersonName;
 import io.quarkus.it.mongodb.panache.reactive.person.ReactivePersonRepository;
@@ -33,8 +35,11 @@ public class ReactivePersonRepositoryResource {
     @Path("/search/{name}")
     public Set<PersonName> searchPersons(@PathParam("name") String name) {
         Set<PersonName> uniqueNames = new HashSet<>();
-        List<PersonName> lastnames = reactivePersonRepository.find("lastname", name).project(PersonName.class).list().await()
-                .indefinitely();
+        List<PersonName> lastnames = reactivePersonRepository.find("lastname", name)
+                .project(PersonName.class)
+                .withReadPreference(ReadPreference.primaryPreferred())
+                .list()
+                .await().indefinitely();
         lastnames.forEach(p -> uniqueNames.add(p));// this will throw if it's not the right type
         return uniqueNames;
     }

@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 
 import org.bson.conversions.Bson;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Collation;
 
@@ -94,6 +95,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <T extends Entity> PanacheQuery<T> withCollation(Collation collation) {
         delegate.withCollation(collation);
+        return (PanacheQuery<T>) this;
+    }
+
+    @Override
+    public <T extends Entity> PanacheQuery<T> withReadPreference(ReadPreference readPreference) {
+        delegate.withReadPreference(readPreference);
         return (PanacheQuery<T>) this;
     }
 

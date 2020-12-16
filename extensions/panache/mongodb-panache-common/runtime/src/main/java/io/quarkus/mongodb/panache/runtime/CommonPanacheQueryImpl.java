@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -136,6 +137,11 @@ public class CommonPanacheQueryImpl<Entity> {
 
     public <T extends Entity> CommonPanacheQueryImpl<T> withCollation(Collation collation) {
         this.collation = collation;
+        return (CommonPanacheQueryImpl<T>) this;
+    }
+
+    public <T extends Entity> CommonPanacheQueryImpl<T> withReadPreference(ReadPreference readPreference) {
+        this.collection = this.collection.withReadPreference(readPreference);
         return (CommonPanacheQueryImpl<T>) this;
     }
 

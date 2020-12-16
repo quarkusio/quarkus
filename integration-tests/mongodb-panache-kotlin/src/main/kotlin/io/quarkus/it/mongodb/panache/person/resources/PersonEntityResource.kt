@@ -1,5 +1,6 @@
 package io.quarkus.it.mongodb.panache.person.resources
 
+import com.mongodb.ReadPreference
 import io.quarkus.it.mongodb.panache.person.PersonEntity
 import io.quarkus.it.mongodb.panache.person.PersonName
 import io.quarkus.it.mongodb.panache.person.Status
@@ -27,6 +28,7 @@ class PersonEntityResource {
     fun searchPersons(@PathParam("name") name: String): Set<PersonName> {
         return PersonEntity.find("lastname = ?1 and status = ?2", name, Status.ALIVE)
                 .project(PersonName::class.java)
+                .withReadPreference(ReadPreference.primaryPreferred())
                 .list()
                 .toSet()
     }

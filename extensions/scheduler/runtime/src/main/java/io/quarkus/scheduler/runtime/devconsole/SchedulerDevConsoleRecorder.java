@@ -5,14 +5,14 @@ import java.time.Instant;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
+import io.quarkus.devconsole.runtime.spi.FlashScopeUtil.FlashMessageStatus;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerContext;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.DevConsolePostHandler;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.FlashScopeUtil.FlashMessageStatus;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;

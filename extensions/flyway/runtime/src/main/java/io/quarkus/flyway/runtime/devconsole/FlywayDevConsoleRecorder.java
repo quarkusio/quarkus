@@ -4,11 +4,11 @@ import java.util.List;
 
 import org.flywaydb.core.Flyway;
 
+import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
+import io.quarkus.devconsole.runtime.spi.FlashScopeUtil.FlashMessageStatus;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerSupplier;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.DevConsolePostHandler;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.FlashScopeUtil.FlashMessageStatus;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;

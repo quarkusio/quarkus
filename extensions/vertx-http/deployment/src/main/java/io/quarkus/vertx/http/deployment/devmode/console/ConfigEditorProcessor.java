@@ -20,9 +20,9 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.DevConsolePostHandler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 

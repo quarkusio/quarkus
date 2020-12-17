@@ -2,12 +2,12 @@ package io.quarkus.liquibase.runtime.devconsole;
 
 import java.util.List;
 
+import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
+import io.quarkus.devconsole.runtime.spi.FlashScopeUtil.FlashMessageStatus;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseContainer;
 import io.quarkus.liquibase.runtime.LiquibaseContainerSupplier;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.DevConsolePostHandler;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.FlashScopeUtil.FlashMessageStatus;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;

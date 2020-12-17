@@ -10,7 +10,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.TempSystemProperties;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.DevConsolePostHandler;
+import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 

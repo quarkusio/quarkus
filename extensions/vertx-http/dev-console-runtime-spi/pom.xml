@@ -10,17 +10,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-vertx-http-dev-console-spi</artifactId>
-    <name>Quarkus - Vert.x - HTTP - Dev Console SPI</name>
+    <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
+    <name>Quarkus - Vert.x - HTTP - Dev Console Runtime SPI</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.arc</groupId>

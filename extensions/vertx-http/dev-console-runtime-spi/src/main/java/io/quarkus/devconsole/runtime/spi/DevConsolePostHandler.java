@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.runtime.devmode.devconsole;
+package io.quarkus.devconsole.runtime.spi;
 
 import java.time.Duration;
 

@@ -15,10 +15,10 @@ import java.util.function.BiFunction;
 import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.vertx.http.runtime.devmode.devconsole.FlashScopeUtil;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 

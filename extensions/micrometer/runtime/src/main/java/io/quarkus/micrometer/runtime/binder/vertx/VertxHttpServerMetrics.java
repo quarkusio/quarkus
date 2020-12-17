@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
+import io.quarkus.micrometer.runtime.binder.HttpTags;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -96,10 +97,10 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         VertxMetricsTags.parseUriPath(requestMetric, matchPatterns, ignorePatterns, uri);
         if (requestMetric.measure) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    VertxMetricsTags.uri(requestMetric.path, response.getStatusCode()),
+                    HttpTags.uri(requestMetric.path, response.getStatusCode()),
                     VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
-                    VertxMetricsTags.status(response.getStatusCode())))
+                    HttpTags.status(response.getStatusCode())))
                     .increment();
         }
         log.debugf("responsePushed %s: %s, %s", uri, socketMetric, requestMetric);
@@ -148,9 +149,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
                     .tags(requestMetric.tags)
                     .tags(Tags.of(
-                            VertxMetricsTags.uri(requestPath, 0),
+                            HttpTags.uri(requestPath, 0),
                             Outcome.CLIENT_ERROR.asTag(),
-                            VertxMetricsTags.STATUS_RESET));
+                            HttpTags.STATUS_RESET));
             sample.stop(builder.register(registry));
         }
     }
@@ -171,9 +172,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
                     .tags(requestMetric.tags)
                     .tags(Tags.of(
-                            VertxMetricsTags.uri(requestPath, response.getStatusCode()),
+                            HttpTags.uri(requestPath, response.getStatusCode()),
                             VertxMetricsTags.outcome(response),
-                            VertxMetricsTags.status(response.getStatusCode())));
+                            HttpTags.status(response.getStatusCode())));
 
             sample.stop(builder.register(registry));
         }
@@ -194,7 +195,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         String path = getServerRequestPath(requestMetric);
         if (path != null) {
             return LongTaskTimer.builder(nameWebsocketConnections)
-                    .tags(Tags.of(VertxMetricsTags.uri(path, 0)))
+                    .tags(Tags.of(HttpTags.uri(path, 0)))
                     .register(registry)
                     .start();
         }

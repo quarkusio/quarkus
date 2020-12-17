@@ -21,6 +21,12 @@ public class MultipartResourceTest {
                         containsString("HELLO WORLD"),
                         containsString("Content-Disposition: form-data; name=\"fileName\""),
                         containsString("greeting.txt"));
+
+        given()
+                .when().get("/q/metrics")
+                .then()
+                .statusCode(200)
+                .body(containsString("http_client_requests"));
     }
 
 }

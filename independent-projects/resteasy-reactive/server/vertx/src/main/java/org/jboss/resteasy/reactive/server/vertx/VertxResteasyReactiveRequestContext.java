@@ -29,11 +29,12 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequestContext
-        implements ServerHttpRequest, ServerHttpResponse {
+        implements ServerHttpRequest, ServerHttpResponse, Handler<Void> {
 
     protected final RoutingContext context;
     protected final HttpServerRequest request;
     protected final HttpServerResponse response;
+    protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
 
     public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             RoutingContext context,
@@ -42,6 +43,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         this.context = context;
         this.request = context.request();
         this.response = context.response();
+        context.addHeadersEndHandler(this);
     }
 
     public RoutingContext getContext() {
@@ -312,5 +314,17 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public OutputStream createResponseOutputStream() {
         return new ResteasyReactiveOutputStream(this);
+    }
+
+    @Override
+    public void setPreCommitListener(Consumer<ResteasyReactiveRequestContext> task) {
+        preCommitTask = task;
+    }
+
+    @Override
+    public void handle(Void event) {
+        if (preCommitTask != null) {
+            preCommitTask.accept(this);
+        }
     }
 }

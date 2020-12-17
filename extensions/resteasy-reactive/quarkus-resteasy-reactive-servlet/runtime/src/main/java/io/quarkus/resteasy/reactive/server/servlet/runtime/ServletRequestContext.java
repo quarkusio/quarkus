@@ -40,13 +40,15 @@ import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveSecurityContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.ResponseCommitListener;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 public class ServletRequestContext extends ResteasyReactiveRequestContext
-        implements ServerHttpRequest, ServerHttpResponse {
+        implements ServerHttpRequest, ServerHttpResponse, ResponseCommitListener {
 
     private static final LazyValue<Event<SecurityIdentity>> SECURITY_IDENTITY_EVENT = new LazyValue<>(
             ServletRequestContext::createEvent);
@@ -57,15 +59,17 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     ServletWriteListener writeListener;
     byte[] asyncWriteData;
     Consumer<Throwable> asyncWriteHandler;
+    protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
 
     public ServletRequestContext(Deployment deployment, ProvidersImpl providers,
             HttpServletRequest request, HttpServletResponse response,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
-            RoutingContext context) {
+            RoutingContext context, HttpServerExchange exchange) {
         super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
         this.request = request;
         this.response = response;
         this.context = context;
+        exchange.addResponseCommitListener(this);
     }
 
     protected boolean isRequestScopeManagementRequired() {
@@ -450,6 +454,18 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
             return response.getOutputStream();
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void setPreCommitListener(Consumer<ResteasyReactiveRequestContext> task) {
+        preCommitTask = task;
+    }
+
+    @Override
+    public void beforeCommit(HttpServerExchange exchange) {
+        if (preCommitTask != null) {
+            preCommitTask.accept(this);
         }
     }
 

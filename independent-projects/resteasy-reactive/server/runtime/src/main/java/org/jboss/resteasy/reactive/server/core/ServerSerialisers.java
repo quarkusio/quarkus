@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
@@ -56,6 +57,13 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 
 public class ServerSerialisers extends Serialisers {
+
+    private static final Consumer<ResteasyReactiveRequestContext> HEADER_FUNCTION = new Consumer<ResteasyReactiveRequestContext>() {
+        @Override
+        public void accept(ResteasyReactiveRequestContext context) {
+            ServerSerialisers.encodeResponseHeaders(context);
+        }
+    };
 
     public static BuiltinReader[] BUILTIN_READERS = new BuiltinReader[] {
             new BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
@@ -164,49 +172,62 @@ public class ServerSerialisers extends Serialisers {
 
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
-        if (writer instanceof ServerMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
-            ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
-            RuntimeResource target = context.getTarget();
-            ServerSerialisers.encodeResponseHeaders(context);
-            Type genericType;
-            if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
-                genericType = context.getGenericReturnType();
-            } else {
-                genericType = target == null ? null : target.getReturnType();
-            }
-            Class<?> entityClass = entity.getClass();
-            if (quarkusRestWriter.isWriteable(
-                    entityClass,
-                    genericType,
-                    target == null ? null : target.getLazyMethod(),
-                    context.getResponseMediaType())) {
-                if (mediaType != null) {
-                    context.setResponseContentType(mediaType);
-                }
-                quarkusRestWriter.writeResponse(entity, genericType, context);
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            if (writer.isWriteable(entity.getClass(), context.getGenericReturnType(), context.getAllAnnotations(),
-                    context.getResponseMediaType())) {
-                Response response = context.getResponse().get();
-                if (mediaType != null) {
-                    context.setResponseContentType(mediaType);
-                }
-                if (writerInterceptors == null) {
-                    writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
-                            context.getAllAnnotations(), response.getMediaType(), response.getHeaders(),
-                            context.getOrCreateOutputStream());
-                    ServerSerialisers.encodeResponseHeaders(context);
-                    context.getOrCreateOutputStream().close();
+        context.serverResponse().setPreCommitListener(HEADER_FUNCTION);
+        try {
+            if (writer instanceof ServerMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
+                ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
+                RuntimeResource target = context.getTarget();
+                Type genericType;
+                if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
+                    genericType = context.getGenericReturnType();
                 } else {
-                    runWriterInterceptors(context, entity, writer, response, writerInterceptors, serialisers);
+                    genericType = target == null ? null : target.getReturnType();
                 }
-                return true;
+                Class<?> entityClass = entity.getClass();
+                if (quarkusRestWriter.isWriteable(
+                        entityClass,
+                        genericType,
+                        target == null ? null : target.getLazyMethod(),
+                        context.getResponseMediaType())) {
+                    if (mediaType != null) {
+                        context.setResponseContentType(mediaType);
+                    }
+                    quarkusRestWriter.writeResponse(entity, genericType, context);
+                    return true;
+                } else {
+                    return false;
+                }
             } else {
-                return false;
+                if (writer.isWriteable(entity.getClass(), context.getGenericReturnType(), context.getAllAnnotations(),
+                        context.getResponseMediaType())) {
+                    Response response = context.getResponse().get();
+                    if (mediaType != null) {
+                        context.setResponseContentType(mediaType);
+                    }
+                    if (writerInterceptors == null) {
+                        writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
+                                context.getAllAnnotations(), response.getMediaType(), response.getHeaders(),
+                                context.getOrCreateOutputStream());
+                        context.getOrCreateOutputStream().close();
+                    } else {
+                        runWriterInterceptors(context, entity, writer, response, writerInterceptors, serialisers);
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        } catch (Throwable e) {
+            //clear the pre-commit listener, as if this error is unrecoverable
+            //the error handling will want to write out its own response
+            //and the pre commit listener will interfere with that
+            context.serverResponse().setPreCommitListener(null);
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new RuntimeException(e);
             }
         }
     }

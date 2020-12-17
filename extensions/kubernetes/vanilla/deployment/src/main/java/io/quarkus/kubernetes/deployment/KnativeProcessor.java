@@ -9,6 +9,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import io.dekorate.knative.decorator.AddAwsElasticBlockStoreVolumeToRevisionDecorator;
+import io.dekorate.knative.decorator.AddAzureDiskVolumeToRevisionDecorator;
+import io.dekorate.knative.decorator.AddAzureFileVolumeToRevisionDecorator;
+import io.dekorate.knative.decorator.AddConfigMapVolumeToRevisionDecorator;
+import io.dekorate.knative.decorator.AddHostAliasesToRevisionDecorator;
+import io.dekorate.knative.decorator.AddPvcVolumeToRevisionDecorator;
+import io.dekorate.knative.decorator.AddSecretVolumeToRevisionDecorator;
+import io.dekorate.knative.decorator.AddSidecarToRevisionDecorator;
 import io.dekorate.knative.decorator.ApplyGlobalAutoscalingClassDecorator;
 import io.dekorate.knative.decorator.ApplyGlobalContainerConcurrencyDecorator;
 import io.dekorate.knative.decorator.ApplyGlobalRequestsPerSecondTargetDecorator;
@@ -210,6 +218,52 @@ public class KnativeProcessor {
             long percent = traffic.percent.orElse(100L);
             result.add(new DecoratorBuildItem(KNATIVE,
                     new ApplyTrafficDecorator(name, revisionName, latestRevision, percent, tag)));
+        });
+
+        //Add revision decorators
+        result.addAll(createVolumeDecorators(project, name, config));
+        config.getHostAliases().entrySet().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e))));
+        });
+        config.getSidecars().entrySet().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE, new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e))));
+        });
+
+        return result;
+    }
+
+    private static List<DecoratorBuildItem> createVolumeDecorators(Optional<Project> project, String name,
+            PlatformConfiguration config) {
+        List<DecoratorBuildItem> result = new ArrayList<>();
+
+        config.getSecretVolumes().entrySet().forEach(e -> {
+            result.add(
+                    new DecoratorBuildItem(KNATIVE, new AddSecretVolumeToRevisionDecorator(SecretVolumeConverter.convert(e))));
+        });
+
+        config.getConfigMapVolumes().entrySet().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddConfigMapVolumeToRevisionDecorator(ConfigMapVolumeConverter.convert(e))));
+        });
+
+        config.getPvcVolumes().entrySet().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE, new AddPvcVolumeToRevisionDecorator(PvcVolumeConverter.convert(e))));
+        });
+
+        config.getAwsElasticBlockStoreVolumes().entrySet().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddAwsElasticBlockStoreVolumeToRevisionDecorator(AwsElasticBlockStoreVolumeConverter.convert(e))));
+        });
+
+        config.getAzureFileVolumes().entrySet().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddAzureFileVolumeToRevisionDecorator(AzureFileVolumeConverter.convert(e))));
+        });
+
+        config.getAzureDiskVolumes().entrySet().forEach(e -> {
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddAzureDiskVolumeToRevisionDecorator(AzureDiskVolumeConverter.convert(e))));
         });
         return result;
     }

@@ -624,7 +624,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                     @Override
                     ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
-                        return method.invokeStaticMethod(ofMethod(Optional.class, "of", Optional.class, Object.class),
+                        // If the value is a proxy, it may be non-null at build time but become null
+                        // when we actually create the value during initialization;
+                        // so we need to use 'ofNullable' and not 'of' here.
+                        return method.invokeStaticMethod(ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
                                 context.loadDeferred(res));
                     }
                 };

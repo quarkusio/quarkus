@@ -141,20 +141,23 @@ public class OpenshiftProcessor {
         builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseJvmImage));
         Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(config.baseJvmImage);
 
-        baseImage.ifPresent(b -> {
-            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, null));
-            envProducer.produce(
-                    KubernetesEnvBuildItem.createSimpleVar(b.getJarLibEnvVar(), concatUnixPaths(jarDirectory, "lib"), null));
-            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, null));
-            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
-                    String.join(" ", config.jvmArguments), null));
-        });
+        if (config.buildStrategy != BuildStrategy.DOCKER) {
+            baseImage.ifPresent(b -> {
+                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, null));
+                envProducer.produce(
+                        KubernetesEnvBuildItem.createSimpleVar(b.getJarLibEnvVar(), concatUnixPaths(jarDirectory, "lib"),
+                                null));
+                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, null));
+                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
+                        String.join(" ", config.jvmArguments), null));
+            });
 
-        if (!baseImage.isPresent()) {
-            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar("JAVA_APP_JAR", pathToJar, null));
-            envProducer.produce(
-                    KubernetesEnvBuildItem.createSimpleVar("JAVA_LIB_DIR", concatUnixPaths(jarDirectory, "lib"), null));
-            commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
+            if (!baseImage.isPresent()) {
+                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar("JAVA_APP_JAR", pathToJar, null));
+                envProducer.produce(
+                        KubernetesEnvBuildItem.createSimpleVar("JAVA_LIB_DIR", concatUnixPaths(jarDirectory, "lib"), null));
+                commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
+            }
         }
     }
 
@@ -184,22 +187,23 @@ public class OpenshiftProcessor {
             nativeBinaryFileName = config.nativeBinaryFileName.orElse(outputNativeBinaryFileName);
         }
 
-        String pathToNativeBinary = concatUnixPaths(config.nativeBinaryDirectory, nativeBinaryFileName);
+        if (config.buildStrategy != BuildStrategy.DOCKER) {
+            String pathToNativeBinary = concatUnixPaths(config.nativeBinaryDirectory, nativeBinaryFileName);
+            builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseNativeImage));
+            Optional<OpenshiftBaseNativeImage> baseImage = OpenshiftBaseNativeImage.findMatching(config.baseNativeImage);
+            baseImage.ifPresent(b -> {
+                envProducer.produce(
+                        KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), config.nativeBinaryDirectory,
+                                OPENSHIFT));
+                envProducer.produce(
+                        KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", config.nativeArguments),
+                                OPENSHIFT));
+            });
 
-        builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseNativeImage));
-        Optional<OpenshiftBaseNativeImage> baseImage = OpenshiftBaseNativeImage.findMatching(config.baseNativeImage);
-        baseImage.ifPresent(b -> {
-            envProducer.produce(
-                    KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), config.nativeBinaryDirectory,
-                            OPENSHIFT));
-            envProducer.produce(
-                    KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", config.nativeArguments),
-                            OPENSHIFT));
-        });
-
-        if (!baseImage.isPresent()) {
-            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
-                    config.nativeArguments.toArray(new String[config.nativeArguments.size()])));
+            if (!baseImage.isPresent()) {
+                commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
+                        config.nativeArguments.toArray(new String[config.nativeArguments.size()])));
+            }
         }
     }
 
@@ -282,7 +286,7 @@ public class OpenshiftProcessor {
             return;
         }
 
-        createContainerImage(kubernetesClient, openshiftYml.get(), config, null, out.getOutputDirectory(),
+        createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", out.getOutputDirectory(),
                 nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }

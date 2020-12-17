@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.openshift.api.model.BuildConfig;
+import io.fabric8.openshift.api.model.DeploymentConfig;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
 import io.quarkus.test.ProdBuildResults;
@@ -41,6 +42,16 @@ public class OpenshiftWithDockerBuildStrategyTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
+        //Assert that the container contains neither command nor arguments
+        assertThat(openshiftList).filteredOn(d -> "DeploymentConfig".equals(d.getKind())).singleElement().satisfies(d -> {
+            assertThat(d).isInstanceOfSatisfying(DeploymentConfig.class, dc -> {
+                assertThat(dc.getSpec().getTemplate().getSpec().getContainers()).singleElement().satisfies(c -> {
+                    assertThat(c.getCommand()).isNullOrEmpty();
+                    assertThat(c.getArgs()).isNullOrEmpty();
+                });
+            });
+        });
+
         assertThat(openshiftList).filteredOn(h -> "BuildConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-s2i");
@@ -52,5 +63,6 @@ public class OpenshiftWithDockerBuildStrategyTest {
                 });
             });
         });
+
     }
 }

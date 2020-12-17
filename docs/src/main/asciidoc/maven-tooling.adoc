@@ -254,7 +254,7 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 
 [TIP]
 ====
-You can also run a Quarkus application in debug mode with a suspended JVM using `./mvnw compile quarkus:dev -Ddebug` which is a shorthand for `./mvnw compile quarkus:dev -Ddebug=true`.
+You can also run a Quarkus application in debug mode with a suspended JVM using `./mvnw compile quarkus:dev -Dsuspend` which is a shorthand for `./mvnw compile quarkus:dev -Dsuspend=true`.
 
 Then, attach your debugger to `localhost:5005`.
 ====

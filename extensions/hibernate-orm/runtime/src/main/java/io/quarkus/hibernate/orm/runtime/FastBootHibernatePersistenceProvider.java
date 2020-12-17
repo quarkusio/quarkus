@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
@@ -26,6 +27,7 @@ import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
@@ -178,7 +180,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
             for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
                     .getOrDefault(persistenceUnitName, Collections.emptyList())) {
-                descriptor.getInitListener().ifPresent(l -> l.contributeRuntimeProperties(runtimeSettingsBuilder::put));
+                Optional<HibernateOrmIntegrationRuntimeInitListener> listenerOptional = descriptor.getInitListener();
+                if (listenerOptional.isPresent()) {
+                    listenerOptional.get().contributeRuntimeProperties(runtimeSettingsBuilder::put);
+                }
             }
 
             // Allow detection of driver/database capabilities on runtime init (was disabled during static init)

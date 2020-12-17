@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -73,6 +74,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -305,7 +307,10 @@ public class FastBootMetadataBuilder {
                 QuarkusInfinispanRegionFactory.class.getName());
 
         for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
-            descriptor.getInitListener().ifPresent(listener -> listener.contributeBootProperties(cfg::put));
+            Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                listenerOptional.get().contributeBootProperties(cfg::put);
+            }
         }
 
         return mergedSettings;
@@ -321,9 +326,11 @@ public class FastBootMetadataBuilder {
         IntegrationSettings.Builder integrationSettingsBuilder = new IntegrationSettings.Builder();
 
         for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
-            descriptor.getInitListener()
-                    .ifPresent(listener -> listener.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
-                            integrationSettingsBuilder::put));
+            Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                listenerOptional.get().onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
+                        integrationSettingsBuilder::put);
+            }
         }
 
         Dialect dialect = extractDialect();

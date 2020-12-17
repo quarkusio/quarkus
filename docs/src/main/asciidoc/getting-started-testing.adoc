@@ -910,7 +910,7 @@ Most IDEs offer the possibility to run a selected class as JUnit test directly. 
 
 * `java.util.logging.manager` (see link:logging[Logging Guide])
 
-* `maven.home` (only if there are any custom settings in `${maven.home}/conf/settings.mxl`, see link:maven-tooling[Maven Guide])
+* `maven.home` (only if there are any custom settings in `${maven.home}/conf/settings.xml`, see link:maven-tooling[Maven Guide])
 
 * `maven.settings` (in case a custom version of `settings.xml` file should be used for the tests)
 

@@ -61,11 +61,11 @@ public class PgPoolRecorder {
                 dataSourceReactivePostgreSQLConfig);
         PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent() &&
-                dataSourceReactiveRuntimeConfig.threadLocal.get()) {
-            return new ThreadLocalPgPool(vertx, pgConnectOptions, poolOptions);
+        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
+            log.warn(
+                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return PgPool.pool(vertx, pgConnectOptions, poolOptions);
+        return new ThreadLocalPgPool(vertx, pgConnectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,

@@ -10,12 +10,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-undertow-websockets-parent</artifactId>
-    <name>Quarkus - Undertow - WebSockets</name>
+    <artifactId>quarkus-websockets-parent</artifactId>
+    <name>Quarkus - WebSockets</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        <module>legacy</module>
     </modules>
 
 </project>

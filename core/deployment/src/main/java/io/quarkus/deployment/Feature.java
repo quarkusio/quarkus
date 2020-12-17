@@ -130,7 +130,7 @@ public enum Feature {
     SPRING_SCHEDULED,
     SWAGGER_UI,
     TIKA,
-    UNDERTOW_WEBSOCKETS,
+    WEBSOCKETS,
     VAULT,
     VERTX,
     VERTX_WEB,

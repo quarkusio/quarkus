@@ -24,6 +24,7 @@
         <module>quarkus-resteasy-reactive-servlet</module>
         <module>rest-client-reactive</module>
         <module>rest-client-reactive-jackson</module>
+        <module>quarkus-resteasy-reactive-links</module>
     </modules>
 
 </project>

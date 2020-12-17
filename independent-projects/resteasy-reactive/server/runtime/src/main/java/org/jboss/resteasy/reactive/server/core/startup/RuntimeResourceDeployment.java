@@ -4,6 +4,7 @@ import static org.jboss.resteasy.reactive.common.util.DeploymentUtils.loadClass;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -12,9 +13,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -144,8 +147,12 @@ public class RuntimeResourceDeployment {
         for (int i = 0; i < method.getParameters().length; ++i) {
             parameterClasses[i] = loadClass(method.getParameters()[i].declaredType);
         }
+        Set<String> classAnnotationNames = new HashSet<>();
+        for (Annotation annotation : resourceClass.getAnnotations()) {
+            classAnnotationNames.add(annotation.annotationType().getName());
+        }
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterClasses, method.getMethodAnnotationNames());
+                parameterClasses, classAnnotationNames, method.getMethodAnnotationNames());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);

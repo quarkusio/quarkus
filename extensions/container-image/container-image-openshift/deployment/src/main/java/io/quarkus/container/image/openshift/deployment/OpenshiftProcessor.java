@@ -248,13 +248,14 @@ public class OpenshiftProcessor {
         LOG.info("Performing openshift binary build with jar on server: " + kubernetesClient.getClient().getMasterUrl()
                 + " in namespace:" + namespace + ".");
 
+        //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
+        //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
+        //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
+        String contextRoot = config.buildStrategy == BuildStrategy.DOCKER ? "target" : null;
         if (packageConfig.isFastJar()) {
-            createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", jar.getPath().getParent(),
-                    jar.getPath().getParent());
+            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(), jar.getPath().getParent());
         } else {
-            createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", jar.getPath().getParent(),
-                    jar.getPath(),
-                    jar.getLibraryDir());
+            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(), jar.getPath(), jar.getLibraryDir());
         }
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
@@ -291,8 +292,11 @@ public class OpenshiftProcessor {
                     "No Openshift manifests were generated (most likely due to the fact that the service is not an HTTP service) so no openshift process will be taking place");
             return;
         }
-
-        createContainerImage(kubernetesClient, openshiftYml.get(), config, "target", out.getOutputDirectory(),
+        //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
+        //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
+        //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
+        String contextRoot = config.buildStrategy == BuildStrategy.DOCKER ? "target" : null;
+        createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, out.getOutputDirectory(),
                 nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }

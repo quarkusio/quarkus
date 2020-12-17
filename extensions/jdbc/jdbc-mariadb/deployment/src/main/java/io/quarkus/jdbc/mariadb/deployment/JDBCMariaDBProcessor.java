@@ -14,6 +14,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.mariadb.runtime.MariaDBAgroalConnectionConfigurer;
+import io.quarkus.jdbc.mariadb.runtime.MariaDBServiceBindingConverter;
 
 public class JDBCMariaDBProcessor {
 
@@ -45,7 +46,9 @@ public class JDBCMariaDBProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            //TODO: add binding class
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                            MariaDBServiceBindingConverter.class.getName()));
             dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MARIADB));
         }
     }

@@ -31,6 +31,11 @@
             <artifactId>svm</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-service-binding</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

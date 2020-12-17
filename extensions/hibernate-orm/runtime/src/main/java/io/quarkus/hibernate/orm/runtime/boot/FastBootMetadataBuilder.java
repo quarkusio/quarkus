@@ -25,8 +25,10 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.persistence.PersistenceException;
 import javax.persistence.spi.PersistenceUnitTransactionType;
@@ -71,6 +73,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
@@ -100,8 +103,7 @@ public class FastBootMetadataBuilder {
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
-    private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
-    private final boolean isEnversPresent;
+    private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
@@ -112,8 +114,7 @@ public class FastBootMetadataBuilder {
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
-        this.integrationStaticInitListeners = puDefinition.getIntegrationStaticInitListeners();
-        this.isEnversPresent = puDefinition.isEnversPresent();
+        this.integrationStaticDescriptors = puDefinition.getIntegrationStaticDescriptors();
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
         // integration, instance );
@@ -245,11 +246,16 @@ public class FastBootMetadataBuilder {
         }
         cfg.put(WRAP_RESULT_SETS, "false");
 
-        //Hibernate Envers requires XML_MAPPING_ENABLED to be activated, but we don't want to enable this for any other use:
-        if (isEnversPresent) {
+        // Hibernate Envers (and others) require XML_MAPPING_ENABLED to be activated,
+        // but we don't want to enable this for any other use:
+        List<String> integrationsRequiringXmlMapping = integrationStaticDescriptors.stream()
+                .filter(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)
+                .map(HibernateOrmIntegrationStaticDescriptor::getIntegrationName).collect(Collectors.toList());
+        if (integrationStaticDescriptors.stream().anyMatch(HibernateOrmIntegrationStaticDescriptor::isXmlMappingRequired)) {
             if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
-                LOG.warn(
-                        "XML mapping is not supported. It will be partially activated to allow compatibility with Hibernate Envers, but this support is temporary");
+                LOG.warnf(
+                        "XML mapping is not supported. It will be partially activated to allow compatibility with %s, but this support is temporary",
+                        integrationsRequiringXmlMapping);
             }
         } else {
             if (readBooleanConfigurationValue(cfg, XML_MAPPING_ENABLED)) {
@@ -300,11 +306,11 @@ public class FastBootMetadataBuilder {
         cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
                 QuarkusInfinispanRegionFactory.class.getName());
 
-        for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
-            if (listener == null) {
-                continue;
+        for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
+            Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                listenerOptional.get().contributeBootProperties(cfg::put);
             }
-            listener.contributeBootProperties(cfg::put);
         }
 
         return mergedSettings;
@@ -319,12 +325,12 @@ public class FastBootMetadataBuilder {
 
         IntegrationSettings.Builder integrationSettingsBuilder = new IntegrationSettings.Builder();
 
-        for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
-            if (listener == null) {
-                continue;
+        for (HibernateOrmIntegrationStaticDescriptor descriptor : integrationStaticDescriptors) {
+            Optional<HibernateOrmIntegrationStaticInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                listenerOptional.get().onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
+                        integrationSettingsBuilder::put);
             }
-            listener.onMetadataInitialized(fullMeta, metamodelBuilder.getBootstrapContext(),
-                    integrationSettingsBuilder::put);
         }
 
         Dialect dialect = extractDialect();

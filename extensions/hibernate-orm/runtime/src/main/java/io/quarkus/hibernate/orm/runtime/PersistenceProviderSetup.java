@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 
 public final class PersistenceProviderSetup {
 
@@ -17,9 +17,9 @@ public final class PersistenceProviderSetup {
     }
 
     public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
-            Map<String, List<HibernateOrmIntegrationRuntimeInitListener>> integrationRuntimeInitListeners) {
+            Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
         javax.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver(
                 new SingletonPersistenceProviderResolver(
-                        new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeInitListeners)));
+                        new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors)));
     }
 }

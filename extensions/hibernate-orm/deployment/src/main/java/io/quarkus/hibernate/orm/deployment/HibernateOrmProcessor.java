@@ -121,7 +121,7 @@ import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
@@ -292,8 +292,6 @@ public final class HibernateOrmProcessor {
             return;
         }
 
-        final boolean enversIsPresent = capabilities.isPresent(Capability.HIBERNATE_ENVERS);
-
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             persistenceUnitDescriptors
@@ -303,8 +301,7 @@ public final class HibernateOrmProcessor {
                                     .getProperties().getProperty(AvailableSettings.MULTI_TENANT))),
                             null,
                             false,
-                            true,
-                            enversIsPresent));
+                            true));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -419,13 +416,13 @@ public final class HibernateOrmProcessor {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
 
-        Map<String, List<HibernateOrmIntegrationStaticInitListener>> integrationStaticInitListeners = HibernateOrmIntegrationStaticConfiguredBuildItem
-                .collectListeners(integrationBuildItems);
+        Map<String, List<HibernateOrmIntegrationStaticDescriptor>> integrationStaticDescriptors = HibernateOrmIntegrationStaticConfiguredBuildItem
+                .collectDescriptors(integrationBuildItems);
 
         List<QuarkusPersistenceUnitDefinition> finalStagePUDescriptors = new ArrayList<>();
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
             finalStagePUDescriptors.add(
-                    pud.asOutputPersistenceUnitDefinition(integrationStaticInitListeners
+                    pud.asOutputPersistenceUnitDefinition(integrationStaticDescriptors
                             .getOrDefault(pud.getPersistenceUnitName(), Collections.emptyList())));
         }
 
@@ -533,7 +530,7 @@ public final class HibernateOrmProcessor {
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems) {
         if (capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
             recorder.setupPersistenceProvider(hibernateOrmRuntimeConfig,
-                    HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectListeners(integrationBuildItems));
+                    HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         }
 
         return new PersistenceProviderSetUpBuildItem();
@@ -907,13 +904,11 @@ public final class HibernateOrmProcessor {
             storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
         }
 
-        final boolean isEnversPresent = capabilities.isPresent(Capability.HIBERNATE_ENVERS);
-
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor, dataSource,
                         getMultiTenancyStrategy(persistenceUnitConfig.multitenant),
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
-                        false, false, isEnversPresent));
+                        false, false));
     }
 
     public static Optional<String> guessDialect(String resolvedDbKind) {

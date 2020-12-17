@@ -59,7 +59,9 @@ public final class HibernateEnversProcessor {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             integrationProducer.produce(
                     new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_ENVERS,
-                            puDescriptor.getPersistenceUnitName(), recorder.createStaticInitListener(buildTimeConfig)));
+                            puDescriptor.getPersistenceUnitName())
+                                    .setInitListener(recorder.createStaticInitListener(buildTimeConfig))
+                                    .setXmlMappingRequired(true));
         }
     }
 

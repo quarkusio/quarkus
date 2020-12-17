@@ -21,6 +21,7 @@ import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomTwoBlo
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomUnorderedBlockingBean;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 public class BlockingSubscriberTest {
     @RegisterExtension
@@ -72,6 +73,7 @@ public class BlockingSubscriberTest {
     @ApplicationScoped
     public static class ProduceIn {
         @Outgoing("in")
+        @Broadcast(2)
         public Publisher<String> produce() {
             return Multi.createFrom().items("a", "b", "c", "d", "e", "f");
         }

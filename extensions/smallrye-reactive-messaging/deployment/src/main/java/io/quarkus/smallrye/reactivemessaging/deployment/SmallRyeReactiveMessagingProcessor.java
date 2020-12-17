@@ -11,14 +11,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
 import javax.enterprise.inject.spi.DeploymentException;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.jandex.AnnotationInstance;
@@ -132,6 +129,7 @@ public class SmallRyeReactiveMessagingProcessor {
             ValidationPhaseBuildItem validationPhase,
             BuildProducer<MediatorBuildItem> mediatorMethods,
             BuildProducer<EmitterBuildItem> emitters,
+            BuildProducer<ChannelBuildItem> channels,
             BuildProducer<ValidationErrorBuildItem> errors) {
 
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
@@ -170,19 +168,25 @@ public class SmallRyeReactiveMessagingProcessor {
                 .get(BuildExtension.Key.INJECTION_POINTS)) {
             Optional<AnnotationInstance> broadcast = getAnnotation(annotationStore, injectionPoint,
                     ReactiveMessagingDotNames.BROADCAST);
+            Optional<AnnotationInstance> channel = getAnnotation(annotationStore, injectionPoint,
+                    ReactiveMessagingDotNames.CHANNEL);
+            Optional<AnnotationInstance> legacyChannel = getAnnotation(annotationStore, injectionPoint,
+                    ReactiveMessagingDotNames.LEGACY_CHANNEL);
+            boolean isEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER);
+            boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
+                    .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
+            boolean isLegacyEmitter = injectionPoint.getRequiredType().name()
+                    .equals(ReactiveMessagingDotNames.LEGACY_EMITTER);
 
             // New emitter from the spec, or Mutiny emitter
-            if (injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER)
-                    || injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.MUTINY_EMITTER)) {
-                AnnotationInstance instance = injectionPoint
-                        .getRequiredQualifier(ReactiveMessagingDotNames.CHANNEL);
-                if (instance == null) {
+            if (isEmitter || isMutinyEmitter) {
+                if (!channel.isPresent()) {
                     validationPhase.getContext().addDeploymentProblem(
                             new DeploymentException(
                                     "Invalid emitter injection - @Channel is required for " + injectionPoint
                                             .getTargetInfo()));
                 } else {
-                    String channelName = instance.value().asString();
+                    String channelName = channel.get().value().asString();
                     Optional<AnnotationInstance> overflow = getAnnotation(annotationStore, injectionPoint,
                             ReactiveMessagingDotNames.ON_OVERFLOW);
                     createEmitter(emitters,
@@ -191,27 +195,38 @@ public class SmallRyeReactiveMessagingProcessor {
             }
 
             // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
-            if (injectionPoint.getRequiredType().name()
-                    .equals(ReactiveMessagingDotNames.LEGACY_EMITTER)) {
-                AnnotationInstance instance = injectionPoint
-                        .getRequiredQualifier(ReactiveMessagingDotNames.LEGACY_CHANNEL);
-                if (instance == null) {
+            if (isLegacyEmitter) {
+                if (!legacyChannel.isPresent()) {
                     validationPhase.getContext().addDeploymentProblem(
                             new DeploymentException(
                                     "Invalid emitter injection - @Channel is required for " + injectionPoint
                                             .getTargetInfo()));
                 } else {
-                    String channelName = instance.value().asString();
+                    String channelName = legacyChannel.get().value().asString();
                     Optional<AnnotationInstance> overflow = getAnnotation(annotationStore, injectionPoint,
                             ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW);
-
                     createEmitter(emitters, injectionPoint, channelName, overflow, broadcast);
+                }
+            }
+
+            if (channel.isPresent() && !(isEmitter || isMutinyEmitter)) {
+                String name = channel.get().value().asString();
+                if (name != null && !name.trim().isEmpty()) {
+                    channels.produce(ChannelBuildItem.of(name));
+                }
+            }
+
+            if (legacyChannel.isPresent() && !isLegacyEmitter) {
+                String name = legacyChannel.get().value().asString();
+                if (name != null && !name.trim().isEmpty()) {
+                    channels.produce(ChannelBuildItem.of(name));
                 }
             }
         }
     }
 
-    private Optional<AnnotationInstance> getAnnotation(AnnotationStore annotationStore, InjectionPointInfo injectionPoint,
+    private Optional<AnnotationInstance> getAnnotation(AnnotationStore annotationStore,
+            InjectionPointInfo injectionPoint,
             DotName onOverflowAnnotation) {
         Collection<AnnotationInstance> annotations = annotationStore.getAnnotations(injectionPoint.getTarget());
         for (AnnotationInstance annotation : annotations) {
@@ -256,9 +271,11 @@ public class SmallRyeReactiveMessagingProcessor {
             strategy = annotation.value().asString();
         }
 
-        boolean isMutinyEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
+        boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
+                .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
         emitters.produce(
-                EmitterBuildItem.of(channelName, isMutinyEmitter, strategy, bufferSize, hasBroadcast, awaitSubscribers));
+                EmitterBuildItem
+                        .of(channelName, isMutinyEmitter, strategy, bufferSize, hasBroadcast, awaitSubscribers));
     }
 
     @BuildStep
@@ -302,11 +319,14 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig, BuildProducer<HealthBuildItem> producer) {
+    public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig,
+            BuildProducer<HealthBuildItem> producer) {
         producer.produce(
-                new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(), buildTimeConfig.healthEnabled));
+                new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(),
+                        buildTimeConfig.healthEnabled));
         producer.produce(
-                new HealthBuildItem(SmallRyeReactiveMessagingReadinessCheck.class.getName(), buildTimeConfig.healthEnabled));
+                new HealthBuildItem(SmallRyeReactiveMessagingReadinessCheck.class.getName(),
+                        buildTimeConfig.healthEnabled));
     }
 
     @BuildStep
@@ -315,6 +335,7 @@ public class SmallRyeReactiveMessagingProcessor {
             BeanContainerBuildItem beanContainer,
             List<MediatorBuildItem> mediatorMethods,
             List<EmitterBuildItem> emitterFields,
+            List<ChannelBuildItem> channelFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             ReactiveMessagingConfiguration conf) {
@@ -363,17 +384,10 @@ public class SmallRyeReactiveMessagingProcessor {
         recorder.registerMediators(configurations, beanContainer.getValue());
 
         for (EmitterBuildItem it : emitterFields) {
-            Config config = ConfigProvider.getConfig();
-            int defaultBufferSize = config.getOptionalValue("mp.messaging.emitter.default-buffer-size", Integer.class)
-                    .orElseGet(new Supplier<Integer>() {
-                        @Override
-                        public Integer get() {
-                            return config
-                                    .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class)
-                                    .orElse(127);
-                        }
-                    });
-            recorder.configureEmitter(beanContainer.getValue(), it.getEmitterConfig(), defaultBufferSize);
+            recorder.configureEmitter(beanContainer.getValue(), it.getEmitterConfig());
+        }
+        for (ChannelBuildItem it : channelFields) {
+            recorder.configureChannel(beanContainer.getValue(), it.getChannelConfig());
         }
     }
 

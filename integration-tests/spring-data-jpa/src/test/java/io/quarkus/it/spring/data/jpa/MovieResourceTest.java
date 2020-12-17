@@ -200,6 +200,23 @@ public class MovieResourceTest {
     }
 
     @Test
+    void testFindRatingByTitle() {
+        when().get("/movie/rating/forTitle/Interstellar").then()
+                .statusCode(200)
+                .body(containsString("Interstellar"))
+                .body(containsString("PG-13"))
+                .body(not(containsString("duration")));
+    }
+
+    @Test
+    void testFindOptionalRatingByTitle() {
+        when().get("/movie/rating/opt/forTitle/Aladdin").then()
+                .statusCode(200)
+                .body(containsString("Aladdin"))
+                .body(not(containsString("duration")));
+    }
+
+    @Test
     void testNewMovie() {
         long id = 999L;
         String title = "tenet";

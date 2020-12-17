@@ -72,7 +72,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -81,7 +80,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -141,11 +139,6 @@ public class ResteasyReactiveProcessor {
     @BuildStep
     public FeatureBuildItem buildSetup() {
         return new FeatureBuildItem(Feature.RESTEASY_REACTIVE);
-    }
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.RESTEASY_REACTIVE);
     }
 
     // This is required to get rid of netty exceptions when allocating direct buffers in tests running
@@ -288,11 +281,6 @@ public class ResteasyReactiveProcessor {
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
             return;
-        }
-
-        if (capabilities.isPresent(Capability.RESTEASY)) {
-            throw new IllegalStateException(
-                    "The 'quarkus-resteasy-reactive' and 'quarkus-resteasy' extensions cannot be used at the same time.");
         }
 
         recorderContext.registerNonDefaultConstructor(

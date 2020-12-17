@@ -2,7 +2,10 @@ package io.quarkus.bootstrap.resolver;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class TsQuarkusExt {
 
@@ -51,6 +54,13 @@ public class TsQuarkusExt {
         return this;
     }
 
+    public TsQuarkusExt setProvidesCapabilities(String... capability) {
+        setDescriptorProp(BootstrapConstants.PROP_PROVIDES_CAPABILITIES,
+                Arrays.asList(capability).stream()
+                        .collect(Collectors.joining(",")));
+        return this;
+    }
+
     public TsArtifact getRuntime() {
         return runtime;
     }
@@ -71,12 +81,16 @@ public class TsQuarkusExt {
             return;
         }
         installed = true;
+
         rtContent.addEntry(rtDescr.build(), BootstrapConstants.DESCRIPTOR_PATH);
+
         if (!extDeps.isEmpty()) {
             for (TsQuarkusExt e : extDeps) {
                 e.install(repo);
             }
         }
+        Properties props = rtDescr.build();
+        rtContent.addEntry(props, BootstrapConstants.DESCRIPTOR_PATH);
         deployment.install(repo);
         runtime.install(repo);
     }

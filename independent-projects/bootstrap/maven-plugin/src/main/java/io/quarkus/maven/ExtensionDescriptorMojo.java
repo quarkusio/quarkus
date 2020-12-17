@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -18,6 +19,7 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
+import io.quarkus.maven.capabilities.CapabilityConfig;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -29,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -122,6 +125,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     @Parameter(required = true, defaultValue = "${project.groupId}:${project.artifactId}-deployment:${project.version}")
     private String deployment;
+
+    @Parameter(required = false)
+    List<CapabilityConfig> capabilities = Collections.emptyList();
 
     @Parameter(required = true, defaultValue = "${project.build.outputDirectory}/META-INF/quarkus-extension.yaml")
     private File extensionFile;
@@ -227,6 +233,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         final Properties props = new Properties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);
+
         if (!conditionalDependencies.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             int i = 0;
@@ -246,6 +253,16 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
 
         }
+
+        if (!capabilities.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            appendCapability(capabilities.get(0), buf);
+            for (int i = 1; i < capabilities.size(); ++i) {
+                appendCapability(capabilities.get(i), buf.append(','));
+            }
+            props.setProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES, buf.toString());
+        }
+
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
@@ -354,7 +371,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.put("description", project.getDescription());
         }
 
-        setBuiltWithQuarkusCoreVersion(mapper, extObject);
+        setBuiltWithQuarkusCoreVersion(extObject);
+        addCapabilities(extObject);
 
         completeCodestartArtifact(mapper, extObject);
 
@@ -419,7 +437,21 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         return mvalue;
     }
 
-    private void setBuiltWithQuarkusCoreVersion(ObjectMapper mapper, ObjectNode extObject) throws MojoExecutionException {
+    private static void appendCapability(CapabilityConfig capability, StringBuilder buf) {
+        buf.append(capability.getName());
+        if (!capability.getOnlyIf().isEmpty()) {
+            for (String onlyIf : capability.getOnlyIf()) {
+                buf.append('?').append(onlyIf);
+            }
+        }
+        if (!capability.getOnlyIfNot().isEmpty()) {
+            for (String onlyIfNot : capability.getOnlyIfNot()) {
+                buf.append("?!").append(onlyIfNot);
+            }
+        }
+    }
+
+    private void setBuiltWithQuarkusCoreVersion(ObjectNode extObject) throws MojoExecutionException {
         final QuarkusCoreDeploymentVersionLocator coreVersionLocator = new QuarkusCoreDeploymentVersionLocator();
         final DependencyNode root;
         try {
@@ -436,14 +468,31 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             if (mvalue != null && mvalue.isObject()) {
                 metadata = (ObjectNode) mvalue;
             } else {
-                metadata = mapper.createObjectNode();
+                metadata = extObject.putObject(METADATA);
             }
             metadata.put("built-with-quarkus-core", coreVersionLocator.coreVersion);
-            extObject.set(METADATA, metadata);
         } else if (!ignoreNotDetectedQuarkusCoreVersion) {
             throw new MojoExecutionException("Failed to determine the Quarkus core version used to build the extension");
         }
 
+    }
+
+    private void addCapabilities(ObjectNode extObject) {
+        if (capabilities.isEmpty()) {
+            return;
+        }
+        JsonNode mvalue = extObject.get(METADATA);
+        ObjectNode metadata;
+        if (mvalue != null && mvalue.isObject()) {
+            metadata = (ObjectNode) mvalue;
+        } else {
+            metadata = extObject.putObject(METADATA);
+        }
+        final ObjectNode capsNode = metadata.putObject("capabilities");
+        final ArrayNode provides = capsNode.putArray("provides");
+        for (CapabilityConfig cap : capabilities) {
+            provides.add(cap.getName());
+        }
     }
 
     private void validateExtensionDeps() throws MojoExecutionException {

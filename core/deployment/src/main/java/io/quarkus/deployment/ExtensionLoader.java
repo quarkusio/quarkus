@@ -44,6 +44,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
+import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStepBuilder;
@@ -126,7 +127,7 @@ public final class ExtensionLoader {
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            Map<String, String> platformProperties, LaunchMode launchMode, DevModeType devModeType,
+            AppModel appModel, LaunchMode launchMode, DevModeType devModeType,
             Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
         // populate with all known types
@@ -150,6 +151,7 @@ public final class ExtensionLoader {
         final DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(
                 reader.getBuildTimeRunTimePatternMap());
         final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
+        final Map<String, String> platformProperties = appModel.getPlatformProperties();
         if (platformProperties.isEmpty()) {
             builder.withSources(ds1, ds2, pcs);
         } else {
@@ -179,18 +181,24 @@ public final class ExtensionLoader {
         }
 
         final BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
+        final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(readResult, launchMode, devModeType);
+
+        Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
+        // BooleanSupplier factory
+        result = result.andThen(bcb -> bcb.addBuildStep(bc -> {
+            bc.produce(bsf);
+        }).produces(BooleanSupplierFactoryBuildItem.class).build());
 
         // the proxy objects used for run time config in the recorders
         Map<Class<?>, Object> proxies = new HashMap<>();
-        Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             try {
-                result = result.andThen(
-                        ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, launchMode, devModeType));
+                result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, bsf));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to load steps from " + clazz, e);
             }
         }
+
         // this has to be an identity hash map else the recorder will get angry
         Map<Object, FieldDescriptor> proxyFields = new IdentityHashMap<>();
         for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
@@ -214,6 +222,7 @@ public final class ExtensionLoader {
                 .produces(RunTimeConfigurationProxyBuildItem.class)
                 .produces(BytecodeRecorderObjectLoaderBuildItem.class)
                 .build());
+
         return result;
     }
 
@@ -228,7 +237,7 @@ public final class ExtensionLoader {
      */
     private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
             BuildTimeConfigurationReader.ReadResult readResult,
-            Map<Class<?>, Object> runTimeProxies, final LaunchMode launchMode, DevModeType devModeType) {
+            Map<Class<?>, Object> runTimeProxies, BooleanSupplierFactoryBuildItem supplierFactory) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
@@ -239,7 +248,6 @@ public final class ExtensionLoader {
         Consumer<BuildStepBuilder> stepConfig = Functions.discardingConsumer();
         // this is the build step instance setup that applies to all steps on this class
         BiConsumer<BuildContext, Object> stepInstanceSetup = Functions.discardingBiConsumer();
-        Map<Class<? extends BooleanSupplier>, BooleanSupplier> condCache = new HashMap<>();
 
         if (constructors.length != 1) {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
@@ -505,96 +513,7 @@ public final class ExtensionLoader {
             for (boolean inv : new boolean[] { false, true }) {
                 Class<? extends BooleanSupplier>[] testClasses = inv ? onlyIfNot : onlyIf;
                 for (Class<? extends BooleanSupplier> testClass : testClasses) {
-                    BooleanSupplier bs = condCache.get(testClass);
-                    if (bs == null) {
-                        // construct a new supplier instance
-                        Consumer<BooleanSupplier> setup = o -> {
-                        };
-                        final Constructor<?>[] ctors = testClass.getDeclaredConstructors();
-                        if (ctors.length != 1) {
-                            throw reportError(testClass, "Conditional class must declare exactly one constructor");
-                        }
-                        final Constructor<?> ctor = ctors[0];
-                        ctor.setAccessible(true);
-                        List<Supplier<?>> paramSuppList = new ArrayList<>();
-                        for (Parameter parameter : ctor.getParameters()) {
-                            final Class<?> parameterClass = parameter.getType();
-                            if (parameterClass == LaunchMode.class) {
-                                paramSuppList.add(() -> launchMode);
-                            } else if (parameterClass == DevModeType.class) {
-                                paramSuppList.add(() -> devModeType);
-                            } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
-                                final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
-                                final ConfigPhase phase = annotation.phase();
-                                if (phase.isAvailableAtBuild()) {
-                                    paramSuppList.add(() -> readResult.requireRootObjectForClass(parameterClass));
-                                } else if (phase.isReadAtMain()) {
-                                    throw reportError(parameter, phase + " configuration cannot be consumed here");
-                                } else {
-                                    throw reportError(parameter,
-                                            "Unsupported conditional class configuration build phase " + phase);
-                                }
-                            } else {
-                                throw reportError(parameter,
-                                        "Unsupported conditional class constructor parameter type " + parameterClass);
-                            }
-                        }
-                        for (Field field : testClass.getDeclaredFields()) {
-                            final int fieldMods = field.getModifiers();
-                            if (Modifier.isStatic(fieldMods)) {
-                                // ignore static fields
-                                continue;
-                            }
-                            if (Modifier.isFinal(fieldMods)) {
-                                // ignore final fields
-                                continue;
-                            }
-                            if (!Modifier.isPublic(fieldMods) || !Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
-                                field.setAccessible(true);
-                            }
-                            final Class<?> fieldClass = field.getType();
-                            if (fieldClass == LaunchMode.class) {
-                                setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o, launchMode));
-                            } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
-                                final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
-                                final ConfigPhase phase = annotation.phase();
-                                if (phase.isAvailableAtBuild()) {
-                                    setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o,
-                                            readResult.requireRootObjectForClass(fieldClass)));
-                                } else if (phase.isReadAtMain()) {
-                                    throw reportError(field, phase + " configuration cannot be consumed here");
-                                } else {
-                                    throw reportError(field,
-                                            "Unsupported conditional class configuration build phase " + phase);
-                                }
-                            } else {
-                                throw reportError(field, "Unsupported conditional class field type " + fieldClass);
-                            }
-                        }
-                        // make it
-                        Object[] args = new Object[paramSuppList.size()];
-                        int idx = 0;
-                        for (Supplier<?> supplier : paramSuppList) {
-                            args[idx++] = supplier.get();
-                        }
-                        try {
-                            bs = (BooleanSupplier) ctor.newInstance(args);
-                        } catch (InstantiationException e) {
-                            throw ReflectUtil.toError(e);
-                        } catch (IllegalAccessException e) {
-                            throw ReflectUtil.toError(e);
-                        } catch (InvocationTargetException e) {
-                            try {
-                                throw e.getCause();
-                            } catch (RuntimeException | Error e2) {
-                                throw e2;
-                            } catch (Throwable throwable) {
-                                throw new IllegalStateException(throwable);
-                            }
-                        }
-                        setup.accept(bs);
-                        condCache.put(testClass, bs);
-                    }
+                    BooleanSupplier bs = supplierFactory.get((Class<? extends BooleanSupplier>) testClass);
                     if (inv) {
                         addStep = and(addStep, not(bs));
                     } else {
@@ -974,7 +893,7 @@ public final class ExtensionLoader {
         return () -> !x.getAsBoolean();
     }
 
-    private static IllegalArgumentException reportError(AnnotatedElement e, String msg) {
+    static IllegalArgumentException reportError(AnnotatedElement e, String msg) {
         if (e instanceof Member) {
             return new IllegalArgumentException(msg + " at " + e + " of " + ((Member) e).getDeclaringClass());
         } else if (e instanceof Parameter) {

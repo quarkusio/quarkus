@@ -34,7 +34,6 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
     @Test
     public void testCollectedDependencies() throws Exception {
         install(root);
-
         List<AppDependency> expected;
         if (deploymentDeps.isEmpty()) {
             expected = expectedResult;

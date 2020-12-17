@@ -87,6 +87,9 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.servlet</provides>
+                    </capabilities>
                     <excludedArtifacts>
                         <excludedArtifact>org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec</excludedArtifact>
                         <excludedArtifact>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</excludedArtifact>

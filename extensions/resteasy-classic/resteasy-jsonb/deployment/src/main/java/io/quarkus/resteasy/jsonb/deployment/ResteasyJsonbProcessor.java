@@ -3,11 +3,9 @@ package io.quarkus.resteasy.jsonb.deployment;
 import java.util.Arrays;
 import java.util.List;
 
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
@@ -26,13 +24,6 @@ public class ResteasyJsonbProcessor {
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_JSONB));
-    }
-
-    @BuildStep
-    void capabilities(BuildProducer<CapabilityBuildItem> capability) {
-        capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSON));
-        capability.produce(new CapabilityBuildItem(Capability.REST_JSONB));
-        capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSONB));
     }
 
     @BuildStep

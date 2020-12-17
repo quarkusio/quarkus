@@ -417,11 +417,11 @@ public class SmallRyeGraphQLProcessor {
     private boolean shouldActivateService(Capabilities capabilities,
             Optional<Boolean> serviceEnabled,
             String linkedExtensionName,
-            Capability linkedCapability,
+            String linkedCapability,
             String configKey) {
 
         return shouldActivateService(capabilities, serviceEnabled, capabilities.isPresent(linkedCapability),
-                linkedExtensionName, linkedCapability.getName(), configKey);
+                linkedExtensionName, linkedCapability, configKey);
     }
 
     private boolean shouldActivateService(Capabilities capabilities,

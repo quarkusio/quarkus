@@ -92,7 +92,7 @@ public class AugmentActionImpl implements AugmentAction {
 
     /**
      * Leaving this here for backwards compatibility, even though this is only internal.
-     * 
+     *
      * @Deprecated use one of the other constructors
      */
     @Deprecated
@@ -304,7 +304,7 @@ public class AugmentActionImpl implements AugmentAction {
             chainBuilder.setClassLoader(classLoader);
 
             ExtensionLoader.loadStepsFrom(classLoader, new Properties(),
-                    curatedApplication.getAppModel().getPlatformProperties(), launchMode, devModeType, null)
+                    curatedApplication.getAppModel(), launchMode, devModeType, null)
                     .accept(chainBuilder);
             chainBuilder.loadProviders(classLoader);
 

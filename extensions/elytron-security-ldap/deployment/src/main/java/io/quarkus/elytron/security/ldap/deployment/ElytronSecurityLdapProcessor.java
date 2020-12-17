@@ -3,13 +3,11 @@ package io.quarkus.elytron.security.ldap.deployment;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
@@ -21,11 +19,6 @@ import io.quarkus.elytron.security.ldap.deployment.config.LdapSecurityRealmBuild
 import io.quarkus.runtime.RuntimeValue;
 
 class ElytronSecurityLdapProcessor {
-
-    @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.SECURITY_ELYTRON_LDAP);
-    }
 
     @BuildStep()
     FeatureBuildItem feature() {

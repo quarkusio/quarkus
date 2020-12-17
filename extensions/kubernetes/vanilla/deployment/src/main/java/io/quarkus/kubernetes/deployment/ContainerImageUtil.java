@@ -20,6 +20,6 @@ final class ContainerImageUtil {
         }
 
         return !containerImageInfo.getRegistry().isPresent()
-                && !Capability.CONTAINER_IMAGE_S2I.getName().equals(activeContainerImageCapability.get());
+                && !Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability.get());
     }
 }

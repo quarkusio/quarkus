@@ -5,13 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -33,6 +36,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.model.CapabilityErrors;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -59,6 +63,52 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         testDir = initProject("projects/dev-mode-env-vars-config");
         run(true);
         assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello, WORLD");
+    }
+
+    @Test
+    public void testCapabilitiesConflict() throws MavenInvocationException, IOException {
+        testDir = getTargetDir("projects/capabilities-conflict");
+        final File runnerPom = new File(testDir, "runner/pom.xml");
+        if (!runnerPom.exists()) {
+            fail("Failed to locate runner/pom.xml in " + testDir);
+        }
+        run(true);
+
+        final CapabilityErrors error = new CapabilityErrors();
+        error.addConflict("sunshine", "org.acme:alt-quarkus-ext::jar:1.0-SNAPSHOT");
+        error.addConflict("sunshine", "org.acme:acme-quarkus-ext::jar:1.0-SNAPSHOT");
+        String response = DevModeTestUtils.getHttpResponse("/hello", true);
+        assertThat(response).contains(error.report());
+
+        final StringWriter buf = new StringWriter();
+        try (BufferedWriter writer = new BufferedWriter(buf)) {
+            writer.write("        <dependency>");
+            writer.newLine();
+            writer.write("            <groupId>org.acme</groupId>");
+            writer.newLine();
+            writer.write("            <artifactId>acme-quarkus-ext</artifactId>");
+            writer.newLine();
+            writer.write("        </dependency>");
+            writer.newLine();
+        }
+        final String acmeDep = buf.toString();
+        filter(runnerPom, Collections.singletonMap(acmeDep, ""));
+        assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
+
+        buf.getBuffer().setLength(0);
+        try (BufferedWriter writer = new BufferedWriter(buf)) {
+            writer.write("        <dependency>");
+            writer.newLine();
+            writer.write("            <groupId>org.acme</groupId>");
+            writer.newLine();
+            writer.write("            <artifactId>alt-quarkus-ext</artifactId>");
+            writer.newLine();
+            writer.write("        </dependency>");
+            writer.newLine();
+        }
+        final String altDep = buf.toString();
+        filter(runnerPom, Collections.singletonMap(acmeDep, altDep));
+        assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
     }
 
     @Test

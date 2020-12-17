@@ -42,7 +42,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
@@ -60,10 +59,8 @@ class AgroalProcessor {
     private static final DotName DATA_SOURCE = DotName.createSimple(javax.sql.DataSource.class.getName());
 
     @BuildStep
-    void agroal(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<CapabilityBuildItem> capability) {
+    void agroal(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.AGROAL));
-        capability.produce(new CapabilityBuildItem(Capability.AGROAL));
     }
 
     @BuildStep

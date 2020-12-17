@@ -2,10 +2,8 @@ package io.quarkus.mongodb.panache.deployment;
 
 import java.util.List;
 
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
@@ -47,11 +45,6 @@ public class PanacheMongoResourceProcessor extends BasePanacheMongoResourceProce
     public PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
         return new PanacheMongoRepositoryEnhancer(index.getIndex(), getImperativeTypeBundle());
-    }
-
-    @BuildStep
-    protected CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.MONGODB_PANACHE);
     }
 
     @BuildStep

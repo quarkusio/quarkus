@@ -6,6 +6,7 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.model.ArtifactCoords;
@@ -105,7 +106,9 @@ public class QuarkusModelHelper {
             versionMap.put(appDependency.getArtifact().getKey(), appDependency);
         });
 
+        final Map<String, Object> capabilities = new HashMap<>();
         final List<AppDependency> deploymentDeps = new ArrayList<>();
+        final Map<String, CapabilityContract> capabilitiesContracts = new HashMap<>();
         for (Dependency extensionDependency : model.getExtensionDependencies()) {
             AppDependency appDep = toAppDependency(extensionDependency);
             for (Path artifactPath : appDep.getArtifact().getPaths()) {
@@ -113,13 +116,15 @@ public class QuarkusModelHelper {
                     continue;
                 }
                 if (Files.isDirectory(artifactPath)) {
-                    processQuarkusDir(appDep.getArtifact(), artifactPath.resolve(BootstrapConstants.META_INF),
-                            appBuilder);
+                    processQuarkusDir(appDep.getArtifact(),
+                            artifactPath.resolve(BootstrapConstants.META_INF),
+                            appBuilder, capabilities, capabilitiesContracts);
                 } else {
                     try (FileSystem artifactFs = FileSystems.newFileSystem(artifactPath,
                             QuarkusModelHelper.class.getClassLoader())) {
-                        processQuarkusDir(appDep.getArtifact(), artifactFs.getPath(BootstrapConstants.META_INF),
-                                appBuilder);
+                        processQuarkusDir(appDep.getArtifact(),
+                                artifactFs.getPath(BootstrapConstants.META_INF),
+                                appBuilder, capabilities, capabilitiesContracts);
                     } catch (IOException e) {
                         throw new AppModelResolverException("Failed to process " + artifactPath, e);
                     }
@@ -130,6 +135,7 @@ public class QuarkusModelHelper {
                 deploymentDeps.add(deploymentDep);
             }
         }
+        appBuilder.setCapabilitiesContracts(capabilitiesContracts);
 
         final List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps);
         fullDeploymentDeps.addAll(deploymentDeps);
@@ -197,7 +203,8 @@ public class QuarkusModelHelper {
         return rtProps;
     }
 
-    private static void processQuarkusDir(AppArtifact a, Path quarkusDir, AppModel.Builder appBuilder) {
+    private static void processQuarkusDir(AppArtifact a, Path quarkusDir, AppModel.Builder appBuilder,
+            Map<String, Object> capabilities, Map<String, CapabilityContract> capabilitiesContracts) {
         if (!Files.exists(quarkusDir)) {
             return;
         }
@@ -209,7 +216,14 @@ public class QuarkusModelHelper {
         if (extProps == null) {
             return;
         }
-        appBuilder.handleExtensionProperties(extProps, a.toString());
+        final String extensionCoords = a.toString();
+        appBuilder.handleExtensionProperties(extProps, extensionCoords);
+
+        final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
+        if (providesCapabilities != null) {
+            capabilitiesContracts.put(extensionCoords,
+                    CapabilityContract.providesCapabilities(extensionCoords, providesCapabilities));
+        }
     }
 
     static AppDependency alignVersion(AppDependency dependency, Map<AppArtifactKey, AppDependency> versionMap) {

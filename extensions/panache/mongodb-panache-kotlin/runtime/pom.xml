@@ -94,6 +94,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.mongodb.panache.kotlin</provides>
+                    </capabilities>
+                </configuration>
             </plugin>
             <!-- The entity classes needs to be indexed -->
             <plugin>

@@ -7,13 +7,11 @@ import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
 
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -67,11 +65,6 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
 
     protected KotlinReactiveTypeBundle getReactiveTypeBundle() {
         return REACTIVE_TYPE_BUNDLE;
-    }
-
-    @BuildStep
-    protected CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.MONGODB_PANACHE_KOTLIN);
     }
 
     @BuildStep

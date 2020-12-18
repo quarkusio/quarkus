@@ -308,6 +308,9 @@ injecting a `SecurityIdentity` instance in your beans, you are allowed to check 
 
 [source,java]
 ----
+import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
 @Path("/api/protected")
 public class ProtectedResource {
 
@@ -316,11 +319,11 @@ public class ProtectedResource {
     
     
     @GET
-    public CompletionStage<List<Permission>> get() {
-        return identity.checkPermission(new AuthPermission("{resource_name}"))
+    public Uni<List<Permission>> get() {
+        return identity.checkPermission(new AuthPermission("{resource_name}")).onItem()
                 .transform(granted -> {
                     if (granted) {
-                        return CompletableFuture.completedFuture(doGetState());
+                        return identity.getAttribute("permissions");
                     }
                     throw new ForbiddenException();
                 });

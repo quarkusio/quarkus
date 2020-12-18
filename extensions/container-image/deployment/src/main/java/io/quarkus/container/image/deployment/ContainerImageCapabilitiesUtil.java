@@ -31,7 +31,7 @@ public final class ContainerImageCapabilitiesUtil {
         if (activeContainerImageCapabilities.size() > 1) {
             throw new IllegalStateException(String.join(" and ", activeContainerImageCapabilities)
                     + " were detected, at most one container-image extension can be present.\n"
-                    + "Either remove the unneeded ones, or select one using the property 'quarkus.container-image-builder=<extension name (without the `container-image-` prefix)>'.");
+                    + "Either remove the unneeded ones, or select one by adding the property 'quarkus.container-image.builder=<extension name (without the `container-image-` prefix)>' in application.properties or as a system property.");
         }
         return activeContainerImageCapabilities.isEmpty() ? Optional.empty()
                 : Optional.of(activeContainerImageCapabilities.iterator().next());

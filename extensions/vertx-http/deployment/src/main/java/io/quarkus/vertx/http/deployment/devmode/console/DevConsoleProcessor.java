@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.deployment.devmode.console;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -334,6 +335,10 @@ public class DevConsoleProcessor {
                 String devTemplatesURL = devTemplateURLs.nextElement().toExternalForm();
                 if (devTemplatesURL.startsWith("jar:file:") && devTemplatesURL.endsWith("!/dev-templates")) {
                     String jarPath = devTemplatesURL.substring(9, devTemplatesURL.length() - 15);
+                    if (File.separatorChar == '\\') {
+                        // on Windows this will be /C:/some/path, so turn it into C:\some\path
+                        jarPath = jarPath.substring(1).replace('/', '\\');
+                    }
                     try (FileSystem fs = FileSystems
                             .newFileSystem(Paths.get(jarPath), classLoader)) {
                         scanTemplates(fs, devTemplatePaths);

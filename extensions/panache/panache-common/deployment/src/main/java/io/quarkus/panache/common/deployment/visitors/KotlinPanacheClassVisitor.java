@@ -115,17 +115,6 @@ public class KotlinPanacheClassVisitor extends ClassVisitor {
         }
     }
 
-    public static List<ByteCodeType> findEntityTypeArguments(IndexView indexView, String repositoryClassName,
-            DotName repositoryDotName) {
-        for (ClassInfo classInfo : indexView.getAllKnownImplementors(repositoryDotName)) {
-            if (repositoryClassName.equals(classInfo.name().toString())) {
-                return recursivelyFindEntityTypeArguments(indexView, classInfo.name(), repositoryDotName);
-            }
-        }
-
-        return null;
-    }
-
     public static List<ByteCodeType> recursivelyFindEntityTypeArguments(IndexView indexView, DotName clazz,
             DotName repositoryDotName) {
         if (clazz.equals(JandexUtil.DOTNAME_OBJECT)) {

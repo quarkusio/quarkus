@@ -11,5 +11,6 @@ public enum ParameterType {
     CONTEXT,
     ASYNC_RESPONSE,
     COOKIE,
-    BEAN
+    BEAN,
+    CUSTOM
 }

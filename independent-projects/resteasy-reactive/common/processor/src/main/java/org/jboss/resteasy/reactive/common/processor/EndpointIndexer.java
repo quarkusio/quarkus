@@ -234,7 +234,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
-    protected abstract METHOD createResourceMethod();
+    protected abstract METHOD createResourceMethod(MethodInfo info, Map<String, Object> methodContext);
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
@@ -363,6 +363,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             String methodPath,
             Set<String> classPathParameters, String classSseElementType) {
         try {
+            Map<String, Object> methodContext = new HashMap<>();
             Set<String> pathParameters = new HashSet<>(classPathParameters);
             URLUtils.parsePathParameters(methodPath, pathParameters);
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
@@ -390,7 +391,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
                 PARAM parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo,
                         existingConverters, additionalReaders,
-                        anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters, info.parameterName(i));
+                        anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters, info.parameterName(i),
+                        methodContext);
                 suspended |= parameterResult.isSuspended();
                 sse |= parameterResult.isSse();
                 String name = parameterResult.getName();
@@ -447,7 +449,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
 
-            ResourceMethod method = createResourceMethod()
+            ResourceMethod method = createResourceMethod(info, methodContext)
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
                     .setConsumes(consumes)
@@ -679,7 +681,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     public PARAM extractParameterInfo(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Map<String, String> existingConverters, AdditionalReaders additionalReaders,
             Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
-            boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName) {
+            boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
+            Map<String, Object> methodContext) {
         PARAM builder = createIndexedParam()
                 .setCurrentClassInfo(currentClassInfo)
                 .setActualEndpointInfo(actualEndpointInfo)
@@ -713,7 +716,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (defaultValueAnnotation != null) {
             builder.setDefaultValue(defaultValueAnnotation.value().asString());
         }
-        if (moreThanOne(pathParam, queryParam, headerParam, formParam, cookieParam, contextParam, beanParam,
+        if (handleCustomParameter(anns, builder, paramType, field, methodContext)) {
+            return builder;
+        } else if (moreThanOne(pathParam, queryParam, headerParam, formParam, cookieParam, contextParam, beanParam,
                 restPathParam, restQueryParam, restHeaderParam, restFormParam, restCookieParam)) {
             throw new RuntimeException(
                     "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @CookieParam, @BeanParam, @Context on "
@@ -853,6 +858,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
         builder.setElementType(elementType);
         return builder;
+    }
+
+    protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, PARAM builder, Type paramType, boolean field,
+            Map<String, Object> methodContext) {
+        return false;
     }
 
     protected void handlePathSegmentParam(PARAM builder) {

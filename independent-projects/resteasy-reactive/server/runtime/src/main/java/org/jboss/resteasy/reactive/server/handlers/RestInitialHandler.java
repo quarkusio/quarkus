@@ -15,7 +15,7 @@ public class RestInitialHandler implements ServerRestHandler {
     final RequestMapper<InitialMatch> mappers;
     final Deployment deployment;
     final ProvidersImpl providers;
-    final List<ResourceRequestFilterHandler> preMappingHandlers;
+    final List<ServerRestHandler> preMappingHandlers;
     final ServerRestHandler[] initialChain;
 
     final ThreadSetupAction requestContext;
@@ -26,7 +26,7 @@ public class RestInitialHandler implements ServerRestHandler {
         this.deployment = deployment;
         this.providers = new ProvidersImpl(deployment);
         this.preMappingHandlers = deployment.getPreMatchHandlers();
-        if (preMappingHandlers == null) {
+        if (preMappingHandlers.isEmpty()) {
             initialChain = new ServerRestHandler[] { new MatrixParamHandler(), this };
         } else {
             initialChain = new ServerRestHandler[preMappingHandlers.size() + 2];

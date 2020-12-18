@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Priorities;
@@ -224,7 +225,8 @@ public class ResteasyReactiveProcessor {
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             ExceptionMappersBuildItem exceptionMappersBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
-            ContextResolversBuildItem contextResolversBuildItem) throws NoSuchMethodException {
+            ContextResolversBuildItem contextResolversBuildItem,
+            List<MethodScannerBuildItem> methodScanners) throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -281,6 +283,8 @@ public class ResteasyReactiveProcessor {
                 MethodCreator initConverters = c.getMethodCreator("init", void.class, Deployment.class)) {
 
             QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
+                    .addMethodScanners(
+                            methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(Collectors.toList()))
                     .setIndex(index)
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))

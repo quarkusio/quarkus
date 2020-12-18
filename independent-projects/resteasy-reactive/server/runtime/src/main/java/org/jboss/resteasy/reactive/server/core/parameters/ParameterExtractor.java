@@ -21,12 +21,12 @@ public interface ParameterExtractor {
     public class ParameterCallback {
 
         private Object result;
-        private Exception failure;
-        private BiConsumer<Object, Exception> listener;
+        private Throwable failure;
+        private BiConsumer<Object, Throwable> listener;
 
-        public void setListener(BiConsumer<Object, Exception> listener) {
+        public void setListener(BiConsumer<Object, Throwable> listener) {
             Object result;
-            Exception failure;
+            Throwable failure;
             synchronized (this) {
                 if (this.listener != null) {
                     throw new RuntimeException("Listener already set");
@@ -41,7 +41,7 @@ public interface ParameterExtractor {
         }
 
         public void setResult(Object result) {
-            BiConsumer<Object, Exception> listener;
+            BiConsumer<Object, Throwable> listener;
             synchronized (this) {
                 if (this.result != null || this.failure != null) {
                     throw new RuntimeException("Callback already completed result:" + result + " failure:" + failure);
@@ -54,8 +54,8 @@ public interface ParameterExtractor {
             }
         }
 
-        public void setFailure(Exception failure) {
-            BiConsumer<Object, Exception> listener;
+        public void setFailure(Throwable failure) {
+            BiConsumer<Object, Throwable> listener;
             synchronized (this) {
                 if (this.result != null || this.failure != null) {
                     throw new RuntimeException("Callback already completed result:" + result + " failure:" + failure);

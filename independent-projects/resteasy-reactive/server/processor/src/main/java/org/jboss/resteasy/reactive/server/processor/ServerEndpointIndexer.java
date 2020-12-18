@@ -11,6 +11,8 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 
 import io.quarkus.gizmo.MethodCreator;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,13 +36,16 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonArrayHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonObjectHandler;
@@ -51,11 +56,13 @@ public class ServerEndpointIndexer
         extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter, ServerResourceMethod> {
     private final MethodCreator initConverters;
     protected final EndpointInvokerFactory endpointInvokerFactory;
+    protected final List<MethodScanner> methodScanners;
 
     protected ServerEndpointIndexer(AbstractBuilder builder) {
         super(builder);
         this.initConverters = builder.initConverters;
         this.endpointInvokerFactory = builder.endpointInvokerFactory;
+        this.methodScanners = new ArrayList<>(builder.methodScanners);
     }
 
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
@@ -97,8 +104,31 @@ public class ServerEndpointIndexer
     }
 
     @Override
-    protected ServerResourceMethod createResourceMethod() {
-        return new ServerResourceMethod();
+    protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ServerIndexedParameter builder,
+            Type paramType, boolean field, Map<String, Object> methodContext) {
+        for (MethodScanner i : methodScanners) {
+            ParameterExtractor res = i.handleCustomParameter(paramType, anns, field, methodContext);
+            if (res != null) {
+                builder.setType(ParameterType.CUSTOM);
+                builder.setCustomerParameterExtractor(res);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected ServerResourceMethod createResourceMethod(MethodInfo methodInfo, Map<String, Object> methodContext) {
+        ServerResourceMethod serverResourceMethod = new ServerResourceMethod();
+        List<HandlerChainCustomizer> methodCustomizers = new ArrayList<>();
+        for (MethodScanner i : methodScanners) {
+            List<HandlerChainCustomizer> scanned = i.scan(methodInfo, methodContext);
+            if (scanned != null) {
+                methodCustomizers.addAll(scanned);
+            }
+        }
+        serverResourceMethod.setHandlerChainCustomizers(methodCustomizers);
+        return serverResourceMethod;
     }
 
     @Override
@@ -137,7 +167,7 @@ public class ServerEndpointIndexer
                     additionalReaders,
                     annotations, field.type(), field.toString(), true, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
-                    Collections.emptySet(), field.name());
+                    Collections.emptySet(), field.name(), new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, result);
@@ -200,7 +230,8 @@ public class ServerEndpointIndexer
         return new ServerMethodParameter(name,
                 elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index),
                 type, single, signature,
-                converter, defaultValue, parameterResult.isObtainedAsCollection(), encoded);
+                converter, defaultValue, parameterResult.isObtainedAsCollection(), encoded,
+                parameterResult.getCustomerParameterExtractor());
     }
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
@@ -245,6 +276,7 @@ public class ServerEndpointIndexer
 
         private MethodCreator initConverters;
         private EndpointInvokerFactory endpointInvokerFactory = new ReflectionEndpointInvokerFactory();
+        private List<MethodScanner> methodScanners = new ArrayList<>();
 
         public EndpointInvokerFactory getEndpointInvokerFactory() {
             return endpointInvokerFactory;
@@ -261,6 +293,16 @@ public class ServerEndpointIndexer
 
         public B setInitConverters(MethodCreator initConverters) {
             this.initConverters = initConverters;
+            return (B) this;
+        }
+
+        public B addMethodScanner(MethodScanner methodScanner) {
+            this.methodScanners.add(methodScanner);
+            return (B) this;
+        }
+
+        public B addMethodScanners(Collection<MethodScanner> methodScanners) {
+            this.methodScanners.addAll(methodScanners);
             return (B) this;
         }
 

@@ -16,7 +16,6 @@ import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeParameterConverter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
-import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
@@ -37,7 +36,7 @@ public class Deployment {
     private final Supplier<Application> applicationSupplier;
     private final ThreadSetupAction threadSetupAction;
     private final RequestContextFactory requestContextFactory;
-    private final List<ResourceRequestFilterHandler> preMatchHandlers;
+    private final List<ServerRestHandler> preMatchHandlers;
     private final List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
 
     public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
@@ -46,7 +45,7 @@ public class Deployment {
             EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,
             ConfigurationImpl configuration, Supplier<Application> applicationSupplier,
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
-            List<ResourceRequestFilterHandler> preMatchHandlers,
+            List<ServerRestHandler> preMatchHandlers,
             List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
@@ -104,7 +103,7 @@ public class Deployment {
         return paramConverterProviders;
     }
 
-    public List<ResourceRequestFilterHandler> getPreMatchHandlers() {
+    public List<ServerRestHandler> getPreMatchHandlers() {
         return preMatchHandlers;
     }
 

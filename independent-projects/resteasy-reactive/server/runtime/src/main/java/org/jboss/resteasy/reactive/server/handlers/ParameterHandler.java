@@ -36,9 +36,9 @@ public class ParameterHandler implements ServerRestHandler {
             Object result = extractor.extractParameter(requestContext);
             if (result instanceof ParameterExtractor.ParameterCallback) {
                 requestContext.suspend();
-                ((ParameterExtractor.ParameterCallback) result).setListener(new BiConsumer<Object, Exception>() {
+                ((ParameterExtractor.ParameterCallback) result).setListener(new BiConsumer<Object, Throwable>() {
                     @Override
-                    public void accept(Object o, Exception throwable) {
+                    public void accept(Object o, Throwable throwable) {
                         if (throwable != null) {
                             requestContext.resume(throwable);
                         } else {

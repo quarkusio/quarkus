@@ -39,6 +39,7 @@ import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.Features;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -105,7 +106,7 @@ public class RuntimeDeploymentManager {
                 //TODO: add DynamicFeature for these
                 //TODO: remove the cast
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
-                        clazz, (ServerResourceMethod) method, true, classPathTemplate);
+                        clazz, (ServerResourceMethod) method, true, classPathTemplate, info);
 
                 RuntimeMappingDeployment.buildMethodMapper(templates, method, runtimeResource);
             }
@@ -126,7 +127,7 @@ public class RuntimeDeploymentManager {
             }
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
-                        clazz, (ServerResourceMethod) method, false, classTemplate);
+                        clazz, (ServerResourceMethod) method, false, classTemplate, info);
 
                 RuntimeMappingDeployment.buildMethodMapper(perClassMappers, method, runtimeResource);
             }
@@ -178,13 +179,19 @@ public class RuntimeDeploymentManager {
         }
 
         //pre matching interceptors are run first
-        List<ResourceRequestFilterHandler> preMatchHandlers = null;
+        List<ServerRestHandler> preMatchHandlers = new ArrayList<>();
+        for (HandlerChainCustomizer customizer : info.getGlobalHandlerCustomers()) {
+            preMatchHandlers.addAll(customizer.handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH));
+        }
         if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
             preMatchHandlers = new ArrayList<>(interceptorDeployment.getPreMatchContainerRequestFilters().size());
             for (ContainerRequestFilter containerRequestFilter : interceptorDeployment.getPreMatchContainerRequestFilters()
                     .values()) {
                 preMatchHandlers.add(new ResourceRequestFilterHandler(containerRequestFilter, true));
             }
+        }
+        for (HandlerChainCustomizer customizer : info.getGlobalHandlerCustomers()) {
+            preMatchHandlers.addAll(customizer.handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH));
         }
 
         Deployment deployment = new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,

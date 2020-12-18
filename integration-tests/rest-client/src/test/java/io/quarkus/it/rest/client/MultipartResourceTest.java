@@ -2,6 +2,7 @@ package io.quarkus.it.rest.client;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +27,8 @@ public class MultipartResourceTest {
                 .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
-                .body(containsString("http_client_requests"));
+                // /echo is ignored in application.properties
+                .body(not(containsString(
+                        "http_client_requests_seconds_count{clientName=\"localhost\",method=\"POST\",outcome=\"SUCCESS\",status=\"200\",uri=\"/echo\",} 1.0")));
     }
-
 }

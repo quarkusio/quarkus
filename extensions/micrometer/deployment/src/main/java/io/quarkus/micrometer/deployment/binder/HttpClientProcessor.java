@@ -2,6 +2,7 @@ package io.quarkus.micrometer.deployment.binder;
 
 import java.util.function.BooleanSupplier;
 
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -19,6 +20,8 @@ public class HttpClientProcessor {
 
     // Rest Client listener
     private static final String REST_CLIENT_METRICS_LISTENER = "io.quarkus.micrometer.runtime.binder.RestClientMetrics";
+    // Http Client runtime config (injected programmatically)
+    private static final String REST_CLIENT_HTTP_CONFIG = "io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig";
 
     static class HttpClientEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -29,11 +32,13 @@ public class HttpClientProcessor {
     }
 
     @BuildStep(onlyIf = HttpClientEnabled.class)
-    void registerRestClientListener(BuildProducer<NativeImageResourceBuildItem> resource,
+    UnremovableBeanBuildItem registerRestClientListener(BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         resource.produce(new NativeImageResourceBuildItem(
                 "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(true, true, REST_CLIENT_METRICS_LISTENER));
+
+        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNameExclusion(REST_CLIENT_HTTP_CONFIG));
     }
 }

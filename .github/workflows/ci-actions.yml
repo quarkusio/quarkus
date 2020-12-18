@@ -484,7 +484,7 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Run Quarkus REST TCK
+      - name: Run RESTEasy Reactive TCK
         run: mvn -B --settings ../tcks/.github/mvn-settings.xml install
         working-directory: ./quarkus-rest-testsuite
       - name: Verify with Maven

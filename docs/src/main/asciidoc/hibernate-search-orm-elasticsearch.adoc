@@ -5,6 +5,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Hibernate Search guide
 :extension-status: preview
+:hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/
 include::./attributes.adoc[]
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.
@@ -431,6 +432,7 @@ but we haven't set them up yet.
 
 Let's see how you can do it with Hibernate Search.
 
+[[analysis-configurer]]
 === Setting up the analyzers
 
 It is an easy task, we just need to create an implementation of `ElasticsearchAnalysisConfigurer`
@@ -531,7 +533,7 @@ The Hibernate Search DSL supports a significant subset of the Elasticsearch pred
 Feel free to explore the DSL using autocompletion.
 
 When that's not enough, you can always fall back to
-link:https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#search-dsl-predicate-extensions-elasticsearch-from-json[defining a predicate using JSON directly].
+link:{hibernate-search-doc-prefix}#search-dsl-predicate-extensions-elasticsearch-from-json[defining a predicate using JSON directly].
 ====
 
 == Configuring the application
@@ -760,7 +762,7 @@ In a real life application, it is obviously something you won't do at startup.
 == Further reading
 
 If you are interested in learning more about Hibernate Search 6,
-the Hibernate team publishes https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/[an extensive reference documentation].
+the Hibernate team publishes link:{hibernate-search-doc-prefix}[an extensive reference documentation].
 
 == FAQ
 
@@ -777,3 +779,26 @@ We don't have plans to support the Lucene backend in Quarkus for now.
 == Hibernate Search Configuration Reference
 
 include::{generated-dir}/config/quarkus-hibernate-search-orm-elasticsearch.adoc[leveloffset=+1, opts=optional]
+
+[NOTE]
+[[bean-reference-note-anchor]]
+.About bean references
+====
+When referencing beans using a string value in configuration properties, that string is parsed.
+
+Here are the most common formats:
+
+* `bean:` followed by the name of a `@Named` CDI bean.
+For example `bean:myBean`.
+* `class:` followed by the fully-qualified name of a class, to be instantiated through CDI if it's a CDI bean,
+or through its public, no-argument constructor otherwise.
+For example `class:com.mycompany.MyClass`.
+* An arbitrary string referencing a built-in implementation.
+Available values are detailed in the documentation of each configuration property,
+such as `async`/`read-sync`/`write-sync`/`sync` for
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy,`quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy`>>.
+
+Other formats are also accepted, but are only useful for advanced use cases.
+See link:{hibernate-search-doc-prefix}#configuration-bean-reference-parsing[this section of Hibernate Search's reference documentation]
+for more information.
+====

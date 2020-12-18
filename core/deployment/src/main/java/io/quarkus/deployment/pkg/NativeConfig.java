@@ -166,8 +166,8 @@ public class NativeConfig {
     public boolean dumpProxies;
 
     /**
-     * If this build should be done using a container runtime. If this is set docker will be used by default,
-     * unless container-runtime is also set.
+     * If this build should be done using a container runtime. Unless container-runtime is also set, docker will be
+     * used by default. If docker is not available or is an alias to podman, podman will be used instead as the default.
      */
     @ConfigItem
     public boolean containerBuild;

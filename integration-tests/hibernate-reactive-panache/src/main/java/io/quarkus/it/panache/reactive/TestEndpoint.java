@@ -3,10 +3,8 @@ package io.quarkus.it.panache.reactive;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -19,11 +17,6 @@ import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElements;
-import javax.xml.bind.annotation.XmlTransient;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.junit.jupiter.api.Assertions;
@@ -1467,7 +1460,6 @@ public class TestEndpoint {
                 }));
     }
 
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @GET
     @Path("ignored-properties")
     public Person ignoredProperties() throws NoSuchMethodException, SecurityException {
@@ -1505,57 +1497,6 @@ public class TestEndpoint {
     public Uni<String> testBug5885() {
         return bug5885EntityRepository.findById(1L)
                 .map(v -> "OK");
-    }
-
-    @GET
-    @Path("testJaxbAnnotationTransfer")
-    public String testJaxbAnnotationTransfer() throws Exception {
-        // Test for fix to this bug: https://github.com/quarkusio/quarkus/issues/6021
-
-        // Ensure that any JAX-B annotations are properly moved to generated getters
-        Method m = JAXBEntity.class.getMethod("getNamedAnnotatedProp");
-        XmlAttribute anno = m.getAnnotation(XmlAttribute.class);
-        assertNotNull(anno);
-        assertEquals("Named", anno.name());
-        assertNull(m.getAnnotation(XmlTransient.class));
-
-        m = JAXBEntity.class.getMethod("getDefaultAnnotatedProp");
-        anno = m.getAnnotation(XmlAttribute.class);
-        assertNotNull(anno);
-        assertEquals("##default", anno.name());
-        assertNull(m.getAnnotation(XmlTransient.class));
-
-        m = JAXBEntity.class.getMethod("getUnAnnotatedProp");
-        assertNull(m.getAnnotation(XmlAttribute.class));
-        assertNull(m.getAnnotation(XmlTransient.class));
-
-        m = JAXBEntity.class.getMethod("getTransientProp");
-        assertNull(m.getAnnotation(XmlAttribute.class));
-        assertNotNull(m.getAnnotation(XmlTransient.class));
-
-        m = JAXBEntity.class.getMethod("getArrayAnnotatedProp");
-        assertNull(m.getAnnotation(XmlTransient.class));
-        XmlElements elementsAnno = m.getAnnotation(XmlElements.class);
-        assertNotNull(elementsAnno);
-        assertNotNull(elementsAnno.value());
-        assertEquals(2, elementsAnno.value().length);
-        assertEquals("array1", elementsAnno.value()[0].name());
-        assertEquals("array2", elementsAnno.value()[1].name());
-
-        // Ensure that all original fields were labeled @XmlTransient and had their original JAX-B annotations removed
-        ensureFieldSanitized("namedAnnotatedProp");
-        ensureFieldSanitized("transientProp");
-        ensureFieldSanitized("defaultAnnotatedProp");
-        ensureFieldSanitized("unAnnotatedProp");
-        ensureFieldSanitized("arrayAnnotatedProp");
-
-        return "OK";
-    }
-
-    private void ensureFieldSanitized(String fieldName) throws Exception {
-        Field f = JAXBEntity.class.getDeclaredField(fieldName);
-        assertNull(f.getAnnotation(XmlAttribute.class));
-        assertNotNull(f.getAnnotation(XmlTransient.class));
     }
 
     @GET

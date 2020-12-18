@@ -3,14 +3,9 @@ package io.quarkus.it.panache.reactive;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.StringWriter;
-
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.transaction.Transactional;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -56,10 +51,6 @@ public class PanacheFunctionalityTest {
                 .when().get("/test/ignored-properties")
                 .then()
                 .body(is("{\"id\":666,\"dogs\":[],\"name\":\"Eddie\",\"serialisationTrick\":1,\"status\":\"DECEASED\"}"));
-        RestAssured.given().accept(ContentType.XML)
-                .when().get("/test/ignored-properties")
-                .then().body(is(
-                        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"));
     }
 
     @DisabledOnNativeImage
@@ -78,18 +69,10 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/5885").then().body(is("OK"));
     }
 
-    @Test
-    public void testJaxbAnnotationTransfer() {
-        RestAssured.when()
-                .get("/test/testJaxbAnnotationTransfer")
-                .then()
-                .body(is("OK"));
-    }
-
     /**
      * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to serialize the attribute *peristent*
      * in the JSON which is not intended. This test ensures that the attribute *persistent* is not generated when using Jackson.
-     * 
+     *
      * This test does not interact with the Quarkus application itself. It is just using the Jackson ObjectMapper with a
      * PanacheEntity. Thus this test is disabled in native mode. The test code runs the JVM and not native.
      */
@@ -109,26 +92,6 @@ public class PanacheFunctionalityTest {
         assertEquals(
                 "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
                 personAsString);
-    }
-
-    /**
-     * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
-     */
-    @DisabledOnNativeImage
-    @Test
-    public void jaxbDeserializationHasAllFields() throws JsonProcessingException, JAXBException {
-        // set Up
-        Person person = new Person();
-        person.name = "max";
-        // do
-        JAXBContext jaxbContext = JAXBContext.newInstance(Person.class);
-
-        Marshaller marshaller = jaxbContext.createMarshaller();
-        StringWriter sw = new StringWriter();
-        marshaller.marshal(person, sw);
-        assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-                + "<person><name>max</name><serialisationTrick>1</serialisationTrick></person>",
-                sw.toString());
     }
 
     /**

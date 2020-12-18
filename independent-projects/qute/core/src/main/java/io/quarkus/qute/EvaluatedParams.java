@@ -43,7 +43,7 @@ public final class EvaluatedParams {
                 results.add(result);
             }
         }
-        return new EvaluatedParams(CompletableFuture.allOf(results.toArray(Futures.EMPTY_RESULTS)), allResults);
+        return new EvaluatedParams(CompletableFuture.allOf(results.toArray(new CompletableFuture[0])), allResults);
     }
 
     public static EvaluatedParams evaluateMessageKey(EvalContext context) {

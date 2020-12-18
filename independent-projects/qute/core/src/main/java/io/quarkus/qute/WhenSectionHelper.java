@@ -76,7 +76,7 @@ public class WhenSectionHelper implements SectionHelper {
                 if (caseBlocks.hasNext()) {
                     return resolveCaseBlocks(context, value, caseBlocks);
                 } else {
-                    return CompletableFuture.completedFuture(ResultNode.NOOP);
+                    return ResultNode.NOOP;
                 }
             }
         });
@@ -89,7 +89,7 @@ public class WhenSectionHelper implements SectionHelper {
                 return context.execute(caseBlock.block, context.resolutionContext());
             }
         }
-        return CompletableFuture.completedFuture(ResultNode.NOOP);
+        return ResultNode.NOOP;
     }
 
     public static class Factory implements SectionHelperFactory<WhenSectionHelper> {
@@ -345,19 +345,20 @@ public class WhenSectionHelper implements SectionHelper {
                                 }
                             }).collect(Collectors.toList())));
                 }
-                return CompletableFuture.allOf(results.toArray(Futures.EMPTY_RESULTS)).thenApply(new Function<Void, Boolean>() {
-                    @Override
-                    public Boolean apply(Void t) {
-                        return caseOperator.evaluate(value,
-                                Arrays.stream(allResults).map(t1 -> {
-                                    try {
-                                        return t1.get();
-                                    } catch (InterruptedException | ExecutionException e) {
-                                        throw new IllegalStateException(e);
-                                    }
-                                }).collect(Collectors.toList()));
-                    }
-                });
+                return CompletableFuture.allOf(results.toArray(new CompletableFuture[0]))
+                        .thenApply(new Function<Void, Boolean>() {
+                            @Override
+                            public Boolean apply(Void t) {
+                                return caseOperator.evaluate(value,
+                                        Arrays.stream(allResults).map(t1 -> {
+                                            try {
+                                                return t1.get();
+                                            } catch (InterruptedException | ExecutionException e) {
+                                                throw new IllegalStateException(e);
+                                            }
+                                        }).collect(Collectors.toList()));
+                            }
+                        });
             }
         }
 

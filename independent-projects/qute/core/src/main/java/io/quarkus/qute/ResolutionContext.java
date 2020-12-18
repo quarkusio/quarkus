@@ -29,12 +29,10 @@ public interface ResolutionContext {
      * Create a child resolution context.
      * 
      * @param data
-     * @param namespaceResolvers
      * @param extendingBlocks
      * @return a new child resolution context
      */
-    ResolutionContext createChild(Object data, List<NamespaceResolver> namespaceResolvers,
-            Map<String, SectionBlock> extendingBlocks);
+    ResolutionContext createChild(Object data, Map<String, SectionBlock> extendingBlocks);
 
     /**
      * 
@@ -68,5 +66,11 @@ public interface ResolutionContext {
      * @see TemplateInstance#getAttribute(String)
      */
     Object getAttribute(String key);
+
+    /**
+     * 
+     * @return the evaluator
+     */
+    Evaluator getEvaluator();
 
 }

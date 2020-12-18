@@ -9,6 +9,7 @@ import io.quarkus.qute.TestEvalContext;
 import io.quarkus.qute.ValueResolver;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -68,7 +69,7 @@ public class SimpleGeneratorTest {
     public void testGenerator() throws Exception {
         Class<?> clazz = SimpleGeneratorTest.class.getClassLoader()
                 .loadClass("io.quarkus.qute.generator.MyService_ValueResolver");
-        ValueResolver resolver = (ValueResolver) clazz.newInstance();
+        ValueResolver resolver = (ValueResolver) clazz.getDeclaredConstructor().newInstance();
         assertEquals("Foo",
                 resolver.resolve(new TestEvalContext(new MyService(), "getName", null))
                         .toCompletableFuture().get(1, TimeUnit.SECONDS).toString());
@@ -130,16 +131,17 @@ public class SimpleGeneratorTest {
     }
 
     private ValueResolver newResolver(String className)
-            throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+            throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
+            InvocationTargetException, NoSuchMethodException, SecurityException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = SimpleGeneratorTest.class.getClassLoader();
         }
         Class<?> clazz = cl.loadClass(className);
-        return (ValueResolver) clazz.newInstance();
+        return (ValueResolver) clazz.getDeclaredConstructor().newInstance();
     }
 
-    private static Index index(Class<?>... classes) throws IOException {
+    static Index index(Class<?>... classes) throws IOException {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try (InputStream stream = SimpleGeneratorTest.class.getClassLoader()

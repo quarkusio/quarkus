@@ -177,7 +177,7 @@ public final class ValueResolvers {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 Mapper mapper = (Mapper) context.getBase();
-                return CompletableFuture.completedFuture(mapper.get(context.getName()));
+                return mapper.getAsync(context.getName());
             }
 
         };

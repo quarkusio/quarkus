@@ -36,12 +36,12 @@ public class UserTagSectionHelper implements SectionHelper {
                     // Execute the nested content first and make it accessible via the "nested-content" key 
                     evaluatedParams.put(NESTED_CONTENT,
                             context.execute(
-                                    context.resolutionContext().createChild(new HashMap<>(evaluatedParams), null, null)));
+                                    context.resolutionContext().createChild(new HashMap<>(evaluatedParams), null)));
                 }
                 try {
                     // Execute the template with the params as the root context object
                     TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
-                    tagTemplate.root.resolve(context.resolutionContext().createChild(evaluatedParams, null, null))
+                    tagTemplate.root.resolve(context.resolutionContext().createChild(evaluatedParams, null))
                             .whenComplete((resultNode, t2) -> {
                                 if (t2 != null) {
                                     result.completeExceptionally(t2);

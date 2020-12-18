@@ -45,7 +45,7 @@ public class IfSectionHelper implements SectionHelper {
             IfBlock block = blocks.get(0);
             return block.condition.evaluate(context).thenCompose(r -> {
                 if (isFalsy(r)) {
-                    return CompletableFuture.completedFuture(ResultNode.NOOP);
+                    return ResultNode.NOOP;
                 } else {
                     return context.execute(block.block, context.resolutionContext());
                 }
@@ -66,7 +66,7 @@ public class IfSectionHelper implements SectionHelper {
                 if (blocks.hasNext()) {
                     return resolveBlocks(context, blocks);
                 }
-                return CompletableFuture.completedFuture(ResultNode.NOOP);
+                return ResultNode.NOOP;
             } else {
                 return context.execute(block.block, context.resolutionContext());
             }

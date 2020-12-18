@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Hibernate Search guide
-:extension-status: preview
 :hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/
 include::./attributes.adoc[]
 
@@ -12,8 +11,6 @@ You have a Hibernate ORM-based application? You want to provide a full-featured 
 
 With this guide, you'll learn how to synchronize your entities to an Elasticsearch cluster in a heart beat with Hibernate Search.
 We will also explore how you can can query your Elasticsearch cluster using the Hibernate Search API.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

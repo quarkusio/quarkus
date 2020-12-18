@@ -14,4 +14,4 @@ metadata:
   guide: "https://quarkus.io/guides/hibernate-search-orm-elasticsearch"
   categories:
   - "data"
-  status: "preview"
+  status: "stable"

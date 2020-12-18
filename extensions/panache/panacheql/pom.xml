@@ -28,6 +28,11 @@
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId> 
+            <artifactId>jboss-logmanager-embedded</artifactId> 
+            <scope>test</scope> 
+        </dependency>
     </dependencies>
 
     <build>

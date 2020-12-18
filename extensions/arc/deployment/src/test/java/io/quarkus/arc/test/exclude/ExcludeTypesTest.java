@@ -1,11 +1,21 @@
 package io.quarkus.arc.test.exclude;
 
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
+import javax.interceptor.AroundInvoke;
+import javax.interceptor.Interceptor;
+import javax.interceptor.InterceptorBinding;
+import javax.interceptor.InvocationContext;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -23,9 +33,9 @@ public class ExcludeTypesTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ExcludeTypesTest.class, Pong.class, Alpha.class, Bravo.class, Charlie.class, Bar.class,
-                            Baz.class)
+                            Baz.class, Magic.class, MagicInterceptor.class)
                     .addAsResource(new StringAsset(
-                            "quarkus.arc.exclude-types=Alpha,io.quarkus.arc.test.exclude.Bravo,io.quarkus.arc.test.exclude.bar.*,,io.quarkus.arc.test.exclude.baz.**"),
+                            "quarkus.arc.exclude-types=Alpha,io.quarkus.arc.test.exclude.Bravo,io.quarkus.arc.test.exclude.bar.*,,io.quarkus.arc.test.exclude.baz.**,MagicInterceptor"),
                             "application.properties"));
 
     @Inject
@@ -51,6 +61,7 @@ public class ExcludeTypesTest {
     @ApplicationScoped
     static class Charlie implements Pong {
 
+        @Magic
         public String ping() {
             return "charlie";
         }
@@ -60,6 +71,24 @@ public class ExcludeTypesTest {
     public interface Pong {
 
         String ping();
+
+    }
+
+    @Magic
+    @Interceptor
+    public static class MagicInterceptor {
+
+        @AroundInvoke
+        public Object toUpperCase(InvocationContext context) throws Exception {
+            return context.proceed().toString().toUpperCase();
+        }
+
+    }
+
+    @InterceptorBinding
+    @Target({ TYPE, METHOD })
+    @Retention(RUNTIME)
+    @interface Magic {
 
     }
 

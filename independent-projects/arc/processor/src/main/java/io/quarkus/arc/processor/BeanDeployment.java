@@ -132,8 +132,9 @@ public class BeanDeployment {
         this.removeUnusedBeans = builder.removeUnusedBeans;
         this.unusedExclusions = removeUnusedBeans ? new ArrayList<>(builder.removalExclusions) : null;
         this.removedBeans = new CopyOnWriteArraySet<>();
-
         this.customContexts = new ConcurrentHashMap<>();
+
+        this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
 
         this.qualifiers = findQualifiers(this.beanArchiveIndex);
         this.repeatingQualifierAnnotations = findContainerAnnotations(qualifiers, this.beanArchiveIndex);
@@ -174,7 +175,6 @@ public class BeanDeployment {
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
         this.jtaCapabilities = builder.jtaCapabilities;
         this.alternativePriorities = builder.alternativePriorities;
-        this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {
@@ -513,31 +513,40 @@ public class BeanDeployment {
         }
     }
 
-    private static Map<DotName, ClassInfo> findQualifiers(IndexView index) {
+    private Map<DotName, ClassInfo> findQualifiers(IndexView index) {
         Map<DotName, ClassInfo> qualifiers = new HashMap<>();
         for (AnnotationInstance qualifier : index.getAnnotations(DotNames.QUALIFIER)) {
-            qualifiers.put(qualifier.target().asClass().name(), qualifier.target().asClass());
+            ClassInfo qualifierClass = qualifier.target().asClass();
+            if (isExcluded(qualifierClass)) {
+                continue;
+            }
+            qualifiers.put(qualifierClass.name(), qualifierClass);
         }
         return qualifiers;
     }
 
-    private static Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations, IndexView index) {
+    private Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> annotations, IndexView index) {
         Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
         for (ClassInfo annotation : annotations.values()) {
             AnnotationInstance repeatableMetaAnnotation = annotation.classAnnotation(DotNames.REPEATABLE);
             if (repeatableMetaAnnotation != null) {
                 DotName containerAnnotationName = repeatableMetaAnnotation.value().asClass().name();
-                containerAnnotations.put(containerAnnotationName, getClassByName(index, containerAnnotationName));
+                ClassInfo containerClass = getClassByName(index, containerAnnotationName);
+                containerAnnotations.put(containerAnnotationName, containerClass);
             }
         }
         return containerAnnotations;
     }
 
-    private static Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
+    private Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
         Map<DotName, ClassInfo> bindings = new HashMap<>();
         // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
         for (AnnotationInstance binding : index.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
-            bindings.put(binding.target().asClass().name(), binding.target().asClass());
+            ClassInfo bindingClass = binding.target().asClass();
+            if (isExcluded(bindingClass)) {
+                continue;
+            }
+            bindings.put(bindingClass.name(), bindingClass);
         }
         return bindings;
     }
@@ -582,7 +591,7 @@ public class BeanDeployment {
         return result;
     }
 
-    private static Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
+    private Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
             Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes, AnnotationStore annotationStore) {
@@ -595,7 +604,7 @@ public class BeanDeployment {
         for (AnnotationInstance stereotype : stereotypeAnnotations) {
             final DotName stereotypeName = stereotype.target().asClass().name();
             ClassInfo stereotypeClass = getClassByName(index, stereotypeName);
-            if (stereotypeClass != null) {
+            if (stereotypeClass != null && !isExcluded(stereotypeClass)) {
 
                 boolean isAlternative = false;
                 Integer alternativePriority = null;
@@ -1070,15 +1079,15 @@ public class BeanDeployment {
     }
 
     private List<InterceptorInfo> findInterceptors(List<InjectionPointInfo> injectionPoints) {
-        Set<ClassInfo> interceptorClasses = new HashSet<>();
+        Map<DotName, ClassInfo> interceptorClasses = new HashMap<>();
         for (AnnotationInstance annotation : beanArchiveIndex.getAnnotations(DotNames.INTERCEPTOR)) {
             if (Kind.CLASS.equals(annotation.target().kind())) {
-                interceptorClasses.add(annotation.target().asClass());
+                interceptorClasses.put(annotation.target().asClass().name(), annotation.target().asClass());
             }
         }
         List<InterceptorInfo> interceptors = new ArrayList<>();
-        for (ClassInfo interceptorClass : interceptorClasses) {
-            if (annotationStore.hasAnnotation(interceptorClass, DotNames.VETOED)) {
+        for (ClassInfo interceptorClass : interceptorClasses.values()) {
+            if (annotationStore.hasAnnotation(interceptorClass, DotNames.VETOED) || isExcluded(interceptorClass)) {
                 // Skip vetoed interceptors
                 continue;
             }

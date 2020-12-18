@@ -463,11 +463,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: tcks
-      - name: Download Quarkus REST Testsuite
+      - name: Download RESTEasy Reactive Testsuite
         uses: actions/checkout@v2
         with:
-          repository: quarkusio/quarkus-rest-testsuite
-          path: quarkus-rest-testsuite
+          repository: quarkusio/resteasy-reactive-testsuite
+          path: resteasy-reactive-testsuite
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
         working-directory: ./tcks
@@ -486,7 +486,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Run RESTEasy Reactive TCK
         run: mvn -B --settings ../tcks/.github/mvn-settings.xml install
-        working-directory: ./quarkus-rest-testsuite
+        working-directory: ./resteasy-reactive-testsuite
       - name: Verify with Maven
         run: mvn -B --settings .github/mvn-settings.xml -f tcks/pom.xml install
         working-directory: ./tcks

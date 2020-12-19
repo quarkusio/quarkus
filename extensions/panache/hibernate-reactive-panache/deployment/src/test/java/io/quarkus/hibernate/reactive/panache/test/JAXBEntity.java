@@ -1,8 +1,7 @@
-package io.quarkus.it.panache.reactive;
+package io.quarkus.hibernate.reactive.panache.test;
 
 import javax.persistence.Entity;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
+import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
@@ -13,7 +12,6 @@ import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 
 @Entity
 @XmlRootElement(name = "JAXBEntity")
-@XmlAccessorType(XmlAccessType.NONE)
 public class JAXBEntity extends PanacheEntity {
 
     @XmlAttribute(name = "Named")
@@ -32,4 +30,22 @@ public class JAXBEntity extends PanacheEntity {
     public String arrayAnnotatedProp;
 
     public String unAnnotatedProp;
+
+    // note that this annotation is automatically added for mapped fields, which is not the case here
+    // so we do it manually to emulate a mapped field situation
+    @XmlTransient
+    @Transient
+    public int serialisationTrick;
+
+    public String name;
+
+    // For JAXB: both getter and setter are required
+    // Here we make sure the field is not used by Hibernate, but the accessor is used by jaxb, jsonb and jackson
+    public int getSerialisationTrick() {
+        return ++serialisationTrick;
+    }
+
+    public void setSerialisationTrick(int serialisationTrick) {
+        this.serialisationTrick = serialisationTrick;
+    }
 }

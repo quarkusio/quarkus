@@ -264,7 +264,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                     DotName customResultTypeName = resultType.name();
 
                     if (customResultTypeName.equals(entityClassInfo.name())
-                            || isSupportedJavaLangType(customResultTypeName)) {
+                            || isHibernateSupportedReturnType(customResultTypeName)) {
                         // no special handling needed
                         customResultTypeName = null;
                     } else {
@@ -385,7 +385,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     // Unless it is some kind of collection containing multiple types, 
     // return the type used in the query result.
     private Type verifyQueryResultType(Type t) {
-        if (isSupportedJavaLangType(t.name())) {
+        if (isHibernateSupportedReturnType(t.name())) {
             return t;
         }
         if (t.kind() == Kind.ARRAY) {
@@ -511,10 +511,6 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                 }
             }
         }
-    }
-
-    private boolean isSupportedJavaLangType(DotName dotName) {
-        return isIntLongOrBoolean(dotName) || dotName.equals(DotNames.OBJECT) || dotName.equals(DotNames.STRING);
     }
 
     private ResultHandle castReturnValue(MethodCreator methodCreator, ResultHandle resultHandle, String type) {

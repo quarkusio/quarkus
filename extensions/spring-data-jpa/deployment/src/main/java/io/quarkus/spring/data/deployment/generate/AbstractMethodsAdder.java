@@ -228,7 +228,7 @@ public abstract class AbstractMethodsAdder {
             }
 
             methodCreator.returnValue(sliceResult);
-        } else if (isIntLongOrBoolean(returnType)) {
+        } else if (isHibernateSupportedReturnType(returnType)) {
             ResultHandle singleResult = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(PanacheQuery.class, "singleResult", Object.class),
                     panacheQuery);
@@ -291,9 +291,7 @@ public abstract class AbstractMethodsAdder {
         }
     }
 
-    protected boolean isIntLongOrBoolean(DotName dotName) {
-        return DotNames.BOOLEAN.equals(dotName) || DotNames.PRIMITIVE_BOOLEAN.equals(dotName)
-                || DotNames.INTEGER.equals(dotName) || DotNames.PRIMITIVE_INTEGER.equals(dotName)
-                || DotNames.LONG.equals(dotName) || DotNames.PRIMITIVE_LONG.equals(dotName);
+    protected boolean isHibernateSupportedReturnType(DotName dotName) {
+        return dotName.equals(DotNames.OBJECT) || DotNames.HIBERNATE_PROVIDED_BASIC_TYPES.contains(dotName);
     }
 }

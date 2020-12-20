@@ -25,8 +25,10 @@
         <scala.version>2.12.8</scala.version>
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
+        <!-- version.* properties are defined in jboss-parent and are overridden/updated here: -->
         <version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
@@ -126,6 +128,9 @@
 
         <!-- platform properties -->
         <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java11</platform.quarkus.native.builder-image>
+
+        <script.extension>sh</script.extension>
+        <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
     </properties>
 
     <dependencyManagement>
@@ -968,6 +973,18 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>Windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <properties>
+                <script.extension>bat</script.extension>
+            </properties>
         </profile>
 
     </profiles>

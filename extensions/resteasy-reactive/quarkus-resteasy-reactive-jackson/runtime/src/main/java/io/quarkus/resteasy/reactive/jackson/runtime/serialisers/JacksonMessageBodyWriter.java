@@ -79,8 +79,9 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
         } else {
             // First test the names to see if JsonView is used. We do this to avoid doing reflection for the common case
             // where JsonView is not used
-            if (context.getResteasyReactiveResourceInfo().getMethodAnnotationNames().contains(JSON_VIEW_NAME)) {
-                Method method = context.getResteasyReactiveResourceInfo().getMethod();
+            ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
+            if ((resourceInfo != null) && resourceInfo.getMethodAnnotationNames().contains(JSON_VIEW_NAME)) {
+                Method method = resourceInfo.getMethod();
                 if (handleJsonView(method.getAnnotation(JsonView.class), o, stream)) {
                     return;
                 }

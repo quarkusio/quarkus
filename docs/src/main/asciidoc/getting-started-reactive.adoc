@@ -171,7 +171,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=getting-started-reactive \
     -DclassName="org.acme.quickstart.ReactiveGreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="resteasy-mutiny, resteasy-jackson"
+    -Dextensions="resteasy-reactive, rest-client"
 cd getting-started-reactive
 ----
 
@@ -181,14 +181,14 @@ For Windows users
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-mutiny,resteasy-jackson"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-reactive,rest-client"
 ----
 
 - If using Powershell, wrap `-D` parameters in double quotes
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-mutiny,resteasy-jackson"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-reactive,rest-client"
 ----
 
 It generates the following in  `./getting-started-reactive`:
@@ -297,16 +297,16 @@ NOTE: In order to get Mutiny working properly with JAX-RS resources, make sure t
 [source,bash,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:add-extensions \
-    -Dextensions="io.quarkus:quarkus-resteasy-mutiny"
+    -Dextensions="io.quarkus:quarkus-resteasy-reactive"
 ----
 
-Or add `quarkus-resteasy-mutiny` into your dependencies manually.
+Or add `quarkus-resteasy-reactive` into your dependencies manually.
 
 [source, xml]
 ----
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-mutiny</artifactId>
+      <artifactId>quarkus-resteasy-reactive</artifactId>
     </dependency>
 ----
 
@@ -342,7 +342,7 @@ In the `ReactiveGreetingResource` add the following method:
 [source, java]
 ----
 @GET
-@Produces(MediaType.APPLICATION_JSON)
+@Produces(MediaType.TEXT_PLAIN)
 @Path("/greeting/{count}/{name}")
 public Multi<String> greetings(@PathParam int count, @PathParam String name) {
   return service.greetings(count, name);
@@ -357,7 +357,7 @@ So calling the endpoint produces something like:
 [source,shell]
 ----
 $ curl http://localhost:8080/hello/greeting/3/neo
-["hello neo - 0","hello neo - 1","hello neo - 2"]
+hello neo - 0hello neo - 1hello neo - 2
 ----
 
 We can also generate Server-Sent Event responses by returning a `Multi`:

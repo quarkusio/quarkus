@@ -680,16 +680,16 @@ public class Endpoint {
 
 [[json]]
 
-You can import either of the following modules to get support for JSON:
+Instead of importing `io.quarkus:quarkus-resteasy-reactive`, you can import either of the following modules to get support for JSON:
 
 .Table Context object
 |===
 |GAV|Usage
 
-|`io.quarkus:quarkus-resteasy-jackson`
+|`io.quarkus:quarkus-resteasy-reactive-jackson`
 |https://github.com/FasterXML/jackson[Jackson support]
 
-|`io.quarkus:quarkus-resteasy-jsonb`
+|`io.quarkus:quarkus-resteasy-reactive-jsonb`
 |http://json-b.net/[JSONB support]
 
 |===

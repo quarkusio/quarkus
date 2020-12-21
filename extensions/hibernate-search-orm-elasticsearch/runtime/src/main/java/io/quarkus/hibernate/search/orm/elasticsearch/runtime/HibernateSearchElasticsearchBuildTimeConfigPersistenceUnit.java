@@ -28,13 +28,16 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     public ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
 
     /**
-     * The class or the name of the bean that should be notified of any failure occurring in a background process
+     * A <<bean-reference-note-anchor,bean reference>> to a component
+     * that should be notified of any failure occurring in a background process
      * (mainly index operations).
-     * <p>
-     * Must implement {@link org.hibernate.search.engine.reporting.FailureHandler}.
+     *
+     * The referenced bean must implement `FailureHandler`.
+     *
+     * @asciidoclet
      */
     @ConfigItem
-    public Optional<Class<?>> backgroundFailureHandler;
+    public Optional<String> backgroundFailureHandler;
 
     @ConfigGroup
     public static class ElasticsearchNamedBackendsBuildTimeConfig {
@@ -96,18 +99,45 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     @ConfigGroup
     public static class AnalysisConfig {
         /**
-         * The class or the name of the bean used to configure full text analysis (e.g. analyzers, normalizers).
+         * A <<bean-reference-note-anchor,bean reference>> to the component
+         * used to configure full text analysis (e.g. analyzers, normalizers).
+         *
+         * The referenced bean must implement `ElasticsearchAnalysisConfigurer`.
+         *
+         * See <<analysis-configurer>> for more information.
+         *
+         * @asciidoclet
          */
         @ConfigItem
-        public Optional<Class<?>> configurer;
+        public Optional<String> configurer;
     }
 
     @ConfigGroup
     public static class LayoutConfig {
         /**
-         * The class or the name of the bean used to configure layout (e.g. index names, index aliases).
+         * A <<bean-reference-note-anchor,bean reference>> to the component
+         * used to configure layout (e.g. index names, index aliases).
+         *
+         * The referenced bean must implement `IndexLayoutStrategy`.
+         *
+         * Available built-in implementations:
+         *
+         * `simple`::
+         * The default, future-proof strategy: if the index name in Hibernate Search is `myIndex`,
+         * this strategy will create an index named `myindex-000001`, an alias for write operations named `myindex-write`,
+         * and an alias for read operations named `myindex-read`.
+         * `no-alias`::
+         * A strategy without index aliases, mostly useful on legacy clusters:
+         * if the index name in Hibernate Search is `myIndex`,
+         * this strategy will create an index named `myindex`, and will not use any alias.
+         *
+         * See
+         * link:{hibernate-search-doc-prefix}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+         * for more information.
+         *
+         * @asciidoclet
          */
         @ConfigItem
-        public Optional<Class<?>> strategy;
+        public Optional<String> strategy;
     }
 }

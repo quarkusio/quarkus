@@ -284,9 +284,11 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * ^!icon:check[role=lime]
          * !===
          *
+         * This property also accepts a <<bean-reference-note-anchor,bean reference>>
+         * to a custom implementations of `AutomaticIndexingSynchronizationStrategy`.
+         *
          * See
-         * https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#mapper-orm-indexing-automatic-synchronization[this
-         * section of the reference documentation]
+         * link:{hibernate-search-doc-prefix}#mapper-orm-indexing-automatic-synchronization[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet

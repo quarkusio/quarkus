@@ -29,7 +29,7 @@
         <quarkus-http.version>3.0.16.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>
-        <micrometer.version>1.6.1</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <micrometer.version>1.6.2</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>

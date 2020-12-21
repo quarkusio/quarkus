@@ -316,22 +316,7 @@ public class NativeImageBuildStep {
             Path outputDir) {
         boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
         if (!isContainerBuild) {
-            Optional<String> graal = nativeConfig.graalvmHome;
-            File java = nativeConfig.javaHome;
-            if (java == null) {
-                // try system property first - it will be the JAVA_HOME used by the current JVM
-                String home = System.getProperty(JAVA_HOME_SYS);
-                if (home == null) {
-                    // No luck, somewhat a odd JVM not enforcing this property
-                    // try with the JAVA_HOME environment variable
-                    home = System.getenv(JAVA_HOME_ENV);
-                }
-
-                if (home != null) {
-                    java = new File(home);
-                }
-            }
-            List<String> nativeImageExecutable = getNativeImageExecutable(graal, java);
+            List<String> nativeImageExecutable = getNativeImageExecutable(nativeConfig);
             if (nativeImageExecutable != null) {
                 return nativeImageExecutable;
             }
@@ -589,12 +574,27 @@ public class NativeImageBuildStep {
         }
     }
 
-    private static List<String> getNativeImageExecutable(Optional<String> graalVmHome, File javaHome) {
+    private static List<String> getNativeImageExecutable(NativeConfig nativeConfig) {
         String executableName = getNativeImageExecutableName();
-        if (graalVmHome.isPresent()) {
-            File file = Paths.get(graalVmHome.get(), "bin", executableName).toFile();
+        if (nativeConfig.graalvmHome.isPresent()) {
+            File file = Paths.get(nativeConfig.graalvmHome.get(), "bin", executableName).toFile();
             if (file.exists()) {
                 return Collections.singletonList(file.getAbsolutePath());
+            }
+        }
+
+        File javaHome = nativeConfig.javaHome;
+        if (javaHome == null) {
+            // try system property first - it will be the JAVA_HOME used by the current JVM
+            String home = System.getProperty(JAVA_HOME_SYS);
+            if (home == null) {
+                // No luck, somewhat a odd JVM not enforcing this property
+                // try with the JAVA_HOME environment variable
+                home = System.getenv(JAVA_HOME_ENV);
+            }
+
+            if (home != null) {
+                javaHome = new File(home);
             }
         }
 

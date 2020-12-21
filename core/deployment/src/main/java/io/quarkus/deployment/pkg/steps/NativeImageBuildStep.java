@@ -15,10 +15,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -52,7 +50,6 @@ public class NativeImageBuildStep {
 
     private static final Logger log = Logger.getLogger(NativeImageBuildStep.class);
     private static final String DEBUG_BUILD_PROCESS_PORT = "5005";
-    private static final String GRAALVM_HOME = "GRAALVM_HOME";
 
     /**
      * Name of the <em>system</em> property to retrieve JAVA_HOME
@@ -99,7 +96,6 @@ public class NativeImageBuildStep {
 
         final String runnerJarName = runnerJar.getFileName().toString();
 
-        HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
 
         String noPIE = "";
@@ -109,7 +105,7 @@ public class NativeImageBuildStep {
             noPIE = detectNoPIE();
         }
 
-        nativeImage = getNativeImage(nativeConfig, processInheritIODisabled, outputDir, env);
+        nativeImage = getNativeImage(nativeConfig, processInheritIODisabled, outputDir);
         final GraalVM.Version graalVMVersion = GraalVM.Version.ofBinary(nativeImage);
 
         if (graalVMVersion.isDetected()) {
@@ -293,7 +289,7 @@ public class NativeImageBuildStep {
             }
             System.setProperty("native.image.path", finalPath.toAbsolutePath().toString());
 
-            if (objcopyExists(env)) {
+            if (objcopyExists()) {
                 if (nativeConfig.debug.enabled) {
                     splitDebugSymbols(finalPath);
                 }
@@ -317,30 +313,27 @@ public class NativeImageBuildStep {
 
     private static List<String> getNativeImage(NativeConfig nativeConfig,
             Optional<ProcessInheritIODisabled> processInheritIODisabled,
-            Path outputDir, Map<String, String> env) {
+            Path outputDir) {
         boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
         if (isContainerBuild) {
             return setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
         } else {
             Optional<String> graal = nativeConfig.graalvmHome;
             File java = nativeConfig.javaHome;
-            if (graal.isPresent()) {
-                env.put(GRAALVM_HOME, graal.get());
-            }
             if (java == null) {
                 // try system property first - it will be the JAVA_HOME used by the current JVM
                 String home = System.getProperty(JAVA_HOME_SYS);
                 if (home == null) {
                     // No luck, somewhat a odd JVM not enforcing this property
                     // try with the JAVA_HOME environment variable
-                    home = env.get(JAVA_HOME_ENV);
+                    home = System.getenv(JAVA_HOME_ENV);
                 }
 
                 if (home != null) {
                     java = new File(home);
                 }
             }
-            return getNativeImageExecutable(graal, java, env, nativeConfig, processInheritIODisabled, outputDir);
+            return getNativeImageExecutable(graal, java, nativeConfig, processInheritIODisabled, outputDir);
         }
     }
 
@@ -587,7 +580,7 @@ public class NativeImageBuildStep {
         }
     }
 
-    private static List<String> getNativeImageExecutable(Optional<String> graalVmHome, File javaHome, Map<String, String> env,
+    private static List<String> getNativeImageExecutable(Optional<String> graalVmHome, File javaHome,
             NativeConfig nativeConfig, Optional<ProcessInheritIODisabled> processInheritIODisabled, Path outputDir) {
         String imageName = SystemUtils.IS_OS_WINDOWS ? "native-image.cmd" : "native-image";
         if (graalVmHome.isPresent()) {
@@ -605,7 +598,7 @@ public class NativeImageBuildStep {
         }
 
         // System path
-        String systemPath = env.get(PATH);
+        String systemPath = System.getenv(PATH);
         if (systemPath != null) {
             String[] pathDirs = systemPath.split(File.pathSeparator);
             for (String pathDir : pathDirs) {
@@ -650,9 +643,9 @@ public class NativeImageBuildStep {
         return "";
     }
 
-    private boolean objcopyExists(Map<String, String> env) {
+    private boolean objcopyExists() {
         // System path
-        String systemPath = env.get(PATH);
+        String systemPath = System.getenv(PATH);
         if (systemPath != null) {
             String[] pathDirs = systemPath.split(File.pathSeparator);
             for (String pathDir : pathDirs) {

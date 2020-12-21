@@ -28,6 +28,7 @@ public class MultipartResourceTest {
 
         given()
                 .formParams(map)
+                .header("Expect", "100-continue")
                 .contentType(ContentType.URLENC)
                 .when().post("/multipart/")
                 .then()

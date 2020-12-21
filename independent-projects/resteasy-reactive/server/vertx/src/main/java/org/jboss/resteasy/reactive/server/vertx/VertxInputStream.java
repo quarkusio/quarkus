@@ -27,8 +27,11 @@ public class VertxInputStream extends InputStream {
     private boolean finished;
     private ByteBuf pooled;
     private final long limit;
+    private final VertxResteasyReactiveRequestContext vertxResteasyReactiveRequestContext;
 
-    public VertxInputStream(RoutingContext request, long timeout) {
+    public VertxInputStream(RoutingContext request, long timeout,
+            VertxResteasyReactiveRequestContext vertxResteasyReactiveRequestContext) {
+        this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
         this.exchange = new VertxBlockingInput(request.request(), timeout);
         Long limitObj = request.get(MAX_REQUEST_SIZE_KEY);
         if (limitObj == null) {
@@ -38,7 +41,9 @@ public class VertxInputStream extends InputStream {
         }
     }
 
-    public VertxInputStream(RoutingContext request, long timeout, ByteBuf existing) {
+    public VertxInputStream(RoutingContext request, long timeout, ByteBuf existing,
+            VertxResteasyReactiveRequestContext vertxResteasyReactiveRequestContext) {
+        this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
         this.exchange = new VertxBlockingInput(request.request(), timeout);
         Long limitObj = request.get(MAX_REQUEST_SIZE_KEY);
         if (limitObj == null) {
@@ -68,6 +73,10 @@ public class VertxInputStream extends InputStream {
     public int read(final byte[] b, final int off, final int len) throws IOException {
         if (closed) {
             throw new IOException("Stream is closed");
+        }
+        if (vertxResteasyReactiveRequestContext.continueState == VertxResteasyReactiveRequestContext.ContinueState.REQUIRED) {
+            vertxResteasyReactiveRequestContext.continueState = VertxResteasyReactiveRequestContext.ContinueState.SENT;
+            vertxResteasyReactiveRequestContext.response.writeContinue();
         }
         readIntoBuffer();
         if (limit > 0 && exchange.request.bytesRead() > limit) {

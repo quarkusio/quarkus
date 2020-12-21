@@ -42,33 +42,41 @@ public class RequestDeserializeHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        MediaType requestType = mediaType;
+        MediaType effectiveRequestType = mediaType;
         String requestTypeString = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (requestTypeString != null) {
             try {
-                requestType = MediaType.valueOf(requestTypeString);
+                effectiveRequestType = MediaType.valueOf(requestTypeString);
+                int plusIndex = effectiveRequestType.getSubtype().indexOf('+');
+                // for the purposes of locating readers, we can handle the suffix by using it as a subtype
+                if ((plusIndex > -1) && (plusIndex < effectiveRequestType.getSubtype().length() - 1)) {
+                    effectiveRequestType = new MediaType(effectiveRequestType.getType(),
+                            effectiveRequestType.getSubtype().substring(plusIndex + 1),
+                            effectiveRequestType.getParameters());
+                }
             } catch (Exception e) {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
-        } else if (requestType == null) {
-            requestType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
+        } else if (effectiveRequestType == null) {
+            effectiveRequestType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, requestType, RuntimeType.SERVER);
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, effectiveRequestType, RuntimeType.SERVER);
         if (readers.isEmpty()) {
             throw new NotSupportedException();
         }
         for (MessageBodyReader<?> reader : readers) {
-            if (isReadable(reader, requestContext, requestType)) {
+            if (isReadable(reader, requestContext, effectiveRequestType)) {
                 Object result;
                 ReaderInterceptor[] interceptors = requestContext.getReaderInterceptors();
                 try {
                     try {
                         if (interceptors == null) {
-                            result = readFrom(reader, requestContext, requestType);
+                            result = readFrom(reader, requestContext, effectiveRequestType);
                         } else {
                             result = new ReaderInterceptorContextImpl(requestContext,
                                     getAnnotations(requestContext),
-                                    type, type, requestType, reader, requestContext.getInputStream(), interceptors, serialisers)
+                                    type, type, effectiveRequestType, reader, requestContext.getInputStream(), interceptors,
+                                    serialisers)
                                             .proceed();
                         }
                     } catch (NoContentException e) {

@@ -1,0 +1,10 @@
+name: google-cloud-functions-example
+ref: google-cloud-functions
+type: code
+tags:
+  - example
+  - singleton-example
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-google-cloud-functions

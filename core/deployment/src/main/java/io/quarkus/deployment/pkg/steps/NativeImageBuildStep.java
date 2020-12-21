@@ -739,10 +739,10 @@ public class NativeImageBuildStep {
 
     //https://github.com/quarkusio/quarkus/issues/11573
     //https://github.com/oracle/graal/issues/1610
+    @BuildStep
     List<RuntimeReinitializedClassBuildItem> graalVmWorkaround(NativeConfig nativeConfig,
-            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
-        Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
+        Path outputDir = Paths.get("."); // The path is not important for getting the version
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage = getNativeImage(nativeConfig, processInheritIODisabled, outputDir, env);
         GraalVM.Version version = GraalVM.Version.ofBinary(nativeImage);

@@ -85,6 +85,11 @@
  * </ul>
  * </p>
  * <p>
+ * <b>WARNING</b>: MongoDB queries must be valid JSON documents,
+ * using the same field multiple times in a query is not allowed using PanacheQL as it would generate an invalid JSON
+ * (see this issue on github: https://github.com/quarkusio/quarkus/issues/12086).
+ * </p>
+ * <p>
  * You can also write native MongoDB queries, in this case the field names are not replaced even if you use
  * <code>@BsonProperty</code>, but you can still use parameterized queries by index or name.<br/>
  * <code>find("{'field':?1}", value)</code> or <code>find("{'field'::key}", value)</code>

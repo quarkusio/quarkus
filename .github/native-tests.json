@@ -100,7 +100,7 @@
         {
             "category": "Misc2",
             "timeout": 65,
-            "test-modules": "tika hibernate-validator test-extension logging-gelf bootstrap-config mailer"
+            "test-modules": "tika hibernate-validator test-extension logging-gelf bootstrap-config mailer native-config-profile"
         },
         {
             "category": "Misc3",

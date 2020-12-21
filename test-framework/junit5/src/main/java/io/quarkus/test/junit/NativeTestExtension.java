@@ -3,29 +3,30 @@ package io.quarkus.test.junit;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.platform.commons.JUnitException;
+import org.opentest4j.TestAbortedException;
 
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
-import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -38,6 +39,9 @@ public class NativeTestExtension
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
     private static boolean ssl;
 
+    private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
+    private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
+
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
@@ -48,7 +52,9 @@ public class NativeTestExtension
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        if (!failedBoot) {
+        if (failedBoot) {
+            throwBootFailureException();
+        } else {
             RestAssuredURLManager.setURL(ssl, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
             TestScopeManager.setup(true);
         }
@@ -56,43 +62,7 @@ public class NativeTestExtension
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
-        Class<?> testClass = extensionContext.getRequiredTestClass();
-        ensureNoInjectAnnotationIsUsed(testClass);
-        ExtensionContext root = extensionContext.getRoot();
-        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        PropertyTestUtil.setLogFileProperty();
-        if (state == null) {
-            ensureNoTestProfile(testClass);
-
-            TestResourceManager testResourceManager = new TestResourceManager(testClass);
-            try {
-                testResourceManager.init();
-                Map<String, String> systemProps = testResourceManager.start();
-                NativeImageLauncher launcher = new NativeImageLauncher(testClass);
-                launcher.addSystemProperties(systemProps);
-                try {
-                    launcher.start();
-                } catch (IOException e) {
-                    try {
-                        launcher.close();
-                    } catch (Throwable t) {
-                    }
-                    throw e;
-                }
-                if (launcher.isDefaultSsl()) {
-                    ssl = true;
-                }
-                state = new ExtensionState(testResourceManager, launcher, true);
-                store.put(ExtensionState.class.getName(), state);
-
-                testHttpEndpointProviders = TestHttpEndpointProvider.load();
-            } catch (Exception e) {
-
-                failedBoot = true;
-                throw new JUnitException("Quarkus native image start failed, original cause: " + e, e);
-            }
-        }
+        ensureStarted(extensionContext);
     }
 
     private void ensureNoInjectAnnotationIsUsed(Class<?> testClass) {
@@ -112,25 +82,116 @@ public class NativeTestExtension
 
     }
 
-    /**
-     * We don't support {@link TestProfile} in native tests because we don't want to incur the native binary rebuild cost
-     * which is very high.
-     *
-     * This method looks up the annotations via Jandex in order to try and prevent the image generation if there are
-     * any cases of {@link NativeImageTest} being used with {@link TestProfile}
-     */
-    private void ensureNoTestProfile(Class<?> testClass) {
-        Index index = TestClassIndexer.readIndex(testClass);
-        List<AnnotationInstance> instances = index.getAnnotations(DotName.createSimple(NativeImageTest.class.getName()));
-        for (AnnotationInstance instance : instances) {
-            if (instance.target().kind() != AnnotationTarget.Kind.CLASS) {
-                continue;
+    private ExtensionState ensureStarted(ExtensionContext extensionContext) {
+        Class<?> testClass = extensionContext.getRequiredTestClass();
+        ensureNoInjectAnnotationIsUsed(testClass);
+
+        ExtensionContext root = extensionContext.getRoot();
+        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
+        ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
+        TestProfile annotation = testClass.getAnnotation(TestProfile.class);
+        Class<? extends QuarkusTestProfile> selectedProfile = null;
+        if (annotation != null) {
+            selectedProfile = annotation.value();
+        }
+        boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
+        if ((state == null && !failedBoot) || wrongProfile) {
+            if (wrongProfile) {
+                if (state != null) {
+                    try {
+                        state.close();
+                    } catch (Throwable throwable) {
+                        throwable.printStackTrace();
+                    }
+                }
             }
-            ClassInfo testClassInfo = instance.target().asClass();
-            if (testClassInfo.classAnnotation(DotName.createSimple(TestProfile.class.getName())) != null) {
-                throw new JUnitException(
-                        "@TestProfile is not supported in NativeImageTest tests. Offending class is " + testClassInfo.name());
+            PropertyTestUtil.setLogFileProperty();
+            try {
+                state = doNativeStart(extensionContext, selectedProfile);
+                store.put(ExtensionState.class.getName(), state);
+
+            } catch (Throwable e) {
+                failedBoot = true;
+                firstException = e;
             }
+        }
+        return state;
+    }
+
+    private ExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
+            throws Throwable {
+        quarkusTestProfile = profile;
+        TestResourceManager testResourceManager = null;
+        try {
+            Class<?> requiredTestClass = context.getRequiredTestClass();
+
+            Map<String, String> sysPropRestore = new HashMap<>();
+            sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
+                    System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
+
+            QuarkusTestProfile profileInstance = null;
+            final Map<String, String> additional = new HashMap<>();
+            if (profile != null) {
+                profileInstance = profile.newInstance();
+                additional.putAll(profileInstance.getConfigOverrides());
+                final Set<Class<?>> enabledAlternatives = profileInstance.getEnabledAlternatives();
+                if (!enabledAlternatives.isEmpty()) {
+                    additional.put("quarkus.arc.selected-alternatives", enabledAlternatives.stream()
+                            .peek((c) -> {
+                                if (!c.isAnnotationPresent(Alternative.class)) {
+                                    throw new RuntimeException(
+                                            "Enabled alternative " + c + " is not annotated with @Alternative");
+                                }
+                            })
+                            .map(Class::getName).collect(Collectors.joining(",")));
+                }
+                final String configProfile = profileInstance.getConfigProfile();
+                if (configProfile != null) {
+                    additional.put(ProfileManager.QUARKUS_PROFILE_PROP, configProfile);
+                }
+                additional.put("quarkus.configuration.build-time-mismatch-at-runtime", "fail");
+                for (Map.Entry<String, String> i : additional.entrySet()) {
+                    sysPropRestore.put(i.getKey(), System.getProperty(i.getKey()));
+                }
+                for (Map.Entry<String, String> i : additional.entrySet()) {
+                    System.setProperty(i.getKey(), i.getValue());
+                }
+            }
+
+            testResourceManager = new TestResourceManager(requiredTestClass);
+            testResourceManager.init();
+            additional.putAll(testResourceManager.start());
+
+            NativeImageLauncher launcher = new NativeImageLauncher(requiredTestClass);
+            launcher.addSystemProperties(additional);
+            try {
+                launcher.start();
+            } catch (IOException e) {
+                try {
+                    launcher.close();
+                } catch (Throwable t) {
+                }
+                throw e;
+            }
+            if (launcher.isDefaultSsl()) {
+                ssl = true;
+            }
+
+            final ExtensionState state = new ExtensionState(testResourceManager, launcher, sysPropRestore);
+
+            testHttpEndpointProviders = TestHttpEndpointProvider.load();
+
+            return state;
+        } catch (Throwable e) {
+
+            try {
+                if (testResourceManager != null) {
+                    testResourceManager.close();
+                }
+            } catch (Exception ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
         }
     }
 
@@ -143,20 +204,53 @@ public class NativeTestExtension
         state.testResourceManager.inject(testInstance);
     }
 
+    private void throwBootFailureException() throws Exception {
+        if (firstException != null) {
+            Throwable throwable = firstException;
+            firstException = null;
+            throw new RuntimeException(throwable);
+        } else {
+            throw new TestAbortedException("Boot failed");
+        }
+    }
+
     public class ExtensionState implements ExtensionContext.Store.CloseableResource {
 
         private final TestResourceManager testResourceManager;
         private final Closeable resource;
+        private final Map<String, String> sysPropRestore;
+        private final Thread shutdownHook;
 
-        ExtensionState(TestResourceManager testResourceManager, Closeable resource, boolean nativeImage) {
+        ExtensionState(TestResourceManager testResourceManager, Closeable resource, Map<String, String> sysPropRestore) {
             this.testResourceManager = testResourceManager;
             this.resource = resource;
+            this.sysPropRestore = sysPropRestore;
+            this.shutdownHook = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        ExtensionState.this.close();
+                    } catch (IOException ignored) {
+                    }
+                }
+            }, "Quarkus Test Cleanup Shutdown task");
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+
         }
 
         @Override
-        public void close() throws Throwable {
+        public void close() throws IOException {
             testResourceManager.close();
             resource.close();
+            for (Map.Entry<String, String> entry : sysPropRestore.entrySet()) {
+                String val = entry.getValue();
+                if (val == null) {
+                    System.clearProperty(entry.getKey());
+                } else {
+                    System.setProperty(entry.getKey(), val);
+                }
+            }
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
         }
     }
 }

@@ -376,7 +376,7 @@ public class ResteasyServerCommonProcessor {
                 if (clazz.classAnnotation(ResteasyDotNames.PATH) != null) {
                     // Root resources - no need to add scope, @Path is a bean defining annotation
                     if (clazz.classAnnotation(DotNames.TYPED) == null) {
-                        // Add @Typed(MyResource.class)
+                        // Add @Typed(MyResource.class, interfaces...)
                         context.transform().add(createTypedAnnotationInstance(clazz)).done();
                     }
                     return;
@@ -393,7 +393,7 @@ public class ResteasyServerCommonProcessor {
                         transformation = context.transform().add(BuiltinScope.SINGLETON.getName());
                     }
                     if (clazz.classAnnotation(DotNames.TYPED) == null) {
-                        // Add @Typed(MyProvider.class)
+                        // Add @Typed(MyProvider.class, interfaces...)
                         if (transformation == null) {
                             transformation = context.transform();
                         }
@@ -408,7 +408,7 @@ public class ResteasyServerCommonProcessor {
                             .add(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName()
                                     : BuiltinScope.DEPENDENT.getName());
                     if (clazz.classAnnotation(DotNames.TYPED) == null) {
-                        // Add @Typed(MySubresource.class)
+                        // Add @Typed(MySubresource.class, interfaces...)
                         transformation.add(createTypedAnnotationInstance(clazz));
                     }
                     transformation.done();
@@ -499,10 +499,14 @@ public class ResteasyServerCommonProcessor {
     }
 
     private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz) {
+        List<AnnotationValue> types = new ArrayList<>();
+        types.add(AnnotationValue.createClassValue("value", Type.create(clazz.name(), org.jboss.jandex.Type.Kind.CLASS)));
+        for (DotName interfaze : clazz.interfaceNames()) {
+            types.add(AnnotationValue.createClassValue("value", Type.create(interfaze, org.jboss.jandex.Type.Kind.CLASS)));
+        }
+
         return AnnotationInstance.create(DotNames.TYPED, clazz,
-                new AnnotationValue[] { AnnotationValue.createArrayValue("value",
-                        new AnnotationValue[] { AnnotationValue.createClassValue("value",
-                                Type.create(clazz.name(), org.jboss.jandex.Type.Kind.CLASS)) }) });
+                new AnnotationValue[] { AnnotationValue.createArrayValue("value", types.toArray(new AnnotationValue[0])) });
     }
 
     private Set<DotName> findSubresources(IndexView index, Map<DotName, ClassInfo> scannedResources) {

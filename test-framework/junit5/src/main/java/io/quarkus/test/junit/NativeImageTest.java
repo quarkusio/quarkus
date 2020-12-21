@@ -29,4 +29,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith({ DisabledOnNativeImageCondition.class, QuarkusTestExtension.class, NativeTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NativeImageTest {
+    /**
+     * Allow to define system properties that will be passed to the native image that will be started by the tests.
+     * Properties defined in this field will have precedence over the ones defined in profiles shipped with the image.
+     */
+    String[] systemProperties() default {};
 }

@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -71,6 +72,11 @@ public class NativeTestExtension
                 Map<String, String> systemProps = testResourceManager.start();
                 NativeImageLauncher launcher = new NativeImageLauncher(testClass);
                 launcher.addSystemProperties(systemProps);
+                systemProps = getAnnotationSystemProperties(testClass);
+                if (!systemProps.isEmpty()) {
+                    launcher.addSystemProperties(systemProps);
+                }
+
                 try {
                     launcher.start();
                 } catch (IOException e) {
@@ -109,7 +115,31 @@ public class NativeTestExtension
             }
             current = current.getSuperclass();
         }
+    }
 
+    private Map<String, String> getAnnotationSystemProperties(Class<?> testClass) {
+        final Map<String, String> systemProps = new HashMap<>();
+        final NativeImageTest annotation = testClass.getAnnotation(NativeImageTest.class);
+
+        if (annotation != null && annotation.systemProperties().length > 0) {
+            for (String expression : annotation.systemProperties()) {
+                if (!expression.contains("=") || expression.startsWith("=")) {
+                    throw new JUnitException("Invalid system property '" + expression
+                            + "' passed to @NativeImageTest: it must be 'key=value'");
+                }
+                final int equalSignIndex = expression.indexOf('=');
+                final String key = expression.substring(0, equalSignIndex);
+
+                final String value;
+                if (expression.endsWith("=")) {
+                    value = "";
+                } else {
+                    value = expression.substring(equalSignIndex + 1);
+                }
+                systemProps.put(key, value);
+            }
+        }
+        return systemProps;
     }
 
     /**

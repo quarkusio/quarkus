@@ -1,13 +1,8 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,9 +14,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -35,7 +27,6 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.NativeConfig.ContainerRuntime;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -43,13 +34,11 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
-import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.deployment.util.ProcessUtil;
 
 public class NativeImageBuildStep {
 
     private static final Logger log = Logger.getLogger(NativeImageBuildStep.class);
-    private static final String DEBUG_BUILD_PROCESS_PORT = "5005";
+    public static final String DEBUG_BUILD_PROCESS_PORT = "5005";
 
     /**
      * Name of the <em>system</em> property to retrieve JAVA_HOME
@@ -68,7 +57,7 @@ public class NativeImageBuildStep {
 
     private static final int OOM_ERROR_VALUE = 137;
     private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
-    private static final String CONTAINER_BUILD_VOLUME_PATH = "/project";
+    public static final String CONTAINER_BUILD_VOLUME_PATH = "/project";
     private static final String TRUST_STORE_SYSTEM_PROPERTY_MARKER = "-Djavax.net.ssl.trustStore=";
     private static final String MOVED_TRUST_STORE_NAME = "trustStore";
     public static final String APP_SOURCES = "app-sources";
@@ -96,8 +85,6 @@ public class NativeImageBuildStep {
 
         final String runnerJarName = runnerJar.getFileName().toString();
 
-        List<String> nativeImage;
-
         String noPIE = "";
 
         boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
@@ -105,8 +92,9 @@ public class NativeImageBuildStep {
             noPIE = detectNoPIE();
         }
 
-        nativeImage = getNativeImage(nativeConfig, processInheritIODisabled, outputDir);
-        final GraalVM.Version graalVMVersion = GraalVM.Version.ofBinary(nativeImage);
+        NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir);
+        buildRunner.setup(processInheritIODisabled.isPresent());
+        final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
 
         if (graalVMVersion.isDetected()) {
             checkGraalVMVersion(graalVMVersion);
@@ -115,14 +103,9 @@ public class NativeImageBuildStep {
         }
 
         try {
-            List<String> command = new ArrayList<>(nativeImage);
+            List<String> command = new ArrayList<>();
             if (nativeConfig.cleanupServer && !graalVMVersion.isMandrel()) {
-                List<String> cleanup = new ArrayList<>(nativeImage);
-                cleanup.add("--server-shutdown");
-                final ProcessBuilder pb = new ProcessBuilder(cleanup.toArray(new String[0]));
-                pb.directory(outputDir.toFile());
-                final Process process = ProcessUtil.launchProcess(pb, processInheritIODisabled.isPresent());
-                process.waitFor();
+                buildRunner.cleanupServer(outputDir.toFile(), processInheritIODisabled.isPresent());
             }
             boolean enableSslNative = false;
             for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
@@ -260,15 +243,7 @@ public class NativeImageBuildStep {
             command.add(executableName);
 
             log.info(String.join(" ", command).replace("$", "\\$"));
-            CountDownLatch errorReportLatch = new CountDownLatch(1);
-            final ProcessBuilder processBuilder = new ProcessBuilder(command).directory(outputDir.toFile());
-            final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled.isPresent());
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
-                    errorReportLatch));
-            executor.shutdown();
-            errorReportLatch.await();
-            int exitCode = process.waitFor();
+            int exitCode = buildRunner.build(command, outputDir, processInheritIODisabled.isPresent());
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, command);
             }
@@ -311,14 +286,12 @@ public class NativeImageBuildStep {
         }
     }
 
-    private static List<String> getNativeImage(NativeConfig nativeConfig,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled,
-            Path outputDir) {
+    private static NativeImageBuildRunner getNativeImageBuildRunner(NativeConfig nativeConfig, Path outputDir) {
         boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
         if (!isContainerBuild) {
-            List<String> nativeImageExecutable = getNativeImageExecutable(nativeConfig);
-            if (nativeImageExecutable != null) {
-                return nativeImageExecutable;
+            NativeImageBuildLocalRunner localRunner = getNativeImageBuildLocalRunner(nativeConfig);
+            if (localRunner != null) {
+                return localRunner;
             }
             String executableName = getNativeImageExecutableName();
             String errorMessage = "Cannot find the `" + executableName
@@ -328,108 +301,7 @@ public class NativeImageBuildStep {
             }
             log.warn(errorMessage + " Attempting to fall back to container build.");
         }
-        return setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
-    }
-
-    public static List<String> setupContainerBuild(NativeConfig nativeConfig,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled, Path outputDir) {
-        List<String> nativeImage;
-        final ContainerRuntime containerRuntime = nativeConfig.containerRuntime
-                .orElseGet(NativeImageBuildStep::detectContainerRuntime);
-        log.infof("Using %s to run the native image builder", containerRuntime.getExecutableName());
-        // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
-        nativeImage = new ArrayList<>();
-
-        String outputPath = outputDir.toAbsolutePath().toString();
-        if (SystemUtils.IS_OS_WINDOWS) {
-            outputPath = FileUtil.translateToVolumePath(outputPath);
-        }
-        Collections.addAll(nativeImage, containerRuntime.getExecutableName(), "run", "-v",
-                outputPath + ":" + CONTAINER_BUILD_VOLUME_PATH + ":z", "--env", "LANG=C");
-
-        if (SystemUtils.IS_OS_LINUX) {
-            String uid = getLinuxID("-ur");
-            String gid = getLinuxID("-gr");
-            if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
-                Collections.addAll(nativeImage, "--user", uid + ":" + gid);
-                if (containerRuntime == ContainerRuntime.PODMAN) {
-                    // Needed to avoid AccessDeniedExceptions
-                    nativeImage.add("--userns=keep-id");
-                }
-            }
-        }
-        nativeConfig.containerRuntimeOptions.ifPresent(nativeImage::addAll);
-        if (nativeConfig.debugBuildProcess && nativeConfig.publishDebugBuildProcessPort) {
-            // publish the debug port onto the host if asked for
-            nativeImage.add("--publish=" + DEBUG_BUILD_PROCESS_PORT + ":" + DEBUG_BUILD_PROCESS_PORT);
-        }
-        Collections.addAll(nativeImage, "--rm", nativeConfig.builderImage);
-
-        if (containerRuntime == ContainerRuntime.DOCKER || containerRuntime == ContainerRuntime.PODMAN) {
-            // we pull the docker image in order to give users an indication of which step the process is at
-            // it's not strictly necessary we do this, however if we don't the subsequent version command
-            // will appear to block and no output will be shown
-            log.info("Checking image status " + nativeConfig.builderImage);
-            Process pullProcess = null;
-            try {
-                final ProcessBuilder pb = new ProcessBuilder(
-                        Arrays.asList(containerRuntime.getExecutableName(), "pull", nativeConfig.builderImage));
-                pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled.isPresent());
-                pullProcess.waitFor();
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException("Failed to pull builder image " + nativeConfig.builderImage, e);
-            } finally {
-                if (pullProcess != null) {
-                    pullProcess.destroy();
-                }
-            }
-        }
-        return nativeImage;
-    }
-
-    /**
-     * @return {@link ContainerRuntime#DOCKER} if it's available, or {@link ContainerRuntime#PODMAN} if the podman
-     *         executable exists in the environment or if the docker executable is an alias to podman
-     * @throws IllegalStateException if no container runtime was found to build the image
-     */
-    private static ContainerRuntime detectContainerRuntime() {
-        // Docker version 19.03.14, build 5eb3275d40
-        String dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
-        boolean dockerAvailable = dockerVersionOutput.contains("Docker version");
-        // Check if Podman is installed
-        // podman version 2.1.1
-        String podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-        boolean podmanAvailable = podmanVersionOutput.startsWith("podman version");
-        if (dockerAvailable) {
-            // Check if "docker" is an alias to "podman"
-            if (dockerVersionOutput.equals(podmanVersionOutput)) {
-                return ContainerRuntime.PODMAN;
-            }
-            return ContainerRuntime.DOCKER;
-        } else if (podmanAvailable) {
-            return ContainerRuntime.PODMAN;
-        } else {
-            throw new IllegalStateException("No container runtime was found to run the native image builder");
-        }
-    }
-
-    private static String getVersionOutputFor(ContainerRuntime containerRuntime) {
-        Process versionProcess = null;
-        try {
-            ProcessBuilder pb = new ProcessBuilder(containerRuntime.getExecutableName(), "--version")
-                    .redirectErrorStream(true);
-            versionProcess = pb.start();
-            versionProcess.waitFor();
-            return new String(FileUtil.readFileContents(versionProcess.getInputStream()), StandardCharsets.UTF_8);
-        } catch (IOException | InterruptedException e) {
-            // If an exception is thrown in the process, just return an empty String
-            log.debugf(e, "Failure to read version output from %s", containerRuntime.getExecutableName());
-            return "";
-        } finally {
-            if (versionProcess != null) {
-                versionProcess.destroy();
-            }
-        }
+        return new NativeImageBuildContainerRunner(nativeConfig, outputDir);
     }
 
     private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,
@@ -574,12 +446,12 @@ public class NativeImageBuildStep {
         }
     }
 
-    private static List<String> getNativeImageExecutable(NativeConfig nativeConfig) {
+    private static NativeImageBuildLocalRunner getNativeImageBuildLocalRunner(NativeConfig nativeConfig) {
         String executableName = getNativeImageExecutableName();
         if (nativeConfig.graalvmHome.isPresent()) {
             File file = Paths.get(nativeConfig.graalvmHome.get(), "bin", executableName).toFile();
             if (file.exists()) {
-                return Collections.singletonList(file.getAbsolutePath());
+                return new NativeImageBuildLocalRunner(file.getAbsolutePath());
             }
         }
 
@@ -601,7 +473,7 @@ public class NativeImageBuildStep {
         if (javaHome != null) {
             File file = new File(javaHome, "bin/" + executableName);
             if (file.exists()) {
-                return Collections.singletonList(file.getAbsolutePath());
+                return new NativeImageBuildLocalRunner(file.getAbsolutePath());
             }
         }
 
@@ -614,7 +486,7 @@ public class NativeImageBuildStep {
                 if (dir.isDirectory()) {
                     File file = new File(dir, executableName);
                     if (file.exists()) {
-                        return Collections.singletonList(file.getAbsolutePath());
+                        return new NativeImageBuildLocalRunner(file.getAbsolutePath());
                     }
                 }
             }
@@ -782,26 +654,6 @@ public class NativeImageBuildStep {
                 }
 
                 return UNVERSIONED;
-            }
-
-            private static Version ofBinary(List<String> nativeImage) {
-                final Version graalVMVersion;
-                try {
-                    List<String> versionCommand = new ArrayList<>(nativeImage);
-                    versionCommand.add("--version");
-
-                    Process versionProcess = new ProcessBuilder(versionCommand.toArray(new String[0]))
-                            .redirectErrorStream(true)
-                            .start();
-                    versionProcess.waitFor();
-                    try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
-                        graalVMVersion = of(reader.lines());
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to get GraalVM version", e);
-                }
-                return graalVMVersion;
             }
 
             private static boolean isSnapshot(String s) {

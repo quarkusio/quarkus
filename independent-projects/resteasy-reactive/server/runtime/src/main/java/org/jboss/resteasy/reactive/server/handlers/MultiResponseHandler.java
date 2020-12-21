@@ -14,7 +14,7 @@ import org.reactivestreams.Subscription;
 
 public class MultiResponseHandler implements ServerRestHandler {
 
-    class SseMultiSubscriber extends AbstractMultiSubscriber {
+    private static class SseMultiSubscriber extends AbstractMultiSubscriber {
 
         SseMultiSubscriber(ResteasyReactiveRequestContext requestContext) {
             super(requestContext);
@@ -40,7 +40,7 @@ public class MultiResponseHandler implements ServerRestHandler {
         }
     }
 
-    class StreamingMultiSubscriber extends AbstractMultiSubscriber {
+    private static class StreamingMultiSubscriber extends AbstractMultiSubscriber {
 
         StreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext) {
             super(requestContext);
@@ -69,7 +69,7 @@ public class MultiResponseHandler implements ServerRestHandler {
         }
     }
 
-    abstract class AbstractMultiSubscriber implements Subscriber<Object> {
+    static abstract class AbstractMultiSubscriber implements Subscriber<Object> {
         protected Subscription subscription;
         protected ResteasyReactiveRequestContext requestContext;
 
@@ -102,6 +102,17 @@ public class MultiResponseHandler implements ServerRestHandler {
         public void onError(Throwable t) {
             // no need to cancel on error
             handleException(requestContext, t);
+        }
+
+        protected void handleException(ResteasyReactiveRequestContext requestContext, Throwable t) {
+            // in truth we can only send an exception if we haven't sent the headers yet, otherwise
+            // it will appear to be an SSE value, which is incorrect, so we should only log it and close the connection
+            if (requestContext.serverResponse().headWritten()) {
+                log.error("Exception in SSE server handling, impossible to send it to client", t);
+            } else {
+                // we can go through the abort chain
+                requestContext.resume(t);
+            }
         }
     }
 
@@ -150,16 +161,5 @@ public class MultiResponseHandler implements ServerRestHandler {
 
     private void handleSse(ResteasyReactiveRequestContext requestContext, Multi<?> result) {
         result.subscribe().withSubscriber(new SseMultiSubscriber(requestContext));
-    }
-
-    private void handleException(ResteasyReactiveRequestContext requestContext, Throwable t) {
-        // in truth we can only send an exception if we haven't sent the headers yet, otherwise
-        // it will appear to be an SSE value, which is incorrect, so we should only log it and close the connection
-        if (requestContext.serverResponse().headWritten()) {
-            log.error("Exception in SSE server handling, impossible to send it to client", t);
-        } else {
-            // we can go through the abort chain
-            requestContext.resume(t);
-        }
     }
 }

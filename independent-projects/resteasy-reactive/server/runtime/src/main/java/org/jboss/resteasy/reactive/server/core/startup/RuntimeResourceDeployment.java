@@ -109,8 +109,7 @@ public class RuntimeResourceDeployment {
 
     public RuntimeResource buildResourceMethod(ResourceClass clazz,
             ServerResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
-        RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
-                .forMethod(clazz, method);
+
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>();
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
@@ -130,6 +129,17 @@ public class RuntimeResourceDeployment {
                 consumesMediaTypes.add(MediaType.valueOf(s));
             }
         }
+
+        Class<Object> resourceClass = loadClass(clazz.getClassName());
+        Class<?>[] parameterClasses = new Class[method.getParameters().length];
+        for (int i = 0; i < method.getParameters().length; ++i) {
+            parameterClasses[i] = loadClass(method.getParameters()[i].declaredType);
+        }
+        ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
+                parameterClasses, method.getMethodAnnotationNames());
+
+        RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
+                .forMethod(method, lazyMethod);
 
         //setup reader and writer interceptors first
         handlers.addAll(interceptorDeployment.setupInterceptorHandler());
@@ -187,14 +197,6 @@ public class RuntimeResourceDeployment {
                 score.add(ScoreSystem.Category.Resource, ScoreSystem.Diagnostic.ResourceSingleton);
             }
         }
-
-        Class<Object> resourceClass = loadClass(clazz.getClassName());
-        Class<?>[] parameterClasses = new Class[method.getParameters().length];
-        for (int i = 0; i < method.getParameters().length; ++i) {
-            parameterClasses[i] = loadClass(method.getParameters()[i].declaredType);
-        }
-        ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterClasses, method.getMethodAnnotationNames());
 
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];

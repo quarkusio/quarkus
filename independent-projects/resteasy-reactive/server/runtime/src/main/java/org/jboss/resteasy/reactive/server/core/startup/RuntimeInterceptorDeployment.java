@@ -16,7 +16,6 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.HasPriority;
-import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
@@ -26,8 +25,8 @@ import org.jboss.resteasy.reactive.server.handlers.InterceptorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResourceResponseFilterHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureContext;
-import org.jboss.resteasy.reactive.server.jaxrs.DynamicFeatureResourceInfo;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -158,8 +157,8 @@ public class RuntimeInterceptorDeployment {
         return result;
     }
 
-    public MethodInterceptorContext forMethod(ResourceClass clazz, ResourceMethod method) {
-        return new MethodInterceptorContext(clazz, method);
+    public MethodInterceptorContext forMethod(ResourceMethod method, ResteasyReactiveResourceInfo lazyMethod) {
+        return new MethodInterceptorContext(method, lazyMethod);
     }
 
     <T> TreeMap<ResourceInterceptor<T>, T> buildInterceptorMap(
@@ -185,7 +184,7 @@ public class RuntimeInterceptorDeployment {
         final Map<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> methodSpecificReaderInterceptorsMap;
         final Map<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> methodSpecificWriterInterceptorsMap;
 
-        MethodInterceptorContext(ResourceClass clazz, ResourceMethod method) {
+        MethodInterceptorContext(ResourceMethod method, ResteasyReactiveResourceInfo lazyMethod) {
             this.method = method;
             Map<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> methodSpecificRequestInterceptorsMap = Collections
                     .emptyMap();
@@ -203,12 +202,11 @@ public class RuntimeInterceptorDeployment {
                 // in the global fields
                 ResourceInterceptors dynamicallyConfiguredInterceptors = new ResourceInterceptors();
 
-                DynamicFeatureResourceInfo dynamicFeatureResourceInfo = new DynamicFeatureResourceInfo(clazz, method); // TODO: look into using LazyMethod
                 DynamicFeatureContext context = new DynamicFeatureContext(
                         dynamicallyConfiguredInterceptors, configurationImpl, info.getFactoryCreator());
                 for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {
                     DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
-                    feature.configure(dynamicFeatureResourceInfo, context);
+                    feature.configure(lazyMethod, context);
                 }
                 dynamicallyConfiguredInterceptors.sort();
 

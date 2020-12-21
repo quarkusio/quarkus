@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     <name>Quarkus - RESTEasy Reactive - Jackson - Runtime</name>
-    <description>Jackson integration for Quarkus RESTEasy Reactive</description>
+    <description>Jackson integration for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
 
     <dependencies>
         <dependency>

@@ -1,6 +1,7 @@
 ---
 name: "Quarkus RESTEasy Reactive Servlet"
 metadata:
+  unlisted: true
   short-name: "quarkus-resteasy-reactive-servlet"
   keywords:
   - "jaxrs"

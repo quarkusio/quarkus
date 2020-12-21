@@ -315,9 +315,7 @@ public class NativeImageBuildStep {
             Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Path outputDir) {
         boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
-        if (isContainerBuild) {
-            return setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
-        } else {
+        if (!isContainerBuild) {
             Optional<String> graal = nativeConfig.graalvmHome;
             File java = nativeConfig.javaHome;
             if (java == null) {
@@ -335,6 +333,7 @@ public class NativeImageBuildStep {
             }
             return getNativeImageExecutable(graal, java, nativeConfig, processInheritIODisabled, outputDir);
         }
+        return setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
     }
 
     public static List<String> setupContainerBuild(NativeConfig nativeConfig,

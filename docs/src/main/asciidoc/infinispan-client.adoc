@@ -10,8 +10,8 @@ include::./attributes.adoc[]
 Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension
 provides functionality to allow the client that can connect to said server when running in Quarkus.
 
-More information can be found about Infinispan at https://infinispan.org and the client/server at
-https://infinispan.org/docs/dev/user_guide/user_guide.html#client_server
+Check out the https://infinispan.org/documentation[Infinispan documentation] to find out more about the Infinispan project,
+in particular the https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html[Hot Rod Java client guide].
 
 == Configuration
 
@@ -348,7 +348,7 @@ Either method of Serialization above will automatically register the schema with
 startup, meaning that you will automatically gain the ability to query objects stored in the
 remote Infinispan Server.
 
-You can read more about this at https://infinispan.org/docs/stable/titles/developing/developing.html#query_dsl.
+You can read more about https://infinispan.org/docs/stable/titles/developing/developing.html#searching_ickle[querying] in the Infinispan documentation.
 
 You can use either the Query DSL or the Ickle Query language with the Quarkus Infinispan client
 extension.
@@ -380,8 +380,7 @@ a regular expression so that only a subset of caches have near caching applied t
 Encryption at this point requires additional steps to get working.
 
 The first step is to configure the `hotrod-client.properties` file to point to your truststore
-and/or keystore. This is further detailed at
-https://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
+and/or keystore. This is further detailed https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_encryption[here].
 
 The Infinispan Client extension enables SSL by default. You can read more about this
 at link:native-and-ssl[Using SSL With Native Executables].
@@ -412,7 +411,7 @@ the Quarkus Infinispan Client extension.
 
 |===
 
-The guide for configuring these can be found at https://infinispan.org/docs/dev/user_guide/user_guide.html#authentication.
+The guide for configuring these can be found https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_authentication[here].
 However you need to configure these through the `hotrod-client.properties` file if using Dependency Injection.
 
 == Additional Features

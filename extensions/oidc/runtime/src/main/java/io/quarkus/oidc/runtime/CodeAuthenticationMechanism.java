@@ -321,20 +321,21 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                 .isRemoveRedirectParameters();
                                         if (removeRedirectParams || finalUserPath != null || finalUserQuery != null) {
 
-                                            final String scheme = isForceHttps(configContext) ? "https"
-                                                    : context.request().scheme();
                                             URI absoluteUri = URI.create(context.request().absoluteURI());
-                                            StringBuilder sb = new StringBuilder(scheme).append("://")
-                                                    .append(absoluteUri.getAuthority())
-                                                    .append(finalUserPath != null ? finalUserPath : absoluteUri.getRawPath());
+
+                                            StringBuilder finalUriWithoutQuery = new StringBuilder(buildUri(context,
+                                                    isForceHttps(configContext),
+                                                    absoluteUri.getAuthority(),
+                                                    (finalUserPath != null ? finalUserPath : absoluteUri.getRawPath())));
+
                                             if (!removeRedirectParams) {
-                                                sb.append('?').append(absoluteUri.getRawQuery());
+                                                finalUriWithoutQuery.append('?').append(absoluteUri.getRawQuery());
                                             }
                                             if (finalUserQuery != null) {
-                                                sb.append(!removeRedirectParams ? "" : "?");
-                                                sb.append(finalUserQuery);
+                                                finalUriWithoutQuery.append(!removeRedirectParams ? "" : "?");
+                                                finalUriWithoutQuery.append(finalUserQuery);
                                             }
-                                            String finalRedirectUri = sb.toString();
+                                            String finalRedirectUri = finalUriWithoutQuery.toString();
                                             LOG.debugf("Final redirect URI: %s", finalRedirectUri);
                                             uniEmitter.fail(new AuthenticationRedirectException(finalRedirectUri));
                                         } else {
@@ -422,9 +423,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         Authentication auth = configContext.oidcConfig.getAuthentication();
         if (auth.isRestorePathAfterRedirect()) {
-            String requestPath = !redirectPath.equals(context.request().path()) ? context.request().path() : "";
-            if (context.request().query() != null) {
-                requestPath += ("?" + context.request().query());
+            String requestQuery = context.request().query();
+            String requestPath = !redirectPath.equals(context.request().path()) || requestQuery != null
+                    ? context.request().path()
+                    : "";
+            if (requestQuery != null) {
+                requestPath += ("?" + requestQuery);
             }
             if (!requestPath.isEmpty()) {
                 cookieValue += (COOKIE_DELIM + requestPath);
@@ -460,6 +464,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
+        String authority = URI.create(context.request().absoluteURI()).getAuthority();
+        return buildUri(context, forceHttps, authority, path);
+    }
+
+    private String buildUri(RoutingContext context, boolean forceHttps, String authority, String path) {
         final String scheme = forceHttps ? "https" : context.request().scheme();
         String forwardedPrefix = "";
         if (resolver.isEnableHttpForwardedPrefix()) {
@@ -472,7 +481,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
         }
         return new StringBuilder(scheme).append("://")
-                .append(URI.create(context.request().absoluteURI()).getAuthority())
+                .append(authority)
                 .append(forwardedPrefix)
                 .append(path)
                 .toString();

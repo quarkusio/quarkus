@@ -74,12 +74,67 @@ public class CodeFlowTest {
     public void testCodeFlowForceHttpsRedirectUri() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
+            // Verify X-Forwarded-Prefix header is checked during all the redirects 
+            webClient.addRequestHeader("X-Forwarded-Prefix", "/xforwarded");
+
             WebResponse webResponse = webClient
                     .loadWebResponse(
                             new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
             String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-https", "xforwarded%2Ftenant-https",
+                    true);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocation.startsWith("https"));
+            endpointLocation = "http" + endpointLocation.substring(5);
+            assertTrue(endpointLocation.contains("/xforwarded"));
+            endpointLocation = endpointLocation.replace("/xforwarded", "");
+            URI endpointLocationUri = URI.create(endpointLocation);
+            assertNotNull(endpointLocationUri.getRawQuery());
+
+            webClient.addRequestHeader("X-Forwarded-Prefix", "/xforwarded");
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+
+            // This is a redirect from quarkus-oidc which drops the query parameters
+            String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocationWithoutQuery.startsWith("https"));
+            assertTrue(endpointLocationWithoutQuery.contains("/xforwarded"));
+
+            endpointLocationWithoutQuery = "http" + endpointLocationWithoutQuery.substring(5);
+            endpointLocationWithoutQuery = endpointLocationWithoutQuery.replace("/xforwarded", "");
+            URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
+            assertNull(endpointLocationWithoutQueryUri.getRawQuery());
+
+            page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
+            assertEquals("tenant-https", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowForceHttpsRedirectUriWithQuery() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-https/query?a=b").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
             verifyLocationHeader(webClient, keycloakUrl, "tenant-https", "tenant-https",
                     true);
+
             HtmlPage page = webClient.getPage(keycloakUrl);
 
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -97,18 +152,19 @@ public class CodeFlowTest {
             endpointLocation = "http" + endpointLocation.substring(5);
             URI endpointLocationUri = URI.create(endpointLocation);
             assertNotNull(endpointLocationUri.getRawQuery());
+
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
 
-            // This is a redirect from quarkus-oidc which drops the query parameters
-            String endpointLocation2 = webResponse.getResponseHeaderValue("location");
-            assertTrue(endpointLocation2.startsWith("https"));
+            // This is a redirect from quarkus-oidc which drops the code and state query parameters
+            String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocationWithoutQuery.startsWith("https"));
 
-            endpointLocation2 = "http" + endpointLocation2.substring(5);
-            URI endpointLocationUri2 = URI.create(endpointLocation2);
-            assertNull(endpointLocationUri2.getRawQuery());
+            endpointLocationWithoutQuery = "http" + endpointLocationWithoutQuery.substring(5);
+            URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
+            assertEquals("a=b", endpointLocationWithoutQueryUri.getRawQuery());
 
-            page = webClient.getPage(endpointLocationUri2.toURL());
-            assertEquals("tenant-https", page.getBody().asText());
+            page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
+            assertEquals("tenant-https?a=b", page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }
     }

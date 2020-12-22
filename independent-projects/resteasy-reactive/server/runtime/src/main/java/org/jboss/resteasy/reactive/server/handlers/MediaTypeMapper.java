@@ -131,7 +131,7 @@ public class MediaTypeMapper implements ServerRestHandler {
         }
 
         public void setupServerMediaType() {
-            serverMediaType = new ServerMediaType(mtsWithParams, StandardCharsets.UTF_8.name(), true);
+            serverMediaType = new ServerMediaType(mtsWithParams, StandardCharsets.UTF_8.name(), true, false);
         }
     }
 }

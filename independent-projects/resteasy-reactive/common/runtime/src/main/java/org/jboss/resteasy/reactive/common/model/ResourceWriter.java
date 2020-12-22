@@ -90,7 +90,8 @@ public class ResourceWriter {
     public ServerMediaType serverMediaType() {
         if (serverMediaType == null) {
             synchronized (this) {
-                serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name());
+                // a MessageBodyWriter should always return its configured media type when negotiating, hence the 'false' for 'useSuffix'
+                serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name(), false, false);
             }
         }
         return serverMediaType;

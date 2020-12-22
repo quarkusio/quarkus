@@ -115,15 +115,7 @@ public abstract class Serialisers {
         readers.add(entityClass, reader);
     }
 
-    public List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType, String... produces) {
-        List<MediaType> type = new ArrayList<>();
-        for (String i : produces) {
-            type.add(MediaType.valueOf(i));
-        }
-        return findBuildTimeWriters(entityType, runtimeType, type);
-    }
-
-    private List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType,
+    public List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType,
             List<MediaType> produces) {
         if (Response.class.isAssignableFrom(entityType)) {
             return Collections.emptyList();

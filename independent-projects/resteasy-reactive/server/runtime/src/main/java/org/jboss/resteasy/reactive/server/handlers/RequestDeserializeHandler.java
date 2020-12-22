@@ -15,6 +15,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.ReaderInterceptor;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.jaxrs.ReaderInterceptorContextImpl;
@@ -46,14 +47,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
         String requestTypeString = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (requestTypeString != null) {
             try {
-                effectiveRequestType = MediaType.valueOf(requestTypeString);
-                int plusIndex = effectiveRequestType.getSubtype().indexOf('+');
-                // for the purposes of locating readers, we can handle the suffix by using it as a subtype
-                if ((plusIndex > -1) && (plusIndex < effectiveRequestType.getSubtype().length() - 1)) {
-                    effectiveRequestType = new MediaType(effectiveRequestType.getType(),
-                            effectiveRequestType.getSubtype().substring(plusIndex + 1),
-                            effectiveRequestType.getParameters());
-                }
+                effectiveRequestType = MediaTypeHelper.withSuffixAsSubtype(MediaType.valueOf(requestTypeString));
             } catch (Exception e) {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }

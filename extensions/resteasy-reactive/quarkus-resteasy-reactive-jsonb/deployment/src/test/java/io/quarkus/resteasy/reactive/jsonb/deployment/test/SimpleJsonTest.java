@@ -49,7 +49,7 @@ public class SimpleJsonTest {
                 .post("/simple/person-custom-mt")
                 .then()
                 .statusCode(200)
-                .contentType("application/json")
+                .contentType("application/vnd.quarkus.person-v1+json")
                 .body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
 
         RestAssured

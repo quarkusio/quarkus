@@ -60,11 +60,11 @@ public class DB2PoolRecorder {
                 dataSourceReactiveDB2Config);
         DB2ConnectOptions connectOptions = toConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent() &&
-                dataSourceReactiveRuntimeConfig.threadLocal.get()) {
-            return new ThreadLocalDB2Pool(vertx, connectOptions, poolOptions);
+        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent()) {
+            log.warn(
+                    "Configuration element 'thread-local' on Reactive datasource connections is deprecated and will be ignored. The started pool will always be based on a per-thread separate pool now.");
         }
-        return DB2Pool.pool(vertx, connectOptions, poolOptions);
+        return new ThreadLocalDB2Pool(vertx, connectOptions, poolOptions);
     }
 
     private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,

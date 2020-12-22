@@ -16,7 +16,12 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 
 public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
 
@@ -48,22 +53,33 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
             final Pool pgPool = pgPoolEntry.getValue();
             try {
                 CompletableFuture<Void> databaseConnectionAttempt = new CompletableFuture<>();
-                pgPool.query(healthCheckSQL)
-                        .execute(ar -> {
-                            if (ar.failed()) {
-                                builder.down();
-                                builder.withData(dataSourceName, "down - connection failed: " + ar.cause().getMessage());
-                            }
-                            databaseConnectionAttempt.complete(null);
-                        });
+                Context context = Vertx.currentContext();
+                if (context != null) {
+                    log.debug("Run health check on the current Vert.x context");
+                    context.runOnContext(v -> {
+                        pgPool.query(healthCheckSQL)
+                                .execute(ar -> {
+                                    checkFailure(ar, builder, dataSourceName);
+                                    databaseConnectionAttempt.complete(null);
+                                });
+                    });
+                } else {
+                    log.debug("Vert.x context not found for health check");
+                    pgPool.query(healthCheckSQL)
+                            .execute(ar -> {
+                                checkFailure(ar, builder, dataSourceName);
+                                databaseConnectionAttempt.complete(null);
+                            });
+                }
+
                 //20 seconds is rather high, but using just 10 is often not enough on slow CI
                 //systems, especially if the connections have to be established for the first time.
                 databaseConnectionAttempt.get(20, TimeUnit.SECONDS);
                 builder.withData(dataSourceName, "up");
             } catch (RuntimeException | ExecutionException exception) {
-                log.warn("Error obtaining database connection for healthcheck", exception);
+                operationsError(dataSourceName, exception);
                 builder.down();
-                builder.withData(dataSourceName, "down - connection failed: " + exception.toString());
+                builder.withData(dataSourceName, "down - connection failed: " + exception.getMessage());
             } catch (InterruptedException e) {
                 log.warn("Interrupted while obtaining database connection for healthcheck of datasource " + dataSourceName);
                 Thread.currentThread().interrupt();
@@ -77,6 +93,18 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
         }
 
         return builder.build();
+    }
+
+    private void operationsError(final String datasourceName, final Throwable cause) {
+        log.warn("Error obtaining database connection for healthcheck of datasource '" + datasourceName + '\'', cause);
+    }
+
+    private void checkFailure(AsyncResult<RowSet<Row>> ar, HealthCheckResponseBuilder builder, String dataSourceName) {
+        if (ar.failed()) {
+            operationsError(dataSourceName, ar.cause());
+            builder.down();
+            builder.withData(dataSourceName, "down - connection failed: " + ar.cause().getMessage());
+        }
     }
 
     protected String getPoolName(Bean<?> bean) {

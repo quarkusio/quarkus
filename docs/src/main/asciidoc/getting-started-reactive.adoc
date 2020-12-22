@@ -171,7 +171,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=getting-started-reactive \
     -DclassName="org.acme.quickstart.ReactiveGreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="resteasy-reactive, rest-client"
+    -Dextensions="resteasy-reactive"
 cd getting-started-reactive
 ----
 
@@ -181,14 +181,14 @@ For Windows users
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-reactive,rest-client"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-reactive"
 ----
 
 - If using Powershell, wrap `-D` parameters in double quotes
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-reactive,rest-client"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-reactive"
 ----
 
 It generates the following in  `./getting-started-reactive`:
@@ -277,7 +277,7 @@ public class ReactiveGreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/greeting/{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return service.greeting(name);
     }
 
@@ -344,7 +344,7 @@ In the `ReactiveGreetingResource` add the following method:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("/greeting/{count}/{name}")
-public Multi<String> greetings(@PathParam int count, @PathParam String name) {
+public Multi<String> greetings(int count, String name) {
   return service.greetings(count, name);
 }
 ----
@@ -366,9 +366,9 @@ We can also generate Server-Sent Event responses by returning a `Multi`:
 ----
 @GET
 @Produces(MediaType.SERVER_SENT_EVENTS)
-@SseElementType(MediaType.TEXT_PLAIN)
+@RestSseElementType(MediaType.TEXT_PLAIN)
 @Path("/stream/{count}/{name}")
-public Multi<String> greetingsAsStream(@PathParam int count, @PathParam String name) {
+public Multi<String> greetingsAsStream(int count, String name) {
     return service.greetings(count, name);
 }
 ----

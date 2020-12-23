@@ -76,7 +76,7 @@ public class HibernateReactiveTestEndpoint {
                         throw new AssertionError("Database was not populated properly");
                 })
                 .chain(() -> mutinySession.merge(new GuineaPig(5, "Aloi")))
-                .invoke(aloi -> mutinySession.remove(aloi))
+                .chain(aloi -> mutinySession.remove(aloi))
                 .chain(() -> mutinySession.flush())
                 .chain(() -> selectNameFromId(5))
                 .map(result -> {
@@ -91,6 +91,11 @@ public class HibernateReactiveTestEndpoint {
     @Path("/reactiveRemoveManagedEntity")
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
+                .chain(() -> selectNameFromId(5))
+                .invoke(name -> {
+                    if (name == null)
+                        throw new AssertionError("Database was not populated properly");
+                })
                 .chain(() -> mutinySession.find(GuineaPig.class, 5))
                 .chain(aloi -> mutinySession.remove(aloi))
                 .chain(() -> mutinySession.flush())

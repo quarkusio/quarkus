@@ -33,4 +33,12 @@ public class QuartzRuntimeConfig {
     @ConfigItem
     public boolean forceStart;
 
+    /**
+     * Scheduler will immediately start running if it finds a {@link io.quarkus.scheduler.Scheduled} business method
+     * or is forced to start using forceStart property.
+     * If set to true the scheduler will be not start triggering jobs until an explicit start is called from the main
+     * scheduler. This is useful to programmatically register listeners before scheduler starts performing some work.
+     */
+    @ConfigItem
+    public boolean haltStart;
 }

@@ -65,6 +65,7 @@ public class QuartzScheduler implements Scheduler {
 
     private final org.quartz.Scheduler scheduler;
     private final boolean enabled;
+    private final boolean haltStart;
 
     @Produces
     @Singleton
@@ -80,10 +81,12 @@ public class QuartzScheduler implements Scheduler {
             SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs,
             Instance<UserTransaction> userTransation) {
         enabled = schedulerRuntimeConfig.enabled;
+        final QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
+        haltStart = runtimeConfig.haltStart;
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
-        } else if (!quartzSupport.getRuntimeConfig().forceStart && context.getScheduledMethods().isEmpty()) {
+        } else if (!runtimeConfig.forceStart && context.getScheduledMethods().isEmpty()) {
             LOGGER.info("No scheduled business methods found - Quartz scheduler will not be started");
             this.scheduler = null;
         } else {
@@ -247,7 +250,7 @@ public class QuartzScheduler implements Scheduler {
 
     // Use Interceptor.Priority.PLATFORM_BEFORE to start the scheduler before regular StartupEvent observers
     void start(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE) StartupEvent startupEvent) {
-        if (scheduler == null) {
+        if (scheduler == null || haltStart) {
             return;
         }
         try {

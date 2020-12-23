@@ -42,7 +42,9 @@ public class DynamicEntityWriter implements EntityWriter {
                         RuntimeType.SERVER);
                 if (!writersList.isEmpty()) {
                     writers = writersList.toArray(new MessageBodyWriter[0]);
-                    selectedMediaType = res;
+                    // use the actual type the method declares as this is what the spec expects despite the fact that we might
+                    // have used the suffix of the subtype to determine a MessageBodyWriter
+                    selectedMediaType = context.getTarget().getProduces().getSortedOriginalMediaTypes()[0];
                 }
             } else if (vertxRequest.getRequestHeader(HttpHeaders.ACCEPT) != null
                     && !MediaType.WILDCARD.equals(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT))) {

@@ -118,9 +118,9 @@ public class ClassRoutingHandler implements ServerRestHandler {
         if (target.value.getProduces() != null) {
             String accepts = serverRequest.getRequestHeader(HttpHeaders.ACCEPT);
             if ((accepts != null) && !accepts.equals(MediaType.WILDCARD)) {
-                if (!accepts.contains(",") && target.value.getProduces().getSortedMediaTypes().length == 1) { // the point of this branch is to eliminate the list creation and sorting
+                if (!accepts.contains(",") && target.value.getProduces().getSortedOriginalMediaTypes().length == 1) { // the point of this branch is to eliminate the list creation and sorting
                     MediaType acceptsMediaType = MediaType.valueOf(accepts.trim());
-                    MediaType providedMediaType = target.value.getProduces().getSortedMediaTypes()[0];
+                    MediaType providedMediaType = target.value.getProduces().getSortedOriginalMediaTypes()[0];
                     if (!providedMediaType.isCompatible(acceptsMediaType)) {
                         throw new NotAcceptableException();
                     }

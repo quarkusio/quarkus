@@ -21,11 +21,7 @@ public class ServerMediaType {
     private final MediaType[] sortedOriginalMediaTypes;
     private final MediaType hardCoded;
 
-    public ServerMediaType(String[] mediaTypesStrs, String charset) {
-        this(mediaTypesFromArray(mediaTypesStrs), charset);
-    }
-
-    private static List<MediaType> mediaTypesFromArray(String[] mediaTypesStrs) {
+    public static List<MediaType> mediaTypesFromArray(String[] mediaTypesStrs) {
         List<MediaType> mediaTypes = new ArrayList<>(mediaTypesStrs.length);
         for (String mediaTypesStr : mediaTypesStrs) {
             mediaTypes.add(MediaType.valueOf(mediaTypesStr));
@@ -33,11 +29,15 @@ public class ServerMediaType {
         return mediaTypes;
     }
 
-    public ServerMediaType(List<MediaType> mediaTypes, String charset) {
-        this(mediaTypes, charset, false);
-    }
-
-    public ServerMediaType(List<MediaType> mediaTypes, String charset, boolean deprioritizeWildcards) {
+    /**
+     *
+     * @param mediaTypes The original media types
+     * @param charset charset to use
+     * @param deprioritizeWildcards whether or not wildcard types should be carry less weight when sorting is performed
+     * @param useSuffix whether or not a media type whose subtype contains a suffix should swap the entire subtype with the
+     *        suffix
+     */
+    public ServerMediaType(List<MediaType> mediaTypes, String charset, boolean deprioritizeWildcards, boolean useSuffix) {
         if (mediaTypes.isEmpty()) {
             this.sortedOriginalMediaTypes = new MediaType[] { MediaType.WILDCARD_TYPE };
         } else {
@@ -87,6 +87,13 @@ public class ServerMediaType {
             MediaType m = new MediaType(existing.getType(), existing.getSubtype(), charset);
             sortedMediaTypes[i] = m;
         }
+        // use the suffix type if it exists when negotiating the type
+        if (useSuffix) {
+            for (int i = 0; i < sortedMediaTypes.length; i++) {
+                sortedMediaTypes[i] = MediaTypeHelper.withSuffixAsSubtype(sortedMediaTypes[i]);
+            }
+        }
+        // if there is only one media type, use it
         if (sortedMediaTypes.length == 1
                 && !(sortedMediaTypes[0].isWildcardType() || sortedMediaTypes[0].isWildcardSubtype())) {
             hardCoded = sortedMediaTypes[0];

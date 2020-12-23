@@ -273,4 +273,18 @@ public class MediaTypeHelper {
         }
         return false;
     }
+
+    /**
+     * If the supplied media type contains a suffix in the subtype, then this returns a new media type
+     * that uses the suffix as the subtype
+     */
+    public static MediaType withSuffixAsSubtype(MediaType mediaType) {
+        int plusIndex = mediaType.getSubtype().indexOf('+');
+        if ((plusIndex > -1) && (plusIndex < mediaType.getSubtype().length() - 1)) {
+            mediaType = new MediaType(mediaType.getType(),
+                    mediaType.getSubtype().substring(plusIndex + 1),
+                    mediaType.getParameters());
+        }
+        return mediaType;
+    }
 }

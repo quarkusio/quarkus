@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
+import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Version;
@@ -86,6 +87,7 @@ public final class DotNames {
     public static final DotName JPA_ID = DotName.createSimple(Id.class.getName());
     public static final DotName VERSION = DotName.createSimple(Version.class.getName());
     public static final DotName JPA_MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
+    public static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());;
     public static final DotName VOID = DotName.createSimple(void.class.getName());
     public static final DotName LONG = DotName.createSimple(Long.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());

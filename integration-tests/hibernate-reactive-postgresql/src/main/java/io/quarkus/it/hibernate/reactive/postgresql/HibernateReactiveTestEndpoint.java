@@ -123,7 +123,7 @@ public class HibernateReactiveTestEndpoint {
                 pgPool.query("DELETE FROM Pig").execute(),
                 pgPool.query("DELETE FROM Cow").execute())
                 .asTuple()
-                .then(() -> pgPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
+                .chain(() -> pgPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
     }
 
     private Uni<String> selectNameFromId(Integer id) {

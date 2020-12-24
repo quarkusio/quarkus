@@ -57,17 +57,6 @@ public class MethodNameParser {
 
     private static final Set<String> BOOLEAN_OPERATIONS = new HashSet<>(Arrays.asList("True", "False"));
 
-    private static final Set<DotName> SIMPLE_FIELD_TYPES = new HashSet<>(Arrays.asList(
-            DotNames.STRING,
-            DotNames.BOOLEAN, DotNames.PRIMITIVE_BOOLEAN,
-            DotNames.INTEGER, DotNames.PRIMITIVE_INTEGER,
-            DotNames.LONG, DotNames.PRIMITIVE_LONG,
-            DotNames.SHORT, DotNames.PRIMITIVE_SHORT,
-            DotNames.BYTE, DotNames.PRIMITIVE_BYTE,
-            DotNames.CHARACTER, DotNames.PRIMITIVE_CHAR,
-            DotNames.DOUBLE, DotNames.PRIMITIVE_DOUBLE,
-            DotNames.FLOAT, DotNames.PRIMITIVE_FLOAT));
-
     private final ClassInfo entityClass;
     private final IndexView indexView;
     private final List<ClassInfo> mappedSuperClassInfos;
@@ -380,7 +369,7 @@ public class MethodNameParser {
                 fieldPathBuilder.append('.');
             }
             fieldPathBuilder.append(fieldInfo.name());
-            if (!isSupportedHibernateType(fieldInfo.type().name())) {
+            if (!isHibernateProvidedBasicType(fieldInfo.type().name())) {
                 parentClassInfo = indexView.getClassByName(fieldInfo.type().name());
                 if (parentClassInfo == null) {
                     throw new IllegalStateException(
@@ -542,8 +531,8 @@ public class MethodNameParser {
         return mappedSuperClassInfoElements;
     }
 
-    private boolean isSupportedHibernateType(DotName dotName) {
-        return SIMPLE_FIELD_TYPES.contains(dotName);
+    private boolean isHibernateProvidedBasicType(DotName dotName) {
+        return DotNames.HIBERNATE_PROVIDED_BASIC_TYPES.contains(dotName);
     }
 
     private static class MutableReference<T> {

@@ -32,6 +32,9 @@ public final class QuarkusCodestartData {
         RESTEASY_EXAMPLE_RESOURCE_PATH("resteasy-example.resource.path"),
         RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-example.resource.class-name"),
 
+        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_PATH("resteasy-reactive-example.resource.path"),
+        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-reactive-example.resource.class-name"),
+
         SPRING_WEB_EXAMPLE_RESOURCE_PATH("spring-web-example.resource.path"),
         SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME("spring-web-example.resource.class-name"),
 
@@ -70,6 +73,9 @@ public final class QuarkusCodestartData {
 
         RESTEASY_EXAMPLE_RESOURCE_PATH("path"),
         RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
+
+        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_PATH("path"),
+        RESTEASY_REACTIVE_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),
 
         SPRING_WEB_EXAMPLE_RESOURCE_PATH("path"),
         SPRING_WEB_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName);

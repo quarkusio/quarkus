@@ -122,6 +122,8 @@ updates:
       - dependency-name: org.bouncycastle:bcprov-jdk15on
       - dependency-name: org.bouncycastle:bctls-jdk15on
       - dependency-name: org.bouncycastle:bc-fips
+      # Logstash
+      - dependency-name: biz.paluch.logging:logstash-gelf
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

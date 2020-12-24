@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.jsonb.runtime.serialisers;
 
+import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageBodyWriterUtil.*;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -8,7 +10,6 @@ import java.lang.reflect.Type;
 import javax.inject.Inject;
 import javax.json.bind.Jsonb;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -33,7 +34,7 @@ public class JsonbMessageBodyWriter implements ServerMessageBodyWriter<Object> {
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        httpHeaders.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+        setContentTypeIfNecessary(httpHeaders);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             entityStream.write(((String) o).getBytes());
         } else {
@@ -49,7 +50,7 @@ public class JsonbMessageBodyWriter implements ServerMessageBodyWriter<Object> {
     @Override
     public void writeResponse(Object o, Type genericType, ServerRequestContext context)
             throws WebApplicationException, IOException {
-        context.serverResponse().setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+        setContentTypeIfNecessary(context);
         OutputStream originalStream = context.getOrCreateOutputStream();
         OutputStream stream = new NoopCloseAndFlushOutputStream(originalStream);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...

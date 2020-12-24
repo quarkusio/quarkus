@@ -53,6 +53,7 @@ public class WebJarUtil {
             AppArtifact artifact, String rootFolderInJar)
             throws IOException {
 
+        rootFolderInJar = normalizeRootFolderInJar(rootFolderInJar);
         AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
 
         Path path = createDir(userApplication.getArtifactId(), artifact.getGroupId(), artifact.getArtifactId(),
@@ -128,6 +129,7 @@ public class WebJarUtil {
 
     public static Map<String, byte[]> copyResourcesForProduction(CurateOutcomeBuildItem curateOutcomeBuildItem,
             AppArtifact artifact, String rootFolderInJar) throws IOException {
+        rootFolderInJar = normalizeRootFolderInJar(rootFolderInJar);
         AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
 
         Map<String, byte[]> map = new HashMap<>();
@@ -308,5 +310,13 @@ public class WebJarUtil {
         try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
             return !dirStream.iterator().hasNext();
         }
+    }
+
+    private static String normalizeRootFolderInJar(String rootFolderInJar) {
+        if (rootFolderInJar.endsWith("/")) {
+            return rootFolderInJar;
+        }
+
+        return rootFolderInJar + "/";
     }
 }

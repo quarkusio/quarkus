@@ -384,7 +384,8 @@ class SmallRyeHealthProcessor {
                     HEALTH_UI_WEBJAR_ARTIFACT_ID);
 
             if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.devOrTest(curateOutcomeBuildItem, launchMode, artifact, HEALTH_UI_WEBJAR_PREFIX);
+                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, artifact,
+                        HEALTH_UI_WEBJAR_PREFIX);
                 updateApiUrl(tempPath.resolve(FILE_TO_UPDATE), healthPath);
 
                 smallRyeHealthBuildProducer.produce(new SmallRyeHealthBuildItem(tempPath.toAbsolutePath().toString(),
@@ -393,7 +394,8 @@ class SmallRyeHealthProcessor {
                 notFoundPageDisplayableEndpointProducer
                         .produce(new NotFoundPageDisplayableEndpointBuildItem(healthConfig.ui.rootPath + "/"));
             } else {
-                Map<String, byte[]> files = WebJarUtil.production(curateOutcomeBuildItem, artifact, HEALTH_UI_WEBJAR_PREFIX);
+                Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(curateOutcomeBuildItem, artifact,
+                        HEALTH_UI_WEBJAR_PREFIX);
 
                 for (Map.Entry<String, byte[]> file : files.entrySet()) {
 

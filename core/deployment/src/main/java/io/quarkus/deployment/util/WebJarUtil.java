@@ -49,7 +49,7 @@ public class WebJarUtil {
     private WebJarUtil() {
     }
 
-    public static Path devOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, LaunchModeBuildItem launchMode,
+    public static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, LaunchModeBuildItem launchMode,
             AppArtifact artifact, String rootFolderInJar)
             throws IOException {
 
@@ -121,8 +121,8 @@ public class WebJarUtil {
         return original;
     }
 
-    public static Map<String, byte[]> production(CurateOutcomeBuildItem curateOutcomeBuildItem, AppArtifact artifact,
-            String rootFolderInJar) throws IOException {
+    public static Map<String, byte[]> copyResourcesForProduction(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            AppArtifact artifact, String rootFolderInJar) throws IOException {
         AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
 
         Map<String, byte[]> map = new HashMap<>();

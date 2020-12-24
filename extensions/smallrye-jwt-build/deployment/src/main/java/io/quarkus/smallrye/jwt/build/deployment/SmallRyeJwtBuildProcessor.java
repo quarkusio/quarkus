@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.jwt.builder.deployment;
+package io.quarkus.smallrye.jwt.build.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

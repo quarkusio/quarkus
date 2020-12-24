@@ -447,7 +447,8 @@ public class SmallRyeGraphQLProcessor {
             AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, GRAPHQL_UI_WEBJAR_GROUP_ID,
                     GRAPHQL_UI_WEBJAR_ARTIFACT_ID);
             if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.devOrTest(curateOutcomeBuildItem, launchMode, artifact, GRAPHQL_UI_WEBJAR_PREFIX);
+                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, artifact,
+                        GRAPHQL_UI_WEBJAR_PREFIX);
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT);
 
                 smallRyeGraphQLBuildProducer.produce(new SmallRyeGraphQLBuildItem(tempPath.toAbsolutePath().toString(),
@@ -456,7 +457,8 @@ public class SmallRyeGraphQLProcessor {
                         .produce(new NotFoundPageDisplayableEndpointBuildItem(graphQLConfig.ui.rootPath + "/"));
 
             } else {
-                Map<String, byte[]> files = WebJarUtil.production(curateOutcomeBuildItem, artifact, GRAPHQL_UI_WEBJAR_PREFIX);
+                Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(curateOutcomeBuildItem, artifact,
+                        GRAPHQL_UI_WEBJAR_PREFIX);
 
                 for (Map.Entry<String, byte[]> file : files.entrySet()) {
 

@@ -70,7 +70,8 @@ public class SwaggerUiProcessor {
                     SWAGGER_UI_WEBJAR_ARTIFACT_ID);
 
             if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.devOrTest(curateOutcomeBuildItem, launchMode, artifact, SWAGGER_UI_WEBJAR_PREFIX);
+                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, artifact,
+                        SWAGGER_UI_WEBJAR_PREFIX);
                 // Update index.html
                 WebJarUtil.updateFile(tempPath.resolve("index.html"), generateIndexHtml(openApiPath, swaggerUiConfig));
 
@@ -78,7 +79,8 @@ public class SwaggerUiProcessor {
                         nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
                 displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(swaggerUiConfig.path + "/"));
             } else {
-                Map<String, byte[]> files = WebJarUtil.production(curateOutcomeBuildItem, artifact, SWAGGER_UI_WEBJAR_PREFIX);
+                Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(curateOutcomeBuildItem, artifact,
+                        SWAGGER_UI_WEBJAR_PREFIX);
                 ThemeHref theme = swaggerUiConfig.theme.orElse(ThemeHref.feeling_blue);
                 for (Map.Entry<String, byte[]> file : files.entrySet()) {
                     String fileName = file.getKey();

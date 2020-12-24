@@ -54,6 +54,16 @@ public class SimpleJsonTest {
 
         RestAssured
                 .with()
+                .body("{\"first\": \"Bob\", \"last\": \"Builder\"}")
+                .contentType("application/vnd.quarkus.person-v1+json")
+                .post("/simple/person-custom-mt-response")
+                .then()
+                .statusCode(201)
+                .contentType("application/vnd.quarkus.person-v1+json")
+                .body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
+
+        RestAssured
+                .with()
                 .body("[{\"first\": \"Bob\", \"last\": \"Builder\"}, {\"first\": \"Bob2\", \"last\": \"Builder2\"}]")
                 .contentType("application/json; charset=utf-8")
                 .post("/simple/people")

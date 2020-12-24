@@ -42,14 +42,14 @@ public class WebJarUtil {
 
     private static final Logger LOG = Logger.getLogger(WebJarUtil.class);
 
-    private final static String tmpDir = System.getProperty("java.io.tmpdir");
+    private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
     private static final String CUSTOM_MEDIA_FOLDER = "META-INF/branding/";
     private static final List<String> IGNORE_LIST = Arrays.asList("logo.png", "favicon.ico", "style.css");
 
     private WebJarUtil() {
     }
 
-    public static Path devOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, LaunchModeBuildItem launch,
+    public static Path devOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, LaunchModeBuildItem launchMode,
             AppArtifact artifact, String rootFolderInJar)
             throws IOException {
 
@@ -59,7 +59,7 @@ public class WebJarUtil {
                 artifact.getVersion());
 
         // Clean on non dev mode
-        if (!launch.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+        if (!launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
             IoUtils.createOrEmptyDir(path);
         }
 
@@ -292,7 +292,7 @@ public class WebJarUtil {
 
     private static Path createDir(String appName, String libgroupId, String libartifactId, String libversion) {
         try {
-            Path path = Paths.get(tmpDir, "quarkus", appName, libgroupId, libartifactId, libversion);
+            Path path = Paths.get(TMP_DIR, "quarkus", appName, libgroupId, libartifactId, libversion);
 
             if (!Files.exists(path)) {
                 Files.createDirectories(path);

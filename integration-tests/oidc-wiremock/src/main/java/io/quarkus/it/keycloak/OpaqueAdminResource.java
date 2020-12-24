@@ -12,8 +12,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@Path("/api/admin")
-public class AdminResource {
+@Path("/opaque/api/admin")
+public class OpaqueAdminResource {
 
     @Inject
     SecurityIdentity identity;

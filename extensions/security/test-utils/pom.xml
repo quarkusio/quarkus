@@ -12,6 +12,10 @@
     <artifactId>quarkus-security-test-utils</artifactId>
     <name>Quarkus - Security - Test Utilities</name>
 
+    <properties>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

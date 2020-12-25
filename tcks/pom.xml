@@ -29,6 +29,7 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
 
     <build>

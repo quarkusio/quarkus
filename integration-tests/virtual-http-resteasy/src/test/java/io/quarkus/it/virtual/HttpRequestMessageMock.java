@@ -11,12 +11,12 @@ import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.HttpStatusType;
 
-public class HttpRequestMessageMock implements HttpRequestMessage<Optional<byte[]>> {
+public class HttpRequestMessageMock implements HttpRequestMessage<Optional<String>> {
     protected URI uri;
     protected HttpMethod httpMethod;
     protected Map<String, String> headers = new HashMap<>();
     protected Map<String, String> queryParameters = new HashMap<>();
-    protected byte[] body;
+    protected String body;
 
     @Override
     public URI getUri() {
@@ -39,7 +39,7 @@ public class HttpRequestMessageMock implements HttpRequestMessage<Optional<byte[
     }
 
     @Override
-    public Optional<byte[]> getBody() {
+    public Optional<String> getBody() {
         return Optional.ofNullable(body);
     }
 
@@ -69,7 +69,7 @@ public class HttpRequestMessageMock implements HttpRequestMessage<Optional<byte[
         this.queryParameters = queryParameters;
     }
 
-    public void setBody(byte[] body) {
+    public void setBody(String body) {
         this.body = body;
     }
 }

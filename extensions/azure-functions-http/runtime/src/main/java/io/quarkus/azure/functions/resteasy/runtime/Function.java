@@ -12,7 +12,7 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 public class Function extends BaseFunction {
 
     public HttpResponseMessage run(
-            @HttpTrigger(name = "req") HttpRequestMessage<Optional<byte[]>> request,
+            @HttpTrigger(name = "req") HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) {
         if (!started) {
             HttpResponseMessage.Builder responseBuilder = request

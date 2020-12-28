@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -92,6 +93,11 @@ public class CreateProject {
 
     public CreateProject resourcePath(String resourcePath) {
         setValue(RESOURCE_PATH, resourcePath);
+        return this;
+    }
+
+    public CreateProject applicationProperties(Properties properties) {
+        setValue(APPLICATION_PROPERTIES, properties);
         return this;
     }
 

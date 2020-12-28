@@ -11,6 +11,7 @@ import io.quarkus.devtools.project.extensions.Extensions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -20,6 +21,7 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     boolean noDockerfiles;
     boolean noBuildToolWrapper;
     BuildTool buildTool = BuildTool.MAVEN;
+    Map<String, String> applicationProperties = new HashMap<>();
 
     QuarkusCodestartProjectInputBuilder() {
         super();
@@ -37,6 +39,11 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
 
     public QuarkusCodestartProjectInputBuilder addExtension(AppArtifactKey extension) {
         return this.addExtension(Extensions.toCoords(extension, null));
+    }
+
+    public QuarkusCodestartProjectInputBuilder addApplicationProperties(Map<String, String> properties) {
+        this.applicationProperties.putAll(properties);
+        return this;
     }
 
     @Override

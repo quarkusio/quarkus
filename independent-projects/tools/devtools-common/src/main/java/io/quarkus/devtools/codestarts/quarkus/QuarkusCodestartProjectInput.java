@@ -6,6 +6,7 @@ import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
 import io.quarkus.devtools.project.BuildTool;
 import java.util.Collection;
+import java.util.Map;
 
 public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
     private final BuildTool buildTool;
@@ -13,6 +14,7 @@ public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
     private final boolean noExamples;
     private final boolean noDockerfiles;
     private final boolean noBuildToolWrapper;
+    private final Map<String, String> applicationProperties;
 
     public QuarkusCodestartProjectInput(QuarkusCodestartProjectInputBuilder builder) {
         super(builder);
@@ -21,6 +23,7 @@ public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
         this.noExamples = builder.noExamples;
         this.noDockerfiles = builder.noDockerfiles;
         this.noBuildToolWrapper = builder.noBuildToolWrapper;
+        this.applicationProperties = builder.applicationProperties;
     }
 
     public static QuarkusCodestartProjectInputBuilder builder() {
@@ -29,6 +32,10 @@ public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
 
     public Collection<AppArtifactCoords> getExtensions() {
         return extensions;
+    }
+
+    public Map<String, String> getApplicationProperties() {
+        return applicationProperties;
     }
 
     public boolean noExamples() {

@@ -139,6 +139,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
+    @Parameter(property = "properties")
+    private Properties properties;
+
     @Component
     private Prompter prompter;
 
@@ -247,7 +250,8 @@ public class CreateProjectMojo extends AbstractMojo {
                     .packageName(packageName)
                     .extensions(extensions)
                     .legacyCodegen(legacyCodegen)
-                    .noExamples(noExamples);
+                    .noExamples(noExamples)
+                    .applicationProperties(properties);
             if (path != null) {
                 createProject.setValue("path", path);
             }

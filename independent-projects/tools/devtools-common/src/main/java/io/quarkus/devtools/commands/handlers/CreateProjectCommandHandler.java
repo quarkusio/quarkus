@@ -5,6 +5,7 @@ import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
 import static io.quarkus.devtools.commands.CreateProject.NO_EXAMPLES;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
+import static io.quarkus.devtools.project.codegen.ProjectGenerator.APPLICATION_PROPERTIES;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_ARTIFACT_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_VERSION;
@@ -77,6 +78,9 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         if (extensionsToAdd == null) {
             throw new QuarkusCommandException("Failed to create project because of invalid extensions");
         }
+
+        final Map<String, String> applicationProperties = invocation.getValue(APPLICATION_PROPERTIES, Collections.emptyMap());
+
         try {
             Map<String, Object> platformData = new HashMap<>();
             if (platformDescr.getMetadata().get("maven") != null) {
@@ -87,6 +91,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             }
             final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                     .addExtensions(extensionsToAdd)
+                    .addApplicationProperties(applicationProperties)
                     .buildTool(invocation.getQuarkusProject().getBuildTool())
                     .addCodestarts(invocation.getValue(CODESTARTS, new HashSet<>()))
                     .noExamples(invocation.getValue(NO_EXAMPLES, false))

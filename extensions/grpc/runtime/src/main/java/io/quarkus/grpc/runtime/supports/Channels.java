@@ -38,6 +38,8 @@ import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 public class Channels {
 
     private static final Logger LOGGER = Logger.getLogger(Channels.class.getName());
+    private static final String SERVERS_DELIMITER = ",";
+    private static final String PORT_DELIMITER = ":";
 
     private Channels() {
         // Avoid direct instantiation
@@ -51,8 +53,20 @@ public class Channels {
         }
 
         GrpcClientConfiguration config = instance.get().getConfiguration(name);
-        String host = config.host;
-        int port = config.port;
+        final Optional<String> servers = config.servers;
+        final Optional<String> host = config.host;
+        final Optional<Integer> port = config.port;
+        String target;
+        if (servers.isPresent()) {
+            target = validateServers(
+                    config.servers.orElseThrow(() -> new IllegalArgumentException("Unable to build server destination.")));
+
+        } else if (host.isPresent() && port.isPresent()) {
+            target = host.get() + ":" + host.get();
+        } else {
+            throw new IllegalArgumentException("Either provide a list of servers or a valid host and port");
+        }
+
         boolean plainText = !config.ssl.trustStore.isPresent();
         Optional<Boolean> usePlainText = config.plainText;
         if (usePlainText.isPresent()) {
@@ -85,7 +99,7 @@ public class Channels {
             context = sslContextBuilder.build();
         }
 
-        NettyChannelBuilder builder = NettyChannelBuilder.forAddress(host, port)
+        NettyChannelBuilder builder = NettyChannelBuilder.forTarget(target)
                 .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
                 .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
                 .maxHedgedAttempts(config.maxHedgedAttempts)
@@ -93,6 +107,10 @@ public class Channels {
                 .maxInboundMetadataSize(config.maxInboundMetadataSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
                 .maxInboundMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
                 .negotiationType(NegotiationType.valueOf(config.negotiationType.toUpperCase()));
+
+        if (config.loadBalancer.isPresent()) {
+            builder.defaultLoadBalancingPolicy(config.loadBalancer.get());
+        }
 
         if (config.retry) {
             builder.enableRetry();
@@ -145,6 +163,24 @@ public class Channels {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Validates a {@link #SERVERS_DELIMITER} delimited list of servers
+     *
+     * @param flatServers flat list of servers being validated
+     * @return the same provided list if valid
+     */
+    private static String validateServers(final String flatServers) {
+
+        final String[] servers = flatServers.split(SERVERS_DELIMITER);
+        for (final String server : servers) {
+            if (server.split(PORT_DELIMITER).length != 2) {
+                throw new IllegalArgumentException("Invalid server configuration: " + server);
+            }
+        }
+
+        return flatServers;
     }
 
     private static InputStream streamFor(Path path, String resourceName) {

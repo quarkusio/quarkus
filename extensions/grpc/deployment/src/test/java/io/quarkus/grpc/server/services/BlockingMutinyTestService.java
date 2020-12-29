@@ -22,7 +22,7 @@ public class BlockingMutinyTestService
 
     private void assertRunOnEventLoop() {
         assertThat(Vertx.currentContext()).isNotNull();
-        assertThat(Vertx.currentContext().isEventLoopContext());
+        assertThat(Vertx.currentContext().isEventLoopContext()).isTrue();
         assertThat(Thread.currentThread().getName()).contains("eventloop-thread");
     }
 

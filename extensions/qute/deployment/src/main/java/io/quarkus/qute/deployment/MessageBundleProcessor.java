@@ -151,7 +151,7 @@ public class MessageBundleProcessor {
                         if (defaultLocale.equals(locale) || previous != null) {
                             throw new MessageBundleException(String.format(
                                     "A localized message bundle interface [%s] already exists for locale %s: [%s]",
-                                    previous != null ? previous : bundleClass, localizedInterface));
+                                    previous != null ? previous : bundleClass, locale, localizedInterface));
                         }
                     }
 

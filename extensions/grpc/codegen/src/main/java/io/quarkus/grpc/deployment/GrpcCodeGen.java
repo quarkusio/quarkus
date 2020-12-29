@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.codehaus.plexus.util.io.RawInputStreamFacade;
 import org.jboss.logging.Logger;
@@ -76,40 +77,42 @@ public class GrpcCodeGen implements CodeGenProvider {
 
         try {
             if (Files.isDirectory(protoDir)) {
-                List<String> protoFiles = Files.walk(protoDir)
-                        .filter(Files::isRegularFile)
-                        .filter(path -> path.toString().endsWith(PROTO))
-                        .map(Path::toString)
-                        .map(this::escapeWhitespace)
-                        .collect(Collectors.toList());
-                if (!protoFiles.isEmpty()) {
-                    initExecutables(workDir, context.appModel());
+                try (Stream<Path> protoFilesPaths = Files.walk(protoDir)) {
+                    List<String> protoFiles = protoFilesPaths
+                            .filter(Files::isRegularFile)
+                            .filter(path -> path.toString().endsWith(PROTO))
+                            .map(Path::toString)
+                            .map(this::escapeWhitespace)
+                            .collect(Collectors.toList());
+                    if (!protoFiles.isEmpty()) {
+                        initExecutables(workDir, context.appModel());
 
-                    Collection<String> protosToImport = gatherImports(workDir.resolve("protoc-dependencies"), context);
+                        Collection<String> protosToImport = gatherImports(workDir.resolve("protoc-dependencies"), context);
 
-                    List<String> command = new ArrayList<>();
-                    command.add(executables.protoc.toString());
-                    for (String protoImportDir : protosToImport) {
-                        command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
+                        List<String> command = new ArrayList<>();
+                        command.add(executables.protoc.toString());
+                        for (String protoImportDir : protosToImport) {
+                            command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
+                        }
+
+                        command.addAll(asList("-I=" + escapeWhitespace(protoDir.toString()),
+                                "--plugin=protoc-gen-grpc=" + executables.grpc,
+                                "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
+                                "--q-grpc_out=" + outDir,
+                                "--grpc_out=" + outDir,
+                                "--java_out=" + outDir));
+                        command.addAll(protoFiles);
+
+                        ProcessBuilder processBuilder = new ProcessBuilder(command);
+
+                        final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
+                        int resultCode = process.waitFor();
+                        if (resultCode != 0) {
+                            throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
+                                    " to " + outDir.toAbsolutePath().toString());
+                        }
+                        return true;
                     }
-
-                    command.addAll(asList("-I=" + escapeWhitespace(protoDir.toString()),
-                            "--plugin=protoc-gen-grpc=" + executables.grpc,
-                            "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
-                            "--q-grpc_out=" + outDir,
-                            "--grpc_out=" + outDir,
-                            "--java_out=" + outDir));
-                    command.addAll(protoFiles);
-
-                    ProcessBuilder processBuilder = new ProcessBuilder(command);
-
-                    final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
-                    int resultCode = process.waitFor();
-                    if (resultCode != 0) {
-                        throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
-                                " to " + outDir.toAbsolutePath().toString());
-                    }
-                    return true;
                 }
             }
         } catch (IOException | InterruptedException e) {
@@ -182,7 +185,7 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     private String escapeWhitespace(String path) {
         if (OS.determineOS() == OS.LINUX) {
-            return path.replaceAll(" ", "\\ ");
+            return path.replace(" ", "\\ ");
         } else {
             return path;
         }

@@ -643,13 +643,13 @@ First, libsunec.so, the C library used for the SSL implementation:
 
 [source,bash]
 ----
-docker cp {container-id-from-above}:/opt/graalvm/jre/lib/amd64/libsunec.so src/main/zip.native/
+docker cp {container-id-from-above}:/opt/graalvm/lib/libsunec.so src/main/zip.native/
 ----
 
 Second, cacerts, the certificate store.  You may need to periodically obtain an updated copy, also.
 [source,bash]
 ----
-docker cp {container-id-from-above}:/opt/graalvm/jre/lib/security/cacerts src/main/zip.native/
+docker cp {container-id-from-above}:/opt/graalvm/lib/security/cacerts src/main/zip.native/
 ----
 
 Your final archive will look like this:

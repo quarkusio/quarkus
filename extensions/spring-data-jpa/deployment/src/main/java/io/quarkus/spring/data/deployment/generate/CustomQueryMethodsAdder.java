@@ -6,8 +6,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,6 +51,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     private static final Pattern SELECT_CLAUSE = Pattern.compile("select\\s+(.+)\\s+from", Pattern.CASE_INSENSITIVE);
     private static final Pattern FIELD_ALIAS = Pattern.compile(".*\\s+[as|AS]+\\s+([\\w\\.]+)");
     private static final Pattern FIELD_NAME = Pattern.compile("(\\w+).*");
+    private static final Pattern NAMED_PARAMETER = Pattern.compile("\\:(\\w+)\\b");
 
     private final IndexView index;
     private final ClassOutput nonBeansClassOutput;
@@ -150,6 +153,18 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             try (MethodCreator methodCreator = classCreator.getMethodCreator(method.name(), methodReturnTypeDotName.toString(),
                     methodParameterTypesStr)) {
 
+                Set<String> usedNamedParameters = extractNamedParameters(queryString);
+                if (!usedNamedParameters.isEmpty()) {
+                    Set<String> missingParameters = new LinkedHashSet<>(usedNamedParameters);
+                    missingParameters.removeAll(namedParameterToIndex.keySet());
+                    if (!missingParameters.isEmpty()) {
+                        throw new IllegalArgumentException(
+                                method.name() + " of Repository " + repositoryClassInfo
+                                        + " is missing the named parameters " + missingParameters
+                                        + ", provided are " + namedParameterToIndex.keySet()
+                                        + ". Ensure that the parameters are correctly annotated with @Param.");
+                    }
+                }
                 if (isModifying) {
                     methodCreator.addAnnotation(Transactional.class);
                     AnnotationInstance modifyingAnnotation = method.annotation(DotNames.SPRING_DATA_MODIFYING);
@@ -330,6 +345,15 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             generateCustomResultTypes(interfaceName, implName, customResultTypes.get(implName));
             customClassCreatedCallback.accept(implName.toString());
         }
+    }
+
+    private Set<String> extractNamedParameters(String queryString) {
+        Set<String> namedParameters = new LinkedHashSet<>();
+        final Matcher matcher = NAMED_PARAMETER.matcher(queryString);
+        while (matcher.find()) {
+            namedParameters.add(matcher.group(1));
+        }
+        return namedParameters;
     }
 
     // we currently only support the 'value' attribute of @Query

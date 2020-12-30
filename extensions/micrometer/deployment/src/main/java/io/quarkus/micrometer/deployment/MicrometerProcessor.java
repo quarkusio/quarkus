@@ -249,6 +249,7 @@ public class MicrometerProcessor {
                     break;
                 case TYPE:
                     classes.add(target.asClass().name().toString());
+                    break;
                 default:
                     break;
             }

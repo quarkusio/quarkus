@@ -209,7 +209,7 @@ public class JsonExporter {
         } else {
             return ";" + tags.stream()
                     .map(tag -> tag.getKey() + "=" + tag.getValue()
-                            .replaceAll(";", "_"))
+                            .replace(";", "_"))
                     .collect(Collectors.joining(";"));
         }
     }

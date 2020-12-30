@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.commons.compress.archivers.zip.UnixStat;
 import org.apache.commons.compress.archivers.zip.X5455_ExtendedTimestamp;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -35,8 +36,9 @@ public final class QuarkusProjectCompress {
 
     public static void zip(final Path quarkusProjectDirPath, final Path targetZipPath, final boolean includeProjectDirectory,
             final Long withSpecificFilesTime) throws IOException {
-        try (final ZipArchiveOutputStream zaos = new ZipArchiveOutputStream(Files.newOutputStream(targetZipPath))) {
-            Files.walk(quarkusProjectDirPath)
+        try (final ZipArchiveOutputStream zaos = new ZipArchiveOutputStream(Files.newOutputStream(targetZipPath));
+                Stream<Path> paths = Files.walk(quarkusProjectDirPath)) {
+            paths
                     .filter((path) -> includeProjectDirectory || !quarkusProjectDirPath.equals(path))
                     .forEach((path) -> {
                         try {

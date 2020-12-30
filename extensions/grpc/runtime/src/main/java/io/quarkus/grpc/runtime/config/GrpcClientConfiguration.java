@@ -12,32 +12,17 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class GrpcClientConfiguration {
 
-    public static final String DEFAULT_PORT = "9000";
-    public static final String DEFAULT_LOAD_BALANCER = "pick_first";
-
     /**
      * The gRPC service port.
      */
-    @ConfigItem(defaultValue = DEFAULT_PORT)
-    public Optional<Integer> port;
+    @ConfigItem(defaultValue = "9000")
+    public int port;
 
     /**
      * The host name / IP on which the service is exposed.
      */
     @ConfigItem
-    public Optional<String> host;
-
-    /**
-     * A comma delimited list of servers where the service is exposed (ex.: <host1>:<port1>,<host2>:<port2>,...)
-     */
-    @ConfigItem
-    public Optional<String> servers;
-
-    /**
-     * Name of load balancer. There are two baseline load balancers, pick_first and round_robin.
-     */
-    @ConfigItem(defaultValue = DEFAULT_LOAD_BALANCER)
-    public Optional<String> loadBalancer;
+    public String host;
 
     /**
      * The SSL/TLS config.

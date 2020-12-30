@@ -63,8 +63,9 @@ public class Pods {
     @Path("/{namespace}")
     public Response createNew(@PathParam("namespace") String namespace) {
         return Response
-                .ok(kubernetesClient.pods().inNamespace(namespace).createNew().withNewMetadata().withResourceVersion("12345")
-                        .endMetadata().done())
+                .ok(kubernetesClient.pods().inNamespace(namespace)
+                        .create(new PodBuilder().withNewMetadata().withResourceVersion("12345")
+                                .endMetadata().build()))
                 .build();
     }
 }

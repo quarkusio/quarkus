@@ -17,8 +17,6 @@ import org.mockito.Mockito;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.ConfigMapList;
-import io.fabric8.kubernetes.api.model.DoneableConfigMap;
-import io.fabric8.kubernetes.api.model.DoneableSecret;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.SecretList;
@@ -166,11 +164,11 @@ public class KubernetesConfigSourceProviderTest {
     }
 
     private void stubNamespacedConfigMap(KubernetesClient kubernetesClient, ConfigMap configMap, String configMapName) {
-        MixedOperation<ConfigMap, ConfigMapList, DoneableConfigMap, Resource<ConfigMap, DoneableConfigMap>> mixedOperation = (MixedOperation<ConfigMap, ConfigMapList, DoneableConfigMap, Resource<ConfigMap, DoneableConfigMap>>) mock(
+        MixedOperation<ConfigMap, ConfigMapList, Resource<ConfigMap>> mixedOperation = (MixedOperation<ConfigMap, ConfigMapList, Resource<ConfigMap>>) mock(
                 MixedOperation.class);
         when(kubernetesClient.configMaps()).thenReturn(mixedOperation);
-        Resource<ConfigMap, DoneableConfigMap> resource = (Resource<ConfigMap, DoneableConfigMap>) mock(Resource.class);
-        NonNamespaceOperation<ConfigMap, ConfigMapList, DoneableConfigMap, Resource<ConfigMap, DoneableConfigMap>> nsClient = (NonNamespaceOperation<ConfigMap, ConfigMapList, DoneableConfigMap, Resource<ConfigMap, DoneableConfigMap>>) mock(
+        Resource<ConfigMap> resource = (Resource<ConfigMap>) mock(Resource.class);
+        NonNamespaceOperation<ConfigMap, ConfigMapList, Resource<ConfigMap>> nsClient = (NonNamespaceOperation<ConfigMap, ConfigMapList, Resource<ConfigMap>>) mock(
                 NonNamespaceOperation.class);
         when(mixedOperation.inNamespace("demo")).thenReturn(nsClient);
         when(nsClient.withName(configMapName)).thenReturn(resource);
@@ -183,10 +181,10 @@ public class KubernetesConfigSourceProviderTest {
     }
 
     private void stubConfigMap(KubernetesClient kubernetesClient, ConfigMap configMap, String configMapName) {
-        MixedOperation<ConfigMap, ConfigMapList, DoneableConfigMap, Resource<ConfigMap, DoneableConfigMap>> mixedOperation = (MixedOperation<ConfigMap, ConfigMapList, DoneableConfigMap, Resource<ConfigMap, DoneableConfigMap>>) mock(
+        MixedOperation<ConfigMap, ConfigMapList, Resource<ConfigMap>> mixedOperation = (MixedOperation<ConfigMap, ConfigMapList, Resource<ConfigMap>>) mock(
                 MixedOperation.class);
         when(kubernetesClient.configMaps()).thenReturn(mixedOperation);
-        Resource<ConfigMap, DoneableConfigMap> resource = (Resource<ConfigMap, DoneableConfigMap>) mock(Resource.class);
+        Resource<ConfigMap> resource = (Resource<ConfigMap>) mock(Resource.class);
         when(mixedOperation.withName(configMapName)).thenReturn(resource);
         when(resource.get()).thenReturn(configMap);
         Config kubernetesConfig = mock(Config.class);
@@ -196,10 +194,10 @@ public class KubernetesConfigSourceProviderTest {
     }
 
     private void stubSecrets(KubernetesClient kubernetesClient, Secret secret, String secretName) {
-        MixedOperation<Secret, SecretList, DoneableSecret, Resource<Secret, DoneableSecret>> mixedOperation = (MixedOperation<Secret, SecretList, DoneableSecret, Resource<Secret, DoneableSecret>>) mock(
+        MixedOperation<Secret, SecretList, Resource<Secret>> mixedOperation = (MixedOperation<Secret, SecretList, Resource<Secret>>) mock(
                 MixedOperation.class);
         when(kubernetesClient.secrets()).thenReturn(mixedOperation);
-        Resource<Secret, DoneableSecret> resource = (Resource<Secret, DoneableSecret>) mock(Resource.class);
+        Resource<Secret> resource = (Resource<Secret>) mock(Resource.class);
         when(mixedOperation.withName(secretName)).thenReturn(resource);
         when(resource.get()).thenReturn(secret);
         Config kubernetesConfig = mock(Config.class);

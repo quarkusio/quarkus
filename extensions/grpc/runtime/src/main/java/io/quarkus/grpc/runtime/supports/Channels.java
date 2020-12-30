@@ -75,7 +75,7 @@ public class Channels {
 
             if (certificatePath != null && keyPath != null) {
                 try (InputStream certificate = streamFor(certificatePath, "certificate");
-                                InputStream key = streamFor(keyPath, "key")) {
+                        InputStream key = streamFor(keyPath, "key")) {
                     sslContextBuilder.keyManager(certificate, key);
                 } catch (IOException e) {
                     throw new UncheckedIOException("Configuring gRPC client certificate failed", e);
@@ -86,13 +86,13 @@ public class Channels {
         }
 
         NettyChannelBuilder builder = NettyChannelBuilder.forAddress(host, port)
-                                                         .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
-                                                         .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
-                                                         .maxHedgedAttempts(config.maxHedgedAttempts)
-                                                         .maxRetryAttempts(config.maxRetryAttempts)
-                                                         .maxInboundMetadataSize(config.maxInboundMetadataSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
-                                                         .maxInboundMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
-                                                         .negotiationType(NegotiationType.valueOf(config.negotiationType.toUpperCase()));
+                .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
+                .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
+                .maxHedgedAttempts(config.maxHedgedAttempts)
+                .maxRetryAttempts(config.maxRetryAttempts)
+                .maxInboundMetadataSize(config.maxInboundMetadataSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
+                .maxInboundMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
+                .negotiationType(NegotiationType.valueOf(config.negotiationType.toUpperCase()));
 
         if (config.retry) {
             builder.enableRetry();
@@ -139,7 +139,7 @@ public class Channels {
 
         // Client-side interceptors
         InstanceHandle<GrpcClientInterceptorContainer> interceptors = Arc.container()
-                                                                         .instance(GrpcClientInterceptorContainer.class);
+                .instance(GrpcClientInterceptorContainer.class);
         for (ClientInterceptor clientInterceptor : interceptors.get().getSortedInterceptors()) {
             builder.intercept(clientInterceptor);
         }
@@ -149,7 +149,7 @@ public class Channels {
 
     private static InputStream streamFor(Path path, String resourceName) {
         final InputStream resource = Thread.currentThread().getContextClassLoader()
-                                           .getResourceAsStream(path.toString());
+                .getResourceAsStream(path.toString());
         if (resource != null) {
             return resource;
         } else {

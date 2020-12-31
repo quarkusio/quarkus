@@ -112,7 +112,7 @@
         <jboss-threads.version>3.2.0.Final</jboss-threads.version>
         <vertx.version>3.9.5</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
-        <httpcore.version>4.4.13</httpcore.version>
+        <httpcore.version>4.4.14</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
         <cronutils.version>9.1.3</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
@@ -186,7 +186,7 @@
         <antlr.version>4.8</antlr.version>
         <quarkus-security.version>1.1.3.Final</quarkus-security.version>
         <keycloak.version>11.0.3</keycloak.version>
-        <logstash-gelf.version>1.14.0</logstash-gelf.version>
+        <logstash-gelf.version>1.14.1</logstash-gelf.version>
         <jsch.version>0.1.55</jsch.version>
         <jzlib.version>1.1.1</jzlib.version>
         <checker-qual.version>2.5.2</checker-qual.version>

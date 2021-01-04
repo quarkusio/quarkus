@@ -52,7 +52,7 @@ public @interface ResourceProperties {
     boolean hal() default false;
 
     /**
-     * Name that should be used then generating a HAL collection response.
+     * Name that should be used when generating a HAL collection response.
      * <p>
      * Default: hyphenated resource name without a suffix. Ignored suffixes are `Controller` and `Resource`.
      */

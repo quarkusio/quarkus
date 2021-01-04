@@ -12,13 +12,13 @@ A lot of web applications are monotonous CRUD applications with REST APIs that a
 To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
 While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
-Currently this extension supports Hibernate ORM with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
+Currently this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
 
 include::./status-include.adoc[]
 
 == Setting up REST Data with Panache
 
-To begin with:
+=== Hibernate ORM
 
 * Add the required dependencies to your `pom.xml`
 ** Hibernate ORM REST Data with Panache extension (`quarkus-hibernate-orm-rest-data-panache`)
@@ -44,12 +44,35 @@ To begin with:
 ----
 
 * Implement the Panache entities and/or repositories as explained in the link:hibernate-orm-panache[Hibernate ORM with Panache guide].
-* Define the interfaces for generation as explained in the sections below.
+* Define the interfaces for generation as explained in the resource generation section.
+
+=== MongoDB
+
+* Add the required dependencies to your `pom.xml`
+** MongoDB REST Data with Panache extension (`quarkus-mongodb-rest-data-panache`)
+** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`)
+
+[source,xml]
+----
+<dependencies>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
+    </dependency>
+</dependencies>
+----
+
+* Implement the Panache entities and/or repositories as explained in the link:mongodb-panache[MongoDB with Panache guide].
+* Define the interfaces for generation as explained in the resource generation section.
 
 == Generating resources
 
 REST Data with Panache generates JAX-RS resources based on the interfaces available in your application.
-For each entity and repository that you want to generate, provide an interface that extends either `PanacheEntityResource` or `PanacheRepositoryResource` interface.
+For each entity and repository that you want to generate, provide a resource interface.
 _Do not implement these interfaces and don't provide custom methods because they will be ignored._ You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
 
 === PanacheEntityResource
@@ -72,10 +95,30 @@ public interface PeopleResource extends PanacheRepositoryResource<PersonReposito
 }
 ----
 
+=== PanacheMongoEntityResource
+
+If your application has an entity (e.g. `Person`) that extends either `PanacheMongoEntity` or `PanacheMongoEntityBase` class, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+
+[source,java]
+----
+public interface PeopleResource extends PanacheMongoEntityResource<Person, Long> {
+}
+----
+
+=== PanacheMongoRepositoryResource
+
+If your application has a simple entity (e.g. `Person`) and a repository (e.g. `PersonRepository`) that implements either `PanacheMongoRepository` or `PanacheMongoRepositoryBase` interface, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+
+[source,java]
+----
+public interface PeopleResource extends PanacheMongoRepositoryResource<PersonRepository, Person, Long> {
+}
+----
+
 === The generated resource
 
 The generated resources will be functionally equivalent for both entities and repositories.
-The only difference being the particular data access pattern in use.
+The only difference being the particular data access pattern and data storage in use.
 
 If you have defined one of the `PeopleResource` interfaces mentioned above, this extension will generate its implementation using a particular data access strategy.
 The implemented class then will be used by a generated JAX-RS resource, which will look like this:
@@ -171,6 +214,7 @@ Request page index and size are taken from the `page` and `size` query parameter
 Default is `true`.
 * `hal` - in addition to the standard `application/json` responses, generates additional methods that can return `application/hal+json` responses if requested via an `Accept` header.
 Default is `false`.
+* `halCollectionName` - name that should be used when generating a hal collection response. Default name is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
 
 `@MethodProperties`
 

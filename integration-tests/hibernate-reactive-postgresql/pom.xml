@@ -98,12 +98,18 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemProperties>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                    </systemProperties>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemProperties>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                    </systemProperties>
                 </configuration>
             </plugin>
             <plugin>

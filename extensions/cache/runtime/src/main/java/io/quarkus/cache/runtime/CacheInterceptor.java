@@ -1,14 +1,18 @@
 package io.quarkus.cache.runtime;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.interceptor.Interceptor.Priority;
 import javax.interceptor.InvocationContext;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
+import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheManager;
 
 public abstract class CacheInterceptor {
@@ -18,28 +22,68 @@ public abstract class CacheInterceptor {
     @Inject
     CacheManager cacheManager;
 
-    @SuppressWarnings("unchecked")
-    protected <T extends Annotation> List<T> getInterceptorBindings(InvocationContext context, Class<T> bindingClass) {
-        List<T> bindings = new ArrayList<>();
-        for (Annotation binding : InterceptorBindings.getInterceptorBindings(context)) {
-            if (bindingClass.isInstance(binding)) {
-                bindings.add((T) binding);
+    /*
+     * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve the
+     * interceptor bindings stored by Arc in the invocation context data (very good performance-wise). But sometimes the
+     * interception is managed by another CDI interceptors implementation. It can happen for example while using caching
+     * annotations on a MicroProfile REST Client method. In that case, we have no other choice but to rely on reflection (with
+     * underlying synchronized blocks which are bad for performances) to retrieve the interceptor bindings.
+     */
+    protected <T extends Annotation> CacheInterceptionContext<T> getInterceptionContext(InvocationContext invocationContext,
+            Class<T> interceptorBindingClass) {
+        return getArcCacheInterceptionContext(invocationContext, interceptorBindingClass)
+                .orElse(getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass));
+    }
+
+    private <T extends Annotation> Optional<CacheInterceptionContext<T>> getArcCacheInterceptionContext(
+            InvocationContext invocationContext, Class<T> interceptorBindingClass) {
+        Set<Annotation> bindings = InterceptorBindings.getInterceptorBindings(invocationContext);
+        if (bindings == null) {
+            // This should only happen when the interception is not managed by Arc.
+            return Optional.empty();
+        }
+        CacheInterceptionContext<T> result = new CacheInterceptionContext<>();
+        for (Annotation binding : bindings) {
+            if (binding instanceof CacheKeyParameterPositions) {
+                short[] cacheKeyParameterPositions = ((CacheKeyParameterPositions) binding).value();
+                result.setCacheKeyParameterPositions(cacheKeyParameterPositions);
+            } else if (interceptorBindingClass.isInstance(binding)) {
+                result.getInterceptorBindings().add(cast(binding, interceptorBindingClass));
             }
         }
-        return bindings;
+        return Optional.of(result);
     }
 
-    protected <T extends Annotation> T getInterceptorBinding(InvocationContext context, Class<T> bindingClass) {
-        return getInterceptorBindings(context, bindingClass).get(0);
-    }
-
-    protected short[] getCacheKeyParameterPositions(InvocationContext context) {
-        List<CacheKeyParameterPositions> bindings = getInterceptorBindings(context, CacheKeyParameterPositions.class);
-        if (bindings.isEmpty()) {
-            return new short[0];
-        } else {
-            return bindings.get(0).value();
+    private <T extends Annotation> CacheInterceptionContext<T> getNonArcCacheInterceptionContext(
+            InvocationContext invocationContext, Class<T> interceptorBindingClass) {
+        CacheInterceptionContext<T> result = new CacheInterceptionContext<>();
+        for (Annotation annotation : invocationContext.getMethod().getAnnotations()) {
+            if (interceptorBindingClass.isInstance(annotation)) {
+                result.getInterceptorBindings().add(cast(annotation, interceptorBindingClass));
+            }
         }
+        Parameter[] parameters = invocationContext.getMethod().getParameters();
+        if (parameters.length > 0) {
+            List<Short> cacheKeyParameterPositions = new ArrayList<>();
+            for (short i = 0; i < parameters.length; i++) {
+                if (parameters[i].isAnnotationPresent(CacheKey.class)) {
+                    cacheKeyParameterPositions.add(i);
+                }
+            }
+            if (!cacheKeyParameterPositions.isEmpty()) {
+                short[] cacheKeyParameterPositionsArray = new short[cacheKeyParameterPositions.size()];
+                for (int i = 0; i < cacheKeyParameterPositions.size(); i++) {
+                    cacheKeyParameterPositionsArray[i] = cacheKeyParameterPositions.get(i);
+                }
+                result.setCacheKeyParameterPositions(cacheKeyParameterPositionsArray);
+            }
+        }
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Annotation> T cast(Annotation annotation, Class<T> interceptorBindingClass) {
+        return (T) annotation;
     }
 
     protected Object getCacheKey(AbstractCache cache, short[] cacheKeyParameterPositions, Object[] methodParameterValues) {

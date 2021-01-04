@@ -6,6 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import javax.enterprise.util.Nonbinding;
+import javax.interceptor.InterceptorBinding;
 
 /**
  * When a method annotated with {@link CacheResult} is invoked, Quarkus will compute a cache key and use it to check in the
@@ -29,8 +30,9 @@ import javax.enterprise.util.Nonbinding;
  * <p>
  * The underlying caching provider can be chosen and configured in the Quarkus {@link application.properties} file.
  */
+@InterceptorBinding
+@Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
 public @interface CacheResult {
 
     /**

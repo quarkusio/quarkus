@@ -35,8 +35,7 @@ public final class HaltedScheduleJobTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Starter.class)
                     .addAsResource(new StringAsset("quarkus.quartz.enabled=true\n" +
-                            "quarkus.quartz.force-start=true\n" +
-                            "quarkus.quartz.halt-start=true"),
+                            "quarkus.quartz.start-mode=halted"),
                             "application.properties"));
     @Inject
     Instance<org.quartz.Scheduler> quartzScheduler;

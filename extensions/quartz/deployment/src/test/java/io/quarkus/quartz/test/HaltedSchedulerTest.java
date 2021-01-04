@@ -25,8 +25,7 @@ public final class HaltedSchedulerTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("quarkus.quartz.enabled=true\n" +
-                            "quarkus.quartz.force-start=true\n" +
-                            "quarkus.quartz.halt-start=true"),
+                            "quarkus.quartz.start-mode=halted"),
                             "application.properties"));
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject

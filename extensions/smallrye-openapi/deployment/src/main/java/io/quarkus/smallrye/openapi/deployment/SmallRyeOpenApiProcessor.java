@@ -375,7 +375,7 @@ public class SmallRyeOpenApiProcessor {
 
         // Only scan if either RESTEasy, Quarkus REST, Spring Web or Vert.x Web (with @Route) is used
         boolean isRestEasy = capabilities.isPresent(Capability.RESTEASY);
-        boolean isQuarkusRest = capabilities.isPresent(Capability.QUARKUS_REST);
+        boolean isQuarkusRest = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
         boolean isSpring = capabilities.isPresent(Capability.SPRING_WEB);
         boolean isVertx = isUsingVertxRoute(index);
         return isRestEasy || isQuarkusRest || isSpring || isVertx;
@@ -429,7 +429,7 @@ public class SmallRyeOpenApiProcessor {
 
     private String[] getScanners(Capabilities capabilities, IndexView index) {
         List<String> scanners = new ArrayList<>();
-        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.QUARKUS_REST)) {
+        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             scanners.add(JAX_RS);
         }
         if (capabilities.isPresent(Capability.SPRING_WEB)) {

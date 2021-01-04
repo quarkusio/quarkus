@@ -56,7 +56,7 @@ public class VertxBinderProcessor {
         if (capabilities.isPresent(Capability.RESTEASY)) {
             resteasyJaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(RESTEASY_CONTAINER_FILTER_CLASS_NAME));
             turnVertxBinderFilterIntoBean(additionalBeans, RESTEASY_CONTAINER_FILTER_CLASS_NAME);
-        } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
+        } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             customContainerRequestFilter
                     .produce(new CustomContainerRequestFilterBuildItem(QUARKUS_REST_CONTAINER_FILTER_CLASS_NAME));
             turnVertxBinderFilterIntoBean(additionalBeans, QUARKUS_REST_CONTAINER_FILTER_CLASS_NAME);

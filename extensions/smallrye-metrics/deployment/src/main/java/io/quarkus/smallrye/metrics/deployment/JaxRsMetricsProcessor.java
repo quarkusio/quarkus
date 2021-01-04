@@ -65,7 +65,7 @@ public class JaxRsMetricsProcessor {
             } else if (capabilities.isPresent(Capability.RESTEASY)) {
                 jaxRsProviders.produce(
                         new ResteasyJaxrsProviderBuildItem(SMALLRYE_QUARKUS_RESTEASY_FILTER_CLASS_NAME));
-            } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
+            } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
                 customContainerResponseFilters
                         .produce(new CustomContainerResponseFilterBuildItem(SMALLRYE_QUARKUS_REST_FILTER_CLASS_NAME));
             }

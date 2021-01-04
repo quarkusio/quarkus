@@ -28,7 +28,7 @@ public enum Capability {
     RESTEASY,
     RESTEASY_JSON,
     RESTEASY_MUTINY,
-    QUARKUS_REST,
+    RESTEASY_REACTIVE,
     JWT,
     TIKA,
     MONGODB_PANACHE,

@@ -327,6 +327,7 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
 * link:spring-security[Quarkus - Extension for Spring Security]
 * link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]

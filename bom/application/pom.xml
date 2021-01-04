@@ -177,7 +177,7 @@
         <kubernetes-client.version>5.0.0</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>2.1.SP1</quarkus-spring-data-api.version>
+        <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <htmlunit.version>2.40.0</htmlunit.version>
@@ -1489,6 +1489,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-data-jpa-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-data-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-data-rest-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4608,6 +4618,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-data-commons-api</artifactId>
+                <version>${quarkus-spring-data-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-data-rest-api</artifactId>
                 <version>${quarkus-spring-data-api.version}</version>
             </dependency>
             <dependency>

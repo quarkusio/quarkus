@@ -630,3 +630,4 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
 * link:spring-cache[Quarkus - Extension for Spring Cache]
 * link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
+* link:spring-data-rest[Quarkus - Extension for Spring Data REST]

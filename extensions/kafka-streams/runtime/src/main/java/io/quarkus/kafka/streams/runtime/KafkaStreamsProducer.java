@@ -1,5 +1,7 @@
 package io.quarkus.kafka.streams.runtime;
 
+import static io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig.DEFAULT_KAFKA_BROKER;
+
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collection;
@@ -36,6 +38,7 @@ import org.apache.kafka.streams.KafkaStreams.StateListener;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.StateRestoreListener;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -79,6 +82,11 @@ public class KafkaStreamsProducer {
         Properties buildTimeProperties = kafkaStreamsSupport.getProperties();
 
         String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers);
+        if (DEFAULT_KAFKA_BROKER.equalsIgnoreCase(bootstrapServersConfig)) {
+            // Try to see if kafka.bootstrap.servers is set, if so, use that value, if not, keep localhost:9092
+            bootstrapServersConfig = ConfigProvider.getConfig().getOptionalValue("kafka.bootstrap.servers", String.class)
+                    .orElse(bootstrapServersConfig);
+        }
         Properties kafkaStreamsProperties = getStreamsProperties(buildTimeProperties, bootstrapServersConfig, runtimeConfig);
         this.kafkaAdminClient = Admin.create(getAdminClientConfig(kafkaStreamsProperties));
 

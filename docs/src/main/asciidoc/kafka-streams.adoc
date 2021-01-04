@@ -468,6 +468,8 @@ e.g. via environment variables or system properties.
 `topics` is specific to Quarkus: the application will wait for all the given topics to exist before launching the Kafka Streams engine.
 This is to done to gracefully await the creation of topics that don't yet exist at application startup time.
 
+TIP: Alternatively, you can use `kafka.bootstrap.servers` instead of `quarkus.kafka-streams.bootstrap-servers` as you did in the _generator_ project above.
+
 All the properties within the `kafka-streams` namespace are passed through as-is to the Kafka Streams engine.
 Changing their values requires a rebuild of the application.
 
@@ -553,6 +555,8 @@ networks:
 
 To launch all the containers, building the `producer` and `aggregator` container images,
 run `docker-compose up --build`.
+
+TIP: Instead of `QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS`, you can use `KAFKA_BOOTSTRAP_SERVERS`.
 
 You should see log statements from the `producer` application about messages being sent to the "temperature-values" topic.
 

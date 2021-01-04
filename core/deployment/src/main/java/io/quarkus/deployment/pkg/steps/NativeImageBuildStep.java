@@ -767,9 +767,10 @@ public class NativeImageBuildStep {
 
             static final Version VERSION_20_1 = new Version("GraalVM 20.1", 20, 1, Distribution.ORACLE);
             static final Version VERSION_20_2 = new Version("GraalVM 20.2", 20, 2, Distribution.ORACLE);
+            static final Version VERSION_20_3 = new Version("GraalVM 20.3", 20, 3, Distribution.ORACLE);
 
             static final Version MINIMUM = VERSION_20_1;
-            static final Version CURRENT = VERSION_20_2;
+            static final Version CURRENT = VERSION_20_3;
 
             final String fullVersion;
             final int major;

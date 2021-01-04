@@ -12,6 +12,11 @@
     <artifactId>quarkus-panache-mock</artifactId>
     <name>Quarkus - Panache - Mock</name>
     <description>Mocking with Panache</description>
+
+    <properties>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

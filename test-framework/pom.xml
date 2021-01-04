@@ -13,6 +13,11 @@
     <artifactId>quarkus-test-framework</artifactId>
     <name>Quarkus - Test Framework</name>
     <packaging>pom</packaging>
+
+    <properties>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
+    </properties>
+
     <modules>
         <module>artemis</module>
         <module>common</module>

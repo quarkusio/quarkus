@@ -131,6 +131,8 @@
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
+
+        <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
     </properties>
 
     <dependencyManagement>
@@ -443,6 +445,34 @@
                                         </includes>
                                     </bannedDependencies>
                                 </rules>
+                            </configuration>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>enforce-test-deps-scope</id>
+                            <configuration>
+                                <rules>
+                                    <bannedDependencies>
+                                        <excludes>
+                                            <exclude>io.quarkus:quarkus-test-*</exclude>
+                                            <exclude>io.rest-assured:*</exclude>
+                                            <exclude>org.assertj:*</exclude>
+                                            <exclude>org.junit.jupiter:*</exclude>
+                                            <exclude>org.testcontainers:*</exclude>
+                                        </excludes>
+                                        <includes>
+                                            <include>io.quarkus:quarkus-test-*:*:*:test</include>
+                                            <include>io.rest-assured:*:*:*:test</include>
+                                            <include>org.assertj:*:*:*:test</include>
+                                            <include>org.junit.jupiter:*:*:*:test</include>
+                                            <include>org.testcontainers:*:*:*:test</include>
+                                        </includes>
+                                        <message>Found test dependencies with wrong scope:</message>
+                                    </bannedDependencies>
+                                </rules>
+                                <skip>${enforce-test-deps-scope.skip}</skip>
                             </configuration>
                             <goals>
                                 <goal>enforce</goal>

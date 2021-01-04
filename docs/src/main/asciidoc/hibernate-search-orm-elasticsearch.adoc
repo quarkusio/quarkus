@@ -444,28 +444,34 @@ package org.acme.hibernate.search.elasticsearch.config;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurationContext;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
 
+import javax.enterprise.context.Dependent;
+import javax.inject.Named;
+
+@Dependent
+@Named("myAnalysisConfigurer") // <1>
 public class AnalysisConfigurer implements ElasticsearchAnalysisConfigurer {
 
     @Override
     public void configure(ElasticsearchAnalysisConfigurationContext context) {
-        context.analyzer("name").custom() // <1>
+        context.analyzer("name").custom() // <2>
                 .tokenizer("standard")
                 .tokenFilters("asciifolding", "lowercase");
 
-        context.analyzer("english").custom() // <2>
+        context.analyzer("english").custom() // <3>
                 .tokenizer("standard")
                 .tokenFilters("asciifolding", "lowercase", "porter_stem");
 
-        context.normalizer("sort").custom() // <3>
+        context.normalizer("sort").custom() // <4>
                 .tokenFilters("asciifolding", "lowercase");
     }
 }
 ----
-<1> This is a simple analyzer separating the words on spaces, removing any non-ASCII characters by its ASCII counterpart (and thus removing accents) and putting everything in lowercase.
+<1> We will need to reference the configurer from the configuration properties, so we make it a named bean.
+<2> This is a simple analyzer separating the words on spaces, removing any non-ASCII characters by its ASCII counterpart (and thus removing accents) and putting everything in lowercase.
 It is used in our examples for the author's names.
-<2> We are a bit more aggressive with this one and we include some stemming: we will be able to search for `mystery` and get a result even if the indexed input contains `mysteries`.
+<3> We are a bit more aggressive with this one and we include some stemming: we will be able to search for `mystery` and get a result even if the indexed input contains `mysteries`.
 It is definitely too aggressive for person names but it is perfect for the book titles.
-<3> Here is the normalizer used for sorting. Very similar to our first analyzer, except we don't tokenize the words as we want one and only one token.
+<4> Here is the normalizer used for sorting. Very similar to our first analyzer, except we don't tokenize the words as we want one and only one token.
 
 == Adding full text capabilities to our REST service
 
@@ -552,7 +558,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create <3>
 quarkus.hibernate-orm.sql-load-script=import.sql <4>
 
 quarkus.hibernate-search-orm.elasticsearch.version=7 <5>
-quarkus.hibernate-search-orm.elasticsearch.analysis.configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer <6>
+quarkus.hibernate-search-orm.elasticsearch.analysis.configurer=bean:myAnalysisConfigurer <6>
 quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create <7>
 quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8>
 ----

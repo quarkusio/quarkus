@@ -283,7 +283,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                         }
                     }
                 });
-        RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor,
+        RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor, null,
                 closeable -> closeTasks.add(closeable), new VertxRequestContextFactory(), ThreadSetupAction.NOOP, "/");
         Deployment deployment = runtimeDeploymentManager.deploy();
         RestInitialHandler initialHandler = new RestInitialHandler(deployment);

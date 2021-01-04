@@ -49,5 +49,5 @@ public class QuartzRuntimeConfig {
      * This is useful to programmatically register listeners before scheduler starts performing some work.
      */
     @ConfigItem
-    public Optional<String> startMode;
+    public Optional<QuartzStartMode> startMode;
 }

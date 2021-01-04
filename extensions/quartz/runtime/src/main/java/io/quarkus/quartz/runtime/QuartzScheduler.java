@@ -75,9 +75,9 @@ public class QuartzScheduler implements Scheduler {
         warnDeprecated(runtimeConfig);
         boolean forceStart;
         if (runtimeConfig.startMode.isPresent()) {
-            final String mode = runtimeConfig.startMode.get();
-            haltStart = QuartzStartMode.isHalted(mode);
-            forceStart = haltStart || QuartzStartMode.isForced(mode);
+            final QuartzStartMode mode = runtimeConfig.startMode.get();
+            haltStart = mode.isHalted();
+            forceStart = haltStart || mode.isForced();
         } else {
             haltStart = false;
             forceStart = runtimeConfig.forceStart.isPresent() && runtimeConfig.forceStart.get();

@@ -2,6 +2,7 @@ package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -87,7 +88,9 @@ public class ConcurrencyTest {
             }
         }, executorService);
 
+        AtomicReference<String> callingThreadName2 = new AtomicReference<>();
         CompletableFuture<String> future2 = CompletableFuture.supplyAsync(() -> {
+            callingThreadName2.set(Thread.currentThread().getName());
             try {
                 return cachedService.cachedMethodWithoutLockTimeout(NO_TIMEOUT_KEY);
             } catch (InterruptedException e) {
@@ -104,8 +107,11 @@ public class ConcurrencyTest {
          */
         assertEquals(future1.get(), future2.get());
 
-        // The value loader execution from `future1` should be done synchronously on the calling thread.
-        assertEquals(callingThreadName1.get(), future1.get());
+        /*
+         * The value loader execution should be done synchronously on the calling thread.
+         * Both thread names need to be checked because there's no way to determine which future will be run first.
+         */
+        assertTrue(callingThreadName1.get().equals(future1.get()) || callingThreadName2.get().equals(future1.get()));
     }
 
     @Singleton

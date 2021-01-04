@@ -188,3 +188,46 @@ quarkus.grpc.clients.hello.ssl.certificate=tls/client.pem
 quarkus.grpc.clients.hello.ssl.key=tls/client.key
 quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 ----
+
+== Client Interceptors
+
+You can implement a gRPC client interceptor by implementing an `@ApplicationScoped` bean implementing `io.grpc.ClientInterceptor`:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyInterceptor implements ClientInterceptor {
+
+    @Override
+    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
+            CallOptions callOptions, Channel next) {
+       // ...
+    }
+}
+----
+
+TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html[ClientInterceptor JavaDoc] to properly implement your interceptor.
+
+When you have multiple client interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
+
+source, java]
+----
+@ApplicationScoped
+public class MyInterceptor implements ClientInterceptor, Prioritized {
+
+    @Override
+    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
+            CallOptions callOptions, Channel next) {
+       // ...
+    }
+
+    @Override
+    public int getPriority() {
+        return 10;
+    }
+}
+----
+
+Interceptors with the highest priority are called first.
+The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
+

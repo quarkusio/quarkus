@@ -13,6 +13,11 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class KafkaStreamsRuntimeConfig {
 
     /**
+     * Default Kafka bootstrap server.
+     */
+    public static final String DEFAULT_KAFKA_BROKER = "localhost:9012";
+
+    /**
      * A unique identifier for this Kafka Streams application.
      * If not set, defaults to quarkus.application.name.
      */
@@ -20,9 +25,10 @@ public class KafkaStreamsRuntimeConfig {
     public String applicationId;
 
     /**
-     * A comma-separated list of host:port pairs identifying the Kafka bootstrap server(s)
+     * A comma-separated list of host:port pairs identifying the Kafka bootstrap server(s).
+     * If not set, fallback to {@code kafka.bootstrap.servers}, and if not set either use {@code localhost:9012}.
      */
-    @ConfigItem(defaultValue = "localhost:9012")
+    @ConfigItem(defaultValue = DEFAULT_KAFKA_BROKER)
     public List<InetSocketAddress> bootstrapServers;
 
     /**

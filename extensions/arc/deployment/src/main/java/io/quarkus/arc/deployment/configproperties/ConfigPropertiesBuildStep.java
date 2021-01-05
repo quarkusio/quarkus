@@ -1,7 +1,5 @@
 package io.quarkus.arc.deployment.configproperties;
 
-import static io.quarkus.arc.deployment.configproperties.InterfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties;
-
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -135,8 +133,9 @@ public class ConfigPropertiesBuildStep {
         YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index, reflectiveClasses);
         ClassConfigPropertiesUtil classConfigPropertiesUtil = new ClassConfigPropertiesUtil(index,
                 yamlListObjectHandler, producerClassCreator, capabilities, reflectiveMethods, configProperties);
-        InterfaceConfigPropertiesUtil interfaceConfigPropertiesUtil = new InterfaceConfigPropertiesUtil(yamlListObjectHandler,
-                producerClassCreator);
+        InterfaceConfigPropertiesUtil interfaceConfigPropertiesUtil = new InterfaceConfigPropertiesUtil(index,
+                yamlListObjectHandler, nonBeansClassOutput, producerClassCreator, capabilities, defaultConfigValues,
+                configProperties);
         for (ConfigPropertiesMetadataBuildItem configPropertiesMetadata : configPropertiesMetadataList) {
             ClassInfo classInfo = configPropertiesMetadata.getClassInfo();
 
@@ -148,9 +147,9 @@ public class ConfigPropertiesBuildStep {
                  */
 
                 Map<DotName, GeneratedClass> interfaceToGeneratedClass = new HashMap<>();
-                generateImplementationForInterfaceConfigProperties(
-                        classInfo, nonBeansClassOutput, index, configPropertiesMetadata.getPrefix(),
-                        configPropertiesMetadata.getNamingStrategy(), defaultConfigValues, configProperties,
+                interfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
+                        classInfo, configPropertiesMetadata.getPrefix(),
+                        configPropertiesMetadata.getNamingStrategy(),
                         interfaceToGeneratedClass);
                 for (Map.Entry<DotName, GeneratedClass> entry : interfaceToGeneratedClass.entrySet()) {
                     interfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(entry.getKey(),

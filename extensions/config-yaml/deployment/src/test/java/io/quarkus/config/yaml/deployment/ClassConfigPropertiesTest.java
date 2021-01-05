@@ -23,7 +23,7 @@ public class ClassConfigPropertiesTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, SqlConfiguration.class, Nested.class)
-                    .addAsResource("class-configprops.yaml", APPLICATION_YAML));
+                    .addAsResource("configprops.yaml", APPLICATION_YAML));
 
     @Inject
     DummyBean dummyBean;

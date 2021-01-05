@@ -15,6 +15,7 @@ import java.util.Set;
 
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -32,6 +33,8 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -45,12 +48,25 @@ import io.quarkus.runtime.util.HashUtil;
 
 final class InterfaceConfigPropertiesUtil {
 
+    private final IndexView index;
     private final YamlListObjectHandler yamlListObjectHandler;
+    private final ClassOutput classOutput;
     private final ClassCreator classCreator;
+    private final Capabilities capabilities;
+    private final BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues;
+    private final BuildProducer<ConfigPropertyBuildItem> configProperties;
 
-    InterfaceConfigPropertiesUtil(YamlListObjectHandler yamlListObjectHandler, ClassCreator classCreator) {
+    InterfaceConfigPropertiesUtil(IndexView index, YamlListObjectHandler yamlListObjectHandler, ClassOutput classOutput,
+            ClassCreator classCreator,
+            Capabilities capabilities, BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
+            BuildProducer<ConfigPropertyBuildItem> configProperties) {
+        this.index = index;
         this.yamlListObjectHandler = yamlListObjectHandler;
+        this.classOutput = classOutput;
         this.classCreator = classCreator;
+        this.capabilities = capabilities;
+        this.defaultConfigValues = defaultConfigValues;
+        this.configProperties = configProperties;
     }
 
     /**
@@ -88,21 +104,17 @@ final class InterfaceConfigPropertiesUtil {
         }
     }
 
-    static void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface, ClassOutput classOutput,
-            IndexView index, String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
-            BuildProducer<ConfigPropertyBuildItem> configProperties,
+    void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface,
+            String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
-        generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface, classOutput, index,
-                prefixStr, namingStrategy, defaultConfigValues, configProperties, interfaceToGeneratedClass);
+        generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface,
+                prefixStr, namingStrategy, interfaceToGeneratedClass);
     }
 
-    private static void generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
-            ClassInfo currentInterface, ClassOutput classOutput,
-            IndexView index, String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
-            BuildProducer<ConfigPropertyBuildItem> configProperties,
+    private void generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
+            ClassInfo currentInterface,
+            String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
         Set<DotName> allInterfaces = new HashSet<>();
@@ -162,9 +174,7 @@ final class InterfaceConfigPropertiesUtil {
                                 // 2) retrieve the implementation from Arc
 
                                 generateImplementationForInterfaceConfigPropertiesRec(originalInterface, returnTypeClassInfo,
-                                        classOutput,
-                                        index, fullConfigName, namingStrategy, defaultConfigValues, configProperties,
-                                        interfaceToGeneratedClass);
+                                        fullConfigName, namingStrategy, interfaceToGeneratedClass);
 
                                 ResultHandle arcContainer = methodCreator
                                         .invokeStaticMethod(
@@ -224,6 +234,17 @@ final class InterfaceConfigPropertiesUtil {
                                                 MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
                                                 readOptionalResponse.getValue()));
                             }
+                        } else if (ConfigPropertiesUtil.isListOfObject(method.returnType())) {
+                            if (!capabilities.isPresent(Capability.CONFIG_YAML)) {
+                                throw new DeploymentException(
+                                        "Support for List of objects in classes annotated with '@ConfigProperties' is only possible via the 'quarkus-config-yaml' extension. Offending method is '"
+                                                + method.name() + "' of interface '"
+                                                + method.declaringClass().name().toString());
+                            }
+                            ResultHandle value = yamlListObjectHandler.handle(
+                                    new YamlListObjectHandler.MethodReturnTypeMember(method), methodCreator, config,
+                                    nameAndDefaultValue.getName(), fullConfigName);
+                            methodCreator.returnValue(value);
                         } else {
                             if (defaultValueStr != null) {
                                 /*

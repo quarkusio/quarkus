@@ -12,6 +12,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
@@ -49,15 +50,14 @@ class YamlListObjectHandler {
         this.reflectiveClasses = reflectiveClasses;
     }
 
-    public ResultHandle handle(FieldInfo field, MethodCreator configPopulator, ResultHandle configObject,
-            String fullConfigName) {
-        ClassInfo classInfo = validateType(field.type());
-        validateClass(classInfo, field);
+    public ResultHandle handle(Member member, MethodCreator configPopulator, ResultHandle configObject,
+            String configName, String fullConfigName) {
+        ClassInfo classInfo = validateType(member.type());
+        validateClass(classInfo, member);
         // these need to be registered for reflection because SnakeYaml used reflection to instantiate them
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, classInfo.name().toString()));
 
-        String fieldName = field.name();
-        String wrapperClassName = classInfo.name().toString() + "_GeneratedListWrapper_" + fieldName;
+        String wrapperClassName = classInfo.name().toString() + "_GeneratedListWrapper_" + configName;
 
         // generate a class that has a List field and getters and setter which have the proper generic type
         // this way SnakeYaml can properly populate the field
@@ -65,15 +65,15 @@ class YamlListObjectHandler {
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
                 .className(wrapperClassName)
                 .build()) {
-            FieldDescriptor fieldDesc = cc.getFieldCreator(fieldName, List.class).setModifiers(Modifier.PRIVATE)
+            FieldDescriptor fieldDesc = cc.getFieldCreator(configName, List.class).setModifiers(Modifier.PRIVATE)
                     .getFieldDescriptor();
 
-            MethodCreator getter = cc.getMethodCreator(JavaBeanUtil.getGetterName(fieldName, classInfo.name()), List.class);
+            MethodCreator getter = cc.getMethodCreator(JavaBeanUtil.getGetterName(configName, classInfo.name()), List.class);
             getter.setSignature(String.format("()Ljava/util/List<L%s;>;", forSignature(classInfo)));
             getterDesc = getter.getMethodDescriptor();
             getter.returnValue(getter.readInstanceField(fieldDesc, getter.getThis()));
 
-            MethodCreator setter = cc.getMethodCreator(JavaBeanUtil.getSetterName(fieldName), void.class, List.class);
+            MethodCreator setter = cc.getMethodCreator(JavaBeanUtil.getSetterName(configName), void.class, List.class);
             setter.setSignature(String.format("(Ljava/util/List<L%s;>;)V", forSignature(classInfo)));
             setter.writeInstanceField(fieldDesc, setter.getThis(), setter.getMethodParam(0));
             setter.returnValue(null);
@@ -149,19 +149,21 @@ class YamlListObjectHandler {
         return configPopulator.invokeVirtualMethod(getterDesc, wrapperHandle);
     }
 
-    private void validateClass(ClassInfo classInfo, FieldInfo field) {
+    private void validateClass(ClassInfo classInfo, Member member) {
         if (Modifier.isInterface(classInfo.flags())) {
             throw new IllegalArgumentException(
                     "The use of interfaces as the generic type of Lists fields / methods is not allowed. Offending field is '"
-                            + field.name() + "' of class '" + field.declaringClass().name().toString() + "'");
+                            + member.name() + "' of class '" + member.declaringClass().name().toString() + "'");
         }
         if (!classInfo.hasNoArgsConstructor()) {
-            throw new IllegalArgumentException("Class '" + classInfo + "' which is used as field '" + field.name()
-                    + "' in class '" + field.declaringClass().name().toString() + "' must be have a no-args constructor");
+            throw new IllegalArgumentException(
+                    String.format("Class '%s' which is used as %s in class '%s' must be have a no-args constructor", classInfo,
+                            member.phraseUsage(), member.declaringClass().name().toString()));
         }
         if (!Modifier.isPublic(classInfo.flags())) {
-            throw new IllegalArgumentException("Class '" + classInfo + "' which is used as field '" + field.name()
-                    + "' in class '" + field.declaringClass().name().toString() + "' must be a public class");
+            throw new IllegalArgumentException(
+                    String.format("Class '%s' which is used as %s in class '%s' must be a public class", classInfo,
+                            member.phraseUsage(), member.declaringClass().name().toString()));
         }
     }
 
@@ -187,5 +189,58 @@ class YamlListObjectHandler {
         return classInfo.name().toString().replace('.', '/');
     }
 
-    private static final String ILLEGAL_ARGUMENT_MESSAGE = "YamlListObjectHandler can only be used for fields that are of type 'List<SomeClass>' where 'SomeClass' is an application class";
+    /**
+     * An abstraction over Field and Method which we will use in order to keep the same code for Class and Interface cases
+     */
+    static abstract class Member {
+        private final ClassInfo declaringClass;
+        private final Type type;
+        private final String name;
+
+        protected abstract String phraseUsage();
+
+        public Member(ClassInfo declaringClass, Type type, String name) {
+            this.declaringClass = declaringClass;
+            this.type = type;
+            this.name = name;
+        }
+
+        public ClassInfo declaringClass() {
+            return declaringClass;
+        }
+
+        public Type type() {
+            return type;
+        }
+
+        public String name() {
+            return name;
+        }
+    }
+
+    static class FieldMember extends Member {
+
+        public FieldMember(FieldInfo fieldInfo) {
+            super(fieldInfo.declaringClass(), fieldInfo.type(), fieldInfo.name());
+        }
+
+        @Override
+        protected String phraseUsage() {
+            return "field '" + name() + "'";
+        }
+    }
+
+    static class MethodReturnTypeMember extends Member {
+
+        public MethodReturnTypeMember(MethodInfo methodInfo) {
+            super(methodInfo.declaringClass(), methodInfo.returnType(), methodInfo.name());
+        }
+
+        @Override
+        protected String phraseUsage() {
+            return "return type of method '" + name() + "'";
+        }
+    }
+
+    private static final String ILLEGAL_ARGUMENT_MESSAGE = "YamlListObjectHandler can only be used for fields / methods that are of type 'List<SomeClass>' where 'SomeClass' is an application class";
 }

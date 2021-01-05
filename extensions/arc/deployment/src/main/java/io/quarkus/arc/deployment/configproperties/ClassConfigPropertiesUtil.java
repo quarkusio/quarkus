@@ -370,8 +370,9 @@ final class ClassConfigPropertiesUtil {
                                     "Support for List of objects in classes annotated with '@ConfigProperties' is only possible via the 'quarkus-config-yaml' extension. Offending field is '"
                                             + field.name() + "' of class '" + field.declaringClass().name().toString());
                         }
-                        ResultHandle setterValue = yamlListObjectHandler.handle(field, methodCreator, mpConfig,
-                                fullConfigName);
+                        ResultHandle setterValue = yamlListObjectHandler.handle(new YamlListObjectHandler.FieldMember(field),
+                                methodCreator, mpConfig,
+                                getEffectiveConfigName(namingStrategy, field), fullConfigName);
                         createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
                     } else {
                         populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
@@ -450,6 +451,10 @@ final class ClassConfigPropertiesUtil {
     }
 
     private static String getFullConfigName(String prefixStr, ConfigProperties.NamingStrategy namingStrategy, FieldInfo field) {
+        return prefixStr + "." + getEffectiveConfigName(namingStrategy, field);
+    }
+
+    private static String getEffectiveConfigName(ConfigProperties.NamingStrategy namingStrategy, FieldInfo field) {
         String nameToUse = field.name();
         AnnotationInstance configPropertyAnnotation = field.annotation(DotNames.CONFIG_PROPERTY);
         if (configPropertyAnnotation != null) {
@@ -458,7 +463,7 @@ final class ClassConfigPropertiesUtil {
                 nameToUse = configPropertyNameValue.asString();
             }
         }
-        return prefixStr + "." + namingStrategy.getName(nameToUse);
+        return namingStrategy.getName(nameToUse);
     }
 
     private static void createWriteValue(BytecodeCreator bytecodeCreator, ResultHandle configObject, FieldInfo field,

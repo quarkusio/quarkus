@@ -10,7 +10,10 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class CategoryConfig {
 
     /**
-     * The log level level for this category
+     * The log level for this category.
+     *
+     * Note that to get log levels below <code>INFO</code>,
+     * the minimum level build time configuration option needs to be adjusted as well.
      */
     @ConfigItem(defaultValue = "inherit")
     InheritableLevel level;

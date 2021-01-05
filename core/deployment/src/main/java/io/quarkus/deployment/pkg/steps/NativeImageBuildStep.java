@@ -168,6 +168,7 @@ public class NativeImageBuildStep {
             command.add(
                     "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-H:+JNI");
+            command.add("-H:+AllowFoldMethods");
             command.add("-jar");
             command.add(runnerJarName);
 

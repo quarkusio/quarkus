@@ -46,6 +46,8 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 @Recorder
 public class LoggingSetupRecorder {
 
+    private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
+
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
     /**
@@ -75,11 +77,14 @@ public class LoggingSetupRecorder {
     public static void handleFailedStart() {
         LogConfig config = new LogConfig();
         ConfigInstantiator.handleObject(config);
-        new LoggingSetupRecorder().initializeLogging(config, Collections.emptyList(), Collections.emptyList(),
+        LogBuildTimeConfig buildConfig = new LogBuildTimeConfig();
+        ConfigInstantiator.handleObject(buildConfig);
+        new LoggingSetupRecorder().initializeLogging(config, buildConfig, Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(), null);
     }
 
-    public void initializeLogging(LogConfig config, final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
+    public void initializeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
+            final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier) {
@@ -131,6 +136,21 @@ public class LoggingSetupRecorder {
         namedHandlers.putAll(additionalNamedHandlersMap);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
+            final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
+            final Level logLevel = entry.getValue().level.getLevel();
+            final Level minLogLevel = buildCategory == null
+                    ? buildConfig.minLevel
+                    : buildCategory.minLevel.getLevel();
+
+            if (logLevel.intValue() < minLogLevel.intValue()) {
+                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
+                        entry.getKey(), minLogLevel, minLogLevel);
+
+                entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
+            }
+        }
+
+        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String name = entry.getKey();
             final Logger categoryLogger = logContext.getLogger(name);
             final CategoryConfig categoryConfig = entry.getValue();
@@ -155,6 +175,14 @@ public class LoggingSetupRecorder {
 
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private CategoryBuildTimeConfig isSubsetOf(String categoryName, Map<String, CategoryBuildTimeConfig> categories) {
+        return categories.entrySet().stream()
+                .filter(buildCategoryEntry -> categoryName.startsWith(buildCategoryEntry.getKey()))
+                .map(Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     private static Map<String, Handler> createNamedHandlers(LogConfig config,

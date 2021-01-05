@@ -36,4 +36,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./mvnw -B -Dquickly install org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: ./mvnw -B -Dquickly-ci install org.sonarsource.scanner.maven:sonar-maven-plugin:sonar

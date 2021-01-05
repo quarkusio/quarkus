@@ -61,8 +61,8 @@ public class ThreadLocalPgPool extends ThreadLocalPool<PgPool> implements PgPool
         public void close() {
             if (open) {
                 delegate.close();
+                ThreadLocalPgPool.this.removeSelfFromTracking(this);
             }
-            ThreadLocalPgPool.this.removeSelfFromTracking(this);
         }
     }
 }

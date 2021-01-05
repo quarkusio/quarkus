@@ -53,8 +53,8 @@ final class TestableThreadLocalPool extends ThreadLocalPool<TestPoolInterface> {
         public void close() {
             if (open) {
                 delegate.close();
+                TestableThreadLocalPool.this.removeSelfFromTracking(this);
             }
-            TestableThreadLocalPool.this.removeSelfFromTracking(this);
         }
 
         @Override

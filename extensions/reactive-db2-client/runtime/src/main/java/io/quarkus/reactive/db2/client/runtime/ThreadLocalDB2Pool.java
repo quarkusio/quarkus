@@ -61,8 +61,8 @@ public class ThreadLocalDB2Pool extends ThreadLocalPool<DB2Pool> implements DB2P
         public void close() {
             if (open) {
                 delegate.close();
+                ThreadLocalDB2Pool.this.removeSelfFromTracking(this);
             }
-            ThreadLocalDB2Pool.this.removeSelfFromTracking(this);
         }
     }
 }

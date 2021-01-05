@@ -61,8 +61,8 @@ public class ThreadLocalMySQLPool extends ThreadLocalPool<MySQLPool> implements 
         public void close() {
             if (open) {
                 delegate.close();
+                ThreadLocalMySQLPool.this.removeSelfFromTracking(this);
             }
-            ThreadLocalMySQLPool.this.removeSelfFromTracking(this);
         }
     }
 

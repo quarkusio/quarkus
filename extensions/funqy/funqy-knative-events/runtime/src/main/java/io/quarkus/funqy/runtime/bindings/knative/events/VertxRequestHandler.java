@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.knative.events.CloudEvent;
+import io.quarkus.funqy.knative.events.CloudEventOutput;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
@@ -214,7 +215,17 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                     ObjectWriter writer = (ObjectWriter) invoker.getBindingContext()
                                             .get(ObjectWriter.class.getName());
                                     httpResponse.putHeader("Content-Type", "application/json");
-                                    httpResponse.end(writer.writeValueAsString(obj));
+
+                                    if (obj instanceof CloudEventOutput) {
+                                        CloudEventOutput<?> cloudEventOutput = (CloudEventOutput<?>) obj;
+
+                                        httpResponse.putHeader("ce-source", cloudEventOutput.source());
+                                        httpResponse.putHeader("ce-type", cloudEventOutput.type());
+
+                                        httpResponse.end(writer.writeValueAsString(cloudEventOutput.data()));
+                                    } else {
+                                        httpResponse.end(writer.writeValueAsString(obj));
+                                    }
                                 } catch (JsonProcessingException jpe) {
                                     log.error("Failed to unmarshal input", jpe);
                                     routingContext.fail(400);
@@ -304,16 +315,29 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 obj -> {
                                     if (targetInvoker.hasOutput()) {
                                         httpResponse.setStatusCode(200);
+                                        httpResponse.putHeader("Content-Type", "application/cloudevents+json");
                                         final Map<String, Object> responseEvent = new HashMap<>();
 
                                         responseEvent.put("id", getResponseId());
                                         responseEvent.put("specversion", "1.0");
-                                        responseEvent.put("source",
-                                                targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
-                                        responseEvent.put("type",
-                                                targetInvoker.getBindingContext().get(RESPONSE_TYPE));
                                         responseEvent.put("datacontenttype", "application/json");
-                                        responseEvent.put("data", obj);
+
+                                        if (obj instanceof CloudEventOutput) {
+                                            CloudEventOutput<?> cloudEventOutput = (CloudEventOutput<?>) obj;
+                                            responseEvent.put("source", cloudEventOutput.source());
+                                            responseEvent.put("type", cloudEventOutput.type());
+
+                                            responseEvent.put("data", cloudEventOutput.data());
+
+                                        } else {
+
+                                            responseEvent.put("source",
+                                                    targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
+                                            responseEvent.put("type",
+                                                    targetInvoker.getBindingContext().get(RESPONSE_TYPE));
+
+                                            responseEvent.put("data", obj);
+                                        }
                                         try {
                                             httpResponse.end(mapper.writer().writeValueAsString(responseEvent));
                                         } catch (JsonProcessingException e) {

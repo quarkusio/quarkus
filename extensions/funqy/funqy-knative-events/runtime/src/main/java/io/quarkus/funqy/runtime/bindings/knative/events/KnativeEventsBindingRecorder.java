@@ -1,6 +1,8 @@
 package io.quarkus.funqy.runtime.bindings.knative.events;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -19,6 +21,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.knative.events.CloudEventMapping;
+import io.quarkus.funqy.knative.events.CloudEventOutput;
 import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
@@ -68,7 +71,18 @@ public class KnativeEventsBindingRecorder {
                 invoker.getBindingContext().put(QueryReader.class.getName(), queryReader);
             }
             if (invoker.hasOutput()) {
-                JavaType outputJavaType = objectMapper.constructType(invoker.getOutputType());
+                Type clazz = invoker.getOutputType();
+                if (clazz instanceof ParameterizedType
+                        && CloudEventOutput.class.isAssignableFrom((Class<?>) ((ParameterizedType) clazz).getRawType())) {
+
+                    if (clazz instanceof ParameterizedType) {
+                        Type[] actualParams = ((ParameterizedType) clazz).getActualTypeArguments();
+                        if (actualParams.length == 1 && actualParams[0] instanceof Class<?>) {
+                            clazz = (Class<?>) actualParams[0];
+                        }
+                    }
+                }
+                JavaType outputJavaType = objectMapper.constructType(clazz);
                 ObjectWriter writer = objectMapper.writerFor(outputJavaType);
                 invoker.getBindingContext().put(ObjectWriter.class.getName(), writer);
 

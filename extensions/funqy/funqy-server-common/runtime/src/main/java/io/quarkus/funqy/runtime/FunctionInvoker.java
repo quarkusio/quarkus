@@ -1,7 +1,10 @@
 package io.quarkus.funqy.runtime;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,7 +58,7 @@ public class FunctionInvoker {
                             "Uni must be used with type parameter (e.g. Uni<String>).");
                 }
             } else {
-                outputType = returnType;
+                outputType = method.getGenericReturnType();
             }
         }
     }

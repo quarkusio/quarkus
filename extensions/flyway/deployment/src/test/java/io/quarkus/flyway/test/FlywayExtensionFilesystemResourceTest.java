@@ -58,7 +58,7 @@ public class FlywayExtensionFilesystemResourceTest {
             }
         }
         String currentVersion = flyway.info().current().getVersion().toString();
-        assertEquals("1.0.2", currentVersion, "Expected to be 1.0.2 as there is a SQL and two Java migration scripts");
+        assertEquals("1.0.3", currentVersion, "Expected to be 1.0.3 as there is a SQL and two Java migration scripts");
     }
 
     public static class V1_0_1__Update extends BaseJavaMigration {

@@ -4,8 +4,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.flywaydb.core.api.Location;
+import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.internal.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
@@ -23,6 +25,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     private static final String LOCATION_SEPARATOR = "/";
     private static Collection<String> applicationMigrationFiles = Collections.emptyList(); // the set default to aid unit tests
     private static Collection<Class<? extends JavaMigration>> applicationMigrationClasses = Collections.emptyList(); // the set default to aid unit tests
+    private static Map<String, Collection<Callback>> applicationCallbackClasses = Collections.emptyMap(); // the set default to aid unit tests
 
     private final Collection<LoadableResource> scannedResources;
 
@@ -48,6 +51,14 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
             }
         }
 
+    }
+
+    public static void setApplicationCallbackClasses(Map<String, Collection<Callback>> callbackClasses) {
+        QuarkusPathLocationScanner.applicationCallbackClasses = callbackClasses;
+    }
+
+    public static Collection<Callback> callbacksForDataSource(String dsName) {
+        return applicationCallbackClasses.getOrDefault(dsName, Collections.emptyList());
     }
 
     /**

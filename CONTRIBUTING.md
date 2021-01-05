@@ -93,6 +93,8 @@ Because we are all humans, and to ensure Quarkus is stable for everyone, all cha
 
 The process requires only one additional step to enable Actions on your fork (clicking the green button in the actions tab). [See the full video walkthrough](https://youtu.be/egqbx-Q-Cbg) for more details on how to do this.
 
+To keep the caching of non-Quarkus artifacts efficient (speeding up CI), you should occasionally sync the `master` branch of your fork with `master` of this repo (e.g. monthly).
+
 ### Tests and documentation are not optional
 
 Don't forget to include tests in your pull requests. 

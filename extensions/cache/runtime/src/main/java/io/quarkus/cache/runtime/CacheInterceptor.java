@@ -42,43 +42,38 @@ public abstract class CacheInterceptor {
             // This should only happen when the interception is not managed by Arc.
             return Optional.empty();
         }
-        CacheInterceptionContext<T> result = new CacheInterceptionContext<>();
+        List<T> interceptorBindings = new ArrayList<>();
+        List<Short> cacheKeyParameterPositions = new ArrayList<>();
         for (Annotation binding : bindings) {
             if (binding instanceof CacheKeyParameterPositions) {
-                short[] cacheKeyParameterPositions = ((CacheKeyParameterPositions) binding).value();
-                result.setCacheKeyParameterPositions(cacheKeyParameterPositions);
+                for (short position : ((CacheKeyParameterPositions) binding).value()) {
+                    cacheKeyParameterPositions.add(position);
+                }
             } else if (interceptorBindingClass.isInstance(binding)) {
-                result.getInterceptorBindings().add(cast(binding, interceptorBindingClass));
+                interceptorBindings.add(cast(binding, interceptorBindingClass));
             }
         }
-        return Optional.of(result);
+        return Optional.of(new CacheInterceptionContext<>(interceptorBindings, cacheKeyParameterPositions));
     }
 
     private <T extends Annotation> CacheInterceptionContext<T> getNonArcCacheInterceptionContext(
             InvocationContext invocationContext, Class<T> interceptorBindingClass) {
-        CacheInterceptionContext<T> result = new CacheInterceptionContext<>();
+        List<T> interceptorBindings = new ArrayList<>();
+        List<Short> cacheKeyParameterPositions = new ArrayList<>();
         for (Annotation annotation : invocationContext.getMethod().getAnnotations()) {
             if (interceptorBindingClass.isInstance(annotation)) {
-                result.getInterceptorBindings().add(cast(annotation, interceptorBindingClass));
+                interceptorBindings.add(cast(annotation, interceptorBindingClass));
             }
         }
         Parameter[] parameters = invocationContext.getMethod().getParameters();
         if (parameters.length > 0) {
-            List<Short> cacheKeyParameterPositions = new ArrayList<>();
             for (short i = 0; i < parameters.length; i++) {
                 if (parameters[i].isAnnotationPresent(CacheKey.class)) {
                     cacheKeyParameterPositions.add(i);
                 }
             }
-            if (!cacheKeyParameterPositions.isEmpty()) {
-                short[] cacheKeyParameterPositionsArray = new short[cacheKeyParameterPositions.size()];
-                for (int i = 0; i < cacheKeyParameterPositions.size(); i++) {
-                    cacheKeyParameterPositionsArray[i] = cacheKeyParameterPositions.get(i);
-                }
-                result.setCacheKeyParameterPositions(cacheKeyParameterPositionsArray);
-            }
         }
-        return result;
+        return new CacheInterceptionContext<>(interceptorBindings, cacheKeyParameterPositions);
     }
 
     @SuppressWarnings("unchecked")
@@ -86,20 +81,20 @@ public abstract class CacheInterceptor {
         return (T) annotation;
     }
 
-    protected Object getCacheKey(AbstractCache cache, short[] cacheKeyParameterPositions, Object[] methodParameterValues) {
+    protected Object getCacheKey(AbstractCache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
         if (methodParameterValues == null || methodParameterValues.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();
-        } else if (cacheKeyParameterPositions.length == 1) {
+        } else if (cacheKeyParameterPositions.size() == 1) {
             // If exactly one @CacheKey-annotated parameter was identified for the intercepted method at build time, then this
             // parameter will be used as the cache key.
-            return methodParameterValues[cacheKeyParameterPositions[0]];
-        } else if (cacheKeyParameterPositions.length >= 2) {
+            return methodParameterValues[cacheKeyParameterPositions.get(0)];
+        } else if (cacheKeyParameterPositions.size() >= 2) {
             // If two or more @CacheKey-annotated parameters were identified for the intercepted method at build time, then a
             // composite cache key built from all these parameters will be used.
             List<Object> keyElements = new ArrayList<>();
-            for (int i = 0; i < cacheKeyParameterPositions.length; i++) {
-                keyElements.add(methodParameterValues[cacheKeyParameterPositions[i]]);
+            for (short position : cacheKeyParameterPositions) {
+                keyElements.add(methodParameterValues[position]);
             }
             return new CompositeCacheKey(keyElements.toArray(new Object[0]));
         } else if (methodParameterValues.length == 1) {

@@ -37,6 +37,7 @@ public class FlywayExtensionConfigFixture {
         assertEquals(baselineOnMigrate(configuration), baselineOnMigrate(dataSourceName));
         assertEquals(baselineVersion(configuration), baselineVersion(dataSourceName));
         assertEquals(baselineDescription(configuration), baselineDescription(dataSourceName));
+        assertEquals(callbacks(configuration), callbacks(dataSourceName));
     }
 
     public void assertDefaultConfigurationSettings(Configuration configuration) {
@@ -52,6 +53,15 @@ public class FlywayExtensionConfigFixture {
         assertEquals(baselineOnMigrate(configuration), baselineOnMigrate(defaultConfiguration));
         assertEquals(baselineVersion(configuration), baselineVersion(defaultConfiguration));
         assertEquals(baselineDescription(configuration), baselineDescription(defaultConfiguration));
+        assertEquals(callbacks(configuration), callbacks(defaultConfiguration));
+    }
+
+    public int callbacks(Configuration configuration) {
+        return configuration.getCallbacks().length;
+    }
+
+    public int callbacks(String datasourceName) {
+        return getStringValue("quarkus.flyway.%s.callbacks", datasourceName).split(",").length;
     }
 
     public int connectRetries(String datasourceName) {

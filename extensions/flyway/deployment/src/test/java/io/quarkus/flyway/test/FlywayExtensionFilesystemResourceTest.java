@@ -2,6 +2,7 @@ package io.quarkus.flyway.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,6 +16,7 @@ import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.h2.jdbc.JdbcSQLException;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +45,11 @@ public class FlywayExtensionFilesystemResourceTest {
     public void testFlywayConfigInjection() throws SQLException {
 
         try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
+            try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
+                fail("fake_existing_tbl should not exist. Clean was run at start");
+            } catch (JdbcSQLException e) {
+                // expected fake_existing_tbl does not exist
+            }
             try (ResultSet countQuery = stat.executeQuery("select count(1) from quarked_flyway")) {
                 assertTrue(countQuery.first());
                 assertEquals(2,
@@ -51,7 +58,7 @@ public class FlywayExtensionFilesystemResourceTest {
             }
         }
         String currentVersion = flyway.info().current().getVersion().toString();
-        assertEquals("1.0.2", currentVersion, "Expected to be 1.0.2 as there is a SQL and two Java migration scripts");
+        assertEquals("1.0.3", currentVersion, "Expected to be 1.0.3 as there is a SQL and two Java migration scripts");
     }
 
     public static class V1_0_1__Update extends BaseJavaMigration {

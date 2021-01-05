@@ -3,11 +3,13 @@ package io.quarkus.flyway.runtime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.jboss.logging.Logger;
 
@@ -30,6 +32,11 @@ public class FlywayRecorder {
     public void setApplicationMigrationClasses(Collection<Class<? extends JavaMigration>> migrationClasses) {
         log.debugv("Setting the following application migration classes: {0}", migrationClasses);
         QuarkusPathLocationScanner.setApplicationMigrationClasses(migrationClasses);
+    }
+
+    public void setApplicationCallbackClasses(Map<String, Collection<Callback>> callbackClasses) {
+        log.debugv("Setting application callbacks: {0} total", callbackClasses.values().size());
+        QuarkusPathLocationScanner.setApplicationCallbackClasses(callbackClasses);
     }
 
     public Supplier<Flyway> flywaySupplier(String dataSourceName) {

@@ -28,6 +28,7 @@ import javax.enterprise.inject.Default;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
+import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -89,7 +90,7 @@ class FlywayProcessor {
             FlywayRecorder recorder,
             RecorderContext context,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) throws IOException, URISyntaxException {
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) throws Exception {
 
         featureProducer.produce(new FeatureBuildItem(Feature.FLYWAY));
 
@@ -102,6 +103,13 @@ class FlywayProcessor {
         addJavaMigrations(combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION), context,
                 reflectiveClassProducer, javaMigrationClasses);
         recorder.setApplicationMigrationClasses(javaMigrationClasses);
+
+        final Map<String, Collection<Callback>> callbacks = FlywayCallbacksLocator.with(
+                dataSourceNames,
+                flywayBuildConfig,
+                combinedIndexBuildItem,
+                reflectiveClassProducer).getCallbacks();
+        recorder.setApplicationCallbackClasses(callbacks);
 
         resourceProducer.produce(new NativeImageResourceBuildItem(applicationMigrations.toArray(new String[0])));
     }
@@ -182,11 +190,6 @@ class FlywayProcessor {
                 .map(flywayBuildConfig::getConfigForDataSourceName)
                 .flatMap(config -> config.locations.stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            migrationLocations.addAll(flywayBuildConfig.defaultDataSource.locations);
-        }
-
         return migrationLocations;
     }
 

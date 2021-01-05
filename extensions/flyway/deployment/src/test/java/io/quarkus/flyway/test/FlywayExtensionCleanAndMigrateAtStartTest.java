@@ -1,7 +1,7 @@
 package io.quarkus.flyway.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -11,6 +11,7 @@ import java.sql.Statement;
 import javax.inject.Inject;
 
 import org.flywaydb.core.Flyway;
+import org.h2.jdbc.JdbcSQLException;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +41,9 @@ public class FlywayExtensionCleanAndMigrateAtStartTest {
 
         try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
-                assertFalse(executeQuery.next(), "Table exists but is not empty");
+                fail("fake_existing_tbl should not exist");
+            } catch (JdbcSQLException e) {
+                // expected fake_existing_tbl does not exist
             }
         }
         String currentVersion = flyway.info().current().getVersion().toString();

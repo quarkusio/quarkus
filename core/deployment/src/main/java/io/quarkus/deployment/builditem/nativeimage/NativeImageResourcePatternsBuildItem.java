@@ -30,10 +30,17 @@ import io.quarkus.deployment.util.GlobUtil;
  */
 public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
 
+    private final List<String> excludePatterns;
+
     private final List<String> includePatterns;
 
-    private NativeImageResourcePatternsBuildItem(List<String> includePatterns) {
+    private NativeImageResourcePatternsBuildItem(List<String> includePatterns, List<String> excludePatterns) {
         this.includePatterns = includePatterns;
+        this.excludePatterns = excludePatterns;
+    }
+
+    public List<String> getExcludePatterns() {
+        return excludePatterns;
     }
 
     public List<String> getIncludePatterns() {
@@ -45,12 +52,102 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
     }
 
     public static class Builder {
+        private List<String> excludePatterns = new ArrayList<>();
         private List<String> includePatterns = new ArrayList<>();
 
         public NativeImageResourcePatternsBuildItem build() {
             final List<String> incl = includePatterns;
             includePatterns = null;
-            return new NativeImageResourcePatternsBuildItem(Collections.unmodifiableList(incl));
+            final List<String> excl = excludePatterns;
+            excludePatterns = null;
+            return new NativeImageResourcePatternsBuildItem(Collections.unmodifiableList(incl),
+                    Collections.unmodifiableList(excl));
+        }
+
+        /**
+         * Add a glob pattern for matching resource paths that should <strong>not</strong> be added to the native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
+         * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
+         *
+         * @param glob the glob pattern to add to the list of patterns to exclude
+         * @return this {@link Builder}
+         */
+        public Builder excludeGlob(String glob) {
+            excludePatterns.add(GlobUtil.toRegexPattern(glob));
+            return this;
+        }
+
+        /**
+         * Add a collection of glob patterns for matching resource paths that should <strong>not</strong> be added to the
+         * native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
+         * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
+         *
+         * @param globs the glob patterns to add to the list of patterns to exclude
+         * @return this {@link Builder}
+         */
+        public Builder excludeGlobs(Collection<String> globs) {
+            globs.stream().map(GlobUtil::toRegexPattern).forEach(excludePatterns::add);
+            return this;
+        }
+
+        /**
+         * Add an array of glob patterns for matching resource paths that should <strong>not</strong> be added to the
+         * native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
+         * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
+         *
+         * @param globs the glob patterns to add to the list of patterns to exclude
+         * @return this {@link Builder}
+         */
+        public Builder excludeGlobs(String... globs) {
+            Stream.of(globs).map(GlobUtil::toRegexPattern).forEach(excludePatterns::add);
+            return this;
+        }
+
+        /**
+         * Add a regular expression for matching resource paths that should <strong>not</strong> be added to the native
+         * image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
+         *
+         * @param pattern the regular expression to add to the list of patterns to exclude
+         * @return this {@link Builder}
+         */
+        public Builder excludePattern(String pattern) {
+            excludePatterns.add(pattern);
+            return this;
+        }
+
+        /**
+         * Add a collection of regular expressions for matching resource paths that should <strong>not</strong> be added
+         * to the native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
+         *
+         * @param patterns the regular expressions to add to the list of patterns to exclude
+         * @return this {@link Builder}
+         */
+        public Builder excludePatterns(Collection<String> patterns) {
+            excludePatterns.addAll(patterns);
+            return this;
+        }
+
+        /**
+         * Add an array of regular expressions for matching resource paths that should <strong>not</strong> be added
+         * to the native image.
+         * <p>
+         * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
+         *
+         * @param patterns the regular expressions to add to the list of patterns to exclude
+         * @return this {@link Builder}
+         */
+        public Builder excludePatterns(String... patterns) {
+            Stream.of(patterns).forEach(excludePatterns::add);
+            return this;
         }
 
         /**

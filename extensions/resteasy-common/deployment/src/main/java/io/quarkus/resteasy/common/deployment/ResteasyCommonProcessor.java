@@ -190,7 +190,8 @@ public class ResteasyCommonProcessor {
 
             boolean needJsonSupport = restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.CONSUMES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.PRODUCES)
-                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_SSE_ELEMENT_TYPE);
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_SSE_ELEMENT_TYPE)
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE);
             if (needJsonSupport) {
                 LOGGER.warn(
                         "Quarkus detected the need of REST JSON support but you have not provided the necessary JSON " +
@@ -481,6 +482,18 @@ public class ResteasyCommonProcessor {
                             providerDiscoverer.noProducesDefaultsToAll(), resteasyConfig.isJsonDefault())) {
                         return true;
                     }
+                }
+            }
+
+            // handle @PartType: we don't know if it's used for writing or reading so we register both
+            for (AnnotationInstance partTypeAnnotation : index.getAnnotations(ResteasyDotNames.RESTEASY_PART_TYPE)) {
+                try {
+                    MediaType partTypeMediaType = MediaType.valueOf(partTypeAnnotation.value().asString());
+                    providersToRegister.addAll(categorizedReaders.getPossible(partTypeMediaType));
+                    providersToRegister.addAll(categorizedWriters.getPossible(partTypeMediaType));
+                } catch (IllegalArgumentException e) {
+                    // Let's not throw an error, there's a good chance RESTEasy will do it for us
+                    // and if not, this might be valid.
                 }
             }
         }

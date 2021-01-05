@@ -44,6 +44,8 @@ public final class ResteasyDotNames {
             .createSimple("org.jboss.resteasy.annotations.jaxrs.MatrixParam");
     public static final DotName RESTEASY_SSE_ELEMENT_TYPE = DotName
             .createSimple("org.jboss.resteasy.annotations.SseElementType");
+    public static final DotName RESTEASY_PART_TYPE = DotName
+            .createSimple("org.jboss.resteasy.annotations.providers.multipart.PartType");
     public static final DotName CONFIG_PROPERTY = DotName
             .createSimple(ConfigProperty.class.getName());
     public static final DotName CDI_INSTANCE = DotName

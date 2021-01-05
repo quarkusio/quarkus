@@ -45,7 +45,12 @@ import io.quarkus.runtime.util.HashUtil;
 
 final class InterfaceConfigPropertiesUtil {
 
-    private InterfaceConfigPropertiesUtil() {
+    private final YamlListObjectHandler yamlListObjectHandler;
+    private final ClassCreator classCreator;
+
+    InterfaceConfigPropertiesUtil(YamlListObjectHandler yamlListObjectHandler, ClassCreator classCreator) {
+        this.yamlListObjectHandler = yamlListObjectHandler;
+        this.classCreator = classCreator;
     }
 
     /**
@@ -58,8 +63,7 @@ final class InterfaceConfigPropertiesUtil {
      *  }
      * </pre>
      */
-    static void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, boolean needsQualifier,
-            ClassCreator classCreator,
+    void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, boolean needsQualifier,
             GeneratedClass generatedClass) {
         String methodName = "produce" + interfaceName.withoutPackagePrefix();
         if (needsQualifier) {

@@ -3,26 +3,34 @@ package io.quarkus.smallrye.faulttolerance.test.asynchronous.additional;
 import static io.smallrye.faulttolerance.core.util.CompletionStages.failedFuture;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.Fallback;
+import org.eclipse.microprofile.faulttolerance.Retry;
 
 import io.smallrye.common.annotation.NonBlocking;
 
 @ApplicationScoped
+@Retry(maxRetries = 3, delay = 0, jitter = 0)
 public class NonblockingHelloService {
-    private volatile Thread helloThread;
-    private volatile StackTraceElement[] helloStackTrace;
+    private final List<Thread> helloThreads = new CopyOnWriteArrayList<>();
+    private final List<StackTraceElement[]> helloStackTraces = new CopyOnWriteArrayList<>();
+
+    private final AtomicInteger invocationCounter = new AtomicInteger();
 
     private volatile Thread fallbackThread;
 
     @NonBlocking
     @Fallback(fallbackMethod = "fallback")
     public CompletionStage<String> hello() {
-        helloThread = Thread.currentThread();
-        helloStackTrace = new Throwable().getStackTrace();
+        invocationCounter.incrementAndGet();
+        helloThreads.add(Thread.currentThread());
+        helloStackTraces.add(new Throwable().getStackTrace());
         return failedFuture(new RuntimeException());
     }
 
@@ -31,12 +39,16 @@ public class NonblockingHelloService {
         return completedFuture("hello");
     }
 
-    Thread getHelloThread() {
-        return helloThread;
+    List<Thread> getHelloThreads() {
+        return helloThreads;
     }
 
-    StackTraceElement[] getHelloStackTrace() {
-        return helloStackTrace;
+    List<StackTraceElement[]> getHelloStackTraces() {
+        return helloStackTraces;
+    }
+
+    AtomicInteger getInvocationCounter() {
+        return invocationCounter;
     }
 
     Thread getFallbackThread() {

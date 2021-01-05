@@ -28,10 +28,17 @@ public class BlockingAsyncTest {
         CompletionStage<String> future = service.hello();
         assertThat(future.toCompletableFuture().get()).isEqualTo("hello");
 
-        assertThat(service.getHelloThread()).isNotSameAs(mainThread);
-        assertThat(service.getHelloStackTrace()).anySatisfy(frame -> {
-            assertThat(frame.getClassName()).contains("io.smallrye.faulttolerance.core");
+        assertThat(service.getHelloThreads()).allSatisfy(thread -> {
+            assertThat(thread).isNotSameAs(mainThread);
         });
+        assertThat(service.getHelloStackTraces()).allSatisfy(stackTrace -> {
+            assertThat(stackTrace).anySatisfy(frame -> {
+                assertThat(frame.getClassName()).contains("io.smallrye.faulttolerance.core");
+            });
+        });
+
+        // 1 initial execution + 3 retries
+        assertThat(service.getInvocationCounter()).hasValue(4);
 
         assertThat(service.getFallbackThread()).isNotSameAs(mainThread);
     }

@@ -55,6 +55,8 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
     private final void scanForAbandonedConnections() {
         for (PoolAndThread pair : allConnections) {
             if (pair.isDead()) {
+                //This might potentially close the connection a second time,
+                //so we need to ensure implementations allow it.
                 pair.close();
                 allConnections.remove(pair);
             }
@@ -67,6 +69,10 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
         }
     }
 
+    /**
+     * We will need the created Pool instances to have an idempotent implementation
+     * of close()
+     */
     protected abstract PoolType createThreadLocalPool();
 
     @Override
@@ -101,9 +107,33 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
         }
     }
 
+    //Useful for testing mostly
     public int trackedSize() {
         synchronized (allConnections) {
             return allConnections.size();
+        }
+    }
+
+    /**
+     * Removes references to the instance without closing it.
+     * This assumes the instance was created via this pool
+     * and that it's now closed, so no longer needing tracking.
+     * 
+     * @param instance
+     */
+    protected void removeSelfFromTracking(final PoolType instance) {
+        synchronized (allConnections) {
+            if (closed)
+                return;
+            for (PoolAndThread pair : allConnections) {
+                if (pair.pool == instance) {
+                    allConnections.remove(pair);
+                    if (pair.isCurrentThread()) {
+                        threadLocal.remove();
+                    }
+                    return;
+                }
+            }
         }
     }
 
@@ -131,6 +161,12 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
             pool.close();
         }
 
+        /**
+         * @return if this is the pair referring to the current Thread
+         */
+        public boolean isCurrentThread() {
+            return threadReference.get() == Thread.currentThread();
+        }
     }
 
 }

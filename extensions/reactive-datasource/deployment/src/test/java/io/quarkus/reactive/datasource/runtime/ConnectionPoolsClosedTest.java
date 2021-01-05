@@ -18,6 +18,10 @@ public class ConnectionPoolsClosedTest {
          * any related Pool instances.
          * But we do look for abandoned connections when we scale up again,
          * so test for that specifically.
+         * Connections will be closed more aggressively in practice as implementors
+         * of ThreadLocalPool register a callback on close; so assuming clients
+         * actually close it and threads aren't terminated abruptly this
+         * should be unnecessary (still useful, since reality is often different).
          */
         TestableThreadLocalPool globalPool = new TestableThreadLocalPool();
         Assert.assertTrue(globalPool.trackedSize() == 0);

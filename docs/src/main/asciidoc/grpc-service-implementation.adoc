@@ -41,7 +41,7 @@ When extending them, you need to override the service methods defined in the ser
 
 To implement a gRPC service using the default gRPC API, create a class extending the default implementation base.
 Then, override the methods defined in the service interface.
-Finally, expose the service as a CDI bean using the `@Singleton` annotation:
+Finally, implement the service as a CDI bean using the `@Singleton` annotation:
 
 [source, java]
 ----
@@ -65,7 +65,7 @@ public class HelloService extends GreeterGrpc.GreeterImplBase {
 To implement a gRPC service using the Mutiny gRPC API, create a class extending the Mutiny implementation base.
 Then, override the methods defined in the service interface.
 These methods are using Mutiny types.
-Finally, expose the service as a CDI bean using the `@Singleton` annotation:
+Finally, implement the service as a CDI bean using the `@Singleton` annotation:
 
 [source, java]
 ----
@@ -150,7 +150,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
 ----
 
 == Health check
-For the exposed services, Quarkus gRPC exposes health information in the following format:
+For the implemented services, Quarkus gRPC exposes health information in the following format:
 [source,protobuf]
 ----
 syntax = "proto3";
@@ -232,3 +232,46 @@ quarkus.grpc.server.ssl.trust-store=tls/ca.jks
 quarkus.grpc.server.ssl.trust-store-password=*****
 quarkus.grpc.server.ssl.client-auth=REQUIRED
 ----
+
+== Server Interceptors
+
+You can implement a gRPC server interceptor by implementing an `@ApplicationScoped` bean implementing `io.grpc.ServerInterceptor`:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyInterceptor implements ServerInterceptor {
+
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
+            Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
+        // ...
+    }
+}
+----
+
+TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html[ServerInterceptor JavaDoc] to properly implement your interceptor.
+
+When you have multiple server interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
+
+source, java]
+----
+@ApplicationScoped
+public class MyInterceptor implements ServerInterceptor, Prioritized {
+
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
+            Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
+        // ...
+    }
+
+    @Override
+    public int getPriority() {
+        return 10;
+    }
+}
+----
+
+Interceptors with the highest priority are called first.
+The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
+

@@ -9,10 +9,12 @@ import io.vertx.core.http.HttpConnection;
 import io.vertx.core.net.impl.ConnectionBase;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.client.impl.MultiInvoker.MultiRequest;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
@@ -34,11 +36,60 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         return (Multi<R>) super.get(responseType);
     }
 
+    /**
+     * We need this class to work around a bug in Mutiny where we can register our cancel listener
+     * after the subscription is cancelled and we never get notified
+     * See https://github.com/smallrye/smallrye-mutiny/issues/417
+     */
+    static class MultiRequest<R> {
+
+        private final AtomicReference<Runnable> onCancel = new AtomicReference<>();
+
+        private MultiEmitter<? super R> emitter;
+
+        private static final Runnable CLEARED = () -> {
+        };
+
+        public MultiRequest(MultiEmitter<? super R> emitter) {
+            this.emitter = emitter;
+            emitter.onTermination(() -> {
+                if (emitter.isCancelled()) {
+                    this.cancel();
+                }
+            });
+        }
+
+        public boolean isCancelled() {
+            return onCancel.get() == CLEARED;
+        }
+
+        private void cancel() {
+            Runnable action = onCancel.getAndSet(CLEARED);
+            if (action != null && action != CLEARED) {
+                action.run();
+            }
+        }
+
+        public void onCancel(Runnable onCancel) {
+            if (this.onCancel.compareAndSet(null, onCancel)) {
+                // this was a first set
+            } else if (this.onCancel.get() == CLEARED) {
+                // already cleared
+                if (onCancel != null)
+                    onCancel.run();
+            } else {
+                // it was already set
+                throw new IllegalArgumentException("onCancel was already called");
+            }
+        }
+    }
+
     @Override
     public <R> Multi<R> method(String name, Entity<?> entity, GenericType<R> responseType) {
         AsyncInvokerImpl invoker = (AsyncInvokerImpl) target.request().rx();
         // FIXME: backpressure setting?
         return Multi.createFrom().emitter(emitter -> {
+            MultiRequest<R> multiRequest = new MultiRequest<>(emitter);
             RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity, responseType,
                     false);
             restClientRequestContext.getResult().handle((response, connectionError) -> {
@@ -46,22 +97,26 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     emitter.fail(connectionError);
                 } else {
                     HttpClientResponse vertxResponse = restClientRequestContext.getVertxClientResponse();
-                    // FIXME: this is probably not good enough
-                    if (response.getStatus() == 200
-                            && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
-                        registerForSse(emitter, responseType, response, vertxResponse);
+                    if (!emitter.isCancelled()) {
+                        // FIXME: this is probably not good enough
+                        if (response.getStatus() == 200
+                                && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
+                            registerForSse(multiRequest, responseType, response, vertxResponse);
+                        } else {
+                            // read stuff in chunks
+                            registerForChunks(multiRequest, restClientRequestContext, responseType, response, vertxResponse);
+                        }
+                        vertxResponse.resume();
                     } else {
-                        // read stuff in chunks
-                        registerForChunks(emitter, restClientRequestContext, responseType, response, vertxResponse);
+                        vertxResponse.request().connection().close();
                     }
-                    vertxResponse.resume();
                 }
                 return null;
             });
         });
     }
 
-    private <R> void registerForSse(MultiEmitter<? super R> emitter,
+    private <R> void registerForSse(MultiRequest<? super R> multiRequest,
             GenericType<R> responseType,
             Response response,
             HttpClientResponse vertxResponse) {
@@ -73,16 +128,20 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
             // the content-type SSE field
-            emitter.emit((R) event.readData(responseType));
+            multiRequest.emitter.emit((R) event.readData(responseType));
         }, error -> {
-            emitter.fail(error);
+            multiRequest.emitter.fail(error);
         }, () -> {
-            emitter.complete();
+            multiRequest.emitter.complete();
+        });
+        // watch for user cancelling
+        multiRequest.onCancel(() -> {
+            sseSource.close();
         });
         sseSource.registerAfterRequest(vertxResponse);
     }
 
-    private <R> void registerForChunks(MultiEmitter<? super R> emitter,
+    private <R> void registerForChunks(MultiRequest<? super R> multiRequest,
             RestClientRequestContext restClientRequestContext,
             GenericType<R> responseType,
             Response response,
@@ -93,13 +152,13 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             if (t == ConnectionBase.CLOSED_EXCEPTION) {
                 // we can ignore this one since we registered a closeHandler
             } else {
-                emitter.fail(t);
+                multiRequest.emitter.fail(t);
             }
         });
         HttpConnection connection = vertxClientResponse.request().connection();
         // this captures the server closing
         connection.closeHandler(v -> {
-            emitter.complete();
+            multiRequest.emitter.complete();
         });
         vertxClientResponse.handler(new Handler<Buffer>() {
             @Override
@@ -108,18 +167,22 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
                     R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
                             response.getMetadata());
-                    emitter.emit(item);
+                    multiRequest.emitter.emit(item);
                 } catch (Throwable t) {
                     // FIXME: probably close the client too? watch out that it doesn't call our close handler
                     // which calls emitter.complete()
-                    emitter.fail(t);
+                    multiRequest.emitter.fail(t);
                 }
             }
         });
         // this captures the end of the response
         // FIXME: won't this call complete twice()?
         vertxClientResponse.endHandler(v -> {
-            emitter.complete();
+            multiRequest.emitter.complete();
+        });
+        // watch for user cancelling
+        multiRequest.onCancel(() -> {
+            vertxClientResponse.request().connection().close();
         });
     }
 

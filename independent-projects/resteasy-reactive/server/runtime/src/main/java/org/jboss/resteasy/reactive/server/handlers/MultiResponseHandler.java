@@ -72,11 +72,17 @@ public class MultiResponseHandler implements ServerRestHandler {
     static abstract class AbstractMultiSubscriber implements Subscriber<Object> {
         protected Subscription subscription;
         protected ResteasyReactiveRequestContext requestContext;
+        private boolean weClosed = false;
 
         AbstractMultiSubscriber(ResteasyReactiveRequestContext requestContext) {
             this.requestContext = requestContext;
             // let's make sure we never restart by accident, also make sure we're not marked as completed
             requestContext.restart(AWOL, true);
+            requestContext.serverResponse().addCloseHandler(() -> {
+                if (!weClosed && this.subscription != null) {
+                    subscription.cancel();
+                }
+            });
         }
 
         @Override
@@ -88,6 +94,8 @@ public class MultiResponseHandler implements ServerRestHandler {
 
         @Override
         public void onComplete() {
+            // make sure we don't trigger cancel with our onCloseHandler
+            weClosed = true;
             // no need to cancel on complete
             // FIXME: are we interested in async completion?
             requestContext.serverResponse().end();

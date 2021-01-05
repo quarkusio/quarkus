@@ -53,6 +53,14 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         }
     }
 
+    @Override
+    public ServerHttpResponse addCloseHandler(Runnable onClose) {
+        this.response.closeHandler(v -> {
+            onClose.run();
+        });
+        return this;
+    }
+
     public RoutingContext getContext() {
         return context;
     }

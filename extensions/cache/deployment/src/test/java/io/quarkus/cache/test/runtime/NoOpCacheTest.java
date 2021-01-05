@@ -1,6 +1,10 @@
 package io.quarkus.cache.test.runtime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -20,6 +24,7 @@ public class NoOpCacheTest {
 
     private static final String CACHE_NAME = "test-cache";
     private static final Object KEY = new Object();
+    private static final String FORCED_EXCEPTION_MESSAGE = "Forced exception";
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
@@ -49,6 +54,30 @@ public class NoOpCacheTest {
         cachedService.invalidateAll();
     }
 
+    @Test
+    public void testRuntimeExceptionThrowDuringCacheComputation() {
+        NumberFormatException e = assertThrows(NumberFormatException.class, () -> {
+            cachedService.throwRuntimeExceptionDuringCacheComputation();
+        });
+        assertEquals(FORCED_EXCEPTION_MESSAGE, e.getMessage());
+    }
+
+    @Test
+    public void testCheckedExceptionThrowDuringCacheComputation() {
+        IOException e = assertThrows(IOException.class, () -> {
+            cachedService.throwCheckedExceptionDuringCacheComputation();
+        });
+        assertEquals(FORCED_EXCEPTION_MESSAGE, e.getMessage());
+    }
+
+    @Test
+    public void testErrorThrowDuringCacheComputation() {
+        OutOfMemoryError e = assertThrows(OutOfMemoryError.class, () -> {
+            cachedService.throwErrorDuringCacheComputation();
+        });
+        assertEquals(FORCED_EXCEPTION_MESSAGE, e.getMessage());
+    }
+
     @Singleton
     static class CachedService {
 
@@ -63,6 +92,21 @@ public class NoOpCacheTest {
 
         @CacheInvalidateAll(cacheName = CACHE_NAME)
         public void invalidateAll() {
+        }
+
+        @CacheResult(cacheName = "runtime-exception-cache")
+        public String throwRuntimeExceptionDuringCacheComputation() {
+            throw new NumberFormatException(FORCED_EXCEPTION_MESSAGE);
+        }
+
+        @CacheResult(cacheName = "checked-exception-cache")
+        public String throwCheckedExceptionDuringCacheComputation() throws IOException {
+            throw new IOException(FORCED_EXCEPTION_MESSAGE);
+        }
+
+        @CacheResult(cacheName = "error-cache")
+        public String throwErrorDuringCacheComputation() {
+            throw new OutOfMemoryError(FORCED_EXCEPTION_MESSAGE);
         }
     }
 }

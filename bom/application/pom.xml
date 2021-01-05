@@ -26,7 +26,7 @@
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.13</opentracing-kafka.version>
         <jaeger.version>0.34.3</jaeger.version>
-        <quarkus-http.version>3.0.16.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.17.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>
         <micrometer.version>1.6.1</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->

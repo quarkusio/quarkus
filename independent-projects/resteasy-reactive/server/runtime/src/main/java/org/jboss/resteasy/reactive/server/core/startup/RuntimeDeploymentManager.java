@@ -49,6 +49,7 @@ public class RuntimeDeploymentManager {
     public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
     private final DeploymentInfo info;
     private final Supplier<Executor> executorSupplier;
+    private final Supplier<ServerRestHandler> blockingInputHandlerSupplier;
     private final Consumer<Closeable> closeTaskHandler;
     private final RequestContextFactory requestContextFactory;
     private final ThreadSetupAction threadSetupAction;
@@ -56,10 +57,12 @@ public class RuntimeDeploymentManager {
 
     public RuntimeDeploymentManager(DeploymentInfo info,
             Supplier<Executor> executorSupplier,
+            Supplier<ServerRestHandler> blockingInputHandlerSupplier,
             Consumer<Closeable> closeTaskHandler,
             RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath) {
         this.info = info;
         this.executorSupplier = executorSupplier;
+        this.blockingInputHandlerSupplier = blockingInputHandlerSupplier;
         this.closeTaskHandler = closeTaskHandler;
         this.requestContextFactory = requestContextFactory;
         this.threadSetupAction = threadSetupAction;
@@ -91,6 +94,7 @@ public class RuntimeDeploymentManager {
                     }
                 });
         RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
+                blockingInputHandlerSupplier,
                 interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler);
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
         possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources

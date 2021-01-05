@@ -19,7 +19,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  * to allow the request to stay on the IO thread. If the request is too large
  * it will be delegated to an executor and a blocking stream used instead.
  * <p>
- * TODO: the stream implementation here could be a lot more efficent.
+ * TODO: the stream implementation here could be a lot more efficient.
  */
 public class InputHandler implements ServerRestHandler {
 

@@ -152,7 +152,7 @@ class HibernateValidatorProcessor {
                     .supplier(hibernateValidatorRecorder.resteasyConfigSupportSupplier(
                             resteasyConfigBuildItem.isPresent() ? resteasyConfigBuildItem.get().isJsonDefault() : false))
                     .done());
-        } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
+        } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestEndPointValidationInterceptor"));

@@ -128,7 +128,7 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.QUARKUS_REST);
+        return new CapabilityBuildItem(Capability.RESTEASY_REACTIVE);
     }
 
     @BuildStep

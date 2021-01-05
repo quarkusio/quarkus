@@ -63,7 +63,7 @@ public class SmallRyeOpenTracingProcessor {
         } else if (capabilities.isPresent(Capability.RESTEASY)) {
             providers.produce(
                     new ResteasyJaxrsProviderBuildItem(QuarkusSmallRyeTracingStandaloneVertxDynamicFeature.class.getName()));
-        } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
+        } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             customResponseFilters.produce(new CustomContainerResponseFilterBuildItem(
                     QuarkusSmallRyeTracingStandaloneContainerResponseFilter.class.getName()));
             dynamicFeatures.produce(new DynamicFeatureBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));

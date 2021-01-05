@@ -16,7 +16,6 @@ import io.opentracing.Tracer;
 import io.opentracing.contrib.jaxrs2.server.OperationNameProvider;
 import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
 
-//TODO: For Quarkus REST we could really use something better than this...
 @Provider
 public class QuarkusSmallRyeTracingDynamicFeature implements DynamicFeature {
 

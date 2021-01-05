@@ -92,17 +92,20 @@ public class RuntimeResourceDeployment {
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig quarkusRestConfig;
     private final Supplier<Executor> executorSupplier;
+    private final Supplier<ServerRestHandler> blockingInputHandlerSupplier;
     private final RuntimeInterceptorDeployment runtimeInterceptorDeployment;
     private final DynamicEntityWriter dynamicEntityWriter;
     private final ResourceLocatorHandler resourceLocatorHandler;
 
     public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
+            Supplier<ServerRestHandler> blockingInputHandlerSupplier,
             RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
             ResourceLocatorHandler resourceLocatorHandler) {
         this.info = info;
         this.serialisers = info.getSerialisers();
         this.quarkusRestConfig = info.getConfig();
         this.executorSupplier = executorSupplier;
+        this.blockingInputHandlerSupplier = blockingInputHandlerSupplier;
         this.runtimeInterceptorDeployment = runtimeInterceptorDeployment;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
@@ -148,6 +151,15 @@ public class RuntimeResourceDeployment {
         //which we also want in the abort handler chain
         abortHandlingChain.addAll(handlers);
 
+        // when a method is blocking, we also want all the request filters to run on the worker thread
+        // because they can potentially set thread local variables
+        if (method.isBlocking()) {
+            handlers.add(new BlockingHandler(executorSupplier));
+            score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
+        } else {
+            score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
+        }
+
         //spec doesn't seem to test this, but RESTEeasy does not run request filters again for sub resources (which makes sense)
         if (!locatableResource) {
             handlers.addAll(interceptorDeployment.setupRequestFilterHandler());
@@ -171,8 +183,13 @@ public class RuntimeResourceDeployment {
             // read the body as multipart in one go
             handlers.add(new ReadBodyHandler(bodyParameter != null));
         } else if (bodyParameter != null) {
-            // allow the body to be read by chunks
-            handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), executorSupplier));
+            if (method.isBlocking() && (blockingInputHandlerSupplier != null)) {
+                // when the method is blocking, we will already be on a worker thread
+                handlers.add(blockingInputHandlerSupplier.get());
+            } else {
+                // allow the body to be read by chunks
+                handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), executorSupplier));
+            }
         }
         // if we need the body, let's deserialise it
         if (bodyParameter != null) {
@@ -228,12 +245,6 @@ public class RuntimeResourceDeployment {
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
                     converter, param.parameterType,
                     param.isObtainedAsCollection()));
-        }
-        if (method.isBlocking()) {
-            handlers.add(new BlockingHandler(executorSupplier));
-            score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
-        } else {
-            score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
         }
         handlers.add(new InvocationHandler(invoker));
 

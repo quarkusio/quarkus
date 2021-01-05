@@ -626,6 +626,119 @@ The first one provides more fine-grain tuning such as the worker pool to use and
 The second one, used in also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 ====
 
+== Testing a Kafka application
+
+=== Testing without a broker
+
+It can be useful to test the application without having to start a Kafka broker.
+To achieve this, you can _switch_ the channels managed by the Kafka connector to _in-memory_.
+
+IMPORTANT: This approach only works for JVM tests. It cannot be used for native tests (because they do not support injection).
+
+First, add the following dependency to your application:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.smallrye.reactive</groupId>
+    <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Then, create a Quarkus Test Resource as follows:
+
+[source, java]
+----
+public class KafkaTestResourceLifecycleManager implements QuarkusTestResourceLifecycleManager {
+
+    @Override
+    public Map<String, String> start() {
+        Map<String, String> env = new HashMap<>();
+        Map<String, String> props1 = InMemoryConnector.switchIncomingChannelsToInMemory("orders");  // <1>
+        Map<String, String> props2 = InMemoryConnector.switchOutgoingChannelsToInMemory("queue");   // <2>
+        env.putAll(props1);
+        env.putAll(props2);
+        return env;  // <3>
+    }
+
+    @Override
+    public void stop() {
+        InMemoryConnector.clear();  // <4>
+    }
+}
+----
+1. Switch the incoming channel "orders" (expecting messages from Kafka) to in-memory.
+2. Switch the outgoing channel "queue" (writing messages to Kafka) to in-memory.
+3. Builds and returns a `Map` containing all the properties required to configure the application to use in-memory channels.
+4. When the test stops, clear the `InMemoryConnector` (discard all the received and sent messages)
+
+Create a Quarkus Test using the test resource created above:
+
+[source, java]
+----
+@QuarkusTest
+@QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
+class BaristaTest {
+
+    @Inject  @Any
+    InMemoryConnector connector; // <1>
+
+    @Test
+    void testProcessOrder() {
+        InMemorySource<Order> orders = connector.source("orders"); // <2>
+        InMemorySink<Beverage> queue = connector.sink("queue");    // <3>
+
+        Order order = new Order();
+        order.setProduct("coffee");
+        order.setName("Coffee lover");
+        order.setOrderId("1234");
+
+        orders.send(order);  // <4>
+
+        await().<List<? extends Message<Beverage>>>until(queue::received, t -> t.size() == 1); // <5>
+
+        Beverage queuedBeverage = queue.received().get(0).getPayload();
+        Assertions.assertEquals(Beverage.State.READY, queuedBeverage.getPreparationState());
+        Assertions.assertEquals("coffee", queuedBeverage.getBeverage());
+        Assertions.assertEquals("Coffee lover", queuedBeverage.getCustomer());
+        Assertions.assertEquals("1234", queuedBeverage.getOrderId());
+    }
+
+}
+----
+1. Inject the in-memory connector in your test class
+2. Retrieve the incoming channel (`orders`) - the channel must have been switched to in-memory in the test resource.
+3. Retrieve the outgoing channel (`queue`) - the channel must have been switched to in-memory in the test resource.
+4. Use the `send` method to send a message to the `orders` channel. So, the application will process this message.
+5. Use the `received` method to check the messages produced by the application.
+
+=== Starting Kafka in a test resource
+
+Alternatively, you can start a Kafka broker in a test resource.
+The following snippet shows a test resource starting a Kafka broker using https://www.testcontainers.org/modules/kafka/[Test Containers]:
+
+[source, java]
+----
+public class KafkaResource implements QuarkusTestResourceLifecycleManager {
+
+    private final KafkaContainer kafka = new KafkaContainer();
+
+    @Override
+    public Map<String, String> start() {
+        kafka.start();
+        return Collections.singletonMap("kafka.bootstrap.servers", kafka.getBootstrapServers());  // <1>
+    }
+
+    @Override
+    public void stop() {
+        kafka.close();
+    }
+}
+----
+1. Configure the Kafka bootstrap location so the application connects to this broker.
+
+
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.

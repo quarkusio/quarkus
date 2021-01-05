@@ -149,7 +149,9 @@ final class InterfaceConfigPropertiesUtil {
                 List<MethodInfo> methods = classInfo.methods();
                 for (MethodInfo method : methods) {
                     Type returnType = method.returnType();
-                    if (isDefault(method.flags())) { // don't do anything with default methods
+                    short methodModifiers = method.flags();
+                    if (isDefault(methodModifiers) || Modifier.isStatic(methodModifiers)
+                            || Modifier.isPrivate(methodModifiers)) {
                         continue;
                     }
                     if (!method.parameters().isEmpty()) {

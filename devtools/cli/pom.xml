@@ -101,7 +101,6 @@
                                         <native.image.path>
                                             ${project.build.directory}/${project.build.finalName}-runner
                                         </native.image.path>
-                                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>

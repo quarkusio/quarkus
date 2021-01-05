@@ -5,7 +5,6 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.NEW_AUTHENTICATION;
 import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_RESPONSE;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,9 +16,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -28,10 +24,11 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
-import io.quarkus.oidc.OidcTenantConfig.Credentials;
-import io.quarkus.oidc.OidcTenantConfig.Credentials.Secret;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.SecurityEvent;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
@@ -40,7 +37,6 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
-import io.smallrye.jwt.build.Jwt;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.AsyncResult;
@@ -286,11 +282,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // Client secret has to be posted as a form parameter if OIDC requires the client_secret_post authentication
         Credentials creds = configContext.oidcConfig.getCredentials();
-        if (creds.clientSecret.value.isPresent() && Secret.Method.POST == creds.clientSecret.method.orElse(null)) {
-            params.put("client_secret", creds.clientSecret.value.get());
+        if (OidcCommonUtils.isClientSecretPostAuthRequired(creds)) {
+            params.put(OidcConstants.CLIENT_SECRET, creds.clientSecret.value.get());
         } else if (creds.jwt.secret.isPresent()) {
-            params.put("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-            params.put("client_assertion", signJwtWithClientSecret(configContext.oidcConfig));
+            params.put(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+            params.put(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwt(configContext.oidcConfig));
         }
 
         final String finalUserPath = userPath;
@@ -353,23 +349,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
             }
         });
-    }
-
-    private String signJwtWithClientSecret(OidcTenantConfig cfg) {
-        final byte[] keyBytes = cfg.credentials.jwt.secret.get().getBytes(StandardCharsets.UTF_8);
-        SecretKey key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HMACSHA256");
-
-        // 'jti' claim is created by default.
-        final long iat = (System.currentTimeMillis() / 1000);
-        final long exp = iat + cfg.credentials.jwt.lifespan;
-
-        return Jwt.claims()
-                .issuer(cfg.clientId.get())
-                .subject(cfg.clientId.get())
-                .audience(cfg.authServerUrl.get())
-                .issuedAt(iat)
-                .expiresAt(exp)
-                .sign(key);
     }
 
     private void processSuccessfulAuthentication(RoutingContext context,

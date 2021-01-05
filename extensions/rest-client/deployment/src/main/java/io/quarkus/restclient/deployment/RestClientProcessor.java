@@ -170,6 +170,7 @@ class RestClientProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Capabilities capabilities,
             PackageConfig packageConfig,
+            Optional<RestClientAnnotationProviderBuildItem> restClientAnnotationProvider,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -236,15 +237,20 @@ class RestClientProcessor {
                     configurator.addQualifier(REST_CLIENT);
                     final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
                     final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
+                    final Class<?> annotationProvider = checkAnnotationProviders(entry.getValue(),
+                            restClientAnnotationProvider.orElse(null));
                     configurator.scope(scope);
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType, baseUri).create();
                         ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
                         ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
                         ResultHandle configPrefixHandle = m.load(configPrefix);
+                        ResultHandle annotationProviderHandle = annotationProvider == null ? m.loadNull()
+                                : m.loadClass(annotationProvider);
                         ResultHandle baseHandle = m.newInstance(
-                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class, String.class),
-                                interfaceHandle, baseUriHandle, configPrefixHandle);
+                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class, String.class,
+                                        Class.class),
+                                interfaceHandle, baseUriHandle, configPrefixHandle, annotationProviderHandle);
                         ResultHandle ret = m.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                         m.returnValue(ret);
@@ -254,6 +260,15 @@ class RestClientProcessor {
                 }
             }
         }));
+    }
+
+    private static Class<?> checkAnnotationProviders(ClassInfo classInfo,
+            RestClientAnnotationProviderBuildItem restClientAnnotationProvider) {
+        if (restClientAnnotationProvider != null
+                && classInfo.classAnnotation(restClientAnnotationProvider.getAnnotationName()) != null) {
+            return restClientAnnotationProvider.getProviderClass();
+        }
+        return null;
     }
 
     @BuildStep

@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -13,7 +14,6 @@ import io.vertx.ext.web.RoutingContext;
 
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
-    private static final String BEARER = "Bearer";
     protected static final ChallengeData UNAUTHORIZED_CHALLENGE = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
             null, null);
 
@@ -49,7 +49,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             return headerValue;
         }
 
-        if (!BEARER.equalsIgnoreCase(scheme)) {
+        if (!OidcConstants.BEARER_SCHEME.equalsIgnoreCase(scheme)) {
             return null;
         }
 

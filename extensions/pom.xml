@@ -133,7 +133,11 @@
         <module>elytron-security-oauth2</module>
         <module>smallrye-jwt-build</module>
         <module>smallrye-jwt</module>
+        <module>oidc-common</module>
         <module>oidc</module>
+        <module>oidc-token-propagation</module>
+        <module>oidc-client</module>
+        <module>oidc-client-filter</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
 

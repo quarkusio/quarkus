@@ -15,6 +15,7 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTokenCredential;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
@@ -216,8 +217,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     }
                                 });
                             }
-                            if (event.result().principal().containsKey("scope")) {
-                                for (String role : event.result().principal().getString("scope").split(" ")) {
+                            if (event.result().principal().containsKey(OidcConstants.TOKEN_SCOPE)) {
+                                for (String role : event.result().principal().getString(OidcConstants.TOKEN_SCOPE).split(" ")) {
                                     builder.addRole(role.trim());
                                 }
                             }

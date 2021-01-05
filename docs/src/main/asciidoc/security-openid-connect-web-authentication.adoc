@@ -458,6 +458,9 @@ quarkus.oidc.credentials.secret={GOOGLE_CLIENT_SECRET}
 quarkus.oidc.token.issuer=https://accounts.google.com
 ----
 
+== Token Propagation
+Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Authorization Code Flow access token propagation to the downstream services.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]

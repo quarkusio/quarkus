@@ -15,10 +15,10 @@ import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
-import io.quarkus.oidc.OidcTenantConfig.Credentials;
-import io.quarkus.oidc.OidcTenantConfig.Credentials.Secret;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
-import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.TlsConfig;
@@ -29,7 +29,6 @@ import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.ext.auth.PubSecKeyOptions;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
@@ -42,32 +41,28 @@ import io.vertx.ext.jwt.JWTOptions;
 public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
+    private static final String DEFAULT_TENANT_ID = "Default";
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
 
     public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
         final Vertx vertxValue = vertx.get();
-        Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
 
+        String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
+        TenantConfigContext defaultTenantContext = createTenantContext(vertxValue, config.defaultTenant, tlsConfig,
+                defaultTenantId);
+
+        Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
         for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
-            if (config.defaultTenant.getTenantId().isPresent()
-                    && tenant.getKey().equals(config.defaultTenant.getTenantId().get())) {
-                throw new OIDCException("tenant-id '" + tenant.getKey() + "' duplicates the default tenant-id");
-            }
-            if (tenant.getValue().getTenantId().isPresent() && !tenant.getKey().equals(tenant.getValue().getTenantId().get())) {
-                throw new OIDCException("Configuration has 2 different tenant-id values: '"
-                        + tenant.getKey() + "' and '" + tenant.getValue().getTenantId().get() + "'");
-            }
+            OidcCommonUtils.verifyConfigurationId(defaultTenantId, tenant.getKey(), tenant.getValue().getTenantId());
             staticTenantsConfig.put(tenant.getKey(),
                     createTenantContext(vertxValue, tenant.getValue(), tlsConfig, tenant.getKey()));
         }
 
-        TenantConfigContext tenantContext = createTenantContext(vertxValue, config.defaultTenant, tlsConfig, "Default");
-
         return new Supplier<TenantConfigBean>() {
             @Override
             public TenantConfigBean get() {
-                return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, tenantContext,
+                return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, defaultTenantContext,
                         new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
                             @Override
                             public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
@@ -115,7 +110,7 @@ public class OidcRecorder {
             oidcConfig.tenantId = Optional.of(tenantId);
         }
         if (!oidcConfig.tenantEnabled) {
-            LOG.debugf("%s tenant configuration is disabled", tenantId);
+            LOG.debugf("'%s' tenant configuration is disabled", tenantId);
             return new TenantConfigContext(null, oidcConfig);
         }
 
@@ -139,23 +134,10 @@ public class OidcRecorder {
             return createdTenantContextFromPublicKey(options, oidcConfig);
         }
 
-        if (!oidcConfig.getAuthServerUrl().isPresent()) {
-            throw new ConfigurationException(
-                    "'auth-server-url' is not present. Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
-                            + " when the quarkus-oidc extension is enabled");
-        }
-
-        if (!oidcConfig.getClientId().isPresent()) {
-            throw new ConfigurationException(
-                    "'client-id' is not present. Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
-                            + " when the quarkus-oidc extension is enabled");
-        }
+        OidcCommonUtils.verifyCommonConfiguration(oidcConfig);
 
         // Base IDP server URL
-        String authServerUrl = oidcConfig.getAuthServerUrl().get();
-        if (authServerUrl.endsWith("/")) {
-            authServerUrl = authServerUrl.substring(0, authServerUrl.length() - 1);
-        }
+        String authServerUrl = OidcCommonUtils.getAuthServerUrl(oidcConfig);
         options.setSite(authServerUrl);
 
         if (!oidcConfig.discoveryEnabled) {
@@ -165,17 +147,12 @@ public class OidcRecorder {
                             + "set when the discovery is disabled.");
                 }
                 // These endpoints can only be used with the code flow
-                if (oidcConfig.getAuthorizationPath().isPresent()) {
-                    options.setAuthorizationPath(authServerUrl + prependSlash(oidcConfig.getAuthorizationPath().get()));
-                }
-
-                if (oidcConfig.getTokenPath().isPresent()) {
-                    options.setTokenPath(authServerUrl + prependSlash(oidcConfig.getTokenPath().get()));
-                }
+                options.setAuthorizationPath(OidcCommonUtils.getOidcEndpointUrl(authServerUrl, oidcConfig.authorizationPath));
+                options.setTokenPath(OidcCommonUtils.getOidcEndpointUrl(authServerUrl, oidcConfig.tokenPath));
             }
 
             if (oidcConfig.getUserInfoPath().isPresent()) {
-                options.setUserInfoPath(authServerUrl + prependSlash(oidcConfig.getUserInfoPath().get()));
+                options.setUserInfoPath(OidcCommonUtils.getOidcEndpointUrl(authServerUrl, oidcConfig.userInfoPath));
             }
 
             // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
@@ -185,23 +162,13 @@ public class OidcRecorder {
             }
 
             if (oidcConfig.getIntrospectionPath().isPresent()) {
-                options.setIntrospectionPath(authServerUrl + prependSlash(oidcConfig.getIntrospectionPath().get()));
+                options.setIntrospectionPath(OidcCommonUtils.getOidcEndpointUrl(authServerUrl, oidcConfig.introspectionPath));
             }
 
             if (oidcConfig.getJwksPath().isPresent()) {
-                options.setJwkPath(authServerUrl + prependSlash(oidcConfig.getJwksPath().get()));
+                options.setJwkPath(OidcCommonUtils.getOidcEndpointUrl(authServerUrl, oidcConfig.jwksPath));
             }
 
-        }
-
-        Credentials creds = oidcConfig.getCredentials();
-        if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
-            throw new ConfigurationException(
-                    "'credentials.secret' and 'credentials.client-secret' properties are mutually exclusive");
-        }
-        if ((creds.secret.isPresent() || creds.clientSecret.value.isPresent()) && creds.jwt.secret.isPresent()) {
-            throw new ConfigurationException(
-                    "Use only 'credentials.secret' or 'credentials.client-secret' or 'credentials.jwt.secret' property");
         }
 
         if (ApplicationType.SERVICE.equals(oidcConfig.applicationType)) {
@@ -224,31 +191,18 @@ public class OidcRecorder {
 
         // TODO: The workaround to support client_secret_post is added below and have to be removed once
         // it is supported again in VertX OAuth2.
-        if (creds.secret.isPresent() || creds.clientSecret.value.isPresent()
-                && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC) {
+        Credentials creds = oidcConfig.getCredentials();
+        if (OidcCommonUtils.isClientSecretBasicAuthRequired(creds)) {
             // If it is set for client_secret_post as well then VertX OAuth2 will only use client_secret_basic
-            options.setClientSecret(creds.secret.orElseGet(() -> creds.clientSecret.value.get()));
+            options.setClientSecret(OidcCommonUtils.clientSecret(creds));
         } else {
             // Avoid VertX OAuth2 setting a null client_secret form parameter if it is client_secret_post or client_secret_jwt
             options.setClientSecretParameterName(null);
         }
 
-        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
-        if (proxyOpt.isPresent()) {
-            options.setProxyOptions(proxyOpt.get());
-        }
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
 
-        boolean trustAll = oidcConfig.tls.verification.isPresent() ? oidcConfig.tls.verification.get() == Verification.NONE
-                : tlsConfig.trustAll;
-        if (trustAll) {
-            options.setTrustAll(true);
-            options.setVerifyHost(false);
-        }
-
-        final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()
-                ? oidcConfig.getConnectionDelay().get().toMillis() / 1000
-                : 0;
-        final long connectionRetryCount = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
+        final long connectionRetryCount = OidcCommonUtils.getConnectionRetryCount(oidcConfig);
         if (connectionRetryCount > 1) {
             LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
         }
@@ -296,10 +250,6 @@ public class OidcRecorder {
         return new TenantConfigContext(auth, oidcConfig);
     }
 
-    private static String prependSlash(String path) {
-        return !path.startsWith("/") ? "/" + path : path;
-    }
-
     private static OAuth2Auth discoverOidcEndpoints(Vertx vertx, OAuth2ClientOptions options) {
         return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OAuth2Auth>>() {
             public void accept(UniEmitter<? super OAuth2Auth> uniEmitter) {
@@ -307,7 +257,7 @@ public class OidcRecorder {
                     @Override
                     public void handle(AsyncResult<OAuth2Auth> event) {
                         if (event.failed()) {
-                            uniEmitter.fail(toOidcException(event.cause()));
+                            uniEmitter.fail(toOidcException(event.cause(), options.getSite()));
                         } else {
                             uniEmitter.complete(event.result());
                         }
@@ -326,7 +276,7 @@ public class OidcRecorder {
                     OAuth2Auth auth = OAuth2Auth.create(vertx, options);
                     auth.loadJWK(res -> {
                         if (res.failed()) {
-                            uniEmitter.fail(toOidcException(res.cause()));
+                            uniEmitter.fail(toOidcException(res.cause(), options.getSite()));
                         }
                         uniEmitter.complete(auth);
                     });
@@ -352,32 +302,17 @@ public class OidcRecorder {
         return new TenantConfigContext(new OAuth2AuthProviderImpl(null, options), oidcConfig);
     }
 
-    protected static OIDCException toOidcException(Throwable cause) {
-        final String message = "OIDC server is not available at the 'quarkus.oidc.auth-server-url' URL. "
-                + "Please make sure it is correct. Note it has to end with a realm value if you work with Keycloak, for example:"
-                + " 'https://localhost:8180/auth/realms/quarkus'";
+    protected static OIDCException toOidcException(Throwable cause, String authServerUrl) {
+        final String message = OidcCommonUtils.formatConnectionErrorMessage(authServerUrl);
         return new OIDCException(message, cause);
-    }
-
-    protected static Optional<ProxyOptions> toProxyOptions(OidcTenantConfig.Proxy proxyConfig) {
-        // Proxy is enabled if (at least) "host" is configured.
-        if (!proxyConfig.host.isPresent()) {
-            return Optional.empty();
-        }
-        JsonObject jsonOptions = new JsonObject();
-        jsonOptions.put("host", proxyConfig.host.get());
-        jsonOptions.put("port", proxyConfig.port);
-        if (proxyConfig.username.isPresent()) {
-            jsonOptions.put("username", proxyConfig.username.get());
-        }
-        if (proxyConfig.password.isPresent()) {
-            jsonOptions.put("password", proxyConfig.password.get());
-        }
-        return Optional.of(new ProxyOptions(jsonOptions));
     }
 
     public void setSecurityEventObserved(boolean isSecurityEventObserved) {
         DefaultTenantConfigResolver bean = Arc.container().instance(DefaultTenantConfigResolver.class).get();
         bean.setSecurityEventObserved(isSecurityEventObserved);
+    }
+
+    public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
+        return OidcCommonUtils.toProxyOptions(proxyConfig);
     }
 }

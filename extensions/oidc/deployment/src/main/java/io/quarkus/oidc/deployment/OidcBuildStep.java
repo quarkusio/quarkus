@@ -45,8 +45,6 @@ import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 public class OidcBuildStep {
     public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
 
-    OidcBuildTimeConfig buildTimeConfig;
-
     @BuildStep(onlyIf = IsEnabled.class)
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.OIDC);
@@ -111,7 +109,7 @@ public class OidcBuildStep {
         return new ValidationErrorBuildItem();
     }
 
-    static class IsEnabled implements BooleanSupplier {
+    public static class IsEnabled implements BooleanSupplier {
         OidcBuildTimeConfig config;
 
         public boolean getAsBoolean() {

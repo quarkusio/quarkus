@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
@@ -12,7 +11,7 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 
-class TestPool implements Pool {
+class TestPool implements TestPoolInterface {
 
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
@@ -39,6 +38,7 @@ class TestPool implements Pool {
         isClosed.set(true);
     }
 
+    @Override
     public boolean isClosed() {
         return isClosed.get();
     }

@@ -9,26 +9,29 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.wildfly.common.Assert;
 
+/**
+ * Regression tests for some basic sanity semantics of ThreadLocalPool
+ */
 public class ConnectionPoolsClosedTest {
 
+    /**
+     * When a thread is terminated, we don't immediately clean up
+     * any related Pool instances.
+     * But we do look for abandoned connections when we scale up again,
+     * so test for that specifically.
+     * Connections will be closed more aggressively in practice as implementors
+     * of ThreadLocalPool register a callback on close; so assuming clients
+     * actually close it and threads aren't terminated abruptly this
+     * should be unnecessary (still useful, since reality is often different).
+     */
     @Test
-    public void connectionsGetClosed() throws ExecutionException, InterruptedException {
-        /**
-         * When a thread is terminated, we don't immediately clean up
-         * any related Pool instances.
-         * But we do look for abandoned connections when we scale up again,
-         * so test for that specifically.
-         * Connections will be closed more aggressively in practice as implementors
-         * of ThreadLocalPool register a callback on close; so assuming clients
-         * actually close it and threads aren't terminated abruptly this
-         * should be unnecessary (still useful, since reality is often different).
-         */
+    public void connectionsFromOtherThreadsGetClosed() throws ExecutionException, InterruptedException {
         TestableThreadLocalPool globalPool = new TestableThreadLocalPool();
         Assert.assertTrue(globalPool.trackedSize() == 0);
-        final TestPool p1 = grabPoolFromOtherThread(globalPool);
+        final TestPoolInterface p1 = grabPoolFromOtherThread(globalPool);
         Assert.assertFalse(p1.isClosed());
         Assert.assertTrue(globalPool.trackedSize() == 1);
-        final TestPool p2 = grabPoolFromOtherThread(globalPool);
+        final TestPoolInterface p2 = grabPoolFromOtherThread(globalPool);
         Assert.assertTrue(p1.isClosed());
         Assert.assertFalse(p2.isClosed());
         Assert.assertTrue(globalPool.trackedSize() == 1);
@@ -37,12 +40,39 @@ public class ConnectionPoolsClosedTest {
         Assert.assertTrue(globalPool.trackedSize() == 0);
     }
 
-    private TestPool grabPoolFromOtherThread(TestableThreadLocalPool globalPool)
+    /**
+     * Here we check that when explicit close of a thread-local
+     * specific pool is closed, we also de-reference it.
+     * And when closing the global pool, all thread-local
+     * specific pools are closed and de-referenced.
+     */
+    @Test
+    public void plainClose() {
+        TestableThreadLocalPool globalPool = new TestableThreadLocalPool();
+        Assert.assertTrue(globalPool.trackedSize() == 0);
+        final TestPoolInterface p1 = globalPool.pool();
+        Assert.assertTrue(globalPool.trackedSize() == 1);
+        Assert.assertFalse(p1.isClosed());
+        p1.close();
+        Assert.assertTrue(p1.isClosed());
+        Assert.assertTrue(globalPool.trackedSize() == 0);
+        final TestPoolInterface p2 = globalPool.pool();
+        Assert.assertTrue(globalPool.trackedSize() == 1);
+        Assert.assertFalse(p2.isClosed());
+        Assert.assertTrue(p1.isClosed());
+        globalPool.close();
+        Assert.assertTrue(p2.isClosed());
+        Assert.assertTrue(globalPool.trackedSize() == 0);
+    }
+
+    private TestPoolInterface grabPoolFromOtherThread(TestableThreadLocalPool globalPool)
             throws ExecutionException, InterruptedException {
         final ExecutorService e = Executors.newSingleThreadExecutor();
-        final Future<TestPool> creation = e.submit(() -> globalPool.pool());
-        final TestPool poolInstance = creation.get();
+        final Future<TestPoolInterface> creation = e.submit(() -> globalPool.pool());
+        final TestPoolInterface poolInstance = creation.get();
         e.shutdownNow();
+        //We already blocked for the callable to be executed, so
+        //termination of the Executor should be immediate.
         e.awaitTermination(1, TimeUnit.MILLISECONDS);
         return poolInstance;
     }

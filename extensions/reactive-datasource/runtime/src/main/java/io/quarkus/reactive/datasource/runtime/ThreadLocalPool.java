@@ -16,6 +16,25 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 
+/**
+ * This Pool implementation wraps the Vert.x Pool into thread-locals,
+ * as it's otherwise not thread-safe to be exposed to all the threads
+ * possibly accessing it in Quarkus.
+ * There are two main drawbacks to this approach:
+ * <p>
+ * 1# We need to track each instance stored in a ThreadLocal
+ * so to ensure we can close also the ones started in other threads.
+ * </p>
+ * <p>
+ * 2# Having the actual number of Pools determined by the number
+ * of threads requesting one makes this not honour the limit of
+ * connections to the database.
+ * </p>
+ *
+ * In particular the second limitation will need to be addressed.
+ *
+ * @param <PoolType> useful for implementations to produce typed pools
+ */
 public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
 
     //List of all opened pools. Access requires synchronization on the list instance.
@@ -58,7 +77,6 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
                 //This might potentially close the connection a second time,
                 //so we need to ensure implementations allow it.
                 pair.close();
-                allConnections.remove(pair);
             }
         }
     }

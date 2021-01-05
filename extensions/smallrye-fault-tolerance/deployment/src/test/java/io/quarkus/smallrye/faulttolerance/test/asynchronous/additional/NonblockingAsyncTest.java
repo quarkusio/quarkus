@@ -28,10 +28,19 @@ public class NonblockingAsyncTest {
         CompletionStage<String> future = service.hello();
         assertThat(future.toCompletableFuture().get()).isEqualTo("hello");
 
-        assertThat(service.getHelloThread()).isSameAs(mainThread);
-        assertThat(service.getHelloStackTrace()).anySatisfy(frame -> {
-            assertThat(frame.getClassName()).contains("io.smallrye.faulttolerance.core");
+        // no delay between retries, all executions happen on the same thread
+        // if there _was_ a delay, subsequent retries would be offloaded to another thread
+        assertThat(service.getHelloThreads()).allSatisfy(thread -> {
+            assertThat(thread).isSameAs(mainThread);
         });
+        assertThat(service.getHelloStackTraces()).allSatisfy(stackTrace -> {
+            assertThat(stackTrace).anySatisfy(frame -> {
+                assertThat(frame.getClassName()).contains("io.smallrye.faulttolerance.core");
+            });
+        });
+
+        // 1 initial execution + 3 retries
+        assertThat(service.getInvocationCounter()).hasValue(4);
 
         assertThat(service.getFallbackThread()).isSameAs(mainThread);
     }

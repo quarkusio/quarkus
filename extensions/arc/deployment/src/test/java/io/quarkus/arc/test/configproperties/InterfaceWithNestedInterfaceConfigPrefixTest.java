@@ -27,7 +27,7 @@ public class InterfaceWithNestedInterfaceConfigPrefixTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class, DummyProperties.NestedDummy.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.boolWD=true\ndummy.nested-dummy.foo=bar\ndummy.nested-dummy.other=some"),
+                            "dummy.name=quarkus\ndummy.boolWD=true\ndummy.nested-dummy.foo=bar\ndummy.nested-dummy.other=some\ndummy.other-nested.foo=bar2\ndummy.other-nested.other=some2"),
                             "application.properties"));
 
     @Inject
@@ -37,11 +37,18 @@ public class InterfaceWithNestedInterfaceConfigPrefixTest {
     public void testConfiguredValues() {
         assertEquals("quarkus", dummyBean.dummyProperties.getName());
         assertTrue(dummyBean.dummyProperties.isBoolWithDef());
+
         DummyProperties.NestedDummy nestedDummy = dummyBean.dummyProperties.getNestedDummy();
         assertNotNull(nestedDummy);
         assertEquals("some", nestedDummy.getOther());
         assertEquals("bar", nestedDummy.getFooBar());
         assertEquals(Arrays.asList(1, 2, 3), nestedDummy.getNumbers());
+
+        DummyProperties.NestedDummy otherNested = dummyBean.dummyProperties.getOtherNested();
+        assertNotNull(otherNested);
+        assertEquals("some2", otherNested.getOther());
+        assertEquals("bar2", otherNested.getFooBar());
+        assertEquals(Arrays.asList(1, 2, 3), otherNested.getNumbers());
     }
 
     @Singleton
@@ -60,6 +67,8 @@ public class InterfaceWithNestedInterfaceConfigPrefixTest {
         boolean isBoolWithDef();
 
         NestedDummy getNestedDummy();
+
+        NestedDummy getOtherNested();
 
         interface NestedDummy {
 

@@ -107,6 +107,20 @@ final class ConfigPropertiesUtil {
         return new ReadOptionalResponse(value, isPresentTrue, isPresentBranch.falseBranch());
     }
 
+    public static boolean isListOfObject(Type type) {
+        if (type.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+            return false;
+        }
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        if (!DotNames.LIST.equals(parameterizedType.name())) {
+            return false;
+        }
+        if (parameterizedType.arguments().size() != 1) {
+            return false;
+        }
+        return !parameterizedType.arguments().get(0).name().toString().startsWith("java");
+    }
+
     private static boolean isCollection(final Type resultType) {
         return DotNames.COLLECTION.equals(resultType.name()) ||
                 DotNames.LIST.equals(resultType.name()) ||

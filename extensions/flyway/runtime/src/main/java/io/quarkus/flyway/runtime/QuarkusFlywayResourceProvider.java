@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.flywaydb.core.api.ResourceProvider;
-import org.flywaydb.core.internal.resource.LoadableResource;
+import org.flywaydb.core.api.resource.LoadableResource;
 import org.flywaydb.core.internal.util.StringUtils;
 import org.jboss.logging.Logger;
 

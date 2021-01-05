@@ -90,10 +90,6 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository>
-            <id>microprofile-jwt-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/orgeclipsemicroprofile-1384/</url>
-        </repository>
     </repositories>
 
     <distributionManagement>

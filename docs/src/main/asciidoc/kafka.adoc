@@ -681,7 +681,7 @@ Create a Quarkus Test using the test resource created above:
 @QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
 class BaristaTest {
 
-    @Inject  @Any
+    @Inject @Any
     InMemoryConnector connector; // <1>
 
     @Test
@@ -707,7 +707,7 @@ class BaristaTest {
 
 }
 ----
-1. Inject the in-memory connector in your test class
+1. Inject the in-memory connector in your test class.
 2. Retrieve the incoming channel (`orders`) - the channel must have been switched to in-memory in the test resource.
 3. Retrieve the outgoing channel (`queue`) - the channel must have been switched to in-memory in the test resource.
 4. Use the `send` method to send a message to the `orders` channel. So, the application will process this message.
@@ -716,7 +716,7 @@ class BaristaTest {
 === Starting Kafka in a test resource
 
 Alternatively, you can start a Kafka broker in a test resource.
-The following snippet shows a test resource starting a Kafka broker using https://www.testcontainers.org/modules/kafka/[Test Containers]:
+The following snippet shows a test resource starting a Kafka broker using https://www.testcontainers.org/modules/kafka/[Testcontainers]:
 
 [source, java]
 ----
@@ -736,8 +736,38 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager {
     }
 }
 ----
-1. Configure the Kafka bootstrap location so the application connects to this broker.
+1. Configure the Kafka bootstrap location, so the application connects to this broker.
 
+== Authenticating with OAuth
+
+If your Kafka broker uses OAuth as authentication mechanism, you need to configure the Kafka consumer to enable this authentication process.
+First, add the following dependency to your application:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.strimzi</groupId>
+    <artifactId>kafka-oauth-client</artifactId>
+</dependency>
+----
+
+This dependency provides the callback handler required to handle the OAuth workflow.
+Then, in the `application.properties`, add:
+
+[source, properties]
+----
+mp.messaging.connector.smallrye-kafka.security.protocol=SASL_PLAINTEXT
+mp.messaging.connector.smallrye-kafka.sasl.mechanism=OAUTHBEARER
+mp.messaging.connector.smallrye-kafka.sasl.jaas.config=org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required \
+  oauth.client.id="team-a-client" \
+  oauth.client.secret="team-a-client-secret" \
+  oauth.token.endpoint.uri="http://keycloak:8080/auth/realms/kafka-authz/protocol/openid-connect/token" ;
+mp.messaging.connector.smallrye-kafka.sasl.login.callback.handler.class=io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler
+----
+
+Update the `oauth.client.id`, `oauth.client.secret` and `oauth.token.endpoint.uri` values.
+
+OAuth authentication works for both JVM and native modes.
 
 == Going further
 

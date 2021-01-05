@@ -112,7 +112,7 @@ final class InterfaceConfigPropertiesUtil {
                 prefixStr, namingStrategy, interfaceToGeneratedClass);
     }
 
-    private void generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
+    private String generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
             ClassInfo currentInterface,
             String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
@@ -122,9 +122,11 @@ final class InterfaceConfigPropertiesUtil {
         collectInterfacesRec(currentInterface, index, allInterfaces);
 
         String generatedClassName = createName(currentInterface.name(), prefixStr);
-        // the generated class needs to be unremovable if it's not top-level interface since it will only be obtains via Arc.container().instance() in generated code
-        interfaceToGeneratedClass.put(currentInterface.name(),
-                new GeneratedClass(generatedClassName, !originalInterface.name().equals(currentInterface.name())));
+
+        // we only need to generate CDI producers for the top-level interface, not the sub-interfaces
+        if (originalInterface.name().equals(currentInterface.name())) {
+            interfaceToGeneratedClass.put(currentInterface.name(), new GeneratedClass(generatedClassName, true));
+        }
 
         try (ClassCreator interfaceImplClassCreator = ClassCreator.builder().classOutput(classOutput)
                 .interfaces(currentInterface.name().toString()).className(generatedClassName)
@@ -171,23 +173,25 @@ final class InterfaceConfigPropertiesUtil {
                         if ((returnType.kind() == Type.Kind.CLASS)) {
                             ClassInfo returnTypeClassInfo = index.getClassByName(returnType.name());
                             if ((returnTypeClassInfo != null) && Modifier.isInterface(returnTypeClassInfo.flags())) {
-                                // when the return type is an interface,
-                                // 1) we generate an implementation
-                                // 2) retrieve the implementation from Arc
-
-                                generateImplementationForInterfaceConfigPropertiesRec(originalInterface, returnTypeClassInfo,
+                                String generatedSubInterfaceImp = generateImplementationForInterfaceConfigPropertiesRec(
+                                        originalInterface, returnTypeClassInfo,
                                         fullConfigName, namingStrategy, interfaceToGeneratedClass);
 
                                 ResultHandle arcContainer = methodCreator
                                         .invokeStaticMethod(
                                                 MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-                                ResultHandle instanceHandle = methodCreator.invokeInterfaceMethod(
+                                ResultHandle configInstanceHandle = methodCreator.invokeInterfaceMethod(
                                         ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                                                 Annotation[].class),
-                                        arcContainer, methodCreator.loadClass(returnTypeClassInfo.name().toString()),
+                                        arcContainer, methodCreator.loadClass(Config.class),
                                         methodCreator.newArray(Annotation.class, 0));
-                                methodCreator.returnValue(methodCreator.invokeInterfaceMethod(
-                                        MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle));
+                                ResultHandle config = methodCreator.invokeInterfaceMethod(
+                                        ofMethod(InstanceHandle.class, "get", Object.class), configInstanceHandle);
+
+                                ResultHandle interImpl = methodCreator
+                                        .newInstance(MethodDescriptor.ofConstructor(generatedSubInterfaceImp,
+                                                Config.class.getName()), config);
+                                methodCreator.returnValue(interImpl);
                                 continue;
                             }
                         }
@@ -271,6 +275,8 @@ final class InterfaceConfigPropertiesUtil {
                 }
             }
         }
+
+        return generatedClassName;
     }
 
     private static void collectInterfacesRec(ClassInfo current, IndexView index, Set<DotName> result) {

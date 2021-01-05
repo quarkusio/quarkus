@@ -148,7 +148,7 @@
         <aws-lambda-java-events.version>3.7.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.4.0</aws-xray.version>
-        <awssdk.version>2.15.57</awssdk.version>
+        <awssdk.version>2.15.58</awssdk.version>
         <aws-alexa-sdk.version>2.37.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.4.20</kotlin.version>
@@ -181,7 +181,7 @@
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <htmlunit.version>2.40.0</htmlunit.version>
-        <mockito.version>3.6.28</mockito.version>
+        <mockito.version>3.7.0</mockito.version>
         <jna.version>5.3.1</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.8</antlr.version>
         <quarkus-security.version>1.1.3.Final</quarkus-security.version>

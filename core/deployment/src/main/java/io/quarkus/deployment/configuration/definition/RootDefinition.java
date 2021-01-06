@@ -73,7 +73,7 @@ public final class RootDefinition extends ClassDefinition {
             rootName = String.join("-", (Iterable<String>) () -> lowerCase(trimmedSegments.iterator()));
         }
         this.rootName = rootName;
-        this.descriptor = FieldDescriptor.of(CONFIG_CLASS_NAME, String.join("", segments), Object.class);
+        this.descriptor = FieldDescriptor.of(CONFIG_CLASS_NAME, String.join("", segments), configClass);
     }
 
     public ConfigPhase getConfigPhase() {

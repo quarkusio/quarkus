@@ -9,4 +9,8 @@ import io.vertx.core.eventbus.Message;
  */
 public interface EventConsumerInvoker extends BeanInvoker<Message<Object>> {
 
+    default boolean isBlocking() {
+        return false;
+    }
+
 }

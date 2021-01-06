@@ -18,6 +18,7 @@ import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -81,10 +82,24 @@ public class VertxRecorder {
                 consumer.handler(new Handler<Message<Object>>() {
                     @Override
                     public void handle(Message<Object> m) {
-                        try {
-                            invoker.invoke(m);
-                        } catch (Throwable e) {
-                            m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                        if (invoker.isBlocking()) {
+                            vertx.executeBlocking(new Handler<Promise<Object>>() {
+                                @Override
+                                public void handle(Promise<Object> event) {
+                                    try {
+                                        invoker.invoke(m);
+                                    } catch (Throwable e) {
+                                        m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                    }
+                                    event.complete();
+                                }
+                            }, null);
+                        } else {
+                            try {
+                                invoker.invoke(m);
+                            } catch (Throwable e) {
+                                m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                            }
                         }
                     }
                 });

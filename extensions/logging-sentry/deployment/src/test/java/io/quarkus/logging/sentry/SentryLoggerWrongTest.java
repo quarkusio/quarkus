@@ -1,8 +1,5 @@
 package io.quarkus.logging.sentry;
 
-import static io.sentry.jvmti.ResetFrameCache.resetFrameCache;
-
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,8 +19,4 @@ public class SentryLoggerWrongTest {
         //Exception is expected
     }
 
-    @AfterAll
-    static void reset() {
-        resetFrameCache();
-    }
 }

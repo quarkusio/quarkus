@@ -1,5 +1,6 @@
 package io.quarkus.rest.data.panache.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,7 +46,7 @@ class JaxRsResourceImplementor {
 
     /**
      * Implement a JAX-RS resource with a following structure.
-     * 
+     *
      * <pre>
      * {@code
      *      &#64;Path("/my-entities')
@@ -80,7 +81,7 @@ class JaxRsResourceImplementor {
 
     private FieldDescriptor implementResourceField(ClassCreator classCreator, ResourceMetadata resourceMetadata) {
         FieldCreator resourceFieldCreator = classCreator.getFieldCreator("resource", resourceMetadata.getResourceClass());
-        resourceFieldCreator.addAnnotation(Inject.class);
+        resourceFieldCreator.setModifiers(resourceFieldCreator.getModifiers() & ~Modifier.PRIVATE).addAnnotation(Inject.class);
         return resourceFieldCreator.getFieldDescriptor();
     }
 

@@ -1,17 +1,13 @@
 package io.quarkus.logging.sentry;
 
 import static io.quarkus.logging.sentry.SentryLoggerTest.getSentryHandler;
-import static io.sentry.jvmti.ResetFrameCache.resetFrameCache;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.sentry.Sentry;
-import io.sentry.jul.SentryHandler;
-import io.sentry.jvmti.FrameCache;
 
 public class SentryLoggerCustomTest {
 
@@ -25,13 +21,9 @@ public class SentryLoggerCustomTest {
         final SentryHandler sentryHandler = getSentryHandler();
         assertThat(sentryHandler).isNotNull();
         assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.TRACE);
-        assertThat(FrameCache.shouldCacheThrowable(new IllegalStateException("Test frame"), 1)).isTrue();
-        assertThat(Sentry.getStoredClient()).isNotNull();
-        assertThat(Sentry.isInitialized()).isTrue();
-    }
-
-    @AfterAll
-    public static void reset() {
-        resetFrameCache();
+        assertThat(sentryHandler.getOptions().getInAppIncludes()).containsExactlyInAnyOrder("io.quarkus.logging.sentry",
+                "org.test");
+        assertThat(sentryHandler.getOptions().getDsn()).isEqualTo("https://123@example.com/22222");
+        assertThat(Sentry.isEnabled()).isTrue();
     }
 }

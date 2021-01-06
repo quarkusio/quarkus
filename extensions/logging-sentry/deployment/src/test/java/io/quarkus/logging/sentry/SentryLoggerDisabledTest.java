@@ -1,16 +1,13 @@
 package io.quarkus.logging.sentry;
 
 import static io.quarkus.logging.sentry.SentryLoggerTest.getSentryHandler;
-import static io.sentry.jvmti.ResetFrameCache.resetFrameCache;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.sentry.Sentry;
-import io.sentry.jul.SentryHandler;
 
 public class SentryLoggerDisabledTest {
 
@@ -23,12 +20,7 @@ public class SentryLoggerDisabledTest {
     public void sentryLoggerDisabledTest() {
         final SentryHandler sentryHandler = getSentryHandler();
         assertThat(sentryHandler).isNull();
-        assertThat(Sentry.getStoredClient()).isNotNull();
-        assertThat(Sentry.isInitialized()).isTrue();
+        assertThat(Sentry.isEnabled()).isFalse();
     }
 
-    @AfterAll
-    static void reset() {
-        resetFrameCache();
-    }
 }

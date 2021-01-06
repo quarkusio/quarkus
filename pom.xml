@@ -112,6 +112,7 @@
                 </property>
             </activation>
             <properties>
+                <!-- please check quick-build-ci as well when modifying these properties -->
                 <skipTests>true</skipTests>
                 <skipITs>true</skipITs>
                 <skipDocs>true</skipDocs>
@@ -125,6 +126,26 @@
             <build>
                 <defaultGoal>clean install</defaultGoal>
             </build>
+        </profile>
+        <profile>
+            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+            <id>quick-build-ci</id>
+            <activation>
+                <property>
+                    <name>quickly-ci</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <skipDocs>true</skipDocs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
+                <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+            </properties>
         </profile>
         <profile>
             <id>release</id>

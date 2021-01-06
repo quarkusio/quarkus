@@ -65,25 +65,28 @@ public class QuartzScheduler implements Scheduler {
 
     private final org.quartz.Scheduler scheduler;
     private final boolean enabled;
-
-    @Produces
-    @Singleton
-    org.quartz.Scheduler produceQuartzScheduler() {
-        if (scheduler == null) {
-            throw new IllegalStateException(
-                    "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler via quarkus.quartz.force-start=true");
-        }
-        return scheduler;
-    }
+    private final boolean startHalted;
 
     public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, Config config,
             SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs,
             Instance<UserTransaction> userTransation) {
         enabled = schedulerRuntimeConfig.enabled;
+        final QuartzRuntimeConfig runtimeConfig = quartzSupport.getRuntimeConfig();
+        warnDeprecated(runtimeConfig);
+
+        boolean forceStart;
+        if (runtimeConfig.startMode != QuartzStartMode.NORMAL) {
+            startHalted = (runtimeConfig.startMode == QuartzStartMode.HALTED);
+            forceStart = startHalted || (runtimeConfig.startMode == QuartzStartMode.FORCED);
+        } else {
+            startHalted = false;
+            forceStart = runtimeConfig.forceStart.orElse(false);
+        }
+
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
-        } else if (!quartzSupport.getRuntimeConfig().forceStart && context.getScheduledMethods().isEmpty()) {
+        } else if (!forceStart && context.getScheduledMethods().isEmpty()) {
             LOGGER.info("No scheduled business methods found - Quartz scheduler will not be started");
             this.scheduler = null;
         } else {
@@ -202,6 +205,28 @@ public class QuartzScheduler implements Scheduler {
         }
     }
 
+    /**
+     * Warn if there's any deprecated configuration
+     *
+     * @param runtimeConfig {@link QuartzRuntimeConfig} quartz scheduler configurations
+     */
+    private static void warnDeprecated(QuartzRuntimeConfig runtimeConfig) {
+        if (runtimeConfig.forceStart.isPresent()) {
+            LOGGER.warn("`quarkus.quartz.force-start` is deprecated and will be removed in a future version - it is "
+                    + "recommended to switch to `quarkus.quartz.start-mode`");
+        }
+    }
+
+    @Produces
+    @Singleton
+    org.quartz.Scheduler produceQuartzScheduler() {
+        if (scheduler == null) {
+            throw new IllegalStateException(
+                    "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler via quarkus.quartz.force-start=true");
+        }
+        return scheduler;
+    }
+
     @Override
     public void pause() {
         if (!enabled) {
@@ -247,7 +272,7 @@ public class QuartzScheduler implements Scheduler {
 
     // Use Interceptor.Priority.PLATFORM_BEFORE to start the scheduler before regular StartupEvent observers
     void start(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE) StartupEvent startupEvent) {
-        if (scheduler == null) {
+        if (scheduler == null || startHalted) {
             return;
         }
         try {

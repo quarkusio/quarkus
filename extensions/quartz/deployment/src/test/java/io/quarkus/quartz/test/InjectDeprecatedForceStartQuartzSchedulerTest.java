@@ -26,13 +26,13 @@ import org.quartz.TriggerBuilder;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class InjectQuartzSchedulerTest {
+public class InjectDeprecatedForceStartQuartzSchedulerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Starter.class)
-                    .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
+                    .addAsResource(new StringAsset("quarkus.quartz.force-start=true"),
                             "application.properties"));
 
     @Test

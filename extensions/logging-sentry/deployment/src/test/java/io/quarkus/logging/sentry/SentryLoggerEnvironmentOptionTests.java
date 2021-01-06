@@ -3,6 +3,8 @@ package io.quarkus.logging.sentry;
 import static io.quarkus.logging.sentry.SentryLoggerTest.getSentryHandler;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.logging.Handler;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,9 +20,9 @@ public class SentryLoggerEnvironmentOptionTests {
 
     @Test
     public void sentryLoggerEnvironmentOptionTest() {
-        final SentryHandler sentryHandler = getSentryHandler();
+        final Handler sentryHandler = getSentryHandler();
         assertThat(sentryHandler).isNotNull();
-        assertThat(sentryHandler.getOptions().getEnvironment()).isEqualTo("test-environment");
+        assertThat(sentryHandler).extracting("options").extracting("environment").isEqualTo("test-environment");
         assertThat(Sentry.isEnabled()).isTrue();
     }
 

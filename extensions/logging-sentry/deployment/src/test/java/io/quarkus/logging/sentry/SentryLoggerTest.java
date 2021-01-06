@@ -3,6 +3,7 @@ package io.quarkus.logging.sentry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -25,15 +26,19 @@ public class SentryLoggerTest {
 
     @Test
     public void sentryLoggerDefaultTest() {
-        final SentryHandler sentryHandler = getSentryHandler();
+        final Handler sentryHandler = getSentryHandler();
         assertThat(sentryHandler).isNotNull();
-        assertThat(sentryHandler.getOptions().getInAppIncludes()).isEmpty();
-        assertThat(sentryHandler.getOptions().getDsn()).isEqualTo("https://123@default.com/22222");
+        assertThat(sentryHandler).extracting("options").extracting("InAppIncludes").satisfies(o -> {
+            assertThat(o).isInstanceOfSatisfying(Collection.class, c -> {
+                assertThat(c).isEmpty();
+            });
+        });
+        assertThat(sentryHandler).extracting("options").extracting("dsn").isEqualTo("https://123@default.com/22222");
         assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.WARN);
         assertThat(Sentry.isEnabled()).isTrue();
     }
 
-    public static SentryHandler getSentryHandler() {
+    public static Handler getSentryHandler() {
         LogManager logManager = LogManager.getLogManager();
         assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
 
@@ -42,9 +47,9 @@ public class SentryLoggerTest {
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
         Handler handler = Arrays.stream(delayedHandler.getHandlers())
-                .filter(h -> (h instanceof SentryHandler))
+                .filter(h -> SentryHandler.class.getName().equals(h.getClass().getName()))
                 .findFirst().orElse(null);
-        return (SentryHandler) handler;
+        return handler;
     }
 
 }

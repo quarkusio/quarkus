@@ -3,6 +3,8 @@ package io.quarkus.logging.sentry;
 import static io.quarkus.logging.sentry.SentryLoggerTest.getSentryHandler;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.logging.Handler;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,12 +20,13 @@ public class SentryLoggerCustomTest {
 
     @Test
     public void sentryLoggerCustomTest() {
-        final SentryHandler sentryHandler = getSentryHandler();
+        final Handler sentryHandler = getSentryHandler();
         assertThat(sentryHandler).isNotNull();
         assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.TRACE);
-        assertThat(sentryHandler.getOptions().getInAppIncludes()).containsExactlyInAnyOrder("io.quarkus.logging.sentry",
-                "org.test");
-        assertThat(sentryHandler.getOptions().getDsn()).isEqualTo("https://123@example.com/22222");
+        assertThat(sentryHandler).extracting("options").extracting("InAppIncludes").satisfies(o -> {
+            assertThat(o.toString()).contains("io.quarkus.logging.sentry").contains("org.test");
+        });
+        assertThat(sentryHandler).extracting("options").extracting("dsn").isEqualTo("https://123@example.com/22222");
         assertThat(Sentry.isEnabled()).isTrue();
     }
 }

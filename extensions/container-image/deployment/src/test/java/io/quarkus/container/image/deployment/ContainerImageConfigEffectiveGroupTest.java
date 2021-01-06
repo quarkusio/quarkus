@@ -29,6 +29,14 @@ class ContainerImageConfigEffectiveGroupTest {
     }
 
     @Test
+    void testFromSpaceInUsername() {
+        testWithNewUsername("user name", () -> {
+            sut.group = Optional.of(System.getProperty(USER_NAME_SYSTEM_PROPERTY));
+            assertEquals(sut.getEffectiveGroup(), Optional.of("user-name"));
+        });
+    }
+
+    @Test
     void testFromOther() {
         testWithNewUsername("WhateveR", () -> {
             sut.group = Optional.of("OtheR");

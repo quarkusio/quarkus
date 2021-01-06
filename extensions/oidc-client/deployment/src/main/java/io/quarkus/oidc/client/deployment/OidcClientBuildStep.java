@@ -16,11 +16,13 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.runtime.OidcClientBuildTimeConfig;
 import io.quarkus.oidc.client.runtime.OidcClientRecorder;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
+import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.client.runtime.TokensProducer;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -40,6 +42,11 @@ public class OidcClientBuildStep {
     @BuildStep(onlyIf = IsEnabled.class)
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(TokensProducer.class));
+    }
+
+    @BuildStep(onlyIf = IsEnabled.class)
+    void runtimeInitializeTokenHelper(BuildProducer<RuntimeInitializedClassBuildItem> runtime) {
+        runtime.produce(new RuntimeInitializedClassBuildItem(TokensHelper.class.getName()));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

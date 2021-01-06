@@ -1094,8 +1094,9 @@ lowercased, and re-joined using hyphens (`-`).
 
 A configuration root's class name can contain an extra suffix segment for the case where there are configuration
 roots for multiple <<Configuration Root Phases>>.  Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
-may end with `BuildTimeConfig` or `BuildTimeConfiguration`, and classes which correspond to the `RUN_TIME` phase
-may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration`.
+may end with `BuildTimeConfig` or `BuildTimeConfiguration`, classes which correspond to the `RUN_TIME` phase
+may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration` while classes which correspond
+to the `BOOTSTRAP` configuration may end with `BootstrapConfig` or `BootstrapConfiguration`.
 
 Note: The current implementation is still using injection site to determine the root set, so to avoid migration problems, it
 is recommended that the injection site (field or parameter) have the same name as the configuration root class until
@@ -1129,6 +1130,13 @@ A configuration root dictates when its contained keys are read from configuratio
 | ✗
 | Appropriate for things which affect build and must be visible for run time code.  Not read from config at run time.
 
+| BOOTSTRAP
+| ✗
+| ✓
+| ✗
+| ✓
+| Used when runtime configuration needs to be obtained from an external system (like `Consul`), but details of that system need to be configurable (for example Consul's URL). The high level way this works is by using the standard Quarkus config sources (such as properties files, system properties, etc.) and producing `ConfigSourceProvider` objects which are subsequently taken into account by Quarkus when creating the final runtime `Config` object.
+
 | RUN_TIME
 | ✗
 | ✓
@@ -1139,6 +1147,8 @@ A configuration root dictates when its contained keys are read from configuratio
 |===
 
 For all cases other than the `BUILD_TIME` case, the configuration root class and all of the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact.  Configuration roots of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
+
+IMPORTANT: _Bootstrap_ configuration steps are executed during runtime-init *before* any of other runtime steps. This means that code executed as part of this step cannot access anything that gets initialized in runtime init steps (runtime synthetic CDI beans being one such example).
 
 ==== Configuration Example
 

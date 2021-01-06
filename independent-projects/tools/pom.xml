@@ -52,7 +52,7 @@
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>16</maven-model-helper.version>
         <commons-io.version>2.8.0</commons-io.version>
-        <quarkus-http.version>3.0.16.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.17.Final</quarkus-http.version>
     </properties>
     <modules>
         <module>platform-descriptor-api</module>

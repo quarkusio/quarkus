@@ -15,7 +15,7 @@
     <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
 
     <properties>
-        <postgres.image>postgres:10.5</postgres.image>
+        <postgres.image>postgres:13.1</postgres.image>
         <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
     </properties>
 
@@ -148,7 +148,7 @@
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all postgres:10.5 images currently running, not just those we just started.
+                            <!--Stops all postgres images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>

@@ -229,7 +229,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>postgres:10.5</name>
+                                    <name>postgres:13.1</name>
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>
@@ -252,7 +252,7 @@
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all postgres:10.5 images currently running, not just those we just started.
+                            <!--Stops all postgres images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>

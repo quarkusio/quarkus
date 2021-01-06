@@ -41,6 +41,13 @@ The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/mi
 
 == Creating the Maven Project
 
+Micrometer defines a core library and a set of additional libraries that support different monitoring systems.
+Quarkus Micrometer extensions are structured similarly: `quarkus-micrometer` provides core micrometer support and
+runtime integration and other supporting Quarkus and Quarkiverse extensions bring in additional dependencies
+and requirements to support specific monitoring systems.
+
+For this example, we'll use the Prometheus registry.
+
 First, we need a new project. Create a new project with the following command:
 
 [source,bash,subs=attributes+]
@@ -48,18 +55,20 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=micrometer-quickstart \
-    -Dextensions="micrometer"
+    -Dextensions="micrometer-registry-prometheus"
 cd micrometer-quickstart
 ----
 
-This command generates a Maven project, that imports the `micrometer` extension as a dependency.
+This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
+This extension will load the `micrometer` extension as well as additional library dependencies required to support
+prometheus.
 
 If you already have your Quarkus project configured, you can add the `micrometer` extension
 to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="micrometer"
+./mvnw quarkus:add-extension -Dextensions="micrometer-registry-prometheus"
 ----
 
 This will add the following to your `pom.xml`:
@@ -68,17 +77,7 @@ This will add the following to your `pom.xml`:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-micrometer</artifactId>
-</dependency>
-----
-
-You should also add a dependency for the registry of your choosing, e.g.
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.micrometer</groupId>
-    <artifactId>micrometer-registry-prometheus</artifactId>
+    <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
 </dependency>
 ----
 
@@ -317,12 +316,45 @@ In this example, a singleton CDI bean will produce two different `MeterFilter` b
 Prometheus `MeterRegistry` instances (using the `@MeterFilterConstraint` qualifier), and another will be applied
 to all `MeterRegistry` instances. An application configuration property is also injected and used as a tag value.
 
+== Using other Registry implementations
+
+If you aren't using Prometheus, you have a few options. Some Micrometer registry implementations
+have been wrapped in
+https://github.com/quarkiverse/quarkiverse-micrometer-registry[Quarkiverse extensions].
+To use the Micrometer StackDriver MeterRegistry, for example, you would use the
+`quarkiverse-micrometer-registry-stackdriver` extension:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkiverse</groupId>
+    <artifactId>quarkiverse-micrometer-registry-stackdriver</artifactId>
+</dependency>
+----
+
+If the Micrometer registry you would like to use does not yet have an associated extension,
+use the `quarkus-micrometer` extension and bring in the packaged MeterRegistry dependency directly:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-micrometer</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.acme</groupId>
+    <artifactId>custom-micrometer-registry</artifactId>
+</dependency>
+----
+
+You will then need to specify your own provider to configure and initialize the
+MeterRegistry, as discussed in the next section.
+
 == Creating a customized MeterRegistry
 
-In some instances, you may want to customize how your registry is intialized. Use a custom `@Produces` 
-method to create and produce your initialized `MeterRegistry`.
+Use a custom `@Produces` method to create and configure a customized `MeterRegistry` if you need to.
 
-The following example customizes the line format used for StatsD. 
+The following example customizes the line format used for StatsD:
 
 [source,java]
 ----
@@ -340,8 +372,13 @@ public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, 
 }
 ----
 
-This example corresponds to the following instructions in the Micrometer documentation: 
+This example corresponds to the following instructions in the Micrometer documentation:
 https://micrometer.io/docs/registry/statsD#_customizing_the_metrics_sink
+
+Note that the method returns the specific type of `MeterRegistry` as a `@Singleton`. Use MicroProfile Config to inject
+any configuration attributes you need to configure the registry. Most Micrometer registry extensions,
+like `quarkiverse-micrometer-registry-statsd`, define a producer for registry-specific configuration objects that
+are integrated with the Quarkus configuration model.
 
 == Support for the MicroProfile Metrics API
 

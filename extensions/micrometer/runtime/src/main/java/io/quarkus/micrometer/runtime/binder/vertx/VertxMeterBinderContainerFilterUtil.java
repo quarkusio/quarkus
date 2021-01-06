@@ -8,6 +8,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.micrometer.runtime.binder.HttpRequestMetric;
 import io.vertx.ext.web.RoutingContext;
 
 final class VertxMeterBinderContainerFilterUtil {
@@ -19,7 +20,7 @@ final class VertxMeterBinderContainerFilterUtil {
 
     static void doFilter(RoutingContext routingContext, UriInfo info) {
         // bail early if we have no routing context, or if path munging isn't necessary
-        if (routingContext == null || routingContext.get(RequestMetric.HTTP_REQUEST_PATH_MATCHED) != null) {
+        if (routingContext == null || routingContext.get(HttpRequestMetric.HTTP_REQUEST_PATH_MATCHED) != null) {
             return;
         }
 
@@ -36,6 +37,6 @@ final class VertxMeterBinderContainerFilterUtil {
             log.debugf("Saving parameterized path %s in %s", path, routingContext);
         }
 
-        routingContext.put(RequestMetric.HTTP_REQUEST_PATH, path);
+        routingContext.put(HttpRequestMetric.HTTP_REQUEST_PATH, path);
     }
 }

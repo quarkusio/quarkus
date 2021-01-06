@@ -44,6 +44,7 @@
         <module>smallrye-fault-tolerance</module>
         <module>jaeger</module>
         <module>micrometer</module>
+        <module>micrometer-registry-prometheus</module>
 
         <!-- REST services -->
         <module>resteasy-common</module>

@@ -8,7 +8,6 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
-import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ import java.util.function.Function;
  *
  *
  */
-public class CuratedApplication implements Serializable, Closeable {
+public class CuratedApplication implements Serializable, AutoCloseable {
 
     private static final String AUGMENTOR = "io.quarkus.runner.bootstrap.AugmentActionImpl";
 

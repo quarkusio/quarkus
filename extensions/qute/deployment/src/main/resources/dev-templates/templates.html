@@ -1,0 +1,35 @@
+{#include main}
+  {#style}
+   .annotation {
+     color: gray;
+   }
+  {/style}
+  {#title}Quarkus Qute Templates{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">Path</th>
+      <th scope="col">Variants</th>
+      <th scope="col">Parameters</th>
+    </tr>
+   </thead>
+   <tbody>
+    {#for template in info:devQuteInfos.templateInfos}
+    <tr>
+      <td>
+        {template.path}
+      </td>
+      <td>
+        {template.variants}
+      </td>
+      <td>
+        {#for entry in template.parameters.entrySet()}
+         {entry.key}: {entry.value}</br>
+        {/for}
+      </td>
+    {/for}
+   </tbody>
+  </table>
+  {/body}
+{/include}

@@ -47,6 +47,7 @@ import org.jboss.resteasy.spi.ResourceInvoker;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
 @Provider
@@ -65,7 +66,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private volatile static String httpRoot = "";
     private volatile static List<String> servletMappings = Collections.emptyList();
     private volatile static Set<java.nio.file.Path> staticResouceRoots = Collections.emptySet();
-    private volatile static List<String> additionalEndpoints = Collections.emptyList();
+    private volatile static List<AdditionalRouteDescription> additionalEndpoints = Collections.emptyList();
     private volatile static Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.emptyMap();
     private volatile static List<RouteDescription> reactiveRoutes = Collections.emptyList();
 
@@ -307,8 +308,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
             if (!additionalEndpoints.isEmpty()) {
                 sb.resourcesStart("Additional endpoints");
-                for (String additionalEndpoint : additionalEndpoints) {
-                    sb.staticResourcePath(adjustRoot(httpRoot, additionalEndpoint));
+                for (AdditionalRouteDescription additionalEndpoint : additionalEndpoints) {
+                    sb.staticResourcePath(adjustRoot(httpRoot, additionalEndpoint.getUri()),
+                            additionalEndpoint.getDescription());
                 }
                 sb.resourcesEnd();
             }
@@ -403,7 +405,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         NotFoundExceptionMapper.nonJaxRsClassNameToMethodPaths = nonJaxRsPaths;
     }
 
-    public static void setAdditionalEndpoints(List<String> additionalEndpoints) {
+    public static void setAdditionalEndpoints(List<AdditionalRouteDescription> additionalEndpoints) {
         NotFoundExceptionMapper.additionalEndpoints = additionalEndpoints;
     }
 

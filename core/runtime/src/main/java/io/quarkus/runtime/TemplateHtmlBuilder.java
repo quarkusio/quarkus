@@ -58,6 +58,8 @@ public class TemplateHtmlBuilder {
 
     private static final String ANCHOR_TEMPLATE = "<a href=\"/%1$s\">/%2$s</a>";
 
+    private static final String DESCRIPTION_TEMPLATE = "%1$s — %2$s";
+
     private static final String RESOURCE_TEMPLATE = "<h3>%1$s</h3>\n";
 
     private static final String LIST_START = "<ul>\n";
@@ -215,18 +217,22 @@ public class TemplateHtmlBuilder {
     }
 
     public TemplateHtmlBuilder resourcePath(String title) {
-        return resourcePath(title, true, false);
+        return resourcePath(title, true, false, null);
     }
 
     public TemplateHtmlBuilder staticResourcePath(String title) {
-        return resourcePath(title, false, true);
+        return staticResourcePath(title, null);
+    }
+
+    public TemplateHtmlBuilder staticResourcePath(String title, String description) {
+        return resourcePath(title, false, true, description);
     }
 
     public TemplateHtmlBuilder servletMapping(String title) {
-        return resourcePath(title, false, false);
+        return resourcePath(title, false, false, null);
     }
 
-    private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor) {
+    private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor, String description) {
         String content;
         if (withAnchor) {
             if (title.startsWith("/")) {
@@ -235,6 +241,9 @@ public class TemplateHtmlBuilder {
             content = String.format(ANCHOR_TEMPLATE, title, escapeHtml(title));
         } else {
             content = escapeHtml(title);
+        }
+        if (description != null && !description.isEmpty()) {
+            content = String.format(DESCRIPTION_TEMPLATE, content, description);
         }
         result.append(String.format(RESOURCE_TEMPLATE, content));
         if (withListStart) {

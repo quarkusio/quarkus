@@ -7,12 +7,12 @@ public class ArtifactResult {
 
     private final Path path;
     private final String type;
-    private final Map<String, Path> additionalPaths;
+    private final Map<String, Object> metadata;
 
-    public ArtifactResult(Path path, String type, Map<String, Path> additionalPaths) {
+    public ArtifactResult(Path path, String type, Map<String, Object> metadata) {
         this.path = path;
         this.type = type;
-        this.additionalPaths = additionalPaths;
+        this.metadata = metadata;
     }
 
     public Path getPath() {
@@ -23,7 +23,7 @@ public class ArtifactResult {
         return type;
     }
 
-    public Map<String, Path> getAdditionalPaths() {
-        return additionalPaths;
+    public Map<String, Object> getMetadata() {
+        return metadata;
     }
 }

@@ -1,0 +1,13 @@
+{#if it.scope.name != 'javax.enterprise.context.Dependent'}
+ <span class="annotation" title="{it.scope.name}">@{it.scope.localName}</span><br/>
+{/if}
+{#for qual in it.qualifiers}
+ {#if qual.name != 'javax.inject.Named'}
+ {#if qual.name != 'javax.enterprise.inject.Any'}
+ {#if qual.name != 'javax.enterprise.inject.Default'}
+   <span class="annotation" title="{qual.name}">@{qual.localName}</span><br/>
+ {/if}
+ {/if}
+ {/if}
+{/for}
+<span title="{it.type.name}">{it.type.localName}</span>

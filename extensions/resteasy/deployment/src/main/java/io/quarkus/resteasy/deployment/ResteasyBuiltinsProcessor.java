@@ -36,6 +36,7 @@ import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
 public class ResteasyBuiltinsProcessor {
@@ -108,9 +109,10 @@ public class ResteasyBuiltinsProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void addAdditionalEndpointsExceptionMapper(List<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             ExceptionMapperRecorder recorder, HttpRootPathBuildItem httpRoot) {
-        List<String> endpoints = displayableEndpoints
+        List<AdditionalRouteDescription> endpoints = displayableEndpoints
                 .stream()
-                .map(displayableAdditionalBuildItem -> displayableAdditionalBuildItem.getEndpoint())
+                .map(displayableAdditionalBuildItem -> new AdditionalRouteDescription(
+                        displayableAdditionalBuildItem.getEndpoint(), displayableAdditionalBuildItem.getDescription()))
                 .sorted()
                 .collect(Collectors.toList());
 

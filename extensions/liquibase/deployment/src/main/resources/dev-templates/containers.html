@@ -1,0 +1,40 @@
+{#include main}
+{#style}
+.annotation {
+color: gray;
+}
+{/style}
+{#title}Quarkus Liquibase{/title}
+{#body}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for container in info:containers}
+    <tr>
+        <td>
+            {container.getEffectiveDataSourceName()}
+        </td>
+        <td>
+            <div class="btn-group">
+                <form method="post"  enctype="application/x-www-form-urlencoded">
+                    <input type="hidden" name="datasource" value="{container.dataSourceName}">
+                    <input type="hidden" name="operation" value="clean">
+                    <input id="clear" type="submit" class="btn btn-primary btn-sm" value="Clean" >
+                </form>
+                <form method="post"  enctype="application/x-www-form-urlencoded">
+                    <input type="hidden" name="datasource" value="{container.dataSourceName}">
+                    <input type="hidden" name="operation" value="migrate">
+                    <input id="migrate" type="submit" class="btn btn-primary btn-sm" value="Migrate" >
+                </form>
+            </div>
+        </td>
+    {/for}
+    </tbody>
+</table>
+{/body}
+{/include}

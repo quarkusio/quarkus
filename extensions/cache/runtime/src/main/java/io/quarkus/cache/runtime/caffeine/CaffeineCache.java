@@ -52,7 +52,7 @@ public class CaffeineCache extends AbstractCache {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return name;
     }
 
@@ -137,5 +137,9 @@ public class CaffeineCache extends AbstractCache {
     // For testing purposes only.
     public Duration getExpireAfterAccess() {
         return expireAfterAccess;
+    }
+
+    public long getSize() {
+        return cache.synchronous().estimatedSize();
     }
 }

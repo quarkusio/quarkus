@@ -28,7 +28,6 @@ import java.util.Set;
  * The entry point for starting/building a Quarkus application. This class sets up the base class loading
  * architecture. Once this has been established control is passed into the new class loaders
  * to allow for customisation of the boot process.
- *
  */
 public class QuarkusBootstrap implements Serializable {
 
@@ -226,6 +225,42 @@ public class QuarkusBootstrap implements Serializable {
         return this.classLoadListeners;
     }
 
+    public Builder clonedBuilder() {
+        Builder builder = new Builder()
+                .setBaseName(baseName)
+                .setProjectRoot(projectRoot)
+                .setBaseClassLoader(baseClassLoader)
+                .setBuildSystemProperties(buildSystemProperties)
+                .setMode(mode)
+                .setTest(test)
+                .setLocalProjectDiscovery(localProjectDiscovery)
+                .setTargetDirectory(targetDirectory)
+                .setAppModelResolver(appModelResolver)
+                .setVersionUpdateNumber(versionUpdateNumber)
+                .setVersionUpdate(versionUpdate)
+                .setDependenciesOrigin(dependenciesOrigin)
+                .setIsolateDeployment(isolateDeployment)
+                .setMavenArtifactResolver(mavenArtifactResolver)
+                .setManagingProject(managingProject)
+                .setForcedDependencies(new ArrayList<>(forcedDependencies))
+                .setDisableClasspathCache(disableClasspathCache)
+                .addClassLoaderEventListeners(classLoadListeners)
+                .setExistingModel(existingModel);
+        if (appArtifact != null) {
+            builder.setAppArtifact(appArtifact);
+        } else {
+            builder.setApplicationRoot(applicationRoot);
+        }
+        if (offline != null) {
+            builder.setOffline(offline);
+        }
+        builder.additionalApplicationArchives.addAll(additionalApplicationArchives);
+        builder.additionalDeploymentArchives.addAll(additionalDeploymentArchives);
+        builder.excludeFromClassPath.addAll(excludeFromClassPath);
+        builder.localArtifacts.addAll(localArtifacts);
+        return builder;
+    }
+
     public static class Builder {
         public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
         boolean rebuild;
@@ -387,10 +422,10 @@ public class QuarkusBootstrap implements Serializable {
 
         /**
          * If the deployment should use an isolated (aka parent last) classloader.
-         *
+         * <p>
          * For tests this is generally false, as we want to share the base class path so that the
          * test extension code can integrate with the deployment.
-         *
+         * <p>
          * TODO: should this always be true?
          *
          * @param isolateDeployment

@@ -1,6 +1,7 @@
 package io.quarkus.scheduler.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -52,6 +54,8 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -66,6 +70,7 @@ import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
+import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
 
 /**
  * @author Martin Kouba
@@ -218,6 +223,18 @@ public class SchedulerProcessor {
                 .done());
 
         return new FeatureBuildItem(Feature.SCHEDULER);
+    }
+
+    @BuildStep
+    public DevConsoleRuntimeTemplateInfoBuildItem devConsoleInfo() {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
+                new BeanLookupSupplier(SchedulerContext.class));
+    }
+
+    @BuildStep
+    @Record(value = STATIC_INIT, optional = true)
+    DevConsoleRouteBuildItem invokeEndpoint(SchedulerDevConsoleRecorder recorder) {
+        return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
     }
 
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {

@@ -44,7 +44,7 @@ public class JsonRegistryProcessor {
         routes.produce(new RouteBuildItem.Builder()
                 .routeFunction(recorder.route(config.export.json.path))
                 .handler(recorder.getHandler())
-                .nonApplicationRoute()
+                .nonApplicationRoute(true)
                 .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder("org.HdrHistogram.Histogram",

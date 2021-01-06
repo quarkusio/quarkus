@@ -12,13 +12,10 @@ import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
 
-/**
- * The liquibase recorder
- */
 @Recorder
 public class LiquibaseRecorder {
 
-    private final List<LiquibaseContainer> liquibaseContainers = new ArrayList<>(2);
+    static final List<LiquibaseContainer> liquibaseContainers = new ArrayList<>(2);
 
     public Supplier<LiquibaseFactory> liquibaseSupplier(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);

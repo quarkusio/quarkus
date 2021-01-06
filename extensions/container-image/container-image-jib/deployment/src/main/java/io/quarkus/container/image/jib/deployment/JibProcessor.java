@@ -40,6 +40,7 @@ import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.builder.Version;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
+import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
@@ -66,6 +67,11 @@ public class JibProcessor {
     public static final String JIB = "jib";
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
+
+    @BuildStep
+    public AvailableContainerImageExtensionBuildItem availability() {
+        return new AvailableContainerImageExtensionBuildItem(JIB);
+    }
 
     @BuildStep(onlyIf = JibBuild.class)
     public CapabilityBuildItem capability() {
@@ -102,10 +108,11 @@ public class JibProcessor {
         }
         setUser(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
-        containerize(containerImageConfig, containerImage, jibContainerBuilder,
+        JibContainer container = containerize(containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
+                Collections.singletonMap("container-image", container.getTargetImage().toString())));
     }
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class, NativeBuild.class })
@@ -132,10 +139,11 @@ public class JibProcessor {
                 nativeImage, containerImageLabels);
         setUser(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
-        containerize(containerImageConfig, containerImage, jibContainerBuilder,
+        JibContainer container = containerize(containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
+                Collections.singletonMap("container-image", container.getTargetImage().toString())));
     }
 
     private JibContainer containerize(ContainerImageConfig containerImageConfig,

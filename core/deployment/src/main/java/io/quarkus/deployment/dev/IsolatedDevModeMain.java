@@ -43,6 +43,7 @@ import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.codegen.CodeGenData;
 import io.quarkus.deployment.util.FSWatchUtil;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
@@ -232,6 +233,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
             }
+            DevConsoleManager.setQuarkusBootstrap(curatedApplication.getQuarkusBootstrap());
+            DevConsoleManager.setHotReplacementContext(processor);
             return processor;
         }
         return null;

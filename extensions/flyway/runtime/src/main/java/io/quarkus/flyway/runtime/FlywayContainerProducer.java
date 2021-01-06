@@ -34,6 +34,7 @@ public class FlywayContainerProducer {
         final Collection<Callback> callbacks = QuarkusPathLocationScanner.callbacksForDataSource(dataSourceName);
         final Flyway flyway = new FlywayCreator(matchingRuntimeConfig, matchingBuildTimeConfig).withCallbacks(callbacks)
                 .createFlyway(dataSource);
-        return new FlywayContainer(flyway, matchingRuntimeConfig.cleanAtStart, matchingRuntimeConfig.migrateAtStart);
+        return new FlywayContainer(flyway, matchingRuntimeConfig.cleanAtStart, matchingRuntimeConfig.migrateAtStart,
+                dataSourceName);
     }
 }

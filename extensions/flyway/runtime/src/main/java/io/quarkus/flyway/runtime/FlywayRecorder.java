@@ -22,7 +22,7 @@ public class FlywayRecorder {
 
     private static final Logger log = Logger.getLogger(FlywayRecorder.class);
 
-    private final List<FlywayContainer> flywayContainers = new ArrayList<>(2);
+    static final List<FlywayContainer> flywayContainers = new ArrayList<>(2);
 
     public void setApplicationMigrationFiles(Collection<String> migrationFiles) {
         log.debugv("Setting the following application migration files: {0}", migrationFiles);

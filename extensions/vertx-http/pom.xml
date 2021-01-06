@@ -16,5 +16,7 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        <module>dev-console-spi</module>
+        <module>dev-console-runtime-spi</module>
     </modules>
 </project>

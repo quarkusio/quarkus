@@ -18,7 +18,7 @@ The extension will expose a customizable HTTP endpoint which simply greets the v
 [NOTE]
 .Disclaimer
 To be sure it's extra clear you don't need an extension to add a Servlet to your application.
-This guide is a simplified example to explain the concepts of extensions development.
+This guide is a simplified example to explain the concepts of extensions development, see the link:writing-extensions[full documentation] if you need more information.
 Keep in mind it's not representative of the power of moving things to build time or simplifying the build of native images.
 
 == Prerequisites
@@ -827,3 +827,8 @@ For more information, check link:https://github.com/quarkiverse/quarkiverse/wiki
 Creating new extensions may appear to be an intricate task at first but once you understood the Quarkus game-changer paradigm (build time vs runtime) the structure of an extension makes perfectly sense.
 
 As usual, along the path Quarkus simplifies things under the hood (Maven Mojo, bytecode generation or testing) to make it pleasant to develop new features.
+
+== Further reading
+
+- link:writing-extensions[Writing your own extension] for the full documentation.
+- link:dev-console[Quarkus DEV Console] to learn how to support the DEV Console in your extension

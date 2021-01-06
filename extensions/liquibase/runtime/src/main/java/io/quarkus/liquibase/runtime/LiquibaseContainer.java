@@ -8,13 +8,15 @@ public class LiquibaseContainer {
     private final boolean cleanAtStart;
     private final boolean migrateAtStart;
     private final boolean validateOnMigrate;
+    private final String dataSourceName;
 
     public LiquibaseContainer(LiquibaseFactory liquibaseFactory, boolean cleanAtStart, boolean migrateAtStart,
-            boolean validateOnMigrate) {
+            boolean validateOnMigrate, String dataSourceName) {
         this.liquibaseFactory = liquibaseFactory;
         this.cleanAtStart = cleanAtStart;
         this.migrateAtStart = migrateAtStart;
         this.validateOnMigrate = validateOnMigrate;
+        this.dataSourceName = dataSourceName;
     }
 
     public LiquibaseFactory getLiquibaseFactory() {
@@ -31,5 +33,16 @@ public class LiquibaseContainer {
 
     public boolean isValidateOnMigrate() {
         return validateOnMigrate;
+    }
+
+    public String getDataSourceName() {
+        return dataSourceName;
+    }
+
+    public String getEffectiveDataSourceName() {
+        if (io.quarkus.datasource.common.runtime.DataSourceUtil.isDefault(dataSourceName)) {
+            return "default";
+        }
+        return dataSourceName;
     }
 }

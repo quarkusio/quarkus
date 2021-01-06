@@ -138,7 +138,7 @@ class VertxHttpProcessor {
                 recorder.addRoute(frameworkRouter, route.getRouteFunction(), route.getHandler(), route.getType());
 
                 // Handle redirects from old paths to new non application endpoint root
-                if (httpBuildTimeConfig.redirectToNonApplicationRootPath) {
+                if (httpBuildTimeConfig.redirectToNonApplicationRootPath && route.isRequiresLegacyRedirect()) {
                     recorder.addRoute(router, route.getRouteFunction(),
                             recorder.getNonApplicationRedirectHandler(),
                             route.getType());

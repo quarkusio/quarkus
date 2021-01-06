@@ -42,6 +42,7 @@ import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
 public class NotFoundExceptionMapper {
@@ -56,7 +57,7 @@ public class NotFoundExceptionMapper {
     private volatile static String httpRoot = "";
     private volatile static List<String> servletMappings = Collections.emptyList();
     private volatile static Set<java.nio.file.Path> staticResourceRoots = Collections.emptySet();
-    private volatile static List<String> additionalEndpoints = Collections.emptyList();
+    private volatile static List<AdditionalRouteDescription> additionalEndpoints = Collections.emptyList();
     private volatile static List<RouteDescription> reactiveRoutes = Collections.emptyList();
 
     private static final Logger LOG = Logger.getLogger(NotFoundExceptionMapper.class);
@@ -171,8 +172,9 @@ public class NotFoundExceptionMapper {
 
             if (!additionalEndpoints.isEmpty()) {
                 sb.resourcesStart("Additional endpoints");
-                for (String additionalEndpoint : additionalEndpoints) {
-                    sb.staticResourcePath(adjustRoot(httpRoot, additionalEndpoint));
+                for (AdditionalRouteDescription additionalEndpoint : additionalEndpoints) {
+                    sb.staticResourcePath(adjustRoot(httpRoot, additionalEndpoint.getUri()),
+                            additionalEndpoint.getDescription());
                 }
                 sb.resourcesEnd();
             }
@@ -263,7 +265,7 @@ public class NotFoundExceptionMapper {
         }
     }
 
-    public static void setAdditionalEndpoints(List<String> additionalEndpoints) {
+    public static void setAdditionalEndpoints(List<AdditionalRouteDescription> additionalEndpoints) {
         NotFoundExceptionMapper.additionalEndpoints = additionalEndpoints;
     }
 

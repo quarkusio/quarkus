@@ -1,0 +1,29 @@
+{#include main}
+{#style}
+.annotation {
+color: gray;
+}
+{/style}
+{#title}Deploy to Openshift{/title}
+{#body}
+
+<form method="post" enctype="application/x-www-form-urlencoded">
+    Build Type:
+    <select name="quarkus.build.package-type">
+        <option value="">Default</option>
+        <option value="jar">Jar</option>
+        <option value="mutable-jar">Mutable Jar</option>
+        <option value="fast-jar">Fast Jar</option>
+        <option value="native">Native</option>
+    </select>
+    <br/>
+    Expose:
+    <select name="quarkus.openshift.expose">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+    </select>
+    <br>
+    <input type="submit" value="Deploy">
+</form>
+{/body}
+{/include}

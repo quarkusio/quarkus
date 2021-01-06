@@ -1,11 +1,13 @@
 package io.quarkus.it.bouncycastle;
 
 import static org.awaitility.Awaitility.given;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
+
+import javax.inject.Inject;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.jboss.logging.Logger;
@@ -22,42 +26,64 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.specification.RequestSpecification;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.KeyStoreOptions;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 @QuarkusTest
-public class BouncyCastleJsseTestCase {
+public class BouncyCastleFipsJsseTestCase {
 
-    static final Logger LOG = Logger.getLogger(BouncyCastleJsseTestCase.class);
+    static final Logger LOG = Logger.getLogger(BouncyCastleFipsJsseTestCase.class);
 
     @TestHTTPResource(ssl = true)
     URL url;
 
+    @Inject
+    Vertx vertx;
+
     @Test
-    public void testListProviders() {
+    public void testListProviders() throws Exception {
         if (!JavaVersionUtil.isJava11OrHigher()) {
             LOG.trace("Skipping BouncyCastleJsseITCase, Java version is older than 11");
             return;
         }
         doTestListProviders();
-        checkLog(false);
+        //checkLog(false);
     }
 
-    protected void doTestListProviders() {
-        RequestSpecification spec = new RequestSpecBuilder()
-                .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))
-                .setPort(url.getPort())
-                .setKeyStore("client-keystore.jks", "password")
-                .setTrustStore("client-truststore.jks", "password")
-                .build();
-        RestAssured.given()
-                .spec(spec)
-                .when()
-                .get("/jsse/listProviders")
-                .then()
-                .statusCode(200)
-                .body(containsString("BC,BCJSSE,SunJSSE"));
+    protected void doTestListProviders() throws Exception {
+        WebClientOptions options = createWebClientOptions();
+        WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/jsse/listProviders").send().await()
+                .indefinitely();
+        String providers = resp.bodyAsString();
+        assertTrue(providers.contains("BCFIPS,BCJSSE"));
+    }
+
+    private WebClientOptions createWebClientOptions() throws Exception {
+        WebClientOptions webClientOptions = new WebClientOptions().setDefaultHost(url.getHost())
+                .setDefaultPort(url.getPort()).setSsl(true).setVerifyHost(false);
+
+        byte[] keyStoreData = getFileContent(Paths.get("client-keystore.jks"));
+        KeyStoreOptions keyStoreOptions = new KeyStoreOptions()
+                .setPassword("password")
+                .setValue(Buffer.buffer(keyStoreData))
+                .setType("BCFKS")
+                .setProvider("BCFIPS");
+        webClientOptions.setKeyCertOptions(keyStoreOptions);
+
+        byte[] trustStoreData = getFileContent(Paths.get("client-truststore.jks"));
+        KeyStoreOptions trustStoreOptions = new KeyStoreOptions()
+                .setPassword("password")
+                .setValue(Buffer.buffer(trustStoreData))
+                .setType("BCFKS")
+                .setProvider("BCFIPS");
+        webClientOptions.setTrustOptions(trustStoreOptions);
+
+        return webClientOptions;
     }
 
     protected void checkLog(boolean serverOnly) {
@@ -105,5 +131,30 @@ public class BouncyCastleJsseTestCase {
                                 "Log file doesn't contain BouncyCastle JSSE server records, log: " + sbLog.toString());
                     }
                 });
+    }
+
+    private static byte[] getFileContent(Path path) throws IOException {
+        byte[] data;
+        final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+        if (resource != null) {
+            try (InputStream is = resource) {
+                data = doRead(is);
+            }
+        } else {
+            try (InputStream is = Files.newInputStream(path)) {
+                data = doRead(is);
+            }
+        }
+        return data;
+    }
+
+    private static byte[] doRead(InputStream is) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buf = new byte[1024];
+        int r;
+        while ((r = is.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        return out.toByteArray();
     }
 }

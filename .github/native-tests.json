@@ -70,7 +70,7 @@
         {
             "category": "Security1",
             "timeout": 50,
-            "test-modules": "elytron-security-oauth2 elytron-security elytron-security-jdbc elytron-undertow elytron-security-ldap"
+            "test-modules": "elytron-security-oauth2 elytron-security elytron-security-jdbc elytron-undertow elytron-security-ldap bouncycastle bouncycastle-jsse"
         },
         {
             "category": "Security2",

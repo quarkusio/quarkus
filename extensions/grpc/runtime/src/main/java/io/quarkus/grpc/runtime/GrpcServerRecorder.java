@@ -40,6 +40,7 @@ import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.reflection.ReflectionService;
 import io.quarkus.grpc.runtime.supports.BlockingServerInterceptor;
+import io.quarkus.grpc.runtime.supports.RequestScopeHandlerInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -305,19 +306,24 @@ public class GrpcServerRecorder {
                 || ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
         List<GrpcServiceDefinition> toBeRegistered = collectServiceDefinitions(grpcContainer.getServices());
         List<ServerServiceDefinition> definitions = new ArrayList<>();
+
+        RequestScopeHandlerInterceptor requestScopeHandlerInterceptor = new RequestScopeHandlerInterceptor();
+
         for (GrpcServiceDefinition service : toBeRegistered) {
             // We only register the blocking interceptor if needed by at least one method of the service.
             if (blockingMethodsPerService.isEmpty()) {
                 // Fast track - no usage of @Blocking
-                builder.addService(service.definition);
+                builder.addService(ServerInterceptors.intercept(service.definition, requestScopeHandlerInterceptor));
             } else {
                 List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
                 if (list == null) {
                     // The service does not contain any methods annotated with @Blocking - no need for the itcp
-                    builder.addService(service.definition);
+                    builder.addService(ServerInterceptors.intercept(service.definition, requestScopeHandlerInterceptor));
                 } else {
+                    // Order matter! Request scope must be called first (on the event loop) and so should be last in the list...
                     builder.addService(
-                            ServerInterceptors.intercept(service.definition, new BlockingServerInterceptor(vertx, list)));
+                            ServerInterceptors.intercept(service.definition, new BlockingServerInterceptor(vertx, list),
+                                    requestScopeHandlerInterceptor));
                 }
             }
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());

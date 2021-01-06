@@ -1,5 +1,7 @@
 package io.quarkus.grpc.server.services;
 
+import static io.quarkus.grpc.server.services.AssertHelper.assertRunOnEventLoop;
+import static io.quarkus.grpc.server.services.AssertHelper.assertRunOnWorker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,22 +16,10 @@ import io.quarkus.grpc.blocking.MutinyBlockingTestServiceGrpc;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Vertx;
 
 @Singleton
 public class BlockingMutinyTestService
         extends MutinyBlockingTestServiceGrpc.BlockingTestServiceImplBase {
-
-    private void assertRunOnEventLoop() {
-        assertThat(Vertx.currentContext()).isNotNull();
-        assertThat(Vertx.currentContext().isEventLoopContext()).isTrue();
-        assertThat(Thread.currentThread().getName()).contains("eventloop-thread");
-    }
-
-    private void assertRunOnWorker() {
-        assertThat(Vertx.currentContext()).isNotNull();
-        assertThat(Thread.currentThread().getName()).contains("worker");
-    }
 
     @Override
     public Uni<EmptyProtos.Empty> emptyCall(EmptyProtos.Empty request) {

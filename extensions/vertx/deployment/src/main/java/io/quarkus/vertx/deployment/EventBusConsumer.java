@@ -1,6 +1,5 @@
 package io.quarkus.vertx.deployment;
 
-import static io.quarkus.vertx.ConsumeEvent.FAILURE_CODE;
 import static io.quarkus.vertx.deployment.VertxConstants.AXLE_MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
@@ -8,7 +7,6 @@ import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.RX_MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 
-import java.lang.annotation.Annotation;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
@@ -30,40 +28,27 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
 
 class EventBusConsumer {
+
     private static final String INVOKER_SUFFIX = "_VertxInvoker";
+
     private static final MethodDescriptor ARC_CONTAINER = MethodDescriptor
             .ofMethod(Arc.class, "container", ArcContainer.class);
     private static final MethodDescriptor INSTANCE_HANDLE_GET = MethodDescriptor.ofMethod(InstanceHandle.class, "get",
             Object.class);
-    private static final MethodDescriptor ARC_CONTAINER_INSTANCE_FOR_TYPE = MethodDescriptor
-            .ofMethod(ArcContainer.class,
-                    "instance", InstanceHandle.class,
-                    Class.class, Annotation[].class);
-    private static final MethodDescriptor VERTX_EXECUTE_BLOCKING = MethodDescriptor.ofMethod(Vertx.class,
-            "executeBlocking", void.class, Handler.class, boolean.class, Handler.class);
-    private static final MethodDescriptor FUTURE_COMPLETE = MethodDescriptor.ofMethod(Future.class,
-            "complete", void.class, Object.class);
-    private static final MethodDescriptor FUTURE_FAIL = MethodDescriptor.ofMethod(Future.class,
-            "fail", void.class, Throwable.class);
     private static final MethodDescriptor ARC_CONTAINER_BEAN = MethodDescriptor.ofMethod(ArcContainer.class, "bean",
             InjectableBean.class, String.class);
     private static final MethodDescriptor ARC_CONTAINER_INSTANCE_FOR_BEAN = MethodDescriptor
@@ -118,51 +103,23 @@ class EventBusConsumer {
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 
+        boolean blocking;
+        AnnotationValue blockingValue = consumeEvent.value("blocking");
+        blocking = method.hasAnnotation(BLOCKING) || (blockingValue != null && blockingValue.asBoolean());
+
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(EventConsumerInvoker.class).build();
 
         // The method descriptor is: void invokeBean(Object message)
         MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class);
-        ResultHandle containerHandle = invoke.invokeStaticMethod(ARC_CONTAINER);
 
-        AnnotationValue blocking = consumeEvent.value("blocking");
-        boolean blockingAnnotation = method.hasAnnotation(BLOCKING);
-        if ((blocking != null && blocking.asBoolean()) || blockingAnnotation) {
-            // Blocking operation must be performed on a worker thread
-            ResultHandle vertxHandle = invoke
-                    .invokeInterfaceMethod(INSTANCE_HANDLE_GET,
-                            invoke.invokeInterfaceMethod(ARC_CONTAINER_INSTANCE_FOR_TYPE, containerHandle,
-                                    invoke.loadClass(Vertx.class),
-                                    invoke.newArray(Annotation.class.getName(), invoke.load(0))));
-
-            FunctionCreator func = invoke.createFunction(Handler.class);
-            BytecodeCreator funcBytecode = func.getBytecode();
-            AssignableResultHandle messageHandle = funcBytecode.createVariable(Message.class);
-            funcBytecode.assign(messageHandle, invoke.getMethodParam(0));
-            TryBlock tryBlock = funcBytecode.tryBlock();
-            invoke(bean, method, messageHandle, tryBlock);
-            tryBlock.invokeInterfaceMethod(FUTURE_COMPLETE, funcBytecode.getMethodParam(0), tryBlock.loadNull());
-
-            CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-            // Need to reply with the caught exception - using Throwable.toString on purpose to get the class name.
-            ResultHandle failureMessage = catchBlock
-                    .invokeVirtualMethod(THROWABLE_TO_STRING, catchBlock.getCaughtException());
-            ResultHandle failureStatus = catchBlock.load(FAILURE_CODE);
-            catchBlock.invokeInterfaceMethod(
-                    MESSAGE_FAIL,
-                    messageHandle,
-                    failureStatus,
-                    failureMessage);
-            // Completing successfully, the failure has been sent to the sender.
-            catchBlock.invokeInterfaceMethod(FUTURE_COMPLETE, funcBytecode.getMethodParam(0), catchBlock.loadNull());
-
-            funcBytecode.returnValue(null);
-
-            invoke.invokeInterfaceMethod(VERTX_EXECUTE_BLOCKING, vertxHandle, func.getInstance(), invoke.load(false),
-                    invoke.loadNull());
-        } else {
-            invoke(bean, method, invoke.getMethodParam(0), invoke);
+        if (blocking) {
+            MethodCreator isBlocking = invokerCreator.getMethodCreator("isBlocking", boolean.class);
+            isBlocking.returnValue(isBlocking.load(true));
         }
+
+        invoke(bean, method, invoke.getMethodParam(0), invoke);
+
         invoke.returnValue(null);
         invokerCreator.close();
         return generatedName.replace('/', '.');

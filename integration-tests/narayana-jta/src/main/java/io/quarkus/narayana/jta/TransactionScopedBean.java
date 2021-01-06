@@ -1,9 +1,17 @@
 package io.quarkus.narayana.jta;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.transaction.TransactionScoped;
 
 @TransactionScoped
 public class TransactionScopedBean {
+
+    private static final AtomicInteger initializedCount = new AtomicInteger(0);
+    private static final AtomicInteger destroyedCount = new AtomicInteger(0);
+
     private int value = 0;
 
     public int getValue() {
@@ -13,4 +21,28 @@ public class TransactionScopedBean {
     public void setValue(int value) {
         this.value = value;
     }
+
+    static void resetCounters() {
+        initializedCount.set(0);
+        destroyedCount.set(0);
+    }
+
+    static int getInitializedCount() {
+        return initializedCount.get();
+    }
+
+    static int getPreDestroyCount() {
+        return destroyedCount.get();
+    }
+
+    @PostConstruct
+    void postConstruct() {
+        initializedCount.incrementAndGet();
+    }
+
+    @PreDestroy
+    void preDestroy() {
+        destroyedCount.incrementAndGet();
+    }
+
 }

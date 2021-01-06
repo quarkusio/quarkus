@@ -24,7 +24,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.gizmo.ClassCreator;
@@ -38,7 +37,6 @@ import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.deployment.TypeBundle;
-import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 import io.quarkus.spring.data.deployment.MethodNameParser;
 import io.quarkus.spring.data.runtime.TypesConverter;
@@ -275,7 +273,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                     // Find the type of data used in the result
                     // e.g. method.returnType() is a List that may contain non-entity elements
-                    Type resultType = verifyQueryResultType(method.returnType());
+                    Type resultType = verifyQueryResultType(method.returnType(), index);
                     DotName customResultTypeName = resultType.name();
 
                     if (customResultTypeName.equals(entityClassInfo.name())
@@ -291,7 +289,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         if (Modifier.isInterface(resultClassInfo.flags())) {
                             // Find the implementation name, and use that for subsequent query result generation
                             customResultTypeName = customResultTypeNames.computeIfAbsent(customResultTypeName,
-                                    k -> createImplDotName(resultType.name()));
+                                    k -> createSimpleInterfaceImpl(resultType.name()));
 
                             // Remember the parameters for this usage of the custom type, we'll deal with it later
                             customResultTypes.computeIfAbsent(customResultTypeName,
@@ -333,7 +331,8 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                     }
 
                     generateFindQueryResultHandling(methodCreator, panacheQuery, pageableParameterIndex, repositoryClassInfo,
-                            entityClassInfo, methodReturnTypeDotName, null, method.name(), customResultTypeName);
+                            entityClassInfo, methodReturnTypeDotName, null, method.name(), customResultTypeName,
+                            Object[].class.getName());
                 }
 
             }
@@ -404,35 +403,6 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         return sort;
     }
 
-    // Make sure the return type is referencing a class we have indexed 
-    // somewhere along the way (e.g. non-entity return types in @Query methods)
-    // Unless it is some kind of collection containing multiple types, 
-    // return the type used in the query result.
-    private Type verifyQueryResultType(Type t) {
-        if (isHibernateSupportedReturnType(t.name())) {
-            return t;
-        }
-        if (t.kind() == Kind.ARRAY) {
-            return verifyQueryResultType(t.asArrayType().component());
-        } else if (t.kind() == Kind.PARAMETERIZED_TYPE) {
-            List<Type> list = t.asParameterizedType().arguments();
-            if (list.size() == 1) {
-                return verifyQueryResultType(list.get(0));
-            } else {
-                for (Type x : list) {
-                    verifyQueryResultType(x);
-                }
-                return t;
-            }
-        } else {
-            ClassInfo typeClassInfo = index.getClassByName(t.name());
-            if (typeClassInfo == null) {
-                throw new IllegalStateException(t.name() + " was not part of the Quarkus index");
-            }
-        }
-        return t;
-    }
-
     private List<String> getFieldNames(String queryString) {
         Matcher matcher = SELECT_CLAUSE.matcher(queryString);
         if (matcher.find()) {
@@ -457,21 +427,6 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         }
 
         return Collections.emptyList();
-    }
-
-    private DotName createImplDotName(DotName ifaceName) {
-        String fullName = ifaceName.toString();
-
-        // package name: must be in the same package as the interface
-        final int index = fullName.lastIndexOf('.');
-        String packageName = "";
-        if (index > 0 && index < fullName.length() - 1) {
-            packageName = fullName.substring(0, index) + ".";
-        }
-
-        return DotName.createSimple(packageName
-                + (ifaceName.isInner() ? ifaceName.local() : ifaceName.withoutPackagePrefix()) + "_"
-                + HashUtil.sha1(ifaceName.toString()));
     }
 
     private void generateCustomResultTypes(DotName interfaceName, DotName implName, Map<String, List<String>> queryMethods) {
@@ -552,18 +507,4 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         }
         return resultHandle;
     }
-
-    private DotName getPrimitiveTypeName(DotName returnTypeName) {
-        if (DotNames.LONG.equals(returnTypeName)) {
-            return DotNames.PRIMITIVE_LONG;
-        }
-        if (DotNames.INTEGER.equals(returnTypeName)) {
-            return DotNames.PRIMITIVE_INTEGER;
-        }
-        if (DotNames.BOOLEAN.equals(returnTypeName)) {
-            return DotNames.PRIMITIVE_BOOLEAN;
-        }
-        return returnTypeName;
-    }
-
 }

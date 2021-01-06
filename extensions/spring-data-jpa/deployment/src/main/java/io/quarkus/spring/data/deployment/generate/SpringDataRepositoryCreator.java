@@ -47,7 +47,7 @@ public class SpringDataRepositoryCreator {
         this.index = index;
         this.fragmentMethodsAdder = new FragmentMethodsAdder(fragmentImplClassResolvedCallback, index);
         this.stockMethodsAdder = new StockMethodsAdder(index, typeBundle);
-        this.derivedMethodsAdder = new DerivedMethodsAdder(index, typeBundle);
+        this.derivedMethodsAdder = new DerivedMethodsAdder(index, typeBundle, otherClassOutput, customClassCreatedCallback);
 
         // custom queries may generate non-bean classes
         this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput, customClassCreatedCallback,

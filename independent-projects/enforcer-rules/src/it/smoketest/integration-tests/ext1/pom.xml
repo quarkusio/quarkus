@@ -17,7 +17,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- "Symbolic" test dependencies to *-deployment artifacts for consistent build order -->
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-enforcer-rules-smoketest-ext1-deployment</artifactId>
@@ -32,5 +32,26 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>SuperfluousDeploymentDep</id>
+            <dependencies>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-enforcer-rules-smoketest-ext2-deployment</artifactId>
+                    <version>${project.version}</version>
+                    <type>pom</type>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>*</groupId>
+                            <artifactId>*</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
 </project>

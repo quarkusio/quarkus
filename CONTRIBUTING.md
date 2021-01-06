@@ -5,6 +5,38 @@ We try to make it easy, and all contributions, even the smaller ones, are more t
 This includes bug reports, fixes, documentation, examples... 
 But first, read this page (including the small print at the end).
 
+* [Legal](#legal)
+* [Reporting an issue](#reporting-an-issue)
+* [Checking an issue is fixed in master](#checking-an-issue-is-fixed-in-master)
+  + [Using snapshots](#using-snapshots)
+  + [Building master](#building-master)
+  + [Updating the version](#updating-the-version)
+* [Before you contribute](#before-you-contribute)
+  + [Code reviews](#code-reviews)
+  + [Coding Guidelines](#coding-guidelines)
+  + [Continuous Integration](#continuous-integration)
+  + [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
+* [Setup](#setup)
+  + [IDE Config and Code Style](#ide-config-and-code-style)
+    - [Eclipse Setup](#eclipse-setup)
+    - [IDEA Setup](#idea-setup)
+* [Build](#build)
+  + [Workflow tips](#workflow-tips)
+    - [Building all modules of an extension](#building-all-modules-of-an-extension)
+    - [Building a single module of an extension](#building-a-single-module-of-an-extension)
+    - [Running a single test](#running-a-single-test)
+* [Usage](#usage)
+    - [With Maven](#with-maven)
+    - [With Gradle](#with-gradle)
+  + [MicroProfile TCK's](#microprofile-tck-s)
+  + [Test Coverage](#test-coverage)
+* [Extensions](#extensions)
+  + [Descriptions](#descriptions)
+* [The small print](#the-small-print)
+* [Frequently Asked Questions](#frequently-asked-questions)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 ## Legal
 
 All original contributions to Quarkus are licensed under the
@@ -340,29 +372,43 @@ This project is an open source project, please act responsibly, be nice, polite 
 
 * The Maven build fails with `OutOfMemoryException`
 
-Set Maven options to use 1.5GB of heap: `export MAVEN_OPTS="-Xmx1563m"`.
+  Set Maven options to use 1.5GB of heap: `export MAVEN_OPTS="-Xmx1563m"`.
 
 * IntelliJ fails to import Quarkus Maven project with `java.lang.OutOfMemoryError: GC overhead limit exceeded` 
 
-In IntelliJ IDEA (version older than `2019.2`) if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
-  
-To fix the issue, you need to update the Maven importing settings:  
-`Build, Execution, Deployment` > `Build Tools`> `Maven` > `Importing` > `VM options for importer`
-To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
+  In IntelliJ IDEA (version older than `2019.2`) if you see problems in the Maven view claiming `java.lang.OutOfMemoryError: GC overhead limit exceeded` that means the project import failed.
 
-**Note** As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.
+  To fix the issue, you need to update the Maven importing settings:
+  `Build, Execution, Deployment` > `Build Tools`> `Maven` > `Importing` > `VM options for importer`
+  To import Quarkus you need to define the JVM Max Heap Size (E.g. `-Xmx1g`)
 
-* Build hangs with DevMojoIT running infinitely 
-```
-./mvnw clean install
-# Wait...
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.192 s - in io.quarkus.maven.it.GenerateConfigIT
-[INFO] Running io.quarkus.maven.it.DevMojoIT
+  **Note** As for now, we can't provide a unique Max Heap Size value. We have been reported to require from 768M to more than 3G to import Quarkus properly.
 
-```
-DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running on 8080.
+* Build hangs with DevMojoIT running infinitely
+  ```
+  ./mvnw clean install
+  # Wait...
+  [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.192 s - in io.quarkus.maven.it.GenerateConfigIT
+  [INFO] Running io.quarkus.maven.it.DevMojoIT
+  ```
+  DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running on 8080.
 
 * The native integration test for my extension didn't run in the CI
 
-In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which are run in parallel. 
-This means that each new extension needs to be configured explicitly in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
+  In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which are run in parallel.
+  This means that each new extension needs to be configured explicitly in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
+
+* Build aborts complaining about missing (or superfluous) `minimal *-deployment dependencies` or `illegal runtime dependencies`
+
+  To ensure a consistent build order, even when building in parallel (`./mvnw -T...`) or building incrementally/partially (`./mvnw -pl...`), the build enforces the presence of certain dependencies.
+  If those dependencies are not present, your local build will most likely use possibly outdated artifacts from you local repo and CI build might even fail not finding certain artifacts.
+
+  Just do what the failing enforcer rule is telling you and you should be fine.
+
+* Build fails with multiple `This project has been banned from the build due to previous failures` messages
+
+  Just scroll up, there should be an error or warning somewhere. Failing enforcer rules are known to cause such effects and in this case there'll be something like:
+  ```
+  [WARNING] Rule 0: ... failed with message:
+  ...
+  ```

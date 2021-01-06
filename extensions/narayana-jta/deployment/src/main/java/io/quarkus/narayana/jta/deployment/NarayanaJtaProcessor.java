@@ -114,6 +114,7 @@ class NarayanaJtaProcessor {
         recorder.disableTransactionStatusManager();
         recorder.setNodeName(transactions);
         recorder.setDefaultTimeout(transactions);
+        recorder.setConfig(transactions);
     }
 
     @BuildStep(onlyIf = IsTest.class)

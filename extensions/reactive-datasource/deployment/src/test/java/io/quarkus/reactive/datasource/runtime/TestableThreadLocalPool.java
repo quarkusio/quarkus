@@ -1,12 +1,7 @@
-package io.quarkus.reactive.mysql.client.runtime;
+package io.quarkus.reactive.datasource.runtime;
 
-import io.quarkus.reactive.datasource.runtime.ThreadLocalPool;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.mysqlclient.MySQLPool;
-import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
@@ -14,26 +9,23 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 
-public class ThreadLocalMySQLPool extends ThreadLocalPool<MySQLPool> implements MySQLPool {
+final class TestableThreadLocalPool extends ThreadLocalPool<TestPoolInterface> {
 
-    private final MySQLConnectOptions mySQLConnectOptions;
-
-    public ThreadLocalMySQLPool(Vertx vertx, MySQLConnectOptions mySQLConnectOptions, PoolOptions poolOptions) {
-        super(vertx, poolOptions);
-        this.mySQLConnectOptions = mySQLConnectOptions;
+    public TestableThreadLocalPool() {
+        super(null, null);
     }
 
     @Override
-    protected MySQLPool createThreadLocalPool() {
-        return new MySQLPoolWrapper(MySQLPool.pool(vertx, mySQLConnectOptions, poolOptions));
+    protected TestPoolInterface createThreadLocalPool() {
+        return new TestPoolWrapper(new TestPool());
     }
 
-    private class MySQLPoolWrapper implements MySQLPool {
+    private class TestPoolWrapper implements TestPoolInterface {
 
-        private final MySQLPool delegate;
+        private final TestPool delegate;
         private boolean open = true;
 
-        private MySQLPoolWrapper(MySQLPool delegate) {
+        private TestPoolWrapper(TestPool delegate) {
             this.delegate = delegate;
         }
 
@@ -61,8 +53,13 @@ public class ThreadLocalMySQLPool extends ThreadLocalPool<MySQLPool> implements 
         public void close() {
             if (open) {
                 delegate.close();
-                ThreadLocalMySQLPool.this.removeSelfFromTracking(this);
+                TestableThreadLocalPool.this.removeSelfFromTracking(this);
             }
+        }
+
+        @Override
+        public boolean isClosed() {
+            return delegate.isClosed();
         }
     }
 

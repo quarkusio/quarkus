@@ -1,5 +1,6 @@
 package io.quarkus.reactive.datasource.runtime;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,10 +16,29 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Transaction;
 
+/**
+ * This Pool implementation wraps the Vert.x Pool into thread-locals,
+ * as it's otherwise not thread-safe to be exposed to all the threads
+ * possibly accessing it in Quarkus.
+ * There are two main drawbacks to this approach:
+ * <p>
+ * 1# We need to track each instance stored in a ThreadLocal
+ * so to ensure we can close also the ones started in other threads.
+ * </p>
+ * <p>
+ * 2# Having the actual number of Pools determined by the number
+ * of threads requesting one makes this not honour the limit of
+ * connections to the database.
+ * </p>
+ *
+ * In particular the second limitation will need to be addressed.
+ *
+ * @param <PoolType> useful for implementations to produce typed pools
+ */
 public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
 
     //List of all opened pools. Access requires synchronization on the list instance.
-    private final List<Pool> threadLocalPools = new ArrayList<>();
+    private final List<PoolAndThread> allConnections = new ArrayList<>();
 
     //The pool instance for the current thread
     private final ThreadLocal<PoolType> threadLocal = new ThreadLocal<>();
@@ -36,18 +56,29 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
         this.poolOptions = poolOptions;
     }
 
-    private PoolType pool() {
+    PoolType pool() {
         checkPoolIsOpen();
         PoolType pool = threadLocal.get();
         if (pool == null) {
-            synchronized (threadLocalPools) {
+            synchronized (allConnections) {
                 checkPoolIsOpen();
                 pool = createThreadLocalPool();
-                threadLocalPools.add(pool);
+                allConnections.add(new PoolAndThread(pool));
                 threadLocal.set(pool);
+                scanForAbandonedConnections();
             }
         }
         return pool;
+    }
+
+    private final void scanForAbandonedConnections() {
+        for (PoolAndThread pair : allConnections) {
+            if (pair.isDead()) {
+                //This might potentially close the connection a second time,
+                //so we need to ensure implementations allow it.
+                pair.close();
+            }
+        }
     }
 
     private void checkPoolIsOpen() {
@@ -56,6 +87,10 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
         }
     }
 
+    /**
+     * We will need the created Pool instances to have an idempotent implementation
+     * of close()
+     */
     protected abstract PoolType createThreadLocalPool();
 
     @Override
@@ -80,11 +115,75 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
 
     @Override
     public void close() {
-        synchronized (threadLocalPools) {
+        synchronized (allConnections) {
             this.closed = true;
-            for (Pool threadLocalPool : threadLocalPools) {
-                threadLocalPool.close();
+            for (PoolAndThread pair : allConnections) {
+                pair.close();
             }
+            allConnections.clear();
+            threadLocal.remove();
+        }
+    }
+
+    //Useful for testing mostly
+    public int trackedSize() {
+        synchronized (allConnections) {
+            return allConnections.size();
+        }
+    }
+
+    /**
+     * Removes references to the instance without closing it.
+     * This assumes the instance was created via this pool
+     * and that it's now closed, so no longer needing tracking.
+     * 
+     * @param instance
+     */
+    protected void removeSelfFromTracking(final PoolType instance) {
+        synchronized (allConnections) {
+            if (closed)
+                return;
+            for (PoolAndThread pair : allConnections) {
+                if (pair.pool == instance) {
+                    allConnections.remove(pair);
+                    if (pair.isCurrentThread()) {
+                        threadLocal.remove();
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    private static class PoolAndThread {
+        private final Pool pool;
+        private final WeakReference<Thread> threadReference;
+
+        private PoolAndThread(Pool pool) {
+            this.pool = pool;
+            this.threadReference = new WeakReference<>(Thread.currentThread());
+        }
+
+        /**
+         * @return true if this pools is associated to a Thread which is no longer alive.
+         */
+        boolean isDead() {
+            final Thread thread = threadReference.get();
+            return thread == null || (!thread.isAlive());
+        }
+
+        /**
+         * Closes the connection
+         */
+        void close() {
+            pool.close();
+        }
+
+        /**
+         * @return if this is the pair referring to the current Thread
+         */
+        public boolean isCurrentThread() {
+            return threadReference.get() == Thread.currentThread();
         }
     }
 

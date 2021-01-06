@@ -102,6 +102,7 @@ updates:
       - dependency-name: org.bouncycastle:*
       # Logstash
       - dependency-name: biz.paluch.logging:logstash-gelf
+      - dependency-name: io.sentry:*
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

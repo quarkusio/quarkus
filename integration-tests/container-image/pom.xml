@@ -15,5 +15,6 @@
   <modules>
     <module>maven-invoker-way</module>
     <module>quarkus-standard-way</module>
+    <module>container-image-name</module>
   </modules>
 </project>

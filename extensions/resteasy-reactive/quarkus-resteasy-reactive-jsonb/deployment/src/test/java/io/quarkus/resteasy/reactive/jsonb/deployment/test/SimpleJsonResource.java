@@ -21,7 +21,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
 
     @GET
     @Path("/person")
-    @Produces(MediaType.APPLICATION_JSON)
     public Person getPerson() {
         Person person = new Person();
         person.setFirst("Bob");
@@ -75,7 +74,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
 
     @POST
     @Path("/people")
-    @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public List<Person> getPeople(List<Person> people) {
         if (BlockingOperationControl.isBlockingAllowed()) {

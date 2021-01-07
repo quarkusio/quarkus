@@ -16,29 +16,44 @@ public class ResteasyReactiveConfig {
      */
     private boolean singleDefaultProduces;
 
+    /**
+     * When one of the quarkus-resteasy-reactive-jackson or quarkus-resteasy-reactive-jsonb extension are active
+     * and the result type of an endpoint is an application class or one of {@code Collection}, {@code List}, {@code Set} or
+     * {@code Map}, we assume the default return type is "application/json".
+     */
+    private boolean defaultProduces;
+
+    // we need this (and the setters) due to Bytecode Recording
     public ResteasyReactiveConfig() {
     }
 
-    public ResteasyReactiveConfig(long inputBufferSize, boolean singleDefaultProduces) {
+    public ResteasyReactiveConfig(long inputBufferSize, boolean singleDefaultProduces, boolean defaultProduces) {
         this.inputBufferSize = inputBufferSize;
         this.singleDefaultProduces = singleDefaultProduces;
+        this.defaultProduces = defaultProduces;
     }
 
     public long getInputBufferSize() {
         return inputBufferSize;
     }
 
+    public void setInputBufferSize(long inputBufferSize) {
+        this.inputBufferSize = inputBufferSize;
+    }
+
     public boolean isSingleDefaultProduces() {
         return singleDefaultProduces;
     }
 
-    public ResteasyReactiveConfig setInputBufferSize(long inputBufferSize) {
-        this.inputBufferSize = inputBufferSize;
-        return this;
+    public void setSingleDefaultProduces(boolean singleDefaultProduces) {
+        this.singleDefaultProduces = singleDefaultProduces;
     }
 
-    public ResteasyReactiveConfig setSingleDefaultProduces(boolean singleDefaultProduces) {
-        this.singleDefaultProduces = singleDefaultProduces;
-        return this;
+    public boolean isDefaultProduces() {
+        return defaultProduces;
+    }
+
+    public void setDefaultProduces(boolean defaultProduces) {
+        this.defaultProduces = defaultProduces;
     }
 }

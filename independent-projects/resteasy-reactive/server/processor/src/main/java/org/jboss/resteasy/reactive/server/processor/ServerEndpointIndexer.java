@@ -239,11 +239,16 @@ public class ServerEndpointIndexer
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     public static class AbstractBuilder<B extends EndpointIndexer.Builder<ServerEndpointIndexer, B, ServerResourceMethod>>
             extends EndpointIndexer.Builder<ServerEndpointIndexer, B, ServerResourceMethod> {
 
         private MethodCreator initConverters;
         private EndpointInvokerFactory endpointInvokerFactory = new ReflectionEndpointInvokerFactory();
+
+        public EndpointInvokerFactory getEndpointInvokerFactory() {
+            return endpointInvokerFactory;
+        }
 
         public B setEndpointInvokerFactory(EndpointInvokerFactory endpointInvokerFactory) {
             this.endpointInvokerFactory = endpointInvokerFactory;

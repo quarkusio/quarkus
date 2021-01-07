@@ -4,6 +4,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.common.annotation.Experimental;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED, name = "rest")
 public class ResteasyReactiveConfig {
@@ -23,4 +24,14 @@ public class ResteasyReactiveConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean singleDefaultProduces;
+
+    /**
+     * When one of the quarkus-resteasy-reactive-jackson or quarkus-resteasy-reactive-jsonb extension are active
+     * and the result type of an endpoint is an application class or one of {@code Collection}, {@code List}, {@code Set} or
+     * {@code Map},
+     * we assume the default return type is "application/json" if this configuration is enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    @Experimental("This flag has a high probability of going away in the future")
+    public boolean defaultProduces;
 }

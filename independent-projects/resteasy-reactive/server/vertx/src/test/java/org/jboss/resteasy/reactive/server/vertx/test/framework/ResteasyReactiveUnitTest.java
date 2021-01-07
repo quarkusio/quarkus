@@ -217,7 +217,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 .setScannedResourcePaths(resources.getScannedResourcePaths())
                 .setClassLevelExceptionMappers(new HashMap<>())
                 .setInjectableBeans(new HashMap<>())
-                .setConfig(new ResteasyReactiveConfig(10000, true))
+                .setConfig(new ResteasyReactiveConfig(10000, true, true))
                 .setHttpAnnotationToMethod(resources.getHttpAnnotationToMethod())
                 .build();
 

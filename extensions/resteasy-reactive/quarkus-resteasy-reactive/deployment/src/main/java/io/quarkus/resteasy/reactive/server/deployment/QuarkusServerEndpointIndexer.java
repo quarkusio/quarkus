@@ -6,8 +6,11 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.ws.rs.core.MediaType;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -15,6 +18,9 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
+import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.GeneratedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
@@ -42,6 +48,7 @@ public class QuarkusServerEndpointIndexer
     private final MethodCreator initConverters;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
+    private final DefaultProducesHandler defaultProducesHandler;
     private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             DotName.createSimple(HttpServerRequest.class.getName()),
             DotName.createSimple(HttpServerResponse.class.getName()),
@@ -52,10 +59,39 @@ public class QuarkusServerEndpointIndexer
         this.initConverters = builder.initConverters;
         this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
         this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
+        this.defaultProducesHandler = builder.defaultProducesHandler;
     }
 
     protected boolean isContextType(ClassType klass) {
         return super.isContextType(klass) || CONTEXT_TYPES.contains(klass.name());
+    }
+
+    @Override
+    protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
+        List<MediaType> defaultMediaTypes = defaultProducesHandler.handle(new DefaultProducesHandler.Context() {
+            @Override
+            public Type nonAsyncReturnType() {
+                return nonAsyncReturnType;
+            }
+
+            @Override
+            public IndexView index() {
+                return index;
+            }
+
+            @Override
+            public ResteasyReactiveConfig config() {
+                return config;
+            }
+        });
+        if ((defaultMediaTypes != null) && !defaultMediaTypes.isEmpty()) {
+            String[] result = new String[defaultMediaTypes.size()];
+            for (int i = 0; i < defaultMediaTypes.size(); i++) {
+                result[i] = defaultMediaTypes.get(i).toString();
+            }
+            return result;
+        }
+        return super.applyAdditionalDefaults(nonAsyncReturnType);
     }
 
     @Override
@@ -175,6 +211,7 @@ public class QuarkusServerEndpointIndexer
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
         private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
         private MethodCreator initConverters;
+        private DefaultProducesHandler defaultProducesHandler = DefaultProducesHandler.Noop.INSTANCE;
 
         @Override
         public QuarkusServerEndpointIndexer build() {
@@ -199,6 +236,11 @@ public class QuarkusServerEndpointIndexer
 
         public Builder setInitConverters(MethodCreator initConverters) {
             this.initConverters = initConverters;
+            return this;
+        }
+
+        public Builder setDefaultProducesHandler(DefaultProducesHandler defaultProducesHandler) {
+            this.defaultProducesHandler = defaultProducesHandler;
             return this;
         }
     }

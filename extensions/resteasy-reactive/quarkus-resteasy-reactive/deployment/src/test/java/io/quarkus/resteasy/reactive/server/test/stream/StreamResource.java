@@ -123,4 +123,18 @@ public class StreamResource {
     public String infiniteStreamWasCancelled() {
         return receivedCancel ? "OK" : "KO";
     }
+
+    @Path("sse")
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<String> sse() {
+        return Multi.createFrom().items("a", "b", "c");
+    }
+
+    @Path("sse/throw")
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<String> sseThrows() {
+        throw new IllegalStateException("STOP");
+    }
 }

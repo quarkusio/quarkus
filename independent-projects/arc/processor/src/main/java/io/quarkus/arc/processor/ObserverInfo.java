@@ -293,7 +293,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         return qualifiers;
     }
 
-    int getPriority() {
+    public int getPriority() {
         return priority;
     }
 

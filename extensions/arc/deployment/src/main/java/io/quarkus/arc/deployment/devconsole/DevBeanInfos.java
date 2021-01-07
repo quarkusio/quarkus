@@ -5,35 +5,44 @@ import java.util.Collections;
 import java.util.List;
 
 public class DevBeanInfos {
-    private List<DevBeanInfo> beanInfos = new ArrayList<>();
-    private List<DevBeanInfo> removedBeanInfos = new ArrayList<>();
+
+    private final List<DevBeanInfo> beans;
+    private final List<DevBeanInfo> removedBeans;
+    private final List<DevObserverInfo> observers;
 
     public DevBeanInfos() {
+        beans = new ArrayList<>();
+        removedBeans = new ArrayList<>();
+        observers = new ArrayList<>();
     }
 
-    public void setRemovedBeanInfos(List<DevBeanInfo> removedBeanInfos) {
-        this.removedBeanInfos = removedBeanInfos;
+    public List<DevBeanInfo> getRemovedBeans() {
+        return removedBeans;
     }
 
-    public List<DevBeanInfo> getRemovedBeanInfos() {
-        Collections.sort(removedBeanInfos);
-        return removedBeanInfos;
+    public List<DevBeanInfo> getBeans() {
+        return beans;
     }
 
-    public List<DevBeanInfo> getBeanInfos() {
-        Collections.sort(beanInfos);
-        return beanInfos;
+    public List<DevObserverInfo> getObservers() {
+        return observers;
     }
 
-    public void setBeanInfos(List<DevBeanInfo> beanInfos) {
-        this.beanInfos = beanInfos;
+    void addBean(DevBeanInfo beanInfo) {
+        beans.add(beanInfo);
     }
 
-    public void addBeanInfo(DevBeanInfo beanInfo) {
-        beanInfos.add(beanInfo);
+    void addRemovedBean(DevBeanInfo beanInfo) {
+        removedBeans.add(beanInfo);
     }
 
-    public void addRemovedBeanInfo(DevBeanInfo beanInfo) {
-        removedBeanInfos.add(beanInfo);
+    void addObserver(DevObserverInfo observer) {
+        observers.add(observer);
+    }
+
+    void sort() {
+        Collections.sort(beans);
+        Collections.sort(removedBeans);
+        Collections.sort(observers);
     }
 }

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -47,6 +48,7 @@ import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Results;
@@ -58,6 +60,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
+import io.quarkus.vertx.http.runtime.devmode.JsonObjectValueResolver;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.vertx.core.Handler;
@@ -257,8 +260,12 @@ public class DevConsoleProcessor {
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
-        EngineBuilder builder = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
-                .addValueResolver(new ReflectionValueResolver())
+        EngineBuilder builder = Engine.builder().addDefaults();
+
+        // Escape some characters for HTML templates
+        builder.addResultMapper(new HtmlEscaper());
+
+        builder.addValueResolver(new ReflectionValueResolver())
                 .addValueResolver(new JsonObjectValueResolver())
                 .addValueResolver(ValueResolvers.rawResolver())
                 .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
@@ -312,6 +319,8 @@ public class DevConsoleProcessor {
 
         if (template == null)
             return Optional.empty();
+
+        String templateName = id;
         String finalTemplate = template;
         return Optional.of(new TemplateLocator.TemplateLocation() {
             @Override
@@ -321,8 +330,25 @@ public class DevConsoleProcessor {
 
             @Override
             public Optional<Variant> getVariant() {
-                // FIXME
-                return Optional.empty();
+                Variant variant = null;
+                String fileName = templateName;
+                int slashIdx = fileName.lastIndexOf('/');
+                if (slashIdx != -1) {
+                    fileName = fileName.substring(slashIdx, fileName.length());
+                }
+                int dotIdx = fileName.lastIndexOf('.');
+                if (dotIdx != -1) {
+                    String suffix = fileName.substring(dotIdx + 1, fileName.length());
+                    if (suffix.equalsIgnoreCase("json")) {
+                        variant = Variant.forContentType(Variant.APPLICATION_JSON);
+                    } else {
+                        String contentType = URLConnection.getFileNameMap().getContentTypeFor(fileName);
+                        if (contentType != null) {
+                            variant = Variant.forContentType(contentType);
+                        }
+                    }
+                }
+                return Optional.ofNullable(variant);
             }
         });
     }

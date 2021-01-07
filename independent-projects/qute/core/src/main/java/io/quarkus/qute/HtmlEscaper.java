@@ -1,15 +1,10 @@
-package io.quarkus.qute.runtime;
+package io.quarkus.qute;
 
+import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Objects;
 import java.util.Optional;
 
-import io.quarkus.qute.Expression;
-import io.quarkus.qute.RawString;
-import io.quarkus.qute.ResultMapper;
-import io.quarkus.qute.TemplateNode.Origin;
-import io.quarkus.qute.Variant;
-
-class HtmlEscaper implements ResultMapper {
+public class HtmlEscaper implements ResultMapper {
 
     @Override
     public boolean appliesTo(Origin origin, Object result) {

@@ -7,13 +7,13 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
@@ -55,8 +55,9 @@ public final class MessageBundles {
         throw new IllegalStateException("Unable to obtain a message bundle instance for: " + bundleInterface);
     }
 
-    static void setupNamespaceResolvers(@Observes EngineBuilder builder, BundleContext context,
-            @Any Instance<Object> instance) {
+    static void setupNamespaceResolvers(@Observes EngineBuilder builder, BundleContext context) {
+        // Avoid injecting "Instance<Object> instance" which prevents unused beans removal
+        ArcContainer container = Arc.container();
         // For every bundle register a new resolver
         for (Entry<String, Map<String, Class<?>>> entry : context.getBundleInterfaces().entrySet()) {
             final String bundle = entry.getKey();
@@ -64,10 +65,10 @@ public final class MessageBundles {
             Resolver resolver = null;
             for (Entry<String, Class<?>> locEntry : entry.getValue().entrySet()) {
                 if (locEntry.getKey().equals(DEFAULT_LOCALE)) {
-                    resolver = (Resolver) instance.select(locEntry.getValue(), Default.Literal.INSTANCE).get();
+                    resolver = (Resolver) container.select(locEntry.getValue(), Default.Literal.INSTANCE).get();
                     continue;
                 }
-                Instance<?> found = instance.select(locEntry.getValue(), new Localized.Literal(locEntry.getKey()));
+                Instance<?> found = container.select(locEntry.getValue(), new Localized.Literal(locEntry.getKey()));
                 if (!found.isResolvable()) {
                     throw new IllegalStateException("Bean instance for localized interface not found: " + locEntry.getValue());
                 }

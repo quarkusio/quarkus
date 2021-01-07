@@ -65,7 +65,12 @@ public enum Capability {
      */
     SMALLRYE_OPENTRACING,
     SPRING_WEB,
-    SMALLRYE_OPENAPI;
+    SMALLRYE_OPENAPI,
+    /**
+     * Qute
+     */
+    QUTE_TEMPLATES,
+    ;
 
     /**
      *

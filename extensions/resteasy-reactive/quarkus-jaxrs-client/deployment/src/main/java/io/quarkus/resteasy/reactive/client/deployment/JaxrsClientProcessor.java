@@ -101,7 +101,7 @@ public class JaxrsClientProcessor {
                 .setExistingConverters(new HashMap<>())
                 .setScannedResourcePaths(result.getScannedResourcePaths())
                 .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(config.inputBufferSize.asLongValue(),
-                        config.singleDefaultProduces))
+                        config.singleDefaultProduces, config.defaultProduces))
                 .setAdditionalReaders(additionalReaders)
                 .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
                 .setInjectableBeans(new HashMap<>())

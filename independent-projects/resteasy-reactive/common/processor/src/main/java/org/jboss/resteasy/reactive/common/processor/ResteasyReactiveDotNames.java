@@ -9,8 +9,10 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -151,9 +153,11 @@ public final class ResteasyReactiveDotNames {
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 
+    public static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
     public static final DotName LIST = DotName.createSimple(List.class.getName());
     public static final DotName SET = DotName.createSimple(Set.class.getName());
     public static final DotName SORTED_SET = DotName.createSimple(SortedSet.class.getName());
+    public static final DotName MAP = DotName.createSimple(Map.class.getName());
     public static final DotName MULTI_VALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
     public static final DotName PATH_SEGMENT = DotName.createSimple(PathSegment.class.getName());
 

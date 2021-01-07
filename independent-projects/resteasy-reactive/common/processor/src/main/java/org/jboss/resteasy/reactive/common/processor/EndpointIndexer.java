@@ -109,6 +109,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             ResteasyReactiveDotNames.RESOURCE_INFO)));
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
+    protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
 
@@ -153,7 +154,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected final IndexView index;
     private final Map<String, String> existingConverters;
     private final Map<DotName, String> scannedResourcePaths;
-    private final ResteasyReactiveConfig config;
+    protected final ResteasyReactiveConfig config;
     private final AdditionalReaders additionalReaders;
     private final Map<DotName, String> httpAnnotationToMethod;
     private final Map<String, InjectableBean> injectableBeans;
@@ -501,8 +502,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         // FIXME: primitives
         if (STRING.equals(nonAsyncReturnType.name()))
             return config.isSingleDefaultProduces() ? PRODUCES_PLAIN_TEXT : PRODUCES_PLAIN_TEXT_NEGOTIATED;
-        // FIXME: JSON
-        return produces;
+        return applyAdditionalDefaults(nonAsyncReturnType);
+    }
+
+    protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
+        return EMPTY_STRING_ARRAY;
     }
 
     private Type getNonAsyncReturnType(Type returnType) {
@@ -888,6 +892,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return NameBindingUtil.nameBindingNames(index, methodInfo, forClass);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
         private Function<String, BeanFactory<Object>> factoryCreator = new ReflectionBeanFactoryCreator();
         private boolean defaultBlocking;

@@ -3,7 +3,7 @@
 
 == Context & Objective
 
-The purpose of this article is to be more dev oriented and less api oriented to explain how to produce extension for quarkus.
+The purpose of this cookbook is to be more dev oriented and less API oriented to explain how to produce extensions for Quarkus.
 So it will not detail how to generate BuildItem or use substitution, but it will explain the workflow to handle extension.
 First an extension is a module which will be run by quarkus during build time to generate code and inject it.
 It is a kind of pre-compilation.

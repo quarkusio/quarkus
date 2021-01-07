@@ -42,47 +42,54 @@ public class WebJarUtil {
 
     private static final Logger LOG = Logger.getLogger(WebJarUtil.class);
 
-    private final static String tmpDir = System.getProperty("java.io.tmpdir");
+    private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
     private static final String CUSTOM_MEDIA_FOLDER = "META-INF/branding/";
     private static final List<String> IGNORE_LIST = Arrays.asList("logo.png", "favicon.ico", "style.css");
+    private static final String SNAPSHOT_VERSION = "-SNAPSHOT";
 
     private WebJarUtil() {
     }
 
-    public static Path devOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, LaunchModeBuildItem launch,
-            AppArtifact artifact, String rootFolderInJar)
+    public static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, LaunchModeBuildItem launchMode,
+            AppArtifact resourcesArtifact, String rootFolderInJar)
             throws IOException {
 
+        rootFolderInJar = normalizeRootFolderInJar(rootFolderInJar);
         AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
 
-        Path path = createDir(userApplication.getArtifactId(), artifact.getGroupId(), artifact.getArtifactId(),
-                artifact.getVersion());
+        Path path = createResourcesDirectory(userApplication, resourcesArtifact);
 
-        // Clean on non dev mode
-        if (!launch.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+        // Clean if not in dev mode or if the resources jar is a snapshot version
+        if (!launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)
+                || resourcesArtifact.getVersion().contains(SNAPSHOT_VERSION)) {
             IoUtils.createOrEmptyDir(path);
         }
 
         if (isEmpty(path)) {
             ClassLoader classLoader = WebJarUtil.class.getClassLoader();
-            for (Path p : artifact.getPaths()) {
+            for (Path p : resourcesArtifact.getPaths()) {
                 File artifactFile = p.toFile();
                 try (JarFile jarFile = JarFiles.create(artifactFile)) {
                     Enumeration<JarEntry> entries = jarFile.entries();
                     while (entries.hasMoreElements()) {
                         JarEntry entry = entries.nextElement();
-                        if (entry.getName().startsWith(rootFolderInJar) && !entry.isDirectory()) {
-                            try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                                String filename = entry.getName().replace(rootFolderInJar, "");
-                                String modulename = getModuleOverrideName(artifact, filename);
-                                if (IGNORE_LIST.contains(filename)
-                                        && isOverride(userApplication.getPaths(), classLoader, filename, modulename)) {
-                                    try (InputStream override = getOverride(userApplication.getPaths(), classLoader, filename,
-                                            modulename)) {
-                                        createFile(override, path, filename);
+                        if (entry.getName().startsWith(rootFolderInJar)) {
+                            String fileName = entry.getName().replace(rootFolderInJar, "");
+                            Path filePath = path.resolve(fileName);
+                            if (entry.isDirectory()) {
+                                Files.createDirectories(filePath);
+                            } else {
+                                try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                                    String modulename = getModuleOverrideName(resourcesArtifact, fileName);
+                                    if (IGNORE_LIST.contains(fileName)
+                                            && isOverride(userApplication.getPaths(), classLoader, fileName, modulename)) {
+                                        try (InputStream override = getOverride(userApplication.getPaths(), classLoader,
+                                                fileName, modulename)) {
+                                            createFile(override, filePath);
+                                        }
+                                    } else {
+                                        createFile(inputStream, filePath);
                                     }
-                                } else {
-                                    createFile(inputStream, path, filename);
                                 }
                             }
                         }
@@ -121,8 +128,9 @@ public class WebJarUtil {
         return original;
     }
 
-    public static Map<String, byte[]> production(CurateOutcomeBuildItem curateOutcomeBuildItem, AppArtifact artifact,
-            String rootFolderInJar) throws IOException {
+    public static Map<String, byte[]> copyResourcesForProduction(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            AppArtifact artifact, String rootFolderInJar) throws IOException {
+        rootFolderInJar = normalizeRootFolderInJar(rootFolderInJar);
         AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
 
         Map<String, byte[]> map = new HashMap<>();
@@ -266,10 +274,6 @@ public class WebJarUtil {
         return Optional.empty();
     }
 
-    private static void createFile(InputStream source, Path targetDir, String filename) throws IOException {
-        createFile(source, targetDir.resolve(filename));
-    }
-
     private static void createFile(InputStream source, Path targetFile) throws IOException {
         FileLock lock = null;
         FileOutputStream fos = null;
@@ -290,9 +294,10 @@ public class WebJarUtil {
         }
     }
 
-    private static Path createDir(String appName, String libgroupId, String libartifactId, String libversion) {
+    private static Path createResourcesDirectory(AppArtifact userApplication, AppArtifact resourcesArtifact) {
         try {
-            Path path = Paths.get(tmpDir, "quarkus", appName, libgroupId, libartifactId, libversion);
+            Path path = Paths.get(TMP_DIR, "quarkus", userApplication.getGroupId(), userApplication.getArtifactId(),
+                    resourcesArtifact.getGroupId(), resourcesArtifact.getArtifactId(), resourcesArtifact.getVersion());
 
             if (!Files.exists(path)) {
                 Files.createDirectories(path);
@@ -307,5 +312,13 @@ public class WebJarUtil {
         try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
             return !dirStream.iterator().hasNext();
         }
+    }
+
+    private static String normalizeRootFolderInJar(String rootFolderInJar) {
+        if (rootFolderInJar.endsWith("/")) {
+            return rootFolderInJar;
+        }
+
+        return rootFolderInJar + "/";
     }
 }

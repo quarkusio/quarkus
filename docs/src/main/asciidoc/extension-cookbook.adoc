@@ -11,8 +11,8 @@ It is a kind of pre-compilation.
 == Organisation
 
 There are 2 projects:
-- runtime will contain all class loaded on runtime
-- deployment which contain processor class which will be run during build (augmenter).
+- **runtime**:: Contains all classes loaded during runtime
+- **deployment**:: Contains all processor classes which will be run during the build.
 
 The processor is the heart of the extension all build step methods are a hierarchy of dependant.
 Quarkus automatically detect build items input and output and run then in the right order.

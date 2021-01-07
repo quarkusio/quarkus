@@ -51,7 +51,7 @@ public class BouncyCastleFipsJsseTestCase {
             return;
         }
         doTestListProviders();
-        //checkLog(false);
+        checkLog(false);
     }
 
     protected void doTestListProviders() throws Exception {

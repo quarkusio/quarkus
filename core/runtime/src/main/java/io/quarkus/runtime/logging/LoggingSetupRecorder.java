@@ -137,16 +137,13 @@ public class LoggingSetupRecorder {
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
-            final Level logLevel = entry.getValue().level.getLevel();
-            final Level minLogLevel = buildCategory == null
-                    ? buildConfig.minLevel
-                    : buildCategory.minLevel.getLevel();
-
-            if (logLevel.intValue() < minLogLevel.intValue()) {
-                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
-                        entry.getKey(), minLogLevel, minLogLevel);
-
-                entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
+            if (!entry.getValue().level.isInherited()) {
+                final Level logLevel = entry.getValue().level.getLevel();
+                if (buildCategory == null) {
+                    promoteLogLevelIfBelow(entry, logLevel, buildConfig.minLevel);
+                } else if (!buildCategory.minLevel.isInherited()) {
+                    promoteLogLevelIfBelow(entry, logLevel, buildCategory.minLevel.getLevel());
+                }
             }
         }
 
@@ -175,6 +172,15 @@ public class LoggingSetupRecorder {
 
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private void promoteLogLevelIfBelow(Entry<String, CategoryConfig> entry, Level logLevel, Level minLogLevel) {
+        if (logLevel.intValue() < minLogLevel.intValue()) {
+            log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
+                    entry.getKey(), minLogLevel, minLogLevel);
+
+            entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
+        }
     }
 
     private CategoryBuildTimeConfig isSubsetOf(String categoryName, Map<String, CategoryBuildTimeConfig> categories) {

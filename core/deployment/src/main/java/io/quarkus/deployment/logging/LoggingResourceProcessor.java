@@ -218,30 +218,32 @@ public final class LoggingResourceProcessor {
                 BytecodeCreator current = mc;
                 for (Map.Entry<String, CategoryBuildTimeConfig> entry : categories.entrySet()) {
                     final String category = entry.getKey();
-                    final int categoryLevelIntValue = entry.getValue().minLevel.getLevel().intValue();
+                    if (!entry.getValue().minLevel.isInherited()) {
+                        final int categoryLevelIntValue = entry.getValue().minLevel.getLevel().intValue();
 
-                    ResultHandle equalsResult = current.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class),
-                            name, current.load(category));
+                        ResultHandle equalsResult = current.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class),
+                                name, current.load(category));
 
-                    BranchResult equalsBranch = current.ifTrue(equalsResult);
-                    try (BytecodeCreator false1 = equalsBranch.falseBranch()) {
-                        ResultHandle startsWithResult = false1.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(String.class, "startsWith", boolean.class, String.class),
-                                name, false1.load(category));
+                        BranchResult equalsBranch = current.ifTrue(equalsResult);
+                        try (BytecodeCreator false1 = equalsBranch.falseBranch()) {
+                            ResultHandle startsWithResult = false1.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(String.class, "startsWith", boolean.class, String.class),
+                                    name, false1.load(category));
 
-                        BranchResult startsWithBranch = false1.ifTrue(startsWithResult);
+                            BranchResult startsWithBranch = false1.ifTrue(startsWithResult);
 
-                        final BytecodeCreator startsWithTrue = startsWithBranch.trueBranch();
-                        final BranchResult levelCompareBranch = startsWithTrue.ifIntegerGreaterEqual(level,
-                                startsWithTrue.load(categoryLevelIntValue));
-                        levelCompareBranch.trueBranch().returnValue(levelCompareBranch.trueBranch().load(true));
-                        levelCompareBranch.falseBranch().returnValue(levelCompareBranch.falseBranch().load(false));
+                            final BytecodeCreator startsWithTrue = startsWithBranch.trueBranch();
+                            final BranchResult levelCompareBranch = startsWithTrue.ifIntegerGreaterEqual(level,
+                                    startsWithTrue.load(categoryLevelIntValue));
+                            levelCompareBranch.trueBranch().returnValue(levelCompareBranch.trueBranch().load(true));
+                            levelCompareBranch.falseBranch().returnValue(levelCompareBranch.falseBranch().load(false));
 
-                        current = startsWithBranch.falseBranch();
+                            current = startsWithBranch.falseBranch();
+                        }
+
+                        equalsBranch.trueBranch().returnValue(equalsBranch.trueBranch().load(true));
                     }
-
-                    equalsBranch.trueBranch().returnValue(equalsBranch.trueBranch().load(true));
                 }
 
                 final ResultHandle infoLevelIntValue = getLogManagerLevelIntValue(defaultMinLevelName, current);

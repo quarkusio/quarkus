@@ -72,6 +72,7 @@ import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointB
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
+import io.smallrye.openapi.api.models.OpenAPIImpl;
 import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
 import io.smallrye.openapi.runtime.io.Format;
@@ -300,7 +301,7 @@ public class SmallRyeOpenApiProcessor {
         if (shouldScanAnnotations(capabilities, index)) {
             annotationModel = generateAnnotationModel(index, capabilities, httpRootPathBuildItem, resteasyJaxrsConfig);
         } else {
-            annotationModel = null;
+            annotationModel = new OpenAPIImpl();
         }
         OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel, openAPIBuildItems);
         boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();

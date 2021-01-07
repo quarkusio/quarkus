@@ -130,7 +130,7 @@ class VertxHttpProcessor {
         RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx());
         RuntimeValue<Router> frameworkRouter = recorder.initializeRouter(vertx.getVertx());
         boolean frameworkRouterFound = false;
-        recorder.setNonApplicationRedirectHandler(nonApplicationRootPath.getFrameworkRootPath());
+        recorder.setNonApplicationRedirectHandler(nonApplicationRootPath.getFrameworkRootPath(), httpBuildTimeConfig.rootPath);
 
         for (RouteBuildItem route : routes) {
             if (nonApplicationRootPath.isSeparateRoot() && route.isFrameworkRoute()) {

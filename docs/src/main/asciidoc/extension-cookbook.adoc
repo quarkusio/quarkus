@@ -1,12 +1,27 @@
-
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
 = Extension Cookbook
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:toc:
+
+include::./attributes.adoc[]
 
 == Context & Objective
 
-The purpose of this cookbook is to be more dev oriented and less API oriented to explain how to produce extensions for Quarkus.
-So it will not detail how to generate BuildItem or use substitution, but it will explain the workflow to handle extension.
-First an extension is a module which will be run by quarkus during build time to generate code and inject it.
-It is a kind of pre-compilation.
+The purpose of this cookbook is to explain for extension developer, a step by step process to build an extension from scratch.
+Other guide are API oriented and this one will not detailed API. For this purpose use other guide as :
+- link:writing-extensions.html[Write Your Own Extension] 
+- link:writing-native-applications-tips.html[Tips for writing native applications]
+- link:building-my-first-extension.html[Build My first extension]
+
+So this guide will not detail how to generate BuildItem or use substitution, but it will explain the workflow to handle extension.
+First an extension is a module which will be run by Quarkus during build time (pre-compilation) to generate code and include it into the compiled package.
 
 == Organisation
 
@@ -16,7 +31,7 @@ There are 2 projects:
 
 The processor is the heart of the extension all build step methods are a hierarchy of dependant.
 Quarkus automatically detect build items input and output and run then in the right order.
-It mean that sometimes you add an unneeded input just to be sure it is launched after another method.
+It mean that sometimes, a build Item unused is added in order to force order of execution of build step after the generation of the unused input.
 
 The processor can generate bytecode, read config, and pass some data to runtime thanks to recorder (only simple structure).
 
@@ -48,16 +63,46 @@ Synthetic build item is another option.
 
 Paid attention to split config for buildtime (can not been changed on runtime) and for runtime (not known during buildtime).
 
+=== Configure the runtime beans
+
+If you need to send data from build time to runtime to configure bean, you can use recorder to send simple data (String, List,...).
+For hierarchy, there is a trampoline process in Runtime buildstep:
+```
+@BuildStep
+@Record(ExecutionTime.RUNTIME_INIT)
+public void build(CustomRecorder recorder, List<ComplexeBuildItem> complexeBuildItems) {
+    RuntimeValue<ComplexConfig> complexConfig = recorder.createComplexConfig();
+    for (ComplexeBuildItem complexeBuildItem : complexeBuildItems) {
+        recorder.registerLeaf(complexConfig, complexeBuildItem.getString());
+    }
+    //... use complexe config for a beans
+}
+```
+
+On recoder:
+```
+@Recorder
+public class CustomRecorder {
+    public RuntimeValue<ComplexConfig> createComplexConfig() {
+        return new RuntimeValue<>(new ComplexConfig());
+    }
+    public void registerLeaf(RuntimeValue<ComplexConfig> complexConfig, String cfg) {
+        ComplexConfig complexConfigValue = complexConfig.getValue();
+        complexConfigValue.add(cfg);
+    }
+}
+```
 === Register servlet
 
-Build step can generate the ServletBuildItem which referring to the servlet class. If you can the used vert.x routes.
+Build step can generate the ServletBuildItem which point to the servlet class.
+But vert.x routes must be the prefered solution because vertx route use reactor design pattern for high availability.
 
 === Route vertx
 
 BuildStep must produce a RouteBuildItem and forward it to a class on Handler<RoutingContext>.
 
 === Removable
-Quarkus cleanup not used beans. So if you need to register a bean for injection but load without inject (CDI.current().select(MyClient.class).get())
+Quarkus cleanup unused beans. So if you need to register a bean for injection but load without inject (CDI.current().select(MyClient.class).get())
 There are 3 way to do it:
 
 - Unremovable annotation on bean class (not for synthetic beans)
@@ -109,9 +154,10 @@ Then you have to register in the extension processor a RuntimeInitializedClassBu
 
 == JVM : inject class emitted in classLoader and remove substitution
 
-Finally, the goal is to load class produce for native part on jvm too. In order to speed up boot time.
+Finally, the goal is to load class produce for native part on jvm too. In order to speed up boot time and simplify maintainance by having same code between native and jvm at maximum.
+Try to reduce substitution to minimum.
 On native, you can inject code but on jvm part, merge request must been provided to maintainer of source project
-to add the ability to inject class emitted by quarkus during augmentation to avoid class emitting on jvm.
+to add the ability to inject class emitted by Quarkus during augmentation to avoid class emitting on jvm.
 
 == Debugging
 

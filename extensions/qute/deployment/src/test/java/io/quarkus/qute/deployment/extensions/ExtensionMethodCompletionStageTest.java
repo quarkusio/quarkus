@@ -15,6 +15,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.deployment.Foo;
@@ -39,6 +40,7 @@ public class ExtensionMethodCompletionStageTest {
         assertEquals("bravo", result.toCompletableFuture().get());
     }
 
+    @Unremovable
     @Singleton
     public static class FooParentService {
 

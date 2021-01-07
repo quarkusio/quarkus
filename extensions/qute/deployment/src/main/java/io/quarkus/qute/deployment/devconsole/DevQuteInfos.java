@@ -4,17 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DevQuteInfos {
-    private List<DevQuteTemplateInfo> templateInfos = new ArrayList<>();
+
+    private final List<DevQuteTemplateInfo> templateInfos;
 
     public DevQuteInfos() {
+        templateInfos = new ArrayList<>();
     }
 
-    public List<DevQuteTemplateInfo> getTemplateInfos() {
+    public List<DevQuteTemplateInfo> getTemplates() {
         return templateInfos;
-    }
-
-    public void setTemplateInfos(List<DevQuteTemplateInfo> templateInfos) {
-        this.templateInfos = templateInfos;
     }
 
     public void addQuteTemplateInfo(DevQuteTemplateInfo info) {

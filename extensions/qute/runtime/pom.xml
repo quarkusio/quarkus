@@ -26,10 +26,11 @@
             <groupId>io.quarkus.qute</groupId>
             <artifactId>qute-core</artifactId>
         </dependency>
+        <!-- DEV console dependencies -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

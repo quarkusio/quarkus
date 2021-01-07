@@ -28,7 +28,7 @@
         <!-- Used for the dev console. Note that there is no corresponding runtime dependency -->
         <dependency>
             <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-generator</artifactId>
+            <artifactId>qute-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.yaml</groupId>

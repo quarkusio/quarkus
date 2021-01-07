@@ -363,6 +363,9 @@ public class WhenSectionHelper implements SectionHelper {
         }
 
         boolean resolveEnum(SectionResolutionContext context, Object value) {
+            if (params.isEmpty()) {
+                return true;
+            }
             String enumValue = value.toString();
             if (params.size() == 1) {
                 // case enum value with the current value

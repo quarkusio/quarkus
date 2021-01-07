@@ -2,7 +2,9 @@ package io.quarkus.enforcer;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
@@ -39,11 +41,22 @@ public class RequiresMinimalDeploymentDependency extends DeploymentDependencyRul
 
         String projArtifactKey = buildGAVKey(project.getArtifact());
 
+        Set<String> existingUnmatchedDeploymentDeps = directDepsByGAV.entrySet().stream()
+                .filter(entry -> entry.getKey().contains(DEPLOYMENT_ARTIFACT_ID_SUFFIX))
+                .filter(entry -> REQ_TYPE.equals(entry.getValue().getType()))
+                .filter(entry -> REQ_SCOPE.equals(entry.getValue().getScope()))
+                .filter(entry -> entry.getValue().getExclusions().stream()
+                        .anyMatch(excl -> "*".equals(excl.getGroupId()) && "*".equals(excl.getArtifactId())))
+                .map(Entry::getKey)
+                .collect(Collectors.toSet());
+
         List<String> missingDeploymentDeps = nonDeploymentArtifactsByGAV.entrySet().parallelStream()
                 .filter(entry -> directDepsByGAV.containsKey(entry.getKey())) // only direct deps
                 .map(entry -> parseDeploymentGAV(entry.getKey(), entry.getValue()))
+                .sequential()
                 .filter(optDeploymentGAV -> optDeploymentGAV
-                        .map(deploymentGAV -> !isMinDeploymentDepPresent(deploymentGAV, projArtifactKey, directDepsByGAV))
+                        .map(deploymentGAV -> !isMinDeploymentDepPresent(deploymentGAV, projArtifactKey,
+                                existingUnmatchedDeploymentDeps))
                         .orElse(false))
                 .map(Optional::get)
                 .sorted()
@@ -55,22 +68,26 @@ public class RequiresMinimalDeploymentDependency extends DeploymentDependencyRul
                     .map(gavArray -> String.format(DEP_TEMPLATE, gavArray))
                     .collect(Collectors.joining("\n"));
             throw new EnforcerRuleException(missingDeploymentDeps.size()
-                    + " *-deployment dependencies are missing/configured incorrectly:\n"
+                    + " minimal *-deployment dependencies are missing/configured incorrectly:\n"
                     + "    " + missingDeploymentDeps.stream().collect(Collectors.joining("\n    "))
                     + "\n\nTo fix this issue, add the following dependencies to pom.xml:\n\n"
                     + "        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->\n"
                     + requiredDeps);
         }
+        if (!existingUnmatchedDeploymentDeps.isEmpty()) {
+            String superfluousDeps = existingUnmatchedDeploymentDeps.stream()
+                    .map(gav -> "    " + gav)
+                    .sorted()
+                    .collect(Collectors.joining("\n"));
+            throw new EnforcerRuleException(existingUnmatchedDeploymentDeps.size()
+                    + " minimal *-deployment dependencies are superfluous and must be removed from pom.xml:\n"
+                    + superfluousDeps);
+        }
     }
 
     private boolean isMinDeploymentDepPresent(String deploymentGAV, String projArtifactKey,
-            Map<String, Dependency> directDepsByGAV) {
+            Set<String> existingDeploymentDeps) {
         return deploymentGAV.equals(projArtifactKey) // special case: current project itself is the "required dependency"
-                || Optional.ofNullable(directDepsByGAV.get(deploymentGAV))
-                        .filter(d -> REQ_TYPE.equals(d.getType()))
-                        .filter(d -> REQ_SCOPE.equals(d.getScope()))
-                        .map(d -> d.getExclusions().stream()
-                                .anyMatch(e -> "*".equals(e.getGroupId()) && "*".equals(e.getArtifactId())))
-                        .orElse(false);
+                || existingDeploymentDeps.remove(deploymentGAV);
     }
 }

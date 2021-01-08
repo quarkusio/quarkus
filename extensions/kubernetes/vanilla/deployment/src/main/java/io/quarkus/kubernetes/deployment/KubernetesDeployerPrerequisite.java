@@ -5,13 +5,13 @@ import java.util.Optional;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 
 public class KubernetesDeployerPrerequisite {
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
     public void prepare(ContainerImageInfoBuildItem containerImage,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             BuildProducer<ContainerImageBuildRequestBuildItem> buildRequestProducer,

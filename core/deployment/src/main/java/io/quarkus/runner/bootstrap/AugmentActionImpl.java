@@ -7,6 +7,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +49,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 
@@ -66,6 +68,7 @@ public class AugmentActionImpl implements AugmentAction {
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;
     private final LaunchMode launchMode;
+    private final DevModeType devModeType;
     private final List<Consumer<BuildChainBuilder>> chainCustomizers;
     private final List<ClassLoaderEventListener> classLoadListeners;
 
@@ -96,8 +99,37 @@ public class AugmentActionImpl implements AugmentAction {
         this.curatedApplication = curatedApplication;
         this.chainCustomizers = chainCustomizers;
         this.classLoadListeners = classLoadListeners;
-        this.launchMode = quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.PROD ? LaunchMode.NORMAL
-                : quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST ? LaunchMode.TEST : LaunchMode.DEVELOPMENT;
+        LaunchMode launchMode;
+        DevModeType devModeType;
+        switch (quarkusBootstrap.getMode()) {
+            case DEV:
+                launchMode = LaunchMode.DEVELOPMENT;
+                devModeType = DevModeType.LOCAL;
+                break;
+            case PROD:
+                launchMode = LaunchMode.NORMAL;
+                devModeType = null;
+                break;
+            case TEST:
+                launchMode = LaunchMode.TEST;
+                devModeType = null;
+                break;
+            case REMOTE_DEV_CLIENT:
+                //this seems a bit counter intuitive, but the remote dev client just keeps a production
+                //app up to date and ships it to the remote side, this allows the remote side to be fully up
+                //to date even if the process is restarted
+                launchMode = LaunchMode.NORMAL;
+                devModeType = DevModeType.REMOTE_LOCAL_SIDE;
+                break;
+            case REMOTE_DEV_SERVER:
+                launchMode = LaunchMode.DEVELOPMENT;
+                devModeType = DevModeType.REMOTE_SERVER_SIDE;
+                break;
+            default:
+                throw new RuntimeException("Unknown launch mode " + quarkusBootstrap.getMode());
+        }
+        this.launchMode = launchMode;
+        this.devModeType = devModeType;
     }
 
     @Override
@@ -185,7 +217,8 @@ public class AugmentActionImpl implements AugmentAction {
             chainBuilder.setClassLoader(classLoader);
 
             ExtensionLoader.loadStepsFrom(classLoader, new Properties(),
-                    curatedApplication.getAppModel().getPlatformProperties(), LaunchMode.NORMAL, null).accept(chainBuilder);
+                    curatedApplication.getAppModel().getPlatformProperties(), launchMode, devModeType, null)
+                    .accept(chainBuilder);
             chainBuilder.loadProviders(classLoader);
 
             for (Consumer<BuildChainBuilder> c : chainCustomizers) {
@@ -202,7 +235,8 @@ public class AugmentActionImpl implements AugmentAction {
             BuildChain chain = chainBuilder
                     .build();
             BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
-                    .produce(new LaunchModeBuildItem(launchMode))
+                    .produce(new LaunchModeBuildItem(launchMode,
+                            devModeType == null ? Optional.empty() : Optional.of(devModeType)))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LiveReloadBuildItem());

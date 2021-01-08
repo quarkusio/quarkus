@@ -86,6 +86,15 @@ quarkus.http.port=9090 <2>
 
 TIP: Quarkus supports the use of <<using_property_expressions,property expressions>> in the `application.properties` file.
 
+== Embedding a configuration file inside a dependency
+
+You can embed a configuration file inside one of your dependencies by adding a `META-INF/microprofile.properties` configuration file to it
+(this is a standard functionality of MicroProfile Config).
+
+When you add this dependency to your application, its configuration properties will be merged.
+
+You can override the properties coming from it inside your `application.properties` that takes precedence over it.
+
 == Injecting configuration properties
 
 Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the configuration properties in the application.

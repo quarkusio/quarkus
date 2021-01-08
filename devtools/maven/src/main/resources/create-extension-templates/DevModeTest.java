@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 
-class [=artifactIdBaseCamelCase]DevModeTest {
+public class [=artifactIdBaseCamelCase]DevModeTest {
     @RegisterExtension
     static final QuarkusDevModeTest devModeTest = new QuarkusDevModeTest() // Start hot reload (DevMode) test with your extension loaded
         .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));

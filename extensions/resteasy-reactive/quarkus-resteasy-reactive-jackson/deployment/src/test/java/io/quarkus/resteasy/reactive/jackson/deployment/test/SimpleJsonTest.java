@@ -186,4 +186,17 @@ public class SimpleJsonTest {
         RestAssured.get("/simple/user-with-private-view")
                 .then().body(containsString("1"), containsString("test"));
     }
+
+    @Test
+    public void testPerClassExceptionMapper() {
+        RestAssured
+                .with()
+                .body("{\"first\": Bob, \"last\": \"Builder\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/person")
+                .then()
+                .statusCode(400)
+                .contentType("application/json")
+                .body(containsString("Unrecognized token 'Bob'"));
+    }
 }

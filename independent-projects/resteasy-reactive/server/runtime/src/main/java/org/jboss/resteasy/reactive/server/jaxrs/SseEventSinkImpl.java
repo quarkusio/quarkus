@@ -47,6 +47,11 @@ public class SseEventSinkImpl implements SseEventSink {
         closed = true;
         // FIXME: do we need a state flag?
         ServerHttpResponse response = context.serverResponse();
+        if (!response.headWritten()) {
+            // make sure we send the headers if we're closing this sink before the
+            // endpoint method is over
+            SseUtil.setHeaders(context, response);
+        }
         response.end();
         context.close();
         if (broadcaster != null)

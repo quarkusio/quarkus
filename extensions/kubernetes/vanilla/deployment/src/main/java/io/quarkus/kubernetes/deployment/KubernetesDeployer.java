@@ -33,7 +33,7 @@ import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -51,7 +51,7 @@ public class KubernetesDeployer {
             .values().stream()
             .map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
     public void selectDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
             EnabledKubernetesDeploymentTargetsBuildItem targets,
             Capabilities capabilities,
@@ -70,7 +70,7 @@ public class KubernetesDeployer {
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
     public void deploy(KubernetesClientBuildItem kubernetesClient,
             Capabilities capabilities,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,

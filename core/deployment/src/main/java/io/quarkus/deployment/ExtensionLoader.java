@@ -80,6 +80,7 @@ import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -116,63 +117,6 @@ public final class ExtensionLoader {
      * Load all the build steps from the given class loader.
      *
      * @param classLoader the class loader
-     * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
-     */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader)
-            throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, new Properties());
-    }
-
-    /**
-     * Load all the build steps from the given class loader.
-     *
-     * @param classLoader the class loader
-     * @param launchMode the launch mode
-     * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
-     */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, LaunchMode launchMode,
-            Consumer<ConfigBuilder> configCustomizer)
-            throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, new Properties(), launchMode, configCustomizer);
-    }
-
-    /**
-     * Load all the build steps from the given class loader.
-     *
-     * @param classLoader the class loader
-     * @param buildSystemProps the build system properties to use
-     * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
-     */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps)
-            throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, buildSystemProps, LaunchMode.NORMAL, null);
-    }
-
-    /**
-     * Load all the build steps from the given class loader.
-     *
-     * @param classLoader the class loader
-     * @param buildSystemProps the build system properties to use
-     * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
-     */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            LaunchMode launchMode, Consumer<ConfigBuilder> configCustomizer)
-            throws IOException, ClassNotFoundException {
-        return loadStepsFrom(classLoader, buildSystemProps, Collections.emptyMap(), launchMode, configCustomizer);
-    }
-
-    /**
-     * Load all the build steps from the given class loader.
-     *
-     * @param classLoader the class loader
      * @param buildSystemProps the build system properties to use
      * @param platformProperties Quarkus platform properties
      * @param launchMode launch mode
@@ -182,7 +126,8 @@ public final class ExtensionLoader {
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            Map<String, String> platformProperties, LaunchMode launchMode, Consumer<ConfigBuilder> configCustomizer)
+            Map<String, String> platformProperties, LaunchMode launchMode, DevModeType devModeType,
+            Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
         // populate with all known types
         List<Class<?>> roots = new ArrayList<>();
@@ -241,7 +186,7 @@ public final class ExtensionLoader {
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             try {
                 result = result.andThen(
-                        ExtensionLoader.loadStepsFrom(clazz, readResult, proxies, launchMode));
+                        ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, launchMode, devModeType));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to load steps from " + clazz, e);
             }
@@ -281,8 +226,9 @@ public final class ExtensionLoader {
      * @param launchMode the launch mode
      * @return a consumer which adds the steps to the given chain builder
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(Class<?> clazz, BuildTimeConfigurationReader.ReadResult readResult,
-            Map<Class<?>, Object> runTimeProxies, final LaunchMode launchMode) {
+    private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
+            BuildTimeConfigurationReader.ReadResult readResult,
+            Map<Class<?>, Object> runTimeProxies, final LaunchMode launchMode, DevModeType devModeType) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
@@ -575,6 +521,8 @@ public final class ExtensionLoader {
                             final Class<?> parameterClass = parameter.getType();
                             if (parameterClass == LaunchMode.class) {
                                 paramSuppList.add(() -> launchMode);
+                            } else if (parameterClass == DevModeType.class) {
+                                paramSuppList.add(() -> devModeType);
                             } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                                 final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
                                 final ConfigPhase phase = annotation.phase();

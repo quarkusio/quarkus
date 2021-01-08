@@ -29,7 +29,7 @@ import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -63,7 +63,7 @@ public class DockerProcessor {
         return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_DOCKER);
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, DockerBuild.class }, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, DockerBuild.class }, onlyIfNot = NativeBuild.class)
     public void dockerBuildFromJar(DockerConfig dockerConfig,
             ContainerImageConfig containerImageConfig,
             OutputTargetBuildItem out,
@@ -95,7 +95,7 @@ public class DockerProcessor {
                 Collections.singletonMap("container-image", builtContainerImage)));
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class, DockerBuild.class })
+    @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
     public void dockerBuildFromNativeImage(DockerConfig dockerConfig,
             ContainerImageConfig containerImageConfig,
             ContainerImageInfoBuildItem containerImage,

@@ -56,15 +56,15 @@ public class StartupActionImpl implements StartupAction {
         //that is discarded between restarts
         Map<String, byte[]> resources = new HashMap<>();
         resources.putAll(extractGeneratedResources(true));
-        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.DEV) {
+        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
+            resources.putAll(extractGeneratedResources(false));
+            baseClassLoader.reset(resources, transformedClasses);
+            runtimeClassLoader = baseClassLoader;
+        } else {
             baseClassLoader.reset(extractGeneratedResources(false),
                     transformedClasses);
             runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
                     resources, transformedClasses);
-        } else {
-            resources.putAll(extractGeneratedResources(false));
-            baseClassLoader.reset(resources, transformedClasses);
-            runtimeClassLoader = baseClassLoader;
         }
         this.runtimeClassLoader = runtimeClassLoader;
     }
@@ -106,7 +106,7 @@ public class StartupActionImpl implements StartupAction {
     /**
      * Runs the application by running the main method of the main class. As this is a blocking method a new
      * thread is created to run this task.
-     *
+     * <p>
      * Before this method is called an appropriate exit handler will likely need to
      * be set in {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)}
      * of the JVM will exit when the app stops.

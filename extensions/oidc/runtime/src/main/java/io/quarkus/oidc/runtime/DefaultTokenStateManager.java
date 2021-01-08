@@ -40,6 +40,21 @@ public class DefaultTokenStateManager implements TokenStateManager {
                             routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
                 }
             }
+        } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
+            if (!oidcConfig.tokenStateManager.splitTokens) {
+                sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append("")
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(tokens.getRefreshToken());
+            } else {
+                if (tokens.getRefreshToken() != null) {
+                    CodeAuthenticationMechanism.createCookie(routingContext,
+                            oidcConfig,
+                            getRefreshTokenCookieName(oidcConfig.getTenantId().get()),
+                            tokens.getRefreshToken(),
+                            routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
+                }
+            }
         }
         return sb.toString();
     }
@@ -65,6 +80,15 @@ public class DefaultTokenStateManager implements TokenStateManager {
                     refreshToken = rtCookie.getValue();
                 }
             }
+        } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
+            if (!oidcConfig.tokenStateManager.splitTokens) {
+                refreshToken = tokens[2];
+            } else {
+                Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
+                if (rtCookie != null) {
+                    refreshToken = rtCookie.getValue();
+                }
+            }
         }
 
         return new AuthorizationCodeTokens(idToken, accessToken, refreshToken);
@@ -73,8 +97,10 @@ public class DefaultTokenStateManager implements TokenStateManager {
     @Override
     public void deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState) {
         if (oidcConfig.tokenStateManager.splitTokens) {
-            CodeAuthenticationMechanism.removeCookie(getAccessTokenCookie(routingContext, oidcConfig), oidcConfig);
-            CodeAuthenticationMechanism.removeCookie(getRefreshTokenCookie(routingContext, oidcConfig), oidcConfig);
+            CodeAuthenticationMechanism.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
+                    oidcConfig);
+            CodeAuthenticationMechanism.removeCookie(routingContext, getRefreshTokenCookie(routingContext, oidcConfig),
+                    oidcConfig);
         }
     }
 

@@ -162,7 +162,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
             /**
              * Keep ID token only
              */
-            ID_TOKEN
+            ID_TOKEN,
+
+            /**
+             * Keep ID and refresh tokens only
+             */
+            ID_REFRESH_TOKENS
         }
 
         /**
@@ -440,11 +445,20 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Map<String, String> extraParams;
 
         /**
-         * Cookie path parameter value which, if set, will be used for the session, state and post logout cookies.
-         * It may need to be set when the redirect path has a root different to that of the original request URL.
+         * Cookie path parameter value which, if set, will be used to set a path parameter for the session, state and post
+         * logout cookies.
+         * The `cookie-path-header` property, if set, will be checked first.
          */
         @ConfigItem
         public Optional<String> cookiePath = Optional.empty();
+
+        /**
+         * Cookie path header parameter value which, if set, identifies the incoming HTTP header
+         * whose value will be used to set a path parameter for the session, state and post logout cookies.
+         * If the header is missing then the `cookie-path` property will be checked.
+         */
+        @ConfigItem
+        public Optional<String> cookiePathHeader = Optional.empty();
 
         /**
          * Cookie domain parameter value which, if set, will be used for the session, state and post logout cookies.
@@ -575,6 +589,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setSessionAgeExtension(Duration sessionAgeExtension) {
             this.sessionAgeExtension = sessionAgeExtension;
+        }
+
+        public Optional<String> getCookiePathHeader() {
+            return cookiePathHeader;
+        }
+
+        public void setCookiePathHeader(String cookiePathHeader) {
+            this.cookiePathHeader = Optional.of(cookiePathHeader);
         }
 
     }

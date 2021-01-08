@@ -424,22 +424,28 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 60 * 30).getValue();
     }
 
-    static CookieImpl createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
+    static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
             String name, String value, long maxAge) {
-        CookieImpl cookie = new CookieImpl(name, value);
+        ServerCookie cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
         cookie.setSecure(context.request().isSSL());
         cookie.setMaxAge(maxAge);
         LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
         Authentication auth = oidcConfig.getAuthentication();
-        if (auth.cookiePath.isPresent()) {
-            cookie.setPath(auth.getCookiePath().get());
-        }
+        setCookiePath(context, auth, cookie);
         if (auth.cookieDomain.isPresent()) {
             cookie.setDomain(auth.getCookieDomain().get());
         }
         context.response().addCookie(cookie);
         return cookie;
+    }
+
+    static void setCookiePath(RoutingContext context, Authentication auth, ServerCookie cookie) {
+        if (auth.cookiePathHeader.isPresent() && context.request().headers().contains(auth.cookiePathHeader.get())) {
+            cookie.setPath(context.request().getHeader(auth.cookiePathHeader.get()));
+        } else if (auth.cookiePath.isPresent()) {
+            cookie.setPath(auth.getCookiePath().get());
+        }
     }
 
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
@@ -472,18 +478,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             if (SESSION_COOKIE_NAME.equals(cookieName)) {
                 resolver.getTokenStateManager().deleteTokens(context, configContext.oidcConfig, cookie.getValue());
             }
-            removeCookie(cookie, configContext.oidcConfig);
+            removeCookie(context, cookie, configContext.oidcConfig);
         }
     }
 
-    static void removeCookie(ServerCookie cookie, OidcTenantConfig oidcConfig) {
+    static void removeCookie(RoutingContext context, ServerCookie cookie, OidcTenantConfig oidcConfig) {
         if (cookie != null) {
             cookie.setValue("");
             cookie.setMaxAge(0);
             Authentication auth = oidcConfig.getAuthentication();
-            if (auth.cookiePath.isPresent()) {
-                cookie.setPath(auth.cookiePath.get());
-            }
+            setCookiePath(context, auth, cookie);
             if (auth.cookieDomain.isPresent()) {
                 cookie.setDomain(auth.cookieDomain.get());
             }

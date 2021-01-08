@@ -69,9 +69,21 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("tenant-id-refresh-token")
+    public String getNameIdRefreshTokenOnly() {
+        return "tenant-id-refresh-token:" + getName();
+    }
+
+    @GET
     @Path("tenant-split-tokens")
     public String getNameSplitTokens() {
         return "tenant-split-tokens:" + getName();
+    }
+
+    @GET
+    @Path("tenant-split-id-refresh-token")
+    public String getNameIdRefreshSplitTokens() {
+        return "tenant-split-id-refresh-token:" + getName();
     }
 
     @GET
@@ -138,15 +150,31 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("access/tenant-id-refresh-token")
+    public String getAccessTokenIdRefreshTokensOnly() {
+        return "tenant-id-refresh-token:" + getAccessToken();
+    }
+
+    @GET
     @Path("access/tenant-split-tokens")
     public String getAccessTokenSplitTokens() {
         return "tenant-split-tokens:" + getAccessToken();
     }
 
     @GET
+    @Path("access/tenant-split-id-refresh-token")
+    public String getAccessIdRefreshTokenSplitTokens() {
+        return "tenant-split-id-refresh-token:" + getAccessToken();
+    }
+
+    @GET
     @Path("refresh")
     public String getRefreshToken() {
-        if (refreshToken.getToken() != null
+        return doGetRefreshToken(true);
+    }
+
+    private String doGetRefreshToken(boolean refreshWithAccessTokenCheckRequired) {
+        if (refreshWithAccessTokenCheckRequired && refreshToken.getToken() != null
                 && !accessTokenCredential.getRefreshToken().getToken().equals(refreshToken.getToken())) {
             throw new OIDCException("Refresh token values are not equal");
         }
@@ -166,6 +194,18 @@ public class ProtectedResource {
     @Path("refresh/tenant-idtoken-only")
     public String getRefreshTokenIdTokenOnly() {
         return "tenant-idtoken-only:" + getRefreshToken();
+    }
+
+    @GET
+    @Path("refresh/tenant-id-refresh-token")
+    public String getRefreshTokenIdRefreshTokensOnly() {
+        return "tenant-id-refresh-token:" + doGetRefreshToken(false);
+    }
+
+    @GET
+    @Path("refresh/tenant-split-id-refresh-token")
+    public String getRefreshTokenIdRefreshTokensSplit() {
+        return "tenant-split-id-refresh-token:" + doGetRefreshToken(false);
     }
 
     @GET

@@ -646,6 +646,41 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testDefaultSessionManagerIdRefreshTokens() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-id-refresh-token");
+            assertNotNull(getStateCookie(webClient, "tenant-id-refresh-token"));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-id-refresh-token:alice", page.getBody().asText());
+
+            page = webClient.getPage("http://localhost:8081/web-app/access/tenant-id-refresh-token");
+            assertEquals("tenant-id-refresh-token:no access", page.getBody().asText());
+            page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-id-refresh-token");
+            assertEquals("tenant-id-refresh-token:RT injected", page.getBody().asText());
+
+            Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-id-refresh-token");
+            String[] parts = idTokenCookie.getValue().split("\\|");
+            assertEquals(3, parts.length);
+            assertEquals("ID", OidcUtils.decodeJwtContent(parts[0]).getString("typ"));
+            assertEquals("", parts[1]);
+            assertEquals("Refresh", OidcUtils.decodeJwtContent(parts[2]).getString("typ"));
+
+            assertNull(getSessionAtCookie(webClient, "tenant-id-refresh-token"));
+            assertNull(getSessionRtCookie(webClient, "tenant-id-refresh-token"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testDefaultSessionManagerSplitTokens() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-split-tokens");
@@ -695,6 +730,60 @@ public class CodeFlowTest {
             assertNull(getSessionCookie(page.getWebClient(), "tenant-split-tokens"));
             assertNull(getSessionAtCookie(page.getWebClient(), "tenant-split-tokens"));
             assertNull(getSessionRtCookie(page.getWebClient(), "tenant-split-tokens"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testDefaultSessionManagerIdRefreshSplitTokens() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-split-id-refresh-token");
+            assertNotNull(getStateCookie(webClient, "tenant-split-id-refresh-token"));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-split-id-refresh-token:alice", page.getBody().asText());
+
+            page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-id-refresh-token");
+            assertEquals("tenant-split-id-refresh-token:no access", page.getBody().asText());
+            page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-split-id-refresh-token");
+            assertEquals("tenant-split-id-refresh-token:RT injected", page.getBody().asText());
+
+            Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-id-refresh-token");
+            checkSingleTokenCookie(idTokenCookie, "ID");
+
+            assertNull(getSessionAtCookie(page.getWebClient(), "tenant-split-id-refresh-token"));
+
+            Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-id-refresh-token");
+            checkSingleTokenCookie(rtTokenCookie, "Refresh");
+
+            // verify all the cookies are cleared after the session timeout
+            webClient.getOptions().setRedirectEnabled(false);
+            webClient.getCache().clear();
+
+            await().atLeast(6, TimeUnit.SECONDS)
+                    .pollDelay(Duration.ofSeconds(6))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
+                            assertEquals(302, webResponse.getStatusCode());
+                            assertNull(getSessionCookie(webClient, null));
+                            return true;
+                        }
+                    });
+
+            assertNull(getSessionCookie(page.getWebClient(), "tenant-split-id-refresh-token"));
+            assertNull(getSessionAtCookie(page.getWebClient(), "tenant-split-id-refresh-token"));
+            assertNull(getSessionRtCookie(page.getWebClient(), "tenant-split-id-refresh-token"));
 
             webClient.getCookieManager().clearCookies();
         }
@@ -784,6 +873,19 @@ public class CodeFlowTest {
                 assertEquals("OIDC", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
             }
 
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCookiePathHeader() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+            webClient.addRequestHeader("X-Forwarded-Prefix", "/x-forwarded-prefix-value");
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-cookie-path-header").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            assertEquals("/x-forwarded-prefix-value", getStateCookie(webClient, "tenant-cookie-path-header").getPath());
             webClient.getCookieManager().clearCookies();
         }
     }

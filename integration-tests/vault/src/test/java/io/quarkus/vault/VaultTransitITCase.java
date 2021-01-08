@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.vault.runtime.VaultManager;
+import io.quarkus.vault.runtime.VaultAuthManager;
 import io.quarkus.vault.test.client.TestVaultClient;
 import io.quarkus.vault.transit.ClearData;
 import io.quarkus.vault.transit.DecryptionRequest;
@@ -64,6 +64,9 @@ public class VaultTransitITCase {
 
     @Inject
     VaultTransitSecretEngine transitSecretEngine;
+
+    @Inject
+    VaultAuthManager vaultAuthManager;
 
     @Test
     public void encryptionString() {
@@ -172,8 +175,7 @@ public class VaultTransitITCase {
     }
 
     private void rotate(String keyName) {
-        VaultManager vaultManager = VaultManager.getInstance();
-        String clientToken = vaultManager.getVaultAuthManager().getClientToken();
+        String clientToken = vaultAuthManager.getClientToken();
         new TestVaultClient().rotate(clientToken, keyName);
     }
 

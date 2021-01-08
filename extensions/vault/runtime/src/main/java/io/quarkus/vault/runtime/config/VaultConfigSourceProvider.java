@@ -10,14 +10,14 @@ public class VaultConfigSourceProvider implements ConfigSourceProvider {
 
     private static final Logger log = Logger.getLogger(VaultConfigSourceProvider.class);
 
-    private VaultRuntimeConfig vaultRuntimeConfig;
+    private VaultBootstrapConfig vaultBootstrapConfig;
 
-    public VaultConfigSourceProvider(VaultRuntimeConfig vaultRuntimeConfig) {
-        this.vaultRuntimeConfig = vaultRuntimeConfig;
+    public VaultConfigSourceProvider(VaultBootstrapConfig vaultBootstrapConfig) {
+        this.vaultBootstrapConfig = vaultBootstrapConfig;
     }
 
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
-        return Arrays.asList(new VaultConfigSource(150, vaultRuntimeConfig));
+        return Arrays.asList(new VaultConfigSource(150, vaultBootstrapConfig));
     }
 }

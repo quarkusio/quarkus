@@ -21,18 +21,19 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuthAuth;
 import io.quarkus.vault.runtime.config.VaultAppRoleAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.runtime.config.VaultUserpassAuthenticationConfig;
 
 public class VaultAuthManagerTest {
 
-    VaultRuntimeConfig config = createConfig();
+    VaultBootstrapConfig config = createConfig();
     TlsConfig tlsConfig = new TlsConfig();
     AtomicBoolean lookupSelfShouldReturn403 = new AtomicBoolean(false);
+    VaultConfigHolder vaultConfigHolder = new VaultConfigHolder().setVaultBootstrapConfig(config);
     OkHttpVaultClient vaultClient = createVaultClient();
-    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultClient, config);
+    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder, vaultClient);
     VaultUserPassAuth vaultUserPassAuth = new VaultUserPassAuth();
     VaultLookupSelf vaultLookupSelf = new VaultLookupSelf();
     VaultRenewSelf vaultRenewSelf = new VaultRenewSelf();
@@ -89,9 +90,9 @@ public class VaultAuthManagerTest {
         assertEquals("6", token.clientToken, "expires soon");
     }
 
-    private VaultRuntimeConfig createConfig() {
+    private VaultBootstrapConfig createConfig() {
         try {
-            VaultRuntimeConfig config = new VaultRuntimeConfig();
+            VaultBootstrapConfig config = new VaultBootstrapConfig();
             config.tls = new VaultTlsConfig();
             config.authentication = new VaultAuthenticationConfig();
             config.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
@@ -119,7 +120,7 @@ public class VaultAuthManagerTest {
     }
 
     private OkHttpVaultClient createVaultClient() {
-        return new OkHttpVaultClient(config, tlsConfig) {
+        OkHttpVaultClient okHttpVaultClient = new OkHttpVaultClient(vaultConfigHolder, tlsConfig) {
             @Override
             public VaultUserPassAuth loginUserPass(String user, String password) {
                 return vaultUserPassAuth;
@@ -138,6 +139,8 @@ public class VaultAuthManagerTest {
                 return vaultRenewSelf;
             }
         };
+        okHttpVaultClient.init();
+        return okHttpVaultClient;
     }
 
 }

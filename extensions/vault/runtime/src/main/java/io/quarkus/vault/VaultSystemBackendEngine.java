@@ -2,7 +2,7 @@ package io.quarkus.vault;
 
 import java.util.List;
 
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.sys.VaultHealth;
 import io.quarkus.vault.sys.VaultHealthStatus;
 import io.quarkus.vault.sys.VaultInit;
@@ -11,7 +11,7 @@ import io.quarkus.vault.sys.VaultSealStatus;
 /**
  * This service provides access to the system backend.
  *
- * @see VaultRuntimeConfig
+ * @see VaultBootstrapConfig
  */
 public interface VaultSystemBackendEngine {
 

@@ -10,6 +10,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Singleton;
+
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -18,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultException;
+import io.quarkus.vault.runtime.VaultConfigHolder;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuthBody;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuth;
@@ -70,7 +73,7 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSign;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
-import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
+import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -78,6 +81,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+@Singleton
 public class OkHttpVaultClient implements VaultClient {
 
     private static final Logger log = Logger.getLogger(OkHttpVaultClient.class);
@@ -87,15 +91,23 @@ public class OkHttpVaultClient implements VaultClient {
     private OkHttpClient client;
     private URL url;
     private String kubernetesAuthMountPath;
-    private ObjectMapper mapper = new ObjectMapper();
+    private TlsConfig tlsConfig;
+    private final ObjectMapper mapper = new ObjectMapper();
+    private VaultConfigHolder vaultConfigHolder;
 
-    public OkHttpVaultClient(VaultRuntimeConfig serverConfig, TlsConfig tlsConfig) {
-        this.client = createHttpClient(serverConfig, tlsConfig);
-        this.url = serverConfig.url.get();
+    public OkHttpVaultClient(VaultConfigHolder vaultConfigHolder, TlsConfig tlsConfig) {
+        this.vaultConfigHolder = vaultConfigHolder;
+        this.tlsConfig = tlsConfig;
         this.mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    }
 
-        this.kubernetesAuthMountPath = serverConfig.authentication.kubernetes.authMountPath;
+    public OkHttpVaultClient init() {
+        VaultBootstrapConfig config = vaultConfigHolder.getVaultBootstrapConfig();
+        this.url = config.url.get();
+        this.kubernetesAuthMountPath = config.authentication.kubernetes.authMountPath;
+        this.client = createHttpClient(config, tlsConfig);
+        return this;
     }
 
     @Override

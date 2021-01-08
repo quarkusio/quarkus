@@ -4,6 +4,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import io.quarkus.vault.VaultTOTPSecretEngine;
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
@@ -14,15 +17,13 @@ import io.quarkus.vault.secrets.totp.CreateKeyParameters;
 import io.quarkus.vault.secrets.totp.KeyConfiguration;
 import io.quarkus.vault.secrets.totp.KeyDefinition;
 
+@ApplicationScoped
 public class VaultTOTPManager implements VaultTOTPSecretEngine {
 
-    private VaultAuthManager vaultAuthManager;
-    private VaultClient vaultClient;
-
-    public VaultTOTPManager(VaultAuthManager vaultAuthManager, VaultClient vaultClient) {
-        this.vaultAuthManager = vaultAuthManager;
-        this.vaultClient = vaultClient;
-    }
+    @Inject
+    VaultAuthManager vaultAuthManager;
+    @Inject
+    VaultClient vaultClient;
 
     @Override
     public Optional<KeyDefinition> createKey(String name, CreateKeyParameters createKeyParameters) {

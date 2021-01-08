@@ -42,7 +42,6 @@ import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.vault.runtime.Base64String;
-import io.quarkus.vault.runtime.VaultManager;
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.VaultModel;
@@ -104,6 +103,9 @@ public class VaultITCase {
     @ConfigProperty(name = MY_PASSWORD)
     String someSecretThroughIndirection;
 
+    @Inject
+    VaultClient vaultClient;
+
     @Test
     public void credentialsProvider() {
         Map<String, String> staticCredentials = credentialsProvider.getCredentials("static");
@@ -150,8 +152,6 @@ public class VaultITCase {
 
     @Test
     public void httpclient() {
-
-        VaultClient vaultClient = VaultManager.getInstance().getVaultClient();
 
         String anotherWrappingToken = System.getProperty("vault-test.another-password-kv-v2-wrapping-token");
         VaultKvSecretV2 unwrap = vaultClient.unwrap(anotherWrappingToken, VaultKvSecretV2.class);

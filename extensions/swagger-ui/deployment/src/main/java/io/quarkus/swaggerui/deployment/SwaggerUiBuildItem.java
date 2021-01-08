@@ -2,7 +2,7 @@ package io.quarkus.swaggerui.deployment;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-final class SwaggerUiBuildItem extends SimpleBuildItem {
+public final class SwaggerUiBuildItem extends SimpleBuildItem {
 
     private final String swaggerUiFinalDestination;
     private final String swaggerUiPath;

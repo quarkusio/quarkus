@@ -67,6 +67,7 @@ import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRuntimeConfig;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -149,6 +150,7 @@ public class SmallRyeOpenApiProcessor {
     RouteBuildItem handler(LaunchModeBuildItem launch,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             OpenApiRecorder recorder,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             OpenApiRuntimeConfig openApiRuntimeConfig,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig) {
@@ -165,7 +167,8 @@ public class SmallRyeOpenApiProcessor {
          */
         if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             recorder.setupClDevMode(shutdownContext);
-            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openApiConfig.path, "Open API"));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
+                    nonApplicationRootPathBuildItem.adjustPath(openApiConfig.path), "Open API Schema document"));
         }
 
         Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);

@@ -11,7 +11,7 @@ triage:
         - integration-tests/amazon-lambda
     - labels: [area/persistence]
       title: "db2"
-      notify: [aguibert]
+      notify: [mswatosh]
       directories:
         - extensions/reactive-db2-client/
         - extensions/jdbc/jdbc-db2/
@@ -53,7 +53,7 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/templates/
     - labels: [area/hibernate-reactive, area/persistence]
       title: "hibernate reactive"
-      notify: [aguibert, gavinking, Sanne]
+      notify: [DavideD, gavinking, Sanne]
       directories:
         - extensions/hibernate-reactive
     - labels: [area/hibernate-orm, area/persistence]
@@ -61,7 +61,7 @@ triage:
               title.match(/hibernate/i)
               && !title.match(/hibernate.validator/i)
               && !title.match(/hibernate.search/i)
-      notify: [gsmet, Sanne]
+      notify: [gsmet, Sanne, yrodiere]
       directories:
         - extensions/hibernate-orm/
         - integration-tests/common-jpa-entities/
@@ -90,7 +90,7 @@ triage:
         - integration-tests/elasticsearch
     - labels: [area/hibernate-validator]
       title: hibernate validator
-      notify: [gsmet]
+      notify: [gsmet, yrodiere]
       directories:
         - extensions/hibernate-validator/
         - integration-tests/hibernate-validator/

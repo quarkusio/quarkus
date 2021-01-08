@@ -14,12 +14,20 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.core.JsonParseException;
 
 import io.quarkus.runtime.BlockingOperationControl;
 
 @Path("/simple")
 public class SimpleJsonResource extends SuperClass<Person> {
+
+    @ServerExceptionMapper
+    public Response handleParseException(JsonParseException jpe) {
+        return Response.status(Response.Status.BAD_REQUEST).entity(jpe.getMessage()).build();
+    }
 
     @GET
     @Path("/person")

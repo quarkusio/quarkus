@@ -641,6 +641,9 @@ public abstract class PanacheEntityBase {
     /**
      * Delete all entities of this type from the database.
      *
+     * WARNING: the default implementation of this method uses a bulk delete query and ignores
+     * cascading rules from the JPA model.
+     * 
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -665,6 +668,9 @@ public abstract class PanacheEntityBase {
     /**
      * Delete all entities of this type matching the given query, with optional indexed parameters.
      *
+     * WARNING: the default implementation of this method uses a bulk delete query and ignores
+     * cascading rules from the JPA model.
+     * 
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
@@ -680,6 +686,9 @@ public abstract class PanacheEntityBase {
     /**
      * Delete all entities of this type matching the given query, with named parameters.
      *
+     * WARNING: the default implementation of this method uses a bulk delete query and ignores
+     * cascading rules from the JPA model.
+     * 
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities deleted.
@@ -695,6 +704,9 @@ public abstract class PanacheEntityBase {
     /**
      * Delete all entities of this type matching the given query, with named parameters.
      *
+     * WARNING: the default implementation of this method uses a bulk delete query and ignores
+     * cascading rules from the JPA model.
+     * 
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities deleted.

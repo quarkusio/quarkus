@@ -8,11 +8,14 @@ public final class JaxrsProvidersToRegisterBuildItem extends SimpleBuildItem {
 
     private final Set<String> providers;
     private final Set<String> contributedProviders;
+    private final Set<String> annotatedProviders;
     private final boolean useBuiltIn;
 
-    public JaxrsProvidersToRegisterBuildItem(Set<String> providers, Set<String> contributedProviders, boolean useBuiltIn) {
+    public JaxrsProvidersToRegisterBuildItem(Set<String> providers, Set<String> contributedProviders,
+            Set<String> annotatedProviders, boolean useBuiltIn) {
         this.providers = providers;
         this.contributedProviders = contributedProviders;
+        this.annotatedProviders = annotatedProviders;
         this.useBuiltIn = useBuiltIn;
     }
 
@@ -22,6 +25,10 @@ public final class JaxrsProvidersToRegisterBuildItem extends SimpleBuildItem {
 
     public Set<String> getContributedProviders() {
         return this.contributedProviders;
+    }
+
+    public Set<String> getAnnotatedProviders() {
+        return annotatedProviders;
     }
 
     public boolean useBuiltIn() {

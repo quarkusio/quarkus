@@ -2,6 +2,7 @@ package io.quarkus.resteasy.server.common.deployment;
 
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +63,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
@@ -191,10 +193,16 @@ public class ResteasyServerCommonProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Collection<AnnotationInstance> applicationPaths = Collections.emptySet();
-
-        if (!resteasyConfig.ignoreApplicationClasses) {
+        final Set<String> allowedClasses;
+        if (resteasyConfig.ignoreApplicationClasses) {
+            allowedClasses = Collections.emptySet();
+        } else {
             applicationPaths = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
+            allowedClasses = getAllowedClasses(index);
+            jaxrsProvidersToRegisterBuildItem = getFilteredJaxrsProvidersToRegisterBuildItem(
+                    jaxrsProvidersToRegisterBuildItem, allowedClasses);
         }
+        boolean filterClasses = !allowedClasses.isEmpty();
 
         // currently we only examine the first class that is annotated with @ApplicationPath so best
         // fail if the user code has multiple such annotations instead of surprising the user
@@ -203,13 +211,21 @@ public class ResteasyServerCommonProcessor {
             throw createMultipleApplicationsException(applicationPaths);
         }
 
-        Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PATH);
         Set<AnnotationInstance> additionalPaths = new HashSet<>();
         for (AdditionalJaxRsResourceDefiningAnnotationBuildItem annotation : additionalJaxRsResourceDefiningAnnotations) {
             additionalPaths.addAll(beanArchiveIndexBuildItem.getIndex().getAnnotations(annotation.getAnnotationClass()));
         }
 
-        Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
+        Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PATH);
+        final Collection<AnnotationInstance> allPaths;
+        if (filterClasses) {
+            allPaths = paths.stream().filter(
+                    annotationInstance -> allowedClasses
+                            .contains(JandexUtil.getEnclosingClass(annotationInstance).name().toString()))
+                    .collect(Collectors.toList());
+        } else {
+            allPaths = new ArrayList<>(paths);
+        }
         allPaths.addAll(additionalPaths);
 
         if (allPaths.isEmpty()) {
@@ -841,5 +857,73 @@ public class ResteasyServerCommonProcessor {
         }
         return new RuntimeException("Multiple classes ( " + sb.toString()
                 + ") have been annotated with @ApplicationPath which is currently not supported");
+    }
+
+    /**
+     * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
+     *        {@link Application#getSingletons()} to keep.
+     * @param jaxrsProvidersToRegisterBuildItem the initial {@code jaxrsProvidersToRegisterBuildItem} before being
+     *        filtered
+     * @return an instance of {@link JaxrsProvidersToRegisterBuildItem} that has been filtered to take into account
+     *         the classes returned by the methods {@link Application#getClasses()} and {@link Application#getSingletons()}
+     *         if at least one of those methods return a non empty {@code Set}, the provided instance of
+     *         {@link JaxrsProvidersToRegisterBuildItem} otherwise.
+     */
+    private static JaxrsProvidersToRegisterBuildItem getFilteredJaxrsProvidersToRegisterBuildItem(
+            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, Set<String> allowedClasses) {
+
+        if (allowedClasses.isEmpty()) {
+            return jaxrsProvidersToRegisterBuildItem;
+        }
+        Set<String> providers = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getProviders());
+        Set<String> contributedProviders = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+        Set<String> annotatedProviders = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getAnnotatedProviders());
+        providers.removeAll(annotatedProviders);
+        contributedProviders.removeAll(annotatedProviders);
+        annotatedProviders.retainAll(allowedClasses);
+        providers.addAll(annotatedProviders);
+        contributedProviders.addAll(annotatedProviders);
+        return new JaxrsProvidersToRegisterBuildItem(
+                providers, contributedProviders, annotatedProviders, jaxrsProvidersToRegisterBuildItem.useBuiltIn());
+    }
+
+    /**
+     * @param index the index to use to find the existing {@link Application}.
+     * @return the set of classes returned by the methods {@link Application#getClasses()} and
+     *         {@link Application#getSingletons()}.
+     */
+    private static Set<String> getAllowedClasses(IndexView index) {
+        final Collection<ClassInfo> applications = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION);
+        final Set<String> allowedClasses = new HashSet<>();
+        Application application;
+        ClassInfo selectedAppClass = null;
+        for (ClassInfo applicationClassInfo : applications) {
+            if (selectedAppClass != null) {
+                throw new RuntimeException("More than one Application class: " + applications);
+            }
+            selectedAppClass = applicationClassInfo;
+            // FIXME: yell if there's more than one
+            String applicationClass = applicationClassInfo.name().toString();
+            try {
+                Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);
+                application = (Application) appClass.getConstructor().newInstance();
+                Set<Class<?>> classes = application.getClasses();
+                if (!classes.isEmpty()) {
+                    for (Class<?> klass : classes) {
+                        allowedClasses.add(klass.getName());
+                    }
+                }
+                classes = application.getSingletons().stream().map(Object::getClass).collect(Collectors.toSet());
+                if (!classes.isEmpty()) {
+                    for (Class<?> klass : classes) {
+                        allowedClasses.add(klass.getName());
+                    }
+                }
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
+                throw new RuntimeException("Unable to handle class: " + applicationClass, e);
+            }
+        }
+        return allowedClasses;
     }
 }

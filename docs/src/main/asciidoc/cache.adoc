@@ -527,7 +527,7 @@ public class CachedService {
 [#negative-cache]
 == Negative caching and nulls
 
-Sometimes one wants to cache the results of an (expensive) remote call.
+Sometimes one wants to cache the result of an (expensive) remote call.
 If the remote call fails, one may not want to cache the result or exception,
 but rather re-try the remote call on the next invocation.
 
@@ -539,11 +539,11 @@ act accordingly:
 ----
     public void caller(int val) {
 
-        Integer result = callRemote(val);  //<1>
+        Integer result = callRemote(val); //<1>
         if (result != null) {
             System.out.println("Result is " + result);
         else {
-           System.out.println("Got an exception");
+            System.out.println("Got an exception");
         }
     }
 
@@ -551,10 +551,10 @@ act accordingly:
     private Integer callRemote(int val)  {
 
         try {
-            Integer val = remoteWebServer.getResult(val);  //<2>
+            Integer val = remoteWebServer.getResult(val); //<2>
             return val;
         } catch (Exception e) {
-            return null;  // <3>
+            return null; // <3>
         }
     }
 ----
@@ -598,11 +598,4 @@ the exception bubble out of the called method and catch it at the caller side:
 When the call to the remote throws an exception, the cache does not store the result,
 so that a subsequent call to `callRemote()` with the same parameter value will not be
 answered out of the cache.
-It will instead result in another
-attempt to call the remote.
-
-The previous code example has the side-effect that the cache logs the thrown exception
-with a long stack trace to the console. This is done to inform developers that something
-exceptional has happened, but if you have a setup like above, you are already catching
-the exception and know what you are doing.
-
+It will instead result in another attempt to call the remote.

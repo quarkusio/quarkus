@@ -3,6 +3,7 @@ package io.quarkus.container.image.openshift.deployment;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -125,12 +126,12 @@ public class OpenshiftUtils {
                 : openshiftConfig.jvmArguments;
         result.nativeArguments = hasS2iNativeArguments && !hasOpenshiftNativeArguments ? s2iConfig.nativeArguments
                 : openshiftConfig.nativeArguments;
-        result.jarDirectory = hasS2iJarDirectory && !hasOpenshiftJarDirectory ? s2iConfig.jarDirectory
+        result.jarDirectory = hasS2iJarDirectory && !hasOpenshiftJarDirectory ? Optional.of(s2iConfig.jarDirectory)
                 : openshiftConfig.jarDirectory;
         result.jarFileName = hasS2iJarFileName && !hasOpenshiftJarFileName ? s2iConfig.jarFileName
                 : openshiftConfig.jarFileName;
         result.nativeBinaryDirectory = hasS2iNativeBinaryDirectory && !hasOpenshiftNativeBinaryDirectory
-                ? s2iConfig.nativeBinaryDirectory
+                ? Optional.of(s2iConfig.nativeBinaryDirectory)
                 : openshiftConfig.nativeBinaryDirectory;
         result.nativeBinaryFileName = hasS2iNativeBinaryFileName && !hasOpenshiftNativeBinaryFileName
                 ? s2iConfig.nativeBinaryFileName

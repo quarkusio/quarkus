@@ -10,11 +10,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.build.Jwt;
 
-public class DefaultGroupsCustomFactoryUnitTest {
+public class DefaultGroupsSignEncryptUnitTest {
     private static Class<?>[] testClasses = {
             DefaultGroupsEndpoint.class,
-            TestJWTCallerPrincipalFactory.class,
             TokenUtils.class
     };
     /**
@@ -26,12 +27,15 @@ public class DefaultGroupsCustomFactoryUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
                     .addAsResource("privateKey.pem")
-                    .addAsResource("TokenUserGroup.json"));
+                    .addAsResource("applicationDefaultGroupsSignEncrypt.properties", "application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
-        token = TokenUtils.generateTokenString("/TokenUserGroup.json");
+        token = Jwt.issuer("https://server.example.com").innerSign()
+                .keyAlgorithm(KeyEncryptionAlgorithm.RSA_OAEP)
+                .encrypt();
     }
 
     /**
@@ -46,14 +50,5 @@ public class DefaultGroupsCustomFactoryUnitTest {
                 .get("/endp/echo")
                 .then().assertThat().statusCode(200)
                 .body(equalTo("User"));
-    }
-
-    @Test
-    public void echoGroupsWithParser() {
-        RestAssured.given().auth()
-                .oauth2(token)
-                .get("/endp/echo-parser")
-                .then().assertThat().statusCode(200)
-                .body(equalTo("parser:User"));
     }
 }

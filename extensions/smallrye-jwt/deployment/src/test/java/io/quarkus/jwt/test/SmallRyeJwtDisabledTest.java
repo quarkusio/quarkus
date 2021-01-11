@@ -1,10 +1,7 @@
 package io.quarkus.jwt.test;
 
-import java.net.HttpURLConnection;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,8 +21,6 @@ public class SmallRyeJwtDisabledTest {
 
     @Test
     public void serviceIsNotSecured() throws Exception {
-        io.restassured.response.Response response = RestAssured.given().get("/endp/echo").andReturn();
-
-        Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
+        RestAssured.given().get("/endp/echo").then().assertThat().statusCode(403);
     }
 }

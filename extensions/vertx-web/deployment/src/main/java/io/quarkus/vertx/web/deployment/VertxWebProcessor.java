@@ -293,22 +293,32 @@ class VertxWebProcessor {
 
                 if (regexValue == null) {
                     if (pathPrefix != null) {
-                        StringBuilder prefixedPath = new StringBuilder();
-                        prefixedPath.append(pathPrefix);
+                        // A path prefix is set
+                        StringBuilder prefixed = new StringBuilder();
+                        prefixed.append(pathPrefix);
                         if (pathValue == null) {
-                            prefixedPath.append(SLASH);
-                            prefixedPath.append(dashify(businessMethod.getMethod().name()));
-                        } else {
-                            if (!pathValue.asString().startsWith(SLASH)) {
-                                prefixedPath.append(SLASH);
+                            // No path param set - use the method name for non-failure handlers
+                            if (routeHandlerType != Route.HandlerType.FAILURE) {
+                                prefixed.append(SLASH);
+                                prefixed.append(dashify(businessMethod.getMethod().name()));
                             }
-                            prefixedPath.append(pathValue.asString());
+                        } else {
+                            // Path param set
+                            if (!pathValue.asString().startsWith(SLASH)) {
+                                prefixed.append(SLASH);
+                            }
+                            prefixed.append(pathValue.asString());
                         }
-                        path = prefixedPath.toString();
+                        path = prefixed.toString();
                     } else {
-                        if (routeHandlerType != Route.HandlerType.FAILURE) {
-                            // De-camel-case the name and then join the segments with hyphens
-                            path = pathValue != null ? pathValue.asString() : dashify(businessMethod.getMethod().name());
+                        if (pathValue == null) {
+                            // No path param set - use the method name for non-failure handlers
+                            if (routeHandlerType != Route.HandlerType.FAILURE) {
+                                path = dashify(businessMethod.getMethod().name());
+                            }
+                        } else {
+                            // Path param set
+                            path = pathValue.asString();
                         }
                     }
                     if (path != null && !path.startsWith(SLASH)) {
@@ -1009,6 +1019,7 @@ class VertxWebProcessor {
 
     }
 
+    // De-camel-case the name and then join the segments with hyphens
     private static String dashify(String value) {
         StringBuilder ret = new StringBuilder();
         char[] chars = value.toCharArray();

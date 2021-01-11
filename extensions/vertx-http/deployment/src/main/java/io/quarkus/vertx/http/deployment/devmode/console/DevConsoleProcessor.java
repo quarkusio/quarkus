@@ -32,15 +32,19 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
+import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
@@ -81,6 +85,9 @@ import io.vertx.ext.web.RoutingContext;
 public class DevConsoleProcessor {
 
     private static final Logger log = Logger.getLogger(DevConsoleProcessor.class);
+
+    private static final String STATIC_RESOURCES_PATH = "META-INF/resources/dev-console/";
+
     // FIXME: config, take from Qute?
     private static final String[] suffixes = new String[] { "html", "txt" };
     protected static volatile ServerBootstrap virtualBootstrap;
@@ -279,6 +286,24 @@ public class DevConsoleProcessor {
 
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
                 nonApplicationRootPathBuildItem.adjustPath("/dev/"), "Quarkus DEV Console"));
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void deployStaticResources(DevConsoleRecorder recorder, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdownContext,
+            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer) throws IOException {
+        AppArtifact devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
+                "quarkus-vertx-http-deployment");
+
+        Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode,
+                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH);
+
+        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
+                .route("/dev/resources/*")
+                .handler(recorder.devConsoleHandler(devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
+                .nonApplicationRoute(false)
+                .build());
     }
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths) {

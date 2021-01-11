@@ -481,7 +481,17 @@ public class SmallRyeMetricsProcessor {
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
             ValidationPhaseBuildItem validationPhase,
             BeanArchiveIndexBuildItem beanArchiveIndex) {
-        IndexView index = beanArchiveIndex.getIndex();
+        for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
+            if (item.executionTime() == RUNTIME_INIT) {
+                recorder.registerMetrics(item.getConsumer());
+            }
+        }
+    }
+
+    @BuildStep
+    public void warnAboutMetricsFromProducers(ValidationPhaseBuildItem validationPhase,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> unused) {
         for (io.quarkus.arc.processor.BeanInfo bean : validationPhase.getContext().beans().producers()) {
             ClassInfo implClazz = bean.getImplClazz();
             if (implClazz == null) {
@@ -491,41 +501,20 @@ public class SmallRyeMetricsProcessor {
             if (metricType != null) {
                 AnnotationTarget target = bean.getTarget().get();
                 AnnotationInstance metricAnnotation = null;
-                String memberName = null;
                 if (bean.isProducerField()) {
                     FieldInfo field = target.asField();
                     metricAnnotation = field.annotation(METRIC);
-                    memberName = field.name();
                 }
                 if (bean.isProducerMethod()) {
                     MethodInfo method = target.asMethod();
                     metricAnnotation = method.annotation(METRIC);
-                    memberName = method.name();
-                    if (method.parameters().contains(Type.create(DotNames.INJECTION_POINT, Type.Kind.CLASS))) {
-                        continue;
-                    }
                 }
                 if (metricAnnotation != null) {
-                    String nameValue = metricAnnotation.valueWithDefault(index, "name").asString();
-                    boolean absolute = metricAnnotation.valueWithDefault(index, "absolute").asBoolean();
-                    String metricSimpleName = !nameValue.isEmpty() ? nameValue : memberName;
-                    String declaringClassName = bean.getDeclaringBean().getImplClazz().name().toString();
-                    String metricsFinalName = absolute ? metricSimpleName
-                            : MetricRegistry.name(declaringClassName, metricSimpleName);
-                    recorder.registerMetricFromProducer(
-                            bean.getIdentifier(),
-                            metricType,
-                            metricsFinalName,
-                            metricAnnotation.valueWithDefault(index, "tags").asStringArray(),
-                            metricAnnotation.valueWithDefault(index, "description").asString(),
-                            metricAnnotation.valueWithDefault(index, "displayName").asString(),
-                            metricAnnotation.valueWithDefault(index, "unit").asString());
+                    LOGGER.warn(
+                            "Metrics created from CDI producers are no longer supported. There will be no metric automatically registered "
+                                    +
+                                    "for producer " + target);
                 }
-            }
-        }
-        for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
-            if (item.executionTime() == RUNTIME_INIT) {
-                recorder.registerMetrics(item.getConsumer());
             }
         }
     }

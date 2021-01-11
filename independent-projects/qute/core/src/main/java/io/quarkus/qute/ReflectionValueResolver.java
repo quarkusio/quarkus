@@ -4,6 +4,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -100,25 +103,40 @@ public class ReflectionValueResolver implements ValueResolver {
         Method foundGetterMatch = null;
         Method foundBooleanMatch = null;
 
-        for (Method method : clazz.getMethods()) {
-            if (!isMethodValid(method)) {
-                continue;
-            }
-            if (method.isBridge()) {
-                continue;
-            }
-            if (name.equals(method.getName())) {
-                foundMatch = method;
-            } else if (matchesPrefix(name, method.getName(),
-                    GET_PREFIX)) {
-                foundGetterMatch = method;
-            } else if (isBoolean(method.getReturnType()) && (matchesPrefix(name, method.getName(),
-                    IS_PREFIX) || matchesPrefix(name, method.getName(), HAS_PREFIX))) {
-                foundBooleanMatch = method;
-            }
+        // Explore interface methods first...
+        List<Class<?>> classes = new ArrayList<>();
+        Collections.addAll(classes, clazz.getInterfaces());
+        Class<?> superClass = clazz.getSuperclass();
+        while (superClass != null) {
+            Collections.addAll(classes, superClass.getInterfaces());
+            superClass = superClass.getSuperclass();
         }
-        if (foundMatch == null) {
-            foundMatch = (foundGetterMatch != null ? foundGetterMatch : foundBooleanMatch);
+        classes.add(clazz);
+
+        for (Class<?> clazzToTest : classes) {
+            for (Method method : clazzToTest.getMethods()) {
+                if (!isMethodValid(method)) {
+                    continue;
+                }
+                if (method.isBridge()) {
+                    continue;
+                }
+                if (name.equals(method.getName())) {
+                    foundMatch = method;
+                } else if (matchesPrefix(name, method.getName(),
+                        GET_PREFIX)) {
+                    foundGetterMatch = method;
+                } else if (isBoolean(method.getReturnType()) && (matchesPrefix(name, method.getName(),
+                        IS_PREFIX) || matchesPrefix(name, method.getName(), HAS_PREFIX))) {
+                    foundBooleanMatch = method;
+                }
+            }
+            if (foundMatch == null) {
+                foundMatch = (foundGetterMatch != null ? foundGetterMatch : foundBooleanMatch);
+            }
+            if (foundMatch != null) {
+                break;
+            }
         }
         return foundMatch;
     }

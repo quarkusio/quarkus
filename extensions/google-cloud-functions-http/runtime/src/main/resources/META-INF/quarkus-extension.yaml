@@ -11,3 +11,4 @@ metadata:
   - "cloud"
   guide: "https://quarkus.io/guides/gcp-functions-http"
   status: "experimental"
+  codestart: google-cloud-functions-http

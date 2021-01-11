@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.runtime.BlockingOperationControl;
+import io.smallrye.mutiny.Multi;
 
 @Path("/simple")
 public class SimpleJsonResource extends SuperClass<Person> {
@@ -140,4 +141,30 @@ public class SimpleJsonResource extends SuperClass<Person> {
         }).start();
     }
 
+    @GET
+    @Path("/multi1")
+    public Multi<Person> getMulti1() {
+        Person person = new Person();
+        person.setFirst("Bob");
+        person.setLast("Builder");
+        return Multi.createFrom().items(person);
+    }
+
+    @GET
+    @Path("/multi2")
+    public Multi<Person> getMulti2() {
+        Person person = new Person();
+        person.setFirst("Bob");
+        person.setLast("Builder");
+        Person person2 = new Person();
+        person2.setFirst("Bob2");
+        person2.setLast("Builder2");
+        return Multi.createFrom().items(person, person2);
+    }
+
+    @GET
+    @Path("/multi0")
+    public Multi<Person> getMulti0() {
+        return Multi.createFrom().empty();
+    }
 }

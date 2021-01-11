@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.core;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.RuntimeType;
@@ -17,7 +18,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 // and figure out where interceptors come into play
 public class StreamingUtil {
 
-    public static CompletionStage<?> send(ResteasyReactiveRequestContext context, Object entity) {
+    public static CompletionStage<?> send(ResteasyReactiveRequestContext context, Object entity, String prefix) {
         ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
@@ -32,6 +33,13 @@ public class StreamingUtil {
             return ret;
         }
         setHeaders(context, response);
+        if (prefix != null) {
+            byte[] prefixBytes = prefix.getBytes(StandardCharsets.US_ASCII);
+            byte[] prefixedData = new byte[prefixBytes.length + data.length];
+            System.arraycopy(prefixBytes, 0, prefixedData, 0, prefixBytes.length);
+            System.arraycopy(data, 0, prefixedData, prefixBytes.length, data.length);
+            data = prefixedData;
+        }
         return response.write(data);
     }
 

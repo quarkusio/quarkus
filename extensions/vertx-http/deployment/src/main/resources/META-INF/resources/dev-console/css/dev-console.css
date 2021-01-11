@@ -1,0 +1,10 @@
+.quarkus-logo {
+    margin-right: 15px;
+}
+
+.breadcrumb {
+    border-radius: 0px;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 0 6px 0px rgba(0, 0, 0, 0.2);
+}

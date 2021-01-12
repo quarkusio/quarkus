@@ -12,9 +12,12 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.function.BiFunction;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.builder.Version;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
@@ -37,10 +40,15 @@ public class DevConsole implements Handler<RoutingContext> {
 
     final Map<String, Object> globalData = new HashMap<>();
 
+    final Config config = ConfigProvider.getConfig();
+
     DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
         this.globalData.put("httpRootPath", httpRootPath);
         this.globalData.put("frameworkRootPath", frameworkRootPath);
+        this.globalData.put("quarkusVersion", Version.getVersion());
+        this.globalData.put("applicationName", config.getValue("quarkus.application.name", String.class));
+        this.globalData.put("applicationVersion", config.getValue("quarkus.application.version", String.class));
 
         try {
             Enumeration<URL> extensionDescriptors = getClass().getClassLoader()

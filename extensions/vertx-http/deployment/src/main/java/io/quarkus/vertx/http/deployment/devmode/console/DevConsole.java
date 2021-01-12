@@ -47,8 +47,9 @@ public class DevConsole implements Handler<RoutingContext> {
         this.globalData.put("httpRootPath", httpRootPath);
         this.globalData.put("frameworkRootPath", frameworkRootPath);
         this.globalData.put("quarkusVersion", Version.getVersion());
-        this.globalData.put("applicationName", config.getValue("quarkus.application.name", String.class));
-        this.globalData.put("applicationVersion", config.getValue("quarkus.application.version", String.class));
+        this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
+        this.globalData.put("applicationVersion",
+                config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
 
         try {
             Enumeration<URL> extensionDescriptors = getClass().getClassLoader()

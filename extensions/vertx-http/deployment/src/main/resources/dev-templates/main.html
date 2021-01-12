@@ -29,8 +29,8 @@
       {applicationName} {applicationVersion}
     </span>
   </nav>
-     
-  <div class="container-fluid">
+
+  <div class="container-fluid{#if fluid}-fluid{/if}">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">        
         {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
@@ -41,8 +41,7 @@
         {/if}
       </ol>
     </nav>
-      
-      
+
    {#if flash['message']}
      <div class="alert alert-{flash['message']['class']} show fade" role="alert" data-timer="{flash['displayTime']}">
       {flash['message']['text']}

@@ -15,7 +15,6 @@ import java.util.Properties;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
@@ -27,8 +26,6 @@ import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 public class ConfigEditorProcessor {
-
-    private static final Logger log = Logger.getLogger(ConfigEditorProcessor.class);
 
     @BuildStep
     DevConsoleTemplateInfoBuildItem config(List<ConfigDescriptionBuildItem> config) throws Exception {
@@ -86,6 +83,14 @@ public class ConfigEditorProcessor {
                         appProperties.load(in);
                         present = appProperties.containsKey(key);
                     }
+                } else {
+                    // If there is no application.properties file then create a new one in the first module
+                    List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
+                    if (resourcesDir.isEmpty()) {
+                        throw new IllegalStateException(
+                                "Unable to create application.properties - no resource directory found");
+                    }
+                    appProps = Files.createFile(resourcesDir.get(0).resolve("application.properties"));
                 }
                 if (!present) {
                     try (OutputStream out = Files.newOutputStream(appProps, StandardOpenOption.APPEND)) {

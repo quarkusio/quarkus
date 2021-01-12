@@ -18,14 +18,13 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
-import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -47,8 +46,7 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
         JsonFactory jsonFactory = mapper.getFactory();
         if (needsNewFactory(jsonFactory)) {
             jsonFactory = jsonFactory.copy();
-            jsonFactory.configure(Feature.AUTO_CLOSE_TARGET, false);
-            jsonFactory.configure(Feature.FLUSH_PASSED_TO_STREAM, false);
+            setNecessaryJsonFactoryConfig(jsonFactory);
             this.defaultWriter = mapper.writer().with(jsonFactory);
         } else {
             this.defaultWriter = mapper.writer();
@@ -59,6 +57,10 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
         return jsonFactory.isEnabled(Feature.AUTO_CLOSE_TARGET) || jsonFactory.isEnabled(Feature.FLUSH_PASSED_TO_STREAM);
     }
 
+    private static void setNecessaryJsonFactoryConfig(JsonFactory jsonFactory) {
+        jsonFactory.configure(Feature.AUTO_CLOSE_TARGET, false);
+        jsonFactory.configure(Feature.FLUSH_PASSED_TO_STREAM, false);
+    }
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -160,7 +162,9 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
         public ObjectWriter apply(Method method) {
             try {
                 BiFunction<ObjectMapper, Type, ObjectWriter> biFunctionInstance = clazz.getDeclaredConstructor().newInstance();
-                return biFunctionInstance.apply(originalMapper, genericType);
+                ObjectWriter objectWriter = biFunctionInstance.apply(originalMapper, genericType);
+                setNecessaryJsonFactoryConfig(objectWriter.getFactory());
+                return objectWriter;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

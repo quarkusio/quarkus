@@ -22,6 +22,7 @@ import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.swaggerui.runtime.SwaggerUiRuntimeConfig;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
@@ -57,7 +58,8 @@ public class SwaggerUiProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig,
-            SmallRyeOpenApiConfig openapi) throws Exception {
+            SmallRyeOpenApiConfig openapi,
+            HttpRootPathBuildItem httpRootPathBuildItem) throws Exception {
 
         if (shouldInclude(launchMode, swaggerUiConfig)) {
             if ("/".equals(swaggerUiConfig.path)) {
@@ -65,7 +67,10 @@ public class SwaggerUiProcessor {
                         "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
             }
 
-            String openApiPath = nonApplicationRootPathBuildItem.adjustPath(openapi.path);
+            String openApiPath = httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath(openapi.path));
+            String swaggerUiPath = httpRootPathBuildItem
+                    .adjustPath(nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path));
+
             AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, SWAGGER_UI_WEBJAR_GROUP_ID,
                     SWAGGER_UI_WEBJAR_ARTIFACT_ID);
 
@@ -73,7 +78,8 @@ public class SwaggerUiProcessor {
                 Path tempPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, artifact,
                         SWAGGER_UI_WEBJAR_PREFIX);
                 // Update index.html
-                WebJarUtil.updateFile(tempPath.resolve("index.html"), generateIndexHtml(openApiPath, swaggerUiConfig));
+                WebJarUtil.updateFile(tempPath.resolve("index.html"),
+                        generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig));
 
                 swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(tempPath.toAbsolutePath().toString(),
                         nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
@@ -89,7 +95,7 @@ public class SwaggerUiProcessor {
                     if (fileName.equals(theme.toString()) || !fileName.startsWith("theme-")) {
                         byte[] content;
                         if (fileName.endsWith("index.html")) {
-                            content = generateIndexHtml(openApiPath, swaggerUiConfig);
+                            content = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig);
                         } else {
                             content = file.getValue();
                         }
@@ -133,11 +139,12 @@ public class SwaggerUiProcessor {
         }
     }
 
-    private byte[] generateIndexHtml(String openApiPath, SwaggerUiConfig swaggerUiConfig) throws IOException {
+    private byte[] generateIndexHtml(String openApiPath, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig)
+            throws IOException {
         Map<Option, String> options = new HashMap<>();
         Map<String, String> urlsMap = null;
 
-        options.put(Option.selfHref, swaggerUiConfig.path);
+        options.put(Option.selfHref, swaggerUiPath);
 
         // Only add the url if the user did not specified urls
         if (swaggerUiConfig.urls != null && !swaggerUiConfig.urls.isEmpty()) {

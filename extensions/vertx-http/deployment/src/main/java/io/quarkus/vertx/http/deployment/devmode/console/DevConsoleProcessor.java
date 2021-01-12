@@ -57,6 +57,8 @@ import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
@@ -158,7 +160,17 @@ public class DevConsoleProcessor {
 
     }
 
-    protected static void newRouter(Engine engine) {
+    protected static void newRouter(Engine engine,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+
+        // "" or "/myroot"
+        String httpRootPath = httpRootPathBuildItem.adjustPath("/");
+        httpRootPath = httpRootPath.substring(0, httpRootPath.lastIndexOf("/"));
+        // "" or "/myroot" or "/q" or "/myroot/q"
+        String frameworkRootPath = httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath("/"));
+        frameworkRootPath = frameworkRootPath.substring(0, frameworkRootPath.lastIndexOf("/"));
+
         Handler<RoutingContext> errorHandler = new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
@@ -172,10 +184,11 @@ public class DevConsoleProcessor {
                 .handler(new FlashScopeHandler());
         router.route().method(HttpMethod.GET)
                 .order(Integer.MIN_VALUE + 1)
-                .handler(new DevConsole(engine));
+                .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route("/q/dev/*").subRouter(router);
+        mainRouter.route(httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath("/dev/*")))
+                .subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -230,9 +243,12 @@ public class DevConsoleProcessor {
             List<DevTemplatePathBuildItem> devTemplatePaths,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         initializeVirtual();
-        newRouter(buildEngine(devTemplatePaths, devTemplateVariants));
+
+        newRouter(buildEngine(devTemplatePaths), httpRootPathBuildItem, nonApplicationRootPathBuildItem);
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
@@ -261,11 +277,11 @@ public class DevConsoleProcessor {
                 .nonApplicationRoute(false)
                 .build());
 
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem("/q/dev/", "Quarkus DEV Console"));
+        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
+                nonApplicationRootPathBuildItem.adjustPath("/dev/"), "Quarkus DEV Console"));
     }
 
-    private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,
-            Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
+    private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths) {
         EngineBuilder builder = Engine.builder().addDefaults();
 
         // Escape some characters for HTML templates

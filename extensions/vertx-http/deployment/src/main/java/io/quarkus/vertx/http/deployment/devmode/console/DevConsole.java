@@ -35,8 +35,13 @@ public class DevConsole implements Handler<RoutingContext> {
     final Engine engine;
     final Map<String, Map<String, Object>> extensions = new HashMap<>();
 
-    DevConsole(Engine engine) {
+    final Map<String, Object> globalData = new HashMap<>();
+
+    DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
+        this.globalData.put("httpRootPath", httpRootPath);
+        this.globalData.put("frameworkRootPath", frameworkRootPath);
+
         try {
             Enumeration<URL> extensionDescriptors = getClass().getClassLoader()
                     .getResources("/META-INF/quarkus-extension.yaml");
@@ -88,6 +93,11 @@ public class DevConsole implements Handler<RoutingContext> {
     }
 
     protected void renderTemplate(RoutingContext event, TemplateInstance template) {
+        // Add some global variables
+        for (Map.Entry<String, Object> global : globalData.entrySet()) {
+            template.data(global.getKey(), global.getValue());
+        }
+
         template.renderAsync().handle(new BiFunction<String, Throwable, Object>() {
             @Override
             public Object apply(String s, Throwable throwable) {
@@ -119,6 +129,7 @@ public class DevConsole implements Handler<RoutingContext> {
             if (hasConsoleEntry || hasGuide) {
                 if (hasConsoleEntry) {
                     Map<String, Object> data = new HashMap<>();
+                    data.putAll(globalData);
                     data.put("urlbase", groupId + "." + artifactId);
                     String result = simpleTemplate.render(data);
                     loaded.put("_dev", result);

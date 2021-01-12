@@ -16,7 +16,13 @@
   {#insert style/}
   </style>
   
-  <title>{#insert title/} | {applicationName} {applicationVersion}</title>
+  <title>
+    {#if currentExtensionName && currentExtensionName != 'Eclipse Vert.x - HTTP'}
+      {currentExtensionName} /
+    {/if}
+    {#insert title/} |
+    {applicationName} {applicationVersion}
+  </title>
  </head>
  <body>
   <nav class="navbar sticky-top navbar-dark bg-dark">

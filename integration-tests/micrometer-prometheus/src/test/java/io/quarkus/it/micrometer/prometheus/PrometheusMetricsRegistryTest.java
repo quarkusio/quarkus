@@ -149,7 +149,7 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString(
                         "hibernate_entities_inserts_total{entityManagerFactory=\"<default>\",env=\"test\",registry=\"prometheus\",} 3.0"))
                 .body(containsString(
-                        "hibernate_flushes_total{entityManagerFactory=\"<default>\",env=\"test\",registry=\"prometheus\",} 2.0"))
+                        "hibernate_flushes_total{entityManagerFactory=\"<default>\",env=\"test\",registry=\"prometheus\",} 1.0"))
 
                 // Annotated counters
                 .body(not(containsString("metric_none")))

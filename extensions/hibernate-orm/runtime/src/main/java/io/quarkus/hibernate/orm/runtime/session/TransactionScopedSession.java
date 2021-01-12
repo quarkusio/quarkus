@@ -18,7 +18,6 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 import javax.transaction.Status;
-import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
@@ -86,17 +85,13 @@ public class TransactionScopedSession implements Session {
             Session newSession = sessionFactory.openSession();
             newSession.joinTransaction();
             transactionSynchronizationRegistry.putResource(sessionKey, newSession);
-            transactionSynchronizationRegistry.registerInterposedSynchronization(new Synchronization() {
-                @Override
-                public void beforeCompletion() {
-                    newSession.flush();
-                }
-
-                @Override
-                public void afterCompletion(int i) {
-                    newSession.close();
-                }
-            });
+            // No need to flush or close the session upon transaction completion:
+            // Hibernate ORM itself registers a transaction that does just that.
+            // See:
+            // - io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder.mergeSettings
+            // - org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorImpl.joinJtaTransaction
+            // - org.hibernate.internal.SessionImpl.beforeTransactionCompletion
+            // - org.hibernate.internal.SessionImpl.afterTransactionCompletion
             return new SessionResult(newSession, false, true);
         } else {
             //this will throw an exception if the request scope is not active

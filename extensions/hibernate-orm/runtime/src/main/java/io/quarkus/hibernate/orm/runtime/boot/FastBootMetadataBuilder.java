@@ -255,6 +255,9 @@ public class FastBootMetadataBuilder {
         cfg.putIfAbsent(AvailableSettings.CONNECTION_HANDLING,
                 PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
 
+        // Auto-close sessions before transaction completion, as they should be when using JTA.
+        cfg.putIfAbsent(AvailableSettings.AUTO_CLOSE_SESSION, "true");
+
         if (readBooleanConfigurationValue(cfg, WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");
         }

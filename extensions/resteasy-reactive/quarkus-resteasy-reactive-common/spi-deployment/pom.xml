@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-resteasy-reactive-spi</artifactId>
+    <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
     <name>Quarkus - RESTEasy Reactive - SPI</name>
 
     <dependencies>

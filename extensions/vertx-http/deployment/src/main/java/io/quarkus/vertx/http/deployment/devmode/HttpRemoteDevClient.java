@@ -124,6 +124,10 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             connection.getOutputStream().write(initialData);
             connection.getOutputStream().close();
             String session = connection.getHeaderField(RemoteSyncHandler.QUARKUS_SESSION);
+            String error = connection.getHeaderField(RemoteSyncHandler.QUARKUS_ERROR);
+            if (error != null) {
+                throw new IOException("Server did not start a remote dev session: " + error);
+            }
             if (session == null) {
                 throw new IOException("Server did not start a remote dev session");
             }

@@ -22,8 +22,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -47,9 +49,11 @@ import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.Expression;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Results;
+import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolvers;
@@ -273,6 +277,18 @@ public class DevConsoleProcessor {
                     Object result = map.get(ctx.getName());
                     return result == null ? Results.Result.NOT_FOUND : result;
                 }).build());
+
+        // {config:property('quarkus.lambda.handler')}
+        builder.addNamespaceResolver(NamespaceResolver.builder("config").resolveAsync(ctx -> {
+            List<Expression> params = ctx.getParams();
+            if (params.size() != 1 || !ctx.getName().equals("property")) {
+                return Results.NOT_FOUND;
+            }
+            return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
+                Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
+                return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Result.NOT_FOUND);
+            });
+        }).build());
 
         // Add templates and tags
         Map<String, String> templates = new HashMap<>();

@@ -29,6 +29,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
 
     public static final String APPLICATION_QUARKUS = "application/quarkus-live-reload";
     public static final String QUARKUS_SESSION = "X-Quarkus-Session";
+    public static final String QUARKUS_ERROR = "X-Quarkus-Error";
     public static final String QUARKUS_SESSION_COUNT = "X-Quarkus-Count";
     public static final String CONNECT = "/connect";
     public static final String DEV = "/dev";
@@ -107,10 +108,14 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             } else if (event.path().equals(PROBE)) {
                 event.response().end();
             } else {
-                event.response().setStatusCode(404).end();
+                event.response().putHeader(QUARKUS_ERROR, "Unknown path " + event.path()
+                        + " make sure your remote dev URL is pointing to the context root for your Quarkus instance, and not to a sub path.")
+                        .setStatusCode(404).end();
             }
         } else {
-            event.response().setStatusCode(404).end();
+            event.response()
+                    .putHeader(QUARKUS_ERROR, "Unknown method " + event.method() + " this is not a valid remote dev request")
+                    .setStatusCode(405).end();
         }
 
     }
@@ -178,7 +183,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     String compare = HashUtil.sha256(bodyHash + password);
                     if (!compare.equals(rp)) {
                         log.error("Incorrect password");
-                        event.response().setStatusCode(401).end();
+                        event.response().putHeader(QUARKUS_ERROR, "Incorrect password").setStatusCode(401).end();
                         return;
                     }
                     SecureRandom r = new SecureRandom();

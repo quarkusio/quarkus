@@ -31,10 +31,17 @@ hr {
 {/style}
   {#title}DEV Console{/title}
   {#body}
+   <div class="cards-index">
    <div class="row row-cols-1 row-cols-md-4">
    <div class="col mb-4">
        <div class="card h-100 extension">
-           <div class="card-header"><h5>Config Editor</h5></div>
+           <div class="card-header">
+               <h5>Configuration
+               <a href="https://quarkus.io/guides/config" class="btn btn-primary btn-sm btn-guide float-right" title="Guide">
+                   <i class="fa fa-book"></i>
+               </a>
+               </h5>
+           </div>
            <div class="card-body">
                <p class="card-text">
                    <a href="io.quarkus.quarkus-vertx-http/config" class="badge badge-light">
@@ -55,5 +62,6 @@ hr {
        {#extension it/}
    {/each}
    {/if}
+   </div>
   {/body}
 {/include}

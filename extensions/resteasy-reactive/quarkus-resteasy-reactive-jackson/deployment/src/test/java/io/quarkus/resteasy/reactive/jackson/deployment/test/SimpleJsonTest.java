@@ -2,6 +2,8 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.function.Supplier;
@@ -33,6 +35,8 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
                 .body("first", Matchers.equalTo("Bob"))
                 .body("last", Matchers.equalTo("Builder"));
 
@@ -44,6 +48,8 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
+                .header("content-length", notNullValue())
+                .header("transfer-encoding", nullValue())
                 .body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
 
         RestAssured

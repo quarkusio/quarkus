@@ -67,6 +67,12 @@ but note that this might change in the future.
 
 The main template also includes https://jquery.com/[jQuery 3.5.1], but here again this might change.
 
+=== Accessing Config Properties
+
+A `config:property(name)` expression can be used to output the config value for the given property name.
+The property name can be either a string literal or obtained dynamically by another expression.
+For example `{config:property('quarkus.lambda.handler')}` and `{config:property(foo.propertyName)}`.
+
 == Adding full pages
 
 To add full pages for your DEV Console extension such as this one:
@@ -348,4 +354,4 @@ The following Quarkus extensions currently support the DEV Console:
 - link:./openapi-swaggerui[quarkus-smallrye-openapi]
 - link:./qute[quarkus-qute]
 - link:./resteasy-reactive[quarkus-resteasy-reactive]
-- link:./scheduler[quarkus-schedule]
+- link:./scheduler[quarkus-scheduler]

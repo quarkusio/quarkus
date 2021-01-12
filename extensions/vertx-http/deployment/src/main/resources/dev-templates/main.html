@@ -20,8 +20,8 @@
     {#if currentExtensionName && currentExtensionName != 'Eclipse Vert.x - HTTP'}
       {currentExtensionName} /
     {/if}
-    {#insert title/} |
-    {applicationName} {applicationVersion}
+    {#insert title/}
+    {#if applicationName and applicationVersion} | {applicationName} {applicationVersion}{/if}
   </title>
  </head>
  <body>
@@ -31,7 +31,7 @@
       <span id="navbar_title" class="align-middle">Dev Console</span>
     </a>
     <span class="navbar-text">
-      {applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion})
+      {#if applicationName and applicationVersion}{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion}){/if}
     </span>
   </nav>
 

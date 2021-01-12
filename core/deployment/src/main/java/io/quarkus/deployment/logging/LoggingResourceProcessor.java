@@ -171,23 +171,22 @@ public final class LoggingResourceProcessor {
     void setUpMinLevelLogging(LogBuildTimeConfig log,
             final BuildProducer<GeneratedClassBuildItem> generatedTraceLogger) {
         ClassOutput output = new GeneratedClassGizmoAdaptor(generatedTraceLogger, false);
-        if (log.categories.isEmpty() || allMinLevelInfoOrHigher(log.categories)) {
-            generateDefaultLoggers(output);
+        if (log.categories.isEmpty() || allMinLevelInfoOrHigher(log.minLevel.intValue(), log.categories)) {
+            generateDefaultLoggers(log.minLevel, output);
         } else {
             generateCategoryMinLevelLoggers(log.categories, log.minLevel, output);
         }
     }
 
-    private static boolean allMinLevelInfoOrHigher(Map<String, CategoryBuildTimeConfig> categories) {
+    private static boolean allMinLevelInfoOrHigher(int minLogLevel, Map<String, CategoryBuildTimeConfig> categories) {
         return categories.values().stream()
-                .allMatch(categoryConfig -> categoryConfig.minLevel.getLevel().intValue() >= org.jboss.logmanager.Level.INFO
-                        .intValue());
+                .allMatch(categoryConfig -> categoryConfig.minLevel.getLevel().intValue() >= minLogLevel);
     }
 
-    private static void generateDefaultLoggers(ClassOutput output) {
-        generateDefaultLoggingLogger(output);
+    private static void generateDefaultLoggers(Level minLevel, ClassOutput output) {
+        generateDefaultLoggingLogger(minLevel, output);
         generateDefaultLoggerNode(output);
-        generateLogManagerLogger(output, LoggingResourceProcessor::generateMinLevelDefault);
+        generateLogManagerLogger(output, LoggingResourceProcessor.generateMinLevelDefault(minLevel.getName()));
     }
 
     private static void generateCategoryMinLevelLoggers(Map<String, CategoryBuildTimeConfig> categories, Level minLevel,
@@ -307,10 +306,13 @@ public final class LoggingResourceProcessor {
                 .invokeVirtualMethod(MethodDescriptor.ofMethod(Level.class, "intValue", int.class), level);
     }
 
-    private static BranchResult generateMinLevelDefault(MethodCreator method, FieldDescriptor nameAliasDescriptor) {
-        final ResultHandle levelIntValue = getParamLevelIntValue(method);
-        final ResultHandle infoLevelIntValue = getLogManagerLevelIntValue("INFO", method);
-        return method.ifIntegerGreaterEqual(levelIntValue, infoLevelIntValue);
+    private static BiFunction<MethodCreator, FieldDescriptor, BranchResult> generateMinLevelDefault(
+            String defaultMinLevelName) {
+        return (method, nameAliasDescriptor) -> {
+            final ResultHandle levelIntValue = getParamLevelIntValue(method);
+            final ResultHandle infoLevelIntValue = getLogManagerLevelIntValue(defaultMinLevelName, method);
+            return method.ifIntegerGreaterEqual(levelIntValue, infoLevelIntValue);
+        };
     }
 
     private static ResultHandle getLogManagerLevelIntValue(String levelName, BytecodeCreator method) {
@@ -320,7 +322,7 @@ public final class LoggingResourceProcessor {
                 .invokeVirtualMethod(MethodDescriptor.ofMethod(Level.class, "intValue", int.class), infoLevel);
     }
 
-    private static void generateDefaultLoggingLogger(ClassOutput output) {
+    private static void generateDefaultLoggingLogger(Level minLevel, ClassOutput output) {
         try (ClassCreator cc = ClassCreator.builder().setFinal(true)
                 .className(LOGGING_LOGGER_CLASS_NAME)
                 .classOutput(output).build()) {
@@ -328,10 +330,14 @@ public final class LoggingResourceProcessor {
             AnnotationCreator targetClass = cc.addAnnotation("com.oracle.svm.core.annotate.TargetClass");
             targetClass.addValue("className", "org.jboss.logging.Logger");
 
-            // Constant fold these methods to return false,
-            // since the build time log level is above this level.
-            generateFalseFoldMethod("isTraceEnabled", cc);
-            generateFalseFoldMethod("isDebugEnabled", cc);
+            if (minLevel.intValue() >= org.jboss.logmanager.Level.INFO.intValue()) {
+                // Constant fold these methods to return false,
+                // since the build time log level is above this level.
+                generateFalseFoldMethod("isTraceEnabled", cc);
+                generateFalseFoldMethod("isDebugEnabled", cc);
+            } else if (minLevel.intValue() == org.jboss.logmanager.Level.DEBUG.intValue()) {
+                generateFalseFoldMethod("isTraceEnabled", cc);
+            }
         }
     }
 

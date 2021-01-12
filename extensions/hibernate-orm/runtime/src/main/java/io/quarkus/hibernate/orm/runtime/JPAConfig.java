@@ -14,7 +14,10 @@ import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
+import org.hibernate.SessionFactory;
 import org.jboss.logging.Logger;
+
+import io.quarkus.hibernate.orm.runtime.session.JTASessionOptions;
 
 @Singleton
 public class JPAConfig {
@@ -114,11 +117,26 @@ public class JPAConfig {
                         throw new IllegalStateException("Persistence unit is closed");
                     }
                     if (value == null) {
-                        value = Persistence.createEntityManagerFactory(name);
+                        value = create();
                     }
                 }
             }
             return value;
+        }
+
+        private EntityManagerFactory create() {
+            EntityManagerFactory result = Persistence.createEntityManagerFactory(name);
+            try {
+                JTASessionOptions.init(result.unwrap(SessionFactory.class));
+            } catch (RuntimeException e) {
+                try {
+                    result.close();
+                } catch (RuntimeException e2) {
+                    e.addSuppressed(e2);
+                    throw e;
+                }
+            }
+            return result;
         }
 
         public synchronized void close() {

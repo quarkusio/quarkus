@@ -32,7 +32,7 @@ public class FunctionTest {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
         req.setUri(URI.create("https://foo.com/funqy"));
         req.setHttpMethod(HttpMethod.POST);
-        req.setBody("\"Bill\"".getBytes(StandardCharsets.UTF_8));
+        req.setBody("\"Bill\"");
         req.getHeaders().put("Content-Type", "application/json");
 
         // Invoke
@@ -162,7 +162,7 @@ public class FunctionTest {
         final HttpRequestMessageMock req = new HttpRequestMessageMock();
         req.setUri(URI.create(uri));
         req.setHttpMethod(HttpMethod.POST);
-        req.setBody("Bill".getBytes(StandardCharsets.UTF_8));
+        req.setBody("Bill");
         req.getHeaders().put("Content-Type", "text/plain");
 
         // Invoke

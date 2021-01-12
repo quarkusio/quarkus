@@ -12,8 +12,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.bootstrap.BootstrapGradleException;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -34,15 +32,12 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.dev.DevModeContext;
-import io.quarkus.deployment.dev.IDEDevModeMain;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.runtime.LaunchMode;
 
 public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<String, Object>> {
-
-    private static final Logger log = Logger.getLogger(IDEDevModeMain.class.getName());
 
     @Override
     public void accept(CuratedApplication curatedApplication, Map<String, Object> resultMap) {

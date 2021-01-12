@@ -1,8 +1,9 @@
 package io.quarkus.jwt.test;
 
+import static org.hamcrest.Matchers.equalTo;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -54,22 +55,18 @@ public class JwtCookieDevModeTestCase {
     }
 
     private void testOKResponse(String cookieName) {
-        io.restassured.response.Response response = RestAssured.given()
+        RestAssured.given()
                 .header("Cookie", cookieName + "=" + token)
-                .get("/endp/echo").andReturn();
-
-        Assertions.assertEquals(200, response.getStatusCode());
-        String replyString = response.body().asString();
-        // The missing 'groups' claim's default value, 'User' is expected
-        Assertions.assertEquals("User", replyString);
+                .get("/endp/echo")
+                .then().assertThat().statusCode(200)
+                .body(equalTo("User"));
     }
 
     private void testBadResponse(String cookieName) {
-        io.restassured.response.Response response = RestAssured.given()
+        RestAssured.given()
                 .header("Cookie", cookieName + "=" + token)
-                .get("/endp/echo").andReturn();
-
-        Assertions.assertEquals(401, response.getStatusCode());
+                .get("/endp/echo")
+                .then().assertThat().statusCode(401);
     }
 
 }

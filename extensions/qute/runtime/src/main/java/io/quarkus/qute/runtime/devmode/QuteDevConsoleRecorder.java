@@ -1,59 +1,27 @@
 package io.quarkus.qute.runtime.devmode;
 
-import java.net.URLConnection;
+import java.util.function.BiFunction;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.qute.Engine;
-import io.quarkus.qute.Variant;
 import io.quarkus.runtime.annotations.Recorder;
-import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
-import io.vertx.core.json.Json;
-import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class QuteDevConsoleRecorder {
 
-    public Handler<RoutingContext> invokeHandler() {
-        return new Handler<RoutingContext>() {
+    public static final String RENDER_HANDLER = QuteDevConsoleRecorder.class.getName() + ".RENDER_HANDLER";
 
+    public void setupRenderer() {
+        //setup the render handler that is used to handle the template
+        //this is invoked from the deployment side
+        DevConsoleManager.setGlobal(RENDER_HANDLER, new BiFunction<String, Object, String>() {
             @Override
-            public void handle(RoutingContext context) {
-                context.request().setExpectMultipart(true);
-                context.request().endHandler(new Handler<Void>() {
-                    @Override
-                    public void handle(Void ignore) {
-                        MultiMap form = context.request().formAttributes();
-                        String templatePath = form.get("template-path");
-                        String testJsonData = form.get("template-data");
-                        Engine engine = Arc.container().instance(Engine.class).get();
-                        String contentType = null;
-                        String fileName = templatePath;
-                        int slashIdx = fileName.lastIndexOf('/');
-                        if (slashIdx != -1) {
-                            fileName = fileName.substring(slashIdx, fileName.length());
-                        }
-                        int dotIdx = fileName.lastIndexOf('.');
-                        if (dotIdx != -1) {
-                            String suffix = fileName.substring(dotIdx + 1, fileName.length());
-                            if (suffix.equalsIgnoreCase("json")) {
-                                contentType = Variant.APPLICATION_JSON;
-                            } else {
-                                contentType = URLConnection.getFileNameMap().getContentTypeFor(fileName);
-                            }
-                        }
-                        try {
-                            Object testData = Json.decodeValue(testJsonData);
-                            context.response().setStatusCode(200).putHeader("Content-Type", contentType)
-                                    .end(engine.getTemplate(templatePath).render(testData));
-                        } catch (Throwable e) {
-                            context.fail(e);
-                        }
-                    }
-                });
+            public String apply(String template, Object data) {
+                Engine engine = Arc.container().instance(Engine.class).get();
+                return engine.getTemplate(template).render(data);
             }
-
-        };
+        });
     }
 
 }

@@ -38,6 +38,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -180,11 +181,14 @@ public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public ServiceStartBuildItem buildTimeTemplates(List<DevConsoleTemplateInfoBuildItem> items,
-            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
+            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         collectTemplates(devTemplatePaths);
         Map<String, Map<String, Object>> results = new HashMap<>();
         for (DevConsoleTemplateInfoBuildItem i : items) {
-            Map<String, Object> map = results.computeIfAbsent(i.getGroupId() + "." + i.getArtifactId(), (s) -> new HashMap<>());
+            Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
+            Map<String, Object> map = results.computeIfAbsent(groupAndArtifact.getKey() + "." + groupAndArtifact.getValue(),
+                    (s) -> new HashMap<>());
             map.put(i.getName(), i.getObject());
         }
         DevConsoleManager.setTemplateInfo(results);
@@ -226,18 +230,21 @@ public class DevConsoleProcessor {
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             List<DevTemplatePathBuildItem> devTemplatePaths,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
+            Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         initializeVirtual();
         newRouter(buildEngine(devTemplatePaths, devTemplateVariants));
         for (DevConsoleRouteBuildItem i : routes) {
+            Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
                 routeBuildItemBuildProducer.produce(new RouteBuildItem(
-                        new RuntimeDevConsoleRoute(i.getGroupId(), i.getArtifactId(), i.getPath(), i.getMethod()),
+                        new RuntimeDevConsoleRoute(groupAndArtifact.getKey(), groupAndArtifact.getValue(), i.getPath(),
+                                i.getMethod()),
                         i.getHandler()));
             } else {
                 router.route(HttpMethod.valueOf(i.getMethod()),
-                        "/" + i.getGroupId() + "." + i.getArtifactId() + "/" + i.getPath())
+                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath())
                         .handler(i.getHandler());
             }
         }

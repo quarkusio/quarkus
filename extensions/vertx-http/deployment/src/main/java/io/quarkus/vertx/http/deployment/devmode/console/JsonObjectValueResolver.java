@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.runtime.devmode;
+package io.quarkus.vertx.http.deployment.devmode.console;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

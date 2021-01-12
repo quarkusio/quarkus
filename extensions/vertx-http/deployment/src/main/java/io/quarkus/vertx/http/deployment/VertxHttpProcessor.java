@@ -21,9 +21,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.builder.BuildException;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -57,7 +54,6 @@ import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
-import io.quarkus.vertx.http.runtime.devmode.JsonValueResolvers;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.vertx.core.Handler;
@@ -299,10 +295,4 @@ class VertxHttpProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    public void registerJsonValueResolvers(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isPresent(Capability.QUTE_TEMPLATES)) {
-            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(JsonValueResolvers.class));
-        }
-    }
 }

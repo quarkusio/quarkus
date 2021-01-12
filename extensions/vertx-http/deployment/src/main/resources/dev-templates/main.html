@@ -16,21 +16,33 @@
   {#insert style/}
   </style>
   
-  <title>{#insert title/}</title>
+  <title>{#insert title/} | Quarkus {quarkusVersion}</title>
  </head>
  <body>
-  <nav aria-label="breadcrumb">
-   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><img src="{frameworkRootPath}/dev/resources/images/quarkus_icon_rgb_default.svg" with="25" height="25" alt="Quarkus" class="quarkus-logo" /> <a href="{frameworkRootPath}/dev/">DEV Console</a></li>
-    {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
-     <li class="breadcrumb-item active" aria-current="page">{#insert title/}</li>
-    {#else if currentExtensionName}
-     <li class="breadcrumb-item">{currentExtensionName}</li>
-     <li class="breadcrumb-item active" aria-current="page">{#insert title/}</li>
-    {/if}
-   </ol>
+  <nav class="navbar sticky-top navbar-dark bg-dark">
+
+    <a class="navbar-brand" href="{frameworkRootPath}/dev/">
+      <img src="{frameworkRootPath}/dev/resources/images/quarkus_icon_rgb_reverse.svg" width="30" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
+      <span id="navbar_title" class="align-middle">Dev Console</span>
+    </a>
+    <span class="navbar-text">
+      {applicationName} {applicationVersion}
+    </span>
   </nav>
-  <div class="container">
+     
+  <div class="container-fluid">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">        
+        {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
+        <li class="breadcrumb-item active" aria-current="page">{#insert title/}</li>
+        {#else if currentExtensionName}
+        <li class="breadcrumb-item">{currentExtensionName}</li>
+        <li class="breadcrumb-item active" aria-current="page">{#insert title/}</li>
+        {/if}
+      </ol>
+    </nav>
+      
+      
    {#if flash['message']}
      <div class="alert alert-{flash['message']['class']} show fade" role="alert" data-timer="{flash['displayTime']}">
       {flash['message']['text']}
@@ -39,7 +51,6 @@
       </button>
      </div>
    {/if}
-   <h1>{#insert title/}</h1>
    {#insert body/}
   </div>
   <script src="{frameworkRootPath}/dev/resources/js/jquery-3.5.1.min.js"></script>

@@ -1,10 +1,10 @@
 {#include main}
-  {#title}Quarkus Qute Template Preview{/title}
+  {#title}Render Preview{/title}
   {#body}
   <form method="post" enctype="application/x-www-form-urlencoded" target="_blank">
      <div class="form-group">
         <label for="template-select">Select a template:</label>
-        <select class="form-select" name="template-path" id="template-select">
+        <select class="form-control" name="template-path" id="template-select">
         {#for template in info:devQuteInfos.templates}
           {#each template.variants}
           <option value="{it}">{it}</option>
@@ -16,7 +16,7 @@
         <label for="template-select">Test JSON data</label>
         <textarea class="form-control" placeholder="Test JSON data" name="template-data" id="template-data"></textarea>
      </div>
-     <input id="invoke" type="submit" value="Render" class="btn btn-primary btn-sm">
+     <input id="invoke" type="submit" value="Render" class="btn btn-primary">
   </form>
   {/body}
 {/include}

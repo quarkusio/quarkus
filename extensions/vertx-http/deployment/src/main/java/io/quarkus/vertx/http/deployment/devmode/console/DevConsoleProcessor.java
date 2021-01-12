@@ -23,8 +23,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -32,15 +34,19 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
+import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
@@ -49,14 +55,18 @@ import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.Expression;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Results;
+import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
@@ -79,6 +89,9 @@ import io.vertx.ext.web.RoutingContext;
 public class DevConsoleProcessor {
 
     private static final Logger log = Logger.getLogger(DevConsoleProcessor.class);
+
+    private static final String STATIC_RESOURCES_PATH = "dev-static/";
+
     // FIXME: config, take from Qute?
     private static final String[] suffixes = new String[] { "html", "txt" };
     protected static volatile ServerBootstrap virtualBootstrap;
@@ -158,7 +171,17 @@ public class DevConsoleProcessor {
 
     }
 
-    protected static void newRouter(Engine engine) {
+    protected static void newRouter(Engine engine,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+
+        // "" or "/myroot"
+        String httpRootPath = httpRootPathBuildItem.adjustPath("/");
+        httpRootPath = httpRootPath.substring(0, httpRootPath.lastIndexOf("/"));
+        // "" or "/myroot" or "/q" or "/myroot/q"
+        String frameworkRootPath = httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath("/"));
+        frameworkRootPath = frameworkRootPath.substring(0, frameworkRootPath.lastIndexOf("/"));
+
         Handler<RoutingContext> errorHandler = new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
@@ -172,10 +195,11 @@ public class DevConsoleProcessor {
                 .handler(new FlashScopeHandler());
         router.route().method(HttpMethod.GET)
                 .order(Integer.MIN_VALUE + 1)
-                .handler(new DevConsole(engine));
+                .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route("/q/dev/*").subRouter(router);
+        mainRouter.route(httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath("/dev/*")))
+                .subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -230,9 +254,12 @@ public class DevConsoleProcessor {
             List<DevTemplatePathBuildItem> devTemplatePaths,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         initializeVirtual();
-        newRouter(buildEngine(devTemplatePaths, devTemplateVariants));
+
+        newRouter(buildEngine(devTemplatePaths), httpRootPathBuildItem, nonApplicationRootPathBuildItem);
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
@@ -261,11 +288,29 @@ public class DevConsoleProcessor {
                 .nonApplicationRoute(false)
                 .build());
 
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem("/q/dev/", "Quarkus DEV Console"));
+        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
+                nonApplicationRootPathBuildItem.adjustPath("/dev/"), "Quarkus DEV Console"));
     }
 
-    private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,
-            Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void deployStaticResources(DevConsoleRecorder recorder, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdownContext,
+            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer) throws IOException {
+        AppArtifact devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
+                "quarkus-vertx-http-deployment");
+
+        Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode,
+                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH);
+
+        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
+                .route("/dev/resources/*")
+                .handler(recorder.devConsoleHandler(devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
+                .nonApplicationRoute(false)
+                .build());
+    }
+
+    private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths) {
         EngineBuilder builder = Engine.builder().addDefaults();
 
         // Escape some characters for HTML templates
@@ -286,6 +331,18 @@ public class DevConsoleProcessor {
                     Object result = map.get(ctx.getName());
                     return result == null ? Results.Result.NOT_FOUND : result;
                 }).build());
+
+        // {config:property('quarkus.lambda.handler')}
+        builder.addNamespaceResolver(NamespaceResolver.builder("config").resolveAsync(ctx -> {
+            List<Expression> params = ctx.getParams();
+            if (params.size() != 1 || !ctx.getName().equals("property")) {
+                return Results.NOT_FOUND;
+            }
+            return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
+                Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
+                return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Result.NOT_FOUND);
+            });
+        }).build());
 
         // Add templates and tags
         Map<String, String> templates = new HashMap<>();

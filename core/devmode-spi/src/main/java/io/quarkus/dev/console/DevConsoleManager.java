@@ -2,6 +2,7 @@ package io.quarkus.dev.console;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import io.quarkus.dev.spi.HotReplacementContext;
@@ -12,6 +13,15 @@ public class DevConsoleManager {
     private static volatile Map<String, Map<String, Object>> templateInfo;
     private static volatile HotReplacementContext hotReplacementContext;
     private static volatile Object quarkusBootstrap;
+    /**
+     * Global map that can be used to share data betweeen the runtime and deployment side
+     * to enable communication.
+     * <p>
+     * Key names should be namespaced.
+     * <p>
+     * As the class loaders are different these objects will generally need to implement some kind of common interface
+     */
+    private static Map<String, Object> globals = new ConcurrentHashMap<>();
 
     public static void registerHandler(Consumer<DevConsoleRequest> requestHandler) {
         handler = requestHandler;
@@ -48,5 +58,25 @@ public class DevConsoleManager {
 
     public static Object getQuarkusBootstrap() {
         return quarkusBootstrap;
+    }
+
+    /**
+     * Sets a global that is shared between both the runtime and deployment parts
+     *
+     * @param name A namespaced key
+     * @param value A value
+     */
+    public static void setGlobal(String name, Object value) {
+        globals.put(name, value);
+    }
+
+    /**
+     * Gets a shared global
+     *
+     * @param name The key
+     * @return The value
+     */
+    public static <T> T getGlobal(String name) {
+        return (T) globals.get(name);
     }
 }

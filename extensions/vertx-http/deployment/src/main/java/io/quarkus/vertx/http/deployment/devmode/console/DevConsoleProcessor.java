@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -37,6 +38,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -47,6 +49,7 @@ import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Results;
@@ -177,11 +180,14 @@ public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public ServiceStartBuildItem buildTimeTemplates(List<DevConsoleTemplateInfoBuildItem> items,
-            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
+            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         collectTemplates(devTemplatePaths);
         Map<String, Map<String, Object>> results = new HashMap<>();
         for (DevConsoleTemplateInfoBuildItem i : items) {
-            Map<String, Object> map = results.computeIfAbsent(i.getGroupId() + "." + i.getArtifactId(), (s) -> new HashMap<>());
+            Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
+            Map<String, Object> map = results.computeIfAbsent(groupAndArtifact.getKey() + "." + groupAndArtifact.getValue(),
+                    (s) -> new HashMap<>());
             map.put(i.getName(), i.getObject());
         }
         DevConsoleManager.setTemplateInfo(results);
@@ -223,18 +229,21 @@ public class DevConsoleProcessor {
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             List<DevTemplatePathBuildItem> devTemplatePaths,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
+            Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         initializeVirtual();
         newRouter(buildEngine(devTemplatePaths, devTemplateVariants));
         for (DevConsoleRouteBuildItem i : routes) {
+            Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
                 routeBuildItemBuildProducer.produce(new RouteBuildItem(
-                        new RuntimeDevConsoleRoute(i.getGroupId(), i.getArtifactId(), i.getPath(), i.getMethod()),
+                        new RuntimeDevConsoleRoute(groupAndArtifact.getKey(), groupAndArtifact.getValue(), i.getPath(),
+                                i.getMethod()),
                         i.getHandler()));
             } else {
                 router.route(HttpMethod.valueOf(i.getMethod()),
-                        "/" + i.getGroupId() + "." + i.getArtifactId() + "/" + i.getPath())
+                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath())
                         .handler(i.getHandler());
             }
         }
@@ -257,8 +266,12 @@ public class DevConsoleProcessor {
 
     private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants) {
-        EngineBuilder builder = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
-                .addValueResolver(new ReflectionValueResolver())
+        EngineBuilder builder = Engine.builder().addDefaults();
+
+        // Escape some characters for HTML templates
+        builder.addResultMapper(new HtmlEscaper());
+
+        builder.addValueResolver(new ReflectionValueResolver())
                 .addValueResolver(new JsonObjectValueResolver())
                 .addValueResolver(ValueResolvers.rawResolver())
                 .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
@@ -312,6 +325,8 @@ public class DevConsoleProcessor {
 
         if (template == null)
             return Optional.empty();
+
+        String templateName = id;
         String finalTemplate = template;
         return Optional.of(new TemplateLocator.TemplateLocation() {
             @Override
@@ -321,8 +336,25 @@ public class DevConsoleProcessor {
 
             @Override
             public Optional<Variant> getVariant() {
-                // FIXME
-                return Optional.empty();
+                Variant variant = null;
+                String fileName = templateName;
+                int slashIdx = fileName.lastIndexOf('/');
+                if (slashIdx != -1) {
+                    fileName = fileName.substring(slashIdx, fileName.length());
+                }
+                int dotIdx = fileName.lastIndexOf('.');
+                if (dotIdx != -1) {
+                    String suffix = fileName.substring(dotIdx + 1, fileName.length());
+                    if (suffix.equalsIgnoreCase("json")) {
+                        variant = Variant.forContentType(Variant.APPLICATION_JSON);
+                    } else {
+                        String contentType = URLConnection.getFileNameMap().getContentTypeFor(fileName);
+                        if (contentType != null) {
+                            variant = Variant.forContentType(contentType);
+                        }
+                    }
+                }
+                return Optional.ofNullable(variant);
             }
         });
     }

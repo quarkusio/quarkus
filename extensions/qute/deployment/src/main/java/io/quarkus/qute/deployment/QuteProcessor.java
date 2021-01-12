@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static java.util.stream.Collectors.toMap;
 
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Modifier;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -72,6 +75,8 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
@@ -107,11 +112,19 @@ import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.TemplateProducer;
+import io.quarkus.qute.runtime.devmode.QuteDevConsoleRecorder;
 import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.ConfigTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.TimeTemplateExtensions;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 
 public class QuteProcessor {
 
@@ -269,7 +282,7 @@ public class QuteProcessor {
                     bindings.put(name, JandexUtil.getBoxedTypeName(type));
                     parameterNames.add(name);
                 }
-                ret.add(new CheckedTemplateBuildItem(templatePath, bindings));
+                ret.add(new CheckedTemplateBuildItem(templatePath, bindings, methodInfo));
                 enhancer.implement(methodInfo, templatePath, parameterNames, adaptor);
             }
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(),
@@ -489,7 +502,6 @@ public class QuteProcessor {
     }
 
     /**
-     * 
      * @param templateAnalysis
      * @param rootClazz
      * @param results Map of cached results within a single expression
@@ -1034,7 +1046,86 @@ public class QuteProcessor {
                         .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()), templates,
                         tags, variants))
                 .done());
-        ;
+    }
+
+    @BuildStep
+    @Record(value = STATIC_INIT, optional = true)
+    DevConsoleRouteBuildItem invokeEndpoint(QuteDevConsoleRecorder recorder) {
+        recorder.setupRenderer();
+        return new DevConsoleRouteBuildItem("preview", "POST", new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext context) {
+                context.request().setExpectMultipart(true);
+                context.request().endHandler(new Handler<Void>() {
+                    @Override
+                    public void handle(Void ignore) {
+                        MultiMap form = context.request().formAttributes();
+                        String templatePath = form.get("template-path");
+                        String testJsonData = form.get("template-data");
+                        String contentType = null;
+                        String fileName = templatePath;
+                        int slashIdx = fileName.lastIndexOf('/');
+                        if (slashIdx != -1) {
+                            fileName = fileName.substring(slashIdx, fileName.length());
+                        }
+                        int dotIdx = fileName.lastIndexOf('.');
+                        if (dotIdx != -1) {
+                            String suffix = fileName.substring(dotIdx + 1, fileName.length());
+                            if (suffix.equalsIgnoreCase("json")) {
+                                contentType = Variant.APPLICATION_JSON;
+                            } else {
+                                contentType = URLConnection.getFileNameMap().getContentTypeFor(fileName);
+                            }
+                        }
+                        try {
+                            BiFunction<String, Object, String> renderer = DevConsoleManager
+                                    .getGlobal(QuteDevConsoleRecorder.RENDER_HANDLER);
+                            Object testData = Json.decodeValue(testJsonData);
+                            testData = translate(testData); //translate it to JDK types
+                            context.response().setStatusCode(200).putHeader(CONTENT_TYPE, contentType)
+                                    .end(renderer.apply(templatePath, testData));
+                        } catch (DecodeException e) {
+                            context.response().setStatusCode(500).putHeader(CONTENT_TYPE, "text/plain; charset=UTF-8")
+                                    .end("Failed to parse JSON: " + e.getMessage());
+                        } catch (Throwable e) {
+                            context.fail(e);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * translates Json types to JDK types
+     *
+     * @param testData
+     * @return
+     */
+    private Object translate(Object testData) {
+        if (testData instanceof JsonArray) {
+            return translate((JsonArray) testData);
+        } else if (testData instanceof JsonObject) {
+            return translate((JsonObject) testData);
+        }
+        return testData;
+    }
+
+    private Object translate(JsonArray testData) {
+        List<Object> ret = new ArrayList<>();
+        for (Object i : testData.getList()) {
+            ret.add(translate(i));
+        }
+        return ret;
+    }
+
+    private Object translate(JsonObject testData) {
+        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> data = testData.getMap();
+        for (String i : testData.fieldNames()) {
+            map.put(i, translate(data.get(i)));
+        }
+        return map;
     }
 
     private static Type resolveType(AnnotationTarget member, Match match, IndexView index) {
@@ -1072,7 +1163,6 @@ public class QuteProcessor {
     }
 
     /**
-     * 
      * @param templateAnalysis
      * @param helperHint
      * @param match
@@ -1329,7 +1419,7 @@ public class QuteProcessor {
     /**
      * Attempts to find a property with the specified name, ie. a public non-static non-synthetic field with the given name or a
      * public non-static non-synthetic method with no params and the given name.
-     * 
+     *
      * @param name
      * @param clazz
      * @param index
@@ -1371,7 +1461,7 @@ public class QuteProcessor {
 
     /**
      * Find a non-static non-synthetic method with the given name, matching number of params and assignable parameter types.
-     * 
+     *
      * @param virtualMethod
      * @param clazz
      * @param expression

@@ -294,4 +294,5 @@ class VertxHttpProcessor {
             throw new BuildException(e, Collections.emptyList());
         }
     }
+
 }

@@ -54,6 +54,8 @@ public class WhenSectionTest {
         assertEquals("1", template.data("state", State.ON).render());
         assertEquals("0", template.data("state", State.OFF).render());
         assertEquals("-1", template.data("state", State.BROKEN).render());
+        assertEquals("none", template.data("state", State.UNKNOWN).render());
+        assertEquals("none", template.data("state", null).render());
     }
 
     @Test
@@ -63,6 +65,7 @@ public class WhenSectionTest {
         assertEquals("valid", template.data("state", State.ON).render());
         assertEquals("valid", template.data("state", State.OFF).render());
         assertEquals("invalid", template.data("state", State.BROKEN).render());
+        assertEquals("none", template.data("state", State.UNKNOWN).render());
         assertEquals("none", template.data("state", null).render());
     }
 

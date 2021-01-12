@@ -14,18 +14,33 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+
 public final class ArtifactInfoUtil {
 
     public static final String DEPLOYMENT = "-deployment";
 
     /**
      * Returns a Map.Entry containing the groupId and the artifactId of the module the contains the BuildItem
-     *
+     * <p>
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
-     * 
+     *
      * @return the result, or throws
      */
     public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz) {
+        return groupIdAndArtifactId(clazz, null);
+    }
+
+    /**
+     * Returns a Map.Entry containing the groupId and the artifactId of the module the contains the BuildItem
+     * <p>
+     * The way this works is by depending on the pom.properties file that should be present in the deployment jar
+     *
+     * @return the result, or throws
+     */
+    public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         try {
             URL jarLocation = clazz.getProtectionDomain().getCodeSource().getLocation();
             if (jarLocation.toString().endsWith(".jar")) {
@@ -38,8 +53,23 @@ public final class ArtifactInfoUtil {
                     }
                     return ret;
                 }
-            } else {
+            } else if (curateOutcomeBuildItem != null) {
                 // this is needed only for QuarkusDevModeTest inside Quarkus where the class is read from the corresponding directory
+                Path path = Paths.get(jarLocation.toURI());
+                for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
+                    for (Path p : i.getArtifact().getPaths()) {
+                        if (path.equals(p)) {
+
+                            String artifactId = i.getArtifact().getArtifactId();
+                            if (artifactId.endsWith(DEPLOYMENT)) {
+                                artifactId = artifactId.substring(0, artifactId.length() - DEPLOYMENT.length());
+                            }
+                            return new AbstractMap.SimpleEntry<>(i.getArtifact().getGroupId(), artifactId);
+                        }
+                    }
+                }
+                return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
+            } else {
                 return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
             }
         } catch (IOException | URISyntaxException e) {
@@ -50,9 +80,9 @@ public final class ArtifactInfoUtil {
 
     /**
      * Returns a Map.Entry containing the groupId and the artifactId of the module the contains the BuildItem
-     *
+     * <p>
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
-     * 
+     *
      * @return the result, or null if no maven metadata were found
      */
     public static Map.Entry<String, String> groupIdAndArtifactId(FileSystem fs) throws IOException {

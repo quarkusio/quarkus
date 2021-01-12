@@ -16,35 +16,31 @@ public class JsonObjectValueResolver implements ValueResolver {
 
     @Override
     public CompletionStage<Object> resolve(EvalContext context) {
-        return jsonObjectResolveAsync(context);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static CompletionStage<Object> jsonObjectResolveAsync(EvalContext context) {
-        JsonObject map = (JsonObject) context.getBase();
+        JsonObject jsonObject = (JsonObject) context.getBase();
         switch (context.getName()) {
             case "fieldNames":
             case "fields":
-                return CompletableFuture.completedFuture(map.fieldNames());
+                return CompletableFuture.completedFuture(jsonObject.fieldNames());
             case "size":
-                return CompletableFuture.completedFuture(map.size());
+                return CompletableFuture.completedFuture(jsonObject.size());
             case "empty":
             case "isEmpty":
-                return CompletableFuture.completedFuture(map.isEmpty());
+                return CompletableFuture.completedFuture(jsonObject.isEmpty());
             case "get":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(k -> {
-                        return CompletableFuture.completedFuture(map.getValue((String) k));
+                        return CompletableFuture.completedFuture(jsonObject.getValue((String) k));
                     });
                 }
             case "containsKey":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(k -> {
-                        return CompletableFuture.completedFuture(map.containsKey((String) k));
+                        return CompletableFuture.completedFuture(jsonObject.containsKey((String) k));
                     });
                 }
             default:
-                return map.containsKey(context.getName()) ? CompletableFuture.completedFuture(map.getValue(context.getName()))
+                return jsonObject.containsKey(context.getName())
+                        ? CompletableFuture.completedFuture(jsonObject.getValue(context.getName()))
                         : Results.NOT_FOUND;
         }
     }

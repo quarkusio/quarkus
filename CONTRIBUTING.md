@@ -142,7 +142,7 @@ Be sure to test your pull request in:
 If you have not done so on this machine, you need to:
  
 * Install Git and configure your GitHub access
-* Install Java SDK (OpenJDK recommended)
+* Install Java SDK 8 or 11+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
     * Linux

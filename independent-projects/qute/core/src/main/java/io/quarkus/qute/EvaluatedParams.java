@@ -94,7 +94,12 @@ public final class EvaluatedParams {
      * @throws ExecutionException
      */
     public boolean parameterTypesMatch(boolean varargs, Class<?>[] types) throws InterruptedException, ExecutionException {
-        if (types.length != results.length) {
+        // Check the number of parameters and replace the last param type with component type if needed
+        if (types.length == results.length) {
+            if (varargs) {
+                types[types.length - 1] = types[types.length - 1].getComponentType();
+            }
+        } else {
             if (varargs) {
                 int diff = types.length - results.length;
                 if (diff == 1) {
@@ -104,7 +109,6 @@ public final class EvaluatedParams {
                     return false;
                 }
                 // diff < 1
-                // Replace the last param type with component type
                 Class<?> varargsType = types[types.length - 1];
                 types[types.length - 1] = varargsType.getComponentType();
             } else {

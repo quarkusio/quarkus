@@ -24,7 +24,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -43,13 +43,23 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
     public JacksonMessageBodyWriter(ObjectMapper mapper) {
         this.originalMapper = mapper;
         // we don't want the ObjectWriter to close the stream automatically, as we want to handle closing manually at the proper points
-        if (mapper.getFactory().isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET)) {
-            JsonFactory jsonFactory = mapper.getFactory().copy();
-            jsonFactory.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+        JsonFactory jsonFactory = mapper.getFactory();
+        if (needsNewFactory(jsonFactory)) {
+            jsonFactory = jsonFactory.copy();
+            setNecessaryJsonFactoryConfig(jsonFactory);
             this.defaultWriter = mapper.writer().with(jsonFactory);
         } else {
             this.defaultWriter = mapper.writer();
         }
+    }
+
+    private boolean needsNewFactory(JsonFactory jsonFactory) {
+        return jsonFactory.isEnabled(Feature.AUTO_CLOSE_TARGET) || jsonFactory.isEnabled(Feature.FLUSH_PASSED_TO_STREAM);
+    }
+
+    private static void setNecessaryJsonFactoryConfig(JsonFactory jsonFactory) {
+        jsonFactory.configure(Feature.AUTO_CLOSE_TARGET, false);
+        jsonFactory.configure(Feature.FLUSH_PASSED_TO_STREAM, false);
     }
 
     @Override
@@ -152,7 +162,9 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
         public ObjectWriter apply(Method method) {
             try {
                 BiFunction<ObjectMapper, Type, ObjectWriter> biFunctionInstance = clazz.getDeclaredConstructor().newInstance();
-                return biFunctionInstance.apply(originalMapper, genericType);
+                ObjectWriter objectWriter = biFunctionInstance.apply(originalMapper, genericType);
+                setNecessaryJsonFactoryConfig(objectWriter.getFactory());
+                return objectWriter;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

@@ -1,7 +1,11 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -18,7 +22,11 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.json.JsonWriteFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Multi;
 
@@ -37,6 +45,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         person.setFirst("Bob");
         person.setLast("Builder");
         return person;
+    }
+
+    @CustomSerialization(UnquotedFieldsPersonBiFunction.class)
+    @GET
+    @Path("custom-serialized-person")
+    public Person getCustomSerializedPerson() {
+        return getPerson();
     }
 
     @POST
@@ -95,6 +110,14 @@ public class SimpleJsonResource extends SuperClass<Person> {
             reversed.add(0, person);
         }
         return reversed;
+    }
+
+    @CustomSerialization(UnquotedFieldsPersonBiFunction.class)
+    @POST
+    @Path("/custom-serialized-people")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<Person> getCustomSerializedPeople(List<Person> people) {
+        return getPeople(people);
     }
 
     @POST
@@ -171,6 +194,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return testUser();
     }
 
+    @CustomSerialization(UnquotedFieldsPersonBiFunction.class)
+    @GET
+    @Path("/invalid-use-of-custom-serializer")
+    public User invalidUseOfCustomSerializer() {
+        return testUser();
+    }
+
     private User testUser() {
         User user = new User();
         user.id = 1;
@@ -203,5 +233,25 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/multi0")
     public Multi<Person> getMulti0() {
         return Multi.createFrom().empty();
+    }
+
+    public static class UnquotedFieldsPersonBiFunction implements BiFunction<ObjectMapper, Type, ObjectWriter> {
+
+        public static final AtomicInteger count = new AtomicInteger();
+
+        public UnquotedFieldsPersonBiFunction() {
+            count.incrementAndGet();
+        }
+
+        @Override
+        public ObjectWriter apply(ObjectMapper objectMapper, Type type) {
+            if (type instanceof ParameterizedType) {
+                type = ((ParameterizedType) type).getActualTypeArguments()[0];
+            }
+            if (!type.getTypeName().equals(Person.class.getName())) {
+                throw new IllegalArgumentException("Only Person type can be handled");
+            }
+            return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+        }
     }
 }

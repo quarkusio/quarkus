@@ -123,7 +123,7 @@ class RequestContext implements ManagedContext {
             if (initialState instanceof RequestContextState) {
                 currentContext.set(((RequestContextState) initialState).value);
             } else {
-                throw new IllegalArgumentException("Invalid inital state: " + initialState.getClass().getName());
+                throw new IllegalArgumentException("Invalid initial state: " + initialState.getClass().getName());
             }
         }
     }

@@ -1,4 +1,4 @@
-package io.quarkus.swaggerui.deployment;
+package io.quarkus.swaggerui.spi;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 

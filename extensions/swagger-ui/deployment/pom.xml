@@ -34,6 +34,10 @@
             <artifactId>quarkus-swagger-ui</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-swagger-ui-spi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-open-api-ui</artifactId>
         </dependency>

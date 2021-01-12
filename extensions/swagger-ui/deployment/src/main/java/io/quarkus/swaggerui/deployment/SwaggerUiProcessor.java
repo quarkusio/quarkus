@@ -22,6 +22,7 @@ import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.swaggerui.runtime.SwaggerUiRuntimeConfig;
+import io.quarkus.swaggerui.spi.SwaggerUiBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;

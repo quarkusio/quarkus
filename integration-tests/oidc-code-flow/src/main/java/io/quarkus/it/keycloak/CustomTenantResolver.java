@@ -39,6 +39,14 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-split-tokens";
         }
 
+        if (path.contains("tenant-id-refresh-token")) {
+            return "tenant-id-refresh-token";
+        }
+
+        if (path.contains("tenant-split-id-refresh-token")) {
+            return "tenant-split-id-refresh-token";
+        }
+
         if (path.contains("tenant-autorefresh")) {
             return "tenant-autorefresh";
         }
@@ -53,6 +61,10 @@ public class CustomTenantResolver implements TenantResolver {
 
         if (path.contains("tenant-javascript")) {
             return "tenant-javascript";
+        }
+
+        if (path.contains("tenant-cookie-path-header")) {
+            return "tenant-cookie-path-header";
         }
 
         if (path.contains("callback-before-wrong-redirect")) {

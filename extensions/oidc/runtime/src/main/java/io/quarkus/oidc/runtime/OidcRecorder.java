@@ -16,6 +16,7 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
+import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
@@ -173,19 +174,31 @@ public class OidcRecorder {
 
         if (ApplicationType.SERVICE.equals(oidcConfig.applicationType)) {
             if (oidcConfig.token.refreshExpired) {
-                throw new RuntimeException(
+                throw new ConfigurationException(
                         "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
                                 + " application types");
             }
             if (oidcConfig.logout.path.isPresent()) {
-                throw new RuntimeException(
+                throw new ConfigurationException(
                         "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
                                 + " application types");
             }
             if (oidcConfig.roles.source.isPresent() && oidcConfig.roles.source.get() == Source.idtoken) {
-                throw new RuntimeException(
+                throw new ConfigurationException(
                         "The 'roles.source' property can only be set to 'idtoken' for " + ApplicationType.WEB_APP
                                 + " application types");
+            }
+        }
+
+        if (oidcConfig.tokenStateManager.strategy != Strategy.KEEP_ALL_TOKENS) {
+
+            if (oidcConfig.authentication.userInfoRequired || oidcConfig.roles.source.orElse(null) == Source.userinfo) {
+                throw new ConfigurationException(
+                        "UserInfo is required but DefaultTokenStateManager is configured to not keep the access token");
+            }
+            if (oidcConfig.roles.source.orElse(null) == Source.accesstoken) {
+                throw new ConfigurationException(
+                        "Access token is required to check the roles but DefaultTokenStateManager is configured to not keep the access token");
             }
         }
 

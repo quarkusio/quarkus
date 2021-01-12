@@ -86,7 +86,7 @@ public class DevConsoleProcessor {
 
     private static final Logger log = Logger.getLogger(DevConsoleProcessor.class);
 
-    private static final String STATIC_RESOURCES_PATH = "META-INF/resources/dev-console/";
+    private static final String STATIC_RESOURCES_PATH = "dev-static/";
 
     // FIXME: config, take from Qute?
     private static final String[] suffixes = new String[] { "html", "txt" };

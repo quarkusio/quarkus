@@ -70,12 +70,12 @@
         {
             "category": "Security1",
             "timeout": 50,
-            "test-modules": "elytron-security-oauth2 elytron-security elytron-security-jdbc elytron-undertow elytron-security-ldap bouncycastle bouncycastle-jsse"
+            "test-modules": "elytron-security-oauth2 elytron-security elytron-security-jdbc elytron-undertow elytron-security-ldap bouncycastle bouncycastle-jsse bouncycastle-fips"
         },
         {
             "category": "Security2",
             "timeout": 70,
-            "test-modules": "oidc oidc-code-flow oidc-tenancy keycloak-authorization oidc-wiremock"
+            "test-modules": "oidc oidc-code-flow oidc-tenancy keycloak-authorization oidc-client oidc-wiremock"
         },
         {
             "category": "Security3",

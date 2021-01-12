@@ -773,12 +773,16 @@ public class VertxHttpRecorder {
         }
     }
 
-    public void setNonApplicationRedirectHandler(String nonApplicationPath) {
+    public void setNonApplicationRedirectHandler(String nonApplicationPath, String rootPath) {
         nonApplicationRedirectHandler = new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext context) {
                 String absoluteURI = context.request().absoluteURI();
                 int pathStart = absoluteURI.indexOf(context.request().path());
+                if (rootPath.length() > 1 && absoluteURI.contains(rootPath)) {
+                    // Only do this when rootPath is not '/'
+                    pathStart = pathStart + rootPath.length();
+                }
                 String redirectTo = absoluteURI.substring(0, pathStart) + nonApplicationPath
                         + absoluteURI.substring(pathStart);
 

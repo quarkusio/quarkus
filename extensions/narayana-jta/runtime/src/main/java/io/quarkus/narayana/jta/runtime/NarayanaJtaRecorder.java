@@ -67,4 +67,8 @@ public class NarayanaJtaRecorder {
         arjPropertyManager.getCoordinatorEnvironmentBean()
                 .setTransactionStatusManagerEnable(false);
     }
+
+    public void setConfig(final TransactionManagerConfiguration transactions) {
+        arjPropertyManager.getObjectStoreEnvironmentBean().setObjectStoreDir(transactions.objectStoreDirectory);
+    }
 }

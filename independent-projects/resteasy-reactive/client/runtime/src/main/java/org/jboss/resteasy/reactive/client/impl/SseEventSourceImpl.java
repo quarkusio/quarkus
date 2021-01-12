@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
@@ -84,10 +86,18 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         AsyncInvokerImpl invoker = (AsyncInvokerImpl) webTarget.request().rx();
         RestClientRequestContext restClientRequestContext = invoker.performRequestInternal("GET", null, null, false);
         restClientRequestContext.getResult().handle((response, throwable) -> {
-            if (throwable != null)
+            // errors during connection don't currently lead to a retry
+            if (throwable != null) {
                 receiveThrowable(throwable);
-            else {
-                // FIXME: check response
+                notifyCompletion();
+            } else if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                receiveThrowable(new RuntimeException("HTTP call unsuccessful: " + response.getStatus()));
+                notifyCompletion();
+            } else if (!MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
+                receiveThrowable(
+                        new RuntimeException("HTTP call did not return an SSE media type: " + response.getMediaType()));
+                notifyCompletion();
+            } else {
                 registerOnClient(restClientRequestContext.getVertxClientResponse());
             }
             return null;
@@ -176,9 +186,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         }
         if (notifyCompletion) {
             // notify completion before reconnecting
-            for (Runnable runnable : completionListeners) {
-                runnable.run();
-            }
+            notifyCompletion();
         }
         Vertx vertx = webTarget.getRestClient().getVertx();
         // did we already try to reconnect?
@@ -190,6 +198,12 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         // schedule a new reconnect if the client closed us
         if (clientClosed) {
             timerId = vertx.setTimer(TimeUnit.MILLISECONDS.convert(reconnectDelay, reconnectUnit), this);
+        }
+    }
+
+    private synchronized void notifyCompletion() {
+        for (Runnable runnable : completionListeners) {
+            runnable.run();
         }
     }
 

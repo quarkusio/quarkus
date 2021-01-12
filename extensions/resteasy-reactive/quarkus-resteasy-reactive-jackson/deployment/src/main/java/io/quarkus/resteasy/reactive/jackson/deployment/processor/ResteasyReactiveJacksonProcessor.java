@@ -20,6 +20,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
@@ -32,6 +33,11 @@ public class ResteasyReactiveJacksonProcessor {
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_REACTIVE_JACKSON));
+    }
+
+    @BuildStep
+    ServerDefaultProducesHandlerBuildItem jsonDefault() {
+        return ServerDefaultProducesHandlerBuildItem.json();
     }
 
     @BuildStep

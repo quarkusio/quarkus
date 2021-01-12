@@ -165,6 +165,7 @@ Create the `src/main/java/org/acme/kafka/PriceConverter.java` file with the foll
 package org.acme.kafka;
 
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
@@ -179,9 +180,10 @@ public class PriceConverter {
 
     private static final double CONVERSION_RATE = 0.88;
 
-    @Incoming("prices")                                 // <1>
-    @Outgoing("my-data-stream")                         // <2>
-    @Broadcast                                          // <3>
+    @Incoming("prices")                                     // <1>
+    @Outgoing("my-data-stream")                             // <2>
+    @Broadcast                                              // <3>
+    @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING) // <4>
     public double process(int priceInUsd) {
         return priceInUsd * CONVERSION_RATE;
     }
@@ -191,6 +193,7 @@ public class PriceConverter {
 <1> Indicates that the method consumes the items from the `prices` topic
 <2> Indicates that the objects returned by the method are sent to the `my-data-stream` stream
 <3> Indicates that the item are dispatched to all _subscribers_
+<4> Make sure to acknowledge the incoming message
 
 The `process` method is called for every Kafka _record_ from the `prices` topic (configured in the application configuration).
 Every result is sent to the `my-data-stream` in-memory stream.

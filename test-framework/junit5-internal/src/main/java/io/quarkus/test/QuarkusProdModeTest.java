@@ -35,6 +35,8 @@ import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.inject.Inject;
+
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -47,6 +49,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.platform.commons.JUnitException;
 
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
@@ -302,6 +305,8 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
+
         originalHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
 
@@ -418,6 +423,23 @@ public class QuarkusProdModeTest
             logOutputPathForPostMortem();
             throw new RuntimeException(e);
         }
+    }
+
+    private void ensureNoInjectAnnotationIsUsed(Class<?> testClass) {
+        Class<?> current = testClass;
+        while (current.getSuperclass() != null) {
+            for (Field field : current.getDeclaredFields()) {
+                Inject injectAnnotation = field.getAnnotation(Inject.class);
+                if (injectAnnotation != null) {
+                    throw new JUnitException(
+                            "@Inject is not supported in QuarkusProdModeTest tests. Offending field is "
+                                    + field.getDeclaringClass().getTypeName() + "."
+                                    + field.getName());
+                }
+            }
+            current = current.getSuperclass();
+        }
+
     }
 
     private void logOutputPathForPostMortem() {

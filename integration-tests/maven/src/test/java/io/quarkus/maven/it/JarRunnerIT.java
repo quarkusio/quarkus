@@ -476,7 +476,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     private void assertThatFastJarFormatWorks(String outputDir) throws Exception {
-        File testDir = initProject("projects/classic", "projects/project-classic-console-output-fast-jar" + outputDir);
+        File testDir = initProject("projects/rr-with-json-logging", "projects/rr-with-json-logging" + outputDir);
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running
@@ -513,7 +513,7 @@ public class JarRunnerIT extends MojoTestBase {
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
-            assertThatOutputWorksCorrectly(logs);
+            assertThat(logs).isNotEmpty().contains("resteasy-reactive");
 
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();

@@ -164,4 +164,33 @@ public class SimpleJsonTest {
         RestAssured.get("/simple/async-person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
     }
+
+    @Test
+    public void testJsonMulti() {
+        RestAssured
+                .with()
+                .get("/simple/multi2")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[0].first", Matchers.equalTo("Bob"))
+                .body("[0].last", Matchers.equalTo("Builder"))
+                .body("[1].first", Matchers.equalTo("Bob2"))
+                .body("[1].last", Matchers.equalTo("Builder2"));
+        RestAssured
+                .with()
+                .get("/simple/multi1")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[0].first", Matchers.equalTo("Bob"))
+                .body("[0].last", Matchers.equalTo("Builder"));
+        RestAssured
+                .with()
+                .get("/simple/multi0")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body(Matchers.equalTo("[]"));
+    }
 }

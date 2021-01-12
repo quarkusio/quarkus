@@ -18,7 +18,7 @@
         <bouncycastle.fips.version>1.0.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.11</bouncycastle.tls.fips.version>
         <jandex.version>2.2.2.Final</jandex.version>
-        <resteasy.version>4.5.8.Final</resteasy.version>
+        <resteasy.version>4.5.8.SP1</resteasy.version>
         <opentracing.version>0.31.0</opentracing.version>
         <opentracing-jaxrs.version>0.4.1</opentracing-jaxrs.version>
         <opentracing-web-servlet-filter.version>0.2.3</opentracing-web-servlet-filter.version>
@@ -50,7 +50,7 @@
         <smallrye-context-propagation.version>1.0.19</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-converter-api.version>1.3.0</smallrye-converter-api.version>
-        <smallrye-reactive-messaging.version>2.7.0</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>2.7.1</smallrye-reactive-messaging.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
         <jakarta.el-impl.version>3.0.3</jakarta.el-impl.version>
@@ -130,7 +130,7 @@
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.18.1</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>11.0.4.Final</infinispan.version>
+        <infinispan.version>11.0.8.Final</infinispan.version>
         <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
         <caffeine.version>2.8.8</caffeine.version>
         <netty.version>4.1.49.Final</netty.version>
@@ -149,7 +149,7 @@
         <aws-lambda-java-events.version>3.7.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.4.0</aws-xray.version>
-        <awssdk.version>2.15.58</awssdk.version>
+        <awssdk.version>2.15.61</awssdk.version>
         <aws-alexa-sdk.version>2.37.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.4.20</kotlin.version>
@@ -172,7 +172,7 @@
         <artemis.version>2.11.0</artemis.version>
         <proton-j.version>0.33.8</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
-        <sentry.version>1.7.30</sentry.version>
+        <sentry.version>3.2.0</sentry.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>5.0.0</kubernetes-client.version>

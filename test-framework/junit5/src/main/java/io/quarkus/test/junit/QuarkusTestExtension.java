@@ -455,12 +455,12 @@ public class QuarkusTestExtension
         }
         if (!failedBoot) {
             popMockContext();
+            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             for (Object afterEachCallback : afterEachCallbacks) {
                 Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
                 afterEachCallback.getClass().getMethod("afterEach", tuple.getKey())
                         .invoke(afterEachCallback, tuple.getValue());
             }
-            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
                 runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                         .getDeclaredMethod("clearURL").invoke(null);

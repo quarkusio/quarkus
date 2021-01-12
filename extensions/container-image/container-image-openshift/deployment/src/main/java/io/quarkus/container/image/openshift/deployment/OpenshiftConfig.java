@@ -18,6 +18,9 @@ public class OpenshiftConfig {
     public static final String DEFAULT_JVM_DOCKERFILE = "src/main/docker/Dockerfile.jvm";
     public static final String DEFAULT_NATIVE_DOCKERFILE = "src/main/docker/Dockerfile.native";
 
+    public static final String FALLBACK_JAR_DIRECTORY = "/deployments/";
+    public static final String FALLBAC_NATIVE_BINARY_DIRECTORY = "/home/quarkus/";
+
     /**
      * The build config strategy to use.
      */
@@ -64,8 +67,8 @@ public class OpenshiftConfig {
      * The directory where the jar is added during the assemble phase.
      * This is dependent on the S2I image and should be supplied if a non default image is used.
      */
-    @ConfigItem(defaultValue = "/deployments/target/")
-    public String jarDirectory;
+    @ConfigItem
+    public Optional<String> jarDirectory;
 
     /**
      * The resulting filename of the jar in the S2I image.
@@ -78,8 +81,8 @@ public class OpenshiftConfig {
      * The directory where the native binary is added during the assemble phase.
      * This is dependent on the S2I image and should be supplied if a non-default image is used.
      */
-    @ConfigItem(defaultValue = "/home/quarkus/")
-    public String nativeBinaryDirectory;
+    @ConfigItem
+    public Optional<String> nativeBinaryDirectory;
 
     /**
      * The resulting filename of the native binary in the S2I image.

@@ -14,16 +14,24 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.core.JsonParseException;
 
 import io.quarkus.runtime.BlockingOperationControl;
+import io.smallrye.mutiny.Multi;
 
 @Path("/simple")
 public class SimpleJsonResource extends SuperClass<Person> {
 
+    @ServerExceptionMapper
+    public Response handleParseException(JsonParseException jpe) {
+        return Response.status(Response.Status.BAD_REQUEST).entity(jpe.getMessage()).build();
+    }
+
     @GET
     @Path("/person")
-    @Produces(MediaType.APPLICATION_JSON)
     public Person getPerson() {
         Person person = new Person();
         person.setFirst("Bob");
@@ -77,7 +85,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
 
     @POST
     @Path("/people")
-    @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public List<Person> getPeople(List<Person> people) {
         if (BlockingOperationControl.isBlockingAllowed()) {
@@ -169,5 +176,32 @@ public class SimpleJsonResource extends SuperClass<Person> {
         user.id = 1;
         user.name = "test";
         return user;
+    }
+
+    @GET
+    @Path("/multi1")
+    public Multi<Person> getMulti1() {
+        Person person = new Person();
+        person.setFirst("Bob");
+        person.setLast("Builder");
+        return Multi.createFrom().items(person);
+    }
+
+    @GET
+    @Path("/multi2")
+    public Multi<Person> getMulti2() {
+        Person person = new Person();
+        person.setFirst("Bob");
+        person.setLast("Builder");
+        Person person2 = new Person();
+        person2.setFirst("Bob2");
+        person2.setLast("Builder2");
+        return Multi.createFrom().items(person, person2);
+    }
+
+    @GET
+    @Path("/multi0")
+    public Multi<Person> getMulti0() {
+        return Multi.createFrom().empty();
     }
 }

@@ -1,17 +1,15 @@
 package io.quarkus.logging.sentry;
 
 import static io.quarkus.logging.sentry.SentryLoggerTest.getSentryHandler;
-import static io.sentry.jvmti.ResetFrameCache.resetFrameCache;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.AfterAll;
+import java.util.logging.Handler;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.sentry.Sentry;
-import io.sentry.jul.SentryHandler;
-import io.sentry.jvmti.FrameCache;
 
 public class SentryLoggerCustomTest {
 
@@ -22,16 +20,13 @@ public class SentryLoggerCustomTest {
 
     @Test
     public void sentryLoggerCustomTest() {
-        final SentryHandler sentryHandler = getSentryHandler();
+        final Handler sentryHandler = getSentryHandler();
         assertThat(sentryHandler).isNotNull();
         assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.TRACE);
-        assertThat(FrameCache.shouldCacheThrowable(new IllegalStateException("Test frame"), 1)).isTrue();
-        assertThat(Sentry.getStoredClient()).isNotNull();
-        assertThat(Sentry.isInitialized()).isTrue();
-    }
-
-    @AfterAll
-    public static void reset() {
-        resetFrameCache();
+        assertThat(sentryHandler).extracting("options").extracting("InAppIncludes").satisfies(o -> {
+            assertThat(o.toString()).contains("io.quarkus.logging.sentry").contains("org.test");
+        });
+        assertThat(sentryHandler).extracting("options").extracting("dsn").isEqualTo("https://123@example.com/22222");
+        assertThat(Sentry.isEnabled()).isTrue();
     }
 }

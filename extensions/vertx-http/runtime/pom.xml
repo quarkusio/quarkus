@@ -49,12 +49,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- DEV console dependencies -->
-        <dependency>
-            <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-core</artifactId>
-            <optional>true</optional>
-        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

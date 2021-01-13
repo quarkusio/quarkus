@@ -4,7 +4,7 @@
      color: gray;
    }
   {/style}
-  {#title}Quarkus ArC Removed Beans{/title}
+  {#title}Removed Beans{/title}
   {#body}
   <table class="table table-striped">
    <thead class="thead-dark">
@@ -14,7 +14,7 @@
     </tr>
    </thead>
    <tbody>
-    {#for bean in info:devBeanInfos.removedBeanInfos}
+    {#for bean in info:devBeanInfos.removedBeans}
     <tr>
       <td>
        {#display-bean bean/}

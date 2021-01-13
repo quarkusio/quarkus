@@ -261,12 +261,13 @@ class SmallRyeHealthProcessor {
     @BuildStep(onlyIf = OpenAPIIncluded.class)
     public void includeInOpenAPIEndpoint(BuildProducer<AddToOpenAPIDefinitionBuildItem> openAPIProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            HttpRootPathBuildItem httpRootPath,
             Capabilities capabilities,
             SmallRyeHealthConfig healthConfig) {
 
         // Add to OpenAPI if OpenAPI is available
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
-            String basePath = nonApplicationRootPathBuildItem.adjustPath(healthConfig.rootPath);
+            String basePath = httpRootPath.adjustPath(nonApplicationRootPathBuildItem.adjustPath(healthConfig.rootPath));
             HealthOpenAPIFilter filter = new HealthOpenAPIFilter(basePath,
                     basePath + healthConfig.livenessPath,
                     basePath + healthConfig.readinessPath);
@@ -383,7 +384,7 @@ class SmallRyeHealthProcessor {
                         "quarkus.smallrye-health.root-path-ui was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
             }
 
-            String healthPath = nonApplicationRootPathBuildItem.adjustPath(httpRootPath.adjustPath(healthConfig.rootPath));
+            String healthPath = httpRootPath.adjustPath(nonApplicationRootPathBuildItem.adjustPath(healthConfig.rootPath));
 
             AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, HEALTH_UI_WEBJAR_GROUP_ID,
                     HEALTH_UI_WEBJAR_ARTIFACT_ID);
@@ -399,7 +400,7 @@ class SmallRyeHealthProcessor {
                 notFoundPageDisplayableEndpointProducer
                         .produce(new NotFoundPageDisplayableEndpointBuildItem(
                                 nonApplicationRootPathBuildItem
-                                        .adjustPath(httpRootPath.adjustPath(healthConfig.ui.rootPath + "/"))));
+                                        .adjustPath(healthConfig.ui.rootPath + "/")));
             } else {
                 Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(curateOutcomeBuildItem, artifact,
                         HEALTH_UI_WEBJAR_PREFIX);

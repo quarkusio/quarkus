@@ -28,6 +28,8 @@ public class NamespaceTemplateExtensionTest {
     public void testTemplateExtensions() {
         assertEquals("hello:1",
                 engine.parse("{str:format('%s:%s','hello', 1)}").render());
+        assertEquals("1",
+                engine.parse("{str:format('%s',1)}").render());
         assertEquals("olleh",
                 engine.parse("{str:reverse('hello')}").render());
         assertEquals("foolish:olleh",

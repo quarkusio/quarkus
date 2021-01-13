@@ -4,18 +4,20 @@
      color: gray;
    }
   {/style}
-  {#title}Quarkus ArC Beans{/title}
+  {#title}Beans{/title}
   {#body}
   <table class="table table-striped">
    <thead class="thead-dark">
     <tr>
+      <th scope="col">#</th>
       <th scope="col">Bean</th>
       <th scope="col">Source</th>
     </tr>
    </thead>
    <tbody>
-    {#for bean in info:devBeanInfos.beanInfos}
+    {#for bean in info:devBeanInfos.beans}
     <tr>
+      <td>{count}.</td>
       <td>
        {#display-bean bean/}
       </td>

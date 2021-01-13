@@ -27,7 +27,7 @@
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.13</opentracing-kafka.version>
         <jaeger.version>0.34.3</jaeger.version>
-        <quarkus-http.version>3.0.17.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.18.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>
         <micrometer.version>1.6.2</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
@@ -149,7 +149,7 @@
         <aws-lambda-java-events.version>3.7.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.4.0</aws-xray.version>
-        <awssdk.version>2.15.61</awssdk.version>
+        <awssdk.version>2.15.62</awssdk.version>
         <aws-alexa-sdk.version>2.37.1</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.4.20</kotlin.version>
@@ -1794,7 +1794,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-spi</artifactId>
+                <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -657,7 +657,7 @@ All other blocks are ignored (this behavior differs to the Java `switch` where a
 {#switch person.name}
   {#case 'John'} <1>
     Hey John!
-  {#case 'Mary'} <1>
+  {#case 'Mary'}
     Hey Mary!
 {/switch}
 ----

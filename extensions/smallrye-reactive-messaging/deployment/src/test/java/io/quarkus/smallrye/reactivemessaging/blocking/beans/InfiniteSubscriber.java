@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.blocking.beans;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -12,8 +12,8 @@ import org.eclipse.microprofile.reactive.streams.operators.SubscriberBuilder;
 @ApplicationScoped
 public class InfiniteSubscriber {
 
-    private final List<Integer> payloads = new ArrayList<>();
-    private final List<Integer> messages = new ArrayList<>();
+    private final List<Integer> payloads = new CopyOnWriteArrayList<>();
+    private final List<Integer> messages = new CopyOnWriteArrayList<>();
 
     @Incoming("infinite-producer-payload")
     public SubscriberBuilder<Integer, Void> consumeFourItems() {

@@ -453,6 +453,9 @@ public final class RunTimeConfigurationGenerator {
             final ConfigPatternMap<Container> runTimeIgnored = ConfigPatternMap
                     .merge(ConfigPatternMap.merge(buildTimePatternMap,
                             buildTimeRunTimePatternMap, combinator), bootstrapPatternMap, combinator);
+            final ConfigPatternMap<Container> bootstrapIgnored = ConfigPatternMap
+                    .merge(ConfigPatternMap.merge(buildTimePatternMap,
+                            buildTimeRunTimePatternMap, combinator), runTimePatternMap, combinator);
 
             final MethodDescriptor siParserBody = generateParserBody(buildTimeRunTimePatternMap, buildTimeRunTimeIgnored,
                     new StringBuilder("siParseKey"), false, Type.BUILD_TIME);
@@ -460,7 +463,7 @@ public final class RunTimeConfigurationGenerator {
                     new StringBuilder("rtParseKey"), false, Type.RUNTIME);
             MethodDescriptor bsParserBody = null;
             if (bootstrapConfigSetupNeeded()) {
-                bsParserBody = generateParserBody(bootstrapPatternMap, null,
+                bsParserBody = generateParserBody(bootstrapPatternMap, bootstrapIgnored,
                         new StringBuilder("bsParseKey"), false, Type.BOOTSTRAP);
             }
 

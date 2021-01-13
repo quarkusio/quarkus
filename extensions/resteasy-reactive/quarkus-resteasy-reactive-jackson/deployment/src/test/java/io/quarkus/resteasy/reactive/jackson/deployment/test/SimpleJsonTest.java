@@ -2,6 +2,9 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.function.Supplier;
 
@@ -32,6 +35,8 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
                 .body("first", Matchers.equalTo("Bob"))
                 .body("last", Matchers.equalTo("Builder"));
 
@@ -43,6 +48,8 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
+                .header("content-length", notNullValue())
+                .header("transfer-encoding", nullValue())
                 .body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
 
         RestAssured
@@ -227,5 +234,62 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .contentType("application/json")
                 .body(Matchers.equalTo("[]"));
+    }
+
+    @Test
+    public void testCustomSerialization() {
+        assertEquals(0, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
+
+        // assert that we get a proper response
+        // we can't use json-path to assert because the returned string is not proper json as it does not have quotes around the field names
+        RestAssured.get("/simple/custom-serialized-person")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(containsString("Builder"));
+        // assert that our bi-function was created
+        assertEquals(1, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
+
+        // assert with a list of people
+        RestAssured
+                .with()
+                .body("[{\"first\": \"Bob\", \"last\": \"Builder\"}, {\"first\": \"Bob2\", \"last\": \"Builder2\"}]")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/custom-serialized-people")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(containsString("Builder"))
+                .body(containsString("Bob2"))
+                .body(containsString("Builder2"));
+        // assert that another instance of our bi-function was created as a different resource method was used
+        assertEquals(2, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
+
+        RestAssured.get("/simple/custom-serialized-person")
+                .then()
+                .statusCode(200)
+                .contentType("application/json");
+        RestAssured
+                .with()
+                .body("[{\"first\": \"Bob\", \"last\": \"Builder\"}, {\"first\": \"Bob2\", \"last\": \"Builder2\"}]")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/custom-serialized-people")
+                .then()
+                .statusCode(200)
+                .contentType("application/json");
+        // assert that the instances were re-used as we simply invoked methods that should have already created their object writters
+        assertEquals(2, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
+
+        RestAssured.get("/simple/invalid-use-of-custom-serializer")
+                .then()
+                .statusCode(500);
+        // a new instance should have been created
+        assertEquals(3, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
     }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.bootstrap;
+package io.quarkus.bootstrap.jbang;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;

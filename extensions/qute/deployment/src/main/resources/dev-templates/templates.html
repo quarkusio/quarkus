@@ -4,32 +4,45 @@
      color: gray;
    }
   {/style}
-  {#title}Quarkus Qute Templates{/title}
+  {#title}Templates{/title}
   {#body}
   <table class="table table-striped">
    <thead class="thead-dark">
     <tr>
+      <th scope="col">#</th>
       <th scope="col">Path</th>
       <th scope="col">Variants</th>
-      <th scope="col">Parameters</th>
+      <th scope="col">Method *</th>
+      <th scope="col">Parameters *</th>
     </tr>
    </thead>
    <tbody>
-    {#for template in info:devQuteInfos.templateInfos}
+    {#for template in info:devQuteInfos.templates}
     <tr>
+      <td>{count}.</td>
       <td>
         {template.path}
       </td>
       <td>
-        {template.variants}
+        <ul>
+        {#each template.variants}
+          <li>{it}</li>
+        {/each}
+        </ul>
       </td>
       <td>
-        {#for entry in template.parameters.entrySet()}
-         {entry.key}: {entry.value}</br>
-        {/for}
+        {template.methodInfo ?: ''}
+      </td>
+      <td>
+        {#if template.parameters}
+          {#for entry in template.parameters}
+            {entry.key}: {entry.value}</br>
+          {/for}
+        {/if}
       </td>
     {/for}
    </tbody>
+   <tfoot><tr><td colspan="5">* This information is only available for templates that match a <code>@CheckedTemplate</code> method.</td></tr></tfoot>
   </table>
   {/body}
 {/include}

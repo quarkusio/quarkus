@@ -12,7 +12,10 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.arc.runtime.ArcContainerSupplier;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.IsDevelopment;
@@ -33,17 +36,21 @@ public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleTemplateInfoBuildItem collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem) {
+        BeanDeploymentValidator.ValidationContext validationContext = validationPhaseBuildItem.getContext();
         DevBeanInfos beanInfos = new DevBeanInfos();
-        for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().beans().collect()) {
-            beanInfos.addBeanInfo(makeBeanInfo(beanInfo));
+        for (BeanInfo beanInfo : validationContext.beans()) {
+            beanInfos.addBean(createBeanInfo(beanInfo));
         }
-        for (BeanInfo beanInfo : validationPhaseBuildItem.getContext().removedBeans().collect()) {
-            beanInfos.addRemovedBeanInfo(makeBeanInfo(beanInfo));
+        for (BeanInfo beanInfo : validationContext.removedBeans()) {
+            beanInfos.addRemovedBean(createBeanInfo(beanInfo));
+        }
+        for (ObserverInfo observerInfo : validationContext.get(BuildExtension.Key.OBSERVERS)) {
+            beanInfos.addObserver(createDevInfo(observerInfo));
         }
         return new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos);
     }
 
-    private DevBeanInfo makeBeanInfo(BeanInfo beanInfo) {
+    private DevBeanInfo createBeanInfo(BeanInfo beanInfo) {
         List<ClassName> qualifiers = new ArrayList<>();
         for (AnnotationInstance qualAnnotation : beanInfo.getQualifiers()) {
             qualifiers.add(new ClassName(qualAnnotation.name().toString()));
@@ -80,4 +87,20 @@ public class DevConsoleProcessor {
                     scope, DevBeanKind.SYNTHETIC);
         }
     }
+
+    private DevObserverInfo createDevInfo(ObserverInfo observer) {
+        List<ClassName> qualifiers = new ArrayList<>();
+        ClassName name = null;
+        String methodName = null;
+        for (AnnotationInstance qualAnnotation : observer.getQualifiers()) {
+            qualifiers.add(new ClassName(qualAnnotation.name().toString()));
+        }
+        if (observer.getDeclaringBean() != null) {
+            name = new ClassName(observer.getObserverMethod().declaringClass().name().toString());
+            methodName = observer.getObserverMethod().name();
+        }
+        return new DevObserverInfo(name, methodName, observer.getObservedType().toString(), qualifiers, observer.getPriority(),
+                observer.isAsync(), observer.getReception(), observer.getTransactionPhase());
+    }
+
 }

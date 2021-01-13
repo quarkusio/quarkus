@@ -12,9 +12,12 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.function.BiFunction;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.builder.Version;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
@@ -35,8 +38,19 @@ public class DevConsole implements Handler<RoutingContext> {
     final Engine engine;
     final Map<String, Map<String, Object>> extensions = new HashMap<>();
 
-    DevConsole(Engine engine) {
+    final Map<String, Object> globalData = new HashMap<>();
+
+    final Config config = ConfigProvider.getConfig();
+
+    DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
+        this.globalData.put("httpRootPath", httpRootPath);
+        this.globalData.put("frameworkRootPath", frameworkRootPath);
+        this.globalData.put("quarkusVersion", Version.getVersion());
+        this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
+        this.globalData.put("applicationVersion",
+                config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+
         try {
             Enumeration<URL> extensionDescriptors = getClass().getClassLoader()
                     .getResources("/META-INF/quarkus-extension.yaml");
@@ -88,6 +102,11 @@ public class DevConsole implements Handler<RoutingContext> {
     }
 
     protected void renderTemplate(RoutingContext event, TemplateInstance template) {
+        // Add some global variables
+        for (Map.Entry<String, Object> global : globalData.entrySet()) {
+            template.data(global.getKey(), global.getValue());
+        }
+
         template.renderAsync().handle(new BiFunction<String, Throwable, Object>() {
             @Override
             public Object apply(String s, Throwable throwable) {
@@ -119,6 +138,7 @@ public class DevConsole implements Handler<RoutingContext> {
             if (hasConsoleEntry || hasGuide) {
                 if (hasConsoleEntry) {
                     Map<String, Object> data = new HashMap<>();
+                    data.putAll(globalData);
                     data.put("urlbase", groupId + "." + artifactId);
                     String result = simpleTemplate.render(data);
                     loaded.put("_dev", result);

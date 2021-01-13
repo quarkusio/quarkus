@@ -4,6 +4,7 @@ enum State {
 
     ON,
     OFF,
-    BROKEN
+    BROKEN,
+    UNKNOWN
 
 }

@@ -13,8 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +42,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -119,6 +122,8 @@ public class QuarkusTestExtension
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
     private static DeepClone deepClone;
+    //needed for @Nested
+    private static Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
 
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
         quarkusTestProfile = profile;
@@ -382,7 +387,7 @@ public class QuarkusTestExtension
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        if (isNativeTest(context)) {
+        if (isNativeTest()) {
             return;
         }
         if (!failedBoot) {
@@ -450,7 +455,7 @@ public class QuarkusTestExtension
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        if (isNativeTest(context)) {
+        if (isNativeTest()) {
             return;
         }
         if (!failedBoot) {
@@ -513,8 +518,13 @@ public class QuarkusTestExtension
                 constructor.newInstance(actualTestInstance, actualTestMethod));
     }
 
-    private boolean isNativeTest(ExtensionContext context) {
-        return context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
+    private boolean isNativeTest() {
+        for (Class<?> i : currentTestClassStack) {
+            if (i.isAnnotationPresent(NativeImageTest.class)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private ExtensionState ensureStarted(ExtensionContext extensionContext) {
@@ -569,9 +579,10 @@ public class QuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        currentTestClassStack.push(context.getRequiredTestClass());
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.TEST);
-        if (isNativeTest(context)) {
+        if (isNativeTest()) {
             return;
         }
         ensureStarted(context);
@@ -609,7 +620,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             invocation.proceed();
             return;
         }
@@ -625,7 +636,7 @@ public class QuarkusTestExtension
     @Override
     public <T> T interceptTestClassConstructor(Invocation<T> invocation,
             ReflectiveInvocationContext<Constructor<T>> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             return invocation.proceed();
         }
         ExtensionState state = ensureStarted(extensionContext);
@@ -672,8 +683,15 @@ public class QuarkusTestExtension
             Class<?> previousActualTestClass = actualTestClass;
             actualTestClass = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
                     Thread.currentThread().getContextClassLoader());
-
-            actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
+            if (extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+                Class<?> parent = actualTestClass.getEnclosingClass();
+                Object parentInstance = runningQuarkusApplication.instance(parent);
+                Constructor<?> declaredConstructor = actualTestClass.getDeclaredConstructor(parent);
+                declaredConstructor.setAccessible(true);
+                actualTestInstance = declaredConstructor.newInstance(parentInstance);
+            } else {
+                actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
+            }
 
             Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
             resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, actualTestInstance,
@@ -696,7 +714,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             invocation.proceed();
             return;
         }
@@ -707,7 +725,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             invocation.proceed();
             return;
         }
@@ -718,7 +736,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             invocation.proceed();
             return;
         }
@@ -730,7 +748,7 @@ public class QuarkusTestExtension
     @Override
     public <T> T interceptTestFactoryMethod(Invocation<T> invocation,
             ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             return invocation.proceed();
         }
         T result = (T) runExtensionMethod(invocationContext, extensionContext);
@@ -741,7 +759,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             invocation.proceed();
             return;
         }
@@ -752,7 +770,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest(extensionContext)) {
+        if (isNativeTest()) {
             invocation.proceed();
             return;
         }
@@ -816,11 +834,15 @@ public class QuarkusTestExtension
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
-        if (!isNativeTest(context) && (runningQuarkusApplication != null)) {
-            popMockContext();
-        }
-        if (originalCl != null) {
-            setCCL(originalCl);
+        try {
+            if (!isNativeTest() && (runningQuarkusApplication != null)) {
+                popMockContext();
+            }
+            if (originalCl != null) {
+                setCCL(originalCl);
+            }
+        } finally {
+            currentTestClassStack.pop();
         }
     }
 

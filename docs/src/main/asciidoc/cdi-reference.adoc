@@ -797,14 +797,14 @@ See the link:cdi-integration[integration guide] for more information.
 
 In the development mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
 
-* HTTP GET `/quarkus/arc` - returns the summary; number of beans, config properties, etc.
-* HTTP GET `/quarkus/arc/beans` - returns the list of all beans
+* HTTP GET `/q/arc` - returns the summary; number of beans, config properties, etc.
+* HTTP GET `/q/arc/beans` - returns the list of all beans
 ** You can use query params to filter the output:
-*** `scope` - include beans with scope that ends with the given value, i.e. `http://localhost:8080/quarkus/arc/beans?scope=ApplicationScoped`
-*** `beanClass` - include beans with bean class that starts with the given value, i.e. `http://localhost:8080/quarkus/arc/beans?beanClass=org.acme.Foo`
-*** `kind` - include beans of the specified kind (`CLASS`, `PRODUCER_FIELD`, `PRODUCER_METHOD`, `INTERCEPTOR` or `SYNTHETIC`), i.e. `http://localhost:8080/quarkus/arc/beans?kind=PRODUCER_METHOD`
-* HTTP GET `/quarkus/arc/removed-beans` - returns the list of unused beans removed during build
-* HTTP GET `/quarkus/arc/observers` - returns the list of all observer methods
+*** `scope` - include beans with scope that ends with the given value, i.e. `http://localhost:8080/q/arc/beans?scope=ApplicationScoped`
+*** `beanClass` - include beans with bean class that starts with the given value, i.e. `http://localhost:8080/q/arc/beans?beanClass=org.acme.Foo`
+*** `kind` - include beans of the specified kind (`CLASS`, `PRODUCER_FIELD`, `PRODUCER_METHOD`, `INTERCEPTOR` or `SYNTHETIC`), i.e. `http://localhost:8080/q/arc/beans?kind=PRODUCER_METHOD`
+* HTTP GET `/q/arc/removed-beans` - returns the list of unused beans removed during build
+* HTTP GET `/q/arc/observers` - returns the list of all observer methods
 
 NOTE: These endpoints are only available in the development mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
 

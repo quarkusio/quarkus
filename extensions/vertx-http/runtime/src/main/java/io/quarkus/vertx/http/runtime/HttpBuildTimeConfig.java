@@ -31,12 +31,6 @@ public class HttpBuildTimeConfig {
     public boolean virtual;
 
     /**
-     * The HTTP console path. Various debug/development endpoints are deployed under this path.
-     */
-    @ConfigItem(defaultValue = "/quarkus")
-    public String consolePath;
-
-    /**
      * The HTTP root path for non application endpoints. Various endpoints such as metrics, health,
      * and open api are deployed under this path.
      * Setting the value to "/" disables the separate non application root,

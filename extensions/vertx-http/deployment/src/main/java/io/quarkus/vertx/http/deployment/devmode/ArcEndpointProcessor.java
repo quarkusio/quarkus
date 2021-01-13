@@ -9,25 +9,27 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.devmode.ArcEndpointRecorder;
 
 public class ArcEndpointProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void registerRoutes(HttpBuildTimeConfig httpConfig, ArcConfig arcConfig, ArcEndpointRecorder recorder,
+    void registerRoutes(ArcConfig arcConfig, ArcEndpointRecorder recorder,
             BuildProducer<RouteBuildItem> routes,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) {
-        String basePath = httpConfig.consolePath + "/arc";
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+        String basePath = nonApplicationRootPathBuildItem.adjustPath("/arc");
         String beansPath = basePath + "/beans";
         String removedBeansPath = basePath + "/removed-beans";
         String observersPath = basePath + "/observers";
-        routes.produce(new RouteBuildItem(basePath, recorder.createSummaryHandler(getConfigProperties(arcConfig))));
-        routes.produce(new RouteBuildItem(beansPath, recorder.createBeansHandler()));
-        routes.produce(new RouteBuildItem(removedBeansPath, recorder.createRemovedBeansHandler()));
-        routes.produce(new RouteBuildItem(observersPath, recorder.createObserversHandler()));
+        routes.produce(RouteBuildItem.builder().route(basePath)
+                .handler(recorder.createSummaryHandler(getConfigProperties(arcConfig))).build());
+        routes.produce(RouteBuildItem.builder().route(beansPath).handler(recorder.createBeansHandler()).build());
+        routes.produce(RouteBuildItem.builder().route(removedBeansPath).handler(recorder.createRemovedBeansHandler()).build());
+        routes.produce(RouteBuildItem.builder().route(observersPath).handler(recorder.createObserversHandler()).build());
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(basePath));
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(beansPath));
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(removedBeansPath));

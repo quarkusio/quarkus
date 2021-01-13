@@ -20,4 +20,9 @@ public final class OidcConstants {
     public static final String CLIENT_SECRET = "client_secret";
 
     public static final String BEARER_SCHEME = "Bearer";
+
+    public static final String CODE_FLOW_RESPONSE_TYPE = "response_type";
+    public static final String CODE_FLOW_CODE = "code";
+    public static final String CODE_FLOW_STATE = "state";
+    public static final String CODE_FLOW_REDIRECT_URI = "redirect_uri";
 }

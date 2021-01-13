@@ -57,6 +57,7 @@ public class OidcCommonUtils {
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
         }
+        options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
     }
 
     public static String getAuthServerUrl(OidcCommonConfig oidcConfig) {
@@ -76,10 +77,20 @@ public class OidcCommonUtils {
     }
 
     public static long getConnectionRetryCount(OidcCommonConfig oidcConfig) {
-        final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()
-                ? oidcConfig.getConnectionDelay().get().toMillis() / 1000
-                : 0;
+        final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
         return connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
+    }
+
+    public static long getMaximumConnectionDelay(OidcCommonConfig oidcConfig) {
+        final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
+        final long connectionRetryCountSecs = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
+        return connectionDelayInSecs + connectionRetryCountSecs * oidcConfig.getConnectionTimeout().getSeconds();
+    }
+
+    private static long getConnectionDelay(OidcCommonConfig oidcConfig) {
+        return oidcConfig.getConnectionDelay().isPresent()
+                ? oidcConfig.getConnectionDelay().get().getSeconds()
+                : 0;
     }
 
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {

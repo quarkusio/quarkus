@@ -27,15 +27,9 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.ProxyOptions;
-import io.vertx.ext.auth.PubSecKeyOptions;
-import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
-import io.vertx.ext.auth.oauth2.impl.OAuth2AuthProviderImpl;
-import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
 import io.vertx.ext.jwt.JWTOptions;
 
 @Recorder
@@ -112,7 +106,7 @@ public class OidcRecorder {
         }
         if (!oidcConfig.tenantEnabled) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            return new TenantConfigContext(null, oidcConfig);
+            return new TenantConfigContext(new OidcRuntimeClient(null), oidcConfig);
         }
 
         OAuth2ClientOptions options = new OAuth2ClientOptions();
@@ -220,13 +214,13 @@ public class OidcRecorder {
             LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
         }
 
-        OAuth2Auth auth = null;
+        OidcRuntimeClient client = null;
         for (long i = 0; i < connectionRetryCount; i++) {
             try {
                 if (oidcConfig.discoveryEnabled) {
-                    auth = discoverOidcEndpoints(vertx, options);
+                    client = OidcRuntimeClient.discoverOidcEndpoints(vertx, options, oidcConfig);
                 } else {
-                    auth = setOidcEndpoints(vertx, options);
+                    client = OidcRuntimeClient.setOidcEndpoints(vertx, options, oidcConfig);
                 }
 
                 break;
@@ -250,57 +244,16 @@ public class OidcRecorder {
             }
         }
 
-        String endSessionEndpoint = OAuth2AuthProviderImpl.class.cast(auth).getConfig().getLogoutPath();
-
         if (oidcConfig.logout.path.isPresent()) {
-            if (!oidcConfig.endSessionPath.isPresent() && endSessionEndpoint == null) {
+            if (!oidcConfig.endSessionPath.isPresent() && client.getLogoutPath() == null) {
                 throw new RuntimeException(
                         "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint");
             }
         }
 
-        auth.missingKeyHandler(new JwkSetRefreshHandler(auth, oidcConfig.token.forcedJwkRefreshInterval));
-        return new TenantConfigContext(auth, oidcConfig);
+        return new TenantConfigContext(client, oidcConfig);
     }
 
-    private static OAuth2Auth discoverOidcEndpoints(Vertx vertx, OAuth2ClientOptions options) {
-        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OAuth2Auth>>() {
-            public void accept(UniEmitter<? super OAuth2Auth> uniEmitter) {
-                KeycloakAuth.discover(vertx, options, new Handler<AsyncResult<OAuth2Auth>>() {
-                    @Override
-                    public void handle(AsyncResult<OAuth2Auth> event) {
-                        if (event.failed()) {
-                            uniEmitter.fail(toOidcException(event.cause(), options.getSite()));
-                        } else {
-                            uniEmitter.complete(event.result());
-                        }
-                    }
-                });
-            }
-        }).await().indefinitely();
-    }
-
-    private static OAuth2Auth setOidcEndpoints(Vertx vertx, OAuth2ClientOptions options) {
-        if (options.getJwkPath() != null) {
-            return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OAuth2Auth>>() {
-                @SuppressWarnings("deprecation")
-                @Override
-                public void accept(UniEmitter<? super OAuth2Auth> uniEmitter) {
-                    OAuth2Auth auth = OAuth2Auth.create(vertx, options);
-                    auth.loadJWK(res -> {
-                        if (res.failed()) {
-                            uniEmitter.fail(toOidcException(res.cause(), options.getSite()));
-                        }
-                        uniEmitter.complete(auth);
-                    });
-                }
-            }).await().indefinitely();
-        } else {
-            return OAuth2Auth.create(vertx, options);
-        }
-    }
-
-    @SuppressWarnings("deprecation")
     private static TenantConfigContext createdTenantContextFromPublicKey(OAuth2ClientOptions options,
             OidcTenantConfig oidcConfig) {
         if (oidcConfig.applicationType != ApplicationType.SERVICE) {
@@ -308,16 +261,8 @@ public class OidcRecorder {
         }
         LOG.debug("'public-key' property for the local token verification is set,"
                 + " no connection to the OIDC server will be created");
-        options.addPubSecKey(new PubSecKeyOptions()
-                .setAlgorithm("RS256")
-                .setPublicKey(oidcConfig.getPublicKey().get()));
-
-        return new TenantConfigContext(new OAuth2AuthProviderImpl(null, options), oidcConfig);
-    }
-
-    protected static OIDCException toOidcException(Throwable cause, String authServerUrl) {
-        final String message = OidcCommonUtils.formatConnectionErrorMessage(authServerUrl);
-        return new OIDCException(message, cause);
+        return new TenantConfigContext(OidcRuntimeClient.createClientWithPublicKey(options, oidcConfig.publicKey.get()),
+                oidcConfig);
     }
 
     public void setSecurityEventObserved(boolean isSecurityEventObserved) {

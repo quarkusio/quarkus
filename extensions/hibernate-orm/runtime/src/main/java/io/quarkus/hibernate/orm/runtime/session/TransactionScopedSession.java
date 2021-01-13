@@ -83,7 +83,7 @@ public class TransactionScopedSession implements Session {
                 return new SessionResult(session, false, true);
             }
             Session newSession = sessionFactory.openSession();
-            newSession.joinTransaction();
+            // The session has automatically joined the JTA transaction when it was constructed.
             transactionSynchronizationRegistry.putResource(sessionKey, newSession);
             // No need to flush or close the session upon transaction completion:
             // Hibernate ORM itself registers a transaction that does just that.

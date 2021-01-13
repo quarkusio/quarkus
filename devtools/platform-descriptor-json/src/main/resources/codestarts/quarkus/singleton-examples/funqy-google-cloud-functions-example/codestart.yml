@@ -1,0 +1,10 @@
+name: funqy-google-cloud-functions-example
+ref: funqy-google-cloud-functions
+type: code
+tags:
+  - example
+  - singleton-example
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-funqy-google-cloud-functions

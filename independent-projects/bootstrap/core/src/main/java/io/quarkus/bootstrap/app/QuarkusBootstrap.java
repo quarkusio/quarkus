@@ -486,6 +486,8 @@ public class QuarkusBootstrap implements Serializable {
     public enum Mode {
         DEV,
         TEST,
-        PROD;
+        PROD,
+        REMOTE_DEV_SERVER,
+        REMOTE_DEV_CLIENT;
     }
 }

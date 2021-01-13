@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -35,6 +36,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.JavaVersionUtil;
 
@@ -48,6 +50,7 @@ public class QuarkusAugmentor {
     private final Set<Class<? extends BuildItem>> finalResults;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
+    private final DevModeType devModeType;
     private final List<PathsCollection> additionalApplicationArchives;
     private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
@@ -74,6 +77,7 @@ public class QuarkusAugmentor {
         this.configCustomizer = builder.configCustomizer;
         this.deploymentClassLoader = builder.deploymentClassLoader;
         this.rebuild = builder.rebuild;
+        this.devModeType = builder.devModeType;
     }
 
     public BuildResult run() throws Exception {
@@ -96,7 +100,7 @@ public class QuarkusAugmentor {
             //in additional stuff from the deployment leaking in, this is unlikely but has a bit of a smell.
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
                     buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                    effectiveModel.getPlatformProperties(), launchMode, configCustomizer)
+                    effectiveModel.getPlatformProperties(), launchMode, devModeType, configCustomizer)
                     .accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -137,7 +141,8 @@ public class QuarkusAugmentor {
                     .produce(rootBuilder.build(buildCloseables))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
-                    .produce(new LaunchModeBuildItem(launchMode))
+                    .produce(new LaunchModeBuildItem(launchMode,
+                            devModeType == null ? Optional.empty() : Optional.of(devModeType)))
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
                     .produce(new DeploymentClassLoaderBuildItem(deploymentClassLoader))
@@ -191,6 +196,7 @@ public class QuarkusAugmentor {
         String baseName = "quarkus-application";
         Consumer<ConfigBuilder> configCustomizer;
         ClassLoader deploymentClassLoader;
+        DevModeType devModeType;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
@@ -217,6 +223,15 @@ public class QuarkusAugmentor {
 
         public Builder setLaunchMode(LaunchMode launchMode) {
             this.launchMode = launchMode;
+            return this;
+        }
+
+        public DevModeType getDevModeType() {
+            return devModeType;
+        }
+
+        public Builder setDevModeType(DevModeType devModeType) {
+            this.devModeType = devModeType;
             return this;
         }
 

@@ -8,7 +8,6 @@ import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,17 +22,23 @@ public class BlockingAsyncTest {
     BlockingHelloService service;
 
     @Test
-    @Disabled // TODO: investigate why this is failing in CI, but not locally
     public void threadOffloadAndFallback() throws Exception {
         Thread mainThread = Thread.currentThread();
 
         CompletionStage<String> future = service.hello();
         assertThat(future.toCompletableFuture().get()).isEqualTo("hello");
 
-        assertThat(service.getHelloThread()).isNotSameAs(mainThread);
-        assertThat(service.getHelloStackTrace()).anySatisfy(frame -> {
-            assertThat(frame.getClassName()).contains("io.smallrye.faulttolerance.core");
+        assertThat(service.getHelloThreads()).allSatisfy(thread -> {
+            assertThat(thread).isNotSameAs(mainThread);
         });
+        assertThat(service.getHelloStackTraces()).allSatisfy(stackTrace -> {
+            assertThat(stackTrace).anySatisfy(frame -> {
+                assertThat(frame.getClassName()).contains("io.smallrye.faulttolerance.core");
+            });
+        });
+
+        // 1 initial execution + 3 retries
+        assertThat(service.getInvocationCounter()).hasValue(4);
 
         assertThat(service.getFallbackThread()).isNotSameAs(mainThread);
     }

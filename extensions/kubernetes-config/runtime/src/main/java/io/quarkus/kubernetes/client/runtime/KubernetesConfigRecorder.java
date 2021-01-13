@@ -46,9 +46,11 @@ public class KubernetesConfigRecorder {
             if (configSource instanceof AbstractRawDefaultConfigSource) {
                 return false;
             }
-            if (configSource.getPropertyNames().contains(CONFIG_ENABLED_PROPERTY_NAME)) {
+            // don't use configSource.getPropertyNames() as it returns an empty list for env vars
+            String strValue = configSource.getValue(CONFIG_ENABLED_PROPERTY_NAME);
+            if ((strValue != null) && !strValue.isEmpty()) {
                 // TODO: should probably use converter here
-                return !Boolean.parseBoolean(configSource.getValue(CONFIG_ENABLED_PROPERTY_NAME));
+                return !Boolean.parseBoolean(strValue);
             }
         }
         return false;

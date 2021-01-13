@@ -78,7 +78,13 @@ class CacheProcessor {
         for (DotName bindingName : INTERCEPTOR_BINDINGS) {
             for (AnnotationInstance binding : combinedIndex.getIndex().getAnnotations(bindingName)) {
                 throwables.addAll(validateInterceptorBindingTarget(binding, binding.target()));
-                names.add(binding.value(CACHE_NAME_PARAM).asString());
+                if (binding.target().kind() == Kind.METHOD) {
+                    /*
+                     * Cache names from the interceptor bindings placed on cache interceptors must not be collected to prevent
+                     * the instantiation of a cache with an empty name.
+                     */
+                    names.add(binding.value(CACHE_NAME_PARAM).asString());
+                }
             }
         }
 

@@ -43,6 +43,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
@@ -51,7 +52,6 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
@@ -145,6 +145,7 @@ public class SmallRyeGraphQLProcessor {
     void buildExecutionService(
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer,
+            BuildProducer<SmallRyeGraphQLInitializedBuildItem> graphQLInitializedProducer,
             SmallRyeGraphQLRecorder recorder,
             BeanContainerBuildItem beanContainer,
             CombinedIndexBuildItem combinedIndex,
@@ -154,7 +155,8 @@ public class SmallRyeGraphQLProcessor {
 
         Schema schema = SchemaBuilder.build(index, graphQLConfig.autoNameStrategy);
 
-        recorder.createExecutionService(beanContainer.getValue(), schema);
+        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema);
+        graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
         reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getSchemaJavaClasses(schema)));
@@ -173,12 +175,18 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void buildSchemaEndpoint(
             BuildProducer<RouteBuildItem> routeProducer,
+            SmallRyeGraphQLInitializedBuildItem graphQLInitializedBuildItem,
             SmallRyeGraphQLRecorder recorder,
             SmallRyeGraphQLConfig graphQLConfig) {
 
-        Handler<RoutingContext> schemaHandler = recorder.schemaHandler();
-        routeProducer.produce(
-                new RouteBuildItem(graphQLConfig.rootPath + SCHEMA_PATH, schemaHandler, HandlerType.BLOCKING));
+        Handler<RoutingContext> schemaHandler = recorder.schemaHandler(graphQLInitializedBuildItem.getInitialized());
+
+        routeProducer.produce(new RouteBuildItem.Builder()
+                .route(graphQLConfig.rootPath + SCHEMA_PATH)
+                .handler(schemaHandler)
+                .blockingRoute()
+                .build());
+
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -186,6 +194,7 @@ public class SmallRyeGraphQLProcessor {
     void buildExecutionEndpoint(
             BuildProducer<RouteBuildItem> routeProducer,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
+            SmallRyeGraphQLInitializedBuildItem graphQLInitializedBuildItem,
             SmallRyeGraphQLRecorder recorder,
             ShutdownContextBuildItem shutdownContext,
             LaunchModeBuildItem launchMode,
@@ -217,7 +226,8 @@ public class SmallRyeGraphQLProcessor {
 
         Boolean allowGet = ConfigProvider.getConfig().getOptionalValue(ConfigKey.ALLOW_GET, boolean.class).orElse(false);
 
-        Handler<RoutingContext> executionHandler = recorder.executionHandler(allowGet);
+        Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
+                allowGet);
         routeProducer.produce(new RouteBuildItem.Builder()
                 .route(graphQLConfig.rootPath)
                 .handler(executionHandler)

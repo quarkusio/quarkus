@@ -12,6 +12,10 @@ import io.vertx.ext.web.RoutingContext;
 
 public final class RouteBuildItem extends MultiBuildItem {
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     private final Function<Router, Route> routeFunction;
     private final Handler<RoutingContext> handler;
     private final HandlerType type;

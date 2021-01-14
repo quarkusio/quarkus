@@ -27,12 +27,14 @@ import java.util.Scanner;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.builder.Version;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -48,7 +50,14 @@ public class WebJarUtil {
     private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
     private static final String CUSTOM_MEDIA_FOLDER = "META-INF/branding/";
     private static final List<String> IGNORE_LIST = Arrays.asList("logo.png", "favicon.ico", "style.css");
+    private static final String CSS = ".css";
     private static final String SNAPSHOT_VERSION = "-SNAPSHOT";
+
+    private static final String quarkusVersion = Version.getVersion();
+    private static final String applicationName = ConfigProvider.getConfig()
+            .getOptionalValue("quarkus.application.name", String.class).orElse("");
+    private static final String applicationVersion = ConfigProvider.getConfig()
+            .getOptionalValue("quarkus.application.version", String.class).orElse("");;
 
     private WebJarUtil() {
     }
@@ -225,15 +234,25 @@ public class WebJarUtil {
         return artifact.getArtifactId() + type;
     }
 
-    private static InputStream getOverride(PathsCollection paths, ClassLoader classLoader, String filename, String modulename) {
+    private static InputStream getOverride(PathsCollection paths, ClassLoader classLoader, String filename, String modulename)
+            throws IOException {
+
         // First check if the developer supplied the files
-        InputStream customStream = getCustomOverride(paths, filename, modulename);
-        if (customStream != null) {
-            return customStream;
+        InputStream overrideStream = getCustomOverride(paths, filename, modulename);
+        if (overrideStream == null) {
+            // Else check if Quarkus has a default branding
+            overrideStream = getQuarkusOverride(classLoader, filename, modulename);
         }
 
-        // Else check if Quarkus has a default branding
-        return getQuarkusOverride(classLoader, filename);
+        // Allow replacement of certain values in css
+        if (filename.endsWith(CSS)) {
+            String contents = new String(IoUtil.readBytes(overrideStream));
+            contents = contents.replace("{applicationName}", applicationName);
+            contents = contents.replace("{applicationVersion}", applicationVersion);
+            contents = contents.replace("{quarkusVersion}", quarkusVersion);
+            overrideStream = new ByteArrayInputStream(contents.getBytes());
+        }
+        return overrideStream;
     }
 
     private static InputStream getCustomOverride(PathsCollection paths, String filename, String modulename) {
@@ -263,7 +282,12 @@ public class WebJarUtil {
         return null;
     }
 
-    private static InputStream getQuarkusOverride(ClassLoader classLoader, String filename) {
+    private static InputStream getQuarkusOverride(ClassLoader classLoader, String filename, String modulename) {
+        // Allow quarkus per module override
+        boolean quarkusModuleOverride = fileExistInClasspath(classLoader, CUSTOM_MEDIA_FOLDER + modulename);
+        if (quarkusModuleOverride) {
+            return classLoader.getResourceAsStream(CUSTOM_MEDIA_FOLDER + modulename);
+        }
         boolean quarkusOverride = fileExistInClasspath(classLoader, CUSTOM_MEDIA_FOLDER + filename);
         if (quarkusOverride) {
             return classLoader.getResourceAsStream(CUSTOM_MEDIA_FOLDER + filename);
@@ -273,15 +297,13 @@ public class WebJarUtil {
 
     private static boolean isOverride(PathsCollection paths, ClassLoader classLoader, String filename, String modulename) {
         // Check if quarkus override this.
-        if (isQuarkusOverride(classLoader, filename)) {
-            return true;
-        }
-        return isCustomOverride(paths, filename, modulename);
+        return isQuarkusOverride(classLoader, filename, modulename) || isCustomOverride(paths, filename, modulename);
     }
 
-    private static boolean isQuarkusOverride(ClassLoader classLoader, String filename) {
+    private static boolean isQuarkusOverride(ClassLoader classLoader, String filename, String modulename) {
         // Check if quarkus override this.
-        return fileExistInClasspath(classLoader, CUSTOM_MEDIA_FOLDER + filename);
+        return fileExistInClasspath(classLoader, CUSTOM_MEDIA_FOLDER + modulename)
+                || fileExistInClasspath(classLoader, CUSTOM_MEDIA_FOLDER + filename);
     }
 
     private static boolean isCustomOverride(PathsCollection paths, String filename, String modulename) {

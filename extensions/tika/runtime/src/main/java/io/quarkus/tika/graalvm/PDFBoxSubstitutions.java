@@ -1,4 +1,4 @@
-package io.quarkus.tika.runtime.graal;
+package io.quarkus.tika.graalvm;
 
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
@@ -31,7 +31,6 @@ final class Target_org_apache_pdfbox_pdmodel_graphics_color_PDICCBased {
 
 // Substitutions to prevent ICC_ColorSpace instances from appearing in the native image when using Apache Tika
 // See https://github.com/quarkusio/quarkus/pull/13644
-// These substitutions can be removed when moving from GraalVM 20.3 to GraalVM 21.0.
 class PDFBoxSubstitutions {
 
 }

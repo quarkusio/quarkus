@@ -1,5 +1,6 @@
 package io.quarkus.mailer.runtime;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +76,12 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     @Override
     public MailTemplateInstance bounceAddress(String bounceAddress) {
         this.mail.setBounceAddress(bounceAddress);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId) {
+        this.mail.addInlineAttachment(name, file, contentType, contentId);
         return this;
     }
 

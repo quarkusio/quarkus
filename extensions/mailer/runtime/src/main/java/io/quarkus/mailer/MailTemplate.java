@@ -1,5 +1,6 @@
 package io.quarkus.mailer;
 
+import java.io.File;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -47,6 +48,8 @@ public interface MailTemplate {
         MailTemplateInstance replyTo(String replyTo);
 
         MailTemplateInstance bounceAddress(String bounceAddress);
+
+        MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId);
 
         MailTemplateInstance data(String key, Object value);
 

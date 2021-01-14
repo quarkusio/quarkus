@@ -70,7 +70,7 @@ public class ArcEndpointTest {
         }
 
         void addConfigRoute(@Observes Router router) {
-            router.route("/console-path").handler(rc -> rc.response().end(httpConfig.consolePath));
+            router.route("/console-path").handler(rc -> rc.response().end(httpConfig.nonApplicationRootPath));
         }
 
     }

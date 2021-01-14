@@ -75,7 +75,6 @@ public class SecurityConfigFilter implements OASFilter {
                     if (config.oauth2ImplicitTokenUrl.isPresent()) {
                         oAuthFlow.tokenUrl(config.oauth2ImplicitTokenUrl.get());
                     }
-                    oAuthFlow.setScopes(OASFactory.createScopes());
                     oAuthFlows.setImplicit(oAuthFlow);
                     securityScheme.setType(SecurityScheme.Type.OAUTH2);
                     securityScheme.setFlows(oAuthFlows);

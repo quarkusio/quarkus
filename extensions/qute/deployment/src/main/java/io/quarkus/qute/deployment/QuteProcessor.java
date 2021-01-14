@@ -89,6 +89,7 @@ import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.ResultNode;
 import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
+import io.quarkus.qute.SetSectionHelper;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
@@ -1183,9 +1184,7 @@ public class QuteProcessor {
             // Map<String,Long> => Entry<String,Long>
             processLoopElementHint(match, index, expression, incorrectExpressions);
         } else if (helperHint.startsWith(LoopSectionHelper.Factory.HINT_PREFIX)) {
-            Integer iterableExprId = Integer
-                    .valueOf(helperHint.substring(LoopSectionHelper.Factory.HINT_PREFIX.length(), helperHint.length() - 1));
-            Expression valueExpr = templateAnalysis.findExpression(iterableExprId);
+            Expression valueExpr = findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
             if (valueExpr != null) {
                 Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
                 if (valueExprMatch != null) {
@@ -1195,9 +1194,7 @@ public class QuteProcessor {
         } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
             // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
             // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
-            Integer valueExprId = Integer
-                    .valueOf(helperHint.substring(WhenSectionHelper.Factory.HINT_PREFIX.length(), helperHint.length() - 1));
-            Expression valueExpr = templateAnalysis.findExpression(valueExprId);
+            Expression valueExpr = findExpression(helperHint, WhenSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
             if (valueExpr != null) {
                 Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
                 if (valueExprMatch != null && valueExprMatch.clazz.isEnum()) {
@@ -1205,8 +1202,21 @@ public class QuteProcessor {
                     return true;
                 }
             }
+        } else if (helperHint.startsWith(SetSectionHelper.Factory.HINT_PREFIX)) {
+            Expression valueExpr = findExpression(helperHint, SetSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
+            if (valueExpr != null) {
+                Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
+                if (valueExprMatch != null) {
+                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+                }
+            }
         }
         return false;
+    }
+
+    private static Expression findExpression(String helperHint, String hintPrefix, TemplateAnalysis templateAnalysis) {
+        return templateAnalysis
+                .findExpression(Integer.parseInt(helperHint.substring(hintPrefix.length(), helperHint.length() - 1)));
     }
 
     static void processLoopElementHint(Match match, IndexView index, Expression expression,

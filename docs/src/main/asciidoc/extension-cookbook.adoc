@@ -15,7 +15,7 @@ include::./attributes.adoc[]
 == Context & Objective
 
 The purpose of this cookbook is to explain for extension developer, a step by step process to build an extension from scratch.
-Other guide are API oriented and this one will not detailed API. For this purpose use other guide as :
+Other guide are API oriented and this one will not detailed API. For this purpose use other guides such as :
 - link:writing-extensions.html[Write Your Own Extension] 
 - link:writing-native-applications-tips.html[Tips for writing native applications]
 - link:building-my-first-extension.html[Build My first extension]
@@ -71,11 +71,14 @@ For hierarchy, there is a trampoline process in Runtime buildstep:
 @BuildStep
 @Record(ExecutionTime.RUNTIME_INIT)
 public void build(CustomRecorder recorder, List<ComplexeBuildItem> complexeBuildItems) {
+    // for hierarchy create a tree and get back runtimeValue
     RuntimeValue<ComplexConfig> complexConfig = recorder.createComplexConfig();
     for (ComplexeBuildItem complexeBuildItem : complexeBuildItems) {
+        // then send leaf to add to tree
         recorder.registerLeaf(complexConfig, complexeBuildItem.getString());
     }
-    //... use complexe config for a beans
+    // use complexe config for a beans
+    recorder.startBean(complexConfig);
 }
 ```
 
@@ -90,6 +93,9 @@ public class CustomRecorder {
         ComplexConfig complexConfigValue = complexConfig.getValue();
         complexConfigValue.add(cfg);
     }
+    public void startBean(RuntimeValue<ComplexConfig> complexConfig) {
+        // start on runtime part
+    }
 }
 ```
 === Register servlet
@@ -99,7 +105,7 @@ But vert.x routes must be the prefered solution because vertx route use reactor 
 
 === Route vertx
 
-BuildStep must produce a RouteBuildItem and forward it to a class on Handler<RoutingContext>.
+BuildStep must produce a RouteBuildItem with an Handler<RoutingContext> class as parameter.
 
 === Removable
 Quarkus cleanup unused beans. So if you need to register a bean for injection but load without inject (CDI.current().select(MyClient.class).get())
@@ -125,7 +131,8 @@ https://www.graalvm.org/reference-manual/native-image/Limitations/
 === Reflection
 Search full text on "Class.forName" and "loadClass" and "getMethod" on the source of module.
 Create a buildStep with the list of class ReflectiveClassBuildItem
-set methos flags to true if getMethod is used and false for other. Sometimes fields are used with reflection and constructor so paid attention to enable flags for this kind of usage.
+set methods ReflectiveClassBuildItem parameter to true if getMethod is used and false for other.
+Same process occure for fields which are used with reflection and constructor so paid attention to set ReflectiveClassBuildItem parameter to true for this kind of usage.
 
 === ASM emit
 Search full text for "org.objectweb.asm" or "ClassWriter" and translate all generated class process to gizmo generation.
@@ -133,14 +140,15 @@ Search full text for "org.objectweb.asm" or "ClassWriter" and translate all gene
 and ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
 
 === MethodHandle
-MethodHandle is not supported to use substitution to replace MethodHandle with Method.invoke();
+MethodHandle is not supported  currently in graal. It must been suported in next released and quarkus will provide a way to regeister them.
+But the current solution is to use substitution to replace MethodHandle with Method.invoke();
 
 === Proxy
-Search full text for "newProxyInstance" each time try to find what is the interface used for proxy and register on a processor NativeImageProxyDefinitionBuildItem.
+Search full text for "newProxyInstance". For each usage, register interface(s) used for proxy on a processor with NativeImageProxyDefinitionBuildItem.
 
 === Resources
 Get list of resources present in the jar and produce a NativeImageResourceBuildItem for each one.
-When you have a hierarchy of dependency, you can have duplicate file. You have to determine if you need to merge them.
+For hierarchy of dependency, duplicate resource file name can been on different jar but the native package can not contain resource file with same name. So merge of file can be needed.
 
 === Runtime load
 For this part, you have to run and if you see an error from graalvm saying that a particular class must be loaded on runtime and not static init.
@@ -156,8 +164,9 @@ Then you have to register in the extension processor a RuntimeInitializedClassBu
 
 Finally, the goal is to load class produce for native part on jvm too. In order to speed up boot time and simplify maintainance by having same code between native and jvm at maximum.
 Try to reduce substitution to minimum.
-On native, you can inject code but on jvm part, merge request must been provided to maintainer of source project
-to add the ability to inject class emitted by Quarkus during augmentation to avoid class emitting on jvm.
+On native, you can inject code thanks to substitution.
+But on jvm part, to avoid code generation, the class generated during build time can not always replace the original one.
+So, a merge request must been provided to maintainer of source project to add the ability to inject class emitted by Quarkus during augmentation to replace asm generation classes.
 
 == Debugging
 

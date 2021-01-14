@@ -16,7 +16,6 @@ public class ImageIOProcessor {
         // (See https://github.com/quarkusio/quarkus/issues/12535)
         return Arrays.asList(
                 new RuntimeInitializedClassBuildItem("javax.imageio.ImageTypeSpecifier"),
-                new RuntimeInitializedClassBuildItem("com.sun.imageio.plugins.jpeg.JPEG$JCS"),
-                new RuntimeInitializedClassBuildItem("java.awt.image.AreaAveragingScaleFilter"));
+                new RuntimeInitializedClassBuildItem("com.sun.imageio.plugins.jpeg.JPEG$JCS"));
     }
 }

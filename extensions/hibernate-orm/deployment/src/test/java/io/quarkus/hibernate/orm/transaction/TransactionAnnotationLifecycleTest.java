@@ -22,8 +22,7 @@ public class TransactionAnnotationLifecycleTest extends AbstractTransactionLifec
 
     @Override
     protected boolean expectDoubleFlush() {
-        // FIXME: We expect double flushes in this case, but that's a bug
-        return true;
+        return false;
     }
 
     @ApplicationScoped
@@ -41,6 +40,12 @@ public class TransactionAnnotationLifecycleTest extends AbstractTransactionLifec
         @Transactional
         public ValueAndExecutionMetadata<String> retrieve(long id) {
             return super.retrieve(id);
+        }
+
+        @Override
+        @Transactional
+        public ValueAndExecutionMetadata<String> callStoredProcedure(long id) {
+            return super.callStoredProcedure(id);
         }
 
         @Override

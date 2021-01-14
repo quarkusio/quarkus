@@ -2,6 +2,9 @@ package io.quarkus.hibernate.orm.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +13,8 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import javax.persistence.EntityManager;
+import javax.persistence.ParameterMode;
+import javax.persistence.StoredProcedureQuery;
 
 import org.hibernate.BaseSessionEventListener;
 import org.hibernate.Session;
@@ -17,13 +22,17 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Check transaction lifecycle, including session flushes and the closing of the session.
+ * Check transaction lifecycle, including session flushes, the closing of the session,
+ * and the release of JDBC resources.
  */
 public abstract class AbstractTransactionLifecycleTest {
 
@@ -38,6 +47,17 @@ public abstract class AbstractTransactionLifecycleTest {
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(records -> assertThat(records).isEmpty());
+
+    @BeforeAll
+    public static void installStoredProcedure() throws SQLException {
+        AgroalDataSource dataSource = Arc.container().instance(AgroalDataSource.class).get();
+        try (Connection conn = dataSource.getConnection()) {
+            try (Statement st = conn.createStatement()) {
+                st.execute("CREATE ALIAS " + MyStoredProcedure.NAME
+                        + " FOR \"" + MyStoredProcedure.class.getName() + ".execute\"");
+            }
+        }
+    }
 
     @Test
     public void testLifecycle() {
@@ -72,6 +92,13 @@ public abstract class AbstractTransactionLifecycleTest {
                 expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
                 LifecycleOperation.TRANSACTION_COMPLETION);
         assertThat(retrieved.value).isEqualTo(UPDATED_NAME);
+
+        // See https://github.com/quarkusio/quarkus/issues/13273
+        ValueAndExecutionMetadata<String> calledStoredProcedure = crud.callStoredProcedure(id);
+        checkPostConditions(calledStoredProcedure,
+                // Strangely, calling a stored procedure isn't considered as a statement for Hibernate ORM listeners
+                LifecycleOperation.TRANSACTION_COMPLETION);
+        assertThat(calledStoredProcedure.value).isEqualTo(MyStoredProcedure.execute(id));
 
         ValueAndExecutionMetadata<Void> deleted = crud.delete(id);
         checkPostConditions(deleted,
@@ -116,6 +143,16 @@ public abstract class AbstractTransactionLifecycleTest {
             return inTransaction(entityManager -> {
                 SimpleEntity entity = entityManager.find(SimpleEntity.class, id);
                 return entity == null ? null : entity.getName();
+            });
+        }
+
+        public ValueAndExecutionMetadata<String> callStoredProcedure(long id) {
+            return inTransaction(entityManager -> {
+                StoredProcedureQuery storedProcedure = entityManager.createStoredProcedureQuery(MyStoredProcedure.NAME);
+                storedProcedure.registerStoredProcedureParameter(0, Long.class, ParameterMode.IN);
+                storedProcedure.setParameter(0, id);
+                storedProcedure.execute();
+                return (String) storedProcedure.getSingleResult();
             });
         }
 
@@ -182,5 +219,15 @@ public abstract class AbstractTransactionLifecycleTest {
         STATEMENT,
         FLUSH,
         TRANSACTION_COMPLETION;
+    }
+
+    public static class MyStoredProcedure {
+        private static final String NAME = "myStoredProc";
+        private static final String RESULT_PREFIX = "StoredProcResult";
+
+        @SuppressWarnings("unused")
+        public static String execute(long id) {
+            return RESULT_PREFIX + id;
+        }
     }
 }

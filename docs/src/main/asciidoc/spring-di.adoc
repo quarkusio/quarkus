@@ -1,32 +1,70 @@
-// add :context: to the asembly and {context} to individual section IDs
-//TODO: No variables in section titles
-//TODO: need to use product attributes, but also keep compatibility with community ones
-// Tech preview info for community purposes, different from product
-
-ifdef::product-docs[]
-include::common/attributes.adoc[]
-endif::[]
-
-ifndef::product-docs[]
-include::./attributes.adoc[]
-:extension-status: preview
-endif::[]
-
 //TODO: What should we do with this?
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+//TODO: need to use product attributes, but also keep compatibility with community ones
 
+// comment out to show community version
+:product-docs:
+:doctype: book
+
+ifdef::product-docs[]
+//TODO: copy product attribute files over to community repo
+//include::common/attributes.adoc[]
+//temporary attributes
+:ProductName: Quarkus
+:ProductLongName: Red Hat build of Quarkus
+:maven-version: 3.6.3
+endif::[]
+
+
+
+//Top-Level Assembly
 [id="using-the-quarkus-extension-for-spring-di-api_{context}"]
 = Using the Quarkus Extension for Spring DI API
+
+ifdef::context[:parent-context: {context}]
+//temporary context value, will be changed before going into production
+:context: guide-quarkus-spring-di
+
 
 [role="_abstract"]
 The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection, that you can use as an alternative to MicroProfile CDI annotations in your Quarkus application.
 This guide explains how your {ProductName} application can leverage Dependency Injection annotations provided by the Spring Framework.
 
+ifndef::product-docs[]
+//TODO: What should we do with this? Leave it as community-only?
+
+This guide is maintained in the main Quarkus repository and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `spring-di-quickstart` {quickstarts-tree-url}/spring-di-quickstart[directory].
+endif::[]
+
+// Tech preview info for community purposes, different from product
+ifndef::product-docs[]
+include::./attributes.adoc[]
+:extension-status: preview
+endif::[]
+
 ifdef::product-docs[]
+NOTE: The `quarkus-spring-di` extension is available as link:https://access.redhat.com/support/offerings/techpreview[Technology Preview] with {ProductLongName}.
+endif::[]
+
+ifndef::product-docs[]
+include::./status-include.adoc[]
+endif::[]
+
+ifndef::product-docs[]
 [IMPORTANT]
 ====
 Note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
@@ -36,33 +74,15 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for e
 ====
 endif::[]
 
-
-// conditionalized the inclusion of community-only status info section
-ifndef::product-docs[]
-include::./status-include.adoc[]
-endif::[]
-
 .Prerequisites
 
-// Uncomment this for alternative 2
-//* You have a {ProductName} Maven project.
+// comment out the following prerequisite in the alternative 1 layout of the document.
+* You have a {ProductName} Maven project.
 * You have OpenJDK 8 installed.
 * You have Maven {maven-version} installed.
 
-
-////
-// rewrite this as additional resource on the assembly?
-== Solution
-
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
-
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
-
-The solution is located in the `spring-di-quickstart` {quickstarts-tree-url}/spring-di-quickstart[directory].
-////
-
 // Alternative 1: generate project form scratch
+[id="creating-the-spring-di-example-maven-project_{context}"]
 == Creating the Spring DI Example Maven project
 
 [role="_abstract"]
@@ -75,7 +95,7 @@ You can create new a new Maven project for the Spring DI example application on 
 * generate the directory structure of the project
 * create the main class file of the example application
 * create the endpoint that exposes the service that your application provides
-* add the required extensions to the `pom.xml` file of your project
+* add the `quarkus-spring-di` extension to the `pom.xml` file of your project
 * navigate to the top-level directory of your project
 +
 [source,bash,subs=attributes+]
@@ -88,13 +108,9 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy,spring-di"
 cd spring-di-quickstart
 ----
-//This command generates a Maven project with a REST endpoint and imports the `spring-di` extension.
 
-////
-//Alternative 2: you have a project and need to add the required dependencies.
-////
 
-//If you already have your Quarkus project configured, you can add the `spring-di` extension to your project by running the following command in your project base directory:
+//Alternative 2: you have a project and need to add the required extension.
 [id="setting-up-your-spring-di-maven-project_{context}"]
 == Setting up your Spring DI example Maven project
 
@@ -157,9 +173,12 @@ public interface StringFunction extends Function<String, String> {
 
 }
 ----
-//+
-//Other beans in this example implement this interface, and the interface is injected into another bean later on.
-//WHEN? Move this information to the relevant place
+ifndef::product-docs[]
++
+//TODO: Not sure where to place this
+Other beans in this example implement this interface, and the interface is injected into another bean later on.
+endif::[]
+
 
 . Create the `src/main/java/org/acme/spring/di/AppConfiguration.java` file.
 Inside the file that you created, create an `AppConfiguration` class and annotate it with the `@Configuration` annotation provided by Spring Java Config.
@@ -204,7 +223,7 @@ public class NoOpSingleStringFunction implements StringFunction {
     }
 }
 ----
-
++
 //. Quarkus also provides support for injecting configuration values using Spring's `@Value` annotation.
 . With Quarkus, you can also use the `@Value` annotations to inject values of configuration properties into beans:
 .. Set the value of the `greeting.message` property to `hello` in the `src/main/resources/application.properties` file:
@@ -214,7 +233,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 # Your configuration properties
 greeting.message = hello
 ----
-
++
 .. Create the `src/main/java/org/acme/spring/di/MessageProducer.java` file.
 Inside the file that you created, crate a `MessageProducer` bean.
 Use the `@Value` annotation to set the value of the `greeting.message` property as the message String inside the `MessageProducer` bean:
@@ -237,7 +256,7 @@ public class MessageProducer {
     }
 }
 ----
-
++
 //The final bean we will create ties together all the previous beans.
 . Create the `src/main/java/org/acme/spring/di/GreeterBean.java` file that contains the code shown in the example below.
 Note, that the `GreeterBean` bean relies on both constructor-based and field-based injection.
@@ -318,10 +337,10 @@ public class GreeterResource {
 ----
 
 [id='updating-the-application-test-class_{context}']
-== Updating the application test class
+== Updating the application test
 
 [role="_abstract"]
-You must update the functional test for your application to reflect the changes that you made to the `/greeting` endpoint.
+You must update the class file that contains the functional test for your application to reflect the changes that you made to the `/greeting` endpoint.
 
 .Procedure
 
@@ -377,7 +396,7 @@ You receive `HELLO WORLD!` as the response.
 
 . Press _CTRL + C_ to stop the application.
 
-//
+
 ifndef::product-docs[]
 == Run the application as a native
 
@@ -462,3 +481,6 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-cache[Quarkus - Extension for Spring Cache]
 * link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
 endif::[]
+
+ifdef::parent-context[:context: {parent-context}]
+ifndef::parent-context[:!context:]

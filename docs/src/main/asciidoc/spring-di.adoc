@@ -134,9 +134,9 @@ cd <name-of-your-project-directory>
 ----
 ifndef::product-docs[]
 +
-This will add the following to your `pom.xml`:
+This adds the following entry to your `pom.xml` file:
 
-[source,xml]
+[source,xml,options="nowrap",subs="+quotes,attributes+"s]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -184,7 +184,7 @@ endif::[]
 Inside the file that you created, create an `AppConfiguration` class and annotate it with the `@Configuration` annotation provided by Spring Java Config.
 Inside the `AppConfiguration` class, create a `StringFunction` bean that changes a string that you pass to it to uppercase:
 +
-[source,java]
+[source,java,options="nowrap",subs="+quotes,attributes+"]
 ----
 package org.acme.spring.di;
 
@@ -208,7 +208,7 @@ Inside the file that you created, crate a `NoOpSingleStringFunction` bean.
 The `NoOpSingleStringFunction` implements the `StringFunction` bean using the `@Component` stereotype annotation provided by Spring.
 Note, that this bean does not process the string, but returns the string as is:
 +
-[source,java]
+[source,java,options="nowrap",subs="+quotes,attributes+"]
 ----
 package org.acme.spring.di;
 
@@ -228,7 +228,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 . With Quarkus, you can also use the `@Value` annotations to inject values of configuration properties into beans:
 .. Set the value of the `greeting.message` property to `hello` in the `src/main/resources/application.properties` file:
 +
-[source,properties]
+[source,properties,options="nowrap",subs="+quotes,attributes+"]
 ----
 # Your configuration properties
 greeting.message = hello
@@ -264,7 +264,7 @@ Note, that you do not need to use the `@Autowired` annotation on the field-based
 Also note, that the `@Value` annotation on the `suffix` String contains a default value.
 The default value is used when you do not set a value for the `greeting.suffix` property in the `application.properties` file.
 +
-[source,java]
+[source,java,options="nowrap",subs="+quotes,attributes+"]
 ----
 package org.acme.spring.di;
 
@@ -310,8 +310,8 @@ When you create the class files of you example applications, you must also updat
 .Procedure
 
 . Add the following content to the `src/main/java/org/acme/spring/di/GreeterResource.java` file:
-
-[source,java]
++
+[source,java,options="nowrap",subs="+quotes,attributes+"]
 ----
 package org.acme.spring.di;
 
@@ -346,7 +346,7 @@ You must update the class file that contains the functional test for your applic
 
 . Edit the `src/test/java/org/acme/spring/di/GreetingResourceTest.java` file and change the content of the `testHelloEndpoint` method as shown in the example below:
 +
-[source, java]
+[source,java,options="nowrap",subs="+quotes,attributes+"]
 ----
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -386,7 +386,7 @@ cd <name-of-your-project-directory>
 
 . Execute the following command to compile and run your application in development mode:
 +
-[source,bash]
+[source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
 ./mvnw compile quarkus:dev
 ----

@@ -1,4 +1,4 @@
-package io.quarkus.tika.runtime.graal;
+package io.quarkus.tika.graalvm;
 
 @com.oracle.svm.core.annotate.Substitute
 @com.oracle.svm.core.annotate.TargetClass(className = "org.apache.poi.poifs.nio.CleanerUtil")

@@ -9,10 +9,10 @@ import com.oracle.svm.core.annotate.TargetClass;
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
  */
-@TargetClass(className = "org.jboss.resteasy.microprofile.client.header.ComputedHeaderValueFiller")
-final class ComputedHeaderValueFillerReplacement {
+@TargetClass(className = "org.jboss.resteasy.microprofile.client.header.HeaderUtils")
+final class HeaderUtilsReplacement {
     @Substitute
-    private MethodHandle createMethodHandle(Method method, Object clientProxy) {
+    public static MethodHandle createMethodHandle(Method method, Object clientProxy) {
         return null;
     }
 }

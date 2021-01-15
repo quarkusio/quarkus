@@ -14,7 +14,7 @@ import org.jboss.logging.Logger;
  */
 public class Timing {
 
-    private static volatile long bootStartTime = -1;
+    public static volatile long bootStartTime = -1;
 
     private static volatile long bootStopTime = -1;
 

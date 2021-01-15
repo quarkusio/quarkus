@@ -15,6 +15,8 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
 
     public static final DelayedHandler DELAYED_HANDLER;
 
+    private volatile Boolean isQuarkusApplication = null;
+
     static {
         //a hack around class loading
         //this is always loaded in the root class loader with jboss-logmanager,
@@ -47,14 +49,24 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
 
     @Override
     public Handler[] getHandlersOf(final String loggerName) {
+        if (isQuarkusApplication == null) {
+            try {
+                Class.forName("io.quarkus.runner.ApplicationImpl", false, InitialConfigurator.class.getClassLoader());
+                isQuarkusApplication = true;
+            } catch (ClassNotFoundException e) {
+                isQuarkusApplication = false;
+            }
+        }
         if (loggerName.isEmpty()) {
             if (ImageInfo.inImageBuildtimeCode()) {
                 // we can't set a cleanup filter without the build items ready
                 return new Handler[] {
                         createDefaultHandler()
                 };
-            } else {
+            } else if (isQuarkusApplication) {
                 return new Handler[] { DELAYED_HANDLER };
+            } else {
+                return EmbeddedConfigurator.NO_HANDLERS;
             }
         } else {
             return EmbeddedConfigurator.NO_HANDLERS;

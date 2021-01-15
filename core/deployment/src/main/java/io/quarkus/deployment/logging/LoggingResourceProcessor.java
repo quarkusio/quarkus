@@ -230,7 +230,7 @@ public final class LoggingResourceProcessor {
                     try (BytecodeCreator false1 = equalsBranch.falseBranch()) {
                         ResultHandle startsWithResult = false1.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(String.class, "startsWith", boolean.class, String.class),
-                                name, false1.load(category));
+                                name, false1.load(category + "."));
 
                         BranchResult startsWithBranch = false1.ifTrue(startsWithResult);
 

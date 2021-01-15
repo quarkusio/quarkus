@@ -167,6 +167,12 @@ public class QueryReaderTest {
 
     }
 
+    @Test
+    public void testRecursiveType() {
+        QueryObjectMapper mapper = new QueryObjectMapper();
+        QueryReader<RecursiveType> reader = mapper.readerFor(RecursiveType.class);
+    }
+
     static Map.Entry<String, String> entry(String key, String value) {
         return new Map.Entry() {
             @Override

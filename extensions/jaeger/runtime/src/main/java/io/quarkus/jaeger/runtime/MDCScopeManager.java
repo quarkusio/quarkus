@@ -13,12 +13,12 @@ public class MDCScopeManager implements ScopeManager {
     }
 
     @Override
-    public Scope activate(Span span, boolean finishSpanOnClose) {
-        return new MDCScope(wrapped.activate(span, finishSpanOnClose));
+    public Scope activate(Span span) {
+        return new MDCScope(wrapped.activate(span), span);
     }
 
     @Override
-    public Scope active() {
-        return wrapped.active();
+    public Span activeSpan() {
+        return wrapped.activeSpan();
     }
 }

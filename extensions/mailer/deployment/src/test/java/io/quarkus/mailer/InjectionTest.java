@@ -17,6 +17,7 @@ import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
 import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.mail.MailClient;
 
 @SuppressWarnings("WeakerAccess")
@@ -75,8 +76,8 @@ public class InjectionTest {
         beanUsingReactiveMailer.verify().toCompletableFuture().join();
         beanUsingLegacyReactiveMailer.verify().toCompletableFuture().join();
         templates.send1();
-        templates.send2().toCompletableFuture().join();
-        templates.sendNative().toCompletableFuture().join();
+        templates.send2().await();
+        templates.sendNative().await();
     }
 
     @ApplicationScoped
@@ -171,15 +172,15 @@ public class InjectionTest {
         @ResourcePath("mails/test2")
         MailTemplate testMail;
 
-        CompletionStage<Void> send1() {
+        Uni<Void> send1() {
             return test1.to("quarkus@quarkus.io").subject("Test").data("name", "John").send();
         }
 
-        CompletionStage<Void> send2() {
+        Uni<Void> send2() {
             return testMail.to("quarkus@quarkus.io").subject("Test").data("name", "Lu").send();
         }
 
-        CompletionStage<Void> sendNative() {
+        Uni<Void> sendNative() {
             return Templates.testNative("John").to("quarkus@quarkus.io").subject("Test").send();
         }
     }

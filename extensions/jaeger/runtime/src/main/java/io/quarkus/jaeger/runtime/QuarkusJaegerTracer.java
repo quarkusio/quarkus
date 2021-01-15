@@ -23,16 +23,16 @@ public class QuarkusJaegerTracer implements Tracer {
         volatile ScopeManager delegate;
 
         @Override
-        public Scope activate(Span span, boolean b) {
-            return sm().activate(span, b);
+        public Scope activate(Span span) {
+            return sm().activate(span);
         }
 
         @Override
-        public Scope active() {
+        public Span activeSpan() {
             if (delegate == null) {
                 return null;
             }
-            return sm().active();
+            return sm().activeSpan();
         }
 
         ScopeManager sm() {
@@ -106,6 +106,11 @@ public class QuarkusJaegerTracer implements Tracer {
     }
 
     @Override
+    public void close() {
+        tracer.close();
+    }
+
+    @Override
     public ScopeManager scopeManager() {
         return scopeManager;
     }
@@ -113,5 +118,10 @@ public class QuarkusJaegerTracer implements Tracer {
     @Override
     public Span activeSpan() {
         return tracer().activeSpan();
+    }
+
+    @Override
+    public Scope activateSpan(final Span span) {
+        return tracer.activateSpan(span);
     }
 }

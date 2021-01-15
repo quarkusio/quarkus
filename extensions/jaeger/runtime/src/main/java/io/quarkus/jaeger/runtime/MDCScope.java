@@ -25,14 +25,14 @@ public class MDCScope implements Scope {
     private final Object originalParentId;
     private final Object originalSampled;
 
-    public MDCScope(Scope scope) {
+    public MDCScope(Scope scope, Span span) {
         this.wrapped = scope;
         this.originalTraceId = MDC.get(TRACE_ID);
         this.originalSpanId = MDC.get(SPAN_ID);
         this.originalParentId = MDC.get(PARENT_ID);
         this.originalSampled = MDC.get(SAMPLED);
-        if (scope.span().context() instanceof JaegerSpanContext) {
-            putContext((JaegerSpanContext) scope.span().context());
+        if (span.context() instanceof JaegerSpanContext) {
+            putContext((JaegerSpanContext) span.context());
         }
     }
 
@@ -56,11 +56,6 @@ public class MDCScope implements Scope {
         if (originalSampled != null) {
             MDC.put(SAMPLED, originalSampled);
         }
-    }
-
-    @Override
-    public Span span() {
-        return wrapped.span();
     }
 
     protected void putContext(JaegerSpanContext spanContext) {

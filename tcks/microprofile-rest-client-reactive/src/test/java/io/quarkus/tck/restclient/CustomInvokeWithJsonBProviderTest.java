@@ -13,10 +13,10 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.eclipse.microprofile.rest.client.tck.InvokeWithJsonBProviderTest;
 import org.eclipse.microprofile.rest.client.tck.WiremockArquillianTest;
 import org.eclipse.microprofile.rest.client.tck.interfaces.JsonBClient;
 import org.eclipse.microprofile.rest.client.tck.interfaces.MyJsonBObject;
+import org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;

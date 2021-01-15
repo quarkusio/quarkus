@@ -17,7 +17,8 @@ public class PostgreSqlServiceBindingConverter implements ServiceBindingConverte
 
     @Override
     public Optional<ServiceBindingConfigSource> convert(List<ServiceBinding> serviceBindings) {
-        Optional<ServiceBinding> matchingByType = ServiceBinding.singleMatchingByType("postgresql", serviceBindings);
+        String dbKind = "postgresql";
+        Optional<ServiceBinding> matchingByType = ServiceBinding.singleMatchingByType(dbKind, serviceBindings);
         if (!matchingByType.isPresent()) {
             return Optional.empty();
         }
@@ -37,6 +38,7 @@ public class PostgreSqlServiceBindingConverter implements ServiceBindingConverte
         } else {
             log.debug("Property 'password' was not found");
         }
+        properties.put("quarkus.datasource.db-kind", dbKind);
         String host = binding.getProperties().get("host");
         String port = binding.getProperties().get("port");
         String database = binding.getProperties().get("database");

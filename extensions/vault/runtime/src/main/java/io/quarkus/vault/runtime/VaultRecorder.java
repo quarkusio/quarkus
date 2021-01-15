@@ -10,7 +10,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultConfigSourceProvider;
 
@@ -33,7 +33,7 @@ public class VaultRecorder {
         if (vaultBootstrapConfig.url.isPresent()) {
             ArcContainer container = Arc.container();
             container.instance(VaultConfigHolder.class).get().setVaultBootstrapConfig(vaultBootstrapConfig);
-            container.instance(OkHttpVaultClient.class).get().init();
+            container.instance(VertxVaultClient.class).get().init();
             configSourceProvider = new VaultConfigSourceProvider(vaultBootstrapConfig);
         }
         return new RuntimeValue<>(configSourceProvider);

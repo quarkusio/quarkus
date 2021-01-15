@@ -146,4 +146,6 @@ public interface VaultClient {
     VaultListPolicyResult listPolicies(String token);
 
     void deletePolicy(String token, String name);
+
+    void close();
 }

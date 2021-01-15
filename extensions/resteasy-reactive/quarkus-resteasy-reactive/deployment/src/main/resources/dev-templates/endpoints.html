@@ -1,0 +1,30 @@
+{#include main}
+{#title}Quarkus REST Endpoints{/title}
+{#body}
+<header>
+ <h4>REST Resources</h4>
+ {#for endpoint in info:endpointScores.endpoints}
+ <div class="row">
+  <div class="col">
+   <code>{endpoint.httpMethod} {endpoint.fullPath}</code>
+  </div>
+ </div>
+ {#if !endpoint.produces.isEmpty()}
+ <div class="row">
+  <div class="col-1"></div>
+  <div class="col-1">
+   Produces
+  </div>
+  <div class="col">
+   {endpoint.produces}
+  </div>
+ </div>
+ {/if}
+ {/for}
+</header>
+
+<header>
+
+</header>
+{/body}
+{/include}

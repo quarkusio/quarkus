@@ -19,15 +19,9 @@
         <bouncycastle.tls.fips.version>1.0.11</bouncycastle.tls.fips.version>
         <jandex.version>2.2.3.Final</jandex.version>
         <resteasy.version>4.6.0.Final</resteasy.version>
-<<<<<<< HEAD
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jaxrs.version>1.0.0</opentracing-jaxrs.version>
         <opentracing-web-servlet-filter.version>0.4.0</opentracing-web-servlet-filter.version>
-=======
-        <opentracing.version>0.31.0</opentracing.version>
-        <opentracing-jaxrs.version>0.4.1</opentracing-jaxrs.version>
-        <opentracing-web-servlet-filter.version>0.2.3</opentracing-web-servlet-filter.version>
->>>>>>> MP Config 2.0 Support.
         <opentracing-tracerresolver.version>0.1.8</opentracing-tracerresolver.version>
         <opentracing-concurrent.version>0.4.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.2.12</opentracing-jdbc.version>

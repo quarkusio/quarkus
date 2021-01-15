@@ -20,6 +20,7 @@ import javax.ws.rs.core.Configuration;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
@@ -38,6 +39,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private final List<ResponseExceptionMapper<?>> exceptionMappers = new ArrayList<>();
 
     private URL url;
+    // TODO - MP4 - Require Implementation
+    private boolean followRedirect;
+    private String host;
+    private Integer port;
+    private QueryParamStyle queryParamStyle;
 
     @Override
     public RestClientBuilder baseUrl(URL url) {
@@ -78,6 +84,26 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     @Override
     public RestClientBuilder hostnameVerifier(HostnameVerifier hostnameVerifier) {
         clientBuilder.hostnameVerifier(hostnameVerifier);
+        return this;
+    }
+
+    @Override
+    public RestClientBuilder followRedirects(final boolean follow) {
+        this.followRedirect = follow;
+        return this;
+    }
+
+    @Override
+    public RestClientBuilder proxyAddress(final String proxyHost, final int proxyPort) {
+        if (proxyHost == null) {
+            throw new IllegalArgumentException("proxyHost must not be null");
+        }
+        if (proxyPort <= 0 || proxyPort > 65535) {
+            throw new IllegalArgumentException("Invalid port number");
+        }
+
+        this.host = proxyHost;
+        this.port = proxyPort;
         return this;
     }
 
@@ -169,6 +195,12 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     public RestClientBuilder register(Object component, Map<Class<?>, Integer> contracts) {
         registerMpSpecificProvider(component);
         clientBuilder.register(component, contracts);
+        return this;
+    }
+
+    @Override
+    public RestClientBuilder queryParamStyle(final QueryParamStyle style) {
+        this.queryParamStyle = style;
         return this;
     }
 

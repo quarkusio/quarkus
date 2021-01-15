@@ -24,8 +24,7 @@
         <module>microprofile-reactive-messaging</module>
         <module>microprofile-rest-client</module>
         <module>microprofile-openapi</module>
-        <!-- TODO - This TCK Requires update to MP Config 2.0 API -->
-        <!--<module>microprofile-opentracing</module>-->
+        <module>microprofile-opentracing</module>
     </modules>
 
     <properties>

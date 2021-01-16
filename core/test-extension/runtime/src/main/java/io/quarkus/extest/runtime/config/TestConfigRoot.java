@@ -1,7 +1,6 @@
 package io.quarkus.extest.runtime.config;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -10,12 +9,12 @@ public class TestConfigRoot {
     /**
      * resource location of the DSAPublicKey encoded bytes
      */
-    @ConfigProperty
+    @ConfigItem
     public String dsaKeyLocation;
 
     /**
      * Should the TestProcessor#checkConfig method validate the buildTimeConfig
      */
-    @ConfigProperty(defaultValue = "false")
+    @ConfigItem(defaultValue = "false")
     public boolean validateBuildConfig;
 }

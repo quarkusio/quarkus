@@ -220,7 +220,6 @@ country-api/mp-rest/url=https://restcountries.eu/rest #
 country-api/mp-rest/scope=javax.inject.Singleton # /
 ----
 
-
 === Disabling Hostname Verification
 
 To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:
@@ -556,6 +555,33 @@ public class RequestUUIDHeaderFactory implements ClientHeadersFactory {
 ----
 
 Any CDI bean matching the declared factory class will be picked up and can of course benefit from the usual CDI infrastructure.
+
+=== Default header factory
+You can also use `@RegisterClientHeaders` annotation without any custom factory specified. In that case the `DefaultClientHeadersFactoryImpl` factory will be used and all headers listed in `org.eclipse.microprofile.rest.client.propagateHeaders` configuration property will be amended. Individual header names are comma-separated.
+[source, java]
+----
+
+@Path("/v2")
+@RegisterRestClient
+@RegisterClientHeaders
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    Set<Country> getByName(@PathParam String name);
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    CompletionStage<Set<Country>> getByNameAsync(@PathParam String name);
+}
+----
+
+[source,properties]
+----
+org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
+----
 
 == Package and run the application
 

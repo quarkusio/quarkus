@@ -339,7 +339,7 @@ public class QuarkusTestExtension
 
             return result;
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass());
+            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass(), e);
         }
     }
 

@@ -1,5 +1,6 @@
 package io.quarkus.deployment.logging;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.LogConsoleFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
@@ -109,12 +111,15 @@ public final class LoggingResourceProcessor {
     void miscSetup(
             Consumer<RuntimeInitializedClassBuildItem> runtimeInit,
             Consumer<NativeImageSystemPropertyBuildItem> systemProp,
-            Consumer<ServiceProviderBuildItem> provider) {
+            Consumer<ServiceProviderBuildItem> provider,
+            Consumer<GeneratedResourceBuildItem> generatedResource) {
         runtimeInit.accept(new RuntimeInitializedClassBuildItem("org.jboss.logmanager.formatters.TrueColorHolder"));
         systemProp
                 .accept(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
         provider.accept(
                 new ServiceProviderBuildItem(EmbeddedConfigurator.class.getName(), InitialConfigurator.class.getName()));
+        generatedResource.accept(new GeneratedResourceBuildItem("META-INF/services/" + EmbeddedConfigurator.class.getName(),
+                InitialConfigurator.class.getName().getBytes(StandardCharsets.UTF_8), true));
     }
 
     @BuildStep

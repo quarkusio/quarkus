@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -509,14 +510,9 @@ public class JarResultBuildStep {
                 Files.write(target, i.getClassData());
             }
 
-            for (GeneratedResourceBuildItem i : generatedResources) {
-                Path target = out.getPath(i.getName());
-                if (target.getParent() != null) {
-                    Files.createDirectories(target.getParent());
-                }
-                Files.write(target, i.getClassData());
-            }
+            generateResources(out, generatedResources, g -> !g.isIncludeInBootstrap());
         }
+
         //now the application classes
         Path runnerJar = appDir
                 .resolve(outputTargetBuildItem.getBaseName() + ".jar");
@@ -584,6 +580,7 @@ public class JarResultBuildStep {
                 generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
                         applicationInfo);
+                generateResources(runnerZipFs, generatedResources, GeneratedResourceBuildItem::isIncludeInBootstrap);
             }
 
             //now copy the deployment artifacts, if required
@@ -650,6 +647,20 @@ public class JarResultBuildStep {
             });
         }
         return new JarBuildItem(initJar, null, libDir, packageConfig.type, null);
+    }
+
+    private void generateResources(FileSystem fs, List<GeneratedResourceBuildItem> generatedResources,
+            Predicate<GeneratedResourceBuildItem> include) throws IOException {
+        for (GeneratedResourceBuildItem i : generatedResources) {
+            if (!include.test(i)) {
+                continue;
+            }
+            Path target = fs.getPath(i.getName());
+            if (target.getParent() != null) {
+                Files.createDirectories(target.getParent());
+            }
+            Files.write(target, i.getClassData());
+        }
     }
 
     private void copyDependency(CurateOutcomeBuildItem curateOutcomeBuildItem, Map<AppArtifactKey, List<Path>> runtimeArtifacts,

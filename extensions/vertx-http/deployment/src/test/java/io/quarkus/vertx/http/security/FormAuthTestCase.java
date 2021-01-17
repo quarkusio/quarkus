@@ -45,7 +45,8 @@ public class FormAuthTestCase {
     @BeforeAll
     public static void setup() {
         TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+                .add("admin", "admin", "admin")
+                .add("test", "test", "admin");
     }
 
     @Test
@@ -89,6 +90,33 @@ public class FormAuthTestCase {
                 .assertThat()
                 .statusCode(200)
                 .body(equalTo("admin:/admin"));
+
+        //now authenticate with a different user
+        RestAssured
+                .given()
+                .filter(cookies)
+                .redirects().follow(false)
+                .when()
+                .formParam("j_username", "test")
+                .formParam("j_password", "test")
+                .post("/j_security_check")
+                .then()
+                .assertThat()
+                .statusCode(302)
+                .header("location", containsString("/admin"))
+                .cookie("quarkus-credential",
+                        RestAssuredMatchers.detailedCookie().value(notNullValue()).secured(false));
+
+        RestAssured
+                .given()
+                .filter(cookies)
+                .redirects().follow(false)
+                .when()
+                .get("/admin")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body(equalTo("test:/admin"));
 
     }
 

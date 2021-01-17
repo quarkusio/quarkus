@@ -34,7 +34,6 @@ import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplyHeadlessDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImageDecorator;
-import io.dekorate.kubernetes.decorator.ApplyLabelSelectorDecorator;
 import io.dekorate.kubernetes.decorator.ApplyReplicasDecorator;
 import io.dekorate.project.ApplyProjectInfo;
 import io.dekorate.project.Project;
@@ -125,7 +124,6 @@ public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig>
         }
 
         resources.decorate(group, new AddIngressDecorator(config, Labels.createLabelsAsMap(config, "Ingress")));
-        resources.decorate(group, new ApplyLabelSelectorDecorator(createSelector(config)));
     }
 
     /**

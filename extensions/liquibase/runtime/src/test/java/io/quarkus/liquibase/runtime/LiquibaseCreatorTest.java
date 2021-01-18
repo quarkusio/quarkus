@@ -8,6 +8,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+
 class LiquibaseCreatorTest {
 
     private LiquibaseDataSourceRuntimeConfig runtimeConfig = LiquibaseDataSourceRuntimeConfig.defaultConfig();
@@ -201,6 +203,6 @@ class LiquibaseCreatorTest {
     }
 
     private LiquibaseConfig createdLiquibaseConfig() {
-        return creator.createLiquibase(null).getConfiguration();
+        return creator.createLiquibaseFactory(null, DataSourceUtil.DEFAULT_DATASOURCE_NAME).getConfiguration();
     }
 }

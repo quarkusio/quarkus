@@ -1,5 +1,5 @@
 {#include main}
-{#title}Containers{/title}
+{#title}Managed datasources{/title}
 {#body}
 <table class="table table-striped">
     <thead class="thead-dark">
@@ -9,20 +9,21 @@
     </tr>
     </thead>
     <tbody>
-    {#for container in info:containers}
+    {#for liquibaseFactory in info:liquibaseFactories}
     <tr>
         <td>
-            {container.getEffectiveDataSourceName()}
+            {liquibaseFactory.dataSourceName}
         </td>
         <td>
             <div class="btn-group">
-                <form method="post"  enctype="application/x-www-form-urlencoded">
-                    <input type="hidden" name="datasource" value="{container.dataSourceName}">
+                <form method="post" enctype="application/x-www-form-urlencoded">
+                    <input type="hidden" name="datasource" value="{liquibaseFactory.dataSourceName}">
                     <input type="hidden" name="operation" value="clean">
                     <input id="clear" type="submit" class="btn btn-primary btn-sm" value="Clean" >
                 </form>
-                <form method="post"  enctype="application/x-www-form-urlencoded">
-                    <input type="hidden" name="datasource" value="{container.dataSourceName}">
+                &nbsp;
+                <form method="post" enctype="application/x-www-form-urlencoded">
+                    <input type="hidden" name="datasource" value="{liquibaseFactory.dataSourceName}">
                     <input type="hidden" name="operation" value="migrate">
                     <input id="migrate" type="submit" class="btn btn-primary btn-sm" value="Migrate" >
                 </form>

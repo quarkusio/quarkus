@@ -10,39 +10,24 @@
   </servers>
   <profiles>
     <profile>
-      <id>google-mirror-jboss-proxy</id>
+      <id>google-mirror</id>
       <repositories>
         <repository>
           <id>google-maven-central</id>
           <name>GCS Maven Central mirror EU</name>
-          <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
-        </repository>
-        <repository>
-          <id>jboss-maven-central-proxy</id>
-          <name>JBoss Maven Central proxy</name>
-          <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
-        </repository>
-        <repository>
-            <id>gradle-official-repository</id>
-            <name>Gradle Official Repository</name>
-            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
+          <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
         </repository>
       </repositories>
       <pluginRepositories>
         <pluginRepository>
           <id>google-maven-central</id>
           <name>GCS Maven Central mirror EU</name>
-          <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
-        </pluginRepository>
-        <pluginRepository>
-          <id>jboss-maven-central-proxy</id>
-          <name>JBoss Maven Central proxy</name>
-          <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
+          <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
         </pluginRepository>
       </pluginRepositories>
     </profile>
   </profiles>
   <activeProfiles>
-    <activeProfile>google-mirror-jboss-proxy</activeProfile>
+    <activeProfile>google-mirror</activeProfile>
   </activeProfiles>
 </settings>

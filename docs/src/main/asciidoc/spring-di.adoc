@@ -25,7 +25,6 @@ The `quarkus-spring-di` extension provides a compatibility layer for Spring Depe
 This guide explains how your {ProductName} application can leverage Dependency Injection annotations provided by the Spring Framework.
 
 ifndef::product-docs[]
-//TODO: What should we do with this? Leave it as community-only?
 
 This guide is maintained in the main Quarkus repository and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
@@ -45,21 +44,22 @@ ifndef::product-docs[]
 :extension-status: preview
 endif::[]
 
+//tech preview info for product docs
 ifdef::product-docs[]
 NOTE: The `quarkus-spring-di` extension is available as link:https://access.redhat.com/support/offerings/techpreview[Technology Preview] with {ProductLongName}.
 endif::[]
 
+// community-only note about the community suport status of this extension
 ifndef::product-docs[]
 include::./status-include.adoc[]
 endif::[]
 
-ifndef::product-docs[]
+ifdef::product-docs[]
 [IMPORTANT]
 ====
-Note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
-Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
-classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+The Spring compatibility layer that {ProductName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor`) when you run your application.
+{ProductName} can only read metadata from Spring classes and annotations and can parse user code method return types and parameter types that are provided by Spring.
+However, when you add arbitrary libraries that are part of Spring to your {ProductName} application, {ProductName} is not able to use them.
 ====
 endif::[]
 
@@ -71,6 +71,7 @@ endif::[]
 * You have Maven {maven-version} installed.
 
 // Alternative 1: generate project form scratch
+////
 [id="creating-the-spring-di-example-maven-project_{context}"]
 == Creating the Spring DI Example Maven project
 
@@ -97,7 +98,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy,spring-di"
 cd spring-di-quickstart
 ----
-
+////
 
 //Alternative 2: you have a project and need to add the required extension.
 [id="setting-up-your-spring-di-maven-project_{context}"]

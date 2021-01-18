@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -45,7 +46,7 @@ public class FieldInjectedSubClassResource extends FieldInjectedResource {
     public String param(@QueryParam("query") String query,
             @HeaderParam("header") String header,
             @Context UriInfo uriInfo,
-            @BeanParam BeanParamSubClass beanParam) {
+            @BeanParam @NotNull BeanParamSubClass beanParam) {
         checkInjections("/injection-subclass/param2", query, header, uriInfo, this.beanParam, query, uriInfo, beanParam);
         return "OK";
     }

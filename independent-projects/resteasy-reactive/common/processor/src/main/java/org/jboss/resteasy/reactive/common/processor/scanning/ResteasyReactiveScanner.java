@@ -121,17 +121,17 @@ public class ResteasyReactiveScanner {
             // FIXME: this isn't right wrt generics
             switch (target.kind()) {
                 case FIELD:
-                    beanParams.add(target.asField().type().toString());
+                    beanParams.add(target.asField().type().name().toString());
                     break;
                 case METHOD:
                     Type setterParamType = target.asMethod().parameters().get(0);
-                    beanParams.add(setterParamType.toString());
+                    beanParams.add(setterParamType.name().toString());
                     break;
                 case METHOD_PARAMETER:
                     MethodInfo method = target.asMethodParameter().method();
                     int paramIndex = target.asMethodParameter().position();
                     Type paramType = method.parameters().get(paramIndex);
-                    beanParams.add(paramType.toString());
+                    beanParams.add(paramType.name().toString());
                     break;
                 default:
                     break;

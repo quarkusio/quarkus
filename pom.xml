@@ -122,6 +122,7 @@
                 <skip.gradle.tests>true</skip.gradle.tests>
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+                <wiremock.skip>true</wiremock.skip> <!-- wiremock-maven-plugin -->
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>
@@ -145,6 +146,7 @@
                 <skip.gradle.tests>true</skip.gradle.tests>
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+                <wiremock.skip>true</wiremock.skip> <!-- wiremock-maven-plugin -->
             </properties>
         </profile>
         <profile>

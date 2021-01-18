@@ -4,16 +4,20 @@ import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +40,8 @@ import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.api.buildplan.Port;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.builder.Version;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
@@ -54,6 +60,7 @@ import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -85,6 +92,7 @@ public class JibProcessor {
             JarBuildItem sourceJar,
             MainClassBuildItem mainClass,
             OutputTargetBuildItem outputTarget,
+            CurateOutcomeBuildItem curateOutcome,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
@@ -101,7 +109,7 @@ public class JibProcessor {
             jibContainerBuilder = createContainerBuilderFromLegacyJar(jibConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);
         } else if (packageConfig.isFastJar()) {
-            jibContainerBuilder = createContainerBuilderFromFastJar(jibConfig, sourceJar, containerImageLabels);
+            jibContainerBuilder = createContainerBuilderFromFastJar(jibConfig, sourceJar, curateOutcome, containerImageLabels);
         } else {
             throw new IllegalArgumentException(
                     "Package type '" + packageType + "' is not supported by the container-image-jib extension");
@@ -232,8 +240,9 @@ public class JibProcessor {
      */
     private JibContainerBuilder createContainerBuilderFromFastJar(JibConfig jibConfig,
             JarBuildItem sourceJarBuildItem,
-            List<ContainerImageLabelBuildItem> containerImageLabels) {
+            CurateOutcomeBuildItem curateOutcome, List<ContainerImageLabelBuildItem> containerImageLabels) {
         Path componentsPath = sourceJarBuildItem.getPath().getParent();
+        Path appLibDir = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN);
 
         AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
 
@@ -248,11 +257,84 @@ public class JibProcessor {
             entrypoint.add(JarResultBuildStep.QUARKUS_RUN_JAR);
         }
 
+        List<AppArtifact> fastChangingLibs = new ArrayList<>();
+        List<AppDependency> userDependencies = curateOutcome.getEffectiveModel().getUserDependencies();
+        for (AppDependency dep : userDependencies) {
+            AppArtifact artifact = dep.getArtifact();
+            if (artifact == null) {
+                continue;
+            }
+            String artifactVersion = artifact.getVersion();
+            if ((artifactVersion == null) || artifactVersion.isEmpty()) {
+                continue;
+            }
+            if (artifactVersion.toLowerCase().contains("snapshot")) {
+                fastChangingLibs.add(artifact);
+            }
+        }
+        Set<Path> fastChangingLibPaths = Collections.emptySet();
+        List<Path> nonFastChangingLibPaths = null;
+        if (!fastChangingLibs.isEmpty()) {
+            fastChangingLibPaths = new HashSet<>(fastChangingLibs.size());
+            Map<String, Path> libNameToPath = new HashMap<>();
+            try (DirectoryStream<Path> allLibPaths = Files.newDirectoryStream(appLibDir)) {
+                for (Path libPath : allLibPaths) {
+                    libNameToPath.put(libPath.getFileName().toString(), libPath);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            List<String> libFileNames = new ArrayList<>(libNameToPath.keySet());
+            for (AppArtifact appArtifact : fastChangingLibs) {
+                String matchingLibDirFileName = null;
+                for (Path appArtifactPath : appArtifact.getPaths()) {
+                    for (String libFileName : libFileNames) {
+                        if (libFileName.contains(appArtifact.getGroupId())
+                                && libFileName.contains(appArtifactPath.getFileName().toString())) {
+                            matchingLibDirFileName = libFileName;
+                            break;
+                        }
+                    }
+                    if (matchingLibDirFileName != null) {
+                        break;
+                    }
+                }
+                if (matchingLibDirFileName != null) {
+                    fastChangingLibPaths.add(libNameToPath.get(matchingLibDirFileName));
+                }
+            }
+            Collection<Path> allLibPaths = libNameToPath.values();
+            nonFastChangingLibPaths = new ArrayList<>(allLibPaths.size() - fastChangingLibPaths.size());
+            for (Path libPath : allLibPaths) {
+                if (!fastChangingLibPaths.contains(libPath)) {
+                    nonFastChangingLibPaths.add(libPath);
+                }
+            }
+        }
+
         try {
+
             JibContainerBuilder jibContainerBuilder = Jib
                     .from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
-                            jibConfig.baseRegistryPassword))
-                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)), workDirInContainer)
+                            jibConfig.baseRegistryPassword));
+            if (fastChangingLibPaths.isEmpty()) {
+                // just create a layer with the entire lib structure intact
+                jibContainerBuilder.addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)),
+                        workDirInContainer);
+            } else {
+                // we need to manually create each layer
+                // the idea here is that the fast changing libraries are created in a later layer, thus when they do change,
+                // docker doesn't have to create an entire layer with all dependencies - only change the fast ones
+                jibContainerBuilder.addLayer(
+                        Collections.singletonList(
+                                componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.BOOT_LIB)),
+                        workDirInContainer.resolve(JarResultBuildStep.LIB));
+                jibContainerBuilder.addLayer(nonFastChangingLibPaths,
+                        workDirInContainer.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN));
+                jibContainerBuilder.addLayer(new ArrayList<>(fastChangingLibPaths),
+                        workDirInContainer.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN));
+            }
+            jibContainerBuilder
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)),
                             workDirInContainer)
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)), workDirInContainer)
@@ -280,7 +362,8 @@ public class JibProcessor {
 
     private JibContainerBuilder createContainerBuilderFromLegacyJar(JibConfig jibConfig,
             JarBuildItem sourceJarBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            MainClassBuildItem mainClassBuildItem,
             List<ContainerImageLabelBuildItem> containerImageLabels) {
         try {
             // not ideal since this has been previously zipped - we would like to just reuse it

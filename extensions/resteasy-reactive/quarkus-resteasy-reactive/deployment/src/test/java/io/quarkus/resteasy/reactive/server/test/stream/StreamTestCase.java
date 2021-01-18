@@ -2,9 +2,9 @@ package io.quarkus.resteasy.reactive.server.test.stream;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -133,8 +133,8 @@ public class StreamTestCase {
         WebTarget target = client.target(uri.toString() + "stream/sse");
         try (SseEventSource sse = SseEventSource.target(target).build()) {
             CountDownLatch latch = new CountDownLatch(1);
-            List<Throwable> errors = new ArrayList<>();
-            List<String> results = new ArrayList<>();
+            List<Throwable> errors = new CopyOnWriteArrayList<>();
+            List<String> results = new CopyOnWriteArrayList<>();
             sse.register(event -> {
                 results.add(event.readData());
             }, error -> {
@@ -155,8 +155,8 @@ public class StreamTestCase {
         WebTarget target = client.target(uri.toString() + "stream/sse/throws");
         try (SseEventSource sse = SseEventSource.target(target).build()) {
             CountDownLatch latch = new CountDownLatch(1);
-            List<Throwable> errors = new ArrayList<>();
-            List<String> results = new ArrayList<>();
+            List<Throwable> errors = new CopyOnWriteArrayList<>();
+            List<String> results = new CopyOnWriteArrayList<>();
             sse.register(event -> {
                 results.add(event.readData());
             }, error -> {

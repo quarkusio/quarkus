@@ -10,25 +10,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :product-docs:
 :doctype: book
 
-ifdef::product-docs[]
-//TODO: copy product attribute files over to community repo
-//include::common/attributes.adoc[]
-//temporary attributes
-:ProductName: Quarkus
-:ProductLongName: Red Hat build of Quarkus
-:maven-version: 3.6.3
-endif::[]
-
-
-
 //Top-Level Assembly
 [id="using-the-quarkus-extension-for-spring-di-api_{context}"]
 = Using the Quarkus Extension for Spring DI API
 
 ifdef::context[:parent-context: {context}]
-//temporary context value, will be changed before going into production
-:context: guide-quarkus-spring-di
 
+:context: using-the-quarkus-extension-for-spring-di
+
+include::./attributes.adoc[]
 
 [role="_abstract"]
 The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection, that you can use as an alternative to MicroProfile CDI annotations in your Quarkus application.
@@ -52,7 +42,6 @@ endif::[]
 
 // Tech preview info for community purposes, different from product
 ifndef::product-docs[]
-include::./attributes.adoc[]
 :extension-status: preview
 endif::[]
 
@@ -413,6 +402,7 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `or
 Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the link:cdi[Quarkus introduction to CDI] and the link:cdi-reference#arc-configuration-reference[CDI reference guide]
 The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the link:getting-started-testing[Quarkus testing guide].
 
+//BEGIN: REFERENCE module
 [id="overview-of-annotation-equivalents-in-spring-di-and-cdi"]
 == Overview of annotation equivalents in Spring DI and CDI
 
@@ -459,7 +449,7 @@ The following table shows how Spring DI annotations can be converted to CDI anno
 |
 |Does not have a one-to-one mapping to a CDI annotation. Depending on the value of `@Scope`, you can use `@Singleton`, `@ApplicationScoped`, `@SessionScoped`, `@RequestScoped`, or `@Dependent`
 |===
-
+//END: REFERENCE module
 
 ifdef::product-docs[]
 [role="_additional-resources"]

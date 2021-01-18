@@ -5,3 +5,8 @@
 :idseparator: -
 :icons: font
 :imagesdir: ./images
+
+// Product-related attributes
+:ProductName: Quarkus
+:ProductLongName: Red Hat build of Quarkus
+:maven-version: 3.6.3

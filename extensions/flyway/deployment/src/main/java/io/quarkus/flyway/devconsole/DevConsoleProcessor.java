@@ -7,14 +7,14 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.flyway.runtime.FlywayContainerSupplier;
+import io.quarkus.flyway.runtime.FlywayContainersSupplier;
 import io.quarkus.flyway.runtime.devconsole.FlywayDevConsoleRecorder;
 
 public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("containers", new FlywayContainerSupplier());
+        return new DevConsoleRuntimeTemplateInfoBuildItem("containers", new FlywayContainersSupplier());
     }
 
     @BuildStep

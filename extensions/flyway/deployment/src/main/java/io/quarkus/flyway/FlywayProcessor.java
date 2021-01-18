@@ -141,6 +141,8 @@ class FlywayProcessor {
         // add the @FlywayDataSource class otherwise it won't registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(FlywayDataSource.class).build());
 
+        recorder.resetFlywayContainers();
+
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
         for (String dataSourceName : dataSourceNames) {

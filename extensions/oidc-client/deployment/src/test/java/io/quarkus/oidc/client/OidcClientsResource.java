@@ -7,7 +7,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -29,13 +28,6 @@ public class OidcClientsResource {
     @Path("tokens/{id}")
     public Uni<String> grantTokensUni(@PathParam("id") String oidcClientId) {
         return getClient(oidcClientId).getTokens().flatMap(tokens -> createTokensString(tokens));
-    }
-
-    @GET
-    @Path("refresh-tokens/{id}")
-    public Uni<String> refreshGrantTokens(@PathParam("id") String oidcClientId,
-            @QueryParam("refreshToken") String refreshToken) {
-        return getClient(oidcClientId).refreshTokens(refreshToken).flatMap(tokens -> createTokensString(tokens));
     }
 
     @GET
@@ -61,7 +53,7 @@ public class OidcClientsResource {
     }
 
     private boolean tokensAreInitialized(Tokens tokens) {
-        return tokens.getAccessToken() != null && tokens.getAccessTokenExpiresAt() != null && tokens.getRefreshToken() != null;
+        return tokens.getAccessToken() != null && tokens.getAccessTokenExpiresAt() != null;
     }
 
     private OidcClient getClient(String id) {

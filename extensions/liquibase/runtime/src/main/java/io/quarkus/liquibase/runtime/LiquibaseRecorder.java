@@ -1,13 +1,14 @@
 package io.quarkus.liquibase.runtime;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.Any;
 import javax.sql.DataSource;
 
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
@@ -15,32 +16,35 @@ import liquibase.Liquibase;
 @Recorder
 public class LiquibaseRecorder {
 
-    static final List<LiquibaseContainer> liquibaseContainers = new ArrayList<>(2);
-
     public Supplier<LiquibaseFactory> liquibaseSupplier(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
-        LiquibaseContainerProducer liquibaseProducer = Arc.container().instance(LiquibaseContainerProducer.class).get();
-        LiquibaseContainer liquibaseContainer = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
-        liquibaseContainers.add(liquibaseContainer);
+        LiquibaseFactoryProducer liquibaseProducer = Arc.container().instance(LiquibaseFactoryProducer.class).get();
+        LiquibaseFactory liquibaseFactory = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
         return new Supplier<LiquibaseFactory>() {
             @Override
             public LiquibaseFactory get() {
-                return liquibaseContainer.getLiquibaseFactory();
+                return liquibaseFactory;
             }
         };
     }
 
     public void doStartActions() {
         try {
-            for (LiquibaseContainer liquibaseContainer : liquibaseContainers) {
-                LiquibaseFactory liquibaseFactory = liquibaseContainer.getLiquibaseFactory();
-                if (liquibaseContainer.isCleanAtStart()) {
+            InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container()
+                    .select(LiquibaseFactory.class, Any.Literal.INSTANCE);
+            if (liquibaseFactoryInstance.isUnsatisfied()) {
+                return;
+            }
+
+            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
+                LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
+                if (liquibaseFactory.getConfiguration().cleanAtStart) {
                     try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
                         liquibase.dropAll();
                     }
                 }
-                if (liquibaseContainer.isMigrateAtStart()) {
-                    if (liquibaseContainer.isValidateOnMigrate()) {
+                if (liquibaseFactory.getConfiguration().migrateAtStart) {
+                    if (liquibaseFactory.getConfiguration().validateOnMigrate) {
                         try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
                             liquibase.validate();
                         }
@@ -51,7 +55,7 @@ public class LiquibaseRecorder {
                 }
             }
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException("Error starting Liquibase", e);
         }
     }
 }

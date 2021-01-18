@@ -16,27 +16,25 @@ import io.quarkus.liquibase.LiquibaseFactory;
  * any CDI annotations
  *
  */
-public class LiquibaseContainerProducer {
+public class LiquibaseFactoryProducer {
 
     private final LiquibaseBuildTimeConfig liquibaseBuildTimeConfig;
     private final LiquibaseRuntimeConfig liquibaseRuntimeConfig;
 
-    public LiquibaseContainerProducer(LiquibaseBuildTimeConfig liquibaseBuildTimeConfig,
+    public LiquibaseFactoryProducer(LiquibaseBuildTimeConfig liquibaseBuildTimeConfig,
             LiquibaseRuntimeConfig liquibaseRuntimeConfig) {
         this.liquibaseBuildTimeConfig = liquibaseBuildTimeConfig;
         this.liquibaseRuntimeConfig = liquibaseRuntimeConfig;
     }
 
-    public LiquibaseContainer createLiquibaseFactory(DataSource dataSource, String dataSourceName) {
+    public LiquibaseFactory createLiquibaseFactory(DataSource dataSource, String dataSourceName) {
         LiquibaseDataSourceBuildTimeConfig matchingBuildTimeConfig = DataSourceUtil.isDefault(dataSourceName)
                 ? liquibaseBuildTimeConfig.defaultDataSource
                 : liquibaseBuildTimeConfig.getConfigForDataSourceName(dataSourceName);
         LiquibaseDataSourceRuntimeConfig matchingRuntimeConfig = DataSourceUtil.isDefault(dataSourceName)
                 ? liquibaseRuntimeConfig.defaultDataSource
                 : liquibaseRuntimeConfig.getConfigForDataSourceName(dataSourceName);
-        LiquibaseFactory liquibaseFactory = new LiquibaseCreator(matchingRuntimeConfig, matchingBuildTimeConfig)
-                .createLiquibase(dataSource);
-        return new LiquibaseContainer(liquibaseFactory, matchingRuntimeConfig.cleanAtStart,
-                matchingRuntimeConfig.migrateAtStart, matchingRuntimeConfig.validateOnMigrate, dataSourceName);
+        return new LiquibaseCreator(matchingRuntimeConfig, matchingBuildTimeConfig)
+                .createLiquibaseFactory(dataSource, dataSourceName);
     }
 }

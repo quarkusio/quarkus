@@ -8,5 +8,5 @@
 
 // Product-related attributes
 :ProductName: Quarkus
-:ProductLongName: Red Hat build of Quarkus
+:ProductLongName: {ProductName}
 :maven-version: 3.6.3

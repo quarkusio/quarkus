@@ -3,6 +3,8 @@ package io.quarkus.smallrye.health.runtime;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
@@ -17,6 +19,16 @@ import io.vertx.ext.web.RoutingContext;
 abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
 
     protected abstract SmallRyeHealth getHealth(SmallRyeHealthReporter reporter, RoutingContext routingContext);
+
+    private static final Map<String, String> corsHeaders;
+
+    static {
+        corsHeaders = new HashMap<>();
+        corsHeaders.put("Access-Control-Allow-Origin", "*");
+        corsHeaders.put("Access-Control-Allow-Headers", "origin, content-type, accept, authorization");
+        corsHeaders.put("Access-Control-Allow-Credentials", "true");
+        corsHeaders.put("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+    }
 
     @Override
     public void handle(RoutingContext ctx) {
@@ -41,6 +53,7 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
             resp.setStatusCode(503);
         }
         resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+        resp.headers().addAll(corsHeaders);
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             reporter.reportHealth(outputStream, health);
             resp.end(Buffer.buffer(outputStream.toByteArray()));

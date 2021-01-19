@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.health.test;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -27,6 +28,7 @@ public class HealthUnitTest {
         try {
             RestAssured.defaultParser = Parser.JSON;
             RestAssured.when().get("/q/health/live").then()
+                    .header("Access-Control-Allow-Origin", equalTo("*"))
                     .body("status", is("UP"),
                             "checks.status", contains("UP"),
                             "checks.name", contains("basic"));

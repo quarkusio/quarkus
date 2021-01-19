@@ -84,10 +84,10 @@ public class ResteasyReactiveScanner {
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
-            if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
-                blocking = false;
-            } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+            if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
                 blocking = true;
+            } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                blocking = false;
             }
         }
         if (selectedAppClass != null) {

@@ -13,7 +13,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 //Top-Level Assembly
 [id="using-the-quarkus-extension-for-spring-di-api_{context}"]
-= Using the Quarkus Extension for Spring DI API
+= Using the Quarkus extension for Spring Dependency Injection (DI) API
 
 ifdef::context[:parent-context: {context}]
 
@@ -78,7 +78,7 @@ You can create new a new Maven project for the Spring DI example application on 
 
 .Procedure
 
-. Execute the following commands to:
+. Enter the following commands to:
 
 * generate the directory structure of the project.
 * create the main class file of the example application.
@@ -114,7 +114,7 @@ Add the required {ProductName} extension as a dependency of your Maven project.
 cd <name-of-your-project-directory>
 ----
 
-. Execute the following command to add the `quarkus-spring-di` extension to the `pom.xml` file of your project:
+. Enter the following command to add the `quarkus-spring-di` extension to the `pom.xml` file of your project:
 +
 [source,bash]
 ----
@@ -371,7 +371,7 @@ Package and start your Spring DI example application using Maven.
 cd <name-of-your-project-directory>
 ----
 
-. Execute the following command to compile and start your application in development mode:
+. Enter the following command to compile and start your application in development mode:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----

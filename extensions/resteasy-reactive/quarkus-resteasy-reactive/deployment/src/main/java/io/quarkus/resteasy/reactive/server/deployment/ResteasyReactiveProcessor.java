@@ -291,7 +291,8 @@ public class ResteasyReactiveProcessor {
                             config.inputBufferSize.asLongValue(), config.singleDefaultProduces, config.defaultProduces))
                     .setAdditionalReaders(additionalReaders)
                     .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
-                    .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters)
+                    .setInjectableBeans(injectableBeans)
+                    .setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(appResult.isBlocking())
                     .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
                     .setClassLevelExceptionMappers(

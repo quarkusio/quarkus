@@ -20,6 +20,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
@@ -438,11 +439,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean blocking = defaultBlocking;
             AnnotationInstance blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
             if (blockingAnnotation != null) {
-                AnnotationValue value = blockingAnnotation.value();
-                if (value != null) {
-                    blocking = value.asBoolean();
-                } else {
-                    blocking = true;
+                blocking = true;
+            } else {
+                AnnotationInstance nonBlockingAnnotation = getInheritableAnnotation(info, NON_BLOCKING);
+                if (nonBlockingAnnotation != null) {
+                    blocking = false;
                 }
             }
 

@@ -273,6 +273,18 @@ public class ParserTest {
         assertEquals("foo.name", expressions.get(4).toOriginalString());
     }
 
+    @Test
+    public void testParserHook() {
+        Template template = Engine.builder().addDefaults().addParserHook(new ParserHook() {
+            @Override
+            public void beforeParsing(ParserHelper parserHelper) {
+                parserHelper.addContentFilter(contents -> contents.replace("bard", "bar"));
+                parserHelper.addContentFilter(contents -> contents.replace("${", "$\\{"));
+            }
+        }).build().parse("${foo}::{bard}");
+        assertEquals("${foo}::true", template.data("bar", true).render());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

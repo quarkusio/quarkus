@@ -103,7 +103,7 @@ public interface Expression {
         }
 
         default VirtualMethodPart asVirtualMethod() {
-            throw new IllegalArgumentException("Not a virtual method");
+            throw new IllegalStateException("Not a virtual method: " + toString() + " [typeInfo: " + getTypeInfo() + "]");
         }
 
     }

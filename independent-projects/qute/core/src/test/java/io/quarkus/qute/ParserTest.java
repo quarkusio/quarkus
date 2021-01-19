@@ -105,7 +105,7 @@ public class ParserTest {
         assertExpr(expressions, "it.value", 2, "it<loop#" + beanLabels.getGeneratedId() + ">.value");
 
         assertExpr(expressions, "foo.bar", 2, "|org.acme.Foo|.bar");
-        assertExpr(expressions, "baz.name", 2, "|org.acme.Foo|.bar.name");
+        assertExpr(expressions, "baz.name", 2, "baz<set#10>.name");
         assertExpr(expressions, "foo.baz", 2, null);
         assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(labels,bar)");
 

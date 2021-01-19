@@ -38,7 +38,7 @@ public class NativeImageIT extends MojoTestBase {
         // trigger mvn package -Pnative -Dquarkus.ssl.native=true
         final String[] mvnArgs = new String[] { "package", "-DskipTests", "-Pnative", "-Dquarkus.ssl.native=true" };
         final MavenProcessInvocationResult result = running.execute(Arrays.asList(mvnArgs), Collections.emptyMap());
-        await().atMost(5, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(10, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         final String processLog = running.log();
         try {
             assertThat(processLog).containsIgnoringCase("BUILD SUCCESS");

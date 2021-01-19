@@ -47,7 +47,6 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
-import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
@@ -75,7 +74,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             boolean augmentDone = false;
             //ok, we have resolved all the deps
             try {
-                StartupAction start = (StartupActionImpl) augmentAction.createInitialRuntimeApplication();
+                StartupAction start = augmentAction.createInitialRuntimeApplication();
                 //this is a bit yuck, but we need replace the default
                 //exit handler in the runtime class loader
                 //TODO: look at implementing a common core classloader, that removes the need for this sort of crappy hack
@@ -291,7 +290,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     //the main entry point, but loaded inside the augmentation class loader
     @Override
     public void accept(CuratedApplication o, Map<String, Object> params) {
-        Timing.staticInitStarted(o.getBaseRuntimeClassLoader());
         //https://github.com/quarkusio/quarkus/issues/9748
         //if you have an app with all daemon threads then the app thread
         //may be the only thread keeping the JVM alive

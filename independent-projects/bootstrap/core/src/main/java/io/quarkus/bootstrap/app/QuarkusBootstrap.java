@@ -13,7 +13,10 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
 import io.quarkus.bootstrap.resolver.update.VersionUpdate;
 import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -122,7 +125,7 @@ public class QuarkusBootstrap implements Serializable {
         //once we have this it is up to augment to set up the class loader to actually use them
 
         if (existingModel != null) {
-            return new CuratedApplication(this, new CurationResult(existingModel));
+            return new CuratedApplication(this, new CurationResult(existingModel), createClassLoadingConfig());
         }
         //first we check for updates
         if (mode != Mode.PROD) {
@@ -157,7 +160,48 @@ public class QuarkusBootstrap implements Serializable {
                 appModelFactory.setEnableClasspathCache(true);
             }
         }
-        return new CuratedApplication(this, appModelFactory.resolveAppModel());
+        return new CuratedApplication(this, appModelFactory.resolveAppModel(), createClassLoadingConfig());
+    }
+
+    private ConfiguredClassLoading createClassLoadingConfig() {
+        //look for an application.properties
+        for (Path path : applicationRoot) {
+            Path props = path.resolve("application.properties");
+            if (Files.exists(props)) {
+                try (InputStream in = Files.newInputStream(props)) {
+                    Properties p = new Properties();
+                    p.load(in);
+                    Set<AppArtifactKey> parentFirst = toArtifactSet(
+                            p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p)));
+                    Set<AppArtifactKey> liveReloadable = toArtifactSet(
+                            p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p)));
+                    return new ConfiguredClassLoading(parentFirst, liveReloadable);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to load bootstrap classloading config from application.properties", e);
+                }
+            }
+        }
+        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet());
+    }
+
+    private String selectKey(String base, Properties p) {
+        String profile = BootstrapProfile.getActiveProfile(mode);
+        String profileKey = "%" + profile + "." + base;
+        if (p.containsKey(profileKey)) {
+            return profileKey;
+        }
+        return base;
+    }
+
+    private Set<AppArtifactKey> toArtifactSet(String config) {
+        if (config == null) {
+            return new HashSet<>();
+        }
+        Set<AppArtifactKey> ret = new HashSet<>();
+        for (String i : config.split(",")) {
+            ret.add(new AppArtifactKey(i.split(":")));
+        }
+        return ret;
     }
 
     public AppModelResolver getAppModelResolver() {

@@ -1,50 +1,33 @@
-package io.quarkus.runtime.configuration;
-
-import io.quarkus.runtime.LaunchMode;
+package io.quarkus.bootstrap.app;
 
 /**
- * Class that is responsible for resolving the current profile
+ * Mirror of the logic in ProfileManager, but this is needed pre-bootstrap so there is nowhere to really share it.
  *
- * As this is needed immediately after startup it does not use any of the usual build/config infrastructure.
- *
- * The profile is resolved in the following way:
- *
- * - The quarkus.profile system property
- * - The QUARKUS_PROFILE environment entry
- * - The default runtime profile provided during build
- * - The default property for the launch mode
- *
+ * This is only used for reading the class loading config
  */
-public class ProfileManager {
+public class BootstrapProfile {
 
     public static final String QUARKUS_PROFILE_ENV = "QUARKUS_PROFILE";
     public static final String QUARKUS_PROFILE_PROP = "quarkus.profile";
     public static final String QUARKUS_TEST_PROFILE_PROP = "quarkus.test.profile";
     private static final String BACKWARD_COMPATIBLE_QUARKUS_PROFILE_PROP = "quarkus-profile";
+    public static final String DEV = "dev";
+    public static final String PROD = "prod";
+    public static final String TEST = "test";
 
-    private static volatile LaunchMode launchMode = LaunchMode.NORMAL;
     private static String runtimeDefaultProfile = null;
-
-    public static void setLaunchMode(LaunchMode mode) {
-        launchMode = mode;
-    }
-
-    public static LaunchMode getLaunchMode() {
-        return launchMode;
-    }
 
     public static void setRuntimeDefaultProfile(final String profile) {
         runtimeDefaultProfile = profile;
     }
 
-    //NOTE: changes made here must be replicated in BootstrapProfileManager
-    public static String getActiveProfile() {
-        if (launchMode == LaunchMode.TEST) {
+    public static String getActiveProfile(QuarkusBootstrap.Mode mode) {
+        if (mode == QuarkusBootstrap.Mode.TEST) {
             String profile = System.getProperty(QUARKUS_TEST_PROFILE_PROP);
             if (profile != null) {
                 return profile;
             }
-            return launchMode.getDefaultProfile();
+            return "test";
         }
 
         String profile = System.getProperty(QUARKUS_PROFILE_PROP);
@@ -66,8 +49,17 @@ public class ProfileManager {
         if (profile != null) {
             return profile;
         }
-
-        return launchMode.getDefaultProfile();
+        switch (mode) {
+            case REMOTE_DEV_SERVER:
+            case DEV:
+                return DEV;
+            case REMOTE_DEV_CLIENT:
+            case PROD:
+                return PROD;
+            case TEST:
+                return TEST;
+            default:
+                throw new RuntimeException("unknown mode:" + mode);
+        }
     }
-
 }

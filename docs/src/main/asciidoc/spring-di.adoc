@@ -66,21 +66,21 @@ endif::[]
 .Prerequisites
 
 // comment out the following prerequisite in the alternative 1 layout of the document.
-* You have a {ProductName} Maven project.
-* You have OpenJDK 8 installed.
-* You have Maven {maven-version} installed.
+* Have a {ProductName} Maven project.
+* Have OpenJDK 8 installed.
+* Have Maven {maven-version} installed.
 
 // Alternative 1: generate project form scratch
 ////
 [id="creating-the-spring-di-example-maven-project_{context}"]
-== Creating the Spring DI Example Maven project
+== Creating the Spring DI example Maven project
 
 [role="_abstract"]
 You can create new a new Maven project for the Spring DI example application on the command line.
 
 .Procedure
 
-. Execute the following commands to:
+. Run the following commands to:
 
 * generate the directory structure of the project
 * create the main class file of the example application
@@ -294,7 +294,7 @@ public class GreeterBean {
 == Updating the JAX-RS resource
 
 [role="_abstract"]
-When you create the class files of you example applications, you must also update the `GreeterResource.java` class file.
+When you create the class files of your example applications, you must also update the `GreeterResource.java` class file.
 // TODO: explain why this needs to be done.
 
 .Procedure
@@ -374,7 +374,7 @@ Package and run your Spring DI example application using Maven.
 cd <name-of-your-project-directory>
 ----
 
-. Execute the following command to compile and run your application in development mode:
+. Run the following command to compile and start your application in development mode:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -394,9 +394,9 @@ You can create a native image by following the guide about link:building-native-
 endif::[]
 
 ifndef::product-docs[]
-== Important Technical Note
+== Important technical note
 
-Note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
+Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.

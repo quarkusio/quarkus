@@ -1,8 +1,8 @@
 {#include main}
 {#title}Quarkus REST Endpoints{/title}
 {#body}
-<header>
- <h4>REST Resources</h4>
+<br>
+ <h5>REST Resources</h5>
  {#for endpoint in info:endpointScores.endpoints}
  <div class="row">
   <div class="col">
@@ -21,10 +21,14 @@
  </div>
  {/if}
  {/for}
-</header>
-
-<header>
-
-</header>
+<br>
+ <h5>Additional Endpoints</h5>
+ {#for additionalEndpoint in info:additionalEndpointInfo}
+ <div class="row">
+  <div class="col">
+   <code>{additionalEndpoint.endpoint}   {additionalEndpoint.description}</code>
+  </div>
+ </div>
+ {/for}
 {/body}
 {/include}

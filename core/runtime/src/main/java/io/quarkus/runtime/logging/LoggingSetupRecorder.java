@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.logging.ErrorManager;
@@ -137,7 +138,7 @@ public class LoggingSetupRecorder {
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
-            final Level logLevel = entry.getValue().level.getLevel();
+            final Level logLevel = getLogLevel(entry.getKey(), entry.getValue(), categories, buildConfig.minLevel);
             final Level minLogLevel = buildCategory == null
                     ? buildConfig.minLevel
                     : buildCategory.minLevel.getLevel();
@@ -175,6 +176,23 @@ public class LoggingSetupRecorder {
 
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private Level getLogLevel(String categoryName, CategoryConfig categoryConfig, Map<String, CategoryConfig> categories,
+            Level rootMinLevel) {
+        if (Objects.isNull(categoryConfig))
+            return rootMinLevel;
+
+        final InheritableLevel inheritableLevel = categoryConfig.level;
+        if (!inheritableLevel.isInherited())
+            return inheritableLevel.getLevel();
+
+        int lastDotIndex = categoryName.lastIndexOf('.');
+        if (lastDotIndex == -1)
+            return rootMinLevel;
+
+        String parent = categoryName.substring(0, lastDotIndex);
+        return getLogLevel(parent, categories.get(parent), categories, rootMinLevel);
     }
 
     private CategoryBuildTimeConfig isSubsetOf(String categoryName, Map<String, CategoryBuildTimeConfig> categories) {

@@ -31,6 +31,15 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!--
+            smallrye-opentracing depends on opentracing:jaxrs2 that defines JAXRS-API as provided.
+            So we need to add it in case we use opentracing without resteasy.
+            See https://github.com/opentracing-contrib/java-interceptors/issues/15
+        -->
+        <dependency>
+            <groupId>org.jboss.spec.javax.ws.rs</groupId>
+            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-fault-tolerance-tracing-propagation</artifactId>

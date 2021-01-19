@@ -13,6 +13,7 @@ public final class SetRuntimeLogLevels implements QuarkusTestResourceLifecycleMa
         systemProperties.put("quarkus.log.category.\"io.quarkus.it.logging.minlevel.set.bydefault\".level", "DEBUG");
         systemProperties.put("quarkus.log.category.\"io.quarkus.it.logging.minlevel.set.above\".level", "WARN");
         systemProperties.put("quarkus.log.category.\"io.quarkus.it.logging.minlevel.set.below\".level", "TRACE");
+        systemProperties.put("quarkus.log.category.\"io.quarkus.it.logging.minlevel.set.below.child\".level", "inherit");
         systemProperties.put("quarkus.log.category.\"io.quarkus.it.logging.minlevel.set.promote\".level", "INFO");
         return systemProperties;
     }

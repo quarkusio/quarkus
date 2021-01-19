@@ -43,7 +43,7 @@ The extension understands the following types of ConfigMaps and Secrets as input
 You have to explicitly enable the retrieval of ConfigMaps and Secrets by setting `quarkus.kubernetes-config.enabled=true`.
 The default is `false` in order to make it easy to test the application locally.
 
-Afterwards, set the `quarkus.kubernetes-config.configmaps` property to configure which ConfigMaps should be used.
+Afterwards, set the `quarkus.kubernetes-config.config-maps` property to configure which ConfigMaps should be used.
 Set the `quarkus.kubernetes-config.secrets` property to configure which Secrets should be used.
 To access ConfigMaps and Secrets from a specific namespace, you can set the `quarkus.kubernetes-config.namespace` property.
 

@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -483,7 +485,11 @@ public class MethodNameParser {
     }
 
     private String getEntityName() {
-        // TODO: not true?
+        AnnotationInstance annotationInstance = entityClass.classAnnotation(DotNames.JPA_ENTITY);
+        if (annotationInstance != null && annotationInstance.value("name") != null) {
+            AnnotationValue annotationValue = annotationInstance.value("name");
+            return annotationValue.asString().length() > 0 ? annotationValue.asString() : entityClass.simpleName();
+        }
         return entityClass.simpleName();
     }
 

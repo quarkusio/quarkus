@@ -77,3 +77,7 @@ INSERT INTO team(id, name, unit_id) VALUES (11, 'Sales Team', 2);
 INSERT INTO employee(id, user_id, first_name, last_name, team_id) VALUES (100, 'johdoe', 'John', 'Doe', 10);
 INSERT INTO employee(id, user_id, first_name, last_name, team_id) VALUES (101, 'petdig', 'Peter', 'Digger', 10);
 INSERT INTO employee(id, user_id, first_name, last_name, team_id) VALUES (102, 'stesmi', 'Stella', 'Smith', 11);
+
+INSERT INTO MotorCar(id, brand, model) VALUES (1, 'Monteverdi', 'Hai 450');
+INSERT INTO MotorCar(id, brand, model) VALUES (2, 'Rinspeed', 'iChange');
+INSERT INTO MotorCar(id, brand, model) VALUES (3, 'Rinspeed', 'Oasis');

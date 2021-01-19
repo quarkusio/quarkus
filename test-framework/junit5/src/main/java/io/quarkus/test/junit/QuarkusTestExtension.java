@@ -327,19 +327,20 @@ public class QuarkusTestExtension
         try {
             Constructor<?> testResourceClassEntryConstructor = Class
                     .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
-                    .getConstructor(Class.class, Map.class);
+                    .getConstructor(Class.class, Map.class, boolean.class);
 
             List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
             List<Object> result = new ArrayList<>(testResources.size());
             for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
                 Object instance = testResourceClassEntryConstructor.newInstance(
-                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs());
+                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
+                        testResource.isParallel());
                 result.add(instance);
             }
 
             return result;
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass());
+            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass(), e);
         }
     }
 

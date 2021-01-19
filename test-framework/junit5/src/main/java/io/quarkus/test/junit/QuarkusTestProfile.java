@@ -54,14 +54,21 @@ public interface QuarkusTestProfile {
     final class TestResourceEntry {
         private final Class<? extends QuarkusTestResourceLifecycleManager> clazz;
         private final Map<String, String> args;
+        private final boolean parallel;
 
         public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz) {
             this(clazz, Collections.emptyMap());
         }
 
         public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args) {
+            this(clazz, args, false);
+        }
+
+        public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args,
+                boolean parallel) {
             this.clazz = clazz;
             this.args = args;
+            this.parallel = parallel;
         }
 
         public Class<? extends QuarkusTestResourceLifecycleManager> getClazz() {
@@ -70,6 +77,10 @@ public interface QuarkusTestProfile {
 
         public Map<String, String> getArgs() {
             return args;
+        }
+
+        public boolean isParallel() {
+            return parallel;
         }
     }
 }

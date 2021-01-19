@@ -37,6 +37,11 @@ public @interface QuarkusTestResource {
      */
     ResourceArg[] initArgs() default {};
 
+    /**
+     * Whether this test resource is to be started in parallel (concurrently) along with others also marked as parallel
+     */
+    boolean parallel() default false;
+
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @Documented

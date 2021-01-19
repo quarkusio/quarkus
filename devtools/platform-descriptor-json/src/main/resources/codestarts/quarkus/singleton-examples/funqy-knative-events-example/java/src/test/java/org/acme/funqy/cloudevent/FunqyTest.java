@@ -17,6 +17,7 @@ public class FunqyTest {
     @Test
     public void testCloudEvent() {
         RestAssured.given().contentType("application/json")
+                .header("ce-specversion", "1.0")
                 .header("ce-id", UUID.randomUUID().toString())
                 .header("ce-type", "myCloudEventGreeting")
                 .header("ce-source", "test")

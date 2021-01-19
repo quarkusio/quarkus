@@ -9,6 +9,9 @@ import io.smallrye.mutiny.Uni;
 
 public class TokensHelper {
 
+    @SuppressWarnings("unused")
+    private volatile TokenRequestState tokenRequestState;
+
     private static final AtomicReferenceFieldUpdater<TokensHelper, TokenRequestState> tokenRequestStateUpdater = AtomicReferenceFieldUpdater
             .newUpdater(TokensHelper.class, TokenRequestState.class, "tokenRequestState");
 

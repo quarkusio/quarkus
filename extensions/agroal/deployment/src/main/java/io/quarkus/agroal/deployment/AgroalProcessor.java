@@ -24,6 +24,7 @@ import io.quarkus.agroal.runtime.DataSourceSupport;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
+import io.quarkus.agroal.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -67,6 +68,7 @@ class AgroalProcessor {
     void build(
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
             List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
@@ -81,7 +83,7 @@ class AgroalProcessor {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
                 dataSourcesBuildTimeConfig,
                 dataSourcesJdbcBuildTimeConfig,
-                jdbcDriverBuildItems);
+                jdbcDriverBuildItems, defaultDbKinds);
 
         if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
             log.warn("The Agroal dependency is present but no JDBC datasources have been defined.");
@@ -255,16 +257,21 @@ class AgroalProcessor {
     private List<AggregatedDataSourceBuildTimeConfigBuildItem> getAggregatedConfigBuildItems(
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
-            List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems, List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
-        if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
+        Optional<String> effectiveDbKind = dataSourcesBuildTimeConfig.defaultDataSource.dbKind;
+        if (!effectiveDbKind.isPresent() && (defaultDbKinds.size() == 1)) {
+            effectiveDbKind = Optional.of(defaultDbKinds.get(0).getDbKind());
+        }
+
+        if (effectiveDbKind.isPresent()) {
             if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
                 dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
                         dataSourcesBuildTimeConfig.defaultDataSource,
                         dataSourcesJdbcBuildTimeConfig.jdbc,
-                        dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get(),
-                        resolveDriver(DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig.defaultDataSource,
+                        effectiveDbKind.get(),
+                        resolveDriver(DataSourceUtil.DEFAULT_DATASOURCE_NAME, effectiveDbKind.get(),
                                 dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems)));
             }
         }
@@ -279,20 +286,20 @@ class AgroalProcessor {
                     entry.getValue(),
                     jdbcBuildTimeConfig,
                     entry.getValue().dbKind.get(),
-                    resolveDriver(entry.getKey(), entry.getValue(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
+                    resolveDriver(entry.getKey(), entry.getValue().dbKind.get(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
         }
 
         return dataSources;
     }
 
-    private String resolveDriver(String dataSourceName, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
+    private String resolveDriver(String dataSourceName, String dbKind,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
         if (dataSourceJdbcBuildTimeConfig.driver.isPresent()) {
             return dataSourceJdbcBuildTimeConfig.driver.get();
         }
 
         Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
-                .filter(i -> dataSourceBuildTimeConfig.dbKind.get().equals(i.getDbKind()))
+                .filter(i -> dbKind.equals(i.getDbKind()))
                 .findFirst();
 
         if (matchingJdbcDriver.isPresent()) {
@@ -306,7 +313,7 @@ class AgroalProcessor {
         }
 
         throw new ConfigurationException("Unable to find a JDBC driver corresponding to the database kind '"
-                + dataSourceBuildTimeConfig.dbKind.get() + "' for the "
+                + dbKind + "' for the "
                 + (DataSourceUtil.isDefault(dataSourceName) ? "default datasource"
                         : "datasource '" + dataSourceName + "'")
                 + ". Either provide a suitable JDBC driver extension, define the driver manually, or disable the JDBC datasource by adding "

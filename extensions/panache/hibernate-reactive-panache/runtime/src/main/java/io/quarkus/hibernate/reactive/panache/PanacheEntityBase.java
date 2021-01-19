@@ -10,8 +10,11 @@ import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.LockModeType;
 import javax.persistence.Transient;
 
+import org.hibernate.reactive.mutiny.Mutiny;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
@@ -31,13 +34,24 @@ import io.smallrye.mutiny.Uni;
  */
 public abstract class PanacheEntityBase {
 
+    /**
+     * The default {@link org.hibernate.reactive.mutiny.Mutiny.Session} for extra operations.
+     *
+     * @return the default {@link org.hibernate.reactive.mutiny.Mutiny.Session}
+     */
+    @JsonbTransient
+    // @JsonIgnore is here to avoid serialization of this property with jackson
+    @JsonIgnore
+    public Mutiny.Session getSession() {
+        return JpaOperations.getSession();
+    }
+
     // Operations
 
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
-     * 
-     * @return
      *
+     * @return
      * @see #isPersistent()
      * @see #persist(Iterable)
      * @see #persist(Stream)
@@ -50,9 +64,8 @@ public abstract class PanacheEntityBase {
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      * Then flushes all pending changes to the database.
-     * 
-     * @return
      *
+     * @return
      * @see #isPersistent()
      * @see #persist(Iterable)
      * @see #persist(Stream)
@@ -66,9 +79,8 @@ public abstract class PanacheEntityBase {
 
     /**
      * Delete this entity from the database, if it is already persisted.
-     * 
-     * @return
      *
+     * @return
      * @see #isPersistent()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -95,7 +107,7 @@ public abstract class PanacheEntityBase {
 
     /**
      * Flushes all pending changes to the database.
-     * 
+     *
      * @return
      */
     public Uni<Void> flush() {
@@ -618,7 +630,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -645,7 +657,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
@@ -663,7 +675,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities deleted.
@@ -681,7 +693,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities deleted.
@@ -701,7 +713,7 @@ public abstract class PanacheEntityBase {
      * @return
      * @see #persist()
      * @see #persist(Stream)
-     * @see #persist(Object,Object...)
+     * @see #persist(Object, Object...)
      */
     public static Uni<Void> persist(Iterable<?> entities) {
         return INSTANCE.persist(entities);
@@ -714,7 +726,7 @@ public abstract class PanacheEntityBase {
      * @return
      * @see #persist()
      * @see #persist(Iterable)
-     * @see #persist(Object,Object...)
+     * @see #persist(Object, Object...)
      */
     public static Uni<Void> persist(Stream<?> entities) {
         return INSTANCE.persist(entities);
@@ -755,7 +767,6 @@ public abstract class PanacheEntityBase {
      * @return the number of entities updated.
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     * 
      */
     @GenerateBridge
     public static Uni<Integer> update(String query, Map<String, Object> params) {

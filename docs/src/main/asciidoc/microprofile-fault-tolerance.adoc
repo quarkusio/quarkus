@@ -499,3 +499,23 @@ All that is needed to enable the fault tolerance features in Quarkus is:
     <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
 </dependency>
 ----
+
+== Additional resources
+
+SmallRye Fault Tolerance has more features than shown here.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/5.0.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+
+In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
+
+Support for Mutiny is present, so your `@Asynchronous` methods can return `Uni`.
+
+MicroProfile Context Propagation is integrated with Fault Tolerance, so existing contexts are automatically propagated to your `@Asynchronous` methods.
+
+[NOTE]
+====
+This also applies to the CDI request context: if it is active on the original thread, it is propagated to the new thread, but if it's not, then the new thread won't have it either.
+This is contrary to MicroProfile Fault Tolerance specification, which states that the request context must be active during the `@Asynchronous` method invocation.
+
+We believe that in presence of MicroProfile Context Propagation, this requirement should not apply.
+The entire point of context propagation is to make sure the new thread has the same contexts as the original thread.
+====

@@ -3,43 +3,43 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - DEV Console
+= Quarkus - Dev UI
 
 include::./attributes.adoc[]
 
-This guide covers the Quarkus DEV Console for link:building-my-first-extension[extension authors].
+This guide covers the Quarkus Dev UI for link:building-my-first-extension[extension authors].
 
-Quarkus now ships with a new experimental DEV Console, which is available in DEV mode (when you start
+Quarkus now ships with a new experimental Dev UI, which is available in dev mode (when you start
 quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] and will show you something like
 this:
 
-image::dev-console-overview.png[alt=DEV Console overview,role="center"]
+image::dev-console-overview.png[alt=Dev UI overview,role="center"]
 
-It allows you to quickly visualise all the extensions currently loaded, see their status and go directly
+It allows you to quickly visualize all the extensions currently loaded, see their status and go directly
 to their documentation.
 
 On top of that, each extension can add:
 
-- <<how-can-i-make-my-extension-support-the-dev-console,Custom useful bits of runtime information in the overview>> 
+- <<how-can-i-make-my-extension-support-the-dev-ui,Custom useful bits of runtime information in the overview>> 
 - <<adding-full-pages,Full custom pages>>
 - <<advanced-usage-adding-actions,Interactive pages with actions>>
 
-== How can I make my extension support the DEV Console?
+== How can I make my extension support the Dev UI?
 
-In order to make your extension listed in the DEV Console you don't need to do anything!
+In order to make your extension listed in the Dev UI you don't need to do anything!
 
 So you can always start with that :)
 
-If you want to contribute badges or links in your extension card on the DEV Console overview
+If you want to contribute badges or links in your extension card on the Dev UI overview
 page, like this:
 
-image:dev-console-embedded.png[alt=DEV Console embedded,role="center"]
+image:dev-console-embedded.png[alt=Dev UI embedded,role="center"]
 
 You have to add a file named `dev-templates/embedded.html` in your 
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`]
 extension module's resources:
 
-image::dev-console-embedded-file.png[alt=DEV Console embedded.html]
+image::dev-console-embedded-file.png[alt=Dev UI embedded.html]
 
 The contents of this file will be included in your extension card, so for example we can place
 two links with some styling and icons:
@@ -47,19 +47,21 @@ two links with some styling and icons:
 [source,html]
 ----
 <a href="/q/openapi" class="badge badge-light">
-  <svg … ></svg>
+  <i class="fa ..."></i>
   OpenAPI</a>
 <a href="/q/swagger-ui/" class="badge badge-light">
-  <svg … ></svg>
+  <i class="fa ..."></i>
   Swagger UI</a>
 ----
 
+TIP: We use the Font Awesome Free icon set.
+
 == Template and styling support
 
-Both the `embedded.html` files and any full page you add in `/dev-templates` will be intepreted by
-link:guide-qute[the Quarkus Qute template system].
+Both the `embedded.html` files and any full page you add in `/dev-templates` will be interpreted by
+link:qute[the Qute template engine].
 
-This also means that you can link:guides/qute-reference#user_tags[add custom Qute tags] in 
+This also means that you can link:qute-reference#user_tags[add custom Qute tags] in 
 `/dev-templates/tags` for your templates to use.
 
 The style system currently in use is https://getbootstrap.com/docs/4.0/getting-started/introduction/[Bootstrap V4 (4.5.3)]
@@ -75,13 +77,13 @@ For example `{config:property('quarkus.lambda.handler')}` and `{config:property(
 
 == Adding full pages
 
-To add full pages for your DEV Console extension such as this one:
+To add full pages for your Dev UI extension such as this one:
 
-image::dev-console-page.png[alt=DEV Console custom page]
+image::dev-console-page.png[alt=Dev UI custom page]
 
 You need to place them in your extension's 
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module's 
-`/dev-templates` resource folder, like this page for the link:/guides/cache[`quarkus-cache` extension]:
+`/dev-templates` resource folder, like this page for the link:cache[`quarkus-cache` extension]:
 
 [[action-example]]
 [source,java]
@@ -92,7 +94,7 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`
             color: gray;
         }
     {/style}
-    {#title}Quarkus Cache{/title}// <3>
+    {#title}Cache{/title}// <3>
     {#body}// <4>
         <table class="table table-striped custom">
             <thead class="thead-dark">
@@ -125,12 +127,12 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`
     {/body}
 {/include}
 ----
-<1> In order to benefit from the same style as other DEV Console pages, extend the `main` template
+<1> In order to benefit from the same style as other Dev UI pages, extend the `main` template
 <2> You can pass extra CSS for your page in the `style` template parameter
 <3> Don't forget to set your page title in the `title` template parameter
 <4> The `body` template parameter will contain your content
 <5> In order for your template to read custom information from your Quarkus extension, you can use
-    the `info` link:/guides/qute-reference#namespace_extension_methods[namespace].
+    the `info` link:qute-reference#namespace_extension_methods[namespace].
 <6> This shows an <<advanced-usage-adding-actions,interactive page>>
 
 == Linking to your full-page templates
@@ -142,7 +144,7 @@ to them from your `embedded.html` file you can use the `urlbase` template parame
 [source,java]
 ----
 <a href="{urlbase}/caches" class="badge badge-light">// <1>
-  <svg … ></svg>
+  <i class="fa ..."></i>
   Caches <span class="badge badge-light">{info:cacheInfos.size()}</span></a>
 ----
 <1> Use the `urlbase` template parameter to point to where your full-page templates are located
@@ -155,7 +157,7 @@ available from your extension.
 There are two ways to make that information available, depending on whether it is available at
 build time or at run time.
 
-In both cases we advise that you add support for the DEV Console in your `{pkg}.deployment.devconsole`
+In both cases we advise that you add support for the Dev UI in your `{pkg}.deployment.devconsole`
 package in a `DevConsoleProcessor` class (in your extension's 
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module).
 
@@ -180,8 +182,8 @@ public class DevConsoleProcessor {
 }
 ----
 <1> Don't forget to make this link:building-my-first-extension#deploying-the-greeting-feature[build step]
-    conditional on being in DEV mode
-<2> Declare a run-time DEV `info:cacheInfos` template value
+    conditional on being in dev mode
+<2> Declare a run-time dev `info:cacheInfos` template value
 
 This will map the `info:cacheInfos` value to this supplier in your extension's 
 link:building-my-first-extension#description-of-a-quarkus-extension[`runtime module`]:
@@ -256,9 +258,9 @@ public class DevConsoleProcessor {
 
 == Advanced usage: adding actions
 
-You can also add actions to your DEV templates:
+You can also add actions to your Dev UI templates:
 
-image::dev-console-interactive.png[alt=DEV Console interactive page]
+image::dev-console-interactive.png[alt=Dev UI interactive page]
 
 This can be done by adding another link:building-my-first-extension#deploying-the-greeting-feature[build step] to
 declare the action in your extension's
@@ -285,7 +287,7 @@ public class DevConsoleProcessor {
     }
 }
 ----
-<1> Mark the recorder as optional, so it will only be invoked when in DEV mode
+<1> Mark the recorder as optional, so it will only be invoked when in dev mode
 <2> Declare a `POST {urlbase}/caches` route handled by the given handler
 
 Note: you can see <<action-example,how to invoke this action from your full page>>.
@@ -331,7 +333,7 @@ public class CacheDevConsoleRecorder {
 ----
 <1> While you can use https://vertx.io/docs/vertx-web/java/#_routing_by_http_method[any Vert.x handler], 
     the `DevConsolePostHandler` superclass will handle your POST actions
-    nicely, and auto-redirect to the `GET` URI right after your `POST` for optimal behaviour.
+    nicely, and auto-redirect to the `GET` URI right after your `POST` for optimal behavior.
 <2> You can get the Vert.x `RoutingContext` as well as the `form` contents
 <3> Don't forget to add a message for the user to let them know everything went fine
 <4> You can also add error messages
@@ -339,11 +341,11 @@ public class CacheDevConsoleRecorder {
 NOTE: Flash messages are handled by the `main` DEV template and will result in nice notifications for your
 users:
 
-image::dev-console-message.png[alt=DEV Console message]
+image::dev-console-message.png[alt=Dev UI message]
 
-== Extensions supporting DEV Console:
+== Extensions supporting Dev UI
 
-The following Quarkus extensions currently support the DEV Console:
+The following Quarkus extensions currently support the Dev UI:
 
 - link:./cdi[quarkus-arc]
 - link:./cache[quarkus-cache]

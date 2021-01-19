@@ -13,7 +13,7 @@ Quarkus now ships with a new experimental Dev UI, which is available in dev mode
 quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] and will show you something like
 this:
 
-image::dev-console-overview.png[alt=Dev UI overview,role="center"]
+image::dev-ui-overview.png[alt=Dev UI overview,role="center"]
 
 It allows you to quickly visualize all the extensions currently loaded, see their status and go directly
 to their documentation.
@@ -33,13 +33,13 @@ So you can always start with that :)
 If you want to contribute badges or links in your extension card on the Dev UI overview
 page, like this:
 
-image:dev-console-embedded.png[alt=Dev UI embedded,role="center"]
+image:dev-ui-embedded.png[alt=Dev UI embedded,role="center"]
 
 You have to add a file named `dev-templates/embedded.html` in your 
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`]
 extension module's resources:
 
-image::dev-console-embedded-file.png[alt=Dev UI embedded.html]
+image::dev-ui-embedded-file.png[alt=Dev UI embedded.html]
 
 The contents of this file will be included in your extension card, so for example we can place
 two links with some styling and icons:
@@ -79,7 +79,7 @@ For example `{config:property('quarkus.lambda.handler')}` and `{config:property(
 
 To add full pages for your Dev UI extension such as this one:
 
-image::dev-console-page.png[alt=Dev UI custom page]
+image::dev-ui-page.png[alt=Dev UI custom page]
 
 You need to place them in your extension's 
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module's 
@@ -260,7 +260,7 @@ public class DevConsoleProcessor {
 
 You can also add actions to your Dev UI templates:
 
-image::dev-console-interactive.png[alt=Dev UI interactive page]
+image::dev-ui-interactive.png[alt=Dev UI interactive page]
 
 This can be done by adding another link:building-my-first-extension#deploying-the-greeting-feature[build step] to
 declare the action in your extension's
@@ -341,7 +341,7 @@ public class CacheDevConsoleRecorder {
 NOTE: Flash messages are handled by the `main` DEV template and will result in nice notifications for your
 users:
 
-image::dev-console-message.png[alt=Dev UI message]
+image::dev-ui-message.png[alt=Dev UI message]
 
 == Extensions supporting Dev UI
 

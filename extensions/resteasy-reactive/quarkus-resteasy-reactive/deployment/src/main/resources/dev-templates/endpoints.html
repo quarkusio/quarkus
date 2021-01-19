@@ -1,7 +1,14 @@
 {#include main}
 {#title}Quarkus REST Endpoints{/title}
+{#style}
+h5{
+ background: gainsboro;
+ margin-top: 20px;
+ margin-bottom: 20px;
+ padding: 10px;
+}
+{/style}
 {#body}
-<br>
  <h5>REST Resources</h5>
  {#for endpoint in info:endpointScores.endpoints}
  <div class="row">
@@ -21,7 +28,6 @@
  </div>
  {/if}
  {/for}
-<br>
  <h5>Additional Endpoints</h5>
  {#for additionalEndpoint in info:additionalEndpointInfo}
  <div class="row">

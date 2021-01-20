@@ -11,6 +11,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 // TODO: consider moving this to the attributes file
 :doctype: book
 
+//TODO: Determine if title can be replaced by attribute
 //Top-Level Assembly
 [id="using-the-quarkus-extension-for-spring-di-api_{context}"]
 = Using the Quarkus extension for Spring Dependency Injection (DI) API

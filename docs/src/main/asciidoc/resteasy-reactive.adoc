@@ -470,7 +470,7 @@ If you want to stream your response element by element, you can make your endpoi
 link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] type (from https://smallrye.io/smallrye-mutiny/[Mutiny]).
 This is especially useful for streaming text or binary data.
 
-This example, using link:reactive-messaging-http.html[Reactive Messaging] shows how to stream
+This example, using link:reactive-messaging-http[Reactive Messaging] shows how to stream
 text data:
 
 [source,java]
@@ -701,7 +701,7 @@ serialisation>>.
 == More advanced usage
 
 Here are some more advanced topics that you may not need to know about initially, but
-could prove useful for more complex use-cases.
+could prove useful for more complex use cases.
 
 === Execution model, blocking, non-blocking
 
@@ -1426,7 +1426,8 @@ public class Endpoint {
 
 When we call `GET /conditional` the first time, we will get this response:
 
-```
+[source]
+----
 HTTP/1.1 200 OK
 Content-Type: text/plain;charset=UTF-8
 ETag: "v1"
@@ -1434,28 +1435,31 @@ Last-Modified: Wed, 09 Dec 2020 16:10:19 GMT
 Content-Length: 13
 
 Some resource
-```
+----
 
 So now if we want to check if we need to fetch a new version, we can make the following request:
 
-```
+[source]
+----
 GET /conditional HTTP/1.1
 Host: localhost:8080
 If-Modified-Since: Wed, 09 Dec 2020 16:10:19 GMT
-```
+----
 
 And we would get the following response:
 
-```
+[source]
+----
 HTTP/1.1 304 Not Modified
-```
+----
 
 Because the resource has not been modified since that date. This saves on sending the resource,
 but can also help your users detect concurrent modification, for example, let's suppose that one
 client wants to update the resource, but another user has modified it since. You can follow the
 previous `GET` request with this update:
 
-```
+[source]
+----
 PUT /conditional HTTP/1.1
 Host: localhost:8080
 If-Unmodified-Since: Wed, 09 Dec 2020 16:25:43 GMT
@@ -1464,16 +1468,17 @@ Content-Length: 8
 Content-Type: text/plain
 
 newstuff
-```
+----
 
 And if some other user has modified the resource between your `GET` and your `PUT` you would
 get this answer back:
 
-```
+[source]
+----
 HTTP/1.1 412 Precondition Failed
 ETag: "v2"
 Content-Length: 0
-```
+----
 
 === Negotiation
 

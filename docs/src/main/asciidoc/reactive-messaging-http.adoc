@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using HTTP and Web Sockets with Reactive Messaging
+= Quarkus - Using HTTP and WebSockets with Reactive Messaging
 
 include::./attributes.adoc[]
 
@@ -303,14 +303,14 @@ You can build the native executable with:
 
 == Going further
 
-=== Web Sockets
+=== WebSockets
 Except of the `quarkus-http` connector, the `quarkus-reactive-messaging-http` extension also brings in
-`quarkus-websocket` - a connector for exposing and feeding Web Sockets.
+`quarkus-websocket` - a connector for exposing and feeding WebSockets.
 At the moment only binary data is supported.
 
 NOTE: While the sink of the HTTP connector checks if the message is consumed by the remote endpoint,
-the Web Socket sink does not. It may happen that a failure to receive a message is not reported,
-e.g. if the remote side closes the Web Socket connection in a crucial moment.
+the WebSocket sink does not. It may happen that a failure to receive a message is not reported,
+e.g. if the remote side closes the WebSocket connection in a crucial moment.
 
 === Reactive Messaging
 This extension utilizes MicroProfile Reactive Messaging to build data streaming applications.

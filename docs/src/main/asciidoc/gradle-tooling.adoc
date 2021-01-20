@@ -407,7 +407,7 @@ By default, Quarkus will not discover CDI beans inside another module.
 The best way to enable CDI bean discovery for a module in a multi-module project would be to include a `META-INF/beans.xml` file,
 unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
 
-Alternatively, there is some unofficial link:https://plugins.gradle.org/search?term=jandex[Gradle Jandex plugins]) that can be used instead of the `META-INF/beans.xml` file.
+Alternatively, there is some unofficial link:https://plugins.gradle.org/search?term=jandex[Gradle Jandex plugins] that can be used instead of the `META-INF/beans.xml` file.
 
 More information on this topic can be found on the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
 

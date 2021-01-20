@@ -252,7 +252,6 @@ public class DevConsoleProcessor {
     public void setupActions(List<DevConsoleRouteBuildItem> routes,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             List<DevTemplatePathBuildItem> devTemplatePaths,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             HttpRootPathBuildItem httpRootPathBuildItem,
@@ -287,7 +286,11 @@ public class DevConsoleProcessor {
                 .handler(new RedirectHandler())
                 .nonApplicationRoute(false)
                 .build());
+    }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void setupActions(BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
                 nonApplicationRootPathBuildItem.adjustPath("/dev/"), "Quarkus DEV Console"));
     }

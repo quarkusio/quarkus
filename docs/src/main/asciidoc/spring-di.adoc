@@ -64,12 +64,17 @@ However, when you add arbitrary libraries that are part of Spring Framework to y
 .Prerequisites
 
 // comment out the following prerequisite in the alternative 1 layout of the document.
+ifdef::product-docs[]
 * Have a {ProductName} Maven project.
+endif::[]
+ifndef::product-docs[]
+* Have access to an IDE
+endif::[]
 * Have OpenJDK 8 installed.
 * Have Maven {maven-version} installed.
 
+ifndef::product-docs[]
 // Alternative 1: generate project form scratch
-////
 [id="creating-the-spring-di-example-maven-project_{context}"]
 == Creating the Spring DI example Maven project
 
@@ -96,7 +101,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy,spring-di"
 cd spring-di-quickstart
 ----
-////
+endif::[]
 
 //Alternative 2: you have a project and need to add the required extension.
 [id="setting-up-your-spring-di-maven-project_{context}"]

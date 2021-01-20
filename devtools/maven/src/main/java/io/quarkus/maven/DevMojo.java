@@ -186,7 +186,7 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${suspend}")
     private String suspend;
 
-    @Parameter(defaultValue = "localhost")
+    @Parameter(defaultValue = "${debugHost}")
     private String debugHost;
 
     @Parameter(defaultValue = "${project.build.directory}")

@@ -72,7 +72,7 @@ public class CodeFlowDevModeTestCase {
 
             page = webClient.getPage("http://localhost:8080/protected");
 
-            assertEquals("Log in to devmode", page.getTitleText());
+            assertEquals("Sign in to devmode", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -93,7 +93,7 @@ public class CodeFlowDevModeTestCase {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8080/protected/tenant/tenant-config-resolver");
 
-            assertEquals("Log in to devmode", page.getTitleText());
+            assertEquals("Sign in to devmode", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 

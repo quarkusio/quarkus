@@ -43,7 +43,7 @@ public class BearerTokenAuthorizationTest {
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
-            assertEquals("Log in to quarkus-webapp", page.getTitleText());
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -60,7 +60,7 @@ public class BearerTokenAuthorizationTest {
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
-            assertEquals("Log in to quarkus-webapp2", page.getTitleText());
+            assertEquals("Sign in to quarkus-webapp2", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -75,7 +75,7 @@ public class BearerTokenAuthorizationTest {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenants/tenant-hybrid/api/user");
             assertNotNull(getStateCookie(webClient, "tenant-hybrid-webapp"));
-            assertEquals("Log in to quarkus-hybrid", page.getTitleText());
+            assertEquals("Sign in to quarkus-hybrid", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -99,7 +99,7 @@ public class BearerTokenAuthorizationTest {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenants/tenant-hybrid-webapp-service/api/user");
             assertNotNull(getStateCookie(webClient, "tenant-hybrid-webapp-service"));
-            assertEquals("Log in to quarkus-hybrid", page.getTitleText());
+            assertEquals("Sign in to quarkus-hybrid", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -122,7 +122,7 @@ public class BearerTokenAuthorizationTest {
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app-no-discovery"));
-            assertEquals("Log in to quarkus-webapp", page.getTitleText());
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -141,7 +141,7 @@ public class BearerTokenAuthorizationTest {
             // tenant-web-app
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
-            assertEquals("Log in to quarkus-webapp", page.getTitleText());
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -150,7 +150,7 @@ public class BearerTokenAuthorizationTest {
             // tenant-web-app2
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
-            assertEquals("Log in to quarkus-webapp2", page.getTitleText());
+            assertEquals("Sign in to quarkus-webapp2", page.getTitleText());
             loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -323,7 +323,7 @@ public class BearerTokenAuthorizationTest {
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app-dynamic configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app-dynamic"));
-            assertEquals("Log in to quarkus-webapp", page.getTitleText());
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");

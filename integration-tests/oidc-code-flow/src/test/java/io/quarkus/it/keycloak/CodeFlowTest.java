@@ -51,7 +51,7 @@ public class CodeFlowTest {
 
             assertEquals("/index.html", getStateCookieSavedPath(webClient, null));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -86,7 +86,7 @@ public class CodeFlowTest {
 
             HtmlPage page = webClient.getPage(keycloakUrl);
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -137,7 +137,7 @@ public class CodeFlowTest {
 
             HtmlPage page = webClient.getPage(keycloakUrl);
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -187,7 +187,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
             assertEquals("/index.html", getStateCookieSavedPath(webClient, null));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -224,7 +224,7 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/index.html");
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -233,7 +233,7 @@ public class CodeFlowTest {
     public void testRPInitiatedLogout() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-logout");
-            assertEquals("Log in to logout-realm", page.getTitleText());
+            assertEquals("Sign in to logout-realm", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -246,7 +246,7 @@ public class CodeFlowTest {
             assertNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout");
-            assertEquals("Log in to logout-realm", page.getTitleText());
+            assertEquals("Sign in to logout-realm", page.getTitleText());
             loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -304,7 +304,7 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertNull(getSessionCookie(webClient, "tenant-logout"));
-            assertEquals("Log in to logout-realm", page.getTitleText());
+            assertEquals("Sign in to logout-realm", page.getTitleText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -313,7 +313,7 @@ public class CodeFlowTest {
     public void testTokenAutoRefresh() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
-            assertEquals("Log in to logout-realm", page.getTitleText());
+            assertEquals("Sign in to logout-realm", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -356,7 +356,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
             assertEquals("/index.html", getStateCookieSavedPath(webClient, null));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -381,7 +381,7 @@ public class CodeFlowTest {
             assertNotNull(getStateCookieStateParam(webClient, "tenant-1"));
             assertNull(getStateCookieSavedPath(webClient, "tenant-1"));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -407,7 +407,7 @@ public class CodeFlowTest {
             assertNull(getStateCookieSavedPath(webClient, "tenant-jwt"));
 
             HtmlPage page = webClient.getPage(webResponse.getResponseHeaderValue("location"));
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
@@ -438,7 +438,7 @@ public class CodeFlowTest {
             assertNotNull(getStateCookieStateParam(webClient, "tenant-jwt-not-used"));
             assertNull(getStateCookieSavedPath(webClient, "tenant-jwt-not-used"));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -463,7 +463,7 @@ public class CodeFlowTest {
             assertNotNull(getStateCookieStateParam(webClient, "tenant-2"));
             assertNull(getStateCookieSavedPath(webClient, "tenant-2"));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -493,7 +493,7 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/web-app2/name");
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -506,7 +506,7 @@ public class CodeFlowTest {
         // to '/web-app3' no state cookie is detected.
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect?tenantId=tenant-3");
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -530,7 +530,7 @@ public class CodeFlowTest {
         // a redirect_uri '/web-app/callback-after-redirect' which will cause a code to token exchange failure
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-wrong-redirect");
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -552,7 +552,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
             assertEquals("/index.html", getStateCookieSavedPath(webClient, null));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -576,7 +576,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
             assertEquals("/index.html", getStateCookieSavedPath(webClient, null));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -600,7 +600,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh");
             assertEquals("/web-app/refresh", getStateCookieSavedPath(webClient, null));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -620,7 +620,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-idtoken-only");
             assertNotNull(getStateCookie(webClient, "tenant-idtoken-only"));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -651,7 +651,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-id-refresh-token");
             assertNotNull(getStateCookie(webClient, "tenant-id-refresh-token"));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -686,7 +686,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-split-tokens");
             assertNotNull(getStateCookie(webClient, "tenant-split-tokens"));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -741,7 +741,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/tenant-split-id-refresh-token");
             assertNotNull(getStateCookie(webClient, "tenant-split-id-refresh-token"));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -800,7 +800,7 @@ public class CodeFlowTest {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-listener");
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 
@@ -820,7 +820,7 @@ public class CodeFlowTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh-query?a=aValue");
             assertEquals("/web-app/refresh-query?a=aValue", getStateCookieSavedPath(webClient, null));
 
-            assertEquals("Log in to quarkus", page.getTitleText());
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
             HtmlForm loginForm = page.getForms().get(0);
 

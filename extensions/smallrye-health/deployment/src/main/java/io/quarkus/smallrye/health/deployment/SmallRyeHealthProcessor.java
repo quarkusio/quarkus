@@ -70,6 +70,7 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.health.api.HealthGroup;
 import io.smallrye.health.api.HealthGroups;
@@ -299,17 +300,19 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    public void kubernetes(NonApplicationRootPathBuildItem frameworkRootPath,
+    public void kubernetes(HttpBuildTimeConfig httpConfig, NonApplicationRootPathBuildItem frameworkRootPath,
             SmallRyeHealthConfig healthConfig,
             BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
             BuildProducer<KubernetesHealthReadinessPathBuildItem> readinessPathItemProducer) {
 
         livenessPathItemProducer.produce(
                 new KubernetesHealthLivenessPathBuildItem(
-                        frameworkRootPath.adjustPath(healthConfig.rootPath + healthConfig.livenessPath)));
+                        httpConfig
+                                .adjustPath(frameworkRootPath.adjustPath(healthConfig.rootPath + healthConfig.livenessPath))));
         readinessPathItemProducer.produce(
                 new KubernetesHealthReadinessPathBuildItem(
-                        frameworkRootPath.adjustPath(healthConfig.rootPath + healthConfig.readinessPath)));
+                        httpConfig
+                                .adjustPath(frameworkRootPath.adjustPath(healthConfig.rootPath + healthConfig.readinessPath))));
     }
 
     @BuildStep

@@ -46,4 +46,14 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean redirectToNonApplicationRootPath;
+
+    public String adjustPath(String path) {
+        if (!path.startsWith("/")) {
+            throw new IllegalArgumentException("Path must start with /");
+        }
+        if (rootPath.equals("/")) {
+            return path;
+        }
+        return rootPath + path;
+    }
 }

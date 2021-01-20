@@ -4,7 +4,6 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -39,13 +38,11 @@ import io.vertx.ext.web.RoutingContext;
 
 public class ReactiveHttpProcessor {
 
-    @Inject
-    BuildProducer<RouteBuildItem> routeProducer;
-
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerHttpConnector(BuildProducer<AdditionalBeanBuildItem> beanProducer,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer,
+            BuildProducer<RouteBuildItem> routeProducer,
             BodyHandlerBuildItem bodyHandler,
             ReactiveHttpRecorder recorder) {
         beanProducer.produce(new AdditionalBeanBuildItem(QuarkusHttpConnector.class));

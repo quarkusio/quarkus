@@ -124,7 +124,7 @@ public class KubernetesDeployer {
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
             if (targets.getEntriesSortedByPriority().size() > 1) {
-                log.info("Deploying target '" + selectedTarget.getName()
+                log.info("Selecting target '" + selectedTarget.getName()
                         + "' since it has the highest priority among the implicitly enabled deployment targets");
             }
         } else {

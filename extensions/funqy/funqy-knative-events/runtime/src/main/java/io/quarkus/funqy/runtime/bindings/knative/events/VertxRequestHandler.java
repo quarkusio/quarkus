@@ -366,7 +366,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private static boolean isSupportedSpecVersion(String ceSpecVersion) {
-        return (ceSpecVersion.charAt(0) == '0' || ceSpecVersion.charAt(0) == '1') && ceSpecVersion.charAt(1) == '.';
+        return ceSpecVersion != null && (ceSpecVersion.charAt(0) == '0' || ceSpecVersion.charAt(0) == '1')
+                && ceSpecVersion.charAt(1) == '.';
     }
 
     private void regularFunqyHttp(RoutingContext routingContext) {

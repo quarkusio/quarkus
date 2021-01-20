@@ -71,15 +71,8 @@ public class TikaProcessor {
 
     @BuildStep(onlyIf = NativeBuild.class)
     List<RuntimeInitializedClassBuildItem> runtimeInitImageIOClasses() {
-        return Arrays.asList(
-                //org.apache.tika.parser.pdf.PDFParser (https://issues.apache.org/jira/browse/PDFBOX-4548)
-                new RuntimeInitializedClassBuildItem("org.apache.pdfbox.pdmodel.font.PDType1Font"),
-                // The following classes hold instances of java.awt.color.ICC_ColorSpace that are not allowed in the
-                // image heap as this class should be initialized at image runtime
-                // See https://github.com/quarkusio/quarkus/pull/13644
-                new RuntimeInitializedClassBuildItem("org.apache.pdfbox.rendering.SoftMask"),
-                new RuntimeInitializedClassBuildItem(
-                        "org.apache.pdfbox.pdmodel.graphics.color.PDCIEDictionaryBasedColorSpace"));
+        //org.apache.tika.parser.pdf.PDFParser (https://issues.apache.org/jira/browse/PDFBOX-4548)
+        return Collections.singletonList(new RuntimeInitializedClassBuildItem("org.apache.pdfbox.pdmodel.font.PDType1Font"));
     }
 
     @BuildStep

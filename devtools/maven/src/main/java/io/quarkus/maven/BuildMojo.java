@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Profile;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
@@ -30,6 +31,9 @@ import io.quarkus.bootstrap.util.IoUtils;
 public class BuildMojo extends QuarkusBootstrapMojo {
 
     public static final String QUARKUS_PACKAGE_UBER_JAR = "quarkus.package.uber-jar";
+    private static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
+    private static final String NATIVE_PROFILE_NAME = "native";
+    private static final String NATIVE_PACKAGE_TYPE = "native";
 
     @Component
     private MavenProjectHelper projectHelper;
@@ -78,6 +82,20 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     protected void doExecute() throws MojoExecutionException {
 
         try {
+            boolean clearPackageTypeSysProp = false;
+            // Essentially what this does is to enable the native package type even if a different package type is set
+            // in application properties. This is done to preserve what users expect to happen when
+            // they execute "mvn package -Dnative" even if quarkus.package.type has been set in application.properties
+            if (!System.getProperties().containsKey(PACKAGE_TYPE_PROP)
+                    && isNativeProfileEnabled()) {
+                Object packageTypeProp = mavenProject().getProperties().get(PACKAGE_TYPE_PROP);
+                String packageType = NATIVE_PACKAGE_TYPE;
+                if (packageTypeProp != null) {
+                    packageType = packageTypeProp.toString();
+                }
+                System.setProperty(PACKAGE_TYPE_PROP, packageType);
+                clearPackageTypeSysProp = true;
+            }
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
 
                 AugmentAction action = curatedApplication.createAugmentor();
@@ -106,10 +124,26 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                                 result.getJar().getClassifier());
                     }
                 }
+            } finally {
+                if (clearPackageTypeSysProp) {
+                    System.clearProperty(PACKAGE_TYPE_PROP);
+                }
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to build quarkus application", e);
         }
+    }
+
+    private boolean isNativeProfileEnabled() {
+        List<Profile> activeProfiles = mavenProject().getActiveProfiles();
+        if (activeProfiles != null) {
+            for (Profile activeProfile : activeProfiles) {
+                if (NATIVE_PROFILE_NAME.equalsIgnoreCase(activeProfile.getId())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

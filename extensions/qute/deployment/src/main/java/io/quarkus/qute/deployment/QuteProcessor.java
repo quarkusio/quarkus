@@ -993,11 +993,9 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void excludeTypeChecks(BuildProducer<TypeCheckExcludeBuildItem> excludes) {
+    void excludeTypeChecks(QuteConfig config, BuildProducer<TypeCheckExcludeBuildItem> excludes) {
         // Exclude all checks that involve built-in value resolvers
-        // TODO: We need a better way to exclude value resolvers that are not template extension methods
         List<String> skipOperators = Arrays.asList("?:", "or", ":", "?", "&&", "||");
-
         excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<TypeCheck>() {
             @Override
             public boolean test(TypeCheck check) {
@@ -1016,6 +1014,31 @@ public class QuteProcessor {
                 return false;
             }
         }));
+
+        if (config.typeCheckExcludes.isPresent()) {
+            for (String exclude : config.typeCheckExcludes.get()) {
+                //  
+                String[] parts = exclude.split("\\.");
+                if (parts.length < 2) {
+                    // An exclude rule must have at least two parts separated by dot
+                    continue;
+                }
+                String className = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
+                String propertyName = parts[parts.length - 1];
+                excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<TypeCheck>() {
+                    @Override
+                    public boolean test(TypeCheck check) {
+                        if (!className.equals("*") && !check.clazz.name().toString().equals(className)) {
+                            return false;
+                        }
+                        if (!propertyName.equals("*") && !check.name.equals(propertyName)) {
+                            return false;
+                        }
+                        return true;
+                    }
+                }));
+            }
+        }
     }
 
     @BuildStep

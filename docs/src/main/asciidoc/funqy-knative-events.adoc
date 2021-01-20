@@ -233,7 +233,19 @@ Again, make sure to replace `yourAccountName` with your docker or quay account n
 
 == Deploy to Kubernetes/OpenShift
 
-The first step is to define a Kubernetes/OpenShift service to points to your the docker image you created and pushed
+The first step is to setup the broker in our namespace.
+Following is an example command from the the Knative cli.
+
+[source, yaml]
+----
+kn broker create default \
+  --namespace knativetutorial
+----
+
+The broker we have created is called default, this broker will receive the cloud events.
+The broker is also referenced in the function yaml files.
+
+The second step is to define a Kubernetes/OpenShift service to points to your the docker image you created and pushed
 during build.  Take a look at {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
 
 [source, yaml]
@@ -281,6 +293,7 @@ kind: Trigger
 metadata:
   name: defaultchain
 spec:
+  broker: default
   filter:
     attributes:
       type: defaultChain
@@ -300,7 +313,7 @@ There's a trigger yaml file for each of our 4 Funqy functions.  Deploy them all:
 ----
 kubectl apply -n knativetutorial -f src/main/k8s/defaultChain-trigger.yaml
 kubectl apply -n knativetutorial -f src/main/k8s/configChain-trigger.yaml
-kubectl apply -n knativetutorial -f src/main/k8s/annoatedChain-trigger.yaml
+kubectl apply -n knativetutorial -f src/main/k8s/annotatedChain-trigger.yaml
 kubectl apply -n knativetutorial -f src/main/k8s/lastChainLink-trigger.yaml
 ----
 
@@ -328,13 +341,22 @@ This will provide you a url like this (exactly like this if you followed the kna
 Remember this URL.
 
 Next thing we need to do is ssh into our Kubernetes cluster so that we can send a curl request to our broker.
+Following command will create a simple OS pod so we can curl into our functions.
+
+[source,bash]
+----
+kubectl -n knativetutorial apply -f src/main/k8s/curler.yaml
+----
+
+You might need to wait a couple of seconds till the curler pod comes up. Run the following to get bash access to the curler pod.
 
 [source,bash]
 ----
 kubectl -n knativetutorial exec -it curler -- /bin/bash
 ----
 
-You will now be in a shell within the Kubernetes cluster.  Within the shell, execute this curl command
+
+You will now be in a shell within the Kubernetes cluster.  Within the shell, execute this curl command , the broker address is an example and might differ based on your project or broker name.
 
 [source,bash]
 ----

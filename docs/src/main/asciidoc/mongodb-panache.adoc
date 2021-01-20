@@ -70,7 +70,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=mongodb-panache-quickstart \
     -DclassName="org.acme.mongodb.panache.PersonResource" \
     -Dpath="/persons" \
-    -Dextensions="resteasy-jackson,mongodb-panache"
+    -Dextensions="resteasy,resteasy-jackson,mongodb-panache"
 cd mongodb-panache-quickstart
 ----
 

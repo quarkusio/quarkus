@@ -151,7 +151,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=vault-transit-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="vault,resteasy-jackson"
+    -Dextensions="resteasy,vault,resteasy-jackson"
 cd vault-transit-quickstart
 ----
 

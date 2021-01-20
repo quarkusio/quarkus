@@ -388,7 +388,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=getting-started-reactive-crud \
     -DclassName="org.acme.reactive.crud.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-reactive-jackson, reactive-pg-client"
+    -Dextensions="resteasy-reactive,resteasy-reactive-jackson,reactive-pg-client"
 cd getting-started-reactive-crud
 ----
 

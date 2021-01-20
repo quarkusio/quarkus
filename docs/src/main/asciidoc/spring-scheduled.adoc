@@ -45,7 +45,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=spring-scheduler-quickstart \
     -DclassName="org.acme.spring.scheduler.CountResource" \
     -Dpath="/count" \
-    -Dextensions="spring-scheduled"
+    -Dextensions="resteasy,spring-scheduled"
 cd spring-scheduler-quickstart
 ----
 

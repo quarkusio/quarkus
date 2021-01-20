@@ -36,7 +36,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-kotlin-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="kotlin,resteasy-jackson"
+    -Dextensions="resteasy,kotlin,resteasy-jackson"
 cd rest-kotlin-quickstart
 ----
 

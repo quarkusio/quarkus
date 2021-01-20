@@ -150,6 +150,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "${skipExtensionValidation}")
     private boolean skipExtensionValidation;
 
+    @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion")
+    boolean ignoreNotDetectedQuarkusCoreVersion;
+
+    AppArtifactCoords deploymentCoords;
+    CollectResult collectedDeploymentDeps;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -267,6 +273,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.put("description", project.getDescription());
         }
 
+        setBuiltWithQuarkusCoreVersion(extObject);
+
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 
@@ -279,11 +287,20 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
+    private void setBuiltWithQuarkusCoreVersion(ObjectNode extObject) throws MojoExecutionException {
+        final QuarkusCoreDeploymentVersionLocator coreVersionLocator = new QuarkusCoreDeploymentVersionLocator();
+        collectDeploymentDeps().getRoot().accept(coreVersionLocator);
+        if (coreVersionLocator.coreVersion != null) {
+            extObject.put("built-with-quarkus-core", coreVersionLocator.coreVersion);
+        } else if (!ignoreNotDetectedQuarkusCoreVersion) {
+            throw new MojoExecutionException("Failed to determine the Quarkus core version used to build the extension");
+        }
+
+    }
+
     private void validateExtensionDeps() throws MojoExecutionException {
 
-        final AppArtifactCoords deploymentCoords = AppArtifactCoords.fromString(deployment);
-
-        final AppArtifactKey rootDeploymentGact = deploymentCoords.getKey();
+        final AppArtifactKey rootDeploymentGact = getDeploymentCoords().getKey();
         final Node rootDeployment = new Node(null, rootDeploymentGact, 2);
         final Artifact artifact = project.getArtifact();
         final Node rootRuntime = rootDeployment.newChild(new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId(),
@@ -354,16 +371,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
         });
 
-        final CollectResult collectedDeploymentDeps;
-        try {
-            collectedDeploymentDeps = repoSystem.collectDependencies(repoSession,
-                    newCollectRequest(new DefaultArtifact(deploymentCoords.getGroupId(), deploymentCoords.getArtifactId(),
-                            deploymentCoords.getClassifier(), deploymentCoords.getType(), deploymentCoords.getVersion())));
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to collect dependencies of deployment artifact " + deploymentCoords, e);
-        }
-
-        collectedDeploymentDeps.getRoot().accept(new DependencyVisitor() {
+        collectDeploymentDeps().getRoot().accept(new DependencyVisitor() {
             @Override
             public boolean visitEnter(DependencyNode dep) {
                 org.eclipse.aether.artifact.Artifact artifact = dep.getArtifact();
@@ -388,12 +396,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (extDepsTotal.intValue() != 0) {
             final Log log = getLog();
             log.error("Quarkus Extension Dependency Verification Error");
-            log.error("Deployment artifact " + deploymentCoords +
+            log.error("Deployment artifact " + getDeploymentCoords() +
                     " was found to be missing dependencies on Quarkus extension artifacts marked with '-' below:");
             final List<AppArtifactKey> missing = rootDeployment.collectMissing(log);
             final StringBuilder buf = new StringBuilder();
             buf.append("Deployment artifact ");
-            buf.append(deploymentCoords);
+            buf.append(getDeploymentCoords());
             buf.append(" is missing the following dependencies from its configuration: ");
             final Iterator<AppArtifactKey> i = missing.iterator();
             buf.append(i.next());
@@ -402,6 +410,25 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
             throw new MojoExecutionException(buf.toString());
         }
+    }
+
+    private CollectResult collectDeploymentDeps() throws MojoExecutionException {
+        if (collectedDeploymentDeps == null) {
+            final AppArtifactCoords deploymentCoords = getDeploymentCoords();
+            try {
+                collectedDeploymentDeps = repoSystem.collectDependencies(repoSession,
+                        newCollectRequest(new DefaultArtifact(deploymentCoords.getGroupId(), deploymentCoords.getArtifactId(),
+                                deploymentCoords.getClassifier(), deploymentCoords.getType(), deploymentCoords.getVersion())));
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to collect dependencies of deployment artifact " + deploymentCoords,
+                        e);
+            }
+        }
+        return collectedDeploymentDeps;
+    }
+
+    private AppArtifactCoords getDeploymentCoords() {
+        return deploymentCoords == null ? deploymentCoords = AppArtifactCoords.fromString(deployment) : deploymentCoords;
     }
 
     private CollectRequest newCollectRequest(DefaultArtifact projectArtifact) throws MojoExecutionException {
@@ -499,6 +526,31 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
                     .enable(JsonParser.Feature.ALLOW_COMMENTS).enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
                     .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+        }
+    }
+
+    private final class QuarkusCoreDeploymentVersionLocator implements DependencyVisitor {
+        String coreVersion;
+        private boolean skipTheRest;
+
+        @Override
+        public boolean visitEnter(DependencyNode dep) {
+            if (skipTheRest) {
+                return false;
+            }
+            org.eclipse.aether.artifact.Artifact artifact = dep.getArtifact();
+            if (artifact != null && artifact.getArtifactId().equals("quarkus-core-deployment")) {
+                coreVersion = artifact.getVersion();
+                if ("io.quarkus".equals(artifact.getGroupId())) {
+                    skipTheRest = true;
+                }
+            }
+            return skipTheRest ? false : true;
+        }
+
+        @Override
+        public boolean visitLeave(DependencyNode node) {
+            return skipTheRest ? false : true;
         }
     }
 

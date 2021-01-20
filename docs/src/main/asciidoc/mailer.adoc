@@ -289,6 +289,27 @@ public CompletionStage<Response> send() {
 
 TIP: Injected mail templates are validated during build. If there is no matching template in `src/main/resources/templates` the build fails.
 
+Adding `quarkus-resteasy-reactive` extension allows you to directly return a `Uni`, such as:
+
+[source, java]
+----
+@Inject
+MailTemplate hello;
+
+@GET
+@Path("/mail")
+public Uni<Response> send() { <1>
+    return hello.to("to@acme.org")
+        .subject("Hello from Qute template")
+        // the template looks like: Hello {name}!
+        .data("name", "John")
+        .send()
+        .onItem().transform(x -> Response.accepted().build()); <2>
+}
+----
+<1> The method returns a `Uni`
+<2> Transform the `Uni<Void>` returned by `MailTemplate` into `Unit<Response>`
+
 == Testing email sending
 
 Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean

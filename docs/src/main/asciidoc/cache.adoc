@@ -49,7 +49,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=cache-quickstart \
     -DclassName="org.acme.cache.WeatherForecastResource" \
     -Dpath="/weather" \
-    -Dextensions="cache,resteasy-jackson"
+    -Dextensions="resteasy,cache,resteasy-jackson"
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `cache` and `resteasy-jackson` extensions.

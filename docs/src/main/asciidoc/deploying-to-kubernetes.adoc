@@ -34,7 +34,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=kubernetes-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="kubernetes, jib"
+    -Dextensions="resteasy,kubernetes,jib"
 cd kubernetes-quickstart
 ----
 

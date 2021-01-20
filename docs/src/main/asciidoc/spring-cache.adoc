@@ -36,7 +36,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=spring-cache-quickstart \
     -DclassName="org.acme.spring.cache.GreeterResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-di,spring-cache"
+    -Dextensions="resteasy,spring-di,spring-cache"
 cd spring-cache-quickstart
 ----
 

@@ -30,7 +30,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=gelf-logging \
     -DclassName="org.acme.quickstart.GelfLoggingResource" \
     -Dpath="/gelf-logging" \
-    -Dextensions="logging-gelf"
+    -Dextensions="resteasy,logging-gelf"
 ----
 
 If you already have your Quarkus project configured, you can add the `logging-gelf` extension

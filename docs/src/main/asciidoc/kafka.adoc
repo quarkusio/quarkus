@@ -48,7 +48,9 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-quickstart \
-    -Dextensions="smallrye-reactive-messaging-kafka"
+    -DclassName="org.acme.kafka.PriceResource" \
+    -Dpath="/prices" \
+    -Dextensions="resteasy,smallrye-reactive-messaging-kafka"
 cd kafka-quickstart
 ----
 

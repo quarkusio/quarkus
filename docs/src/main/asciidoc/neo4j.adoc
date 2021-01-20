@@ -128,7 +128,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=neo4j-quickstart \
     -DclassName="org.acme.datasource.GreetingResource" \
-    -Dextensions="neo4j,resteasy-jackson"
+    -Dextensions="resteasy,neo4j,resteasy-jackson"
 cd neo4j-quickstart
 ----
 

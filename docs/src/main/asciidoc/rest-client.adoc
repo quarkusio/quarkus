@@ -41,7 +41,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-client-quickstart \
     -DclassName="org.acme.rest.client.CountriesResource" \
     -Dpath="/country" \
-    -Dextensions="rest-client, resteasy-jackson"
+    -Dextensions="resteasy,rest-client,resteasy-jackson"
 cd rest-client-quickstart
 ----
 

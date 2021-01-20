@@ -534,6 +534,11 @@ quarkus.resteasy.gzip.max-input=10M // <2>
 <2> Configure the upper limit on deflated request body. This is useful to mitigate potential attacks by limiting their reach. The default value is `10M`.
 This configuration option would recognize strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`. If no suffix is given, assume bytes.
 
+Once GZip support has been enabled you can use it on an endpoint by adding the `@org.jboss.resteasy.annotations.GZIP` annotation to your endpoint method.
+
+If you want to compress everything then we recommended that you use the `quarkus.http.enable-compression=true` setting instead to globally enable
+compression support.
+
 == Multipart Support
 
 RESTEasy supports multipart via the https://docs.jboss.org/resteasy/docs/4.5.6.Final/userguide/html/Multipart.html[RESTEasy Multipart Provider].

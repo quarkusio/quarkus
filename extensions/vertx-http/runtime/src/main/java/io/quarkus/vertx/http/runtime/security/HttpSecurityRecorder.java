@@ -256,8 +256,13 @@ public class HttpSecurityRecorder {
                 String loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
                 String errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
                 String landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;
+                String postLocation = form.postLocation.startsWith("/") ? form.postLocation : "/" + form.postLocation;
+                String usernameParameter = form.usernameParameter;
+                String passwordParameter = form.passwordParameter;
+                String locationCookie = form.locationCookie;
                 boolean redirectAfterLogin = form.redirectAfterLogin;
-                return new FormAuthenticationMechanism(loginPage, errorPage, landingPage, redirectAfterLogin, loginManager);
+                return new FormAuthenticationMechanism(loginPage, postLocation, usernameParameter, passwordParameter,
+                        errorPage, landingPage, redirectAfterLogin, locationCookie, loginManager);
             }
         };
     }

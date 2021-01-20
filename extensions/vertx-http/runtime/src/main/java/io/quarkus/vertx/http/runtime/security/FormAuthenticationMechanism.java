@@ -27,20 +27,25 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
 
-    public static final String DEFAULT_POST_LOCATION = "/j_security_check";
-
     private final String loginPage;
     private final String errorPage;
-    private final String postLocation = DEFAULT_POST_LOCATION;
-    private final String locationCookie = "quarkus-redirect-location";
+    private final String postLocation;
+    private final String usernameParameter;
+    private final String passwordParameter;
+    private final String locationCookie;
     private final String landingPage;
     private final boolean redirectAfterLogin;
 
     private final PersistentLoginManager loginManager;
 
-    public FormAuthenticationMechanism(String loginPage, String errorPage, String landingPage, boolean redirectAfterLogin,
-            PersistentLoginManager loginManager) {
+    public FormAuthenticationMechanism(String loginPage, String postLocation,
+            String usernameParameter, String passwordParameter, String errorPage, String landingPage,
+            boolean redirectAfterLogin, String locationCookie, PersistentLoginManager loginManager) {
         this.loginPage = loginPage;
+        this.postLocation = postLocation;
+        this.usernameParameter = usernameParameter;
+        this.passwordParameter = passwordParameter;
+        this.locationCookie = locationCookie;
         this.errorPage = errorPage;
         this.landingPage = landingPage;
         this.redirectAfterLogin = redirectAfterLogin;
@@ -59,8 +64,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                         try {
                             MultiMap res = exchange.request().formAttributes();
 
-                            final String jUsername = res.get("j_username");
-                            final String jPassword = res.get("j_password");
+                            final String jUsername = res.get(usernameParameter);
+                            final String jPassword = res.get(passwordParameter);
                             if (jUsername == null || jPassword == null) {
                                 log.debugf(
                                         "Could not authenticate as username or password was not present in the posted result for %s",

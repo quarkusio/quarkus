@@ -25,6 +25,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -125,7 +127,23 @@ public class QuarkusTestExtension
     //needed for @Nested
     private static Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
 
+    private static Timer threadDumpTimer;
+
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
+        threadDumpTimer = new Timer();
+        threadDumpTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.err.println("\n\n======THREAD DUMP======\n");
+                Thread.getAllStackTraces().entrySet().forEach(s -> {
+                    System.err.println("\n\n" + s.getKey());
+                    for (StackTraceElement i : s.getValue()) {
+                        System.err.println(i);
+                    }
+                });
+                System.err.println("\n\n======END THREAD DUMP======\n");
+            }
+        }, 1000 * 60 * 5, 1000 * 60 * 5);
         quarkusTestProfile = profile;
         Closeable testResourceManager = null;
         try {
@@ -276,6 +294,8 @@ public class QuarkusTestExtension
                                 shutdownTasks.pop().run();
                             }
                         } finally {
+                            threadDumpTimer.cancel();
+                            threadDumpTimer = null;
                             for (Map.Entry<String, String> entry : sysPropRestore.entrySet()) {
                                 String val = entry.getValue();
                                 if (val == null) {

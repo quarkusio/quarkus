@@ -63,6 +63,7 @@
                         <configuration>
                             <dir>target/classes</dir>
                             <params>--port=8765 --verbose</params>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                 </executions>

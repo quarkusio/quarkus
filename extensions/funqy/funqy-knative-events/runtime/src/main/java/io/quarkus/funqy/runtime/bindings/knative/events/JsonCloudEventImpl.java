@@ -62,8 +62,10 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     public String specVersion() {
         if (specVersion == null) {
             JsonNode specVersion = event.get("specversion");
-            if (specVersion != null) {
+            if (specVersion != null && isKnownSpecVersion(specVersion.asText())) {
                 this.specVersion = specVersion.asText();
+            } else {
+                this.specVersion = "1.0";
             }
         }
 

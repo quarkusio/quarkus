@@ -149,7 +149,7 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     @Override
     public String dataSchema() {
         if (dataSchema == null) {
-            String dsName = specVersion() != null && specVersion().charAt(0) == '0' ? "ce-schemaurl" : "ce-dataschema";
+            String dsName = majorSpecVersion() == 0 ? "ce-schemaurl" : "ce-dataschema";
             dataSchema = headers.get(dsName);
         }
         return dataSchema;

@@ -97,6 +97,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
+    private final List<Runnable> deploymentFailedStartHandlers = new ArrayList<>();
     private final BiConsumer<Set<String>, ClassScanResult> restartCallback;
     private final BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification;
     private final BiFunction<String, byte[], byte[]> classTransformers;
@@ -1000,9 +1001,16 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         hotReplacementSetup.add(service);
     }
 
+    public void addDeploymentFailedStartHandler(Runnable service) {
+        deploymentFailedStartHandlers.add(service);
+    }
+
     public void startupFailed() {
         for (HotReplacementSetup i : hotReplacementSetup) {
             i.handleFailedInitialStart();
+        }
+        for (Runnable i : deploymentFailedStartHandlers) {
+            i.run();
         }
         //if startup failed we always do a class loader based restart
         lastStartIndex = null;

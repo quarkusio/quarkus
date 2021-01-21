@@ -842,15 +842,6 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
-    public void testDevModeWithoutJavaSrc() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic-no-java-src");
-        run(true);
-        getHttpResponse();
-
-        assertThat(running.log()).contains("The project's sources directory does not exist");
-    }
-
-    @Test
     public void testMultiModuleDevModeWithoutJavaSrc() throws MavenInvocationException, IOException {
         testDir = initProject("projects/multimodule", "projects/multimodule-no-java-src");
         runAndCheck();

@@ -302,11 +302,6 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        // don't warn if running in a module of a multi-module project
-        if (!sourceDir.isDirectory() && (project.getParentFile() == null || !project.getParentFile().exists())) {
-            getLog().warn("The project's sources directory does not exist " + sourceDir);
-        }
-
         try {
 
             DevModeRunner runner = new DevModeRunner();

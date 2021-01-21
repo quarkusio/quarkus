@@ -140,6 +140,7 @@
                             <serverId>ossrh</serverId>
                             <autoReleaseAfterClose>false</autoReleaseAfterClose>
                             <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
+                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
                         </configuration>
                     </plugin>
                     <plugin>

@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.runtime;
 
+import java.util.function.Function;
+
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
@@ -15,6 +17,8 @@ import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.schema.model.Schema;
 import io.vertx.core.Handler;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -70,5 +74,14 @@ public class SmallRyeGraphQLRecorder {
                 QuarkusClassloadingService.setClassLoader(null);
             }
         });
+    }
+
+    public Function<Router, Route> routeFunction(String rootPath, Handler<RoutingContext> bodyHandler) {
+        return new Function<Router, Route>() {
+            @Override
+            public Route apply(Router router) {
+                return router.route(rootPath).handler(bodyHandler);
+            }
+        };
     }
 }

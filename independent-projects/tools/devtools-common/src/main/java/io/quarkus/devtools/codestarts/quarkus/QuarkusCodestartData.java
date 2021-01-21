@@ -27,7 +27,13 @@ public final class QuarkusCodestartData {
         QUARKUS_GRADLE_PLUGIN_ID("quarkus.gradle-plugin.id"),
         QUARKUS_GRADLE_PLUGIN_VERSION("quarkus.gradle-plugin.version"),
         QUARKUS_VERSION("quarkus.version"),
+
         JAVA_VERSION("java.version"),
+        KOTLIN_VERSION("kotlin.version"),
+        SCALA_VERSION("scala.version"),
+        SCALA_MAVEN_PLUGIN_VERSION("scala-maven-plugin.version"),
+        MAVEN_COMPILER_PLUGIN_VERSION("maven-compiler-plugin.version"),
+        MAVEN_SUREFIRE_PLUGIN_VERSION("maven-surefire-plugin.version"),
 
         RESTEASY_EXAMPLE_RESOURCE_PATH("resteasy-example.resource.path"),
         RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-example.resource.class-name"),
@@ -69,7 +75,13 @@ public final class QuarkusCodestartData {
         QUARKUS_GRADLE_PLUGIN_ID("gradle_plugin_id"),
         QUARKUS_GRADLE_PLUGIN_VERSION("gradle_plugin_version"),
         QUARKUS_VERSION("quarkus_version"),
+
         JAVA_VERSION("java_target"),
+        KOTLIN_VERSION("kotlin_version"),
+        SCALA_VERSION("scala_version"),
+        SCALA_MAVEN_PLUGIN_VERSION("scala_plugin_version"),
+        MAVEN_COMPILER_PLUGIN_VERSION("compiler_plugin_version"),
+        MAVEN_SUREFIRE_PLUGIN_VERSION("surefire_plugin_version"),
 
         RESTEASY_EXAMPLE_RESOURCE_PATH("path"),
         RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName),

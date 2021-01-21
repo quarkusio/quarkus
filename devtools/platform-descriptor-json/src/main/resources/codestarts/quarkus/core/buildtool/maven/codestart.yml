@@ -3,7 +3,7 @@ type: buildtool
 fallback: true
 language:
   base:
-    data:
+    shared-data:
       kotlin:
         version: 1.3.72
       scala:
@@ -14,7 +14,6 @@ language:
         version: 3.8.1
       maven-surefire-plugin:
         version: 2.22.1
-    shared-data:
       buildtool:
         build-dir: target
         cli: mvn

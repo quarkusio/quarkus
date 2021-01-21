@@ -96,6 +96,7 @@ public class SseTestCase {
     public void testJsonMultiFromSse() throws Exception {
         testJsonMulti("sse/json");
         testJsonMulti("sse/json2");
+        testJsonMulti("sse/blocking/json");
     }
 
     @Test

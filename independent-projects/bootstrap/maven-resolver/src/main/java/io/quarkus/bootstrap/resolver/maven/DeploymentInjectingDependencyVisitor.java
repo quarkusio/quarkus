@@ -12,6 +12,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -20,6 +21,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.jboss.logging.Logger;
@@ -80,7 +82,8 @@ public class DeploymentInjectingDependencyVisitor {
         collectRuntimeExtensions(root.getChildren());
         // resolve and inject deployment dependencies
         for (DependencyNode rtNode : runtimeNodes) {
-            replaceWith(rtNode, collectDependencies((Artifact) rtNode.getData().get(QUARKUS_DEPLOYMENT_ARTIFACT)));
+            replaceWith(rtNode, collectDependencies((Artifact) rtNode.getData().get(QUARKUS_DEPLOYMENT_ARTIFACT),
+                    rtNode.getDependency().getExclusions()));
         }
     }
 
@@ -169,11 +172,14 @@ public class DeploymentInjectingDependencyVisitor {
         originalNode.setChildren(children);
     }
 
-    private DependencyNode collectDependencies(Artifact artifact) throws BootstrapDependencyProcessingException {
+    private DependencyNode collectDependencies(Artifact artifact, Collection<Exclusion> exclusions)
+            throws BootstrapDependencyProcessingException {
         try {
-            return managedDeps.isEmpty() ? resolver.collectDependencies(artifact, Collections.emptyList(), mainRepos).getRoot()
+            return managedDeps.isEmpty()
+                    ? resolver.collectDependencies(artifact, Collections.emptyList(), mainRepos, exclusions).getRoot()
                     : resolver
-                            .collectManagedDependencies(artifact, Collections.emptyList(), managedDeps, mainRepos, "test",
+                            .collectManagedDependencies(artifact, Collections.emptyList(), managedDeps, mainRepos, exclusions,
+                                    "test",
                                     "provided")
                             .getRoot();
         } catch (AppModelResolverException e) {

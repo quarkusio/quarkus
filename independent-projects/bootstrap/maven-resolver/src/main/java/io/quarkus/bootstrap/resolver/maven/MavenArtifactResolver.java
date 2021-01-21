@@ -24,6 +24,7 @@ import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.DefaultDependencyNode;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
@@ -224,7 +225,12 @@ public class MavenArtifactResolver {
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
             throws BootstrapMavenException {
-        final CollectRequest request = newCollectRequest(artifact, mainRepos);
+        return collectDependencies(artifact, deps, mainRepos, Collections.emptyList());
+    }
+
+    public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos,
+            Collection<Exclusion> exclusions) throws BootstrapMavenException {
+        final CollectRequest request = newCollectRequest(artifact, mainRepos, exclusions);
         request.setDependencies(deps);
         try {
             return repoSystem.collectDependencies(repoSession, request);
@@ -284,10 +290,11 @@ public class MavenArtifactResolver {
     }
 
     public CollectResult collectManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
+            List<RemoteRepository> mainRepos, Collection<Exclusion> exclusions, String... excludedScopes)
+            throws BootstrapMavenException {
         try {
             return repoSystem.collectDependencies(repoSession,
-                    newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, excludedScopes));
+                    newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, exclusions, excludedScopes));
         } catch (DependencyCollectionException e) {
             throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }
@@ -295,6 +302,12 @@ public class MavenArtifactResolver {
 
     private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
             List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
+        return newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, Collections.emptyList(), excludedScopes);
+    }
+
+    private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
+            List<RemoteRepository> mainRepos, Collection<Exclusion> exclusions, String... excludedScopes)
+            throws BootstrapMavenException {
         final List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
         final ArtifactDescriptorResult descr = resolveDescriptorInternal(artifact, aggregatedRepos);
         Collection<String> excluded;
@@ -335,11 +348,16 @@ public class MavenArtifactResolver {
             }
         }
 
-        return new CollectRequest()
-                .setRootArtifact(artifact)
+        final CollectRequest request = new CollectRequest()
                 .setDependencies(mergeDeps(deps, originalDeps, managedVersions))
                 .setManagedDependencies(mergedManagedDeps)
                 .setRepositories(aggregateRepositories(aggregatedRepos, newResolutionRepositories(descr.getRepositories())));
+        if (exclusions.isEmpty()) {
+            request.setRootArtifact(artifact);
+        } else {
+            request.setRoot(new Dependency(artifact, JavaScopes.COMPILE, false, exclusions));
+        }
+        return request;
     }
 
     public List<RemoteRepository> newResolutionRepositories(List<RemoteRepository> repos) {
@@ -359,10 +377,14 @@ public class MavenArtifactResolver {
         }
     }
 
-    private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos)
-            throws BootstrapMavenException {
+    private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos) {
+        return newCollectRequest(artifact, mainRepos, Collections.emptyList());
+    }
+
+    private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos,
+            Collection<Exclusion> exclusions) {
         return new CollectRequest()
-                .setRoot(new Dependency(artifact, JavaScopes.RUNTIME))
+                .setRoot(new Dependency(artifact, JavaScopes.RUNTIME, false, exclusions))
                 .setRepositories(aggregateRepositories(mainRepos, remoteRepos));
     }
 

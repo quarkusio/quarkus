@@ -1,0 +1,164 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Quarkus Tools in your favorite IDE
+
+include::./attributes.adoc[]
+
+[[project-creation]]
+== IDE Overview
+
+The following IDEs have support for the community developed Quarkus Tools:
+
+* https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus[Quarkus Tools for Visual Studio Code]
+* https://marketplace.eclipse.org/content/quarkus-tools[Quarkus Tools for Eclipse]
+* https://plugins.jetbrains.com/plugin/13234-quarkus/versions[Quarkus Tools for IntelliJ]
+* https://github.com/eclipse/che-devfile-registry/blob/master/devfiles/quarkus/devfile.yaml[Quarkus Tools for Eclipse Che]
+
+In addition IntelliJ has additional support for Quarkus in their Ultimate non-open source version.
+
+* https://www.jetbrains.com/help/idea/quarkus.html[IntelliJ Ultimate Edition built-in Quarkus support]
+
+The table below gives an overview of the current IDE's with links and a high-level overview of their features.
+
+:vscode-logo: https://simpleicons.org/icons/visualstudiocode.svg 
+:eclipse-logo: https://simpleicons.org/icons/eclipseide.svg
+:intellij-logo: https://simpleicons.org/icons/intellijidea.svg
+:che-logo: che-icon-dark.svg
+[cols="6*^", header]
+|===
+| .
+| image:{vscode-logo}[200,200]
+{empty} +
+VSCode Quarkus Tools
+| image:{eclipse-logo}[200,200]
+{empty} +
+Eclipse Quarkus Tools
+| image:{intellij-logo}[100,100]
+{empty} +
+IntelliJ Quarkus Tools
+| image:{intellij-logo}[100,100]
+{empty} +
+IntelliJ Ultimate
+| image:{che-logo}[100,100]
+{empty} +
+Eclipse Che
+
+|Description
+|Visual Studio Code extension to install using the marketplace  
+|Eclipse plugin to install into Eclipse using an updatesite
+|IntelliJ plugin that works in IntelliJ Community and Ultimate. Available from Marketplace.
+|Built-in Quarkus features available only in IntelliJ Ultimate
+|Built-in Quarkus features available in Eclipse Che incl. che.openshift.io.
+
+|Status
+|Stable
+|Stable
+|Stable
+|Stable
+|Stable
+
+|Downloads
+| https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus[Marketplace]
+{empty} +
+ https://download.jboss.org/jbosstools/vscode/snapshots/vscode-quarkus/?C=M;O=D[Development Builds]
+| https://download.jboss.org/jbosstools/photon/snapshots/builds/jbosstools-quarkus_master/[Development Update Site]
+| https://plugins.jetbrains.com/plugin/13234-quarkus/versions[Marketplace]
+{empty} +
+https://download.jboss.org/jbosstools/intellij/snapshots/intellij-quarkus/[Development Builds]
+| https://www.jetbrains.com/idea/nextversion/[Installer]
+| https://che.openshift.io/f?url=https://raw.githubusercontent.com/redhat-developer/devfile/master/getting-started/quarkus/devfile.yaml[Start Che Workspace]
+
+|Source
+|https://github.com/redhat-developer/vscode-quarkus[Github]
+|https://github.com/jbosstools/jbosstools-quarkus[Github]
+|https://github.com/redhat-developer/intellij-quarkus[Github]
+|Closed-Source
+|
+
+|https://github.com/redhat-developer/quarkus-ls[Quarkus Language Server]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Wizards w/code.quarkus.io
+|icon:check[]
+|icon:check[]
+|https://issues.jboss.org/browse/JBIDE-26950[icon:times[]]
+|icon:check[]
+|icon:check[]
+
+|Custom Wizard
+|icon:times[]
+|icon:times[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+
+|Config editor
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Config autocompletion
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|Config validation
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|Config jump to definition
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|?
+|icon:check[]
+
+|Config profiles
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|Config outline 
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Easy Launch debug/dev:mode
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+|icon:check[]
+
+|Quarkus Code Snippets
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Injection Discovery/Navigation
+|icon:times[]
+|icon:times[]
+|icon:times[]
+|icon:check[]
+|icon:times[]
+|===

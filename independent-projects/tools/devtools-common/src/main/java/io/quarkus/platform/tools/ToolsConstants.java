@@ -15,6 +15,12 @@ public interface ToolsConstants {
 
     String PROP_QUARKUS_CORE_VERSION = "quarkus-core-version";
 
+    String PROP_KOTLIN_VERSION = "kotlin-version";
+    String PROP_SCALA_VERSION = "scala-version";
+    String PROP_SCALA_PLUGIN_VERSION = "scala-plugin-version";
+    String PROP_SUREFIRE_PLUGIN_VERSION = "surefire-plugin-version";
+    String PROP_COMPILER_PLUGIN_VERSION = "compiler-plugin-version";
+
     String PROP_QUARKUS_MAVEN_PLUGIN_GROUP_ID = "maven-plugin-groupId";
     String PROP_QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID = "maven-plugin-artifactId";
     String PROP_QUARKUS_MAVEN_PLUGIN_VERSION = "maven-plugin-version";

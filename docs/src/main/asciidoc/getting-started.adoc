@@ -120,8 +120,8 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom</artifactId>
-            <version>${quarkus.version}</version>
+            <artifactId>quarkus-universe-bom</artifactId>
+            <version>${quarkus.platform.version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -133,11 +133,14 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
         <plugin>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus.version}</version>
+            <version>${quarkus-plugin.version}</version>
+            <extensions>true</extensions>
             <executions>
                 <execution>
                     <goals>
                         <goal>build</goal>
+                        <goal>generate-code</goal>
+                        <goal>generate-code-tests</goal>
                     </goals>
                 </execution>
             </executions>

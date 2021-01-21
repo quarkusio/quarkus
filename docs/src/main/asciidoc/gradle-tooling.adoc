@@ -206,6 +206,15 @@ By default, `quarkusDev` sets the debug host to `localhost` (for security reason
 ./gradlew quarkusDev -DdebugHost=0.0.0.0
 ----
 ====
+The plugin also exposes a `quarkusDev` configuration. Using this configuration to declare a dependency will restrict the usage of that dependency to development mode.
+The `quarkusDev` configuration can be used as following:
+
+[source,groovy]
+----
+dependencies {
+    quarkusDev 'io.quarkus:quarkus-jdbc-h2'
+}
+----
 
 === Remote Development Mode
 

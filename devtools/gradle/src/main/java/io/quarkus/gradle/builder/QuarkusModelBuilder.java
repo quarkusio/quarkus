@@ -58,6 +58,7 @@ import io.quarkus.bootstrap.resolver.model.impl.SourceSetImpl;
 import io.quarkus.bootstrap.resolver.model.impl.WorkspaceImpl;
 import io.quarkus.bootstrap.resolver.model.impl.WorkspaceModuleImpl;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
+import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
@@ -69,9 +70,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
             return project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
         }
         if (LaunchMode.DEVELOPMENT.equals(mode)) {
-            return project.getConfigurations().create("quarkusDevMode").extendsFrom(
-                    project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
-                    project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+            return project.getConfigurations().getByName(QuarkusPlugin.DEV_MODE_CONFIGURATION_NAME);
         }
         return project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
     }

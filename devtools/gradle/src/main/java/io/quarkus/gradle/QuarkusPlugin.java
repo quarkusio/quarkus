@@ -57,6 +57,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String GENERATE_CONFIG_TASK_NAME = "generateConfig";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
     public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
+    public static final String DEV_MODE_CONFIGURATION_NAME = "quarkusDev";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
@@ -168,8 +169,14 @@ public class QuarkusPlugin implements Plugin<Project> {
                                     .plus(mainSourceSet.getOutput())
                                     .plus(testSourceSet.getOutput()));
 
-                    // create a custom configuration to be used for the dependencies of the testNative task
                     ConfigurationContainer configurations = project.getConfigurations();
+
+                    // create a custom configuration for devmode
+                    configurations.create(DEV_MODE_CONFIGURATION_NAME).extendsFrom(
+                            configurations.getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
+                            configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+
+                    // create a custom configuration to be used for the dependencies of the testNative task
                     configurations.maybeCreate(NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME)
                             .extendsFrom(configurations.findByName(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
                     configurations.maybeCreate(NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME)

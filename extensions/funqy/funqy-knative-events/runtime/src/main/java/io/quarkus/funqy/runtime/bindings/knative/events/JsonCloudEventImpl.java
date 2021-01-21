@@ -154,7 +154,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     @Override
     public String dataSchema() {
         if (dataSchema == null) {
-            String dsName = specVersion() != null && specVersion().charAt(0) == '0' ? "schemaurl" : "dataschema";
+            String dsName = majorSpecVersion() == 0 ? "schemaurl" : "dataschema";
             JsonNode dataSchema = event.get(dsName);
             if (dataSchema != null) {
                 this.dataSchema = dataSchema.asText();
@@ -190,7 +190,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
             }
         } else if (byte[].class.equals(dataType)) {
             try {
-                if (specVersion() != null && specVersion().charAt(0) == '0') {
+                if (majorSpecVersion() == 0) {
                     boolean isBase64 = false;
                     if (event.has("datacontentencoding")) {
                         String dce = event.get("datacontentencoding").asText();

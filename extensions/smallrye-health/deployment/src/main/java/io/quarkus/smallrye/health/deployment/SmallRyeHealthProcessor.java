@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.Health;
@@ -46,7 +47,9 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
@@ -96,6 +99,15 @@ class SmallRyeHealthProcessor {
     private static final String HEALTH_UI_FINAL_DESTINATION = "META-INF/health-ui-files";
     private static final String FILE_TO_UPDATE = "healthui.js";
 
+    // Branding files to monitor for changes 
+    private static final String BRANDING_DIR = "META-INF/branding/";
+    private static final String BRANDING_LOGO_GENERAL = BRANDING_DIR + "logo.png";
+    private static final String BRANDING_LOGO_MODULE = BRANDING_DIR + "smallrye-health-ui.png";
+    private static final String BRANDING_STYLE_GENERAL = BRANDING_DIR + "style.css";
+    private static final String BRANDING_STYLE_MODULE = BRANDING_DIR + "smallrye-health-ui.css";
+    private static final String BRANDING_FAVICON_GENERAL = BRANDING_DIR + "favicon.ico";
+    private static final String BRANDING_FAVICON_MODULE = BRANDING_DIR + "smallrye-health-ui.ico";
+
     static class OpenAPIIncluded implements BooleanSupplier {
         HealthBuildTimeConfig config;
 
@@ -105,6 +117,17 @@ class SmallRyeHealthProcessor {
     }
 
     HealthBuildTimeConfig config;
+
+    @BuildStep
+    List<HotDeploymentWatchedFileBuildItem> brandingFiles() {
+        return Stream.of(BRANDING_LOGO_GENERAL,
+                BRANDING_STYLE_GENERAL,
+                BRANDING_FAVICON_GENERAL,
+                BRANDING_LOGO_MODULE,
+                BRANDING_STYLE_MODULE,
+                BRANDING_FAVICON_MODULE).map(HotDeploymentWatchedFileBuildItem::new)
+                .collect(Collectors.toList());
+    }
 
     @BuildStep
     void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
@@ -378,7 +401,8 @@ class SmallRyeHealthProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthConfig healthConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            LaunchModeBuildItem launchMode) throws Exception {
+            LaunchModeBuildItem launchMode,
+            LiveReloadBuildItem liveReloadBuildItem) throws Exception {
 
         if (shouldInclude(launchMode, healthConfig)) {
 
@@ -404,6 +428,12 @@ class SmallRyeHealthProcessor {
                         .produce(new NotFoundPageDisplayableEndpointBuildItem(
                                 nonApplicationRootPathBuildItem
                                         .adjustPath(healthConfig.ui.rootPath + "/")));
+
+                // Handle live reload of branding files
+                if (liveReloadBuildItem.isLiveReload() && !liveReloadBuildItem.getChangedResources().isEmpty()) {
+                    WebJarUtil.hotReloadBrandingChanges(curateOutcomeBuildItem, launchMode, artifact,
+                            liveReloadBuildItem.getChangedResources());
+                }
             } else {
                 Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(curateOutcomeBuildItem, artifact,
                         HEALTH_UI_WEBJAR_PREFIX);

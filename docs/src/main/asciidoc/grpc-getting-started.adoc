@@ -35,12 +35,14 @@ If you wish to generate code from different `proto` files for tests, also add th
         <plugin>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus-plugin.version}</version>
+            <extensions>true</extensions>
             <executions>
                 <execution>
                     <goals>
+                        <goal>build</goal>
                         <goal>generate-code</goal>
                         <goal>generate-code-tests</goal>
-                        <goal>build</goal>
                     </goals>
                 </execution>
             </executions>

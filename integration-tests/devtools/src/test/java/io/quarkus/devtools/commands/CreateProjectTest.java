@@ -2,6 +2,8 @@ package io.quarkus.devtools.commands;
 
 import static io.quarkus.devtools.ProjectTestUtil.checkContains;
 import static io.quarkus.devtools.ProjectTestUtil.checkMatches;
+import static io.quarkus.platform.tools.ToolsConstants.PROP_COMPILER_PLUGIN_VERSION;
+import static io.quarkus.platform.tools.ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION;
 import static io.quarkus.platform.tools.ToolsUtils.readQuarkusProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -63,10 +65,12 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
                 .satisfies(checkContains("<artifactId>resteasy-app</artifactId>"))
                 .satisfies(checkContains("<version>1.0.0-FOO</version>"))
-                .satisfies(checkContains("<surefire-plugin.version>" + quarkusProp.getProperty("surefire-plugin-version")
-                        + "</surefire-plugin.version>"))
-                .satisfies(checkContains("<compiler-plugin.version>" + quarkusProp.getProperty("compiler-plugin-version")
-                        + "</compiler-plugin.version>"))
+                .satisfies(checkContains(
+                        "<surefire-plugin.version>" + quarkusProp.getProperty(PROP_SUREFIRE_PLUGIN_VERSION)
+                                + "</surefire-plugin.version>"))
+                .satisfies(checkContains(
+                        "<compiler-plugin.version>" + quarkusProp.getProperty(PROP_COMPILER_PLUGIN_VERSION)
+                                + "</compiler-plugin.version>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
 
         assertThat(projectDir.resolve("README.md"))

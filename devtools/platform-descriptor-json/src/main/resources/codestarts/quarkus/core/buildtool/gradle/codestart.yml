@@ -2,10 +2,9 @@ name: gradle
 type: buildtool
 language:
   base:
-    data:
+    shared-data:
       kotlin:
         version: 1.3.72
-    shared-data:
       quarkus:
         gradle-plugin:
           id: io.quarkus

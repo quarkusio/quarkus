@@ -1,5 +1,6 @@
 package io.quarkus.funqy.runtime.bindings.knative.events;
 
+import static io.quarkus.funqy.knative.events.AbstractCloudEvent.isKnownSpecVersion;
 import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder.DATA_OBJECT_READER;
 import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder.DATA_OBJECT_WRITER;
 import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder.INPUT_CE_DATA_TYPE;
@@ -139,10 +140,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     }
                 }
 
-                if (!isSupportedSpecVersion(ceSpecVersion)) {
-                    log.errorf("Unexpected CloudEvent spec-version '%s'.", ceSpecVersion);
-                    routingContext.fail(400);
-                    return;
+                if (!isKnownSpecVersion(ceSpecVersion)) {
+                    log.warnf("Unexpected CloudEvent spec-version '%s'.", ceSpecVersion);
                 }
 
                 final FunctionInvoker invoker;
@@ -363,10 +362,6 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             }
         }));
 
-    }
-
-    private static boolean isSupportedSpecVersion(String ceSpecVersion) {
-        return (ceSpecVersion.charAt(0) == '0' || ceSpecVersion.charAt(0) == '1') && ceSpecVersion.charAt(1) == '.';
     }
 
     private void regularFunqyHttp(RoutingContext routingContext) {

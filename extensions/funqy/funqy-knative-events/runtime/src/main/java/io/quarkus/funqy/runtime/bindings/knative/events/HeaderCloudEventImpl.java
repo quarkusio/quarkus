@@ -59,10 +59,8 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     public String specVersion() {
         if (specVersion == null) {
             String sv = headers.get("ce-specversion");
-            if (sv != null && isKnownSpecVersion(sv)) {
+            if (sv != null) {
                 this.specVersion = sv;
-            } else {
-                this.specVersion = "1.0";
             }
         }
 
@@ -151,7 +149,7 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     @Override
     public String dataSchema() {
         if (dataSchema == null) {
-            String dsName = specVersion().charAt(0) == '0' ? "ce-schemaurl" : "ce-dataschema";
+            String dsName = specVersion() != null && specVersion().charAt(0) == '0' ? "ce-schemaurl" : "ce-dataschema";
             dataSchema = headers.get(dsName);
         }
         return dataSchema;

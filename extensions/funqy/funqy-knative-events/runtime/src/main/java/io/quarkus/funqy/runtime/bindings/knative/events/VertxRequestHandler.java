@@ -218,10 +218,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             id = getResponseId();
                         }
                         String specVersion;
-                        if (outputCloudEvent.specVersion() == null) {
-                            specVersion = inputCloudEvent.specVersion().toString();
+                        if (outputCloudEvent.specVersion() != null) {
+                            specVersion = outputCloudEvent.specVersion();
+                        } else if (inputCloudEvent.specVersion() != null) {
+                            specVersion = inputCloudEvent.specVersion();
                         } else {
-                            specVersion = outputCloudEvent.specVersion().toString();
+                            specVersion = "1.0";
                         }
                         String source = outputCloudEvent.source();
                         if (source == null) {
@@ -249,7 +251,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             if (outputCloudEvent.dataSchema() != null) {
-                                String dsName = outputCloudEvent.specVersion().charAt(0) == '0' ? "ce-schemaurl"
+                                String dsName = specVersion.charAt(0) == '0' ? "ce-schemaurl"
                                         : "ce-dataschema";
                                 httpResponse.putHeader(dsName, outputCloudEvent.dataSchema());
                             }
@@ -295,7 +297,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             if (outputCloudEvent.dataSchema() != null) {
-                                String dsName = outputCloudEvent.specVersion().charAt(0) == '0' ? "schemaurl" : "dataschema";
+                                String dsName = specVersion.charAt(0) == '0' ? "schemaurl" : "dataschema";
                                 responseEvent.put(dsName, outputCloudEvent.dataSchema());
                             }
 

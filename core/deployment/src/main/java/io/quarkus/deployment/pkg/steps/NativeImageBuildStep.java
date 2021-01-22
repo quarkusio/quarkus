@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -36,7 +35,6 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.NativeConfig.ContainerRuntime;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -734,23 +732,6 @@ public class NativeImageBuildStep {
         }
     }
 
-    //https://github.com/quarkusio/quarkus/issues/11573
-    //https://github.com/oracle/graal/issues/1610
-    @BuildStep
-    List<RuntimeReinitializedClassBuildItem> graalVmWorkaround(NativeConfig nativeConfig,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled) {
-        Path outputDir = Paths.get("."); // The path is not important for getting the version
-        HashMap<String, String> env = new HashMap<>(System.getenv());
-        List<String> nativeImage = getNativeImage(nativeConfig, processInheritIODisabled, outputDir, env);
-        GraalVM.Version version = GraalVM.Version.ofBinary(nativeImage);
-        if (version.isNewerThan(GraalVM.Version.VERSION_20_2)) {
-            // https://github.com/oracle/graal/issues/2841
-            return Collections.emptyList();
-        }
-        return Arrays.asList(new RuntimeReinitializedClassBuildItem(ThreadLocalRandom.class.getName()),
-                new RuntimeReinitializedClassBuildItem("java.lang.Math$RandomNumberGeneratorHolder"));
-    }
-
     protected static final class GraalVM {
         static final class Version implements Comparable<Version> {
             private static final Pattern PATTERN = Pattern.compile(
@@ -762,11 +743,10 @@ public class NativeImageBuildStep {
             static final Version SNAPSHOT_MANDREL = new Version("Snapshot", Integer.MAX_VALUE, Integer.MAX_VALUE,
                     Distribution.MANDREL);
 
-            static final Version VERSION_20_2 = new Version("GraalVM 20.2", 20, 2, Distribution.ORACLE);
             static final Version VERSION_20_3 = new Version("GraalVM 20.3", 20, 3, Distribution.ORACLE);
             static final Version VERSION_21_0 = new Version("GraalVM 21.0", 21, 0, Distribution.ORACLE);
 
-            static final Version MINIMUM = VERSION_20_2;
+            static final Version MINIMUM = VERSION_20_3;
             static final Version CURRENT = VERSION_21_0;
 
             final String fullVersion;

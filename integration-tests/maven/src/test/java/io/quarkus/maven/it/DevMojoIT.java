@@ -46,13 +46,27 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 public class DevMojoIT extends RunAndCheckMojoTestBase {
 
     @Test
+    public void testSystemPropertiesConfig() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-sys-props-config");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello, out there");
+    }
+
+    @Test
+    public void testEnvironmentVariablesConfig() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-env-vars-config");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello, WORLD");
+    }
+
+    @Test
     public void testPropertyOverridesTest() throws MavenInvocationException, IOException {
         testDir = getTargetDir("projects/property-overrides");
         runAndCheck("-Dlocal-dep.version=1.0-SNAPSHOT");
     }
 
     @Test
-    public void testSystemPropertyWithSpaces() throws MavenInvocationException, IOException {
+    public void testSystemPropertyWithSpacesOnCommandLine() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-prop-with-spaces");
         runAndCheck("-Dgreeting=\"1 2 3\"");
         final String greeting = DevModeTestUtils.getHttpResponse("/app/hello/greeting");

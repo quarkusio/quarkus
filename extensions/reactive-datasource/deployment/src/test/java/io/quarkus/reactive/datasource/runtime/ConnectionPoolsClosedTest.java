@@ -41,6 +41,45 @@ public class ConnectionPoolsClosedTest {
     }
 
     /**
+     * This test makes sure that when the closed connection is not the last one in the list
+     * of closed connections, no exception is thrown.
+     */
+    @Test
+    public void connectionsThatAreNotTheLastGetClosedSuccessfully()
+            throws ExecutionException, InterruptedException {
+        ExecutorService e = Executors.newFixedThreadPool(3);
+        try {
+            TestableThreadLocalPool globalPool = new TestableThreadLocalPool();
+            Assert.assertTrue(globalPool.trackedSize() == 0);
+            final TestPoolInterface p1 = grabPoolFromLongLivingThread(globalPool, e);
+            Assert.assertFalse(p1.isClosed());
+            Assert.assertTrue(globalPool.trackedSize() == 1);
+            final TestPoolInterface p2 = grabPoolFromLongLivingThread(globalPool, e);
+            Assert.assertFalse(p1.isClosed());
+            Assert.assertFalse(p2.isClosed());
+            Assert.assertFalse(p1.isClosed());
+            Assert.assertFalse(p2.isClosed());
+            Assert.assertTrue(globalPool.trackedSize() == 2);
+            e.shutdown();
+            while (!e.isTerminated()) {
+                Thread.sleep(1);
+            }
+            final TestPoolInterface p3 = grabPoolFromOtherThread(globalPool);
+            Assert.assertTrue(p1.isClosed());
+            Assert.assertTrue(p2.isClosed());
+            Assert.assertFalse(p3.isClosed());
+            Assert.assertTrue(globalPool.trackedSize() == 1);
+            globalPool.close();
+            Assert.assertTrue(p1.isClosed());
+            Assert.assertTrue(p2.isClosed());
+            Assert.assertTrue(p3.isClosed());
+            Assert.assertTrue(globalPool.trackedSize() == 0);
+        } finally {
+            e.shutdown();
+        }
+    }
+
+    /**
      * Here we check that when explicit close of a thread-local
      * specific pool is closed, we also de-reference it.
      * And when closing the global pool, all thread-local
@@ -82,6 +121,17 @@ public class ConnectionPoolsClosedTest {
             Thread.sleep(1);
         }
         return poolInstance;
+    }
+
+    private TestPoolInterface grabPoolFromLongLivingThread(TestableThreadLocalPool globalPool,
+            ExecutorService e)
+            throws InterruptedException, ExecutionException {
+        AtomicReference<Thread> thread = new AtomicReference<>();
+        final Future<TestPoolInterface> creation = e.submit(() -> {
+            thread.set(Thread.currentThread());
+            return globalPool.pool();
+        });
+        return creation.get();
     }
 
 }

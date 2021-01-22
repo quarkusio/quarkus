@@ -916,12 +916,42 @@ NOTE: The template rendering is divided in two phases. During the first phase, w
 
 === Engine Configuration
 
+==== Value Resolvers
+
+Value resolvers are used when evaluating expressions.
+A custom `io.quarkus.qute.ValueResolver` can be registered programmatically via `EngineBuilder.addValueResolver()`.
+
+.`ValueResolver` Builder Example
+[source,java]
+----
+engineBuilder.addValueResolver(ValueResolver.builder()
+    .appliesTo(ctx -> ctx.getBase() instanceof Long && ctx.getName().equals("tenTimes"))
+    .resolveSync(ctx -> (Long) ctx.getBase() * 10)
+    .build());
+----
+
 ==== Template Locator
 
 Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator(Function<String, Optional<Reader>>)`.
 This locator is used whenever the `Engine.getTemplate()` method is called and the engine has no template for a given id stored in the cache.
 
 NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically.
+
+==== Content Filters
+
+Content filters can be used to modify the template contents before parsing.
+
+.Content Filter Example
+[source,java]
+----
+engineBuilder.addParserHook(new ParserHook() {
+    @Override
+    public void beforeParsing(ParserHelper parserHelper) {
+        parserHelper.addContentFilter(contents -> contents.replace("${", "$\\{")); <1>
+    }
+});
+----
+<1> Escape all occurences of `${`.
 
 [[quarkus_integration]]
 == Quarkus Integration
@@ -960,6 +990,24 @@ class MyBean {
 <1> If there is no `ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, the container will attempt to locate a template with path `src/main/resources/templates/items.html`.
 <2> The `ResourcePath` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`. 
 <3> Inject the configured `Engine` instance.
+
+It's also possible to contribute to the engine configuration via a CDI observer method.
+
+.`EngineBuilder` Observer Example
+[source,java]
+----
+import io.quarkus.qute.EngineBuilder;
+
+class MyBean {
+
+    void configureEngine(@Observes EngineBuilder builder) {
+       builder.addValueResolver(ValueResolver.builder()
+                .appliesTo(ctx -> ctx.getBase() instanceof Long && ctx.getName().equals("tenTimes"))
+                .resolveSync(ctx -> (Long) ec.getBase() * 10)
+                .build());
+    }
+}
+----
 
 === Template Variants
 

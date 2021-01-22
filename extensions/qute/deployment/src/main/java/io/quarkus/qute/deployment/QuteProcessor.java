@@ -377,28 +377,25 @@ public class QuteProcessor {
         }).addParserHook(new ParserHook() {
 
             @Override
-            public void beforeParsing(ParserHelper parserHelper, String id) {
-                if (id != null) {
-                    for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
-                        // FIXME: check for dot/extension?
-                        if (id.startsWith(checkedTemplate.templateId)) {
-                            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
-                                parserHelper.addParameter(entry.getKey(), entry.getValue());
-                            }
+            public void beforeParsing(ParserHelper parserHelper) {
+                for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+                    // FIXME: check for dot/extension?
+                    if (parserHelper.getTemplateId().startsWith(checkedTemplate.templateId)) {
+                        for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
+                            parserHelper.addParameter(entry.getKey(), entry.getValue());
                         }
                     }
-
-                    // Add params to message bundle templates
-                    for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
-                        if (id.equals(messageBundleMethod.getTemplateId())) {
-                            MethodInfo method = messageBundleMethod.getMethod();
-                            for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
-                                Type paramType = it.next();
-                                parserHelper.addParameter(method.parameterName(it.previousIndex()),
-                                        JandexUtil.getBoxedTypeName(paramType));
-                            }
-                            break;
+                }
+                // Add params to message bundle templates
+                for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
+                    if (parserHelper.getTemplateId().equals(messageBundleMethod.getTemplateId())) {
+                        MethodInfo method = messageBundleMethod.getMethod();
+                        for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
+                            Type paramType = it.next();
+                            parserHelper.addParameter(method.parameterName(it.previousIndex()),
+                                    JandexUtil.getBoxedTypeName(paramType));
                         }
+                        break;
                     }
                 }
             }

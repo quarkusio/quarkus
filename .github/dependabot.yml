@@ -97,6 +97,7 @@ updates:
       - dependency-name: com.amazonaws:aws-lambda-java-events
       # Apache Commons
       - dependency-name: commons-io:commons-io
+      - dependency-name: org.apache.commons:commons-lang3
       # Micrometer
       - dependency-name: io.micrometer:micrometer-bom
       # BouncyCastle

@@ -1,7 +1,9 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
@@ -101,10 +103,9 @@ public class OidcClientRecorder {
         WebClientOptions options = new WebClientOptions();
 
         URI authServerUri = URI.create(authServerUriString);
-        if (authServerUri.getPort() != -1) {
-            options.setDefaultPort(authServerUri.getPort());
-        }
+
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
+        setWebClientOptions(authServerUri, options);
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
 
@@ -145,6 +146,31 @@ public class OidcClientRecorder {
                         oidcConfig);
             }
         });
+    }
+
+    private static void setWebClientOptions(URI authServerUri, WebClientOptions options) {
+        try {
+            URL url = authServerUri.toURL();
+            options.setDefaultHost(authServerUri.getHost());
+            boolean ssl = false;
+            int port = url.getPort();
+            String protocol = url.getProtocol();
+            char chend = protocol.charAt(protocol.length() - 1);
+            if (chend == 'p') {
+                if (port == -1) {
+                    port = 80;
+                }
+            } else if (chend == 's') {
+                ssl = true;
+                if (port == -1) {
+                    port = 443;
+                }
+            }
+            options.setDefaultPort(port);
+            options.setSsl(ssl);
+        } catch (MalformedURLException e) {
+            throw new OidcClientException("Please check oidc-client auth-server-url");
+        }
     }
 
     private static void setGrantClientParams(OidcClientConfig oidcConfig, MultiMap grantParams, String grantType) {

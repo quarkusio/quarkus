@@ -1,5 +1,6 @@
 package io.quarkus.jdbc.postgresql.deployment;
 
+import io.quarkus.agroal.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -42,11 +43,14 @@ public class JDBCPostgreSQLProcessor {
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+    void registerServiceBinding(Capabilities capabilities,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             PostgreSqlServiceBindingConverter.class.getName()));
+            dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.POSTGRESQL));
         }
     }
 }

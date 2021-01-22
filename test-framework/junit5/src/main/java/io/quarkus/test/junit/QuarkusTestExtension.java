@@ -6,12 +6,16 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -25,7 +29,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -73,6 +81,7 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.PathTestHelper;
@@ -102,6 +111,7 @@ public class QuarkusTestExtension
 
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
+    public static final String QUARKUS_TEST_HANG_DETECTION_TIMEOUT = "quarkus.test.hang-detection-timeout";
 
     private static boolean failedBoot;
 
@@ -124,8 +134,58 @@ public class QuarkusTestExtension
     private static DeepClone deepClone;
     //needed for @Nested
     private static Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
+    private static ScheduledExecutorService hangDetectionExecutor;
+    private static Duration hangTimeout;
+    private static ScheduledFuture<?> hangTaskKey;
+    private static final Runnable hangDetectionTask = new Runnable() {
+
+        final AtomicBoolean runOnce = new AtomicBoolean();
+
+        @Override
+        public void run() {
+            if (!runOnce.compareAndSet(false, true)) {
+                return;
+            }
+            System.err.println("@QuarkusTest has detected a hang, as there has been no test activity in " + hangTimeout);
+            System.err.println("To configure this timeout use the " + QUARKUS_TEST_HANG_DETECTION_TIMEOUT + " config property");
+            System.err.println("A stack track is below to help diagnose the potential hang");
+            System.err.println("=== Stack Trace ===");
+            ThreadInfo[] threads = ManagementFactory.getThreadMXBean().dumpAllThreads(true, true);
+            for (ThreadInfo info : threads) {
+                if (info == null) {
+                    System.err.println("  Inactive");
+                    continue;
+                }
+                Thread.State state = info.getThreadState();
+                System.err.println("Thread " + info.getThreadName() + ": " + state);
+                if (state == Thread.State.WAITING) {
+                    System.err.println("  Waiting on " + info.getLockName());
+                } else if (state == Thread.State.BLOCKED) {
+                    System.err.println("  Blocked on " + info.getLockName());
+                    System.err.println("  Blocked by " + info.getLockOwnerName());
+                }
+                System.err.println("  Stack:");
+                for (StackTraceElement frame : info.getStackTrace()) {
+                    System.err.println("    " + frame.toString());
+                }
+            }
+            System.err.println("=== End Stack Trace ===");
+            //we only every dump once
+        }
+    };
 
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
+        hangDetectionExecutor = Executors.newSingleThreadScheduledExecutor();
+        String time = "10m";
+        //config is not established yet
+        //we can only read from system properties
+        String sysPropString = System.getProperty(QUARKUS_TEST_HANG_DETECTION_TIMEOUT);
+        if (sysPropString != null) {
+            time = sysPropString;
+        }
+        hangTimeout = new DurationConverter().convert(time);
+        hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
+
         quarkusTestProfile = profile;
         Closeable testResourceManager = null;
         try {
@@ -258,6 +318,14 @@ public class QuarkusTestExtension
 
             runningQuarkusApplication = startupAction.run();
 
+            //now we have full config reset the hang timer
+
+            if (hangTaskKey != null) {
+                hangTaskKey.cancel(false);
+                hangTimeout = runningQuarkusApplication.getConfigValue(QUARKUS_TEST_HANG_DETECTION_TIMEOUT, Duration.class)
+                        .orElse(Duration.of(10, ChronoUnit.MINUTES));
+                hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            }
             ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
 
             System.setProperty("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication));
@@ -276,15 +344,19 @@ public class QuarkusTestExtension
                                 shutdownTasks.pop().run();
                             }
                         } finally {
-                            for (Map.Entry<String, String> entry : sysPropRestore.entrySet()) {
-                                String val = entry.getValue();
-                                if (val == null) {
-                                    System.clearProperty(entry.getKey());
-                                } else {
-                                    System.setProperty(entry.getKey(), val);
+                            try {
+                                for (Map.Entry<String, String> entry : sysPropRestore.entrySet()) {
+                                    String val = entry.getValue();
+                                    if (val == null) {
+                                        System.clearProperty(entry.getKey());
+                                    } else {
+                                        System.setProperty(entry.getKey(), val);
+                                    }
                                 }
+                                tm.close();
+                            } finally {
+                                hangDetectionExecutor.shutdown();
                             }
-                            tm.close();
                         }
                         try {
                             TestClassIndexer.removeIndex(requiredTestClass);
@@ -391,6 +463,7 @@ public class QuarkusTestExtension
         if (isNativeTest()) {
             return;
         }
+        resetHangTimeout();
         if (!failedBoot) {
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
@@ -459,6 +532,7 @@ public class QuarkusTestExtension
         if (isNativeTest()) {
             return;
         }
+        resetHangTimeout();
         if (!failedBoot) {
             popMockContext();
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
@@ -586,6 +660,7 @@ public class QuarkusTestExtension
         if (isNativeTest()) {
             return;
         }
+        resetHangTimeout();
         ensureStarted(context);
         if (runningQuarkusApplication != null) {
             pushMockContext();
@@ -625,6 +700,7 @@ public class QuarkusTestExtension
             invocation.proceed();
             return;
         }
+        resetHangTimeout();
         ensureStarted(extensionContext);
         if (failedBoot) {
             throwBootFailureException();
@@ -640,6 +716,7 @@ public class QuarkusTestExtension
         if (isNativeTest()) {
             return invocation.proceed();
         }
+        resetHangTimeout();
         ExtensionState state = ensureStarted(extensionContext);
         if (failedBoot) {
             throwBootFailureException();
@@ -796,6 +873,7 @@ public class QuarkusTestExtension
 
     private Object runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext)
             throws Throwable {
+        resetHangTimeout();
         Method newMethod = null;
 
         ClassLoader old = setCCL(runningQuarkusApplication.getClassLoader());
@@ -850,6 +928,7 @@ public class QuarkusTestExtension
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
+        resetHangTimeout();
         try {
             if (!isNativeTest() && (runningQuarkusApplication != null)) {
                 popMockContext();
@@ -922,6 +1001,7 @@ public class QuarkusTestExtension
 
         @Override
         public void close() {
+            resetHangTimeout();
             if (closed.compareAndSet(false, true)) {
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 if (runningQuarkusApplication != null) {
@@ -1043,6 +1123,13 @@ public class QuarkusTestExtension
             }
 
             return allCustomizers;
+        }
+    }
+
+    private static void resetHangTimeout() {
+        if (hangTaskKey != null) {
+            hangTaskKey.cancel(false);
+            hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
         }
     }
 }

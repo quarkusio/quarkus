@@ -895,6 +895,17 @@ but it is common to create custom implementations to address specific applicatio
 Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus-quickstarts/blob/master/kafka-quickstart/src/test/java/org/acme/kafka/KafkaResource.java[here]),
 or starting a mock HTTP server using http://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/master/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
 
+== Hang Detection
+
+`@QuarkusTest` has support for hang detection to help diagnose any unexpected hangs. If no progress is made for a specified
+time (i.e. no JUnit callbacks are invoked) then Quarkus will print a stack trace to the console to help diagnose the hang.
+The default value for this timeout is 10 minutes.
+
+No further action will be taken, and the tests will continue as normal (generally until CI times out), however the printed
+stack traces should help diagnose why the build has failed. You can control this timeout with the
+`quarkus.test.hang-detection-timeout` system property (you can also set this in application.properties, but this won't
+be read until Quarkus has started, so the timeout for Quarkus start will be the default of 10 minutes).
+
 == Native Executable Testing
 
 It is also possible to test native executables using `@NativeImageTest`. This supports all the features mentioned in this

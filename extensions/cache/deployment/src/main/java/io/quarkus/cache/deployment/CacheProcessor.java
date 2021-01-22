@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -26,8 +28,9 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
 import io.quarkus.cache.deployment.exception.UnknownCacheNameException;
@@ -177,21 +180,26 @@ class CacheProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    void recordCachesBuild(CacheNamesBuildItem cacheNames, CacheConfig config, BeanContainerBuildItem beanContainer,
+    SyntheticBeanBuildItem configureCacheManagerSyntheticBean(CacheNamesBuildItem cacheNames, CacheConfig config,
             CaffeineCacheBuildRecorder caffeineRecorder, NoOpCacheBuildRecorder noOpRecorder) {
-        if (cacheNames.getNames().size() > 0) {
-            if (config.enabled) {
-                switch (config.type) {
-                    case CacheDeploymentConstants.CAFFEINE_CACHE_TYPE:
-                        Set<CaffeineCacheInfo> cacheInfos = CaffeineCacheInfoBuilder.build(cacheNames.getNames(), config);
-                        caffeineRecorder.buildCaches(beanContainer.getValue(), cacheInfos);
-                        break;
-                    default:
-                        throw new DeploymentException("Unknown cache type: " + config.type);
-                }
-            } else {
-                noOpRecorder.buildCaches(beanContainer.getValue(), cacheNames.getNames());
+
+        Supplier<CacheManager> cacheManagerSupplier;
+        if (config.enabled) {
+            switch (config.type) {
+                case CacheDeploymentConstants.CAFFEINE_CACHE_TYPE:
+                    Set<CaffeineCacheInfo> cacheInfos = CaffeineCacheInfoBuilder.build(cacheNames.getNames(), config);
+                    cacheManagerSupplier = caffeineRecorder.getCacheManagerSupplier(cacheInfos);
+                    break;
+                default:
+                    throw new DeploymentException("Unknown cache type: " + config.type);
             }
+        } else {
+            cacheManagerSupplier = noOpRecorder.getCacheManagerSupplier(cacheNames.getNames());
         }
+
+        return SyntheticBeanBuildItem.configure(CacheManager.class)
+                .scope(ApplicationScoped.class)
+                .supplier(cacheManagerSupplier)
+                .done();
     }
 }

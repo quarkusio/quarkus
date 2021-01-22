@@ -17,6 +17,7 @@ public class QuartzExtensionPointConfig {
     /**
      * The properties passed to the class.
      */
+    @ConfigItem
     @ConfigDocMapKey("property-name")
     public Map<String, String> properties;
 }

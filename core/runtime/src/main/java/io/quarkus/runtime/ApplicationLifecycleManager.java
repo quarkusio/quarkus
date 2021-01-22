@@ -68,6 +68,9 @@ public class ApplicationLifecycleManager {
     private static boolean hooksRegistered;
     private static boolean vmShuttingDown;
 
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+
     public static void run(Application application, String... args) {
         run(application, null, null, args);
     }
@@ -154,9 +157,13 @@ public class ApplicationLifecycleManager {
                             .getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
                     applicationLogger.error("Port " + port + " seems to be in use by another process. " +
                             "Quarkus may already be running or the port is used by another application.");
-                    if (System.getProperty("os.name").startsWith("Windows")) {
+                    if (IS_WINDOWS) {
                         applicationLogger.info("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
                         applicationLogger.info("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
+                    } else if (IS_MAC) {
+                        applicationLogger
+                                .info("Use 'netstat -anv | grep " + port + "' to identify the process occupying the port.");
+                        applicationLogger.info("You can try to kill it with 'kill -9 <pid>'.");
                     } else {
                         applicationLogger
                                 .info("Use 'netstat -anop | grep " + port + "' to identify the process occupying the port.");
@@ -223,7 +230,7 @@ public class ApplicationLifecycleManager {
         handleSignal("TERM", exitHandler);
         // the HUP and QUIT signals are not defined for the Windows OpenJDK implementation:
         // https://hg.openjdk.java.net/jdk8u/jdk8u-dev/hotspot/file/7d5c800dae75/src/os/windows/vm/jvm_windows.cpp
-        if (System.getProperty("os.name", "unknown").toLowerCase(Locale.ENGLISH).contains("windows")) {
+        if (IS_WINDOWS) {
             handleSignal("BREAK", diagnosticsHandler);
         } else {
             handleSignal("HUP", exitHandler);

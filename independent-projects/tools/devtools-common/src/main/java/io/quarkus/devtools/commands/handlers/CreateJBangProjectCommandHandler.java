@@ -30,7 +30,12 @@ public class CreateJBangProjectCommandHandler implements QuarkusCommandHandler {
         final QuarkusJBangCodestartProjectInput input = QuarkusJBangCodestartProjectInput.builder()
                 .addExtensions(extensionsToAdd)
                 .setNoJBangWrapper(invocation.getBooleanValue("noJBangWrapper"))
-                .putData("quarkus.version", invocation.getPlatformDescriptor().getBomVersion())
+                .putData(QuarkusJBangCodestartCatalog.DataKey.QUARKUS_BOM_GROUP_ID.getKey(),
+                        invocation.getPlatformDescriptor().getBomGroupId())
+                .putData(QuarkusJBangCodestartCatalog.DataKey.QUARKUS_BOM_ARTIFACT_ID.getKey(),
+                        invocation.getPlatformDescriptor().getBomArtifactId())
+                .putData(QuarkusJBangCodestartCatalog.DataKey.QUARKUS_BOM_VERSION.getKey(),
+                        invocation.getPlatformDescriptor().getBomVersion())
                 .build();
 
         final Path projectDir = invocation.getQuarkusProject().getProjectDirPath();

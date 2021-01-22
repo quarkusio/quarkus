@@ -22,7 +22,8 @@ public class QuartzBuildTimeConfig {
     /**
      * The type of store to use.
      * <p>
-     * When using the `db` store type configuration value make sure that you have the datasource configured.
+     * When using the `jdbc_tx`, `jdbc_cmt` or `db` store types configuration value make sure that you have the datasource
+     * configured.
      * See <a href="https://quarkus.io/guides/datasource"> Configuring your datasource</a> for more information.
      * <p>
      * To create Quartz tables, you can perform a schema migration via the <a href="https://quarkus.io/guides/flyway"> Flyway
@@ -32,6 +33,21 @@ public class QuartzBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "ram")
     public StoreType storeType;
+
+    /**
+     * This instructs `jdbc_tx`, `jdbc_cmt` or `db` store types that all job data values in will be Strings, and therefore can
+     * be stored as name-value pairs, rather than storing more complex objects in their serialized form in the BLOB column.
+     * <p>
+     * This is can be handy, as you avoid the class versioning issues that can arise from serializing your non-String classes
+     * into a BLOB.
+     * <p>
+     * Once this set to `false` i.e serialize job data values, make sure that Native image serialization configuration file
+     * is given via the
+     * `quarkus.native.additional-build-args=-H:SerializationConfigurationResources=/path/to-serialization-config.json`
+     * configuration knob.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useProperties;
 
     /**
      * The name of the datasource to use.

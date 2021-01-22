@@ -332,7 +332,8 @@ public class QuartzScheduler implements Scheduler {
         if (buildTimeConfig.storeType.isDbStore()) {
             String dataSource = buildTimeConfig.dataSourceName.orElse("QUARKUS_QUARTZ_DEFAULT_DATASOURCE");
             QuarkusQuartzConnectionPoolProvider.setDataSourceName(dataSource);
-            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".useProperties", "true");
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".useProperties",
+                    String.valueOf(buildTimeConfig.useProperties));
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".misfireThreshold", "60000");
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".tablePrefix", buildTimeConfig.tablePrefix);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".dataSource", dataSource);

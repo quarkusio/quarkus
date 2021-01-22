@@ -3,7 +3,9 @@ package io.quarkus.quartz.runtime.graal;
 import java.io.ByteArrayOutputStream;
 import java.rmi.RemoteException;
 import java.sql.ResultSet;
+import java.util.function.BooleanSupplier;
 
+import org.graalvm.home.Version;
 import org.quartz.core.RemotableQuartzScheduler;
 import org.quartz.impl.jdbcjobstore.StdJDBCDelegate;
 
@@ -40,13 +42,20 @@ final class Target_org_quartz_impl_RemoteScheduler {
 
 }
 
-@TargetClass(StdJDBCDelegate.class)
+@TargetClass(value = StdJDBCDelegate.class, onlyWith = GraalVMLessThan21.class)
+@Deprecated
+/**
+ * This was only added to avoid Object serialization which is not supported by GraalVM version less than 21.
+ * - see https://github.com/oracle/graal/issues/460
+ * - https://www.graalvm.org/release-notes/21_0/
+ *
+ * The substitutions is kept around for backward compatibility reason and it will be removed in the future.
+ */
 final class Target_org_quartz_impl_jdbc_jobstore_StdJDBCDelegate {
 
     /**
      * Activate the usage of {@link java.util.Properties} to avoid Object serialization
-     * which is not supported by GraalVM - see https://github.com/oracle/graal/issues/460
-     *
+     * 
      * @return true
      */
     @Substitute
@@ -62,6 +71,13 @@ final class Target_org_quartz_impl_jdbc_jobstore_StdJDBCDelegate {
     @Substitute
     protected Object getObjectFromBlob(ResultSet rs, String colName) {
         throw new IllegalStateException("Object serialization not supported."); // should not reach here
+    }
+}
+
+final class GraalVMLessThan21 implements BooleanSupplier {
+    @Override
+    public boolean getAsBoolean() {
+        return Version.getCurrent().compareTo(21) < 0;
     }
 }
 

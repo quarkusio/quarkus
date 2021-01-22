@@ -22,6 +22,13 @@ class MongoTestResource : QuarkusTestResourceLifecycleManager {
     private var mongod: MongodExecutable? = null
 
     override fun start(): Map<String, String> {
+        try {
+            //JDK bug workaround
+            //https://github.com/quarkusio/quarkus/issues/14424
+            //force class init to prevent possible deadlock when done by mongo threads
+            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
+        } catch (e: ClassNotFoundException) {
+        }
         return try {
             val version: Version.Main = Version.Main.V4_0
             val port = 27018

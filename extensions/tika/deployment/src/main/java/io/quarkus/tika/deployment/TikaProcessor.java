@@ -31,7 +31,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.tika.TikaParseException;
 import io.quarkus.tika.runtime.TikaConfiguration;
@@ -69,17 +68,10 @@ public class TikaProcessor {
         return new FeatureBuildItem(Feature.TIKA);
     }
 
-    @BuildStep(onlyIf = NativeBuild.class)
-    List<RuntimeInitializedClassBuildItem> runtimeInitImageIOClasses() {
-        return Arrays.asList(
-                //org.apache.tika.parser.pdf.PDFParser (https://issues.apache.org/jira/browse/PDFBOX-4548)
-                new RuntimeInitializedClassBuildItem("org.apache.pdfbox.pdmodel.font.PDType1Font"),
-                // The following classes hold instances of java.awt.color.ICC_ColorSpace that are not allowed in the
-                // image heap as this class should be initialized at image runtime
-                // See https://github.com/quarkusio/quarkus/pull/13644
-                new RuntimeInitializedClassBuildItem("org.apache.pdfbox.rendering.SoftMask"),
-                new RuntimeInitializedClassBuildItem(
-                        "org.apache.pdfbox.pdmodel.graphics.color.PDCIEDictionaryBasedColorSpace"));
+    @BuildStep
+    public void registerRuntimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> resource) {
+        //org.apache.tika.parser.pdf.PDFParser (https://issues.apache.org/jira/browse/PDFBOX-4548)
+        resource.produce(new RuntimeInitializedClassBuildItem("org.apache.pdfbox.pdmodel.font.PDType1Font"));
     }
 
     @BuildStep

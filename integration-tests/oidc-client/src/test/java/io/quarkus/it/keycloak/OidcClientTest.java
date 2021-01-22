@@ -85,7 +85,12 @@ public class OidcClientTest {
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        final Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        boolean fileExists = Files.exists(accessLogFilePath);
+                        if (!fileExists) {
+                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
+                            fileExists = Files.exists(accessLogFilePath);
+                        }
                         Assertions.assertTrue(Files.exists(accessLogFilePath),
                                 "quarkus log file " + accessLogFilePath + " is missing");
 

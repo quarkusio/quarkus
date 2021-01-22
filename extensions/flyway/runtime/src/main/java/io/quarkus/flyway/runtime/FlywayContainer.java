@@ -31,11 +31,4 @@ public class FlywayContainer {
     public String getDataSourceName() {
         return dataSourceName;
     }
-
-    public String getEffectiveDataSourceName() {
-        if (io.quarkus.datasource.common.runtime.DataSourceUtil.isDefault(dataSourceName)) {
-            return "default";
-        }
-        return dataSourceName;
-    }
 }

@@ -70,9 +70,6 @@ public class ClassComparisonUtil {
                 if (!Objects.equals(i.defaultValue(), method.defaultValue())) {
                     continue;
                 }
-                if (!compareAnnotations(i.annotations(), method.annotations())) {
-                    continue;
-                }
                 boolean paramEqual = true;
                 for (int j = 0; j < method.parameters().size(); ++j) {
                     Type a = method.parameters().get(j);
@@ -159,9 +156,14 @@ public class ClassComparisonUtil {
     }
 
     private static boolean compareAnnotation(AnnotationInstance a, AnnotationInstance b) {
-        for (AnnotationValue i : a.values()) {
-            AnnotationValue j = b.value(i.name());
-            if (!i.equals(j)) {
+        List<AnnotationValue> valuesA = a.values();
+        List<AnnotationValue> valuesB = b.values();
+        if (valuesA.size() != valuesB.size()) {
+            return false;
+        }
+        for (AnnotationValue valueA : valuesA) {
+            AnnotationValue valueB = b.value(valueA.name());
+            if (!valueA.equals(valueB)) {
                 return false;
             }
         }

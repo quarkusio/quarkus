@@ -22,12 +22,14 @@ import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -43,7 +45,7 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
-import io.quarkus.liquibase.runtime.LiquibaseContainerProducer;
+import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
 import liquibase.change.core.LoadDataChange;
 import liquibase.changelog.ChangeLogParameters;
@@ -186,15 +188,14 @@ class LiquibaseProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem createBeansAndStartActions(LiquibaseRecorder recorder,
+    void createBeans(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
-            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         // make a LiquibaseContainerProducer bean
         additionalBeans
-                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseContainerProducer.class).setUnremovable()
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseFactoryProducer.class).setUnremovable()
                         .setDefaultScope(DotNames.SINGLETON).build());
         // add the @LiquibaseDataSource class otherwise it won't registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(LiquibaseDataSource.class).build());
@@ -221,13 +222,20 @@ class LiquibaseProcessor {
 
             syntheticBeanBuildItemBuildProducer.produce(configurator.done());
         }
+    }
 
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    ServiceStartBuildItem startLiquibase(LiquibaseRecorder recorder,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         // will actually run the actions at runtime
         recorder.doStartActions();
 
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
-        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
+        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(getDataSourceNames(jdbcDataSourceBuildItems)));
 
         return new ServiceStartBuildItem("liquibase");
     }

@@ -53,17 +53,28 @@ public class WebJarUtil {
     private static final String CSS = ".css";
     private static final String SNAPSHOT_VERSION = "-SNAPSHOT";
 
-    private static final String quarkusVersion = Version.getVersion();
-    private static final String applicationName = ConfigProvider.getConfig()
+    private static final String QUARKUS_VERSION = Version.getVersion();
+    private static final String APPLICATION_NAME = ConfigProvider.getConfig()
             .getOptionalValue("quarkus.application.name", String.class).orElse("");
-    private static final String applicationVersion = ConfigProvider.getConfig()
+    private static final String APPLICATION_VERSION = ConfigProvider.getConfig()
             .getOptionalValue("quarkus.application.version", String.class).orElse("");;
 
     private WebJarUtil() {
     }
 
-    public static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, LaunchModeBuildItem launchMode,
-            AppArtifact resourcesArtifact, String rootFolderInJar)
+    public static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            LaunchModeBuildItem launchMode,
+            AppArtifact resourcesArtifact,
+            String rootFolderInJar)
+            throws IOException {
+        return copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, resourcesArtifact, rootFolderInJar, true);
+    }
+
+    public static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            LaunchModeBuildItem launchMode,
+            AppArtifact resourcesArtifact,
+            String rootFolderInJar,
+            boolean useDefaultQuarkusBranding)
             throws IOException {
 
         rootFolderInJar = normalizeRootFolderInJar(rootFolderInJar);
@@ -93,13 +104,19 @@ public class WebJarUtil {
                                 if (entry.isDirectory()) {
                                     Files.createDirectories(filePath);
                                 } else {
-                                    try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                                    try (InputStream inputStream = insertVariables(jarFile.getInputStream(entry), fileName)) {
                                         String modulename = getModuleOverrideName(resourcesArtifact, fileName);
                                         if (IGNORE_LIST.contains(fileName)
                                                 && isOverride(userApplication.getPaths(), classLoader, fileName, modulename)) {
-                                            try (InputStream override = getOverride(userApplication.getPaths(), classLoader,
-                                                    fileName, modulename)) {
-                                                createFile(override, filePath);
+                                            try (InputStream override = insertVariables(
+                                                    getOverride(userApplication.getPaths(), classLoader,
+                                                            fileName, modulename, useDefaultQuarkusBranding),
+                                                    fileName)) {
+                                                if (override == null) {
+                                                    createFile(inputStream, filePath);
+                                                } else {
+                                                    createFile(override, filePath); // Override (either developer supplied or Quarkus)
+                                                }
                                             }
                                         } else {
                                             createFile(inputStream, filePath);
@@ -133,12 +150,16 @@ public class WebJarUtil {
                             String modulename = getModuleOverrideName(resourcesArtifact, fileName);
                             if (IGNORE_LIST.contains(fileName)
                                     && isOverride(userApplication.getPaths(), classLoader, fileName, modulename)) {
-                                try (InputStream override = getOverride(userApplication.getPaths(), classLoader,
-                                        fileName, modulename)) {
-                                    createFile(override, targetFilePath);
+                                try (InputStream override = insertVariables(getOverride(userApplication.getPaths(), classLoader,
+                                        fileName, modulename, useDefaultQuarkusBranding), fileName)) {
+                                    if (override == null) {
+                                        copyFile(file, fileName, targetFilePath);
+                                    } else {
+                                        createFile(override, targetFilePath); // Override (either developer supplied or Quarkus)
+                                    }
                                 }
                             } else {
-                                Files.copy(file, targetFilePath);
+                                copyFile(file, fileName, targetFilePath);
                             }
 
                             return FileVisitResult.CONTINUE;
@@ -148,6 +169,60 @@ public class WebJarUtil {
             }
         }
         return deploymentPath;
+    }
+
+    public static Map<String, byte[]> copyResourcesForProduction(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            AppArtifact artifact,
+            String rootFolderInJar) throws IOException {
+        return copyResourcesForProduction(curateOutcomeBuildItem, artifact, rootFolderInJar, true);
+    }
+
+    public static Map<String, byte[]> copyResourcesForProduction(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            AppArtifact artifact,
+            String rootFolderInJar,
+            boolean useDefaultQuarkusBranding) throws IOException {
+        rootFolderInJar = normalizeRootFolderInJar(rootFolderInJar);
+        AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
+
+        Map<String, byte[]> map = new HashMap<>();
+        //we are including in a production artifact
+        //just stick the files in the generated output
+        //we could do this for dev mode as well but then we need to extract them every time
+
+        ClassLoader classLoader = WebJarUtil.class.getClassLoader();
+        for (Path p : artifact.getPaths()) {
+            File artifactFile = p.toFile();
+            try (JarFile jarFile = JarFiles.create(artifactFile)) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith(rootFolderInJar) && !entry.isDirectory()) {
+                        String filename = entry.getName().replace(rootFolderInJar, "");
+                        try (InputStream inputStream = insertVariables(jarFile.getInputStream(entry), filename)) {
+                            byte[] content = null;
+                            String modulename = getModuleOverrideName(artifact, filename);
+                            if (IGNORE_LIST.contains(filename)
+                                    && isOverride(userApplication.getPaths(), classLoader, filename, modulename)) {
+                                try (InputStream resourceAsStream = insertVariables(
+                                        getOverride(userApplication.getPaths(), classLoader,
+                                                filename, modulename, useDefaultQuarkusBranding),
+                                        filename)) {
+                                    if (resourceAsStream != null) {
+                                        content = IoUtil.readBytes(resourceAsStream); // Override (either developer supplied or Quarkus)
+                                    }
+                                }
+                            }
+                            if (content == null) {
+                                content = FileUtil.readFileContents(inputStream);
+                            }
+
+                            map.put(filename, content);
+                        }
+                    }
+                }
+            }
+        }
+        return map;
     }
 
     public static void updateFile(Path original, byte[] newContent) throws IOException {
@@ -178,46 +253,6 @@ public class WebJarUtil {
         return original;
     }
 
-    public static Map<String, byte[]> copyResourcesForProduction(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            AppArtifact artifact, String rootFolderInJar) throws IOException {
-        rootFolderInJar = normalizeRootFolderInJar(rootFolderInJar);
-        AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
-
-        Map<String, byte[]> map = new HashMap<>();
-        //we are including in a production artifact
-        //just stick the files in the generated output
-        //we could do this for dev mode as well but then we need to extract them every time
-
-        ClassLoader classLoader = WebJarUtil.class.getClassLoader();
-        for (Path p : artifact.getPaths()) {
-            File artifactFile = p.toFile();
-            try (JarFile jarFile = JarFiles.create(artifactFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(rootFolderInJar) && !entry.isDirectory()) {
-                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                            String filename = entry.getName().replace(rootFolderInJar, "");
-                            byte[] content;
-                            String modulename = getModuleOverrideName(artifact, filename);
-                            if (IGNORE_LIST.contains(filename)
-                                    && isOverride(userApplication.getPaths(), classLoader, filename, modulename)) {
-                                try (InputStream resourceAsStream = getOverride(userApplication.getPaths(), classLoader,
-                                        filename, modulename)) {
-                                    content = IoUtil.readBytes(resourceAsStream);
-                                }
-                            } else {
-                                content = FileUtil.readFileContents(inputStream);
-                            }
-                            map.put(filename, content);
-                        }
-                    }
-                }
-            }
-        }
-        return map;
-    }
-
     public static AppArtifact getAppArtifact(CurateOutcomeBuildItem curateOutcomeBuildItem, String groupId, String artifactId) {
         for (AppDependency dep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
             if (dep.getArtifact().getArtifactId().equals(artifactId)
@@ -229,34 +264,45 @@ public class WebJarUtil {
                 + " among the application dependencies");
     }
 
+    private static void copyFile(Path file, String fileName, Path targetFilePath) throws IOException {
+        InputStream providedContent = pathToStream(file).orElse(null);
+        if (providedContent != null) {
+            Files.copy(insertVariables(providedContent, fileName), targetFilePath);
+        }
+    }
+
     private static String getModuleOverrideName(AppArtifact artifact, String filename) {
         String type = filename.substring(filename.lastIndexOf("."));
         return artifact.getArtifactId() + type;
     }
 
-    private static InputStream getOverride(PathsCollection paths, ClassLoader classLoader, String filename, String modulename)
+    private static InputStream getOverride(PathsCollection paths, ClassLoader classLoader, String filename, String modulename,
+            boolean useDefaultQuarkusBranding)
             throws IOException {
 
         // First check if the developer supplied the files
         InputStream overrideStream = getCustomOverride(paths, filename, modulename);
-        if (overrideStream == null) {
+        if (overrideStream == null && useDefaultQuarkusBranding) {
             // Else check if Quarkus has a default branding
             overrideStream = getQuarkusOverride(classLoader, filename, modulename);
-        }
-
-        // Allow replacement of certain values in css
-        if (filename.endsWith(CSS)) {
-            String contents = new String(IoUtil.readBytes(overrideStream));
-            contents = contents.replace("{applicationName}", applicationName);
-            contents = contents.replace("{applicationVersion}", applicationVersion);
-            contents = contents.replace("{quarkusVersion}", quarkusVersion);
-            overrideStream = new ByteArrayInputStream(contents.getBytes());
         }
         return overrideStream;
     }
 
+    private static InputStream insertVariables(InputStream is, String filename) throws IOException {
+        // Allow replacement of certain values in css
+        if (filename.endsWith(CSS)) {
+            String contents = new String(IoUtil.readBytes(is));
+            contents = contents.replace("{applicationName}", APPLICATION_NAME);
+            contents = contents.replace("{applicationVersion}", APPLICATION_VERSION);
+            contents = contents.replace("{quarkusVersion}", QUARKUS_VERSION);
+            is = new ByteArrayInputStream(contents.getBytes());
+        }
+        return is;
+    }
+
     private static InputStream getCustomOverride(PathsCollection paths, String filename, String modulename) {
-        // First check if the developer supplied the files
+        // Check if the developer supplied the files
         Path customOverridePath = getCustomOverridePath(paths, filename, modulename);
         if (customOverridePath != null) {
             return pathToStream(customOverridePath).orElse(null);
@@ -321,12 +367,12 @@ public class WebJarUtil {
         return false;
     }
 
-    private static final boolean fileExistInClasspath(ClassLoader classLoader, String filename) {
+    private static boolean fileExistInClasspath(ClassLoader classLoader, String filename) {
         URL u = classLoader.getResource(filename);
         return u != null;
     }
 
-    private static final Optional<InputStream> pathToStream(Path path) {
+    private static Optional<InputStream> pathToStream(Path path) {
         if (Files.exists(path)) {
             try {
                 return Optional.of(Files.newInputStream(path));

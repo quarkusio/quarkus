@@ -1,28 +1,49 @@
 package io.quarkus.devconsole.runtime.spi;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.VertxHttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
 public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
-        event.request().setExpectMultipart(true);
-        event.request().endHandler(new Handler<Void>() {
-            @Override
-            public void handle(Void ignore) {
-                dispatch(event);
+        if (event.getBody() != null) {
+            //really simple form data decoder
+            //but we can't really re-use the netty one
+            String data = event.getBodyAsString();
+            String[] parts = data.split("&");
+            MultiMap post = new VertxHttpHeaders();
+            for (String i : parts) {
+                String[] pair = i.split("=");
+                try {
+                    post.add(URLDecoder.decode(pair[0], StandardCharsets.UTF_8.name()),
+                            URLDecoder.decode(pair[1], StandardCharsets.UTF_8.name()));
+                } catch (UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        });
+            dispatch(event, post);
+        } else {
+            event.request().setExpectMultipart(true);
+            event.request().endHandler(new Handler<Void>() {
+                @Override
+                public void handle(Void ignore) {
+                    dispatch(event, event.request().formAttributes());
+                }
+            });
+        }
     }
 
-    protected void dispatch(RoutingContext event) {
-        MultiMap form = event.request().formAttributes();
+    protected void dispatch(RoutingContext event, MultiMap form) {
         try {
             handlePost(event, form);
             actionSuccess(event);

@@ -149,6 +149,16 @@ with compilation or deployment an error page will let you know.
 
 Hit `CTRL+C` to stop the application.
 
+[NOTE]
+====
+By default, `quarkus:dev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
+
+[source,bash]
+----
+./mvnw compile quarkus:dev -DdebugHost=0.0.0.0
+----
+====
+
 === Remote Development Mode
 
 It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as OpenShift)
@@ -412,7 +422,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
     <dependencies>
         <dependency> <1>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom</artifactId>
+            <artifactId>quarkus-universe-bom</artifactId>
             <version>${quarkus.platform.version}</version>
             <type>pom</type>
             <scope>import</scope>
@@ -426,10 +436,13 @@ If you have not used <<project-creation,project scaffolding>>, add the following
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
             <version>${quarkus-plugin.version}</version>
+            <extensions>true</extensions>
             <executions>
                 <execution>
                     <goals>
                         <goal>build</goal>
+                        <goal>generate-code</goal>
+                        <goal>generate-code-tests</goal>
                     </goals>
                 </execution>
             </executions>

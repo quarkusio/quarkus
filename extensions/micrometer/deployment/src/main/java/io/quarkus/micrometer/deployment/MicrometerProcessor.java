@@ -27,7 +27,10 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.annotations.*;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -78,13 +81,13 @@ public class MicrometerProcessor {
 
     @BuildStep(onlyIf = MicrometerEnabled.class, onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
     MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
-        return new MetricsCapabilityBuildItem(x -> MetricsFactory.MICROMETER.equals(x),
+        return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 null);
     }
 
     @BuildStep(onlyIf = { MicrometerEnabled.class, PrometheusRegistryProcessor.PrometheusEnabled.class })
     MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem() {
-        return new MetricsCapabilityBuildItem(x -> MetricsFactory.MICROMETER.equals(x),
+        return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 mConfig.export.prometheus.path);
     }
 

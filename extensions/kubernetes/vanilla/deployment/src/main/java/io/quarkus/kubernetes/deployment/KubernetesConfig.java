@@ -243,6 +243,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "true")
     boolean addVersionToLabelSelectors;
 
+    /**
+     * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean deploy;
+
     public Optional<String> getPartOf() {
         return partOf;
     }

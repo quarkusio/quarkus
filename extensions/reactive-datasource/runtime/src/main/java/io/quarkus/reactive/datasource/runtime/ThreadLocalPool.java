@@ -72,7 +72,7 @@ public abstract class ThreadLocalPool<PoolType extends Pool> implements Pool {
     }
 
     private final void scanForAbandonedConnections() {
-        for (PoolAndThread pair : allConnections) {
+        for (PoolAndThread pair : new ArrayList<>(allConnections)) {
             if (pair.isDead()) {
                 //This might potentially close the connection a second time,
                 //so we need to ensure implementations allow it.

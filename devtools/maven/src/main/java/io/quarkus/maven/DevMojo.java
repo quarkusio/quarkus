@@ -74,6 +74,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -203,6 +204,12 @@ public class DevMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${quarkus.args}")
     private String argsString;
+
+    @Parameter
+    private Map<String, String> environmentVariables = Collections.emptyMap();
+
+    @Parameter
+    private Map<String, String> systemProperties = Collections.emptyMap();
 
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
@@ -574,11 +581,14 @@ public class DevMojo extends AbstractMojo {
             if (getLog().isDebugEnabled()) {
                 getLog().debug("Launching JVM with command line: " + String.join(" ", launcher.args()));
             }
-            process = new ProcessBuilder(launcher.args())
+            final ProcessBuilder processBuilder = new ProcessBuilder(launcher.args())
                     .redirectErrorStream(true)
                     .inheritIO()
-                    .directory(workingDir == null ? buildDir : workingDir)
-                    .start();
+                    .directory(workingDir == null ? buildDir : workingDir);
+            if (!environmentVariables.isEmpty()) {
+                processBuilder.environment().putAll(environmentVariables);
+            }
+            process = processBuilder.start();
 
             //https://github.com/quarkusio/quarkus/issues/232
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -621,9 +631,7 @@ public class DevMojo extends AbstractMojo {
                 .debugPortOk(debugPortOk)
                 .deleteDevJar(deleteDevJar);
 
-        if (jvmArgs != null) {
-            builder.jvmArgs(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
-        }
+        setJvmArgs(builder);
 
         builder.projectDir(project.getFile().getParentFile());
         builder.buildSystemProperties((Map) project.getProperties());
@@ -735,6 +743,24 @@ public class DevMojo extends AbstractMojo {
         propagateUserProperties(builder);
 
         return builder.build();
+    }
+
+    private void setJvmArgs(Builder builder) throws Exception {
+        String jvmArgs = this.jvmArgs;
+        if (!systemProperties.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            if (jvmArgs != null) {
+                buf.append(jvmArgs);
+            }
+            for (Map.Entry<String, String> prop : systemProperties.entrySet()) {
+                buf.append(" -D").append(prop.getKey()).append("=\"").append(prop.getValue()).append("\"");
+            }
+            jvmArgs = buf.toString();
+        }
+        if (jvmArgs != null) {
+            builder.jvmArgs(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
+        }
+
     }
 
     private void propagateUserProperties(MavenDevModeLauncher.Builder builder) {

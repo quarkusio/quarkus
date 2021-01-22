@@ -43,7 +43,6 @@ public class SimpleRouteTest {
     public void testSimpleRoute() {
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/no-slash").then().statusCode(200).body(is("Hello world!"));
-        when().get("/rx-hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/bzuk").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-event-bus?name=ping").then().statusCode(200).body(is("Hello PING!"));
         when().get("/foo?name=foo").then().statusCode(200).body(is("Hello foo!"));
@@ -97,12 +96,6 @@ public class SimpleRouteTest {
         //we are just testing that this does not throw an exception, see https://github.com/quarkusio/quarkus/issues/13835
         void secIdentity(RoutingContext context) {
             context.response().setStatusCode(200).end(securityIdentity.getPrincipal().getName());
-        }
-
-        @Route(path = "/rx-hello")
-        void rxHello(io.vertx.reactivex.ext.web.RoutingContext context) {
-            String name = context.request().getParam("name");
-            context.response().setStatusCode(200).end("Hello " + (name != null ? name : "world") + "!");
         }
 
         @Route // path is derived from the method name

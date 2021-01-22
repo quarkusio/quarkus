@@ -5,7 +5,7 @@ import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 
-import io.reactivex.Flowable;
+import io.smallrye.mutiny.Multi;
 
 @Path("/reactive")
 public class ReactiveStreamOpsResource {
@@ -27,10 +27,10 @@ public class ReactiveStreamOpsResource {
     }
 
     @GET
-    @Path("/stream-rx")
+    @Path("/stream-mutiny")
     public String stream2() {
         StringBuilder builder = new StringBuilder();
-        ReactiveStreams.fromPublisher(Flowable.fromArray("d", "e", "f"))
+        ReactiveStreams.fromPublisher(Multi.createFrom().items("d", "e", "f"))
                 .map(String::toUpperCase)
                 .forEach(builder::append)
                 .run();

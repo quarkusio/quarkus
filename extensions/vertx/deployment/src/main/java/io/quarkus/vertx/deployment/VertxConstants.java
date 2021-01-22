@@ -12,10 +12,6 @@ import io.vertx.core.eventbus.Message;
 public class VertxConstants {
 
     static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
-    static final DotName RX_MESSAGE = DotName
-            .createSimple(io.vertx.reactivex.core.eventbus.Message.class.getName());
-    static final DotName AXLE_MESSAGE = DotName
-            .createSimple(io.vertx.axle.core.eventbus.Message.class.getName());
     static final DotName MUTINY_MESSAGE = DotName
             .createSimple(io.vertx.mutiny.core.eventbus.Message.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());

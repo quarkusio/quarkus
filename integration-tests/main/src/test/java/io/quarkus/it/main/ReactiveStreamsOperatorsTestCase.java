@@ -17,8 +17,8 @@ public class ReactiveStreamsOperatorsTestCase {
     }
 
     @Test
-    public void testRxJava2() {
-        RestAssured.when().get("/reactive/stream-rx").then()
+    public void testMutiny() {
+        RestAssured.when().get("/reactive/stream-mutiny").then()
                 .body(is("DEF"));
     }
 

@@ -27,9 +27,8 @@ public class InjectionTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(BeanUsingAxleMailClient.class, BeanUsingBareMailClient.class, BeanUsingRxClient.class)
-                    .addClasses(BeanUsingBlockingMailer.class, BeanUsingReactiveMailer.class)
-                    .addClasses(MailTemplates.class)
+                    .addClasses(BeanUsingBareMailClient.class, BeanUsingBlockingMailer.class,
+                            BeanUsingReactiveMailer.class, MailTemplates.class)
                     .addAsResource("mock-config.properties", "application.properties")
                     .addAsResource(new StringAsset(""
                             + "<html>{name}</html>"), "templates/test1.html")
@@ -43,13 +42,7 @@ public class InjectionTest {
                             + "<html>{name}</html>"), "templates/mails/test2.html"));
 
     @Inject
-    BeanUsingAxleMailClient beanUsingBare;
-
-    @Inject
-    BeanUsingBareMailClient beanUsingAxle;
-
-    @Inject
-    BeanUsingRxClient beanUsingRx;
+    BeanUsingBareMailClient beanUsingBare;
 
     @Inject
     BeanUsingMutinyClient beanUsingMutiny;
@@ -69,9 +62,7 @@ public class InjectionTest {
     @Test
     public void testInjection() {
         beanUsingMutiny.verify();
-        beanUsingAxle.verify();
         beanUsingBare.verify();
-        beanUsingRx.verify();
         beanUsingBlockingMailer.verify();
         beanUsingReactiveMailer.verify().toCompletableFuture().join();
         beanUsingLegacyReactiveMailer.verify().toCompletableFuture().join();
@@ -85,28 +76,6 @@ public class InjectionTest {
 
         @Inject
         MailClient client;
-
-        void verify() {
-            Assertions.assertNotNull(client);
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingAxleMailClient {
-
-        @Inject
-        io.vertx.axle.ext.mail.MailClient client;
-
-        void verify() {
-            Assertions.assertNotNull(client);
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingRxClient {
-
-        @Inject
-        io.vertx.reactivex.ext.mail.MailClient client;
 
         void verify() {
             Assertions.assertNotNull(client);

@@ -41,7 +41,6 @@ public class MultiRouteTest {
         when().get("/buffers").then().statusCode(200).body(is("Buffer Buffer Buffer."));
         when().get("/buffers-and-fail").then().statusCode(200).body(containsString("Buffer"));
 
-        when().get("/rx-buffer").then().statusCode(200).body(is("BufferBuffer"));
         when().get("/mutiny-buffer").then().statusCode(200).body(is("BufferBuffer"));
 
         when().get("/void").then().statusCode(204).body(hasLength(0));
@@ -100,12 +99,6 @@ public class MultiRouteTest {
                             Buffer.buffer(" Buffer.")),
                     Multi.createFrom().failure(new IOException("boom")));
 
-        }
-
-        @Route(path = "rx-buffer")
-        Multi<io.vertx.reactivex.core.buffer.Buffer> bufferRx(RoutingContext context) {
-            return Multi.createFrom().items(io.vertx.reactivex.core.buffer.Buffer.buffer("Buffer"),
-                    io.vertx.reactivex.core.buffer.Buffer.buffer("Buffer"));
         }
 
         @Route(path = "mutiny-buffer")

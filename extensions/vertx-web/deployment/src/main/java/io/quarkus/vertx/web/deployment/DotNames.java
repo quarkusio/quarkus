@@ -26,17 +26,14 @@ final class DotNames {
     static final DotName UNI = DotName.createSimple(Uni.class.getName());
     static final DotName MULTI = DotName.createSimple(Multi.class.getName());
     static final DotName BUFFER = DotName.createSimple(Buffer.class.getName());
-    static final DotName RX_BUFFER = DotName.createSimple(io.vertx.reactivex.core.buffer.Buffer.class.getName());
     static final DotName MUTINY_BUFFER = DotName.createSimple(io.vertx.mutiny.core.buffer.Buffer.class.getName());
-    static final DotName RX_HTTP_SERVER_RESPONSE = DotName
-            .createSimple(io.vertx.reactivex.core.http.HttpServerResponse.class.getName());
-    static final DotName RX_HTTP_SERVER_REQUEST = DotName
-            .createSimple(io.vertx.reactivex.core.http.HttpServerRequest.class.getName());
     static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
     static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
+    static final DotName MUTINY_HTTP_SERVER_RESPONSE = DotName.createSimple(
+            io.vertx.mutiny.core.http.HttpServerResponse.class.getName());
+    static final DotName MUTINY_HTTP_SERVER_REQUEST = DotName.createSimple(
+            io.vertx.mutiny.core.http.HttpServerRequest.class.getName());
     static final DotName ROUTING_EXCHANGE = DotName.createSimple(RoutingExchange.class.getName());
-    static final DotName RX_ROUTING_CONTEXT = DotName
-            .createSimple(io.vertx.reactivex.ext.web.RoutingContext.class.getName());
     static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
     static final DotName BODY = DotName.createSimple(Body.class.getName());
     static final DotName HEADER = DotName.createSimple(Header.class.getName());

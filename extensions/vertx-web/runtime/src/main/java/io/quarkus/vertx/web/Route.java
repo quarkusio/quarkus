@@ -19,12 +19,12 @@ import io.vertx.ext.web.RoutingContext;
  * The annotated method can accept arguments of the following types:
  * <ul>
  * <li>{@code io.vertx.ext.web.RoutingContext}</li>
- * <li>{@code io.vertx.reactivex.ext.web.RoutingContext}</li>
+ * <li>{@code io.vertx.mutiny.ext.web.RoutingContext}</li>
  * <li>{@code io.quarkus.vertx.web.RoutingExchange}</li>
  * <li>{@code io.vertx.core.http.HttpServerRequest}</li>
  * <li>{@code io.vertx.core.http.HttpServerResponse}</li>
- * <li>{@code io.vertx.reactivex.core.http.HttpServerRequest}</li>
- * <li>{@code io.vertx.reactivex.core.http.HttpServerResponse}</li>
+ * <li>{@code io.vertx.mutiny.core.http.HttpServerRequest}</li>
+ * <li>{@code io.vertx.mutiny.core.http.HttpServerResponse}</li>
  * </ul>
  * Furthermore, it is possible to inject the request parameters into a method parameter annotated with
  * {@link io.quarkus.vertx.web.Param}:

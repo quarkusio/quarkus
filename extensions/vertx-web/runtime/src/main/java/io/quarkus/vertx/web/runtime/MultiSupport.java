@@ -102,15 +102,6 @@ public class MultiSupport {
         }), rc);
     }
 
-    public static void subscribeRxBuffer(Multi<io.vertx.reactivex.core.buffer.Buffer> multi, RoutingContext rc) {
-        subscribeBuffer(multi.map(new Function<io.vertx.reactivex.core.buffer.Buffer, Buffer>() {
-            @Override
-            public Buffer apply(io.vertx.reactivex.core.buffer.Buffer b) {
-                return b.getDelegate();
-            }
-        }), rc);
-    }
-
     public static void subscribeObject(Multi<Object> multi, RoutingContext rc) {
         subscribeBuffer(multi.map(new Function<Object, Buffer>() {
             @Override

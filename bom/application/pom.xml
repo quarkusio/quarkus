@@ -137,8 +137,7 @@
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.1.Final</jboss-logging.version>
         <mutiny.version>0.13.0</mutiny.version>
-        <axle-client.version>1.4.0</axle-client.version>
-        <mutiny-client.version>1.4.0</mutiny-client.version>
+        <mutiny-vertx.version>1.4.0</mutiny-vertx.version>
         <kafka2.version>2.5.0</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -4042,43 +4041,8 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-generator</artifactId>
-                <version>${axle-client.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-core</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-amqp-client</artifactId>
-                <version>${axle-client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-core</artifactId>
-                <version>${axle-client.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-core</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-core</artifactId>
-                <version>${mutiny-client.version}</version>
+                <version>${mutiny-vertx.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
@@ -4089,36 +4053,31 @@
                         <artifactId>jackson-core</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-web-client</artifactId>
-                <version>${axle-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
-                <version>${mutiny-client.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-sql-client</artifactId>
-                <version>${mutiny-client.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-db2-client</artifactId>
-                <version>${mutiny-client.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
-                <version>${mutiny-client.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
-                <version>${mutiny-client.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <!-- Used by the Reactive PG Client -->
@@ -4126,35 +4085,15 @@
                 <artifactId>client</artifactId>
                 <version>${scram-client.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-axle-mail-client</artifactId>
-                <version>${axle-client.version}</version>
-            </dependency>
-            <dependency>
+           <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
-                <version>${mutiny-client.version}</version>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-redis-client</artifactId>
-                <version>${mutiny-client.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-rx-java2</artifactId>
-                <version>${vertx.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-core</artifactId>
-                    </exclusion>
-                </exclusions>
+                <version>${mutiny-vertx.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>

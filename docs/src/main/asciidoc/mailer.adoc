@@ -411,8 +411,6 @@ If you need fine control on how the mail is sent, for instance if you need to re
 Three API flavors are exposed:
 
 * the Mutiny client (`io.vertx.mutiny.ext.mail.MailClient`)
-* the Axle client (`io.vertx.axle.ext.mail.MailClient`), using `CompletionStage` and Reactive Streams `Publisher` - deprecated, it is recommended to switch to the Mutiny client
-* the RX Java 2 client (`io.vertx.reactivex.ext.mail.MailClient`) - deprecated, it is recommended to switch to the Mutiny client
 * the bare client (`io.vertx.ext.mail.MailClient`)
 
 Check the link:vertx[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.

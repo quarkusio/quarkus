@@ -135,12 +135,6 @@ class VertxProcessor {
     @BuildStep
     void registerVerticleClasses(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        // RX Verticles
-        for (ClassInfo ci : indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(io.vertx.reactivex.core.AbstractVerticle.class.getName()))) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
-        }
-
         // Mutiny Verticles
         for (ClassInfo ci : indexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple(io.smallrye.mutiny.vertx.core.AbstractVerticle.class.getName()))) {

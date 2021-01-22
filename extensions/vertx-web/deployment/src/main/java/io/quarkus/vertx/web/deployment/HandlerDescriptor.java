@@ -98,14 +98,6 @@ class HandlerDescriptor {
         return type.name().equals(DotNames.BUFFER);
     }
 
-    boolean isContentTypeRxBuffer() {
-        Type type = getContentType();
-        if (type == null) {
-            return false;
-        }
-        return type.name().equals(DotNames.RX_BUFFER);
-    }
-
     boolean isContentTypeMutinyBuffer() {
         Type type = getContentType();
         if (type == null) {

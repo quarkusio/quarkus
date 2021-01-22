@@ -12,6 +12,7 @@ import javax.ws.rs.sse.SseEventSink;
 
 import org.jboss.resteasy.reactive.RestSseElementType;
 
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 
 @Path("sse")
@@ -43,6 +44,23 @@ public class SseResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestSseElementType(MediaType.APPLICATION_JSON)
     public void sseJson(Sse sse, SseEventSink sink) throws IOException {
+        if (sink == null) {
+            throw new IllegalStateException("No client connected.");
+        }
+        SseBroadcaster sseBroadcaster = sse.newBroadcaster();
+
+        sseBroadcaster.register(sink);
+        sseBroadcaster.broadcast(sse.newEventBuilder().data(new Message("hello")).build())
+                .thenCompose(v -> sseBroadcaster.broadcast(sse.newEventBuilder().data(new Message("stef")).build()))
+                .thenAccept(v -> sseBroadcaster.close());
+    }
+
+    @Blocking
+    @Path("blocking/json")
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @RestSseElementType(MediaType.APPLICATION_JSON)
+    public void blockingSseJson(Sse sse, SseEventSink sink) throws IOException {
         if (sink == null) {
             throw new IllegalStateException("No client connected.");
         }

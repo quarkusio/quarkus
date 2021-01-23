@@ -197,11 +197,13 @@ public class NativeTestExtension
 
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
-        TestHTTPResourceManager.inject(testInstance);
-        ExtensionContext root = context.getRoot();
-        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        state.testResourceManager.inject(testInstance);
+        if (!failedBoot) {
+            TestHTTPResourceManager.inject(testInstance);
+            ExtensionContext root = context.getRoot();
+            ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
+            ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
+            state.testResourceManager.inject(testInstance);
+        }
     }
 
     private void throwBootFailureException() throws Exception {

@@ -16,6 +16,22 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
 
     public static final String QUARKUS_JBANG_CODESTARTS_DIR = "codestarts/quarkus-jbang";
 
+    public enum DataKey implements KeySupplier {
+        QUARKUS_BOM_GROUP_ID("quarkus.bom.group-id"),
+        QUARKUS_BOM_ARTIFACT_ID("quarkus.bom.artifact-id"),
+        QUARKUS_BOM_VERSION("quarkus.bom.version");
+
+        private final String key;
+
+        DataKey(String key) {
+            this.key = key;
+        }
+
+        public String getKey() {
+            return key;
+        }
+    }
+
     public enum Tooling implements KeySupplier {
         JBANG_WRAPPER
     }
@@ -35,10 +51,12 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
     @Override
     protected Collection<Codestart> select(QuarkusJBangCodestartProjectInput projectInput) {
 
-        if (projectInput.getDependencies().stream().anyMatch(s -> s.contains("quarkus-picocli"))) {
-            projectInput.getSelection().addName("picocli");
-        } else {
-            projectInput.getSelection().addName("resteasy");
+        if (projectInput.getSelection().getNames().isEmpty()) {
+            if (projectInput.getDependencies().stream().anyMatch(s -> s.contains("picocli"))) {
+                projectInput.getSelection().addName("picocli");
+            } else {
+                projectInput.getSelection().addName("resteasy");
+            }
         }
 
         // Add codestarts from extension and for tooling

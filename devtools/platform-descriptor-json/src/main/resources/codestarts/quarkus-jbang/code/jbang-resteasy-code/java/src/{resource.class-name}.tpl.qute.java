@@ -1,6 +1,7 @@
 //usr/bin/env jbang "$0" "$@" ; exit $?
+//DEPS {quarkus.bom.group-id}:{quarkus.bom.artifact-id}:{quarkus.bom.version}@pom
 {#for dep in dependencies}
-//DEPS {dep.formatted-ga}:{quarkus.version}
+//DEPS {dep}
 {/for}
 
 //JAVAC_OPTIONS -parameters

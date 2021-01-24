@@ -6,9 +6,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.model.Profile;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
@@ -16,6 +17,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.repository.RemoteRepository;
 
@@ -87,7 +89,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             // in application properties. This is done to preserve what users expect to happen when
             // they execute "mvn package -Dnative" even if quarkus.package.type has been set in application.properties
             if (!System.getProperties().containsKey(PACKAGE_TYPE_PROP)
-                    && isNativeProfileEnabled()) {
+                    && isNativeProfileEnabled(mavenProject())) {
                 Object packageTypeProp = mavenProject().getProperties().get(PACKAGE_TYPE_PROP);
                 String packageType = NATIVE_PACKAGE_TYPE;
                 if (packageTypeProp != null) {
@@ -134,16 +136,15 @@ public class BuildMojo extends QuarkusBootstrapMojo {
         }
     }
 
-    private boolean isNativeProfileEnabled() {
-        List<Profile> activeProfiles = mavenProject().getActiveProfiles();
-        if (activeProfiles != null) {
-            for (Profile activeProfile : activeProfiles) {
-                if (NATIVE_PROFILE_NAME.equalsIgnoreCase(activeProfile.getId())) {
-                    return true;
-                }
-            }
+    private boolean isNativeProfileEnabled(MavenProject mavenProject) {
+        // gotcha: mavenProject.getActiveProfiles() does not always contain all active profiles (sic!),
+        //         but getInjectedProfileIds() does (which has to be "flattened" first)
+        Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream().flatMap(List<String>::stream);
+        if (activeProfileIds.anyMatch(NATIVE_PROFILE_NAME::equalsIgnoreCase)) {
+            return true;
         }
-        return false;
+        // recurse into parent (if available)
+        return Optional.ofNullable(mavenProject.getParent()).map(this::isNativeProfileEnabled).orElse(false);
     }
 
     @Override

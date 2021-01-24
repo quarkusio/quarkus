@@ -168,7 +168,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <trimStackTrace>false</trimStackTrace>
                             <systemPropertyVariables>
                                 <!-- see TLS availability in native mode https://github.com/quarkusio/quarkus/issues/3797 -->
                                 <!-- to activate tls, set vault-test-extension.use-tls=true and install /opt/graalvm -->

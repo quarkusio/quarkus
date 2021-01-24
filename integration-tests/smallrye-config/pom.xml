@@ -102,6 +102,7 @@
           <name>native</name>
         </property>
       </activation>
+      <!-- add some custom config, the rest comes from parent -->
       <build>
         <plugins>
           <plugin>
@@ -122,36 +123,15 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>${native.surefire.skip}</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-                <configuration>
-                  <environmentVariables>
-                    <QUARKUS_PROFILE>common,prod</QUARKUS_PROFILE>
-                  </environmentVariables>
-                  <systemPropertyVariables>
-                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                  </systemPropertyVariables>
-                </configuration>
-              </execution>
-            </executions>
+            <configuration>
+              <environmentVariables>
+                <QUARKUS_PROFILE>common,prod</QUARKUS_PROFILE>
+              </environmentVariables>
+            </configuration>
           </plugin>
         </plugins>
       </build>
-      <properties>
-        <quarkus.package.type>native</quarkus.package.type>
-      </properties>
     </profile>
   </profiles>
 </project>

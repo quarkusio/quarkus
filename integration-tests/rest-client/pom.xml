@@ -155,7 +155,9 @@
                     <name>native</name>
                 </property>
             </activation>
+            <!-- add some custom config, the rest comes from parent -->
             <properties>
+                <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
                 <quarkus.native.additional-build-args>-J-Djavax.net.ssl.trustStore=${self-signed.trust-store},
                     -J-Djavax.net.ssl.trustStorePassword=${self-signed.trust-store-password}</quarkus.native.additional-build-args>
             </properties>
@@ -163,53 +165,15 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skipTests>${native.surefire.skip}</skipTests>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <!-- force the locale as we want to explicitly test message interpolation -->
-                                        <user.language>en</user.language>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                        <rest-client.trustStore>${wrong-host.trust-store}</rest-client.trustStore>
-                                        <rest-client.trustStorePassword>${wrong-host.trust-store-password}</rest-client.trustStorePassword>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
-                        <executions>
-                            <execution>
-                                <id>native-image</id>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
-                                    <cleanupServer>true</cleanupServer>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <enableHttpsUrlHandler>true</enableHttpsUrlHandler>
-                                    <enableServer>false</enableServer>
-                                    <dumpProxies>false</dumpProxies>
-                                    <graalvmHome>${graalvmHome}</graalvmHome>
-                                </configuration>
-                            </execution>
-                        </executions>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <!-- force the locale as we want to explicitly test message interpolation -->
+                                <user.language>en</user.language>
+                                <rest-client.trustStore>${wrong-host.trust-store}</rest-client.trustStore>
+                                <rest-client.trustStorePassword>${wrong-host.trust-store-password}</rest-client.trustStorePassword>
+                            </systemPropertyVariables>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

@@ -96,7 +96,7 @@ public class OidcClientImpl implements OidcClient {
             @Override
             public Uni<Tokens> get() {
                 MultiMap body = reqBody;
-                HttpRequest<Buffer> request = client.post(tokenRequestUri);
+                HttpRequest<Buffer> request = client.postAbs(tokenRequestUri);
                 if (clientSecretBasicAuthScheme != null) {
                     request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
                 } else if (clientJwtKey != null) {

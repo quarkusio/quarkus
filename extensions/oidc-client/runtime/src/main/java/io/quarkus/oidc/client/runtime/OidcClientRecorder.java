@@ -1,9 +1,7 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
@@ -102,19 +100,17 @@ public class OidcClientRecorder {
 
         WebClientOptions options = new WebClientOptions();
 
-        URI authServerUri = URI.create(authServerUriString);
-
+        URI authServerUri = URI.create(authServerUriString); // create uri for parse exception
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
-        setWebClientOptions(authServerUri, options);
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
 
         Uni<String> tokenRequestUriUni = null;
         if (!oidcConfig.discoveryEnabled) {
             tokenRequestUriUni = Uni.createFrom()
-                    .item(OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath));
+                    .item(OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.tokenPath));
         } else {
-            tokenRequestUriUni = discoverTokenRequestUri(client, authServerUriString, oidcConfig);
+            tokenRequestUriUni = discoverTokenRequestUri(client, authServerUri.toString(), oidcConfig);
         }
         return tokenRequestUriUni.onItem().transform(new Function<String, OidcClient>() {
 
@@ -146,31 +142,6 @@ public class OidcClientRecorder {
                         oidcConfig);
             }
         });
-    }
-
-    private static void setWebClientOptions(URI authServerUri, WebClientOptions options) {
-        try {
-            URL url = authServerUri.toURL();
-            options.setDefaultHost(authServerUri.getHost());
-            boolean ssl = false;
-            int port = url.getPort();
-            String protocol = url.getProtocol();
-            char chend = protocol.charAt(protocol.length() - 1);
-            if (chend == 'p') {
-                if (port == -1) {
-                    port = 80;
-                }
-            } else if (chend == 's') {
-                ssl = true;
-                if (port == -1) {
-                    port = 443;
-                }
-            }
-            options.setDefaultPort(port);
-            options.setSsl(ssl);
-        } catch (MalformedURLException e) {
-            throw new OidcClientException("Please check oidc-client auth-server-url");
-        }
     }
 
     private static void setGrantClientParams(OidcClientConfig oidcConfig, MultiMap grantParams, String grantType) {
@@ -221,13 +192,13 @@ public class OidcClientRecorder {
 
     private static Uni<String> discoverTokenEndpoint(WebClient client, String authServerUrl) {
         String discoveryUrl = authServerUrl + "/.well-known/openid-configuration";
-        return client.get(discoveryUrl).send().onItem().transformToUni(resp -> {
+        return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
             if (resp.statusCode() == 200) {
                 JsonObject json = resp.bodyAsJsonObject();
-                return Uni.createFrom().item(json.getString("token_endpoint"));
+                return json.getString("token_endpoint");
             } else {
                 LOG.tracef("Discovery has failed, status code: %d", resp.statusCode());
-                return Uni.createFrom().nullItem();
+                return null;
             }
         });
     }

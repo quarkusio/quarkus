@@ -178,6 +178,9 @@ class ForwardedParser {
     }
 
     private void setHostAndPort(String hostToParse, int defaultPort) {
+        if (hostToParse == null) {
+            hostToParse = "";
+        }
         String[] hostAndPort = parseHostAndPort(hostToParse);
         host = hostAndPort[0];
         delegate.headers().set(HttpHeaders.HOST, host);

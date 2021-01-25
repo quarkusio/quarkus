@@ -106,7 +106,7 @@ public class CliTest {
         // test list installable
         execute("list", "--installable");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
-        Assertions.assertFalse(screen.contains("quarkus-amazon-lambda-http"));
+        Assertions.assertFalse(screen.contains("quarkus-jackson"));
         Assertions.assertTrue(screen.contains("quarkus-azure-functions-http"));
 
         // test list search installable
@@ -192,7 +192,7 @@ public class CliTest {
         // test list installable
         execute("list", "--installable");
         Assertions.assertEquals(CommandLine.ExitCode.OK, exitCode);
-        Assertions.assertFalse(screen.contains("quarkus-amazon-lambda-http"));
+        Assertions.assertFalse(screen.contains("quarkus-jackson"));
         Assertions.assertTrue(screen.contains("quarkus-azure-functions-http"));
 
         // test list search installable

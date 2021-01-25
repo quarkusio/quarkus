@@ -79,14 +79,14 @@ To deploy the container image created in the above step to OpenShift, follow the
 [source,bash,subs=attributes+]
 ----
 oc get is
-oc new-app --name=greeting <project>/openshift-quickstart:1.0-SNAPSHOT
+oc new-app --name=greeting <project>/openshift-quickstart:1.0.0-SNAPSHOT
 oc get svc
 oc expose svc/greeting
 oc get routes
 curl http://<route>/greeting
 ----
 
-In the above, `oc get is` will list the image stream created.  It should be tagged as <project>/openshift-quickstart:1.0-SNAPSHOT.
+In the above, `oc get is` will list the image stream created.  It should be tagged as <project>/openshift-quickstart:1.0.0-SNAPSHOT.
 
 Similarly, `oc get route` will list the route URL for the exposed service "greeting" so that you can use it to test the application.
 

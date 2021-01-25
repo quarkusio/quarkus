@@ -855,7 +855,7 @@ public class QuteProcessor {
         generatedTypes.addAll(generator.getGeneratedTypes());
 
         ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(index, classOutput);
-        Map<DotName, List<TemplateExtensionMethodBuildItem>> classToNamespaceExtensions = new HashMap<>();
+        Map<DotName, Map<String, List<TemplateExtensionMethodBuildItem>>> classToNamespaceExtensions = new HashMap<>();
         Map<String, DotName> namespaceToClass = new HashMap<>();
 
         for (TemplateExtensionMethodBuildItem templateExtension : templateExtensionMethods) {
@@ -864,17 +864,23 @@ public class QuteProcessor {
                 DotName declaringClassName = templateExtension.getMethod().declaringClass().name();
                 DotName namespaceClassName = namespaceToClass.get(templateExtension.getNamespace());
                 if (namespaceClassName == null) {
-                    namespaceToClass.put(templateExtension.getNamespace(), declaringClassName);
+                    namespaceToClass.put(templateExtension.getNamespace(), namespaceClassName);
                 } else if (!namespaceClassName.equals(declaringClassName)) {
                     throw new IllegalStateException("Template extension methods that share the namespace "
                             + templateExtension.getNamespace() + " must be declared on the same class; but declared on "
                             + namespaceClassName + " and " + declaringClassName);
                 }
-                List<TemplateExtensionMethodBuildItem> namespaceMethods = classToNamespaceExtensions
+                Map<String, List<TemplateExtensionMethodBuildItem>> namespaceToExtensions = classToNamespaceExtensions
                         .get(declaringClassName);
+                if (namespaceToExtensions == null) {
+                    namespaceToExtensions = new HashMap<>();
+                    classToNamespaceExtensions.put(declaringClassName, namespaceToExtensions);
+                }
+                List<TemplateExtensionMethodBuildItem> namespaceMethods = namespaceToExtensions
+                        .get(templateExtension.getNamespace());
                 if (namespaceMethods == null) {
                     namespaceMethods = new ArrayList<>();
-                    classToNamespaceExtensions.put(declaringClassName, namespaceMethods);
+                    namespaceToExtensions.put(templateExtension.getNamespace(), namespaceMethods);
                 }
                 namespaceMethods.add(templateExtension);
             } else {
@@ -885,15 +891,19 @@ public class QuteProcessor {
         }
 
         // Generate a namespace resolver for extension methods declared on the same class
-        for (Entry<DotName, List<TemplateExtensionMethodBuildItem>> entry : classToNamespaceExtensions.entrySet()) {
-            List<TemplateExtensionMethodBuildItem> methods = entry.getValue();
-            // Methods with higher priority take precedence
-            methods.sort(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed());
-            try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
-                    .createNamespaceResolver(methods.get(0).getMethod().declaringClass(), methods.get(0).getNamespace())) {
-                try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
-                    for (TemplateExtensionMethodBuildItem method : methods) {
-                        resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchRegex());
+        for (Entry<DotName, Map<String, List<TemplateExtensionMethodBuildItem>>> entry1 : classToNamespaceExtensions
+                .entrySet()) {
+            Map<String, List<TemplateExtensionMethodBuildItem>> namespaceToMethods = entry1.getValue();
+            for (Entry<String, List<TemplateExtensionMethodBuildItem>> entry2 : namespaceToMethods.entrySet()) {
+                List<TemplateExtensionMethodBuildItem> methods = entry2.getValue();
+                // Methods with higher priority take precedence
+                methods.sort(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed());
+                try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
+                        .createNamespaceResolver(methods.get(0).getMethod().declaringClass(), entry2.getKey())) {
+                    try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
+                        for (TemplateExtensionMethodBuildItem method : methods) {
+                            resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchRegex());
+                        }
                     }
                 }
             }

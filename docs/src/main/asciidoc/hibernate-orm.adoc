@@ -184,15 +184,7 @@ This will start a non-durable empty database: ideal for a quick experiment!
 
 ==== Setting up multiple persistence units
 
-[WARNING]
-====
-This feature is still experimental.
-It is considered stable and usable in production but the configuration properties and CDI integration might evolve depending on your feedback.
-
-If you are using this feature, any feedback (even just to say it fulfills your requirements) is very welcome on our link:{quarkus-mailing-list-index}[quarkus-dev mailing list].
-====
-
-Starting with Quarkus 1.8, you can define multiple persistence units using the Quarkus configuration properties approach.
+It is possible to define multiple persistence units using the Quarkus configuration properties.
 
 The properties at the root of the `quarkus.hibernate-orm.` namespace define the default persistence unit.
 For instance, the following snippet defines a default datasource and a default persistence unit:

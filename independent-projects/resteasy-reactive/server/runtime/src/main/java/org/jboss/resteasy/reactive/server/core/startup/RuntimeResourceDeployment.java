@@ -53,13 +53,11 @@ import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
 import org.jboss.resteasy.reactive.server.handlers.AbortChainHandler;
 import org.jboss.resteasy.reactive.server.handlers.BlockingHandler;
-import org.jboss.resteasy.reactive.server.handlers.CompletionStageResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ExceptionHandler;
 import org.jboss.resteasy.reactive.server.handlers.FixedProducesHandler;
 import org.jboss.resteasy.reactive.server.handlers.InputHandler;
 import org.jboss.resteasy.reactive.server.handlers.InstanceHandler;
 import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
-import org.jboss.resteasy.reactive.server.handlers.MultiResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
 import org.jboss.resteasy.reactive.server.handlers.PerRequestInstanceHandler;
 import org.jboss.resteasy.reactive.server.handlers.ReadBodyHandler;
@@ -68,10 +66,10 @@ import org.jboss.resteasy.reactive.server.handlers.ResourceLocatorHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.SseResponseWriterHandler;
-import org.jboss.resteasy.reactive.server.handlers.UniResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.VariableProducesHandler;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
@@ -112,14 +110,14 @@ public class RuntimeResourceDeployment {
     }
 
     public RuntimeResource buildResourceMethod(ResourceClass clazz,
-            ServerResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
-
+            ServerResourceMethod method, boolean locatableResource, URITemplate classPathTemplate, DeploymentInfo info) {
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>();
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         List<ServerRestHandler> handlers = new ArrayList<>();
+        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
         MediaType sseElementType = null;
         if (method.getSseElementType() != null) {
             sseElementType = MediaType.valueOf(method.getSseElementType());
@@ -218,12 +216,13 @@ public class RuntimeResourceDeployment {
             handlers.add(instanceHandler);
         }
 
+        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.RESOLVE_METHOD_PARAMETERS);
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
             boolean single = param.isSingle();
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param.parameterType,
                     param.type, param.name,
-                    single, param.encoded);
+                    single, param.encoded, param.customerParameterExtractor);
             ParameterConverter converter = null;
             ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
             boolean userProviderConvertersExist = !paramConverterProviders.getParamConverterProviders().isEmpty();
@@ -248,20 +247,14 @@ public class RuntimeResourceDeployment {
                     converter, param.parameterType,
                     param.isObtainedAsCollection()));
         }
+        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
         handlers.add(new InvocationHandler(invoker));
+        addHandlers(handlers, method, info, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
-        Class<?> rawReturnType = getRawType(returnType);
         Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
         Class<?> rawNonAsyncReturnType = getRawType(nonAsyncReturnType);
 
-        if (CompletionStage.class.isAssignableFrom(rawReturnType)) {
-            handlers.add(new CompletionStageResponseHandler());
-        } else if (Uni.class.isAssignableFrom(rawReturnType)) {
-            handlers.add(new UniResponseHandler());
-        } else if (Multi.class.isAssignableFrom(rawReturnType)) {
-            handlers.add(new MultiResponseHandler());
-        }
         ServerMediaType serverMediaType = null;
         if (method.getProduces() != null && method.getProduces().length > 0) {
             // when negotiating a media type, we want to use the proper subtype to locate a ResourceWriter,
@@ -373,10 +366,20 @@ public class RuntimeResourceDeployment {
         return runtimeResource;
     }
 
+    private void addHandlers(List<ServerRestHandler> handlers, ServerResourceMethod method, DeploymentInfo info,
+            HandlerChainCustomizer.Phase phase) {
+        for (HandlerChainCustomizer i : info.getGlobalHandlerCustomers()) {
+            handlers.addAll(i.handlers(phase));
+        }
+        for (HandlerChainCustomizer i : method.getHandlerChainCustomizers()) {
+            handlers.addAll(i.handlers(phase));
+        }
+    }
+
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, boolean locatableResource,
             ParameterType type, String javaType,
             String name,
-            boolean single, boolean encoded) {
+            boolean single, boolean encoded, ParameterExtractor customExtractor) {
         ParameterExtractor extractor;
         switch (type) {
             case HEADER:
@@ -411,8 +414,10 @@ public class RuntimeResourceDeployment {
                 return extractor;
             case BEAN:
                 return new BeanParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(loadClass(javaType)));
+            case CUSTOM:
+                return customExtractor;
             default:
-                return new QueryParamExtractor(name, single, encoded);
+                throw new RuntimeException("Unkown param type: " + type);
         }
     }
 

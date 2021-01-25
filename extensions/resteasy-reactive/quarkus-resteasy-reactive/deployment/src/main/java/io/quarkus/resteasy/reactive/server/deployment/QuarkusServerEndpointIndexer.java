@@ -27,7 +27,6 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParamet
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
-import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
 
@@ -186,11 +185,6 @@ public class QuarkusServerEndpointIndexer
         if (delegate == null)
             throw new RuntimeException("Failed to find converter for " + elementType);
         return delegate;
-    }
-
-    @Override
-    protected ServerResourceMethod createResourceMethod() {
-        return new ServerResourceMethod();
     }
 
     protected void handleFieldExtractors(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,

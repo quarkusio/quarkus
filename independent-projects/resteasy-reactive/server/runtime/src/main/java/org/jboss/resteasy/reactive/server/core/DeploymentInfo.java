@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.core;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -10,6 +11,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -29,6 +31,7 @@ public class DeploymentInfo {
     private ResteasyReactiveConfig config;
     private Function<Object, Object> clientProxyUnwrapper;
     private String applicationPath;
+    private List<HandlerChainCustomizer> globalHandlerCustomers = Collections.emptyList();
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -153,6 +156,15 @@ public class DeploymentInfo {
 
     public DeploymentInfo setApplicationPath(String applicationPath) {
         this.applicationPath = applicationPath;
+        return this;
+    }
+
+    public List<HandlerChainCustomizer> getGlobalHandlerCustomers() {
+        return globalHandlerCustomers;
+    }
+
+    public DeploymentInfo setGlobalHandlerCustomers(List<HandlerChainCustomizer> globalHandlerCustomers) {
+        this.globalHandlerCustomers = globalHandlerCustomers;
         return this;
     }
 }

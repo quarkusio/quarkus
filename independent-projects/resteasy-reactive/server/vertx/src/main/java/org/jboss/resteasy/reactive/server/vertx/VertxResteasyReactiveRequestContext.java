@@ -351,6 +351,14 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         }
     }
 
+    public HttpServerRequest vertxServerRequest() {
+        return request;
+    }
+
+    public HttpServerResponse vertxServerResponse() {
+        return response;
+    }
+
     enum ContinueState {
         NONE,
         REQUIRED,

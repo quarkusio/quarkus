@@ -1446,8 +1446,8 @@ class Item {
 [[resteasy_integration]]
 === RESTEasy Integration
 
-If you want to use Qute in your JAX-RS application, you'll need to add the `quarkus-resteasy-qute` extension first.
-In your `pom.xml` file, add:
+If you want to use Qute in your JAX-RS application, then depending on which JAX-RS stack you are using, you'll need to register the proper extension first.
+If you are using the traditional `quakus-resteasy` extension, then in your `pom.xml` file, add:
 
 [source,xml]
 ----
@@ -1457,8 +1457,19 @@ In your `pom.xml` file, add:
 </dependency>
 ----
 
-This extension registers a special `ContainerResponseFilter` implementation so that a resource method can return a `TemplateInstance` and the filter takes care of all necessary steps.
-A simple JAX-RS resource may look like this:
+If instead you are using RESTEasy Reactive via the `quarkus-resteasy-reactive` extension, then in your `pom.xml` file, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-qute</artifactId>
+</dependency>
+----
+
+Both of these extensions register a special `ContainerResponseFilter` implementation which enables resource methods to return a `TemplateInstance`, thus freeing users of having to take care of all necessary internal steps.
+
+The end result is that a using Qute within a JAX-RS resource may look as simple as:
 
 .HelloResource.java
 [source,java]
@@ -1513,7 +1524,7 @@ class DetailResource {
 <1> Inject a variant template with base path derived from the injected field - `src/main/resources/templates/item`.
 <2> For `text/plain` the `src/main/resources/templates/item.txt` template is used. For `text/html` the `META-INF/resources/templates/item.html` template is used.
 
-The `io.quarkus.resteasy.qute.RestTemplate` util class can be used to obtain a template instance from a body of a JAX-RS resource method:
+The `RestTemplate` util class can be used to obtain a template instance from a body of a JAX-RS resource method:
 
 .RestTemplate Example
 [source,java]

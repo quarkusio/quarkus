@@ -22,9 +22,9 @@ public class ObjectMapperProducer {
     @Singleton
     @Produces
     public ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers,
-            JacksonConfigSupport jacksonConfigSupport) {
+            JacksonBuildTimeConfig jacksonBuildTimeConfig) {
         ObjectMapper objectMapper = new ObjectMapper();
-        if (!jacksonConfigSupport.isFailOnUnknownProperties()) {
+        if (!jacksonBuildTimeConfig.failOnUnknownProperties) {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         }

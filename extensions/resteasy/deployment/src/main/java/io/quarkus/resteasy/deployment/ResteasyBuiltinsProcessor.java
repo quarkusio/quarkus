@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.resteasy.deployment.SecurityTransformerUtils.hasSecurityAnnotation;
+import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,6 +13,7 @@ import javax.ws.rs.RuntimeType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
@@ -34,6 +36,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
@@ -41,8 +44,30 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
+import io.quarkus.security.spi.SecurityTransformerUtils;
 
 public class ResteasyReactiveCommonProcessor {
+
+    @BuildStep
+    void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
+            JaxRsSecurityConfig config,
+            ResourceScanningResultBuildItem resteasyDeployment,
+            BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
+        if (config.denyJaxRs) {
+            final List<ClassInfo> classes = new ArrayList<>();
+
+            Set<DotName> resourceClasses = resteasyDeployment.getResult().getScannedResourcePaths().keySet();
+            for (DotName className : resourceClasses) {
+                ClassInfo classInfo = index.getIndex().getClassByName(className);
+                if (!SecurityTransformerUtils.hasSecurityAnnotation(classInfo)) {
+                    classes.add(classInfo);
+                }
+            }
+
+            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildIem(classes));
+        }
+    }
 
     @BuildStep
     ApplicationResultBuildItem handleApplication(CombinedIndexBuildItem combinedIndexBuildItem,

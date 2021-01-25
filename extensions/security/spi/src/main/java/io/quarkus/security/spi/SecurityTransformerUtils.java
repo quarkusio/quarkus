@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.deployment;
+package io.quarkus.security.spi;
 
 import static java.util.Arrays.asList;
 

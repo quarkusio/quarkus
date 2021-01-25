@@ -879,13 +879,22 @@ public abstract class ResteasyReactiveRequestContext
         return securityContext;
     }
 
+    public boolean isSecurityContextSet() {
+        return securityContext != null;
+    }
+
     protected SecurityContext createSecurityContext() {
         throw new UnsupportedOperationException();
     }
 
     public ResteasyReactiveRequestContext setSecurityContext(SecurityContext securityContext) {
         this.securityContext = securityContext;
+        securityContextUpdated(securityContext);
         return this;
+    }
+
+    protected void securityContextUpdated(SecurityContext securityContext) {
+
     }
 
     public void setOutputStream(OutputStream outputStream) {

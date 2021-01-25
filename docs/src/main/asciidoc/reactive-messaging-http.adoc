@@ -280,8 +280,7 @@ Create the `src/main/resources/META-INF/resources/index.html` file, with the fol
 
 == Get it running
 
-If you followed the instructions, you should have the AMQP broker running.
-Then, you just need to run the application using:
+Run the application using:
 
 [source,bash]
 ----
@@ -290,7 +289,6 @@ Then, you just need to run the application using:
 
 Open `http://localhost:8080/index.html` in your browser.
 
-NOTE: If you started the AMQP broker with docker compose, stop it using `CTRL+C` followed by `docker-compose down`.
 
 == Running Native
 
@@ -303,6 +301,46 @@ You can build the native executable with:
 
 == Going further
 
+=== HTTP connector options
+All `quarkus-http` connector options:
+
+[source, properties]
+----
+# OUTGOING
+
+# The target URL
+mp.messaging.outgoing.<channelName>.url=http://localhost:8213
+
+# Message payload serializer, optional, implementation of `io.quarkus.reactivemessaging.http.runtime.serializers.Serializer`
+mp.messaging.outgoing.<channelName>.serializer=com.example.MySerializer
+
+# The number of attempts to make for sending a request to a remote endpoint. Must not be less than zero
+# Zero by default
+mp.messaging.outgoing.<channelName>.maxRetries=3
+
+# Configures the random factor when using back-off with maxRetries > 0. 0.5 by default
+mp.messaging.outgoing.<channelName>.jitter=0.3
+
+# Configures a back-off delay between attempts to send a request.
+# A random factor (jitter) is applied to increase the delay when several failures happen.
+mp.messaging.outgoing.<channelName>.delay=1s
+
+#The HTTP method (either `POST` or `PUT`), `POST` by default
+mp.messaging.outgoing.<channelName>.method=PUT
+
+#INCOMING
+# The HTTP method (either `POST` or `PUT`, `POST` by default
+mp.messaging.incoming.<channelName>.method=POST
+
+# The path of the endpoint
+mp.messaging.incoming.<channelName>.path=/my-reactive-ws-endpoint
+
+# HTTP endpoint buffers messages if a consumer is not able to keep up. This setting specifies the size of the buffer.
+# 8 by default.
+mp.messaging.incoming.<channelName>.buffer-size=13
+
+----
+
 === WebSockets
 Except of the `quarkus-http` connector, the `quarkus-reactive-messaging-http` extension also brings in
 `quarkus-websocket` - a connector for exposing and feeding WebSockets.
@@ -311,6 +349,41 @@ At the moment only binary data is supported.
 NOTE: While the sink of the HTTP connector checks if the message is consumed by the remote endpoint,
 the WebSocket sink does not. It may happen that a failure to receive a message is not reported,
 e.g. if the remote side closes the WebSocket connection in a crucial moment.
+
+The `quarkus-websocket` connector is configured with the following properties:
+
+[source,properties]
+----
+# OUTGOING
+
+# The target URL
+mp.messaging.outgoing.<channelName>.url=ws://localhost:8234/
+
+# Message serializer, optional, implementation of `io.quarkus.reactivemessaging.http.runtime.serializers.Serializer`
+mp.messaging.outgoing.<channelName>.serializer=com.example.MySerializer
+
+# The number of retries to make for sending a message to a remote websocket endpoint.
+# A value greater than 0 is advised. Otherwise, a web socket timeout can result in a dropped message
+# The default value is 1
+mp.messaging.outgoing.<channelName>.maxRetries=1
+
+# Configures the random factor when using back-off with maxAttempts > 1, 0.5 by default
+mp.messaging.outgoing.<channelName>.jitter=0.7
+
+# Configures a back-off delay between attempts to send a request.
+# A random factor (jitter) is applied to increase the delay when several failures happen.
+mp.messaging.outgoing.<channelName>.delay=2s
+
+
+# INCOMING
+
+# The path of the endpoint
+mp.messaging.incoming.<channelName>.path=/my-ws-endpoint
+
+# Web socket endpoint buffers messages if a consumer is not able to keep up.
+# This setting specifies the size of the buffer. 8 by default
+mp.messaging.incoming.<channelName>.buffer-size=3
+----
 
 === Reactive Messaging
 This extension utilizes MicroProfile Reactive Messaging to build data streaming applications.

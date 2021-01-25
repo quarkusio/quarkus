@@ -113,7 +113,7 @@ public class ContextProducers {
         return ResourceContextImpl.INSTANCE;
     }
 
-    @ApplicationScoped
+    @RequestScoped
     @Produces
     SecurityContext securityContext() {
         return getContext().getSecurityContext();

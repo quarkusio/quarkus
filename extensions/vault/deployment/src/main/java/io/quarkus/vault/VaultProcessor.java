@@ -28,7 +28,7 @@ import io.quarkus.vault.runtime.VaultRecorder;
 import io.quarkus.vault.runtime.VaultSystemBackendManager;
 import io.quarkus.vault.runtime.VaultTOTPManager;
 import io.quarkus.vault.runtime.VaultTransitManager;
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
 import io.quarkus.vault.runtime.client.dto.VaultModel;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
@@ -75,7 +75,7 @@ public class VaultProcessor {
                 .addBeanClass(VaultKubernetesAuthManager.class)
                 .addBeanClass(VaultAuthManager.class)
                 .addBeanClass(VaultDbManager.class)
-                .addBeanClass(OkHttpVaultClient.class)
+                .addBeanClass(VertxVaultClient.class)
                 .addBeanClass(VaultConfigHolder.class)
                 .build();
     }
@@ -90,5 +90,4 @@ public class VaultProcessor {
     HealthBuildItem addHealthCheck(VaultBuildTimeConfig config) {
         return new HealthBuildItem(VaultHealthCheck.class.getName(), config.health.enabled);
     }
-
 }

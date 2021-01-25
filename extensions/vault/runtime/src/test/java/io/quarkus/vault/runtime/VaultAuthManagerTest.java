@@ -9,11 +9,13 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.TlsConfig;
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
@@ -32,11 +34,16 @@ public class VaultAuthManagerTest {
     TlsConfig tlsConfig = new TlsConfig();
     AtomicBoolean lookupSelfShouldReturn403 = new AtomicBoolean(false);
     VaultConfigHolder vaultConfigHolder = new VaultConfigHolder().setVaultBootstrapConfig(config);
-    OkHttpVaultClient vaultClient = createVaultClient();
+    VaultClient vaultClient = createVaultClient();
     VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder, vaultClient);
     VaultUserPassAuth vaultUserPassAuth = new VaultUserPassAuth();
     VaultLookupSelf vaultLookupSelf = new VaultLookupSelf();
     VaultRenewSelf vaultRenewSelf = new VaultRenewSelf();
+
+    @AfterEach
+    public void after() {
+        vaultClient.close();
+    }
 
     @Test
     public void login() {
@@ -119,8 +126,8 @@ public class VaultAuthManagerTest {
         }
     }
 
-    private OkHttpVaultClient createVaultClient() {
-        OkHttpVaultClient okHttpVaultClient = new OkHttpVaultClient(vaultConfigHolder, tlsConfig) {
+    private VaultClient createVaultClient() {
+        VertxVaultClient vaultClient = new VertxVaultClient(vaultConfigHolder, tlsConfig) {
             @Override
             public VaultUserPassAuth loginUserPass(String user, String password) {
                 return vaultUserPassAuth;
@@ -139,8 +146,8 @@ public class VaultAuthManagerTest {
                 return vaultRenewSelf;
             }
         };
-        okHttpVaultClient.init();
-        return okHttpVaultClient;
+        vaultClient.init();
+        return vaultClient;
     }
 
 }

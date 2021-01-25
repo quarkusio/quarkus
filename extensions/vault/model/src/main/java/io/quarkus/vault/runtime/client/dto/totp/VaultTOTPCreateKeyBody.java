@@ -1,5 +1,6 @@
 package io.quarkus.vault.runtime.client.dto.totp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.quarkus.vault.runtime.client.dto.VaultModel;
@@ -27,6 +28,7 @@ public class VaultTOTPCreateKeyBody implements VaultModel {
     @JsonProperty("qr_size")
     public Integer qrSize;
 
+    @JsonIgnore
     public boolean isProducingOutput() {
         // When exported is not set, by default is true
         return is(exported, true) && is(generate, false);

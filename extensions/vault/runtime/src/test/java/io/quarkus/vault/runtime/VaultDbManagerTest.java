@@ -12,11 +12,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.TlsConfig;
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentialsData;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
@@ -37,11 +39,16 @@ public class VaultDbManagerTest {
     AtomicBoolean lookupLeaseShouldReturn400 = new AtomicBoolean(false);
     VaultRenewLease vaultRenewLease = new VaultRenewLease();
     VaultConfigHolder vaultConfigHolder = new VaultConfigHolder().setVaultBootstrapConfig(config);
-    OkHttpVaultClient vaultClient = createVaultClient();
+    VaultClient vaultClient = createVaultClient();
     VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder, vaultClient);
     VaultDbManager vaultDbManager = new VaultDbManager(vaultConfigHolder, vaultAuthManager, vaultClient);
     String mydbrole = "mydbrole";
     String mylease = "mylease";
+
+    @AfterEach
+    public void after() {
+        vaultClient.close();
+    }
 
     @Test
     public void getDynamicDbCredentials() {
@@ -125,8 +132,8 @@ public class VaultDbManagerTest {
         }
     }
 
-    private OkHttpVaultClient createVaultClient() {
-        OkHttpVaultClient okHttpVaultClient = new OkHttpVaultClient(vaultConfigHolder, tlsConfig) {
+    private VaultClient createVaultClient() {
+        VertxVaultClient vaultClient = new VertxVaultClient(vaultConfigHolder, tlsConfig) {
             @Override
             public VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole) {
                 return credentials;
@@ -145,7 +152,7 @@ public class VaultDbManagerTest {
                 return vaultRenewLease;
             }
         };
-        okHttpVaultClient.init();
-        return okHttpVaultClient;
+        vaultClient.init();
+        return vaultClient;
     }
 }

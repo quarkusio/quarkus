@@ -3,7 +3,7 @@ package io.quarkus.vault.test.client;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.runtime.VaultConfigHolder;
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.VertxVaultClient;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRandomBody;
 import io.quarkus.vault.test.client.dto.VaultAppRoleRoleId;
 import io.quarkus.vault.test.client.dto.VaultAppRoleSecretId;
@@ -11,7 +11,7 @@ import io.quarkus.vault.test.client.dto.VaultTransitHash;
 import io.quarkus.vault.test.client.dto.VaultTransitHashBody;
 import io.quarkus.vault.test.client.dto.VaultTransitRandom;
 
-public class TestVaultClient extends OkHttpVaultClient {
+public class TestVaultClient extends VertxVaultClient {
 
     private static VaultConfigHolder getConfigHolder() {
         return Arc.container().instance(VaultConfigHolder.class).get();

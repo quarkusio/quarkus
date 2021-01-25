@@ -101,15 +101,12 @@
 
     <profiles>
         <profile>
-            <id>native-image-it-main</id>
+            <id>native-image</id>
             <activation>
                 <property>
                     <name>native</name>
                 </property>
             </activation>
-            <properties>
-                <quarkus.package.type>native</quarkus.package.type>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -125,25 +122,9 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
+
 </project>

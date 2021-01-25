@@ -203,7 +203,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         shell: bash
-        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dno-native -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install
+        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash

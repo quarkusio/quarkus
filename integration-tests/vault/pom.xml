@@ -67,7 +67,6 @@
                                 </goals>
                                 <configuration>
                                     <skip>false</skip>
-                                    <trimStackTrace>false</trimStackTrace>
                                 </configuration>
                             </execution>
                         </executions>

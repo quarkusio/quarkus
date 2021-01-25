@@ -3,6 +3,7 @@ package io.quarkus.qute.deployment.extensions;
 import static io.quarkus.qute.TemplateExtension.ANY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import javax.enterprise.event.TransactionPhase;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -36,6 +37,8 @@ public class NamespaceTemplateExtensionTest {
                 engine.parse("{str:foolish('hello')}").render());
         assertEquals("ONE=ONE",
                 engine.parse("{MyEnum:ONE}={MyEnum:one}").render());
+        assertEquals("IN_PROGRESS=0",
+                engine.parse("{txPhase:IN_PROGRESS}={txPhase:IN_PROGRESS.ordinal}").render());
     }
 
     @TemplateExtension(namespace = "str")
@@ -68,6 +71,11 @@ public class NamespaceTemplateExtensionTest {
         @TemplateExtension(namespace = "MyEnum", matchName = ANY)
         static MyEnum getVal(String val) {
             return MyEnum.valueOf(val.toUpperCase());
+        }
+
+        @TemplateExtension(namespace = "txPhase", matchName = "*")
+        static TransactionPhase enumValue(String value) {
+            return TransactionPhase.valueOf(value);
         }
 
     }

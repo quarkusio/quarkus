@@ -9,7 +9,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Classloader used for production application, using the multi jar strategy
+ * Classloader used with the fast-jar package type.
+ *
+ * This ClassLoader takes advantage of the fact that Quarkus knows the entire classpath when the application is built,
+ * and thus can index the location of classes and resources (with the result being written during the build to a binary file and
+ * read at application startup).
+ * The advantage this has over the JDK's default System ClassLoader is that it knows which jars contain the requested
+ * classes and resources and thus does not have to iterate over all the jars on the classpath
+ * (which is slow and takes up heap space as the jars need to be kept open), but instead can go directly to the
+ * jar(s) containing the requested class or resource.
+ * The implementation also contains optimizations that allow the ClassLoader to keep a minimum number of jars open
+ * while also preventing the lookup of the entire classpath for missing resources in known directories (like META-INF/services).
  */
 public final class RunnerClassLoader extends ClassLoader {
 

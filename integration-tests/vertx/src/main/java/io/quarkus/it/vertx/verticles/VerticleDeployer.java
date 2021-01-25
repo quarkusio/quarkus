@@ -7,9 +7,9 @@ import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import io.quarkus.runtime.StartupEvent;
-import io.vertx.axle.core.Vertx;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.Vertx;
 
 @ApplicationScoped
 public class VerticleDeployer {
@@ -21,27 +21,19 @@ public class VerticleDeployer {
         CountDownLatch latch = new CountDownLatch(5);
         vertx.deployVerticle(BareVerticle::new, new DeploymentOptions().setConfig(new JsonObject()
                 .put("id", "bare")))
-                .thenAccept(x -> latch.countDown());
+                .subscribe().with(x -> latch.countDown());
 
         vertx.deployVerticle(BareVerticle.class.getName(), new DeploymentOptions().setConfig(new JsonObject()
                 .put("id", "bare-classname")))
-                .thenAccept(x -> latch.countDown());
-
-        vertx.deployVerticle(RxVerticle::new, new DeploymentOptions().setConfig(new JsonObject()
-                .put("id", "rx")))
-                .thenAccept(x -> latch.countDown());
-
-        vertx.deployVerticle(RxVerticle.class.getName(), new DeploymentOptions().setConfig(new JsonObject()
-                .put("id", "rx-classname")))
-                .thenAccept(x -> latch.countDown());
+                .subscribe().with(x -> latch.countDown());
 
         vertx.deployVerticle(MutinyAsyncVerticle::new, new DeploymentOptions().setConfig(new JsonObject()
                 .put("id", "mutiny")))
-                .thenAccept(x -> latch.countDown());
+                .subscribe().with(x -> latch.countDown());
 
         vertx.deployVerticle(MutinyAsyncVerticle.class.getName(), new DeploymentOptions().setConfig(new JsonObject()
                 .put("id", "mutiny-classname")))
-                .thenAccept(x -> latch.countDown());
+                .subscribe().with(x -> latch.countDown());
         latch.countDown();
     }
 

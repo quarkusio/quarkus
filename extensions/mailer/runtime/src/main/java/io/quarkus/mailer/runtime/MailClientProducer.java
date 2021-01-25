@@ -41,26 +41,6 @@ public class MailClientProducer {
         return mutinyClient;
     }
 
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.axle.ext.mail.MailClient axleMailClient() {
-        LOGGER.warn(
-                "`io.vertx.axle.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
-        return io.vertx.axle.ext.mail.MailClient.newInstance(client);
-    }
-
-    @Singleton
-    @Produces
-    @Deprecated
-    public io.vertx.reactivex.ext.mail.MailClient rxMailClient() {
-        LOGGER.warn(
-                "`io.vertx.reactivex.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
-                        + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
-        return io.vertx.reactivex.ext.mail.MailClient.newInstance(client);
-    }
-
     @PreDestroy
     public void stop() {
         client.close();

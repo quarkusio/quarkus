@@ -1,12 +1,10 @@
 package io.quarkus.vertx.deployment;
 
-import static io.quarkus.vertx.deployment.VertxConstants.AXLE_MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
 import static io.quarkus.vertx.deployment.VertxConstants.LOCAL_EVENT_BUS_CODEC;
 import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
-import static io.quarkus.vertx.deployment.VertxConstants.RX_MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 
 import java.util.Arrays;
@@ -14,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -96,7 +95,12 @@ public class EventBusCodecProcessor {
 
         // Register codec classes for reflection.
         codecByTypes.values().stream().map(DotName::toString).distinct()
-                .forEach(name -> reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, name)));
+                .forEach(new Consumer<String>() {
+                    @Override
+                    public void accept(String name) {
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, name));
+                    }
+                });
     }
 
     private static final List<String> BUILT_IN_CODECS = Arrays.asList(
@@ -119,9 +123,7 @@ public class EventBusCodecProcessor {
 
             // Buffers classes
             Buffer.class.getName(),
-            io.vertx.mutiny.core.buffer.Buffer.class.getName(),
-            io.vertx.axle.core.buffer.Buffer.class.getName(),
-            io.vertx.reactivex.core.buffer.Buffer.class.getName());
+            io.vertx.mutiny.core.buffer.Buffer.class.getName());
 
     private static Type extractPayloadTypeFromReturn(MethodInfo method) {
         Type returnType = method.returnType();
@@ -180,8 +182,6 @@ public class EventBusCodecProcessor {
      */
     private static boolean isMessageClass(ParameterizedType type) {
         return type.name().equals(MESSAGE)
-                || type.name().equals(RX_MESSAGE)
-                || type.name().equals(AXLE_MESSAGE)
                 || type.name().equals(MUTINY_MESSAGE);
     }
 }

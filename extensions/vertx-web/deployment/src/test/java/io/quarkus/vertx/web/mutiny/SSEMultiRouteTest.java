@@ -54,10 +54,6 @@ public class SSEMultiRouteTest {
                 .body(is("data: Buffer\nid: 0\n\ndata: Buffer\nid: 1\n\ndata: Buffer.\nid: 2\n\n"))
                 .header("content-type", is("text/event-stream"));
 
-        when().get("/rx-buffer").then().statusCode(200)
-                .body(is("data: Buffer\nid: 0\n\ndata: RX\nid: 1\n\n"))
-                .header("content-type", is("text/event-stream"));
-
         when().get("/mutiny-buffer").then().statusCode(200)
                 .body(is("data: Buffer\nid: 0\n\ndata: Mutiny\nid: 1\n\n"))
                 .header("content-type", is("text/event-stream"));
@@ -148,13 +144,6 @@ public class SSEMultiRouteTest {
         Multi<Buffer> buffers(RoutingContext context) {
             return ReactiveRoutes.asEventStream(Multi.createFrom()
                     .items(Buffer.buffer("Buffer"), Buffer.buffer("Buffer"), Buffer.buffer("Buffer.")));
-        }
-
-        @Route(path = "rx-buffer")
-        Multi<io.vertx.reactivex.core.buffer.Buffer> bufferRx(RoutingContext context) {
-            return ReactiveRoutes
-                    .asEventStream(Multi.createFrom().items(io.vertx.reactivex.core.buffer.Buffer.buffer("Buffer"),
-                            io.vertx.reactivex.core.buffer.Buffer.buffer("RX")));
         }
 
         @Route(path = "mutiny-buffer")

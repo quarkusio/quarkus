@@ -42,12 +42,6 @@ public class VertxInjectionTest {
         Vertx vertx;
 
         @Inject
-        io.vertx.axle.core.Vertx axle;
-
-        @Inject
-        io.vertx.reactivex.core.Vertx rx;
-
-        @Inject
         io.vertx.mutiny.core.Vertx mutiny;
 
         boolean ok;
@@ -58,8 +52,6 @@ public class VertxInjectionTest {
 
         public void init(@Observes StartupEvent ev) {
             Assertions.assertNotNull(vertx);
-            Assertions.assertNotNull(axle);
-            Assertions.assertNotNull(rx);
             Assertions.assertNotNull(mutiny);
             ok = true;
         }
@@ -72,12 +64,6 @@ public class VertxInjectionTest {
         EventBus vertx;
 
         @Inject
-        io.vertx.axle.core.eventbus.EventBus axle;
-
-        @Inject
-        io.vertx.reactivex.core.eventbus.EventBus rx;
-
-        @Inject
         io.vertx.mutiny.core.eventbus.EventBus mutiny;
 
         boolean ok;
@@ -88,8 +74,6 @@ public class VertxInjectionTest {
 
         public void init(@Observes StartupEvent ev) {
             Assertions.assertNotNull(vertx);
-            Assertions.assertNotNull(axle);
-            Assertions.assertNotNull(rx);
             Assertions.assertNotNull(mutiny);
             ok = true;
         }

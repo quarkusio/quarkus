@@ -11,20 +11,20 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 
-import io.reactivex.Flowable;
+import io.smallrye.mutiny.Multi;
 
 @ApplicationScoped
 public class ChannelConsumer {
 
     @Inject
     @Channel("source-channel")
-    Flowable<Message<String>> sourceStream;
+    Multi<Message<String>> sourceStream;
 
     public List<String> consume() {
-        return Flowable.fromPublisher(sourceStream)
-                .map(Message::getPayload)
-                .toList()
-                .blockingGet();
+        return sourceStream
+                .onItem().transform(Message::getPayload)
+                .collect().asList()
+                .await().indefinitely();
     }
 
     @Outgoing("source-channel")

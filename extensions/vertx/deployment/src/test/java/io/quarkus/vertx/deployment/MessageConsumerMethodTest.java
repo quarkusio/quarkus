@@ -165,24 +165,6 @@ public class MessageConsumerMethodTest {
     }
 
     @Test
-    public void testPublishRx() throws InterruptedException {
-        SimpleBean.MESSAGES.clear();
-        SimpleBean.latch = new CountDownLatch(1);
-        eventBus.publish("pub-rx", "Hello");
-        SimpleBean.latch.await(2, TimeUnit.SECONDS);
-        assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
-    }
-
-    @Test
-    public void testPublishAxle() throws InterruptedException {
-        SimpleBean.MESSAGES.clear();
-        SimpleBean.latch = new CountDownLatch(1);
-        eventBus.publish("pub-axle", "Hello");
-        SimpleBean.latch.await(2, TimeUnit.SECONDS);
-        assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
-    }
-
-    @Test
     public void testPublishMutiny() throws InterruptedException {
         SimpleBean.MESSAGES.clear();
         SimpleBean.latch = new CountDownLatch(1);
@@ -246,18 +228,6 @@ public class MessageConsumerMethodTest {
         @ConsumeEvent(value = "blocking", blocking = true)
         void consumeBlocking(String message) {
             MESSAGES.add(message.toLowerCase() + "::" + Context.isOnWorkerThread());
-            latch.countDown();
-        }
-
-        @ConsumeEvent("pub-axle")
-        void consume(io.vertx.axle.core.eventbus.Message<String> message) {
-            MESSAGES.add(message.body().toUpperCase());
-            latch.countDown();
-        }
-
-        @ConsumeEvent("pub-rx")
-        void consume(io.vertx.reactivex.core.eventbus.Message<String> message) {
-            MESSAGES.add(message.body().toUpperCase());
             latch.countDown();
         }
 

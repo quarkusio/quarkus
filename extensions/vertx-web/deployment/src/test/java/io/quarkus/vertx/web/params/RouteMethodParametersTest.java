@@ -37,10 +37,9 @@ public class RouteMethodParametersTest {
 
     @Test
     public void testRoutes() {
-        //RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-response").then().statusCode(200).body(is("Hello world!"));
-        when().get("/hello-rx-response").then().statusCode(200).body(is("Hello world!"));
+        when().get("/hello-mutiny-response").then().statusCode(200).body(is("Hello world!"));
         when().get("/hello-response-nonvoid?name=foo").then().statusCode(200).body(is("Hello foo!"));
         when().get("/hello-all").then().statusCode(200).body(is("ok"));
         when().get("/hello-params?name=foo&identifier=10").then().statusCode(200).body(is("Hello foo! Your id is 10"));
@@ -89,9 +88,9 @@ public class RouteMethodParametersTest {
             response.setStatusCode(200).end("Hello world!");
         }
 
-        @Route(path = "/hello-rx-response")
-        void hello3(io.vertx.reactivex.core.http.HttpServerResponse response) {
-            response.setStatusCode(200).end("Hello world!");
+        @Route(path = "/hello-mutiny-response")
+        void hello3(io.vertx.mutiny.core.http.HttpServerResponse response) {
+            response.setStatusCode(200).endAndForget("Hello world!");
         }
 
         @Route(path = "/hello-response-nonvoid")
@@ -100,11 +99,11 @@ public class RouteMethodParametersTest {
         }
 
         @Route(path = "/hello-all")
-        String hello5(io.vertx.reactivex.core.http.HttpServerResponse rxResponse, RoutingContext routingContext,
+        String hello5(io.vertx.mutiny.core.http.HttpServerResponse mutinyResp, RoutingContext routingContext,
                 RoutingExchange routingExchange, HttpServerRequest request, HttpServerResponse response,
-                io.vertx.reactivex.core.http.HttpServerRequest rxRequest) {
-            assertNotNull(rxRequest);
-            assertNotNull(rxResponse);
+                io.vertx.mutiny.core.http.HttpServerRequest mutinyReq) {
+            assertNotNull(mutinyReq);
+            assertNotNull(mutinyResp);
             assertNotNull(routingContext);
             assertNotNull(routingExchange);
             assertNotNull(request);

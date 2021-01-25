@@ -80,9 +80,6 @@ public class FunctionTest {
         String uri = "https://foo.com/vertx/hello";
         testGET(uri);
         testPOST(uri);
-        uri = "https://foo.com/vertx/rx/hello";
-        testGET(uri);
-        testPOST(uri);
         uri = "https://foo.com/vertx/exchange/hello";
         testGET(uri);
     }

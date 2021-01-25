@@ -32,10 +32,6 @@
             <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-axle-mail-client</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.subethamail</groupId>
             <artifactId>subethasmtp</artifactId>
             <scope>test</scope>

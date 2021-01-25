@@ -13,6 +13,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "server")
 public interface Server {
@@ -31,7 +32,8 @@ public interface Server {
     int threads();
 
     @JsonProperty
-    Map<String, String> form();
+    @WithParentName
+    Map<String, Form> form();
 
     @JsonProperty
     Optional<Ssl> ssl();
@@ -41,6 +43,17 @@ public interface Server {
 
     @JsonProperty
     Log log();
+
+    interface Form {
+        @JsonProperty
+        String loginPage();
+
+        @JsonProperty
+        String errorPage();
+
+        @JsonProperty
+        String landingPage();
+    }
 
     interface Ssl {
         @JsonProperty

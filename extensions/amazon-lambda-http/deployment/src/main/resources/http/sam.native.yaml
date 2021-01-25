@@ -21,15 +21,12 @@
           Variables:
             DISABLE_SIGNAL_HANDLERS: true
         Events:
-          GetResource:
-            Type: Api
-            Properties:
-              Path: /{proxy+}
-              Method: any
+          HttpApiEvent:
+            Type: HttpApi
 
   Outputs:
     ${lambdaName}NativeApi:
       Description: URL for application
-      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+      Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/'
       Export:
         Name: ${lambdaName}NativeApi

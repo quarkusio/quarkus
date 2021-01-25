@@ -1,5 +1,6 @@
 package io.quarkus.it.infinispan.client;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Set;
 
@@ -15,14 +16,16 @@ public class Book {
     private final int publicationYear;
     private final Set<Author> authors;
     private final Type bookType;
+    private final BigDecimal price;
 
     @ProtoFactory
-    public Book(String title, String description, int publicationYear, Set<Author> authors, Type bookType) {
+    public Book(String title, String description, int publicationYear, Set<Author> authors, Type bookType, BigDecimal price) {
         this.title = Objects.requireNonNull(title);
         this.description = Objects.requireNonNull(description);
         this.publicationYear = publicationYear;
         this.authors = Objects.requireNonNull(authors);
         this.bookType = bookType;
+        this.price = price;
     }
 
     @ProtoField(number = 1)
@@ -50,6 +53,11 @@ public class Book {
         return bookType;
     }
 
+    @ProtoField(number = 6)
+    public BigDecimal getPrice() {
+        return price;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -61,11 +69,12 @@ public class Book {
                 title.equals(book.title) &&
                 description.equals(book.description) &&
                 authors.equals(book.authors) &&
-                bookType.equals(book.bookType);
+                bookType.equals(book.bookType) &&
+                price.equals(book.price);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(title, description, publicationYear, authors, bookType);
+        return Objects.hash(title, description, publicationYear, authors, bookType, price);
     }
 }

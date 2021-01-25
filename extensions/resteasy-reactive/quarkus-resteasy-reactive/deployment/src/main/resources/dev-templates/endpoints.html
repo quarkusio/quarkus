@@ -28,6 +28,14 @@ h5{
  </div>
  {/if}
  {/for}
+ <h5>Static Resources</h5>
+ {#for staticResources in info:staticResourcesInfo}
+ <div class="row">
+  <div class="col">
+   <a href="{staticResources}">{staticResources}</a>
+  </div>
+ </div>
+ {/for}
  <h5>Additional Endpoints</h5>
  {#for additionalEndpoint in info:additionalEndpointInfo}
  <div class="row">

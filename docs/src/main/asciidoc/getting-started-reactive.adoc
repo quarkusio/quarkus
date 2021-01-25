@@ -12,7 +12,8 @@ This guide covers:
 
 * A quick glance at the Quarkus engine and how it enables reactive
 * A brief introduction to Mutiny - the reactive programming library used by Quarkus
-* Bootstrapping a reactive application
+* The difference between RESTEasy, RESTEasy Reactive and Reactive Routes
+* The bootstrap of a reactive application using RESTEasy Reactive
 * Creating a reactive JAX-RS endpoint (asynchronous, streams...)
 * Using reactive database access
 * Interacting with other reactive APIs
@@ -46,22 +47,30 @@ The solutions are located in the `getting-started-reactive` and `getting-started
 Quarkus is reactive.
 If you look under the hood, you will find a reactive engine powering your Quarkus application.
 This engine is Eclipse Vert.x (https://vertx.io).
-Every IO interaction passes through the non-blocking and reactive Vert.x engine.
+All network I/O passes through the non-blocking and reactive Vert.x engine.
 
-image:quarkus-reactive-stack.png[alt=Quarkus is based on a reactive engine, 50%]
+image:quarkus-reactive-stack.png[alt=Quarkus is based on a reactive engine, 70%]
 
 Let's take 2 examples to explain how it works.
 Imagine an incoming HTTP request.
-The (Vert.x) HTTP server receives the request and then routes it to the application.
-If the request targets a JAX-RS resource, the routing layer invokes the resource method in a worker thread and writes the response when the data is available.
+The (Vert.x) HTTP server, embedded in Quarkus, receives the request and then routes it to the application.
+If the request targets an _imperative_ method (traditional JAX-RS, code annotated with `@Blocking`...), the routing layer invokes the resource method in a _worker_ thread and writes the response when the data is available.
 So far, nothing new or outstanding.
 The following picture depicts this behavior.
+In this case, the application code is invoked on a worker thread, and the business logic can block that thread.
 
-image:http-blocking-sequence.png[alt=Behavior when using the imperative routes, 50%]
+image:http-blocking-sequence.png[alt=Behavior when using the imperative routes, 70%]
 
-But if the HTTP request targets a reactive (non-blocking) route, the routing layer invokes the route on the IO thread giving lots of benefits such as higher concurrency and performance:
+But, if the HTTP request targets a reactive method (JAX-RS using RESTEasy Reactive, reactive routes, `@Incoming` method not annotated with `@Blocking`...), the routing layer invokes the route on the I/O thread giving lots of benefits such as higher concurrency and performance:
 
-image:http-reactive-sequence.png[alt=Behavior when using the reactive routes, 50%]
+image:http-reactive-sequence.png[alt=Behavior when using the reactive routes, 70%]
+
+Because Quarkus uses the I/O thread to invoke your code, we save context-switches, avoid large thread pool management, and so improve the resource utilization.
+However, the code must **NOT** block that thread.
+Why? Because, I/O threads are used to handle multiple concurrent requests.
+As soon as the handling of a request cannot make progress because it needs to execute some I/O, it schedules these I/O and passes a continuation.
+It releases the thread which can handle another request.
+When the scheduled I/O complete, the continuation is executed, back on the I/O thread.
 
 As a consequence, many Quarkus components are designed with reactive in mind, such as database access (PostgreSQL, MySQL, Mongo, etc.), application services (mail, template engine, etc.), messaging (Kafka, AMQP, etc.) and so on.
 But, to fully benefit from this model, the application code should be written in a non-blocking manner.
@@ -71,7 +80,7 @@ That’s where having a reactive API is an ultimate weapon.
 == Mutiny - A reactive programming library
 
 https://github.com/smallrye/smallrye-mutiny[Mutiny] is a reactive programming library allowing to express and compose asynchronous actions.
-It offers 2 types:
+It offers two types:
 
 * `io.smallrye.mutiny.Uni` - for asynchronous action providing 0 or 1 result
 * `io.smallrye.mutiny.Multi` - for multi-item (with back-pressure) streams
@@ -160,6 +169,13 @@ But enough talking, let's get our hands dirty!
 
 == Bootstrapping the project
 
+There are several ways to implement reactive application with Quarkus.
+In this guide we are going to use RESTEasy Reactive, an implementation of RESTEasy benefiting from the Quarkus reactive engine.
+By default, it invokes the HTTP endpoint on the I/O thread.
+
+IMPORTANT: While it's possible to use _traditional_ RESTEasy, you would need to add the `quarkus-resteasy-mutiny` extension, and the method will still be invoked on a _worker_ thread.
+So, while it would use reactive programming, it would still require worker threads, which defeats the purpose.
+
 The easiest way to create a new Quarkus project is to open a terminal and run the following command:
 
 For Linux and macOS users
@@ -169,7 +185,7 @@ For Linux and macOS users
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=getting-started-reactive \
-    -DclassName="org.acme.quickstart.ReactiveGreetingResource" \
+    -DclassName="org.acme.getting.started.ReactiveGreetingResource" \
     -Dpath="/hello" \
     -Dextensions="resteasy-reactive"
 cd getting-started-reactive
@@ -181,14 +197,14 @@ For Windows users
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.quickstart.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-reactive"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started-reactive -DclassName="org.acme.getting.started.ReactiveGreetingResource" -Dpath="/hello" -Dextensions="resteasy-reactive"
 ----
 
 - If using Powershell, wrap `-D` parameters in double quotes
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.quickstart.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-reactive"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started-reactive" "-DclassName=org.acme.getting.started.ReactiveGreetingResource" "-Dpath=/hello" "-Dextensions=resteasy-reactive"
 ----
 
 It generates the following in  `./getting-started-reactive`:
@@ -202,11 +218,11 @@ It generates the following in  `./getting-started-reactive`:
 
 === Reactive JAX-RS resources
 
-During the project creation, the `src/main/java/org/acme/quickstart/ReactiveGreetingResource.java` file has been created with the following content:
+During the project creation, the `src/main/java/org/acme/getting/started/ReactiveGreetingResource.java` file has been created with the following content:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -219,12 +235,31 @@ public class ReactiveGreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello";
+        return "Hello RESTEasy Reactive";
     }
 }
 ----
 
-It's a very simple REST endpoint, returning "hello" to requests on "/hello".
+It's a very simple REST endpoint, returning "Hello RESTEasy Reactive" to requests on "/hello".
+As it uses RESTEAsy Reactive, this method is called on the I/O thread.
+
+[NOTE]
+====
+To instruct Quarkus to invoke this method on a _worker_ thread, annotate it with the `io.smallrye.common.annotation.Blocking` annotation.
+You can use `@Blocking` on a method, class or enable it for the whole application by annotated an `Application` class:
+
+[source, java]
+----
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.core.Application;
+import io.smallrye.common.annotation.Blocking;
+
+@ApplicationPath("/")
+@Blocking
+public class RestBlockingApplication extends Application {
+}
+----
+====
 
 Let's now create a `ReactiveGreetingService` class with the following content:
 
@@ -262,8 +297,6 @@ import javax.ws.rs.core.MediaType;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import org.jboss.resteasy.annotations.SseElementType;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.reactivestreams.Publisher;
 
 @Path("/hello")
@@ -288,7 +321,8 @@ public class ReactiveGreetingResource {
 ----
 
 The `ReactiveGreetingService` class contains a straightforward method producing a `Uni`.
-While, in this example, the resulting item is emitted immediately, you can imagine any async API producing a `Uni`. We cover this later in this guide.
+While, in this example, the resulting item is emitted immediately, you can imagine any async API producing a `Uni`.
+We cover this later in this guide.
 
 Now, start the application using:
 
@@ -297,7 +331,7 @@ Now, start the application using:
 ./mvnw quarkus:dev
 ----
 
-Once running, check that you get the expected greeting message by opening http://localhost:8080/hello/greeting/neo.
+Once running, check you get the expected greeting message by opening http://localhost:8080/hello/greeting/neo.
 
 == Handling streams
 So far, we only return an asynchronous result.
@@ -315,6 +349,8 @@ public Multi<String> greetings(int count, String name) {
 }
 ----
 
+TIP: you may need to add the `import io.smallrye.mutiny.Multi;` and `import java.time.Duration;` statements.
+
 It generates a greeting message every second and stops after `count` messages.
 
 In the `ReactiveGreetingResource` add the following method:
@@ -322,7 +358,7 @@ In the `ReactiveGreetingResource` add the following method:
 [source, java]
 ----
 @GET
-@Produces(MediaType.TEXT_PLAIN)
+@Produces(MediaType.APPLICATION_JSON)
 @Path("/greeting/{count}/{name}")
 public Multi<String> greetings(int count, String name) {
   return service.greetings(count, name);
@@ -337,7 +373,7 @@ So calling the endpoint produces something like:
 [source,shell]
 ----
 $ curl http://localhost:8080/hello/greeting/3/neo
-hello neo - 0hello neo - 1hello neo - 2
+["hello neo - 0", "hello neo - 1", "hello neo - 2"]
 ----
 
 We can also generate Server-Sent Event responses by returning a `Multi`:
@@ -353,8 +389,10 @@ public Multi<String> greetingsAsStream(int count, String name) {
 }
 ----
 
-The only difference with the previous snippet is the produced type and the `@SseElementType` annotation indicating the type of each event.
+The only difference with the previous snippet is the produced type and the `@RestSseElementType` annotation indicating the type of each event.
 As the `@Produces` annotation defines `SERVER_SENT_EVENTS`, JAX-RS needs it to knows the content type of each (nested) event.
+
+TIP: You may need to add the `import org.jboss.resteasy.reactive.RestSseElementType;` statement.
 
 You can see the result using:
 

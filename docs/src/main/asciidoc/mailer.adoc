@@ -34,7 +34,9 @@ Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=sending-email-quickstart \
-    -Dextensions="mailer"
+    -DclassName="org.acme.mailer.SimpleMailerResource" \
+    -Dpath="/simple" \
+    -Dextensions="resteasy,mailer"
 cd sending-email-quickstart
 ----
 

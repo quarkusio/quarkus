@@ -54,7 +54,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=hibernate-search-orm-elasticsearch-quickstart \
     -DclassName="org.acme.hibernate.search.elasticsearch.LibraryResource" \
     -Dpath="/library" \
-    -Dextensions="hibernate-orm-panache, hibernate-search-orm-elasticsearch, resteasy-jackson, jdbc-postgresql"
+    -Dextensions="resteasy,hibernate-orm-panache,hibernate-search-orm-elasticsearch,resteasy-jackson,jdbc-postgresql"
 cd hibernate-search-orm-elasticsearch-quickstart
 ----
 

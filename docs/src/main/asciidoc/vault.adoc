@@ -241,7 +241,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=vault-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="vault"
+    -Dextensions="resteasy,vault"
 cd vault-quickstart
 ----
 

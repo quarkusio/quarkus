@@ -42,7 +42,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=spring-boot-properties-quickstart \
     -DclassName="org.acme.spring.boot.properties.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-boot-properties"
+    -Dextensions="resteasy,spring-boot-properties"
 cd spring-boot-properties-quickstart
 ----
 

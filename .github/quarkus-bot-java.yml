@@ -61,6 +61,7 @@ triage:
               matches("hibernate", title)
               && !matches("hibernate.validator", title)
               && !matches("hibernate.search", title)
+              && !matches("hibernate.reactive", title)
       notify: [gsmet, Sanne, yrodiere]
       directories:
         - extensions/hibernate-orm/

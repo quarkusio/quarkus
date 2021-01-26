@@ -292,7 +292,7 @@ public class DevConsoleProcessor {
     public void setupActions(BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
-                nonApplicationRootPathBuildItem.adjustPath("/dev/"), "Quarkus DEV Console"));
+                nonApplicationRootPathBuildItem.adjustPath("/dev/"), "Dev UI"));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

@@ -38,14 +38,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jsonp</artifactId>
         </dependency>
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-json-p-provider</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

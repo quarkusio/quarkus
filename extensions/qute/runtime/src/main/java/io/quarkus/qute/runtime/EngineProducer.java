@@ -76,6 +76,7 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.rawResolver());
         builder.addValueResolver(ValueResolvers.logicalAndResolver());
         builder.addValueResolver(ValueResolvers.logicalOrResolver());
+        builder.addValueResolver(ValueResolvers.orEmpty());
 
         // If needed use a specific result mapper for the selected strategy  
         switch (runtimeConfig.propertyNotFoundStrategy) {

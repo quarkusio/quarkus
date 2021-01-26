@@ -218,4 +218,12 @@ public class SimpleTest {
         assertEquals("1:2:3:4:5",
                 engine.parse("{d1}:{d2}:{d3}:{d4}:{d5}").data("d1", 1, "d2", 2, "d3", 3, "d4", 4, "d5", 5).render());
     }
+
+    @Test
+    public void testOrEmpty() {
+        Engine engine = Engine.builder().addDefaultSectionHelpers()
+                .addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.orEmpty())
+                .build();
+        assertEquals("STARTEND", engine.parse("START{#for pet in pets.orEmpty}...{/for}END").data("pets", null).render());
+    }
 }

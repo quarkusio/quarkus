@@ -179,6 +179,8 @@ public class NativeImageMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        getLog().warn(
+                "The quarkus:native-image goal is deprecated, and will be removed in a future version. To build a native executable set the config property quarkus.package.type=native. For more info see https://quarkus.io/guides/building-native-image");
 
         if (project.getPackaging().equals("pom") && appArtifact == null) {
             getLog().info("Type of the artifact is POM and appArtifact parameter has not been set, skipping native-image goal");

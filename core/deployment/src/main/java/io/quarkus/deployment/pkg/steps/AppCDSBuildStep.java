@@ -148,7 +148,7 @@ public class AppCDSBuildStep {
     private Path createAppCDS(JarBuildItem jarResult, String javaBin,
             Path classesLstPath, boolean isFastFar) {
 
-        Path workingDirectory = isFastFar ? jarResult.getPath().getParent().getParent() : jarResult.getPath().getParent();
+        Path workingDirectory = jarResult.getPath().getParent();
         Path appCDSPath = workingDirectory.resolve("app-cds.jsa");
         if (appCDSPath.toFile().exists()) {
             try {

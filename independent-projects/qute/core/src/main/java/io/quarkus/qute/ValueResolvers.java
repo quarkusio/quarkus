@@ -4,6 +4,7 @@ import static io.quarkus.qute.Booleans.isFalsy;
 
 import io.quarkus.qute.Results.Result;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -105,6 +106,25 @@ public final class ValueResolvers {
                 return CompletableFuture.completedFuture(context.getBase());
             }
 
+        };
+    }
+
+    /**
+     * Return an empty list if the base object is null or {@link Result#NOT_FOUND}.
+     */
+    public static ValueResolver orEmpty() {
+        CompletionStage<Object> empty = CompletableFuture.completedFuture(Collections.emptyList());
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                return (context.getBase() == null || Results.Result.NOT_FOUND.equals(context.getBase()))
+                        && context.getName().equals("orEmpty");
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                return empty;
+            }
         };
     }
 

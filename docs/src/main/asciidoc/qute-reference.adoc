@@ -344,26 +344,31 @@ Another built-in section that modifies the current context object is `let`/`set`
 
 NOTE: The current context can be accessed via the implicit binding `this`.
 
-==== Built-in Operators
+==== Built-in Resolvers
 
 |===
-|Operator |Description	|Examples
+|Name |Description	|Examples
 
-|Elvis 
+|Elvis Operator
 |Outputs the default value if the previous part cannot be resolved or resolves to `null`.
 |`{person.name ?: 'John'}`, `{person.name or 'John'}`
 
-|Ternary 
+|orEmpty
+|Outputs an empty list if the previous part cannot be resolved or resolves to `null`.
+|`{#for pet in pets.orEmpty}{pet.name}{/for}`
+
+|Ternary Operator
 |Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
 
-|Logical AND 
+|Logical AND Operator
 |Outputs `true` if both parts are not `falsy` as described in the <<if_section>>. The parameter is only evaluated if needed.
 |`{person.isActive && person.hasStyle}`
 
-|Logical OR 
+|Logical OR Operator
 |Outputs `true` if any of the parts is not `falsy` as described in the <<if_section>>. The parameter is only evaluated if needed.
 |`{person.isActive \|\| person.hasStyle}`
+
 |===
 
 TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the <<if_section>>.

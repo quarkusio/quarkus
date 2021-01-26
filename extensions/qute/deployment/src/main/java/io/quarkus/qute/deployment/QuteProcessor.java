@@ -1006,8 +1006,9 @@ public class QuteProcessor {
         excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<TypeCheck>() {
             @Override
             public boolean test(TypeCheck check) {
-                // RawString - these properties can be used on any object
-                if (check.isProperty() && ("raw".equals(check.name) || "safe".equals(check.name))) {
+                // RawString and orEmpty - these properties can be used on any object
+                if (check.isProperty()
+                        && ("raw".equals(check.name) || "safe".equals(check.name) || "orEmpty".equals(check.name))) {
                     return true;
                 }
                 // Elvis, ternary and logical operators

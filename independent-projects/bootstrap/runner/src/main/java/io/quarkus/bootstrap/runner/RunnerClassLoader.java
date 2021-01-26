@@ -147,7 +147,7 @@ public final class RunnerClassLoader extends ClassLoader {
     }
 
     private String sanitizeName(final String name) {
-        if (name.charAt(0) == '/') {
+        if (name.length() > 0 && name.charAt(0) == '/') {
             return name.substring(1);
         }
         return name;

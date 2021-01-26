@@ -1,5 +1,6 @@
 package io.quarkus.it.infinispan.client;
 
+import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Collections;
@@ -105,9 +106,9 @@ public class TestServlet {
         log.info("Added continuous query listener");
 
         cache.put("book1", new Book("Game of Thrones", "Lots of people perish", 2010,
-                Collections.singleton(new Author("George", "Martin")), Type.FANTASY));
+                Collections.singleton(new Author("George", "Martin")), Type.FANTASY, new BigDecimal("23.99")));
         cache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
-                Collections.singleton(new Author("Son", "Martin")), Type.FANTASY));
+                Collections.singleton(new Author("Son", "Martin")), Type.FANTASY, new BigDecimal("54.99")));
 
         magazineCache.put("first-mad", new Magazine("MAD", YearMonth.of(1952, 10),
                 Collections.singletonList("Blob named Melvin")));
@@ -249,7 +250,7 @@ public class TestServlet {
         long nearCacheInvalidations = stats.getNearCacheInvalidations();
 
         Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010,
-                Collections.emptySet(), Type.PROGRAMMING);
+                Collections.emptySet(), Type.PROGRAMMING, new BigDecimal("12.99"));
 
         String id = "nearcache";
         cache.put(id, nearCacheBook);
@@ -283,7 +284,8 @@ public class TestServlet {
             return "second retrieved book doesn't match";
         }
 
-        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet(), Type.PROGRAMMING);
+        nearCacheBook = new Book("Near Cache Book", "Just here to test",
+                2011, Collections.emptySet(), Type.PROGRAMMING, new BigDecimal("0.99"));
 
         cache.put(id, nearCacheBook);
 
@@ -312,7 +314,7 @@ public class TestServlet {
     @Consumes(MediaType.TEXT_PLAIN)
     public Response createItem(String value, @PathParam("id") String id) {
         ensureStart();
-        Book book = new Book(id, value, 2019, Collections.emptySet(), Type.PROGRAMMING);
+        Book book = new Book(id, value, 2019, Collections.emptySet(), Type.PROGRAMMING, new BigDecimal("9.99"));
         Book previous = cache.putIfAbsent(id, book);
         if (previous == null) {
             //status code 201

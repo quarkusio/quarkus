@@ -130,8 +130,8 @@
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.19.0</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>11.0.8.Final</infinispan.version>
-        <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
+        <infinispan.version>12.0.0.Final</infinispan.version>
+        <infinispan.protostream.version>4.4.0.Alpha4</infinispan.protostream.version>
         <caffeine.version>2.8.8</caffeine.version>
         <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>

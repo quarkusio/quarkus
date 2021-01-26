@@ -267,9 +267,12 @@ public class OpenshiftProcessor {
         if (packageConfig.isFastJar()) {
             createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                     jar.getPath().getParent());
-        } else {
+        } else if (jar.getLibraryDir() != null) { //When using uber-jar the libraryDir is going to be null, potentially causing NPE.
             createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                     jar.getPath(), jar.getLibraryDir());
+        } else {
+            createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
+                    jar.getPath());
         }
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }

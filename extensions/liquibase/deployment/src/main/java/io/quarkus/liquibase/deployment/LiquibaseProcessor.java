@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,7 +48,11 @@ import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
+import liquibase.change.Change;
+import liquibase.change.core.CreateProcedureChange;
+import liquibase.change.core.CreateViewChange;
 import liquibase.change.core.LoadDataChange;
+import liquibase.change.core.SQLFileChange;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.ChangeSet;
 import liquibase.changelog.DatabaseChangeLog;
@@ -307,9 +312,8 @@ class LiquibaseProcessor {
                     result.add(changeSet.getFilePath());
 
                     changeSet.getChanges().stream()
-                            .filter(c -> c instanceof LoadDataChange)
-                            .map(c -> ((LoadDataChange) c).getFile())
-                            .forEach(result::add);
+                            .map(this::extractChangeFile)
+                            .forEach(changeFile -> changeFile.ifPresent(result::add));
 
                     // get all parents of the changeSet
                     DatabaseChangeLog parent = changeSet.getChangeLog();
@@ -327,4 +331,19 @@ class LiquibaseProcessor {
         return Collections.emptySet();
     }
 
+    private Optional<String> extractChangeFile(Change change) {
+        if (change instanceof LoadDataChange) {
+            return Optional.of(((LoadDataChange) change).getFile());
+        }
+        if (change instanceof SQLFileChange) {
+            return Optional.of(((SQLFileChange) change).getPath());
+        }
+        if (change instanceof CreateProcedureChange) {
+            return Optional.of(((CreateProcedureChange) change).getPath());
+        }
+        if (change instanceof CreateViewChange) {
+            return Optional.of(((CreateViewChange) change).getPath());
+        }
+        return Optional.empty();
+    }
 }

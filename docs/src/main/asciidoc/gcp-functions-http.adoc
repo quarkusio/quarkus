@@ -51,7 +51,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=google-cloud-functions-http \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="google-cloud-functions-http,resteasy-json,undertow,vertx-web,funqy-http"
+    -Dextensions="resteasy,google-cloud-functions-http,resteasy-json,undertow,vertx-web,funqy-http"
 ----
 
 == Login to Google Cloud

@@ -102,13 +102,35 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "platformVersion", required = false)
     private String bomVersion;
 
+    /**
+     * The {@link #path} will define the REST path of the generated code when picking only one of those extensions resteasy,
+     * resteasy-reactive and spring-web.
+     * <br />
+     * If more than one of those extensions are picked, this parameter will be ignored.
+     * <br />
+     * This is @Deprecated because using a generic path parameters with multiple example does not make sense and lead to
+     * confusion.
+     * More info: https://github.com/quarkusio/quarkus/issues/14437
+     * <br />
+     * {@code className}
+     */
     @Parameter(property = "path")
+    @Deprecated
     private String path;
 
     /**
-     * This parameter is only working with the RESTEasy and Spring Web extensions and is going to be removed.
-     * Use packageName instead.
-     *
+     * The {@link #className} will define the generated class names when picking only one of those extensions resteasy,
+     * resteasy-reactive and spring-web.
+     * <br />
+     * If more than one of those extensions are picked, then only the package name part will be used as {@link #packageName}
+     * <br />
+     * This is @Deprecated because using a generic className parameters with multiple example does not make sense and lead to
+     * confusion.
+     * More info: https://github.com/quarkusio/quarkus/issues/14437
+     * <br />
+     * By default, the {@link #projectGroupId} is used as package for generated classes (you can also use {@link #packageName}
+     * to have them different).
+     * <br />
      * {@code className}
      */
     @Parameter(property = "className")
@@ -116,7 +138,11 @@ public class CreateProjectMojo extends AbstractMojo {
     private String className;
 
     /**
-     * If not set, groupId will be used
+     * Set the package name of the generated classes.
+     * <br />
+     * If not set, {@link #projectGroupId} will be used as {@link #packageName}
+     *
+     * {@code packageName}
      */
     @Parameter(property = "packageName")
     private String packageName;

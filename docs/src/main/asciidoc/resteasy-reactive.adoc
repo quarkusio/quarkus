@@ -470,7 +470,7 @@ If you want to stream your response element by element, you can make your endpoi
 link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] type (from https://smallrye.io/smallrye-mutiny/[Mutiny]).
 This is especially useful for streaming text or binary data.
 
-This example, using link:reactive-messaging-http.html[Reactive Messaging] shows how to stream
+This example, using link:reactive-messaging-http[Reactive Messaging] shows how to stream
 text data:
 
 [source,java]
@@ -698,10 +698,104 @@ In both cases, importing those modules will allow HTTP message bodies to be read
 and serialised to JSON, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
+==== Advanced Jackson-specific features
+
+When using the `quarkus-resteasy-reactive-jackson` extension there are some advanced features that RESTEasy Reactive supports.
+
+===== @JsonView support
+
+JAX-RS methods can be annotated with https://fasterxml.github.io/jackson-annotations/javadoc/2.10/com/fasterxml/jackson/annotation/JsonView.html[@JsonView]
+in order to customize the serialization of the returned POJO, on a per method-basis. This is best explained with an example.
+
+A typical use of `@JsonView` is to hide certain fields on certain methods. In that vein, let's define two views:
+
+[source,java]
+----
+public class Views {
+
+    public static class Public {
+    }
+
+    public static class Private extends Public {
+    }
+}
+----
+
+Let's assume we have the `User` POJO on which we want to hide some field during serialization. A simple example of this is:
+
+[source,java]
+----
+public class User {
+
+    @JsonView(Views.Private.class)
+    public int id;
+
+    @JsonView(Views.Public.class)
+    public String name;
+}
+----
+
+Depending on the JAX-RS method that returns this user, we might want to exclude the `id` field from serialization - for example you might want an insecure method
+to not expose this field. The way we can achieve that in RESTEasy Reactive is shown in the following example:
+
+[source,java]
+----
+@JsonView(Views.Public.class)
+@GET
+@Path("/public")
+public User userPublic() {
+    return testUser();
+}
+
+@JsonView(Views.Private.class)
+@GET
+@Path("/private")
+public User userPrivate() {
+    return testUser();
+}
+----
+
+When the result the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
+The result of `userPrivate` however will include the `id` as expected when serialized.
+
+===== Completely customized per method serialization
+
+There are times when you need to completely customize the serialization of a POJO on a per JAX-RS method basis. For such use cases, the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` annotation
+is a great tool, as it allows you to configure a per-method `com.fasterxml.jackson.databind.ObjectWriter` which can be configured at will.
+
+Here is an example use case:
+
+[source,java]
+----
+@CustomSerialization(UnquotedFields.class)
+@GET
+@Path("/invalid-use-of-custom-serializer")
+public User invalidUseOfCustomSerializer() {
+    return testUser();
+}
+----
+
+where `UnquotedFields` is a `BiFunction` defined as so:
+
+[source,java]
+----
+public static class UnquotedFields implements BiFunction<ObjectMapper, Type, ObjectWriter> {
+
+    @Override
+    public ObjectWriter apply(ObjectMapper objectMapper, Type type) {
+        return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+    }
+}
+----
+
+Essentially what this class does is force Jackson to not include quotes in the field names.
+
+It is important to note that this customization is only performed for the serialization of the JAX-RS methods that use `@CustomSerialization(UnquotedFields.class)`.
+
 == More advanced usage
 
 Here are some more advanced topics that you may not need to know about initially, but
-could prove useful for more complex use-cases.
+could prove useful for more complex use cases.
 
 === Execution model, blocking, non-blocking
 
@@ -1426,7 +1520,8 @@ public class Endpoint {
 
 When we call `GET /conditional` the first time, we will get this response:
 
-```
+[source]
+----
 HTTP/1.1 200 OK
 Content-Type: text/plain;charset=UTF-8
 ETag: "v1"
@@ -1434,28 +1529,31 @@ Last-Modified: Wed, 09 Dec 2020 16:10:19 GMT
 Content-Length: 13
 
 Some resource
-```
+----
 
 So now if we want to check if we need to fetch a new version, we can make the following request:
 
-```
+[source]
+----
 GET /conditional HTTP/1.1
 Host: localhost:8080
 If-Modified-Since: Wed, 09 Dec 2020 16:10:19 GMT
-```
+----
 
 And we would get the following response:
 
-```
+[source]
+----
 HTTP/1.1 304 Not Modified
-```
+----
 
 Because the resource has not been modified since that date. This saves on sending the resource,
 but can also help your users detect concurrent modification, for example, let's suppose that one
 client wants to update the resource, but another user has modified it since. You can follow the
 previous `GET` request with this update:
 
-```
+[source]
+----
 PUT /conditional HTTP/1.1
 Host: localhost:8080
 If-Unmodified-Since: Wed, 09 Dec 2020 16:25:43 GMT
@@ -1464,16 +1562,17 @@ Content-Length: 8
 Content-Type: text/plain
 
 newstuff
-```
+----
 
 And if some other user has modified the resource between your `GET` and your `PUT` you would
 get this answer back:
 
-```
+[source]
+----
 HTTP/1.1 412 Precondition Failed
 ETag: "v2"
 Content-Length: 0
-```
+----
 
 === Negotiation
 

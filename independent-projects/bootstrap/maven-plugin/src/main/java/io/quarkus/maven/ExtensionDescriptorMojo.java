@@ -69,6 +69,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
+    private static final String METADATA = "metadata";
 
     /**
      * The entry point to Aether, i.e. the component doing all the work.
@@ -273,7 +274,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.put("description", project.getDescription());
         }
 
-        setBuiltWithQuarkusCoreVersion(extObject);
+        setBuiltWithQuarkusCoreVersion(mapper, extObject);
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
@@ -287,11 +288,19 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
-    private void setBuiltWithQuarkusCoreVersion(ObjectNode extObject) throws MojoExecutionException {
+    private void setBuiltWithQuarkusCoreVersion(ObjectMapper mapper, ObjectNode extObject) throws MojoExecutionException {
         final QuarkusCoreDeploymentVersionLocator coreVersionLocator = new QuarkusCoreDeploymentVersionLocator();
         collectDeploymentDeps().getRoot().accept(coreVersionLocator);
         if (coreVersionLocator.coreVersion != null) {
-            extObject.put("built-with-quarkus-core", coreVersionLocator.coreVersion);
+            ObjectNode metadata;
+            JsonNode mvalue = extObject.get(METADATA);
+            if (mvalue != null && mvalue.isObject()) {
+                metadata = (ObjectNode) mvalue;
+            } else {
+                metadata = mapper.createObjectNode();
+            }
+            metadata.put("built-with-quarkus-core", coreVersionLocator.coreVersion);
+            extObject.set(METADATA, metadata);
         } else if (!ignoreNotDetectedQuarkusCoreVersion) {
             throw new MojoExecutionException("Failed to determine the Quarkus core version used to build the extension");
         }
@@ -477,7 +486,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.remove("artifactId");
         }
 
-        JsonNode mvalue = extObject.get("metadata");
+        JsonNode mvalue = extObject.get(METADATA);
         if (mvalue != null && mvalue.isObject()) {
             metadata = (ObjectNode) mvalue;
         } else {
@@ -499,7 +508,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             extObject.remove("shortName");
         }
 
-        extObject.set("metadata", metadata);
+        extObject.set(METADATA, metadata);
 
     }
 
@@ -539,8 +548,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 return false;
             }
             org.eclipse.aether.artifact.Artifact artifact = dep.getArtifact();
-            if (artifact != null && artifact.getArtifactId().equals("quarkus-core-deployment")) {
-                coreVersion = artifact.getVersion();
+            if (artifact != null && artifact.getArtifactId().equals("quarkus-core")) {
+                coreVersion = artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
                 if ("io.quarkus".equals(artifact.getGroupId())) {
                     skipTheRest = true;
                 }

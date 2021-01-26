@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 
@@ -109,6 +110,9 @@ class JaxbProcessor {
     private static final DotName XML_ANY_ELEMENT = DotName.createSimple(XmlAnyElement.class.getName());
 
     private static final List<DotName> JAXB_ROOT_ANNOTATIONS = Arrays.asList(XML_ROOT_ELEMENT, XML_TYPE, XML_REGISTRY);
+
+    private static final List<DotName> IGNORE_TYPES = Collections
+            .singletonList(DotName.createSimple("javax.xml.datatype.XMLGregorianCalendar"));
 
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
@@ -175,6 +179,13 @@ class JaxbProcessor {
                 stream.filter(p -> p.getFileName().toString().equals("jaxb.index"))
                         .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass));
             }
+        }
+    }
+
+    @BuildStep
+    void ignoreWarnings(BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> ignoreWarningProducer) {
+        for (DotName type : IGNORE_TYPES) {
+            ignoreWarningProducer.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(type));
         }
     }
 

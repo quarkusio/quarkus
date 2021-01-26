@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Priorities;
@@ -56,7 +57,9 @@ import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -99,6 +102,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationRedirectExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
+import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -224,7 +228,8 @@ public class ResteasyReactiveProcessor {
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             ExceptionMappersBuildItem exceptionMappersBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
-            ContextResolversBuildItem contextResolversBuildItem) throws NoSuchMethodException {
+            ContextResolversBuildItem contextResolversBuildItem,
+            List<MethodScannerBuildItem> methodScanners) throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -281,6 +286,8 @@ public class ResteasyReactiveProcessor {
                 MethodCreator initConverters = c.getMethodCreator("init", void.class, Deployment.class)) {
 
             QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
+                    .addMethodScanners(
+                            methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(Collectors.toList()))
                     .setIndex(index)
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
@@ -526,6 +533,16 @@ public class ResteasyReactiveProcessor {
                 UnauthorizedExceptionMapper.class.getName(),
                 UnauthorizedException.class.getName(),
                 Priorities.USER + 1, false));
+    }
+
+    @BuildStep
+    MethodScannerBuildItem integrateSecurityOverrideSupport() {
+        return new MethodScannerBuildItem(new MethodScanner() {
+            @Override
+            public List<HandlerChainCustomizer> scan(MethodInfo method, Map<String, Object> methodContext) {
+                return Collections.singletonList(new SecurityContextOverrideHandler.Customizer());
+            }
+        });
     }
 
     private String determineApplicationPath(IndexView index) {

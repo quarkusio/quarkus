@@ -51,7 +51,8 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=amqp-quickstart \
-    -Dextensions="amqp"
+    -Dextensions="amqp" \
+    -DnoExamples
 cd amqp-quickstart
 ----
 

@@ -100,10 +100,7 @@ public class OidcClientRecorder {
 
         WebClientOptions options = new WebClientOptions();
 
-        URI authServerUri = URI.create(authServerUriString);
-        if (authServerUri.getPort() != -1) {
-            options.setDefaultPort(authServerUri.getPort());
-        }
+        URI authServerUri = URI.create(authServerUriString); // create uri for parse exception
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
@@ -111,9 +108,9 @@ public class OidcClientRecorder {
         Uni<String> tokenRequestUriUni = null;
         if (!oidcConfig.discoveryEnabled) {
             tokenRequestUriUni = Uni.createFrom()
-                    .item(OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath));
+                    .item(OidcCommonUtils.getOidcEndpointUrl(authServerUri.toString(), oidcConfig.tokenPath));
         } else {
-            tokenRequestUriUni = discoverTokenRequestUri(client, authServerUriString, oidcConfig);
+            tokenRequestUriUni = discoverTokenRequestUri(client, authServerUri.toString(), oidcConfig);
         }
         return tokenRequestUriUni.onItem().transform(new Function<String, OidcClient>() {
 
@@ -195,13 +192,13 @@ public class OidcClientRecorder {
 
     private static Uni<String> discoverTokenEndpoint(WebClient client, String authServerUrl) {
         String discoveryUrl = authServerUrl + "/.well-known/openid-configuration";
-        return client.get(discoveryUrl).send().onItem().transformToUni(resp -> {
+        return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
             if (resp.statusCode() == 200) {
                 JsonObject json = resp.bodyAsJsonObject();
-                return Uni.createFrom().item(json.getString("token_endpoint"));
+                return json.getString("token_endpoint");
             } else {
                 LOG.tracef("Discovery has failed, status code: %d", resp.statusCode());
-                return Uni.createFrom().nullItem();
+                return null;
             }
         });
     }

@@ -34,6 +34,7 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInt
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.processor.scanning.AsyncReturnTypeScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveContextResolverScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExceptionMappingScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
@@ -65,6 +66,11 @@ import io.quarkus.resteasy.reactive.spi.ParamConverterBuildItem;
  * Processor that handles scanning for types and turning them into build items
  */
 public class ResteasyReactiveScanningProcessor {
+
+    @BuildStep
+    public MethodScannerBuildItem asyncSupport() {
+        return new MethodScannerBuildItem(new AsyncReturnTypeScanner());
+    }
 
     @BuildStep
     public ResourceInterceptorsContributorBuildItem scanForInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,

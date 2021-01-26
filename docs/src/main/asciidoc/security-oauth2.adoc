@@ -42,7 +42,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=security-oauth2-quickstart \
     -DclassName="org.acme.security.oauth2.TokenSecuredResource" \
     -Dpath="/secured" \
-    -Dextensions="resteasy-jackson, security-oauth2"
+    -Dextensions="resteasy,resteasy-jackson,security-oauth2"
 cd security-oauth2-quickstart
 ----
 

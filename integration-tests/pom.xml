@@ -97,6 +97,7 @@
         <module>container-image</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
+        <module>kubernetes-service-binding-jdbc</module>
         <module>openshift-client</module>
         <module>tika</module>
         <module>neo4j</module>

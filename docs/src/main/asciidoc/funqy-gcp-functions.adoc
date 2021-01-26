@@ -58,7 +58,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=funqy-google-cloud-functions \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="funqy-google-cloud-functions"
+    -Dextensions="resteasy,funqy-google-cloud-functions"
 ----
 
 Now, let's remove what's not needed inside the generated application:

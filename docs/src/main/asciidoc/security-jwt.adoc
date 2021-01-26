@@ -34,7 +34,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=security-jwt-quickstart \
     -DclassName="org.acme.security.jwt.TokenSecuredResource" \
     -Dpath="/secured" \
-    -Dextensions="resteasy-jackson, smallrye-jwt, smallrye-jwt-build"
+    -Dextensions="resteasy,resteasy-jackson,smallrye-jwt,smallrye-jwt-build"
 cd security-jwt-quickstart
 ----
 

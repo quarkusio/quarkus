@@ -121,6 +121,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                                 //resume happened in the meantime
                                 suspended = false;
                                 exec = this.executor;
+                                // prevent future suspensions from re-submitting the task
+                                this.executor = null;
                             } else if (suspended) {
                                 running = false;
                                 return;
@@ -221,15 +223,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     public T setRunning(boolean running) {
         this.running = running;
-        return (T) this;
-    }
-
-    public Executor getExecutor() {
-        return executor;
-    }
-
-    public T setExecutor(Executor executor) {
-        this.executor = executor;
         return (T) this;
     }
 

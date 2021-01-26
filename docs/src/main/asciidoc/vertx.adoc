@@ -27,7 +27,9 @@ If you are creating a new project, set the `extensions` parameter are follows:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vertx"
+    -DclassName="org.acme.vertx.GreetingResource" \
+    -Dpath="/hello" \
+    -Dextensions="resteasy,vertx"
 cd vertx-quickstart
 ----
 

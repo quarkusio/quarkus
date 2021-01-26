@@ -45,7 +45,8 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=websockets-quickstart \
-    -Dextensions="undertow-websockets"
+    -Dextensions="undertow-websockets" \
+    -DnoExamples
 cd websockets-quickstart
 ----
 

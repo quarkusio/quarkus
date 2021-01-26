@@ -34,7 +34,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=kubernetes-quickstart \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
-    -Dextensions="kubernetes, jib"
+    -Dextensions="resteasy,kubernetes,jib"
 cd kubernetes-quickstart
 ----
 
@@ -160,6 +160,22 @@ quarkus.container-image.tag=1.0       #optional, defaults to the application ver
 ----
 
 The image that will be used in the generated manifests will be `quarkus/demo-app:1.0`
+
+=== Namespace
+
+By default Quarkus omits the namespace in the generated manifests, rather than enforce the `default` namespace. That means that you can apply the manifest to your chosen namespace when using `kubctl`, which in the example below is `test`:
+
+[source,bash]
+----
+kubectl apply -f target/kubernetes/kubernetes.json -n=test
+----
+
+To specify the namespace in your manifest customize with the following property in your `application.properties`:
+
+[source,properties]
+----
+quarkus.kubernetes.namespace=mynamespace 
+----
 
 === Defining a Docker registry
 
@@ -587,6 +603,7 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.version                         | String                                    |             | ${quarkus.container-image.tag}
 | quarkus.kubernetes.part-of                         | String                                    |             |
 | quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             |
+| quarkus.kubernetes.namespace                       | String                                    |             |
 | quarkus.kubernetes.labels                          | Map                                       |             |
 | quarkus.kubernetes.annotations                     | Map                                       |             |
 | quarkus.kubernetes.env-vars                        | Map<String, Env>                          |             |

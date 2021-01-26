@@ -44,7 +44,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=spring-di-quickstart \
     -DclassName="org.acme.spring.di.GreeterResource" \
     -Dpath="/greeting" \
-    -Dextensions="spring-di"
+    -Dextensions="resteasy,spring-di"
 cd spring-di-quickstart
 ----
 

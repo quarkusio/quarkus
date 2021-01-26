@@ -31,7 +31,7 @@ public final class SkipConcurrentExecutionInvoker implements ScheduledInvoker {
     }
 
     @Override
-    public void invoke(ScheduledExecution execution) {
+    public void invoke(ScheduledExecution execution) throws Exception {
         if (running.compareAndSet(false, true)) {
             try {
                 delegate.invoke(execution);

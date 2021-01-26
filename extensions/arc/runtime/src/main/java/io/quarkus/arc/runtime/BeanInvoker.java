@@ -10,7 +10,7 @@ import io.quarkus.arc.ManagedContext;
  */
 public interface BeanInvoker<T> {
 
-    default void invoke(T param) {
+    default void invoke(T param) throws Exception {
         ManagedContext requestContext = Arc.container().requestContext();
         if (requestContext.isActive()) {
             invokeBean(param);
@@ -24,6 +24,6 @@ public interface BeanInvoker<T> {
         }
     }
 
-    void invokeBean(T param);
+    void invokeBean(T param) throws Exception;
 
 }

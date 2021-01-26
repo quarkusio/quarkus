@@ -88,8 +88,13 @@ public class VertxRecorder {
                                 public void handle(Promise<Object> event) {
                                     try {
                                         invoker.invoke(m);
-                                    } catch (Throwable e) {
-                                        m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                    } catch (Exception e) {
+                                        if (m.replyAddress() == null) {
+                                            // No reply handler
+                                            throw wrapIfNecessary(e);
+                                        } else {
+                                            m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                        }
                                     }
                                     event.complete();
                                 }
@@ -97,8 +102,13 @@ public class VertxRecorder {
                         } else {
                             try {
                                 invoker.invoke(m);
-                            } catch (Throwable e) {
-                                m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                            } catch (Exception e) {
+                                if (m.replyAddress() == null) {
+                                    // No reply handler
+                                    throw wrapIfNecessary(e);
+                                } else {
+                                    m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                }
                             }
                         }
                     }
@@ -120,6 +130,14 @@ public class VertxRecorder {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Unable to register all message consumer methods", e);
             }
+        }
+    }
+
+    private RuntimeException wrapIfNecessary(Exception e) {
+        if (e instanceof RuntimeException) {
+            return (RuntimeException) e;
+        } else {
+            return new RuntimeException(e);
         }
     }
 

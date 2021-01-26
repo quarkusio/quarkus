@@ -263,7 +263,8 @@ public class SchedulerProcessor {
                 .build();
 
         // The descriptor is: void invokeBean(Object execution)
-        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class);
+        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class)
+                .addException(Exception.class);
         // InjectableBean<Foo: bean = Arc.container().bean("1");
         // InstanceHandle<Foo> handle = Arc.container().instance(bean);
         // handle.get().ping();

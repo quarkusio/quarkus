@@ -91,11 +91,12 @@ public abstract class Serialisers {
             List<ResourceReader> goodTypeReaders) {
         if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
             List<ResourceReader> mediaTypeMatchingReaders = new ArrayList<>(goodTypeReaders.size());
-            for (ResourceReader goodTypeReader : goodTypeReaders) {
+            for (int i = 0; i < goodTypeReaders.size(); i++) {
+                ResourceReader goodTypeReader = goodTypeReaders.get(i);
                 if (!goodTypeReader.matchesRuntimeType(runtimeType)) {
                     continue;
                 }
-                MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeReader.mediaTypes());
+                MediaType match = MediaTypeHelper.getFirstMatch(mt, goodTypeReader.mediaTypes());
                 if (match != null || mediaType == null) {
                     mediaTypeMatchingReaders.add(goodTypeReader);
                 }
@@ -134,8 +135,9 @@ public abstract class Serialisers {
                 if (produces == null || produces.isEmpty()) {
                     return null;
                 } else {
-                    for (ResourceWriter writer : entry.getValue()) {
-                        MediaType match = MediaTypeHelper.getBestMatch(produces, writer.modifiableMediaTypes());
+                    List<ResourceWriter> writers = entry.getValue();
+                    for (int i = 0; i < writers.size(); i++) {
+                        MediaType match = MediaTypeHelper.getFirstMatch(produces, writers.get(i).mediaTypes());
                         if (match != null) {
                             return null;
                         }
@@ -201,11 +203,12 @@ public abstract class Serialisers {
             List<ResourceWriter> goodTypeWriters) {
         if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
             List<ResourceWriter> mediaTypeMatchingWriters = new ArrayList<>(goodTypeWriters.size());
-            for (ResourceWriter goodTypeWriter : goodTypeWriters) {
+            for (int i = 0; i < goodTypeWriters.size(); i++) {
+                ResourceWriter goodTypeWriter = goodTypeWriters.get(i);
                 if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
                     continue;
                 }
-                MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.modifiableMediaTypes());
+                MediaType match = MediaTypeHelper.getFirstMatch(mt, goodTypeWriter.mediaTypes());
                 if (match != null) {
                     mediaTypeMatchingWriters.add(goodTypeWriter);
                 }

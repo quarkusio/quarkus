@@ -69,11 +69,11 @@ public class ResourceReader {
         if (mediaTypes == null) {
             //todo: does this actually need to be threadsafe?
             synchronized (this) {
-                List<MediaType> ret = new ArrayList<>();
-                for (String i : mediaTypeStrings) {
-                    ret.add(MediaType.valueOf(i));
+                List<MediaType> mts = new ArrayList<>(mediaTypeStrings.size());
+                for (int i = 0; i < mediaTypeStrings.size(); i++) {
+                    mts.add(MediaType.valueOf(mediaTypeStrings.get(i)));
                 }
-                mediaTypes = Collections.unmodifiableList(ret);
+                mediaTypes = Collections.unmodifiableList(mts);
             }
         }
         return mediaTypes;

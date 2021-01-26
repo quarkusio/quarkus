@@ -16,13 +16,6 @@ import javax.ws.rs.core.Response;
 public class MediaTypeHelper {
     public static final MediaTypeComparator COMPARATOR = new MediaTypeComparator();
 
-    public static float getQ(MediaType type) {
-        float rtn = getQWithParamInfo(type);
-        if (rtn == 2.0F)
-            return 1.0F;
-        return rtn;
-    }
-
     public static float getQWithParamInfo(MediaType type) {
         if (type.getParameters() != null) {
             String val = type.getParameters().get("q");
@@ -133,19 +126,31 @@ public class MediaTypeHelper {
         return COMPARATOR.compare(one, two);
     }
 
-    public static boolean sameWeight(MediaType one, MediaType two) {
-        return COMPARATOR.compare(one, two) == 0;
-    }
-
     public static void sortByWeight(List<MediaType> types) {
-        if (types == null || types.size() <= 1)
+        if (hasAtMostOneItem(types)) {
             return;
+        }
         types.sort(COMPARATOR);
     }
 
+    private static boolean hasAtMostOneItem(List<MediaType> types) {
+        return types == null || types.size() <= 1;
+    }
+
+    /**
+     * Finds the best match according to the weight of the media types
+     * The parameters needs to be sorted, so a copy of these is made if necessary
+     * in order to avoid altering the input
+     */
     public static MediaType getBestMatch(List<MediaType> desired, List<MediaType> provided) {
-        sortByWeight(desired);
-        sortByWeight(provided);
+        if (!hasAtMostOneItem(desired)) {
+            desired = new ArrayList<>(desired);
+            sortByWeight(desired);
+        }
+        if (!hasAtMostOneItem(provided)) {
+            provided = new ArrayList<>(provided);
+            sortByWeight(provided);
+        }
         return getFirstMatch(desired, provided);
     }
 
@@ -171,35 +176,8 @@ public class MediaTypeHelper {
         return null;
     }
 
-    public static MediaType getBestConcreteMatch(List<MediaType> desired, List<MediaType> provided) {
-        sortByWeight(desired);
-        sortByWeight(provided);
-        boolean emptyDesired = desired == null || desired.size() == 0;
-        boolean emptyProvided = provided == null || provided.size() == 0;
-
-        if (emptyDesired && emptyProvided)
-            return null;
-        if (emptyDesired)
-            return provided.get(0);
-        if (emptyProvided)
-            return desired.get(0);
-
-        for (MediaType desire : desired) {
-            for (MediaType provide : provided) {
-                if (provide.isCompatible(desire)) {
-                    if (provide.isWildcardType()) {
-                        return desire;
-                    } else {
-                        return provide;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     public static List<MediaType> parseHeader(String header) {
-        ArrayList<MediaType> types = new ArrayList<MediaType>();
+        ArrayList<MediaType> types = new ArrayList<>();
         String[] medias = header.split(",");
         for (String media : medias) {
             types.add(MediaType.valueOf(media.trim()));

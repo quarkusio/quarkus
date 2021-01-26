@@ -80,7 +80,7 @@ class VertxHttpProcessor {
 
     @BuildStep
     NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
-        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.nonApplicationRootPath);
+        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.nonApplicationRootPath, httpBuildTimeConfig.rootPath);
     }
 
     @BuildStep

@@ -76,6 +76,82 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+== Writing the application
+
+Let's write a simple JAX-RS resource which has all the tokens returned in the authorization code grant response injected:
+
+[source,java]
+----
+package org.acme.security.openid.connect.web.authentication;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.quarkus.oidc.IdToken;
+import io.quarkus.oidc.RefreshToken;
+
+@Path("/tokens")
+public class TokenResource {
+
+    /**
+     * Injection point for the ID Token issued by the OpenID Connect Provider
+     */
+    @Inject
+    @IdToken
+    JsonWebToken idToken;
+
+    /**
+     * Injection point for the Access Token issued by the OpenID Connect Provider
+     */
+    @Inject
+    JsonWebToken accessToken;
+
+    /**
+     * Injection point for the Refresh Token issued by the OpenID Connect Provider
+     */
+    @Inject
+    RefreshToken refreshToken;
+
+    /**
+     * Returns the tokens available to the application. This endpoint exists only for demonstration purposes, you should not
+     * expose these tokens in a real application.
+     *
+     * @return a map containing the tokens available to the application
+     */
+    @GET
+    public String getTokens() {
+        StringBuilder response = new StringBuilder().append("<html>")
+                .append("<body>")
+                .append("<ul>");
+
+        Object userName = this.idToken.getClaim("preferred_username");
+
+        if (userName != null) {
+            response.append("<li>username: ").append(userName.toString()).append("</li>");
+        }
+
+        Object scopes = this.accessToken.getClaim("scope");
+
+        if (scopes != null) {
+            response.append("<li>scopes: ").append(scopes.toString()).append("</li>");
+        }
+
+        response.append("<li>refresh_token: ").append(refreshToken.getToken() != null).append("</li>");
+
+        return response.append("</ul>").append("</body>").append("</html>").toString();
+    }
+}
+----
+
+This endpoint has ID, access and refresh tokens injected. It returns a `preferred_username` claim from the ID token, a `scope` claim from the access token and also a refresh token availability status.
+
+Note that you do not have to inject the tokens - it is only required if the endpoint needs to use the ID token to interact with the currently authenticated user or use the access token to access a downstream service on behalf of this user.
+
+Please see <<access_id_and_access_tokens,Access ID and Access Tokens>> section below for more information.
+
 == Configuring the application
 
 The OpenID Connect extension allows you to define the configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
@@ -98,7 +174,7 @@ The `quarkus.oidc.client-id` property references the `client_id` issued by the O
 The `quarkus.oidc.application-type` property is set to `web-app` in order to tell Quarkus that you want to enable the OpenID Connect Authorization Code Flow, so that your users are redirected to the OpenID Connect Provider to authenticate.
 
 For last, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect. In this case,
-all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check link:security[Security Guide].
+all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check link:security-authorization[Security Authorization Guide].
 
 === Configuring CORS
 
@@ -261,6 +337,7 @@ quarkus.http.auth.permission.authenticated.policy=permit
 You may also need to set `quarkus.oidc.authentication.cookie-path` to a path value common to all of the application resources which is `/` in this example.
 See <<oidc-cookies, Dealing with Cookies>> for more information.
 
+[[access_id_and_access_tokens]]
 == Accessing ID and Access Tokens
 
 OIDC Code Authentication Mechanism acquires three tokens during the authorization code flow: https://openid.net/specs/openid-connect-core-1_0.html#IDToken[IDToken], Access Token and Refresh Token.

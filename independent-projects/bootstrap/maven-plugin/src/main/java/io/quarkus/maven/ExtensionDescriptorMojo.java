@@ -22,6 +22,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,6 +40,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -113,6 +115,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
 
+    @Component
+    private MavenProjectHelper projectHelper;
+
     /**
      * Artifacts that should never end up in the final build. Usually this should only be set if we know
      * this extension provides a newer version of a given artifact that is under a different GAV. E.g. this
@@ -153,6 +158,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion")
     boolean ignoreNotDetectedQuarkusCoreVersion;
+
+    @Parameter(required = false, defaultValue = "${excludeExtensionJsonArtifact}")
+    boolean excludeExtensionJsonArtifact;
 
     AppArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
@@ -285,6 +293,18 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
+        }
+
+        if (!excludeExtensionJsonArtifact) {
+            final Path yamlArtifact = Paths.get(project.getBuild().getDirectory())
+                    .resolve(project.getArtifactId() + '-' + project.getVersion() + "-json.json");
+            try (BufferedWriter bw = Files.newBufferedWriter(yamlArtifact)) {
+                bw.write(getMapper(false).writer(prettyPrinter).writeValueAsString(extObject));
+            } catch (IOException e) {
+                throw new MojoExecutionException(
+                        "Failed to persist " + yamlArtifact, e);
+            }
+            projectHelper.attachArtifact(project, "json", yamlArtifact.toFile());
         }
     }
 

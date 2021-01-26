@@ -2835,6 +2835,16 @@
                 <groupId>io.quarkus.security</groupId>
                 <artifactId>quarkus-security</artifactId>
                 <version>${quarkus-security.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.inject</groupId>
+                        <artifactId>javax.inject</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.enterprise</groupId>
+                        <artifactId>cdi-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

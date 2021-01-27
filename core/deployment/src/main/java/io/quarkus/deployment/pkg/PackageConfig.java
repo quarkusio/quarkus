@@ -95,7 +95,8 @@ public class PackageConfig {
      * on its PATH.
      * This flag is useful when the JVM to be used at runtime is not the same exact JVM version as the one used to build
      * the jar.
-     * Note that this property is consulted only when {@code quarkus.package.create-appcds=true}.
+     * Note that this property is consulted only when {@code quarkus.package.create-appcds=true} and it requires having
+     * docker available during the build.
      */
     @ConfigItem
     public Optional<String> appcdsBuilderImage;

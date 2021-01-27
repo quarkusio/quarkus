@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-kubernetes-client-deployment-internal</artifactId>
     <name>Quarkus - Kubernetes Client - Deployment - Internal</name>
-    <description>This module only exists as a separate module to so the kubernetes extension can share code with the kubernetes-client extension</description>
+    <description>This module only exists as a separate module so the kubernetes extension can share code with the kubernetes-client extension</description>
 
     <dependencies>
         <dependency>

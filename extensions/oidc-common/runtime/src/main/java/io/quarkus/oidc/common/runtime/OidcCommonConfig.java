@@ -37,11 +37,20 @@ public class OidcCommonConfig {
     public Optional<String> clientId = Optional.empty();
 
     /**
-     * The maximum amount of time the adapter will try connecting to the currently unavailable OIDC server for.
-     * For example, setting it to '20S' will let the adapter keep requesting the connection for up to 20 seconds.
+     * The maximum amount of time connecting to the currently unavailable OIDC server will be attempted for.
+     * The number of times the connection request will be repeated is calculated by dividing the value of this property by 2.
+     * For example, setting it to '20S' will allow for requesting the connection up to 10 times with a 2 seconds delay between
+     * the retries.
+     * Note the 'connection-timeout' property does not affect this amount of time.
      */
     @ConfigItem
     public Optional<Duration> connectionDelay = Optional.empty();
+
+    /**
+     * The amount of time after which the connection request to the currently unavailable OIDC server will time out.
+     */
+    @ConfigItem(defaultValue = "10s")
+    public Duration connectionTimeout = Duration.ofSeconds(10);
 
     /**
      * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
@@ -338,5 +347,13 @@ public class OidcCommonConfig {
 
     public void setProxy(Proxy proxy) {
         this.proxy = proxy;
+    }
+
+    public Duration getConnectionTimeout() {
+        return connectionTimeout;
+    }
+
+    public void setConnectionTimeout(Duration connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
     }
 }

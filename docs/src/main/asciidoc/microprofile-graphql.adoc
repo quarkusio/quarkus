@@ -380,6 +380,8 @@ GraphiQL can be accessed from http://localhost:8080/graphql-ui/ .
 
 image:graphql-ui-screenshot01.png[alt=GraphQL UI]
 
+Have a look at the link:security-authorization[Authorization of Web Endpoints] Guide on how to add/remove security for the GraphQL UI.
+
 == Query the GraphQL API
 
 Now visit the GraphiQL page that has been deployed in `dev` mode.

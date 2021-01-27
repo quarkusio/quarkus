@@ -51,6 +51,14 @@ public interface QuarkusTestProfile {
         return Collections.emptyList();
     }
 
+    /**
+     * If this is returns true then only the rest resources returned from {@link #testResources()} will be started,
+     * global annotated test resources will be ignored.
+     */
+    default boolean disableGlobalTestResources() {
+        return false;
+    }
+
     final class TestResourceEntry {
         private final Class<? extends QuarkusTestResourceLifecycleManager> clazz;
         private final Map<String, String> args;

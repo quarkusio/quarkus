@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import javax.inject.Inject;
 import javax.interceptor.Interceptor.Priority;
@@ -32,7 +33,12 @@ public abstract class CacheInterceptor {
     protected <T extends Annotation> CacheInterceptionContext<T> getInterceptionContext(InvocationContext invocationContext,
             Class<T> interceptorBindingClass) {
         return getArcCacheInterceptionContext(invocationContext, interceptorBindingClass)
-                .orElse(getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass));
+                .orElseGet(new Supplier<CacheInterceptionContext<T>>() {
+                    @Override
+                    public CacheInterceptionContext<T> get() {
+                        return getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass);
+                    }
+                });
     }
 
     private <T extends Annotation> Optional<CacheInterceptionContext<T>> getArcCacheInterceptionContext(

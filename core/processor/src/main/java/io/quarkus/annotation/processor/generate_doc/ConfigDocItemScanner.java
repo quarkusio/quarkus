@@ -5,7 +5,6 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.comp
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,15 +31,17 @@ final public class ConfigDocItemScanner {
     private final Map<String, TypeElement> configGroupsToTypeElement = new HashMap<>();
 
     private final FsMap allExtensionGeneratedDocs;
-    private final Path allConfigurationGroupsDir = Constants.GENERATED_DOCS_PATH
-            .resolve("all-configuration-groups-generated-doc");
+    private final FsMap allConfigGroupGeneratedDocs;
     private final FsMultiMap configurationRootsParExtensionFileName;
 
     public ConfigDocItemScanner() {
         this.allExtensionGeneratedDocs = new FsMap(Constants.GENERATED_DOCS_PATH
                 .resolve("all-configuration-roots-generated-doc"));
+        this.allConfigGroupGeneratedDocs = new FsMap(Constants.GENERATED_DOCS_PATH
+                .resolve("all-configuration-groups-generated-doc"));
         this.configurationRootsParExtensionFileName = new FsMultiMap(Constants.GENERATED_DOCS_PATH
                 .resolve("extensions-configuration-roots-list"));
+
     }
 
     /**
@@ -108,7 +109,7 @@ final public class ConfigDocItemScanner {
 
         Set<ConfigDocGeneratedOutput> configDocGeneratedOutputs = new HashSet<>();
         final ConfigDoItemFinder configDoItemFinder = new ConfigDoItemFinder(configRoots, configGroupsToTypeElement,
-                javaDocProperties, allConfigurationGroupsDir);
+                javaDocProperties, allConfigGroupGeneratedDocs, allExtensionGeneratedDocs);
         final ScannedConfigDocsItemHolder inMemoryScannedItemsHolder = configDoItemFinder.findInMemoryConfigurationItems();
 
         if (!inMemoryScannedItemsHolder.isEmpty()) {

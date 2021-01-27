@@ -35,16 +35,22 @@ public class TestResourceManager implements Closeable {
     private boolean started = false;
 
     public TestResourceManager(Class<?> testClass) {
-        this(testClass, Collections.emptyList());
+        this(testClass, Collections.emptyList(), false);
     }
 
-    public TestResourceManager(Class<?> testClass, List<TestResourceClassEntry> additionalTestResources) {
+    public TestResourceManager(Class<?> testClass, List<TestResourceClassEntry> additionalTestResources,
+            boolean disableGlobalTestResources) {
         this.parallelTestResourceEntries = new ArrayList<>();
         this.sequentialTestResourceEntries = new ArrayList<>();
 
         // we need to keep track of duplicate entries to make sure we don't start the same resource
         // multiple times even if there are multiple same @QuarkusTestResource annotations
-        Set<TestResourceClassEntry> uniqueEntries = getUniqueTestResourceClassEntries(testClass, additionalTestResources);
+        Set<TestResourceClassEntry> uniqueEntries;
+        if (disableGlobalTestResources) {
+            uniqueEntries = new HashSet<>(additionalTestResources);
+        } else {
+            uniqueEntries = getUniqueTestResourceClassEntries(testClass, additionalTestResources);
+        }
         Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
         initSequentialTestResources(remainingUniqueEntries);
 

@@ -20,6 +20,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.ReplyException;
@@ -32,6 +34,9 @@ public class MessageConsumerFailureTest {
 
     @Inject
     SimpleBean simpleBean;
+
+    @Inject
+    Vertx vertx;
 
     @Inject
     EventBus eventBus;
@@ -51,6 +56,30 @@ public class MessageConsumerFailureTest {
         verifyFailure("foo-completion-stage-failure-blocking", "boom", true);
         verifyFailure("foo-uni-blocking", "java.lang.NullPointerException: Something is null", false);
         verifyFailure("foo-uni-failure-blocking", "boom", true);
+    }
+
+    @Test
+    public void testFailureNoReplyHandler() throws InterruptedException {
+        Handler<Throwable> oldHandler = vertx.exceptionHandler();
+        try {
+            BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+            vertx.exceptionHandler(new Handler<Throwable>() {
+                @Override
+                public void handle(Throwable event) {
+                    try {
+                        synchronizer.put(event);
+                    } catch (InterruptedException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+            });
+            eventBus.send("foo", "bar");
+            Object ret = synchronizer.poll(2, TimeUnit.SECONDS);
+            assertTrue(ret instanceof IllegalStateException);
+            assertEquals("Foo is dead", ((IllegalStateException) ret).getMessage());
+        } finally {
+            vertx.exceptionHandler(oldHandler);
+        }
     }
 
     void verifyFailure(String address, String expectedMessage, boolean explicit) throws InterruptedException {

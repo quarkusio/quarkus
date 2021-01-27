@@ -102,7 +102,8 @@ class EventBusConsumer {
                 .interfaces(EventConsumerInvoker.class).build();
 
         // The method descriptor is: void invokeBean(Object message)
-        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class);
+        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class)
+                .addException(Exception.class);
 
         if (blocking) {
             MethodCreator isBlocking = invokerCreator.getMethodCreator("isBlocking", boolean.class);

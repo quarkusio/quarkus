@@ -2,9 +2,6 @@ name: gradle-kotlin-dsl
 type: buildtool
 language:
   base:
-    data:
-      kotlin:
-        version: 1.3.72
     shared-data:
       quarkus:
         gradle-plugin:

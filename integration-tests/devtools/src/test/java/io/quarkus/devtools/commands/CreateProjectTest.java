@@ -2,6 +2,9 @@ package io.quarkus.devtools.commands;
 
 import static io.quarkus.devtools.ProjectTestUtil.checkContains;
 import static io.quarkus.devtools.ProjectTestUtil.checkMatches;
+import static io.quarkus.platform.tools.ToolsConstants.PROP_COMPILER_PLUGIN_VERSION;
+import static io.quarkus.platform.tools.ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION;
+import static io.quarkus.platform.tools.ToolsUtils.readQuarkusProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -47,7 +51,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .className("org.acme.getting.started.GreetingResource")
                 .resourcePath("/foo")
                 .extensions(Collections.singleton("resteasy")));
-
+        final Properties quarkusProp = readQuarkusProperties(getPlatformDescriptor());
         assertThat(projectDir.resolve(".gitignore"))
                 .exists()
                 .satisfies(checkMatches("(?s).*target/\\R.*"));
@@ -61,6 +65,12 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
                 .satisfies(checkContains("<artifactId>resteasy-app</artifactId>"))
                 .satisfies(checkContains("<version>1.0.0-FOO</version>"))
+                .satisfies(checkContains(
+                        "<surefire-plugin.version>" + quarkusProp.getProperty(PROP_SUREFIRE_PLUGIN_VERSION)
+                                + "</surefire-plugin.version>"))
+                .satisfies(checkContains(
+                        "<compiler-plugin.version>" + quarkusProp.getProperty(PROP_COMPILER_PLUGIN_VERSION)
+                                + "</compiler-plugin.version>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
 
         assertThat(projectDir.resolve("README.md"))

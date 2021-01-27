@@ -90,6 +90,17 @@ public class PackageConfig {
     public boolean createAppcds;
 
     /**
+     * When AppCDS generation is enabled, if this property is set, then the JVM used to generate the AppCDS file
+     * will be the JVM present in the container image. The builder image is expected to have have the 'java' binary
+     * on its PATH.
+     * This flag is useful when the JVM to be used at runtime is not the same exact JVM version as the one used to build
+     * the jar.
+     * Note that this property is consulted only when {@code quarkus.package.create-appcds=true}.
+     */
+    @ConfigItem
+    public Optional<String> appcdsBuilderImage;
+
+    /**
      * This is an advanced option that only takes effect for the mutable-jar format.
      *
      * If this is specified a directory of this name will be created in the jar distribution. Users can place

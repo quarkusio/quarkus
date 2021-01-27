@@ -6,12 +6,13 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
+@ConfigGroup
 public class OidcCommonConfig {
     /**
-     * The base URL of the OpenID Connect (OIDC) server, for example, 'https://host:port/auth'.
+     * The base URL of the OpenID Connect (OIDC) server, for example, `https://host:port/auth`.
      * OIDC discovery endpoint will be called by default by appending a '.well-known/openid-configuration' path to this URL.
      * Note if you work with Keycloak OIDC server, make sure the base URL is in the following format:
-     * 'https://host:port/auth/realms/{realm}' where '{realm}' has to be replaced by the name of the Keycloak realm.
+     * `https://host:port/auth/realms/{realm}` where `{realm}` has to be replaced by the name of the Keycloak realm.
      */
     @ConfigItem
     public Optional<String> authServerUrl = Optional.empty();
@@ -65,16 +66,16 @@ public class OidcCommonConfig {
     public static class Credentials {
 
         /**
-         * Client secret which is used for a 'client_secret_basic' authentication method.
+         * Client secret which is used for a `client_secret_basic` authentication method.
          * Note that a 'client-secret.value' can be used instead but both properties are mutually exclusive.
          */
         @ConfigItem
         public Optional<String> secret = Optional.empty();
 
         /**
-         * Client secret which can be used for the 'client_secret_basic' (default) and 'client_secret_post'
+         * Client secret which can be used for the `client_secret_basic` (default) and `client_secret_post`
          * and 'client_secret_jwt' authentication methods.
-         * Note that a 'secret.value' property can be used instead to support the 'client_secret_basic' method
+         * Note that a `secret.value` property can be used instead to support the `client_secret_basic` method
          * but both properties are mutually exclusive.
          */
         @ConfigItem

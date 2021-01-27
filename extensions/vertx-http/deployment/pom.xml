@@ -12,6 +12,12 @@
     <artifactId>quarkus-vertx-http-deployment</artifactId>
     <name>Quarkus - Vert.x - HTTP - Deployment</name>
 
+    <properties>
+        <bootstrap.version>4.6.0</bootstrap.version>
+        <fontawesome.version>5.15.2</fontawesome.version>
+        <jquery.version>3.5.1</jquery.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,6 +39,25 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
+        </dependency>
+        <!-- Used for the dev console. Just here so that dependabot can remind us to upgrade -->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>${bootstrap.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.bower</groupId>
+            <artifactId>jquery</artifactId>
+            <version>${jquery.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>font-awesome</artifactId>
+            <version>${fontawesome.version}</version>
+            <scope>provided</scope>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -85,6 +110,268 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            
+            <!-- So we don't have to keep a version of these javascript libs in our repo -->
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.6.1</version>
+                <executions>
+                    <!-- Font awesome -->
+                    <execution>
+                        <id>install-fontawesome-css</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/css/all.min.css</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/css</outputDirectory>
+                            <md5>c4af24ce595437830af0a401897698b2</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-1</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-brands-400.eot</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>d28c96cabe5302f1b2c90275cd3f4e69</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-2</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-brands-400.woff</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>0ce1e868452204695c8ac1c70f693c2d</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-3</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-regular-400.svg</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>d0fdc7c20b0b0b1aaf27327547735fa3</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-4</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-regular-400.woff2</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>847712aaabbeba674afdda86d31cab17</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-5</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-solid-900.ttf</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>260d033f79f75d670fd09d8cf7c8bf8d</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-6</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-brands-400.svg</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>5d10d00980077f67990f73b1961bc46e</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-7</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-brands-400.woff2</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>0c9f225e8f69c622f681cf1ed973cc3d</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-8</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-regular-400.ttf</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>398be22b2308585b84da8e858e2d7b60</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-9</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-solid-900.eot</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>00bb62bc33034479d5e82a0fd1c5efe3</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-10</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-solid-900.woff</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>4bfbf7eb4b19d9ff9293eb177b6d0070</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-11</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-brands-400.ttf</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>dfe5aa4344a2d8a29aec8d83fb3fb14e</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-12</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-regular-400.eot</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>0232fe8b09de812c88e6cc27f57a3a88</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-13</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-regular-400.woff</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>3cace4a04d941b5981ba32c6ce9afae1</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-14</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-solid-900.svg</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>2306f642b31b774ba1d8b6b784539e19</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-fontawesome-fonts-15</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/@fortawesome/fontawesome-free@${fontawesome.version}/webfonts/fa-solid-900.woff2</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
+                            <md5>9ae050d1876ac1763eb6afe4264e6d5a</md5>
+                        </configuration>
+                    </execution>
+                    
+                    <!-- Bootstrap -->
+                    <execution>
+                        <id>install-bootstrap-css</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/bootstrap@${bootstrap.version}/dist/css/bootstrap.min.css</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/css</outputDirectory>
+                            <md5>d432e4222814b62dd30c9513dcc29440</md5>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-bootstrap-js</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/bootstrap@${bootstrap.version}/dist/js/bootstrap.bundle.min.js</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/js</outputDirectory>
+                            <md5>f81d0a1705048649befc8b595e455a94</md5>
+                        </configuration>
+                    </execution>
+                    
+                    <!-- JQuery -->
+                    <execution>
+                        <id>install-jquery</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://unpkg.com/jquery@${jquery.version}/dist/jquery.min.js</url>
+                            <unpack>false</unpack>
+                            <outputDirectory>${project.build.directory}/classes/dev-static/js</outputDirectory>
+                            <md5>dc5e7f18c8d36ac1d3d4753a87c98d0a</md5>
+                        </configuration>
+                    </execution>
+                    
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -88,11 +88,11 @@ public class VertxVaultClient implements VaultClient {
 
     private static final Logger log = Logger.getLogger(VertxVaultClient.class);
 
-    private Vertx vertx;
+    private final Vertx vertx;
     private URL baseUrl;
     private String kubernetesAuthMountPath;
-    private TlsConfig tlsConfig;
-    private VaultConfigHolder vaultConfigHolder;
+    private final TlsConfig tlsConfig;
+    private final VaultConfigHolder vaultConfigHolder;
     private WebClient webClient;
 
     ObjectMapper mapper = new ObjectMapper();

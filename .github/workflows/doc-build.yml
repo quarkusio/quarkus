@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - 'docs/src/main/asciidoc/**'
+      - '.github/workflows/doc-build.yml'
   pull_request:
     paths:
       - 'docs/src/main/asciidoc/**'
+      - '.github/workflows/doc-build.yml'
 
 
 jobs:

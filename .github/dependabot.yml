@@ -63,6 +63,7 @@ updates:
       # Test dependencies
       - dependency-name: io.rest-assured:*
       - dependency-name: org.junit:junit-bom
+      - dependency-name: org.junit.jupiter:*
       - dependency-name: org.assertj:assertj-core
       - dependency-name: org.testcontainers:*
       - dependency-name: org.mockito:*

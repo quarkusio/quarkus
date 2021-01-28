@@ -8,7 +8,6 @@ import java.lang.annotation.Target;
 
 import io.quarkus.vertx.web.Route.Routes;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -81,6 +80,13 @@ import io.vertx.ext.web.RoutingContext;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Route {
+    interface HttpMethod {
+        String GET = "GET";
+        String POST = "POST";
+        String PUT = "PUT";
+        String DELETE = "DELETE";
+        String OPTIONS = "OPTIONS";
+    }
 
     /**
      *
@@ -101,7 +107,7 @@ public @interface Route {
      * @see io.vertx.ext.web.Route#methods()
      * @return the HTTP methods
      */
-    HttpMethod[] methods() default {};
+    String[] methods() default {};
 
     /**
      *

@@ -384,7 +384,7 @@ class VertxWebProcessor {
                 if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
                     if (methods.length == 0) {
                         // No explicit method declared - match all methods
-                        methods = HttpMethod.values();
+                        methods = HttpMethod.values().toArray(new HttpMethod[0]);
                     }
                     descriptions.produce(new RouteDescriptionBuildItem(
                             businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"

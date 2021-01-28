@@ -100,23 +100,23 @@ public class UniValidationTest {
     @ApplicationScoped
     public static class MyRoutes {
 
-        @Route(methods = HttpMethod.GET, path = "/valid")
+        @Route(methods = Route.HttpMethod.GET, path = "/valid")
         public Uni<Greeting> getValidGreeting() {
             return Uni.createFrom().item(new Greeting("luke", "hello"));
         }
 
-        @Route(methods = HttpMethod.GET, path = "/invalid")
+        @Route(methods = Route.HttpMethod.GET, path = "/invalid")
         @Valid
         public Uni<Greeting> getInvalidValidGreeting() {
             return Uni.createFrom().item(new Greeting("neo", "hello"));
         }
 
-        @Route(methods = HttpMethod.GET, path = "/invalid2")
+        @Route(methods = Route.HttpMethod.GET, path = "/invalid2")
         public @Valid Uni<Greeting> getDoubleInValidGreeting() {
             return Uni.createFrom().item(new Greeting("neo", "hi"));
         }
 
-        @Route(methods = HttpMethod.GET, path = "/query")
+        @Route(methods = Route.HttpMethod.GET, path = "/query")
         public Uni<Greeting> getGreetingWithName(@Pattern(regexp = "ne.*") @NotNull @Param("name") String name) {
             return Uni.createFrom().item(new Greeting(name, "hi"));
         }

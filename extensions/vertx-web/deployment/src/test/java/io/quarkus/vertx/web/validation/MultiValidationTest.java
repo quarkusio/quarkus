@@ -63,7 +63,7 @@ public class MultiValidationTest {
     @ApplicationScoped
     public static class MyRoutes {
 
-        @Route(methods = HttpMethod.GET, path = "/query")
+        @Route(methods = Route.HttpMethod.GET, path = "/query")
         public Multi<Greeting> getGreetingWithName(@Pattern(regexp = "ne.*") @NotNull @Param("name") String name) {
             return Multi.createFrom().item(new Greeting(name, "hi"));
         }

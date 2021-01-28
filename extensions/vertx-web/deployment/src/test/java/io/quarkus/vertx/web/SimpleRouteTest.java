@@ -2,8 +2,6 @@ package io.quarkus.vertx.web;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
-import static io.vertx.core.http.HttpMethod.DELETE;
-import static io.vertx.core.http.HttpMethod.GET;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Objects;
@@ -103,12 +101,12 @@ public class SimpleRouteTest {
             exchange.ok("Hello " + exchange.getParam("name").orElse("world") + "!");
         }
 
-        @Route(path = "/delete", methods = DELETE)
+        @Route(path = "/delete", methods = Route.HttpMethod.DELETE)
         void deleteHttpMethod(RoutingExchange exchange) {
             exchange.ok("deleted");
         }
 
-        @Route(path = "/body", methods = HttpMethod.POST, consumes = "text/plain")
+        @Route(path = "/body", methods = Route.HttpMethod.POST, consumes = "text/plain")
         void post(RoutingContext context) {
             context.response().setStatusCode(200).end("Hello " + context.getBodyAsString() + "!");
         }
@@ -130,7 +128,7 @@ public class SimpleRouteTest {
         @Inject
         Router router;
 
-        @Route(path = "/routes", methods = GET)
+        @Route(path = "/routes", methods = Route.HttpMethod.GET)
         void getRoutes(RoutingContext context) {
             context.response().setStatusCode(200).end(
                     router.getRoutes().stream().map(r -> r.getPath()).filter(Objects::nonNull)
@@ -148,7 +146,7 @@ public class SimpleRouteTest {
         @Inject
         EventBus eventBus;
 
-        @Route(path = "/hello-event-bus", methods = GET)
+        @Route(path = "/hello-event-bus", methods = Route.HttpMethod.GET)
         void helloEventBus(RoutingExchange exchange) {
             eventBus.request("hello", exchange.getParam("name").orElse("missing"), ar -> {
                 if (ar.succeeded()) {

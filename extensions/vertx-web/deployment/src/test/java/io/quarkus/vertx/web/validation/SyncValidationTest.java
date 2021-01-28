@@ -102,23 +102,23 @@ public class SyncValidationTest {
     @ApplicationScoped
     public static class MyRoutes {
 
-        @Route(methods = HttpMethod.GET, path = "/valid")
+        @Route(methods = Route.HttpMethod.GET, path = "/valid")
         public Greeting getValidGreeting() {
             return new Greeting("luke", "hello");
         }
 
-        @Route(methods = HttpMethod.GET, path = "/invalid")
+        @Route(methods = Route.HttpMethod.GET, path = "/invalid")
         @Valid
         public Greeting getInvalidValidGreeting() {
             return new Greeting("neo", "hello");
         }
 
-        @Route(methods = HttpMethod.GET, path = "/invalid2")
+        @Route(methods = Route.HttpMethod.GET, path = "/invalid2")
         public @Valid Greeting getDoubleInValidGreeting() {
             return new Greeting("neo", "hi");
         }
 
-        @Route(methods = HttpMethod.GET, path = "/query")
+        @Route(methods = Route.HttpMethod.GET, path = "/query")
         public Greeting getGreetingWithName(@Pattern(regexp = "ne.*") @NotNull @Param("name") String name) {
             return new Greeting(name, "hi");
         }

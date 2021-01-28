@@ -32,7 +32,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.RoutingContext;
@@ -64,7 +63,7 @@ public class DeleteUploadedFilesOnEndTest {
     }
 
     public static class Routes {
-        @Route(path = "/vertx-web/upload", methods = HttpMethod.POST)
+        @Route(path = "/vertx-web/upload", methods = Route.HttpMethod.POST)
         void upload(RoutingContext context) throws IOException {
             final HttpServerResponse response = context.response();
             response.headers().set("Content-Type", "text/plain");

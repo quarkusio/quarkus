@@ -40,17 +40,17 @@ public class BlockingRouteTest {
     @ApplicationScoped
     public static class MyRoutes {
 
-        @Route(methods = HttpMethod.GET, path = "/non-blocking")
+        @Route(methods = Route.HttpMethod.GET, path = "/non-blocking")
         public String nonBlocking() {
             return "nonBlocking-" + Thread.currentThread().getName();
         }
 
-        @Route(methods = HttpMethod.GET, path = "/blocking", type = Route.HandlerType.BLOCKING)
+        @Route(methods = Route.HttpMethod.GET, path = "/blocking", type = Route.HandlerType.BLOCKING)
         public String blocking() {
             return "blocking-" + Thread.currentThread().getName();
         }
 
-        @Route(methods = HttpMethod.GET, path = "/worker")
+        @Route(methods = Route.HttpMethod.GET, path = "/worker")
         @Blocking
         public String worker() {
             return "worker-" + Thread.currentThread().getName();

@@ -8,7 +8,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class TestRoute {
 
-    @Route(path = "/test", methods = { GET, OPTIONS, POST })
+    @Route(path = "/test", methods = { Route.HttpMethod.GET, Route.HttpMethod.OPTIONS, Route.HttpMethod.POST })
     void getRoutes(RoutingContext context) {
         context.response().setStatusCode(200).end("test route");
     }

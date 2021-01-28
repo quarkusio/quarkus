@@ -56,7 +56,7 @@ public class UploadsDirectoryTest {
     }
 
     public static class Routes {
-        @Route(path = "/vertx-web/upload", methods = HttpMethod.POST)
+        @Route(path = "/vertx-web/upload", methods = Route.HttpMethod.POST)
         void upload(RoutingContext context) {
             context.response().headers().set("Content-Type", "text/plain");
             context.response().setChunked(true).setStatusCode(200);

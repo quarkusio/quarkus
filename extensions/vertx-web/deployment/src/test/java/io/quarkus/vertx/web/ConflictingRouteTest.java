@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
 public class ConflictingRouteTest {
@@ -34,12 +33,12 @@ public class ConflictingRouteTest {
     @ApplicationScoped
     public static class MyRoutes {
 
-        @Route(path = "/conflict/:id", methods = HttpMethod.GET, order = 2)
+        @Route(path = "/conflict/:id", methods = Route.HttpMethod.GET, order = 2)
         void getAccount(RoutingContext ctx) {
             ctx.response().end(ctx.pathParam("id"));
         }
 
-        @Route(path = "/conflict/me", methods = HttpMethod.GET, order = 1)
+        @Route(path = "/conflict/me", methods = Route.HttpMethod.GET, order = 1)
         void getCurrentUserAccount(RoutingContext ctx) {
             ctx.response().end("/me called");
         }

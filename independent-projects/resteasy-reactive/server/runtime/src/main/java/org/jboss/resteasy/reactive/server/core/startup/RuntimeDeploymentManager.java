@@ -180,8 +180,9 @@ public class RuntimeDeploymentManager {
 
         //pre matching interceptors are run first
         List<ServerRestHandler> preMatchHandlers = new ArrayList<>();
-        for (HandlerChainCustomizer customizer : info.getGlobalHandlerCustomers()) {
-            preMatchHandlers.addAll(customizer.handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH));
+        for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
+            preMatchHandlers
+                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH));
         }
         if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
             preMatchHandlers = new ArrayList<>(interceptorDeployment.getPreMatchContainerRequestFilters().size());
@@ -190,16 +191,15 @@ public class RuntimeDeploymentManager {
                 preMatchHandlers.add(new ResourceRequestFilterHandler(containerRequestFilter, true));
             }
         }
-        for (HandlerChainCustomizer customizer : info.getGlobalHandlerCustomers()) {
-            preMatchHandlers.addAll(customizer.handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH));
+        for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
+            preMatchHandlers
+                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH));
         }
 
-        Deployment deployment = new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
+        return new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers);
-
-        return deployment;
     }
 
     //TODO: this needs plenty more work to support all possible types and provide all information the FeatureContext allows

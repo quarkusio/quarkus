@@ -112,7 +112,6 @@ public class RuntimeResourceDeployment {
     public RuntimeResource buildResourceMethod(ResourceClass clazz,
             ServerResourceMethod method, boolean locatableResource, URITemplate classPathTemplate, DeploymentInfo info) {
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
-        List<ServerRestHandler> abortHandlingChain = new ArrayList<>();
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
@@ -147,7 +146,7 @@ public class RuntimeResourceDeployment {
         handlers.addAll(interceptorDeployment.setupInterceptorHandler());
         //at this point the handler chain only has interceptors
         //which we also want in the abort handler chain
-        abortHandlingChain.addAll(handlers);
+        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(handlers);
 
         // when a method is blocking, we also want all the request filters to run on the worker thread
         // because they can potentially set thread local variables
@@ -158,7 +157,7 @@ public class RuntimeResourceDeployment {
             score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
         }
 
-        //spec doesn't seem to test this, but RESTEeasy does not run request filters again for sub resources (which makes sense)
+        //spec doesn't seem to test this, but RESTEasy does not run request filters again for sub resources (which makes sense)
         if (!locatableResource) {
             handlers.addAll(interceptorDeployment.setupRequestFilterHandler());
         }
@@ -189,7 +188,7 @@ public class RuntimeResourceDeployment {
                 handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), executorSupplier));
             }
         }
-        // if we need the body, let's deserialise it
+        // if we need the body, let's deserialize it
         if (bodyParameter != null) {
             Class<Object> typeClass = loadClass(bodyParameter.declaredType);
             Type genericType = typeClass;
@@ -333,13 +332,13 @@ public class RuntimeResourceDeployment {
         //the response filter handlers, they need to be added to both the abort and
         //normal chains. At the moment this only has one handler added to it but
         //in future there will be one per filter
-        List<ServerRestHandler> responseFilterHandlers = new ArrayList<>();
+        List<ServerRestHandler> responseFilterHandlers;
         if (method.isSse()) {
             handlers.add(new SseResponseWriterHandler());
+            responseFilterHandlers = Collections.emptyList();
         } else {
             handlers.add(new ResponseHandler());
-
-            responseFilterHandlers.addAll(interceptorDeployment.setupResponseFilterHandler());
+            responseFilterHandlers = new ArrayList<>(interceptorDeployment.setupResponseFilterHandler());
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
         }
@@ -355,7 +354,7 @@ public class RuntimeResourceDeployment {
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
-        RuntimeResource runtimeResource = new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
+        return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
@@ -363,16 +362,15 @@ public class RuntimeResourceDeployment {
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
                 pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());
-        return runtimeResource;
     }
 
     private void addHandlers(List<ServerRestHandler> handlers, ServerResourceMethod method, DeploymentInfo info,
             HandlerChainCustomizer.Phase phase) {
-        for (HandlerChainCustomizer i : info.getGlobalHandlerCustomers()) {
-            handlers.addAll(i.handlers(phase));
+        for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
+            handlers.addAll(info.getGlobalHandlerCustomizers().get(i).handlers(phase));
         }
-        for (HandlerChainCustomizer i : method.getHandlerChainCustomizers()) {
-            handlers.addAll(i.handlers(phase));
+        for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
+            handlers.addAll(method.getHandlerChainCustomizers().get(i).handlers(phase));
         }
     }
 
@@ -417,7 +415,7 @@ public class RuntimeResourceDeployment {
             case CUSTOM:
                 return customExtractor;
             default:
-                throw new RuntimeException("Unkown param type: " + type);
+                throw new RuntimeException("Unknown param type: " + type);
         }
     }
 

@@ -37,13 +37,14 @@ public class RuntimeMappingDeployment {
             //now we have all our possible resources
             List<RequestMapper.RequestPath<RuntimeResource>> result = new ArrayList<>();
             for (Map.Entry<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> entry : i.getValue().entrySet()) {
-                if (entry.getValue().size() == 1) {
+                List<RequestMapper.RequestPath<RuntimeResource>> requestPaths = entry.getValue();
+                if (requestPaths.size() == 1) {
                     //simple case, only one match
-                    result.addAll(entry.getValue());
+                    result.addAll(requestPaths);
                 } else {
-                    List<RuntimeResource> resources = new ArrayList<>();
-                    for (RequestMapper.RequestPath<RuntimeResource> val : entry.getValue()) {
-                        resources.add(val.value);
+                    List<RuntimeResource> resources = new ArrayList<>(requestPaths.size());
+                    for (int j = 0; j < requestPaths.size(); j++) {
+                        resources.add(requestPaths.get(j).value);
                     }
                     MediaTypeMapper mapper = new MediaTypeMapper(resources);
                     //now we just create a fake RuntimeResource

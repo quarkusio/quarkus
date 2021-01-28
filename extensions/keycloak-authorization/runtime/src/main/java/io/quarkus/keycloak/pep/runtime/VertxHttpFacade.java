@@ -68,7 +68,7 @@ public class VertxHttpFacade implements OIDCHttpFacade {
         return new Request() {
             @Override
             public String getMethod() {
-                return request.rawMethod();
+                return request.method().name();
             }
 
             @Override

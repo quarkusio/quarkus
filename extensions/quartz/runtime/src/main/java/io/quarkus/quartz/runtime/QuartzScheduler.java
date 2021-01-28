@@ -181,12 +181,11 @@ public class QuartzScheduler implements Scheduler {
                         }
 
                         JobDetail job = jobBuilder.build();
-                        if (scheduler.checkExists(job.getKey())) {
-                            scheduler.deleteJob(job.getKey());
+                        if (!scheduler.checkExists(job.getKey())) {
+                            scheduler.scheduleJob(job, triggerBuilder.build());
+                            LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
+                                    scheduled);
                         }
-                        scheduler.scheduleJob(job, triggerBuilder.build());
-                        LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
-                                scheduled);
                     }
                 }
                 if (transaction != null) {
@@ -342,7 +341,9 @@ public class QuartzScheduler implements Scheduler {
                     QuarkusQuartzConnectionPoolProvider.class.getName());
             if (buildTimeConfig.clustered) {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".isClustered", "true");
-                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval", "20000"); // 20 seconds
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".acquireTriggersWithinLock", "true");
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval",
+                        "" + quartzSupport.getBuildTimeConfig().clusterCheckinInterval);
             }
 
             if (buildTimeConfig.storeType.isNonManagedTxJobStore()) {

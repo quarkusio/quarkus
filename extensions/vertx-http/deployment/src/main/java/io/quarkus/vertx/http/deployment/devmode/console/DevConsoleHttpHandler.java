@@ -126,10 +126,10 @@ public class DevConsoleHttpHandler implements Consumer<DevConsoleRequest> {
 
     private void nettyDispatch(DevConsoleRequest request)
             throws Exception {
-        String path = request.getPath();
+        String uri = request.getUri();
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getMethod()), path, quarkusHeaders);
+                HttpMethod.valueOf(request.getMethod()), uri, quarkusHeaders);
         for (Map.Entry<String, List<String>> i : request.getHeaders().entrySet()) {
             nettyRequest.headers().add(i.getKey(), i.getValue());
         }

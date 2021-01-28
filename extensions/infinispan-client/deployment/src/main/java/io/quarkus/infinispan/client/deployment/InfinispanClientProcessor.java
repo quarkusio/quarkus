@@ -59,7 +59,8 @@ class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
 
     private static final String META_INF = "META-INF";
-    private static final String HOTROD_CLIENT_PROPERTIES = META_INF + File.separator + "hotrod-client.properties";
+    private static final String HOTROD_CLIENT_FILE = "hotrod-client.properties";
+    private static final String HOTROD_CLIENT_FILE_IN_META_INF = META_INF + File.separator + HOTROD_CLIENT_FILE;
     private static final String PROTO_EXTENSION = ".proto";
 
     /**
@@ -81,12 +82,19 @@ class InfinispanClientProcessor {
         feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
         systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
-        hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_PROPERTIES));
+        // Scan META-INF for backwards compatibility
+        hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_FILE_IN_META_INF));
+        hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_FILE));
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
 
-        InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
+        InputStream stream = stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_FILE);
+        if (stream == null) {
+            // Check if it exists inside META-INF for backwards compatibility
+            stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_FILE_IN_META_INF);
+        }
+
         Properties properties;
         if (stream == null) {
             properties = new Properties();

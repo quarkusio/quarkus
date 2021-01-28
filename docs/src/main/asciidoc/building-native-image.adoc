@@ -240,8 +240,8 @@ cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\
 ----
 ====
 
-In addition to the regular files, the build also produces `target/getting-started-1.0-SNAPSHOT-runner`.
-You can run it using: `./target/getting-started-1.0-SNAPSHOT-runner`.
+In addition to the regular files, the build also produces `target/getting-started-1.0.0-SNAPSHOT-runner`.
+You can run it using: `./target/getting-started-1.0.0-SNAPSHOT-runner`.
 
 == Testing the native executable
 
@@ -300,14 +300,14 @@ To see the `NativeGreetingResourceIT` run against the native executable, use `./
 ----
 $ ./mvnw verify -Pnative
 ...
-[getting-started-1.0-SNAPSHOT-runner:18820]     universe:     587.26 ms
-[getting-started-1.0-SNAPSHOT-runner:18820]      (parse):   2,247.59 ms
-[getting-started-1.0-SNAPSHOT-runner:18820]     (inline):   1,985.70 ms
-[getting-started-1.0-SNAPSHOT-runner:18820]    (compile):  14,922.77 ms
-[getting-started-1.0-SNAPSHOT-runner:18820]      compile:  20,361.28 ms
-[getting-started-1.0-SNAPSHOT-runner:18820]        image:   2,228.30 ms
-[getting-started-1.0-SNAPSHOT-runner:18820]        write:     364.35 ms
-[getting-started-1.0-SNAPSHOT-runner:18820]      [total]:  52,777.76 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]     universe:     587.26 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]      (parse):   2,247.59 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]     (inline):   1,985.70 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]    (compile):  14,922.77 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]      compile:  20,361.28 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]        image:   2,228.30 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]        write:     364.35 ms
+[getting-started-1.0.0-SNAPSHOT-runner:18820]      [total]:  52,777.76 ms
 [INFO]
 [INFO] --- maven-failsafe-plugin:2.22.1:integration-test (default) @ getting-started ---
 [INFO]
@@ -315,7 +315,7 @@ $ ./mvnw verify -Pnative
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quickstart.NativeGreetingResourceIT
-Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getting-started-1.0-SNAPSHOT-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=build/quarkus.log]
+Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=build/quarkus.log]
 2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.002s. Listening on: http://[::]:8081
 2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s - in org.acme.quickstart.NativeGreetingResourceIT
@@ -634,7 +634,7 @@ gdb -ex 'directory path/to/target' path/to/target/{project.name}-{project.versio
 e.g.,
 [source,bash]
 ----
-gdb -ex 'directory ./target' ./target/getting-started-1.0-SNAPSHOT-runner
+gdb -ex 'directory ./target' ./target/getting-started-1.0.0-SNAPSHOT-runner
 ----
 ====
 

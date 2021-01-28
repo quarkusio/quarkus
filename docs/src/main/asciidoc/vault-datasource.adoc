@@ -152,7 +152,7 @@ Compile and start the application:
 [source,bash]
 ----
 ./mvnw package
-java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
+java -jar target/vault-quickstart-1.0.0-SNAPSHOT-runner.jar
 ----
 
 Test it with the `gift-count` endpoint:

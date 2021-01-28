@@ -41,7 +41,7 @@ The following table lists the attributes you can pass to the `create` command:
 | The artifact id of the created project. Not passing it triggers the interactive mode.
 
 | `projectVersion`
-| `1.0-SNAPSHOT`
+| `1.0.0-SNAPSHOT`
 | The version of the created project
 
 | `platformGroupId`
@@ -331,7 +331,7 @@ Now you should be able to execute `./mvnw quarkus-bootstrap:build-tree` on your 
 [source,text,subs=attributes+]
 ----
 [INFO] --- quarkus-bootstrap-maven-plugin:{quarkus-version}:build-tree (default-cli) @ getting-started ---
-[INFO] org.acme:getting-started:jar:1.0-SNAPSHOT
+[INFO] org.acme:getting-started:jar:1.0.0-SNAPSHOT
 [INFO] └─ io.quarkus:quarkus-resteasy-deployment:jar:{quarkus-version} (compile)
 [INFO]    ├─ io.quarkus:quarkus-resteasy-server-common-deployment:jar:{quarkus-version} (compile)
 [INFO]    │  ├─ io.quarkus:quarkus-core-deployment:jar:{quarkus-version} (compile)

@@ -208,7 +208,7 @@ And the region from your AWS CLI profile will be used.
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -jar target/amazon-ses-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -jar target/amazon-ses-quickstart-1.0.0-SNAPSHOT-runner.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.

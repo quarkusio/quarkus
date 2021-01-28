@@ -15,12 +15,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JdkSSLEngineOptions;
 
@@ -47,44 +46,68 @@ public class Http2ServerPushTestCase {
             final CompletableFuture<String> pushedPath = new CompletableFuture<>();
             final CompletableFuture<String> pushedBody = new CompletableFuture<>();
 
-            HttpClientRequest request = vertx.createHttpClient(options)
-                    .get(sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath());
-            request.pushHandler(new Handler<HttpClientRequest>() {
-                @Override
-                public void handle(HttpClientRequest event) {
-                    pushedPath.complete(event.path());
-                    event.handler(new Handler<HttpClientResponse>() {
-                        @Override
-                        public void handle(HttpClientResponse event) {
-                            event.bodyHandler(new Handler<Buffer>() {
-                                @Override
-                                public void handle(Buffer event) {
-                                    pushedBody.complete(new String(event.getBytes(), StandardCharsets.UTF_8));
-                                }
-                            });
-                            event.exceptionHandler(new Handler<Throwable>() {
-                                @Override
-                                public void handle(Throwable event) {
-                                    pushedBody.completeExceptionally(event);
-                                    pushedPath.completeExceptionally(event);
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-            request.handler(new Handler<HttpClientResponse>() {
-                @Override
-                public void handle(HttpClientResponse event) {
-                    event.endHandler(new Handler<Void>() {
-                        @Override
-                        public void handle(Void event) {
+            //            request.pushHandler(new Handler<HttpClientRequest>() {
+            //                @Override
+            //                public void handle(HttpClientRequest event) {
+            //                    pushedPath.complete(event.path());
+            //                    event.handler(new Handler<HttpClientResponse>() {
+            //                        @Override
+            //                        public void handle(HttpClientResponse event) {
+            //                            event.bodyHandler(new Handler<Buffer>() {
+            //                                @Override
+            //                                public void handle(Buffer event) {
+            //                                    pushedBody.complete(new String(event.getBytes(), StandardCharsets.UTF_8));
+            //                                }
+            //                            });
+            //                            event.exceptionHandler(new Handler<Throwable>() {
+            //                                @Override
+            //                                public void handle(Throwable event) {
+            //                                    pushedBody.completeExceptionally(event);
+            //                                    pushedPath.completeExceptionally(event);
+            //                                }
+            //                            });
+            //                        }
+            //                    });
+            //                }
+            //            });
+            //            request.handler(new Handler<HttpClientResponse>() {
+            //                @Override
+            //                public void handle(HttpClientResponse event) {
+            //                    event.endHandler(new Handler<Void>() {
+            //                        @Override
+            //                        public void handle(Void event) {
+            //
+            //                        }
+            //                    });
+            //                }
+            //            });
+            //            request.end();
 
-                        }
+            vertx.createHttpClient(options)
+                    .request(HttpMethod.GET, sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
+                    .onSuccess(request -> {
+                        pushedPath.complete(request.path());
+                        request.send(aResult -> {
+                            if (aResult.succeeded()) {
+                                HttpClientResponse response = aResult.result();
+                                response.body(aResult2 -> {
+                                    if (aResult2.succeeded()) {
+                                        Buffer body = aResult2.result();
+                                        pushedBody.complete(new String(body.getBytes(), StandardCharsets.UTF_8));
+                                    } else if (aResult2.cause() != null) {
+                                        // error receiving response
+                                        pushedBody.completeExceptionally(aResult.cause());
+                                        pushedPath.completeExceptionally(aResult.cause());
+                                    }
+                                });
+                            } else if (aResult.cause() != null) {
+                                // error sending request
+                                pushedBody.completeExceptionally(aResult.cause());
+                                pushedPath.completeExceptionally(aResult.cause());
+                            }
+                        });
                     });
-                }
-            });
-            request.end();
+
             Assertions.assertEquals("/pushed", pushedPath.get(10, TimeUnit.SECONDS));
             Assertions.assertEquals("pushed-body", pushedBody.get(10, TimeUnit.SECONDS));
 

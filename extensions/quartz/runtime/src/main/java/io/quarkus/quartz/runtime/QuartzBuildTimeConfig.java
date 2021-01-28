@@ -20,6 +20,12 @@ public class QuartzBuildTimeConfig {
     public boolean clustered;
 
     /**
+     * The frequency (in milliseconds) at which the scheduler instance checks-in with other instances of the cluster.
+     */
+    @ConfigItem(defaultValue = "15000")
+    public long clusterCheckinInterval;
+
+    /**
      * The type of store to use.
      * <p>
      * When using the `db` store type configuration value make sure that you have the datasource configured.

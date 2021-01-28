@@ -301,7 +301,7 @@ Using `private_key_jwt` or `private_key_jwt` authentication methods ensures that
 [[token-propagation]]
 == Token Propagation in MicroProfile RestClient client filter
 
-`quarkus-oidc-token-propagation` extension provides `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` JAX-RS ClientRequestFilter which propagates the current Bearer or Authorization Code Flow access token as an HTTP `Authorization` `Bearer` scheme value.
+`quarkus-oidc-token-propagation` extension provides `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` JAX-RS ClientRequestFilter which propagates the current link:security-openid-connect[Bearer] or link:security-openid-connect-web-authentication[Authorization Code Flow] access token as an HTTP `Authorization` `Bearer` scheme value.
 
 You can selectively register `AccessTokenRequestFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`, for example:
 
@@ -343,3 +343,5 @@ This filter will be enhanced in the future to support re-signing and/or exchangi
 == References
 
 * link:security[Quarkus Security]
+* link:security-openid-connect[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization]
+* link:security-openid-connect-web-authentication[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]

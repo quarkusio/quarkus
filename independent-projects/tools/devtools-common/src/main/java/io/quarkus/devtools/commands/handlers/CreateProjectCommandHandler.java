@@ -4,6 +4,7 @@ import static io.quarkus.devtools.commands.CreateProject.CODESTARTS;
 import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
 import static io.quarkus.devtools.commands.CreateProject.NO_EXAMPLES;
+import static io.quarkus.devtools.commands.CreateProject.OVERRIDE_EXAMPLES;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_ARTIFACT_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_GROUP_ID;
@@ -88,6 +89,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                     .addExtensions(extensionsToAdd)
                     .buildTool(invocation.getQuarkusProject().getBuildTool())
+                    .addOverrideExamples(invocation.getValue(OVERRIDE_EXAMPLES, new HashSet<>()))
                     .addCodestarts(invocation.getValue(CODESTARTS, new HashSet<>()))
                     .noExamples(invocation.getValue(NO_EXAMPLES, false))
                     .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))

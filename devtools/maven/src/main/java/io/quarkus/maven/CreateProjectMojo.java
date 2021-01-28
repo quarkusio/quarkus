@@ -81,8 +81,17 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "legacyCodegen", defaultValue = "false")
     private boolean legacyCodegen;
 
+    /**
+     * When true, do not include any example code in the generated Quarkus project.
+     */
     @Parameter(property = "noExamples", defaultValue = "false")
     private boolean noExamples;
+
+    /**
+     * Choose which example(s) you want in the generated Quarkus application.
+     */
+    @Parameter(property = "examples")
+    private Set<String> examples;
 
     /**
      * Group ID of the target platform BOM
@@ -272,6 +281,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .className(className)
                     .packageName(packageName)
                     .extensions(extensions)
+                    .overrideExamples(examples)
                     .legacyCodegen(legacyCodegen)
                     .noExamples(noExamples);
             if (path != null) {

@@ -38,6 +38,7 @@ public class CreateProject {
     public static final String NO_BUILDTOOL_WRAPPER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-buildtool-wrapper");
     public static final String NO_EXAMPLES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-examples");
     public static final String CODESTARTS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "codestarts");
+    public static final String OVERRIDE_EXAMPLES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "examples");
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
@@ -131,6 +132,11 @@ public class CreateProject {
 
     public CreateProject codestarts(Set<String> codestarts) {
         setValue(CODESTARTS, codestarts);
+        return this;
+    }
+
+    public CreateProject overrideExamples(Set<String> overrideExamples) {
+        setValue(OVERRIDE_EXAMPLES, overrideExamples);
         return this;
     }
 

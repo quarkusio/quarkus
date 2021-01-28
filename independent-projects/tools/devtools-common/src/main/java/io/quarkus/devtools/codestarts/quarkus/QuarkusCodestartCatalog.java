@@ -92,12 +92,15 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         // Add codestarts from extension and for tooling
         projectInput.getSelection().addNames(getExtensionCodestarts(projectInput));
         projectInput.getSelection().addNames(getToolingCodestarts(projectInput));
+        projectInput.getSelection().addNames(projectInput.getOverrideExamples());
 
         projectInput.getData().putAll(generateSelectedExtensionsData(projectInput));
 
         // Filter out examples if noExamples
         final List<Codestart> projectCodestarts = super.select(projectInput).stream()
                 .filter(c -> !isExample(c) || !projectInput.noExamples())
+                .filter(c -> !isExample(c) || projectInput.getOverrideExamples().isEmpty()
+                        || c.isSelected(projectInput.getOverrideExamples()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
         // include default example codestarts if none selected

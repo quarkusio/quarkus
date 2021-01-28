@@ -261,7 +261,7 @@ You can now interact with your REST service:
 
 You can build a native executable with the usual command `./mvnw package -Pnative`.
 
-Running it is as simple as executing `./target/rest-json-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 
@@ -378,7 +378,7 @@ Open a browser to http://localhost:8080/legumes.html and you will see our list o
 The interesting part starts when running the application as a native executable:
 
  * create the native executable with `./mvnw package -Pnative`.
- * execute it with `./target/rest-json-quickstart-1.0-SNAPSHOT-runner`
+ * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
 No legumes there.
@@ -409,7 +409,7 @@ Let's do that and follow the same steps as before:
 
  * hit `Ctrl+C` to stop the application
  * create the native executable with `./mvnw package -Pnative`.
- * execute it with `./target/rest-json-quickstart-1.0-SNAPSHOT-runner`
+ * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
 This time, you can see our list of legumes.

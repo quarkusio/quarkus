@@ -750,7 +750,7 @@ As usual with native executable compilation, this operation consumes a lot of me
 It might be safer to stop the two containers while you are building the native executable and start them again once you are done.
 ====
 
-Running it is as simple as executing `./target/hibernate-search-orm-elasticsearch-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/hibernate-search-orm-elasticsearch-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/` and use your application.
 

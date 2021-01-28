@@ -626,7 +626,7 @@ quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
 
 You can then build a native executable with the usual command `./mvnw package -Pnative`.
 
-Running it is as simple as executing `./target/mongodb-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/mongodb-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 

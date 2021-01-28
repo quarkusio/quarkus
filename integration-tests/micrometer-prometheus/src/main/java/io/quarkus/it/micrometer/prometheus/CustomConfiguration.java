@@ -10,8 +10,10 @@ import javax.interceptor.Interceptor;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.config.MeterFilter;
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.CollectorRegistry;
@@ -56,5 +58,23 @@ public class CustomConfiguration {
     @Singleton
     public PrometheusMeterRegistry registry(CollectorRegistry collectorRegistry, Clock clock) {
         return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, collectorRegistry, clock);
+    }
+
+    /** Enable histogram buckets for a specific timer */
+    @Produces
+    @Singleton
+    public MeterFilter enableHistogram() {
+        return new MeterFilter() {
+            public DistributionStatisticConfig configure(Meter.Id id, DistributionStatisticConfig config) {
+                if (id.getName().equals("prime.number.test")) {
+                    return DistributionStatisticConfig.builder()
+                            .percentiles(0.5, 0.95) // median and 95th percentile
+                            .percentilesHistogram(true) // histogram buckets (for use with prometheus histogram_quantile)
+                            .build()
+                            .merge(config);
+                }
+                return config;
+            }
+        };
     }
 }

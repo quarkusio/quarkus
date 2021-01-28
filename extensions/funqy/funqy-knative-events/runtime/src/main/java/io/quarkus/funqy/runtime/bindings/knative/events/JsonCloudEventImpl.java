@@ -154,7 +154,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     @Override
     public String dataSchema() {
         if (dataSchema == null) {
-            String dsName = specVersion().charAt(0) == '0' ? "schemaurl" : "dataschema";
+            String dsName = majorSpecVersion() == 0 ? "schemaurl" : "dataschema";
             JsonNode dataSchema = event.get(dsName);
             if (dataSchema != null) {
                 this.dataSchema = dataSchema.asText();
@@ -190,43 +190,45 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
             }
         } else if (byte[].class.equals(dataType)) {
             try {
-                switch (specVersion().charAt(0)) {
-                    case '0':
-                        boolean isBase64 = false;
-                        if (event.has("datacontentencoding")) {
-                            String dce = event.get("datacontentencoding").asText();
-                            if ("base64".equals(dce)) {
-                                isBase64 = true;
-                            } else {
-                                throw new RuntimeException("Cannot deserialize data for data-content-encoding: '" + dce + "'.");
-                            }
-                        }
-                        if (isBase64) {
-                            if (event.has("data")) {
-                                String txt = event.get("data").asText();
-                                data = (T) Base64.getDecoder().decode(txt);
-                                return data;
-                            }
+                if (majorSpecVersion() == 0) {
+                    boolean isBase64 = false;
+                    if (event.has("datacontentencoding")) {
+                        String dce = event.get("datacontentencoding").asText();
+                        if ("base64".equals(dce)) {
+                            isBase64 = true;
                         } else {
-                            if (event.has("data")) {
-                                data = (T) mapper.writeValueAsBytes(event.get("data"));
-                                return data;
-                            }
+                            throw new RuntimeException("Cannot deserialize data for data-content-encoding: '" + dce + "'.");
                         }
-                    case '1':
+                    }
+                    if (isBase64) {
                         if (event.has("data")) {
-                            data = (T) mapper.writeValueAsBytes(event.get("data"));
-                            return data;
-                        } else if (event.has("data_base64")) {
-                            String txt = event.get("data_base64").asText();
+                            String txt = event.get("data").asText();
                             data = (T) Base64.getDecoder().decode(txt);
                             return data;
                         } else {
                             return null;
                         }
-                    default:
-                        throw new RuntimeException("Cannot deserialize data for spec-version: '" + specVersion() + "'.");
+                    } else {
+                        if (event.has("data")) {
+                            data = (T) mapper.writeValueAsBytes(event.get("data"));
+                            return data;
+                        } else {
+                            return null;
+                        }
+                    }
+                } else {
+                    if (event.has("data")) {
+                        data = (T) mapper.writeValueAsBytes(event.get("data"));
+                        return data;
+                    } else if (event.has("data_base64")) {
+                        String txt = event.get("data_base64").asText();
+                        data = (T) Base64.getDecoder().decode(txt);
+                        return data;
+                    } else {
+                        return null;
+                    }
                 }
+
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

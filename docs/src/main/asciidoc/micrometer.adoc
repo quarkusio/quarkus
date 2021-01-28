@@ -62,10 +62,10 @@ cd micrometer-quickstart
 ----
 
 This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
-This extension will load the `micrometer` extension as well as additional library dependencies required to support
+This extension will load the core `micrometer` extension as well as additional library dependencies required to support
 prometheus.
 
-If you already have your Quarkus project configured, you can add the `micrometer` extension
+If you already have your Quarkus project configured, you can add the `micrometer-registry-prometheus` extension
 to your project by running the following command in your project base directory:
 
 [source,bash]
@@ -282,10 +282,11 @@ jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",
 Note that metrics appear lazily, you often won't see any data for your endpoint until
 something tries to access it, etc.
 
-== Adding custom configuration or common tags
+== Using MeterFilter to configure metrics
 
 Micrometer uses `MeterFilter` instances to customize the metrics emitted by `MeterRegistry` instances.
-The Micrometer extension will detect `MeterFilter` CDI beans and use them when initializing `MeterRegistry` instances.
+The Micrometer extension will detect `MeterFilter` CDI beans and use them when initializing `MeterRegistry`
+instances.
 
 [source,java]
 ----
@@ -311,6 +312,25 @@ public class CustomConfiguration {
         return MeterFilter.commonTags(Arrays.asList(
                 Tag.of("env", deploymentEnv)));
     }
+
+    /** Enable histogram buckets for a specific timer */
+    @Produces
+    @Singleton
+    public MeterFilter enableHistogram() {
+        return new MeterFilter() {
+            @Override
+            public DistributionStatisticConfig configure(Meter.Id id, DistributionStatisticConfig config) {
+                if(id.getName().startsWith("myservice")) {
+                    return DistributionStatisticConfig.builder()
+                        .percentiles(0.5, 0.95)     // median and 95th percentile, not aggregable
+                        .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
+                        .build()
+                        .merge(config);
+                }
+                return config;
+            }
+        };
+    }
 }
 ----
 
@@ -324,13 +344,13 @@ If you aren't using Prometheus, you have a few options. Some Micrometer registry
 have been wrapped in
 https://github.com/quarkiverse/quarkiverse-micrometer-registry[Quarkiverse extensions].
 To use the Micrometer StackDriver MeterRegistry, for example, you would use the
-`quarkiverse-micrometer-registry-stackdriver` extension:
+`quarkus-micrometer-registry-stackdriver` extension:
 
 [source,xml]
 ----
 <dependency>
     <groupId>io.quarkiverse</groupId>
-    <artifactId>quarkiverse-micrometer-registry-stackdriver</artifactId>
+    <artifactId>quarkus-micrometer-registry-stackdriver</artifactId>
 </dependency>
 ----
 
@@ -377,10 +397,10 @@ public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, 
 This example corresponds to the following instructions in the Micrometer documentation:
 https://micrometer.io/docs/registry/statsD#_customizing_the_metrics_sink
 
-Note that the method returns the specific type of `MeterRegistry` as a `@Singleton`. Use MicroProfile Config to inject
-any configuration attributes you need to configure the registry. Most Micrometer registry extensions,
-like `quarkiverse-micrometer-registry-statsd`, define a producer for registry-specific configuration objects that
-are integrated with the Quarkus configuration model.
+Note that the method returns the specific type of `MeterRegistry` as a `@Singleton`. Use MicroProfile Config
+to inject any configuration attributes you need to configure the registry. Most Micrometer registry extensions,
+like `quarkus-micrometer-registry-statsd`, define a producer for registry-specific configuration objects
+that are integrated with the Quarkus configuration model.
 
 == Support for the MicroProfile Metrics API
 

@@ -19,7 +19,6 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyph
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stringifyType;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,14 +62,16 @@ class ConfigDoItemFinder {
     private final Properties javaDocProperties;
     private final Map<String, TypeElement> configGroupQualifiedNameToTypeElementMap;
     private final FsMap allConfigurationGroups;
+    private final FsMap allConfigurationRoots;
 
     public ConfigDoItemFinder(Set<ConfigRootInfo> configRoots,
             Map<String, TypeElement> configGroupQualifiedNameToTypeElementMap,
-            Properties javaDocProperties, Path allConfigurationGroupsDir) {
+            Properties javaDocProperties, FsMap allConfigurationGroups, FsMap allConfigurationRoots) {
         this.configRoots = configRoots;
         this.configGroupQualifiedNameToTypeElementMap = configGroupQualifiedNameToTypeElementMap;
         this.javaDocProperties = javaDocProperties;
-        this.allConfigurationGroups = new FsMap(allConfigurationGroupsDir);
+        this.allConfigurationGroups = allConfigurationGroups;
+        this.allConfigurationRoots = allConfigurationRoots;
     }
 
     /**
@@ -97,6 +98,7 @@ class ConfigDoItemFinder {
             final List<ConfigDocItem> configDocItems = recursivelyFindConfigItems(element, rootName, rootName, configPhase,
                     false, sectionLevel, true);
             holder.addConfigRootItems(configRootInfo, configDocItems);
+            allConfigurationRoots.put(configRootInfo.getClazz().toString(), OBJECT_MAPPER.writeValueAsString(configDocItems));
         }
 
         return holder;
@@ -109,6 +111,27 @@ class ConfigDoItemFinder {
             ConfigPhase configPhase, boolean withinAMap, int sectionLevel, boolean generateSeparateConfigGroupDocsFiles)
             throws JsonProcessingException {
         List<ConfigDocItem> configDocItems = new ArrayList<>();
+        TypeElement asTypeElement = (TypeElement) element;
+        TypeMirror superType = asTypeElement.getSuperclass();
+        if (superType.getKind() != TypeKind.NONE) {
+            String key = superType.toString();
+            String rawConfigItems = allConfigurationGroups.get(key);
+            if (rawConfigItems == null) {
+                rawConfigItems = allConfigurationRoots.get(key);
+            }
+            final List<ConfigDocItem> superTypeConfigItems;
+            if (rawConfigItems == null) { // element not yet scanned
+                Element superElement = ((DeclaredType) superType).asElement();
+                superTypeConfigItems = recursivelyFindConfigItems(superElement, rootName, parentName,
+                        configPhase, withinAMap, sectionLevel, generateSeparateConfigGroupDocsFiles);
+            } else {
+                superTypeConfigItems = OBJECT_MAPPER.readValue(rawConfigItems, LIST_OF_CONFIG_ITEMS_TYPE_REF);
+            }
+
+            configDocItems.addAll(superTypeConfigItems);
+
+        }
+
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (!enclosedElement.getKind().isField()) {
                 continue;

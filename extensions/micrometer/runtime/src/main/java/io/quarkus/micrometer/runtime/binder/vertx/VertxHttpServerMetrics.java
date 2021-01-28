@@ -17,10 +17,10 @@ import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
+import io.vertx.core.spi.observability.HttpRequest;
+import io.vertx.core.spi.observability.HttpResponse;
 
 /**
  * HttpServerMetrics<R, W, S>
@@ -92,15 +92,15 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public HttpRequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
-            HttpServerResponse response) {
+            HttpResponse response) {
         HttpRequestMetric requestMetric = new HttpRequestMetric();
         requestMetric.parseUriPath(matchPatterns, ignorePatterns, uri);
         if (requestMetric.isMeasure()) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    HttpMetricsCommon.uri(requestMetric.getPath(), response.getStatusCode()),
+                    HttpMetricsCommon.uri(requestMetric.getPath(), response.statusCode()),
                     VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
-                    HttpMetricsCommon.status(response.getStatusCode())))
+                    HttpMetricsCommon.status(response.statusCode())))
                     .increment();
         }
         log.debugf("responsePushed %s: %s, %s", uri, socketMetric, requestMetric);
@@ -117,12 +117,12 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      * @return a RequestMetricContext
      */
     @Override
-    public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpServerRequest request) {
+    public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpRequest request) {
         HttpRequestMetric requestMetric = new HttpRequestMetric();
         setRequestMetric(Vertx.currentContext(), requestMetric);
 
         // evaluate and remember the path to monitor for use later (maybe a 404 or redirect..)
-        requestMetric.parseUriPath(matchPatterns, ignorePatterns, request.path());
+        requestMetric.parseUriPath(matchPatterns, ignorePatterns, request.uri());
         if (requestMetric.isMeasure()) {
             // If we're measuring this request, create/remember the sample
             requestMetric.setSample(Timer.start(registry));
@@ -156,25 +156,32 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         }
     }
 
+    @Override
+    public void responseBegin(HttpRequestMetric requestMetric, HttpResponse response) {
+        requestMetric.setResponse(response);
+    }
+
     /**
      * Called when an http server response has ended.
+     * Must save response in the httpRequest metric @ responseBegin
      *
      * @param requestMetric a RequestMetricContext or null
-     * @param response the http server response
+     * @param bytesWritten bytes written
      */
     @Override
-    public void responseEnd(HttpRequestMetric requestMetric, HttpServerResponse response) {
-        log.debugf("responseEnd: %s, %s", requestMetric, response);
+    public void responseEnd(HttpRequestMetric requestMetric, long bytesWritten) {
+        log.debugf("responseEnd: %s, %s", requestMetric, requestMetric.getResponse());
 
+        HttpResponse response = requestMetric.getResponse();
         Timer.Sample sample = getRequestSample(requestMetric);
-        if (sample != null) {
+        if (response != null && sample != null) {
             String requestPath = getServerRequestPath(requestMetric);
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
                     .tags(requestMetric.getTags())
                     .tags(Tags.of(
-                            HttpMetricsCommon.uri(requestPath, response.getStatusCode()),
+                            HttpMetricsCommon.uri(requestPath, response.statusCode()),
                             VertxMetricsTags.outcome(response),
-                            HttpMetricsCommon.status(response.getStatusCode())));
+                            HttpMetricsCommon.status(response.statusCode())));
 
             sample.stop(builder.register(registry));
         }

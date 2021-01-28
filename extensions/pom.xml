@@ -153,6 +153,8 @@
         <module>amazon-lambda</module>
         <module>amazon-lambda-xray</module>
         <module>amazon-lambda-http</module>
+        <!-- amazon-lambda-http-v1 is deprecated -->
+        <module>amazon-lambda-http-v1</module>
         <module>amazon-services</module>
         <module>amazon-alexa</module>
         <module>azure-functions-http</module>

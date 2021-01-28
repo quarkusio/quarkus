@@ -2,17 +2,12 @@ package io.quarkus.amazon.lambda.http.deployment;
 
 import org.jboss.logging.Logger;
 
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
+
 import io.quarkus.amazon.lambda.deployment.LambdaUtil;
 import io.quarkus.amazon.lambda.deployment.ProvidedAmazonLambdaHandlerBuildItem;
 import io.quarkus.amazon.lambda.http.LambdaHttpHandler;
-import io.quarkus.amazon.lambda.http.model.AlbContext;
-import io.quarkus.amazon.lambda.http.model.ApiGatewayAuthorizerContext;
-import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
-import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
-import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
-import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
-import io.quarkus.amazon.lambda.http.model.CognitoAuthorizerClaims;
-import io.quarkus.amazon.lambda.http.model.ErrorModel;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -43,16 +38,14 @@ public class AmazonLambdaHttpProcessor {
     public void registerReflectionClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
         reflectiveClassBuildItemBuildProducer
                 .produce(new ReflectiveClassBuildItem(true, true, true,
-                        AlbContext.class,
-                        ApiGatewayAuthorizerContext.class,
-                        ApiGatewayRequestIdentity.class,
-                        AwsProxyRequest.class,
-                        AwsProxyRequestContext.class,
-                        AwsProxyResponse.class,
-                        CognitoAuthorizerClaims.class,
-                        ErrorModel.class,
-                        Headers.class,
-                        MultiValuedTreeMap.class));
+                        APIGatewayV2HTTPEvent.class,
+                        APIGatewayV2HTTPEvent.RequestContext.class,
+                        APIGatewayV2HTTPEvent.RequestContext.Http.class,
+                        APIGatewayV2HTTPEvent.RequestContext.Authorizer.class,
+                        APIGatewayV2HTTPEvent.RequestContext.CognitoIdentity.class,
+                        APIGatewayV2HTTPEvent.RequestContext.IAM.class,
+                        APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT.class,
+                        APIGatewayV2HTTPResponse.class, Headers.class, MultiValuedTreeMap.class));
     }
 
     /**

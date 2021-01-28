@@ -11,12 +11,12 @@ import io.vertx.core.http.HttpMethod;
 @RouteBase(path = "resource", consumes = "application/json", produces = "application/json")
 public class OpenApiRoute {
 
-    @Route(path = "/", methods = HttpMethod.GET)
+    @Route(path = "/", methods = Route.HttpMethod.GET)
     public String root() {
         return "resource";
     }
 
-    @Route(path = "/test-enums", methods = HttpMethod.GET)
+    @Route(path = "/test-enums", methods = Route.HttpMethod.GET)
     public Query testEnums(@Param("query") String query) {
         return Query.QUERY_PARAM_1;
     }

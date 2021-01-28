@@ -27,7 +27,7 @@
         <opentracing-jdbc.version>0.2.12</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <jaeger.version>1.4.0</jaeger.version>
-        <quarkus-http.version>3.0.18.Final</quarkus-http.version>
+        <quarkus-http.version>4.0.0.Alpha2</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>
         <micrometer.version>1.6.3</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
@@ -111,7 +111,7 @@
         <wildfly-elytron.version>1.14.1.Final</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.2.0.Final</jboss-threads.version>
-        <vertx.version>3.9.5</vertx.version>
+        <vertx.version>4.0.0</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
@@ -137,7 +137,7 @@
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.1.Final</jboss-logging.version>
         <mutiny.version>0.13.0</mutiny.version>
-        <mutiny-vertx.version>1.4.0</mutiny-vertx.version>
+        <mutiny-vertx.version>2.0.0.RC3</mutiny-vertx.version>
         <kafka2.version>2.5.0</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->

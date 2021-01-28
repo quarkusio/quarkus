@@ -34,7 +34,7 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
             requestPath = requestPath.substring(contextPath.length() - 1);
         }
         SecurityPathMatch match = deployment.getSecurityPathMatches().getSecurityInfo(requestPath,
-                request.request().rawMethod());
+                request.request().method().name());
 
         SingleConstraintMatch mergedConstraint = match.getMergedConstraint();
         if (mergedConstraint.getRequiredRoles().isEmpty()) {

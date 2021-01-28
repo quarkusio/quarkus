@@ -186,19 +186,20 @@ public class VertxCoreRecorder {
         }
 
         Vertx vertx;
-        if (options.getEventBusOptions().isClustered()) {
-            CompletableFuture<Vertx> latch = new CompletableFuture<>();
-            Vertx.clusteredVertx(options, ar -> {
-                if (ar.failed()) {
-                    latch.completeExceptionally(ar.cause());
-                } else {
-                    latch.complete(ar.result());
-                }
-            });
-            vertx = latch.join();
-        } else {
+        // TODO Unable to check if Vert.x is clustered from config anymore.
+//        if (options.isClustered()) {
+//            CompletableFuture<Vertx> latch = new CompletableFuture<>();
+//            Vertx.clusteredVertx(options, ar -> {
+//                if (ar.failed()) {
+//                    latch.completeExceptionally(ar.cause());
+//                } else {
+//                    latch.complete(ar.result());
+//                }
+//            });
+//            vertx = latch.join();
+//        } else {
             vertx = Vertx.vertx(options);
-        }
+//        }
         vertx.exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable error) {
@@ -298,7 +299,8 @@ public class VertxCoreRecorder {
 
     private static void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
         ClusterConfiguration cluster = conf.cluster;
-        options.getEventBusOptions().setClustered(cluster.clustered);
+        // TODO isClustered has been removed ??????
+//        options.getEventBusOptions().setClustered(cluster.clustered);
         options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
         options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval.toMillis());
         if (cluster.host != null) {

@@ -16,7 +16,6 @@ import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.eventbus.impl.HandlerHolder;
 import io.vertx.core.eventbus.impl.MessageImpl;
-import io.vertx.core.eventbus.impl.clustered.ClusterNodeInfo;
 import io.vertx.core.impl.HAManager;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.impl.resolver.DefaultResolverProvider;
@@ -144,11 +143,6 @@ final class Target_io_vertx_core_eventbus_impl_clustered_ClusteredEventBusCluste
 
     @Substitute
     private void sendRemote(ServerID theServerID, MessageImpl message) {
-        throw new RuntimeException("Not Implemented");
-    }
-
-    @Substitute
-    private void removeSub(String subName, ClusterNodeInfo node, Handler<AsyncResult<Void>> completionHandler) {
         throw new RuntimeException("Not Implemented");
     }
 

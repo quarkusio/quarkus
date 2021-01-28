@@ -5,6 +5,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import io.vertx.core.Promise;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -54,7 +55,7 @@ public class VerticleWithInstanceDeploymentTest {
     public static class MyVerticle extends AbstractVerticle {
 
         @Override
-        public void start(Future<Void> done) {
+        public void start(Promise<Void> done) {
             vertx.createHttpServer()
                     .requestHandler(req -> req.response().end("OK-" + Thread.currentThread().getName()))
                     .listen(8080, ar -> done.handle(ar.mapEmpty()));

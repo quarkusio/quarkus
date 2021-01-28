@@ -67,7 +67,7 @@ public class MutinyStubInjectionTest {
 
         public String invokeFromIoThread(String s) {
             return Uni.createFrom().<String> emitter(e -> {
-                vertx.runOnContext(x -> {
+                vertx.runOnContext(() -> {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())
                             .map(HelloReply::getMessage)
                             .map(r -> r + " " + Thread.currentThread().getName())

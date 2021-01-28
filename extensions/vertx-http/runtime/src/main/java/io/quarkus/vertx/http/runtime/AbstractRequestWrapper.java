@@ -6,19 +6,12 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.Cookie;
-import io.vertx.core.http.HttpConnection;
-import io.vertx.core.http.HttpFrame;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerFileUpload;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.HttpVersion;
-import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.http.StreamPriority;
+import io.vertx.core.http.*;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
@@ -79,11 +72,6 @@ public abstract class AbstractRequestWrapper implements HttpServerRequest {
     @Override
     public HttpMethod method() {
         return delegate.method();
-    }
-
-    @Override
-    public String rawMethod() {
-        return delegate.rawMethod();
     }
 
     @Override
@@ -184,11 +172,6 @@ public abstract class AbstractRequestWrapper implements HttpServerRequest {
     }
 
     @Override
-    public NetSocket netSocket() {
-        return delegate.netSocket();
-    }
-
-    @Override
     public HttpServerRequest setExpectMultipart(boolean b) {
         delegate.setExpectMultipart(b);
         return this;
@@ -213,11 +196,6 @@ public abstract class AbstractRequestWrapper implements HttpServerRequest {
     @Override
     public String getFormAttribute(String s) {
         return delegate.getFormAttribute(s);
-    }
-
-    @Override
-    public ServerWebSocket upgrade() {
-        return delegate.upgrade();
     }
 
     @Override
@@ -256,4 +234,48 @@ public abstract class AbstractRequestWrapper implements HttpServerRequest {
         return delegate.cookieMap();
     }
 
+    @Override
+    public HttpServerRequest body(Handler<AsyncResult<Buffer>> handler) {
+        return delegate.body(handler);
+    }
+
+    @Override
+    public void end(Handler<AsyncResult<Void>> handler) {
+        delegate.end(handler);
+    }
+
+    @Override
+    public void toNetSocket(Handler<AsyncResult<NetSocket>> handler) {
+        delegate.toNetSocket(handler);
+    }
+
+    @Override
+    public void toWebSocket(Handler<AsyncResult<ServerWebSocket>> handler) {
+        delegate.toWebSocket(handler);
+    }
+
+    @Override
+    public HttpServerRequest routed(String route) {
+        return delegate.routed(route);
+    }
+
+    @Override
+    public Future<Buffer> body() {
+        return delegate.body();
+    }
+
+    @Override
+    public Future<Void> end() {
+        return delegate.end();
+    }
+
+    @Override
+    public Future<NetSocket> toNetSocket() {
+        return delegate.toNetSocket();
+    }
+
+    @Override
+    public Future<ServerWebSocket> toWebSocket() {
+        return delegate.toWebSocket();
+    }
 }

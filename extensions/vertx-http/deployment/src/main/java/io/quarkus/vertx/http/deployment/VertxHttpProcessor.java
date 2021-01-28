@@ -14,6 +14,7 @@ import java.util.OptionalInt;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import io.vertx.core.http.impl.Http1xServerRequest;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -57,7 +58,6 @@ import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.vertx.core.Handler;
-import io.vertx.core.http.impl.HttpServerRequestImpl;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -70,7 +70,7 @@ class VertxHttpProcessor {
     LogCategoryBuildItem logging() {
         //this log is only used to log an error about an incorrect URI, which results in a 400 response
         //we don't want to log this
-        return new LogCategoryBuildItem(HttpServerRequestImpl.class.getName(), Level.OFF);
+        return new LogCategoryBuildItem(Http1xServerRequest.class.getName(), Level.OFF);
     }
 
     @BuildStep
@@ -250,7 +250,7 @@ class VertxHttpProcessor {
                 httpBuildTimeConfig, httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
-                        .collect(Collectors.joining(",")));
+                        .collect(Collectors.toList()));
     }
 
     @BuildStep

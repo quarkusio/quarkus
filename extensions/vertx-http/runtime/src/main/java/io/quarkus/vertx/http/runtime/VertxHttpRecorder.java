@@ -29,6 +29,8 @@ import java.util.regex.Pattern;
 
 import javax.enterprise.event.Event;
 
+import io.vertx.core.*;
+import io.vertx.core.impl.WorkerPool;
 import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
@@ -64,14 +66,6 @@ import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Verticle;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
@@ -137,7 +131,7 @@ public class VertxHttpRecorder {
             //as it is possible filters such as the auth filter can do blocking tasks
             //as the underlying handler has not had a chance to install a read handler yet
             //and data that arrives while the blocking task is being processed will be lost
-            if (!httpServerRequest.rawMethod().equals(GET)) {
+            if (httpServerRequest.method() != HttpMethod.GET) {
                 //we don't pause for GET requests, as there is no data
                 httpServerRequest.pause();
             }
@@ -233,7 +227,7 @@ public class VertxHttpRecorder {
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
             LaunchMode launchMode,
-            boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, String websocketSubProtocols)
+            boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, List<String> websocketSubProtocols)
             throws IOException {
 
         if (startVirtual) {
@@ -454,7 +448,7 @@ public class VertxHttpRecorder {
 
     private static void doServerStart(Vertx vertx, HttpBuildTimeConfig httpBuildTimeConfig,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
-            Supplier<Integer> eventLoops, String websocketSubProtocols) throws IOException {
+            Supplier<Integer> eventLoops, List<String> websocketSubProtocols) throws IOException {
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
@@ -709,7 +703,7 @@ public class VertxHttpRecorder {
     }
 
     private static HttpServerOptions createHttpServerOptions(HttpConfiguration httpConfiguration,
-            LaunchMode launchMode, String websocketSubProtocols) {
+            LaunchMode launchMode, List<String> websocketSubProtocols) {
         if (!httpConfiguration.hostEnabled) {
             return null;
         }
@@ -720,7 +714,7 @@ public class VertxHttpRecorder {
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        options.setWebsocketSubProtocols(websocketSubProtocols);
+        options.setWebSocketSubProtocols(websocketSubProtocols);
         options.setReusePort(httpConfiguration.soReusePort);
         options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         options.setTcpCork(httpConfiguration.tcpCork);
@@ -731,7 +725,7 @@ public class VertxHttpRecorder {
     }
 
     private static HttpServerOptions createDomainSocketOptions(HttpConfiguration httpConfiguration,
-            String websocketSubProtocols) {
+            List<String> websocketSubProtocols) {
         if (!httpConfiguration.domainSocketEnabled) {
             return null;
         }
@@ -740,7 +734,7 @@ public class VertxHttpRecorder {
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        options.setWebsocketSubProtocols(websocketSubProtocols);
+        options.setWebSocketSubProtocols(websocketSubProtocols);
         return options;
     }
 
@@ -827,7 +821,7 @@ public class VertxHttpRecorder {
         }
 
         @Override
-        public void start(Future<Void> startFuture) {
+        public void start(Promise<Void> startFuture) {
             final AtomicInteger remainingCount = new AtomicInteger(0);
             boolean httpServerEnabled = httpOptions != null && insecureRequests != HttpConfiguration.InsecureRequests.DISABLED;
             if (httpServerEnabled) {
@@ -891,7 +885,7 @@ public class VertxHttpRecorder {
             }
         }
 
-        private void setupUnixDomainSocketHttpServer(HttpServer httpServer, HttpServerOptions options, Future<Void> startFuture,
+        private void setupUnixDomainSocketHttpServer(HttpServer httpServer, HttpServerOptions options, Promise<Void> startFuture,
                 AtomicInteger remainingCount) {
             httpServer.listen(SocketAddress.domainSocketAddress(options.getHost()), event -> {
                 if (event.succeeded()) {
@@ -905,7 +899,7 @@ public class VertxHttpRecorder {
         }
 
         private void setupTcpHttpServer(HttpServer httpServer, HttpServerOptions options, boolean https,
-                Future<Void> startFuture, AtomicInteger remainingCount) {
+                Promise<Void> startFuture, AtomicInteger remainingCount) {
             httpServer.listen(options.getPort(), options.getHost(), event -> {
                 if (event.cause() != null) {
                     startFuture.fail(event.cause());
@@ -954,7 +948,7 @@ public class VertxHttpRecorder {
         }
 
         @Override
-        public void stop(Future<Void> stopFuture) {
+        public void stop(Promise<Void> stopFuture) {
             if (clearHttpProperty) {
                 String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port";
                 System.clearProperty(portPropertyName);
@@ -1011,49 +1005,52 @@ public class VertxHttpRecorder {
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
     private static void initializeVirtual(Vertx vertxRuntime) {
-        if (virtualBootstrap != null) {
-            return;
-        }
-        VertxInternal vertx = (VertxInternal) vertxRuntime;
-        virtualBootstrap = new ServerBootstrap();
-
-        virtualBootstrap.group(vertx.getEventLoopGroup())
-                .channel(VirtualServerChannel.class)
-                .handler(new ChannelInitializer<VirtualServerChannel>() {
-                    @Override
-                    public void initChannel(VirtualServerChannel ch) throws Exception {
-                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-                    }
-                })
-                .childHandler(new ChannelInitializer<VirtualChannel>() {
-                    @Override
-                    public void initChannel(VirtualChannel ch) throws Exception {
-                        ContextInternal context = (ContextInternal) vertx
-                                .createEventLoopContext(null, null, new JsonObject(),
-                                        Thread.currentThread().getContextClassLoader());
-                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(context, chctx -> {
-                            Http1xServerConnection conn = new Http1xServerConnection(
-                                    context.owner(),
-                                    null,
-                                    new HttpServerOptions(),
-                                    chctx,
-                                    context,
-                                    "localhost",
-                                    null);
-                            conn.handler(ACTUAL_ROOT);
-                            return conn;
-                        });
-
-                        ch.pipeline().addLast("handler", handler);
-                    }
-                });
-
-        // Start the server.
-        try {
-            virtualBootstrap.bind(VIRTUAL_HTTP).sync();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("failed to bind virtual http");
-        }
+        // TODO Migrate virtual channel to Vert.x 4 - lots of stuff have changed.
+//        if (virtualBootstrap != null) {
+//            return;
+//        }
+//        VertxInternal vertx = (VertxInternal) vertxRuntime;
+//        virtualBootstrap = new ServerBootstrap();
+//
+//        virtualBootstrap.group(vertx.getEventLoopGroup())
+//                .channel(VirtualServerChannel.class)
+//                .handler(new ChannelInitializer<VirtualServerChannel>() {
+//                    @Override
+//                    public void initChannel(VirtualServerChannel ch) throws Exception {
+//                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+//                    }
+//                })
+//                .childHandler(new ChannelInitializer<VirtualChannel>() {
+//                    @Override
+//                    public void initChannel(VirtualChannel ch) throws Exception {
+//                        // TODO vertx.getWorkerPool return an executor ??? Not sure how to get the right one.
+//                        ContextInternal context = (ContextInternal) vertx
+//                                .createEventLoopContext(null, null, vertx.getContext().workerPool(),
+//                                        Thread.currentThread().getContextClassLoader());
+//                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(context, chctx -> {
+//
+//                            Http1xServerConnection conn = new Http1xServerConnection(
+//                                    () -> context, // TODO probably not
+//                                    null,
+//                                    new HttpServerOptions(),
+//                                    chctx, // TODO No idea.
+//                                    context,
+//                                    "localhost",
+//                                    null);
+//                            conn.handler(ACTUAL_ROOT);
+//                            return conn;
+//                        });
+//
+//                        ch.pipeline().addLast("handler", handler);
+//                    }
+//                });
+//
+//        // Start the server.
+//        try {
+//            virtualBootstrap.bind(VIRTUAL_HTTP).sync();
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException("failed to bind virtual http");
+//        }
 
     }
 

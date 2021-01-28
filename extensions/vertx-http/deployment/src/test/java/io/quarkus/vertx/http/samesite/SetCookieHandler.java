@@ -4,9 +4,9 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
 import io.vertx.core.Handler;
+import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.impl.CookieImpl;
 
 @ApplicationScoped
 public class SetCookieHandler {

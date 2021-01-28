@@ -6,6 +6,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
@@ -124,14 +125,6 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
             return delegate.method();
         }
         return method;
-    }
-
-    @Override
-    public String rawMethod() {
-        if (!modified) {
-            return delegate.rawMethod();
-        }
-        return method.toString();
     }
 
     @Override
@@ -257,8 +250,18 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     }
 
     @Override
-    public NetSocket netSocket() {
-        return delegate.netSocket();
+    public Future<Buffer> body() {
+        return delegate.body();
+    }
+
+    @Override
+    public Future<Void> end() {
+        return delegate.end();
+    }
+
+    @Override
+    public Future<NetSocket> toNetSocket() {
+        return delegate.toNetSocket();
     }
 
     @Override
@@ -289,8 +292,8 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     }
 
     @Override
-    public ServerWebSocket upgrade() {
-        return delegate.upgrade();
+    public Future<ServerWebSocket> toWebSocket() {
+        return delegate.toWebSocket();
     }
 
     @Override

@@ -1,8 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.impl.CookieImpl;
 
 /**
  * A cookie

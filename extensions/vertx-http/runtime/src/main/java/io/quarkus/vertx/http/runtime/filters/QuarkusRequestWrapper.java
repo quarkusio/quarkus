@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
+import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.*;
+import io.vertx.core.net.NetSocket;
 import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.http.runtime.AbstractRequestWrapper;
 import io.vertx.core.Handler;
-import io.vertx.core.http.Cookie;
-import io.vertx.core.http.CookieSameSite;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 
 public class QuarkusRequestWrapper extends AbstractRequestWrapper {
 
@@ -61,6 +61,26 @@ public class QuarkusRequestWrapper extends AbstractRequestWrapper {
     @Override
     public HttpServerResponse response() {
         return response;
+    }
+
+    @Override
+    public Future<Buffer> body() {
+        return delegate.body();
+    }
+
+    @Override
+    public Future<Void> end() {
+        return delegate.end();
+    }
+
+    @Override
+    public Future<NetSocket> toNetSocket() {
+        return delegate.toNetSocket();
+    }
+
+    @Override
+    public Future<ServerWebSocket> toWebSocket() {
+        return delegate.toWebSocket();
     }
 
     void done() {

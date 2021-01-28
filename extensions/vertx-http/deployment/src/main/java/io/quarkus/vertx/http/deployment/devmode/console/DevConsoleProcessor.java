@@ -131,40 +131,41 @@ public class DevConsoleProcessor {
             }
         });
         virtualBootstrap = new ServerBootstrap();
-        virtualBootstrap.group(vertx.getEventLoopGroup())
-                .channel(VirtualServerChannel.class)
-                .handler(new ChannelInitializer<VirtualServerChannel>() {
-                    @Override
-                    public void initChannel(VirtualServerChannel ch) throws Exception {
-                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-                    }
-                })
-                .childHandler(new ChannelInitializer<VirtualChannel>() {
-                    @Override
-                    public void initChannel(VirtualChannel ch) throws Exception {
-                        ContextInternal context = (ContextInternal) vertx
-                                .createEventLoopContext(null, null, new JsonObject(),
-                                        Thread.currentThread().getContextClassLoader());
-                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(context, chctx -> {
-                            Http1xServerConnection conn = new Http1xServerConnection(
-                                    context.owner(),
-                                    null,
-                                    new HttpServerOptions(),
-                                    chctx,
-                                    context,
-                                    "localhost",
-                                    null);
-                            conn.handler(new Handler<HttpServerRequest>() {
-                                @Override
-                                public void handle(HttpServerRequest event) {
-                                    mainRouter.handle(event);
-                                }
-                            });
-                            return conn;
-                        });
-                        ch.pipeline().addLast("handler", handler);
-                    }
-                });
+        // TODO No idea what needs to be done.
+//        virtualBootstrap.group(vertx.getEventLoopGroup())
+//                .channel(VirtualServerChannel.class)
+//                .handler(new ChannelInitializer<VirtualServerChannel>() {
+//                    @Override
+//                    public void initChannel(VirtualServerChannel ch) throws Exception {
+//                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+//                    }
+//                })
+//                .childHandler(new ChannelInitializer<VirtualChannel>() {
+//                    @Override
+//                    public void initChannel(VirtualChannel ch) throws Exception {
+//                        ContextInternal context = (ContextInternal) vertx
+//                                .createEventLoopContext(null, null, new JsonObject(),
+//                                        Thread.currentThread().getContextClassLoader());
+//                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(context, chctx -> {
+//                            Http1xServerConnection conn = new Http1xServerConnection(
+//                                    context.owner(),
+//                                    null,
+//                                    new HttpServerOptions(),
+//                                    chctx,
+//                                    context,
+//                                    "localhost",
+//                                    null);
+//                            conn.handler(new Handler<HttpServerRequest>() {
+//                                @Override
+//                                public void handle(HttpServerRequest event) {
+//                                    mainRouter.handle(event);
+//                                }
+//                            });
+//                            return conn;
+//                        });
+//                        ch.pipeline().addLast("handler", handler);
+//                    }
+//                });
 
         // Start the server.
         try {

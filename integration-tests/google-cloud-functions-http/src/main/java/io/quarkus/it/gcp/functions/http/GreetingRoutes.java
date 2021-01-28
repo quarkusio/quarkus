@@ -1,6 +1,6 @@
 package io.quarkus.it.gcp.functions.http;
 
-import static io.vertx.core.http.HttpMethod.GET;
+import static io.quarkus.vertx.web.Route.HttpMethod.GET;
 
 import io.quarkus.vertx.web.Route;
 import io.vertx.ext.web.RoutingContext;

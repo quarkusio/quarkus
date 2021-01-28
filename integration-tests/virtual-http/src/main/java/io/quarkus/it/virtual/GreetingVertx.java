@@ -1,6 +1,6 @@
 package io.quarkus.it.virtual;
 
-import static io.vertx.core.http.HttpMethod.*;
+import static io.quarkus.vertx.web.Route.HttpMethod.*;
 
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;

@@ -28,8 +28,14 @@ import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandl
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyReader;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyWriter;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 public class ResteasyReactiveJacksonProcessor {
 
@@ -59,8 +65,24 @@ public class ResteasyReactiveJacksonProcessor {
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(JacksonMessageBodyReader.class.getName(), Object.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
+        additionalReaders
+                .produce(new MessageBodyReaderBuildItem(VertxJsonArrayMessageBodyReader.class.getName(),
+                        JsonArray.class.getName(),
+                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+        additionalReaders
+                .produce(new MessageBodyReaderBuildItem(VertxJsonObjectMessageBodyReader.class.getName(),
+                        JsonObject.class.getName(),
+                        Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(JacksonMessageBodyWriter.class.getName(), Object.class.getName(),
+                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+        additionalWriters
+                .produce(new MessageBodyWriterBuildItem(VertxJsonArrayMessageBodyWriter.class.getName(),
+                        JsonArray.class.getName(),
+                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+        additionalWriters
+                .produce(new MessageBodyWriterBuildItem(VertxJsonObjectMessageBodyWriter.class.getName(),
+                        JsonObject.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));
     }
 

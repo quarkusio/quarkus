@@ -73,7 +73,7 @@ The full source of the `kubernetes.json` file looks something like this:
       },
       "labels" : {
         "app.kubernetes.io/name" : "test-quarkus-app",
-        "app.kubernetes.io/version" : "1.0-SNAPSHOT",
+        "app.kubernetes.io/version" : "1.0.0-SNAPSHOT",
       },
       "name" : "test-quarkus-app"
     },
@@ -82,14 +82,14 @@ The full source of the `kubernetes.json` file looks something like this:
       "selector" : {
         "matchLabels" : {
           "app.kubernetes.io/name" : "test-quarkus-app",
-          "app.kubernetes.io/version" : "1.0-SNAPSHOT",
+          "app.kubernetes.io/version" : "1.0.0-SNAPSHOT",
         }
       },
       "template" : {
         "metadata" : {
           "labels" : {
             "app.kubernetes.io/name" : "test-quarkus-app",
-            "app.kubernetes.io/version" : "1.0-SNAPSHOT"
+            "app.kubernetes.io/version" : "1.0.0-SNAPSHOT"
           }
         },
         "spec" : {
@@ -102,7 +102,7 @@ The full source of the `kubernetes.json` file looks something like this:
                 }
               }
             } ],
-            "image" : "yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
+            "image" : "yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT",
             "imagePullPolicy" : "Always",
             "name" : "test-quarkus-app"
           } ]
@@ -120,7 +120,7 @@ The full source of the `kubernetes.json` file looks something like this:
       },
       "labels" : {
         "app.kubernetes.io/name" : "test-quarkus-app",
-        "app.kubernetes.io/version" : "1.0-SNAPSHOT",
+        "app.kubernetes.io/version" : "1.0.0-SNAPSHOT",
       },
       "name" : "test-quarkus-app"
     },
@@ -132,7 +132,7 @@ The full source of the `kubernetes.json` file looks something like this:
     } ],
     "selector" : {
       "app.kubernetes.io/name" : "test-quarkus-app",
-      "app.kubernetes.io/version" : "1.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "1.0.0-SNAPSHOT"
     },
     "type" : "ClusterIP"
   }
@@ -147,7 +147,7 @@ The generated manifest can be applied to the cluster from the project root using
 kubectl apply -f target/kubernetes/kubernetes.json
 ----
 
-An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` as the container image of the `Pod`.
+An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
 The name of the image is controlled by the Jib extension and can be customized using the usual `application.properties`.
 
 For example with a configuration like:
@@ -788,7 +788,7 @@ One way to deploy an application to OpenShift is to use s2i (source to image) to
 oc new-project quarkus-project
 ./mvnw clean package -Dquarkus.container-image.build=true 
 
-oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0-SNAPSHOT
+oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
 oc expose svc/greeting
 oc get route
 curl <route>/greeting
@@ -900,7 +900,7 @@ The full source of the `knative.json` file looks something like this:
       },
       "labels" : {
         "app.kubernetes.io/name" : "test-quarkus-app",
-        "app.kubernetes.io/version" : "1.0-SNAPSHOT"
+        "app.kubernetes.io/version" : "1.0.0-SNAPSHOT"
       },
       "name" : "knative.
     },
@@ -910,7 +910,7 @@ The full source of the `knative.json` file looks something like this:
           "revisionTemplate" : {
             "spec" : {
               "container" : {
-                "image" : "dev.local/yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
+                "image" : "dev.local/yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT",
                 "imagePullPolicy" : "Always"
               }
             }
@@ -1120,7 +1120,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: "kubernetes-quickstart"
-      app.kubernetes.io/version: "1.0-SNAPSHOT"
+      app.kubernetes.io/version: "1.0.0-SNAPSHOT"
   template:
     metadata:
       annotations:
@@ -1132,7 +1132,7 @@ spec:
       - env:
         - name: "FOO" <3>
           value: "BAR"
-        image: "<<yourDockerUsername>>/kubernetes-quickstart:1.0-SNAPSHOT" <4>
+        image: "<<yourDockerUsername>>/kubernetes-quickstart:1.0.0-SNAPSHOT" <4>
         imagePullPolicy: "Always"
         name: "kubernetes-quickstart"
         ports:

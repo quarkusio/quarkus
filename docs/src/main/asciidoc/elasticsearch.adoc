@@ -402,7 +402,7 @@ You can use both clients in a native executable.
 
 You can build a native executable with the usual command `./mvnw package -Pnative`.
 
-Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0.0-SNAPSHOT-runner`.
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 

@@ -64,7 +64,7 @@ Linux::
  $ ps -o pid,rss,command -p <pid>
 
    PID   RSS COMMAND
- 11229 12628 ./target/getting-started-1.0-SNAPSHOT-runner
+ 11229 12628 ./target/getting-started-1.0.0-SNAPSHOT-runner
 ----
 
 [source,shell]

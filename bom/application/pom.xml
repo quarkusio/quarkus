@@ -26,7 +26,7 @@
         <opentracing-concurrent.version>0.4.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.2.12</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
-        <jaeger.version>1.4.0</jaeger.version>
+        <jaeger.version>1.5.0</jaeger.version>
         <quarkus-http.version>3.0.18.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <threetenbp.version>1.4.3</threetenbp.version>

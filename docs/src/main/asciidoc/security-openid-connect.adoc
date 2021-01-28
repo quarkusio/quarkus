@@ -409,4 +409,5 @@ Please see link:security-openid-connect-client#token-propagation[Token Propagati
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
 * link:security[Quarkus Security]

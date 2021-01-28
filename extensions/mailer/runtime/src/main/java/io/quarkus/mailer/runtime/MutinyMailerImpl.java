@@ -148,7 +148,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
     }
 
     private Uni<MailAttachment> toMailAttachment(Attachment attachment) {
-        MailAttachment attach = new MailAttachment();
+        MailAttachment attach = MailAttachment.create();
         attach.setName(attachment.getName());
         attach.setContentId(attachment.getContentId());
         attach.setDescription(attachment.getDescription());

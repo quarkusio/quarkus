@@ -126,7 +126,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             // using a supplier to make the remote Address resolution lazy: often it's not needed and it's not very cheap to create.
             LazyHostSupplier hostSupplier = new LazyHostSupplier(request);
 
-            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, routingContext, headers, uriInfo, request.rawMethod(),
+            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, routingContext, headers, uriInfo, request.method().name(),
                     hostSupplier,
                     dispatcher.getDispatcher(), vertxResponse, requestContext, executor);
             vertxRequest.setInputStream(is);

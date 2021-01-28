@@ -486,7 +486,7 @@ hold of the caller `JsonWebToken` interface by casting the `SecurityContext#getU
 The `JsonWebToken` interface defines methods for accessing claims in the underlying JWT. It provides accessors for common
 claims that are required by the {mp-jwt} specification as well as arbitrary claims that may exist in the JWT.
 
-All the JWT claims can also be injected. Let's expand our `TokenSecuredResource` with another endpoint /secured/roles-allowed-admin which users the injected `birthdate` claim
+All the JWT claims can also be injected. Let's expand our `TokenSecuredResource` with another endpoint /secured/roles-allowed-admin which uses the injected `birthdate` claim
 (as opposed to getting it from `JsonWebToken`):
 
 [source, java]

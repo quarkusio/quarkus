@@ -136,6 +136,10 @@ public class QuarkusDevModeTest
         return inMemoryLogHandler.records;
     }
 
+    public void clearLogRecords() {
+        inMemoryLogHandler.clearRecords();
+    }
+
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {

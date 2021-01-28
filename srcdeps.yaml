@@ -1,0 +1,12 @@
+configModelVersion: 3.0
+logToConsole: true
+verbosity: info
+repositories:
+  org.jboss.jandex:
+    includes:
+    - org.jboss:jandex
+    urls:
+    - git:https://github.com/Ladicek/jandex
+    buildVersionPattern: .*-SNAPSHOT
+    buildRef: branch-class-constant-indexing
+    skipTests: true

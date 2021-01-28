@@ -56,7 +56,7 @@ import javax.enterprise.context.ApplicationScoped;
 public class MyDeclarativeRoutes {
 
     // neither path nor regex is set - match a path derived from the method name
-    @Route(methods = HttpMethod.GET) <2> 
+    @Route(methods = Route.HttpMethod.GET) <2>
     void hello(RoutingContext rc) { <3>
         rc.response().end("hello");
     }
@@ -66,7 +66,7 @@ public class MyDeclarativeRoutes {
         return "Hello world!";
     }
 
-    @Route(path = "/greetings", methods = HttpMethod.GET)
+    @Route(path = "/greetings", methods = Route.HttpMethod.GET)
     void greetings(RoutingExchange ex) { <5>
         ex.ok("hello " + ex.getParam("name").orElse("world"));
     }
@@ -95,7 +95,7 @@ For instance, you can declare a blocking route as follows:
 
 [source,java]
 ----
-@Route(methods = HttpMethod.POST, path = "/post", type = Route.HandlerType.BLOCKING)
+@Route(methods = Route.HttpMethod.POST, path = "/post", type = Route.HandlerType.BLOCKING)
 public void blocking(RoutingContext rc) {
     // ...
 }
@@ -106,7 +106,7 @@ public void blocking(RoutingContext rc) {
 Alternatively, you can use `@io.smallrye.common.annotation.Blocking` and omit the `type = Route.HandlerType.BLOCKING`:
 [source, java]
 ----
-@Route(methods = HttpMethod.POST, path = "/post")
+@Route(methods = Route.HttpMethod.POST, path = "/post")
 @Blocking
 public void blocking(RoutingContext rc) {
     // ...
@@ -145,12 +145,12 @@ In the following example, both route matches `/accounts/me`:
 
 [source, java]
 ----
-@Route(path = "/accounts/:id", methods = HttpMethod.GET)
+@Route(path = "/accounts/:id", methods = Route.HttpMethod.GET)
 void getAccount(RoutingContext ctx) {
   ...
 }
 
-@Route(path = "/accounts/me", methods = HttpMethod.GET)
+@Route(path = "/accounts/me", methods = Route.HttpMethod.GET)
 void getCurrentUserAccount(RoutingContext ctx) {
   ...
 }
@@ -161,12 +161,12 @@ To avoid the conflict, use the `order` attribute:
 
 [source, java]
 ----
-@Route(path = "/accounts/:id", methods = HttpMethod.GET, order = 2)
+@Route(path = "/accounts/:id", methods = Route.HttpMethod.GET, order = 2)
 void getAccount(RoutingContext ctx) {
   ...
 }
 
-@Route(path = "/accounts/me", methods = HttpMethod.GET, order = 1)
+@Route(path = "/accounts/me", methods = Route.HttpMethod.GET, order = 1)
 void getCurrentUserAccount(RoutingContext ctx) {
   ...
 }

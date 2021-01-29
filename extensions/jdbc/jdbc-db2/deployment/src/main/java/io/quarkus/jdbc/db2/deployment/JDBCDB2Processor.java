@@ -68,7 +68,7 @@ public class JDBCDB2Processor {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             DB2ServiceBindingConverter.class.getName()));
-            dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
         }
+        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
     }
 }

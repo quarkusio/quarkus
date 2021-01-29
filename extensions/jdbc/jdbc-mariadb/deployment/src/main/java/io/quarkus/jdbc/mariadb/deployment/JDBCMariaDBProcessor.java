@@ -49,7 +49,7 @@ public class JDBCMariaDBProcessor {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             MariaDBServiceBindingConverter.class.getName()));
-            dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MARIADB));
         }
+        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MARIADB));
     }
 }

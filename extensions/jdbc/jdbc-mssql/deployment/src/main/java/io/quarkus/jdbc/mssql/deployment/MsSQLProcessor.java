@@ -64,7 +64,7 @@ public class MsSQLProcessor {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             MsSQLServiceBindingConverter.class.getName()));
-            dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MSSQL));
         }
+        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MSSQL));
     }
 }

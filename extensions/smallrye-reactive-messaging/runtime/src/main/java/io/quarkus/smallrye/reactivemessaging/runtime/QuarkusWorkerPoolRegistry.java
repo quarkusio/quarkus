@@ -22,8 +22,6 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.connectors.ExecutionHolder;
 import io.smallrye.reactive.messaging.connectors.WorkerPoolRegistry;
 import io.smallrye.reactive.messaging.helpers.Validation;
-import io.vertx.core.Handler;
-import io.vertx.mutiny.core.Promise;
 import io.vertx.mutiny.core.WorkerExecutor;
 
 @AlternativePriority(1)
@@ -36,8 +34,8 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
     @Inject
     ExecutionHolder executionHolder;
 
-    private Map<String, Integer> workerConcurrency = new HashMap<>();
-    private Map<String, WorkerExecutor> workerExecutors = new ConcurrentHashMap<>();
+    private final Map<String, Integer> workerConcurrency = new HashMap<>();
+    private final Map<String, WorkerExecutor> workerExecutors = new ConcurrentHashMap<>();
 
     public void terminate(
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(100) @BeforeDestroyed(ApplicationScoped.class) Object event) {
@@ -48,13 +46,13 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         }
     }
 
-    public <T> Uni<T> executeWork(Handler<Promise<T>> blockingCodeHandler, String workerName, boolean ordered) {
-        Objects.requireNonNull(blockingCodeHandler, "Action to execute not provided");
+    public <T> Uni<T> executeWork(Uni<T> uni, String workerName, boolean ordered) {
+        Objects.requireNonNull(uni, "Action to execute not provided");
 
         if (workerName == null) {
-            return executionHolder.vertx().executeBlocking(blockingCodeHandler, ordered);
+            return executionHolder.vertx().executeBlocking(uni, ordered);
         } else {
-            return getWorker(workerName).executeBlocking(blockingCodeHandler, ordered);
+            return getWorker(workerName).executeBlocking(uni, ordered);
         }
     }
 

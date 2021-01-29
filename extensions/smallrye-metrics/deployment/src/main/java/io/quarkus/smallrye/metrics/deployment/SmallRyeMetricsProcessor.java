@@ -155,7 +155,8 @@ public class SmallRyeMetricsProcessor {
             SmallRyeMetricsRecorder recorder,
             NonApplicationRootPathBuildItem frameworkRoot,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            LaunchModeBuildItem launchModeBuildItem) {
+            LaunchModeBuildItem launchModeBuildItem,
+            BeanContainerBuildItem beanContainer) {
         Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
         Function<Router, Route> slash = recorder.route(metrics.path);
 

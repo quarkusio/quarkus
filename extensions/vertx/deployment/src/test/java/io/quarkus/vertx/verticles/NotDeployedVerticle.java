@@ -11,7 +11,7 @@ public class NotDeployedVerticle extends AbstractVerticle {
     @Override
     public Uni<Void> asyncStart() {
         return vertx.eventBus().consumer("alpha")
-                .handler(m -> m.replyAndForget("hello from alpha"))
+                .handler(m -> m.reply("hello from alpha"))
                 .completionHandler();
     }
 }

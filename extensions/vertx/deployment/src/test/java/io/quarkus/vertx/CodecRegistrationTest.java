@@ -37,18 +37,18 @@ public class CodecRegistrationTest {
     @Test
     public void testReceptionOfString() {
         String address = "address-1";
-        vertx.eventBus().sendAndForget(address, "a");
-        vertx.eventBus().sendAndForget(address, "b");
-        vertx.eventBus().sendAndForget(address, "c");
+        vertx.eventBus().send(address, "a");
+        vertx.eventBus().send(address, "b");
+        vertx.eventBus().send(address, "c");
         await().until(() -> bean.getAddress1().size() == 3);
     }
 
     @Test
     public void testReceptionOfStringAndSendingNothing() {
         String address = "address-2";
-        vertx.eventBus().sendAndForget(address, "a");
-        vertx.eventBus().sendAndForget(address, "b");
-        vertx.eventBus().sendAndForget(address, "c");
+        vertx.eventBus().send(address, "a");
+        vertx.eventBus().send(address, "b");
+        vertx.eventBus().send(address, "c");
         await().until(() -> bean.getAddress2().size() == 3);
 
         List<Message<?>> messages = new CopyOnWriteArrayList<>();
@@ -84,9 +84,9 @@ public class CodecRegistrationTest {
     @Test
     public void testCodecRegistrationBasedOnParameterType() {
         String address = "address-5";
-        vertx.eventBus().sendAndForget(address, new CustomType1("foo"));
-        vertx.eventBus().sendAndForget(address, new CustomType1("bar"));
-        vertx.eventBus().sendAndForget(address, new CustomType1("baz"));
+        vertx.eventBus().send(address, new CustomType1("foo"));
+        vertx.eventBus().send(address, new CustomType1("bar"));
+        vertx.eventBus().send(address, new CustomType1("baz"));
 
         await().until(() -> bean.getSink().size() == 3);
 
@@ -96,9 +96,9 @@ public class CodecRegistrationTest {
 
         bean.getSink().clear();
         address = "address-6";
-        vertx.eventBus().sendAndForget(address, new CustomType1("foo-x"));
-        vertx.eventBus().sendAndForget(address, new CustomType1("bar-x"));
-        vertx.eventBus().sendAndForget(address, new CustomType1("baz-x"));
+        vertx.eventBus().send(address, new CustomType1("foo-x"));
+        vertx.eventBus().send(address, new CustomType1("bar-x"));
+        vertx.eventBus().send(address, new CustomType1("baz-x"));
 
         await().until(() -> bean.getSink().size() == 3);
         set = bean.getSink().stream().map(x -> (CustomType1) x).map(CustomType1::getName)
@@ -145,8 +145,8 @@ public class CodecRegistrationTest {
     @SuppressWarnings("unused")
     static class EventBusConsumers {
 
-        private List<String> address1 = new CopyOnWriteArrayList<>();
-        private List<String> address2 = new CopyOnWriteArrayList<>();
+        private final List<String> address1 = new CopyOnWriteArrayList<>();
+        private final List<String> address2 = new CopyOnWriteArrayList<>();
 
         public List<String> getAddress1() {
             return address1;

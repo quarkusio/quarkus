@@ -25,6 +25,7 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
+
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
         if (requestContext.getAbortedWith() != null) {
@@ -43,7 +44,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     throw new UncheckedIOException(e);
                 }
 
-                httpClientRequest.send()
+                Future<HttpClientResponse> sent;
+                if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
+                    sent = httpClientRequest.send();
+                } else {
+                    sent = httpClientRequest.send(actualEntity);
+                }
+
+                sent
                         .onSuccess(new Handler<HttpClientResponse>() {
                             @Override
                             public void handle(HttpClientResponse clientResponse) {
@@ -86,11 +94,6 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             }
                         });
 
-                if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
-                    httpClientRequest.end();
-                } else {
-                    httpClientRequest.end(actualEntity);
-                }
             }
         });
 

@@ -46,8 +46,8 @@ public class RedisClientUtil {
             options.setMasterName(redisConfig.masterName.get());
         }
 
-        if (redisConfig.slaves.isPresent()) {
-            options.setUseSlave(redisConfig.slaves.get());
+        if (redisConfig.replicas.isPresent()) {
+            options.setUseReplicas(redisConfig.replicas.get());
         }
 
         return options;

@@ -40,13 +40,13 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
     }
 
     @Override
-    public Uni<Response> auth(String arg0) {
-        return redisAPI.auth(arg0);
+    public Uni<Response> auth(List<String> args) {
+        return redisAPI.auth(args);
     }
 
     @Override
-    public Response authAndAwait(String arg0) {
-        return redisAPI.authAndAwait(arg0);
+    public Response authAndAwait(List<String> args) {
+        return redisAPI.authAndAwait(args);
     }
 
     @Override
@@ -180,13 +180,13 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
     }
 
     @Override
-    public Uni<Response> command() {
-        return redisAPI.command();
+    public Uni<Response> command(List<String> args) {
+        return redisAPI.command(args);
     }
 
     @Override
-    public Response commandAndAwait() {
-        return redisAPI.commandAndAwait();
+    public Response commandAndAwait(List<String> args) {
+        return redisAPI.commandAndAwait(args);
     }
 
     @Override

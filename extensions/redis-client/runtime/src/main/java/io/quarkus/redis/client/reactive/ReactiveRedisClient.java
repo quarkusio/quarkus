@@ -22,9 +22,9 @@ public interface ReactiveRedisClient {
 
     Response askingAndAwait();
 
-    Uni<Response> auth(String arg0);
+    Uni<Response> auth(List<String> args);
 
-    Response authAndAwait(String arg0);
+    Response authAndAwait(List<String> args);
 
     Uni<Response> bgrewriteaof();
 
@@ -78,9 +78,9 @@ public interface ReactiveRedisClient {
 
     Response clusterAndAwait(List<String> args);
 
-    Uni<Response> command();
+    Uni<Response> command(List<String> args);
 
-    Response commandAndAwait();
+    Response commandAndAwait(List<String> args);
 
     Uni<Response> config(List<String> args);
 

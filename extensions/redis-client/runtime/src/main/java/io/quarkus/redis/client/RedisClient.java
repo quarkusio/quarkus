@@ -19,7 +19,7 @@ public interface RedisClient {
 
     Response asking();
 
-    Response auth(String arg0);
+    Response auth(List<String> args);
 
     Response bgrewriteaof();
 
@@ -47,7 +47,7 @@ public interface RedisClient {
 
     Response cluster(List<String> args);
 
-    Response command();
+    Response command(List<String> args);
 
     Response config(List<String> args);
 

@@ -80,12 +80,12 @@ import io.vertx.ext.web.RoutingContext;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Route {
-    interface HttpMethod {
-        String GET = "GET";
-        String POST = "POST";
-        String PUT = "PUT";
-        String DELETE = "DELETE";
-        String OPTIONS = "OPTIONS";
+    enum HttpMethod {
+        GET,
+        POST,
+        PUT,
+        DELETE,
+        OPTIONS
     }
 
     /**
@@ -107,7 +107,7 @@ public @interface Route {
      * @see io.vertx.ext.web.Route#methods()
      * @return the HTTP methods
      */
-    String[] methods() default {};
+    HttpMethod[] methods() default {};
 
     /**
      *

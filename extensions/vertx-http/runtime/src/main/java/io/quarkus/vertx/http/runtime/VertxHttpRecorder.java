@@ -223,7 +223,6 @@ public class VertxHttpRecorder {
     }
 
     public RuntimeValue<Router> initializeRouter(final Supplier<Vertx> vertxRuntimeValue) {
-
         Vertx vertx = vertxRuntimeValue.get();
         Router router = Router.router(vertx);
         return new RuntimeValue<>(router);
@@ -762,14 +761,14 @@ public class VertxHttpRecorder {
 
         Route vr = route.apply(router.getValue());
 
-        Handler<RoutingContext> requestHandler = handler;
         if (blocking == HandlerType.BLOCKING) {
-            vr.blockingHandler(requestHandler, false);
+            vr.blockingHandler(handler, false);
         } else if (blocking == HandlerType.FAILURE) {
-            vr.failureHandler(requestHandler);
+            vr.failureHandler(handler);
         } else {
-            vr.handler(requestHandler);
+            vr.handler(handler);
         }
+
     }
 
     public void setNonApplicationRedirectHandler(String nonApplicationPath, String rootPath) {

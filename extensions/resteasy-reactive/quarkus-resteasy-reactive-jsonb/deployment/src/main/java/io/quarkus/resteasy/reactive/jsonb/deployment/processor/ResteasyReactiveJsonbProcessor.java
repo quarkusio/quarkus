@@ -1,6 +1,8 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.processor;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
@@ -9,13 +11,24 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
+import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.jsonb.runtime.serialisers.JsonbMessageBodyReader;
 import io.quarkus.resteasy.reactive.jsonb.runtime.serialisers.JsonbMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jsonb.runtime.serialisers.vertx.VertxJson;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 
 public class ResteasyReactiveJsonbProcessor {
+
+    private static final List<String> VERTX_SERIALIZERS = Arrays.asList(
+            VertxJson.JsonObjectSerializer.class.getName(),
+            VertxJson.JsonArraySerializer.class.getName());
+
+    private static final List<String> VERTX_DESERIALIZERS = Arrays.asList(
+            VertxJson.JsonObjectDeserializer.class.getName(),
+            VertxJson.JsonArrayDeserializer.class.getName());
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
@@ -41,5 +54,13 @@ public class ResteasyReactiveJsonbProcessor {
                 Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters.produce(new MessageBodyWriterBuildItem(JsonbMessageBodyWriter.class.getName(), Object.class.getName(),
                 Collections.singletonList(MediaType.APPLICATION_JSON)));
+    }
+
+    @BuildStep
+    public void registerVertxJsonSupport(
+            BuildProducer<JsonbSerializerBuildItem> serializers,
+            BuildProducer<JsonbDeserializerBuildItem> deserializers) {
+        serializers.produce(new JsonbSerializerBuildItem(VERTX_SERIALIZERS));
+        deserializers.produce(new JsonbDeserializerBuildItem(VERTX_DESERIALIZERS));
     }
 }

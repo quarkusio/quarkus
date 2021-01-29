@@ -402,6 +402,24 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testRestClientCustomHeadersExtension() throws MavenInvocationException, IOException {
+        testDir = getTargetDir("projects/rest-client-custom-headers-extension");
+        runAndCheck();
+
+        final List<String> extDepWarnings = Files
+                .readAllLines(testDir.toPath().resolve("build-rest-client-custom-headers-extension.log"))
+                .stream()
+                .filter(s -> s.startsWith(
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency "))
+                .collect(Collectors.toList());
+        assertTrue(extDepWarnings
+                .contains(
+                        "[WARNING] [io.quarkus.bootstrap.devmode.DependenciesFilter] Local Quarkus extension dependency org.acme:rest-client-custom-headers will not be hot-reloadable"));
+
+        assertThat(DevModeTestUtils.getHttpResponse("/app/frontend")).isEqualTo("CustomValue1 CustomValue2");
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedMultiModule() throws MavenInvocationException, IOException {
         testDir = initProject("projects/multimodule", "projects/multimodule-with-deps");
         runAndCheck();

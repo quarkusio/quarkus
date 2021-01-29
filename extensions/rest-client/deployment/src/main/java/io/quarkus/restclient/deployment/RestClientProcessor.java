@@ -170,7 +170,7 @@ class RestClientProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Capabilities capabilities,
             PackageConfig packageConfig,
-            Optional<RestClientAnnotationProviderBuildItem> restClientAnnotationProvider,
+            List<RestClientAnnotationProviderBuildItem> restClientAnnotationProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -237,20 +237,28 @@ class RestClientProcessor {
                     configurator.addQualifier(REST_CLIENT);
                     final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
                     final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
-                    final Class<?> annotationProvider = checkAnnotationProviders(entry.getValue(),
-                            restClientAnnotationProvider.orElse(null));
+                    final List<Class<?>> annotationProviders = checkAnnotationProviders(entry.getValue(),
+                            restClientAnnotationProviders);
                     configurator.scope(scope);
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType, baseUri).create();
                         ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
                         ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
                         ResultHandle configPrefixHandle = m.load(configPrefix);
-                        ResultHandle annotationProviderHandle = annotationProvider == null ? m.loadNull()
-                                : m.loadClass(annotationProvider);
+                        ResultHandle annotationProvidersHandle = null;
+                        if (!annotationProviders.isEmpty()) {
+                            annotationProvidersHandle = m.newArray(Class.class, annotationProviders.size());
+                            for (int i = 0; i < annotationProviders.size(); i++) {
+                                m.writeArrayValue(annotationProvidersHandle, i, m.loadClass(annotationProviders.get(i)));
+                            }
+                        } else {
+                            annotationProvidersHandle = m.loadNull();
+                        }
                         ResultHandle baseHandle = m.newInstance(
-                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class, String.class,
-                                        Class.class),
-                                interfaceHandle, baseUriHandle, configPrefixHandle, annotationProviderHandle);
+                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
+                                        String.class,
+                                        Class[].class),
+                                interfaceHandle, baseUriHandle, configPrefixHandle, annotationProvidersHandle);
                         ResultHandle ret = m.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                         m.returnValue(ret);
@@ -262,13 +270,10 @@ class RestClientProcessor {
         }));
     }
 
-    private static Class<?> checkAnnotationProviders(ClassInfo classInfo,
-            RestClientAnnotationProviderBuildItem restClientAnnotationProvider) {
-        if (restClientAnnotationProvider != null
-                && classInfo.classAnnotation(restClientAnnotationProvider.getAnnotationName()) != null) {
-            return restClientAnnotationProvider.getProviderClass();
-        }
-        return null;
+    private static List<Class<?>> checkAnnotationProviders(ClassInfo classInfo,
+            List<RestClientAnnotationProviderBuildItem> restClientAnnotationProviders) {
+        return restClientAnnotationProviders.stream().filter(p -> (classInfo.classAnnotation(p.getAnnotationName()) != null))
+                .map(p -> p.getProviderClass()).collect(Collectors.toList());
     }
 
     @BuildStep

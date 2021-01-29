@@ -5,12 +5,12 @@ import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.client.filter.OidcClientFilter;
 
 @RegisterRestClient
-@AccessToken
+@OidcClientFilter
 @Path("/")
-public interface ProtectedResourceService {
+public interface ServiceAccountService {
 
     @GET
     String getUserName();

@@ -19,13 +19,13 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.PubSecKeyOptions;
 import io.vertx.ext.auth.User;
+import io.vertx.ext.auth.impl.jose.JWT;
 import io.vertx.ext.auth.oauth2.AccessToken;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
-import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
+import io.vertx.ext.auth.oauth2.OAuth2Options;
+import io.vertx.ext.auth.oauth2.impl.AccessTokenImpl;
 import io.vertx.ext.auth.oauth2.impl.OAuth2AuthProviderImpl;
-import io.vertx.ext.auth.oauth2.impl.OAuth2TokenImpl;
 import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
-import io.vertx.ext.jwt.JWT;
 import io.vertx.ext.web.RoutingContext;
 
 public class OidcRuntimeClient {
@@ -36,7 +36,7 @@ public class OidcRuntimeClient {
     }
 
     public String authorizationURL() {
-        OAuth2ClientOptions config = OAuth2AuthProviderImpl.class.cast(auth).getConfig();
+        OAuth2Options config = OAuth2AuthProviderImpl.class.cast(auth).getConfig();
         final String path = config.getAuthorizationPath();
         return path.charAt(0) == '/' ? config.getSite() + path : path;
     }
@@ -71,7 +71,7 @@ public class OidcRuntimeClient {
 
     public void refreshToken(UniEmitter<? super AuthorizationCodeTokens> emitter, String refreshToken) {
 
-        final OAuth2TokenImpl token = new OAuth2TokenImpl(auth, new JsonObject());
+        final AccessTokenImpl token = new AccessTokenImpl(new JsonObject(), auth);
 
         // always get the last token
         token.principal().put("refresh_token", refreshToken);
@@ -126,7 +126,7 @@ public class OidcRuntimeClient {
 
     public void createUserInfoToken(UniEmitter<? super JsonObject> uniEmitter, RoutingContext vertxContext,
             TokenAuthenticationRequest request) {
-        OAuth2TokenImpl tokenImpl = new OAuth2TokenImpl(auth, new JsonObject());
+        AccessTokenImpl tokenImpl = new AccessTokenImpl(new JsonObject(), auth);
         String accessToken = vertxContext.get("access_token");
         if (accessToken == null) {
             accessToken = request.getToken().getToken();
@@ -144,7 +144,7 @@ public class OidcRuntimeClient {
         });
     }
 
-    public static OidcRuntimeClient discoverOidcEndpoints(Vertx vertx, OAuth2ClientOptions options,
+    public static OidcRuntimeClient discoverOidcEndpoints(Vertx vertx, OAuth2Options options,
             OidcTenantConfig oidcConfig) {
         return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OidcRuntimeClient>>() {
             public void accept(UniEmitter<? super OidcRuntimeClient> uniEmitter) {
@@ -162,7 +162,7 @@ public class OidcRuntimeClient {
         }).await().atMost(Duration.ofSeconds(OidcCommonUtils.getMaximumConnectionDelay(oidcConfig) + 3));
     }
 
-    public static OidcRuntimeClient setOidcEndpoints(Vertx vertx, OAuth2ClientOptions options, OidcTenantConfig oidcConfig) {
+    public static OidcRuntimeClient setOidcEndpoints(Vertx vertx, OAuth2Options options, OidcTenantConfig oidcConfig) {
         if (options.getJwkPath() != null) {
             return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OidcRuntimeClient>>() {
                 @SuppressWarnings("deprecation")
@@ -189,7 +189,7 @@ public class OidcRuntimeClient {
     }
 
     @SuppressWarnings("deprecation")
-    public static OidcRuntimeClient createClientWithPublicKey(OAuth2ClientOptions options, String publicKey) {
+    public static OidcRuntimeClient createClientWithPublicKey(OAuth2Options options, String publicKey) {
         options.addPubSecKey(new PubSecKeyOptions()
                 .setAlgorithm("RS256")
                 .setPublicKey(publicKey));
@@ -230,11 +230,11 @@ public class OidcRuntimeClient {
     }
 
     public JsonObject validateTokenWithoutOidcServer(String token) throws Exception {
-        OAuth2AuthProviderImpl authImpl = ((OAuth2AuthProviderImpl) auth);
-        JWT jwt = authImpl.getJWT();
-        JsonObject tokenJson = jwt.decode(token);
+        JWT jwt = new JWT();
+        JsonObject object = jwt.decode(token);
+        // TODO CES - Vert.x 4 Migrate expiration check:
         // this check throws the exception internally if the token has expired
-        jwt.isExpired(tokenJson, authImpl.getConfig().getJWTOptions());
-        return tokenJson;
+        //        jwt.isExpired(tokenJson, authImpl.getConfig().getJWTOptions());
+        return object;
     }
 }

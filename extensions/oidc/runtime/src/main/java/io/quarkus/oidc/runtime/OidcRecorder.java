@@ -28,9 +28,10 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.ProxyOptions;
-import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
-import io.vertx.ext.jwt.JWTOptions;
+import io.vertx.ext.auth.JWTOptions;
+import io.vertx.ext.auth.oauth2.OAuth2Options;
 
 @Recorder
 public class OidcRecorder {
@@ -109,7 +110,7 @@ public class OidcRecorder {
             return new TenantConfigContext(new OidcRuntimeClient(null), oidcConfig);
         }
 
-        OAuth2ClientOptions options = new OAuth2ClientOptions();
+        OAuth2Options options = new OAuth2Options();
 
         if (oidcConfig.getClientId().isPresent()) {
             options.setClientID(oidcConfig.getClientId().get());
@@ -207,7 +208,8 @@ public class OidcRecorder {
             options.setClientSecretParameterName(null);
         }
 
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
+        // TODO CES - Vert.x - Need to configure the HTTP Client Options
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, new HttpClientOptions());
 
         final long connectionRetryCount = OidcCommonUtils.getConnectionRetryCount(oidcConfig);
         if (connectionRetryCount > 1) {
@@ -254,7 +256,7 @@ public class OidcRecorder {
         return new TenantConfigContext(client, oidcConfig);
     }
 
-    private static TenantConfigContext createdTenantContextFromPublicKey(OAuth2ClientOptions options,
+    private static TenantConfigContext createdTenantContextFromPublicKey(OAuth2Options options,
             OidcTenantConfig oidcConfig) {
         if (oidcConfig.applicationType != ApplicationType.SERVICE) {
             throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");

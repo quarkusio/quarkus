@@ -8,10 +8,14 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.context.spi.ThreadContextController;
+import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
+
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.quarkus.grpc.runtime.GrpcContextProvider;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -85,6 +89,12 @@ public class BlockingServerInterceptor implements ServerInterceptor {
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private ServerCall.Listener<ReqT> delegate;
         private final List<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
+        private final ThreadContextSnapshot threadContextSnapshot;
+
+        public ReplayListener(){
+            final GrpcContextProvider contextProvider = new GrpcContextProvider();
+            threadContextSnapshot = contextProvider.currentContext(null);
+        }
 
         synchronized void setDelegate(ServerCall.Listener<ReqT> delegate) {
             this.delegate = delegate;
@@ -99,8 +109,10 @@ public class BlockingServerInterceptor implements ServerInterceptor {
                 vertx.executeBlocking(new Handler<Promise<Object>>() {
                     @Override
                     public void handle(Promise<Object> f) {
+                        final ThreadContextController controller = threadContextSnapshot.begin();
                         consumer.accept(delegate);
                         f.complete();
+                        controller.endContext();
                     }
                 }, true, null);
             } else {

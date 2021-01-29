@@ -1,10 +1,11 @@
 package io.quarkus.grpc.runtime;
 
-import io.grpc.Context;
+import java.util.Map;
+
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
 
-import java.util.Map;
+import io.grpc.Context;
 
 public class GrpcContextProvider implements ThreadContextProvider {
 

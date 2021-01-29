@@ -116,7 +116,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
         verify(mockWriter, times(1)).write(eq("src/main/resources/META-INF/resources/index.html"), anyString());
         verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.native"), anyString());
         verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.jvm"), anyString());
-        verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.fast-jar"), anyString());
+        verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.legacy-jar"), anyString());
         verify(mockWriter, times(1)).write(eq(".dockerignore"), anyString());
     }
 

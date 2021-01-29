@@ -422,7 +422,8 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
 
-        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY, suffixToClassifier(packageConfig.runnerSuffix));
+        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY_JAR,
+                suffixToClassifier(packageConfig.runnerSuffix));
     }
 
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,

@@ -68,7 +68,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "target"), Paths.get("acme-1.0-SNAPSHOT-runner.jar"), output,
+        Process process = doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 Collections.emptyList()).start();
         try {
             // Wait until server up
@@ -94,7 +94,7 @@ public class JarRunnerIT extends MojoTestBase {
         running.stop();
 
         Path jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
@@ -134,7 +134,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "app/target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
+        Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 Collections.emptyList()).start();
         try {
             Assertions.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
@@ -159,7 +159,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "app/target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
+        Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 Collections.emptyList()).start();
         try {
             Assertions.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
@@ -290,7 +290,7 @@ public class JarRunnerIT extends MojoTestBase {
         running.stop();
 
         Path jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
@@ -332,7 +332,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         File targetDir = new File(testDir.getAbsoluteFile(), "runner" + File.separator + "target");
         Path jar = targetDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("acme-1.0-SNAPSHOT-runner.jar"));
+                .resolve(Paths.get("quarkus-app/quarkus-run.jar"));
         File output = new File(targetDir, "output.log");
         output.createNewFile();
 

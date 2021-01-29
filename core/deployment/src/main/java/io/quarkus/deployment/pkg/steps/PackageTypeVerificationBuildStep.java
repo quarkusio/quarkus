@@ -18,7 +18,7 @@ public class PackageTypeVerificationBuildStep {
     @BuildStep
     List<PackageTypeBuildItem> builtins() {
         return Arrays.asList(new PackageTypeBuildItem(PackageConfig.NATIVE), new PackageTypeBuildItem(PackageConfig.JAR),
-                new PackageTypeBuildItem(PackageConfig.LEGACY), new PackageTypeBuildItem(PackageConfig.UBER_JAR),
+                new PackageTypeBuildItem(PackageConfig.LEGACY_JAR), new PackageTypeBuildItem(PackageConfig.UBER_JAR),
                 new PackageTypeBuildItem(PackageConfig.FAST_JAR),
                 new PackageTypeBuildItem(PackageConfig.MUTABLE_JAR));
     }

@@ -74,7 +74,7 @@ public class OpenshiftWithS2iTest {
                             List<EnvVar> envVars = container.getEnv();
                             assertThat(envVars).anySatisfy(envVar -> {
                                 assertThat(envVar.getName()).isEqualTo("JAVA_APP_JAR");
-                                assertThat(envVar.getValue()).isEqualTo("/deployments/openshift-s2i-runner.jar");
+                                assertThat(envVar.getValue()).isEqualTo("/deployments/quarkus-run.jar");
                             });
                             assertThat(envVars).anySatisfy(envVar -> {
                                 assertThat(envVar.getName()).isEqualTo("JAVA_LIB_DIR");

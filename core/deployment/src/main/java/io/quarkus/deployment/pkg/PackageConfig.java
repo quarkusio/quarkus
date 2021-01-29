@@ -11,20 +11,21 @@ public class PackageConfig {
 
     public static final String JAR = "jar";
     public static final String UBER_JAR = "uber-jar";
-    /**
-     * This is the new packaging format, it is intended to become the default soonish, so it will just
-     * be referred to as 'jar'.
-     */
     public static final String FAST_JAR = "fast-jar";
     public static final String MUTABLE_JAR = "mutable-jar";
+    /**
+     * @deprecated use 'legacy-jar' instead
+     */
+    @Deprecated
     public static final String LEGACY = "legacy";
+    public static final String LEGACY_JAR = "legacy-jar";
     public static final String NATIVE = "native";
 
     /**
      * The requested output type.
      *
-     * The default built in types are 'jar', 'fast-jar' (a prototype more performant version of the default 'jar' type),
-     * 'uber-jar' and 'native'.
+     * The default built in types are 'jar' (which will use 'fast-jar'), 'legacy-jar' for the pre-1.12 default jar
+     * packaging, 'uber-jar' and 'native'.
      */
     @ConfigItem(defaultValue = JAR)
     public String type;
@@ -115,20 +116,22 @@ public class PackageConfig {
     public Optional<String> userProvidersDirectory;
 
     public boolean isAnyJarType() {
-        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
-                type.equalsIgnoreCase(PackageConfig.JAR) ||
+        return (type.equalsIgnoreCase(PackageConfig.JAR) ||
                 type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
                 type.equalsIgnoreCase(PackageConfig.UBER_JAR)) ||
+                type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.LEGACY) ||
                 type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
     }
 
     public boolean isFastJar() {
-        return type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
+        return type.equalsIgnoreCase(PackageConfig.JAR) ||
+                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
                 type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
     }
 
     public boolean isLegacyJar() {
-        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
-                type.equalsIgnoreCase(PackageConfig.JAR));
+        return (type.equalsIgnoreCase(PackageConfig.LEGACY_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.LEGACY));
     }
 }

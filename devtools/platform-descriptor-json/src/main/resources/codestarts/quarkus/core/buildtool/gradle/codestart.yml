@@ -15,7 +15,7 @@ language:
           dev: quarkusDev
           package: build
           package-uber-jar: build -Dquarkus.package.type=uber-jar
-          package-fast-jar: build -Dquarkus.package.type=fast-jar
+          package-legacy-jar: build -Dquarkus.package.type=legacy-jar
           package-native: build -Dquarkus.package.type=native
           package-native-container: build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
           build-ci: build

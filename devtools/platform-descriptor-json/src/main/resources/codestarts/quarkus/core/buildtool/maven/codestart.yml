@@ -13,7 +13,7 @@ language:
           dev: compile quarkus:dev
           package: package
           package-uber-jar: package -Dquarkus.package.type=uber-jar
-          package-fast-jar: package -Dquarkus.package.type=fast-jar
+          package-legacy-jar: package -Dquarkus.package.type=legacy-jar
           package-native: package -Pnative
           package-native-container: package -Pnative -Dquarkus.native.container-build=true
           build-ci: verify -B

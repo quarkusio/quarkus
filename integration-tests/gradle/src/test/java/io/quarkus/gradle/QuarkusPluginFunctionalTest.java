@@ -115,7 +115,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
         assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        Path runnerJar = projectRoot.toPath().resolve("build").resolve("foo-1.0.0-SNAPSHOT-runner.jar");
+        Path runnerJar = projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar");
         Files.delete(runnerJar);
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
@@ -144,7 +144,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
 
         assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(projectRoot.toPath().resolve("build").resolve("foo-1.0.0-SNAPSHOT-runner.jar")).exists();
+        assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar")).exists();
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.type=fast-jar");
 

@@ -103,7 +103,7 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
 
     @Override
     protected void testCreator(QuarkusBootstrap creator) throws Exception {
-        System.setProperty("quarkus.package.type", "legacy");
+        System.setProperty("quarkus.package.type", "legacy-jar");
         try {
             CuratedApplication curated = creator.bootstrap();
             assertAppModel(curated.getAppModel());

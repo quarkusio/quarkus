@@ -425,7 +425,7 @@ You can now interact with your REST service:
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -jar target/amazon-s3-quickstart-1.0.0-SNAPSHOT-runner.jar`.
+It can be run with `java -jar target/quarkus-app/quarkus-run.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.

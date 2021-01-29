@@ -505,7 +505,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/redis-quickstart-1.0.0-SNAPSHOT-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 == Running Native

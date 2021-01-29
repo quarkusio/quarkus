@@ -153,7 +153,7 @@ Open your browser to http://localhost:8080/greeting.
 
 Changing the configuration file is immediately reflected.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 == Default values

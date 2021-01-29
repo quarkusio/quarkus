@@ -159,7 +159,7 @@ Then open your 2 browser windows to http://localhost:8080/:
 
 image:websocket-guide-screenshot.png[alt=Application]
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also build the native executable using `./mvnw package -Pnative`.
 
 You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].

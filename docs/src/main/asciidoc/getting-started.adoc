@@ -452,17 +452,16 @@ Be sure to read the link:cdi-reference#bean_discovery[Bean Discovery] section of
 == Packaging and run the application
 
 The application is packaged using `./mvnw package`.
-It produces 2 jar files in `/target`:
+It produces several outputs in `/target`:
 
 * `getting-started-1.0.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
-artifact produced by the Maven build;
-* `getting-started-1.0.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
-the dependencies are copied into the `target/lib` directory.
+artifact produced by the Maven build - it is *not* the runnable jar;
+* the `quarkus-app` directory which contains the `quarkus-run.jar` jar file - being an executable _jar_. Be aware that it's not an _über-jar_ as
+the dependencies are copied into subdirectories of `quarkus-app/lib/`.
 
-You can run the application using: `java -jar target/getting-started-1.0.0-SNAPSHOT-runner.jar`
+You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`
 
-NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
-So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
+NOTE: If you want to deploy your application soemwhere (typically in a container), you need to deploy the whole `quarkus-app` directory.
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 

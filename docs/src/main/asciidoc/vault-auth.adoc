@@ -82,7 +82,7 @@ Compile and start the application:
 [source,bash, subs=attributes+]
 ----
 ./mvnw clean install
-java -jar target/vault-quickstart-1.0.0-SNAPSHOT-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 Finally test the application endpoint:

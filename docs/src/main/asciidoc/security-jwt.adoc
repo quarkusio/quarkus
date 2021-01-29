@@ -581,17 +581,16 @@ hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birth
 ----
 
 === Package and run the application
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file:
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file:
 .Runner jar Example
-[source,shell]
+[source,shell,subs=attributes+]
 ----
 $ ./mvnw clean package
 [INFO] Scanning for projects...
 ...
-[INFO] [io.quarkus.creator.phase.runnerjar.RunnerJarPhase] Building jar: /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/security-jwt-quickstart/target/security-jwt-quickstart-runner.jar
 
-$ java -jar target/security-jwt-quickstart-runner.jar
-2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.796s. Listening on: http://[::]:8080
+$ java -jar target/quarkus-app/quarkus-run.jar
+2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
 2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, smallrye-jwt]
 ----
 

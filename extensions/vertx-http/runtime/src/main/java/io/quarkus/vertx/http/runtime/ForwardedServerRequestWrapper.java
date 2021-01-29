@@ -6,6 +6,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -250,21 +251,6 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     }
 
     @Override
-    public Future<Buffer> body() {
-        return delegate.body();
-    }
-
-    @Override
-    public Future<Void> end() {
-        return delegate.end();
-    }
-
-    @Override
-    public Future<NetSocket> toNetSocket() {
-        return delegate.toNetSocket();
-    }
-
-    @Override
     public HttpServerRequest setExpectMultipart(boolean b) {
         delegate.setExpectMultipart(b);
         return this;
@@ -289,11 +275,6 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public String getFormAttribute(String s) {
         return delegate.getFormAttribute(s);
-    }
-
-    @Override
-    public Future<ServerWebSocket> toWebSocket() {
-        return delegate.toWebSocket();
     }
 
     @Override
@@ -332,4 +313,43 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
         return delegate.cookieMap();
     }
 
+    @Override
+    public HttpServerRequest body(Handler<AsyncResult<Buffer>> handler) {
+        return delegate.body(handler);
+    }
+
+    @Override
+    public Future<Buffer> body() {
+        return delegate.body();
+    }
+
+    @Override
+    public void end(Handler<AsyncResult<Void>> handler) {
+        delegate.end(handler);
+    }
+
+    @Override
+    public Future<Void> end() {
+        return delegate.end();
+    }
+
+    @Override
+    public void toNetSocket(Handler<AsyncResult<NetSocket>> handler) {
+        delegate.toNetSocket(handler);
+    }
+
+    @Override
+    public Future<NetSocket> toNetSocket() {
+        return delegate.toNetSocket();
+    }
+
+    @Override
+    public void toWebSocket(Handler<AsyncResult<ServerWebSocket>> handler) {
+        delegate.toWebSocket(handler);
+    }
+
+    @Override
+    public Future<ServerWebSocket> toWebSocket() {
+        return delegate.toWebSocket();
+    }
 }

@@ -85,9 +85,8 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.Http1xServerConnection;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.impl.VertxHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -131,41 +130,51 @@ public class DevConsoleProcessor {
             }
         });
         virtualBootstrap = new ServerBootstrap();
-        // TODO No idea what needs to be done.
-//        virtualBootstrap.group(vertx.getEventLoopGroup())
-//                .channel(VirtualServerChannel.class)
-//                .handler(new ChannelInitializer<VirtualServerChannel>() {
-//                    @Override
-//                    public void initChannel(VirtualServerChannel ch) throws Exception {
-//                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-//                    }
-//                })
-//                .childHandler(new ChannelInitializer<VirtualChannel>() {
-//                    @Override
-//                    public void initChannel(VirtualChannel ch) throws Exception {
-//                        ContextInternal context = (ContextInternal) vertx
-//                                .createEventLoopContext(null, null, new JsonObject(),
-//                                        Thread.currentThread().getContextClassLoader());
-//                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(context, chctx -> {
-//                            Http1xServerConnection conn = new Http1xServerConnection(
-//                                    context.owner(),
-//                                    null,
-//                                    new HttpServerOptions(),
-//                                    chctx,
-//                                    context,
-//                                    "localhost",
-//                                    null);
-//                            conn.handler(new Handler<HttpServerRequest>() {
-//                                @Override
-//                                public void handle(HttpServerRequest event) {
-//                                    mainRouter.handle(event);
-//                                }
-//                            });
-//                            return conn;
-//                        });
-//                        ch.pipeline().addLast("handler", handler);
-//                    }
-//                });
+        virtualBootstrap.group(vertx.getEventLoopGroup())
+                .channel(VirtualServerChannel.class)
+                .handler(new ChannelInitializer<VirtualServerChannel>() {
+                    @Override
+                    public void initChannel(VirtualServerChannel ch) throws Exception {
+                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+                    }
+                })
+                .childHandler(new ChannelInitializer<VirtualChannel>() {
+                    @Override
+                    public void initChannel(VirtualChannel ch) throws Exception {
+                        EventLoopContext context = vertx.createEventLoopContext();
+
+                        //                                ContextInternal context = (ContextInternal) vertx
+                        //                                        .createEventLoopContext(null, null, new JsonObject(),
+                        //                                                Thread.currentThread().getContextClassLoader());
+                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
+                            Http1xServerConnection connection = new Http1xServerConnection(
+                                    () -> context,
+                                    null,
+                                    new HttpServerOptions(),
+                                    chctx,
+                                    context,
+                                    "localhost",
+                                    null);
+
+                            //                                    Http1xServerConnection conn = new Http1xServerConnection(
+                            //                                            context.owner(),
+                            //                                            null,
+                            //                                            new HttpServerOptions(),
+                            //                                            chctx,
+                            //                                            context,
+                            //                                            "localhost",
+                            //                                            null);
+                            connection.handler(new Handler<HttpServerRequest>() {
+                                @Override
+                                public void handle(HttpServerRequest event) {
+                                    mainRouter.handle(event);
+                                }
+                            });
+                            return connection;
+                        });
+                        ch.pipeline().addLast("handler", handler);
+                    }
+                });
 
         // Start the server.
         try {

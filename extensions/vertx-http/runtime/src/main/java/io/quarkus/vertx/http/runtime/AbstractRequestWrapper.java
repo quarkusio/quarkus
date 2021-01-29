@@ -278,4 +278,5 @@ public abstract class AbstractRequestWrapper implements HttpServerRequest {
     public Future<ServerWebSocket> toWebSocket() {
         return delegate.toWebSocket();
     }
+
 }

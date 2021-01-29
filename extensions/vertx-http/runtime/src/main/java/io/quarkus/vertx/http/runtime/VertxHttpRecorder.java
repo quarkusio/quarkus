@@ -29,8 +29,6 @@ import java.util.regex.Pattern;
 
 import javax.enterprise.event.Event;
 
-import io.vertx.core.*;
-import io.vertx.core.impl.WorkerPool;
 import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
@@ -66,6 +64,14 @@ import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
@@ -76,9 +82,8 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.Http1xServerConnection;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
@@ -885,7 +890,8 @@ public class VertxHttpRecorder {
             }
         }
 
-        private void setupUnixDomainSocketHttpServer(HttpServer httpServer, HttpServerOptions options, Promise<Void> startFuture,
+        private void setupUnixDomainSocketHttpServer(HttpServer httpServer, HttpServerOptions options,
+                Promise<Void> startFuture,
                 AtomicInteger remainingCount) {
             httpServer.listen(SocketAddress.domainSocketAddress(options.getHost()), event -> {
                 if (event.succeeded()) {
@@ -1005,52 +1011,48 @@ public class VertxHttpRecorder {
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
     private static void initializeVirtual(Vertx vertxRuntime) {
-        // TODO Migrate virtual channel to Vert.x 4 - lots of stuff have changed.
-//        if (virtualBootstrap != null) {
-//            return;
-//        }
-//        VertxInternal vertx = (VertxInternal) vertxRuntime;
-//        virtualBootstrap = new ServerBootstrap();
-//
-//        virtualBootstrap.group(vertx.getEventLoopGroup())
-//                .channel(VirtualServerChannel.class)
-//                .handler(new ChannelInitializer<VirtualServerChannel>() {
-//                    @Override
-//                    public void initChannel(VirtualServerChannel ch) throws Exception {
-//                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-//                    }
-//                })
-//                .childHandler(new ChannelInitializer<VirtualChannel>() {
-//                    @Override
-//                    public void initChannel(VirtualChannel ch) throws Exception {
-//                        // TODO vertx.getWorkerPool return an executor ??? Not sure how to get the right one.
-//                        ContextInternal context = (ContextInternal) vertx
-//                                .createEventLoopContext(null, null, vertx.getContext().workerPool(),
-//                                        Thread.currentThread().getContextClassLoader());
-//                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(context, chctx -> {
-//
-//                            Http1xServerConnection conn = new Http1xServerConnection(
-//                                    () -> context, // TODO probably not
-//                                    null,
-//                                    new HttpServerOptions(),
-//                                    chctx, // TODO No idea.
-//                                    context,
-//                                    "localhost",
-//                                    null);
-//                            conn.handler(ACTUAL_ROOT);
-//                            return conn;
-//                        });
-//
-//                        ch.pipeline().addLast("handler", handler);
-//                    }
-//                });
-//
-//        // Start the server.
-//        try {
-//            virtualBootstrap.bind(VIRTUAL_HTTP).sync();
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException("failed to bind virtual http");
-//        }
+        if (virtualBootstrap != null) {
+            return;
+        }
+
+        VertxInternal vertx = (VertxInternal) vertxRuntime;
+        virtualBootstrap = new ServerBootstrap();
+        virtualBootstrap.group(vertx.getEventLoopGroup())
+                .channel(VirtualServerChannel.class)
+                .handler(new ChannelInitializer<VirtualServerChannel>() {
+                    @Override
+                    public void initChannel(VirtualServerChannel ch) throws Exception {
+                        //ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+                    }
+                })
+                .childHandler(new ChannelInitializer<VirtualChannel>() {
+                    @Override
+                    public void initChannel(VirtualChannel ch) throws Exception {
+                        EventLoopContext context = vertx.createEventLoopContext();
+                        VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
+
+                            Http1xServerConnection conn = new Http1xServerConnection(
+                                    () -> context,
+                                    null,
+                                    new HttpServerOptions(),
+                                    chctx,
+                                    context,
+                                    "localhost",
+                                    null);
+                            conn.handler(ACTUAL_ROOT);
+                            return conn;
+                        });
+
+                        ch.pipeline().addLast("handler", handler);
+                    }
+                });
+
+        // Start the server.
+        try {
+            virtualBootstrap.bind(VIRTUAL_HTTP).sync();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("failed to bind virtual http");
+        }
 
     }
 

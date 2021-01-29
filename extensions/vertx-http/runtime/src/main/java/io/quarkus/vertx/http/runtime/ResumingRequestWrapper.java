@@ -1,12 +1,9 @@
 package io.quarkus.vertx.http.runtime;
 
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerFileUpload;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.net.NetSocket;
 
 class ResumingRequestWrapper extends AbstractRequestWrapper {
 
@@ -65,31 +62,11 @@ class ResumingRequestWrapper extends AbstractRequestWrapper {
     }
 
     @Override
-    public Future<Buffer> body() {
-        return delegate.body();
-    }
-
-    @Override
-    public Future<Void> end() {
-        return delegate.end();
-    }
-
-    @Override
-    public Future<NetSocket> toNetSocket() {
-        return delegate.toNetSocket();
-    }
-
-    @Override
     public HttpServerRequest uploadHandler(Handler<HttpServerFileUpload> handler) {
         delegate.uploadHandler(handler);
         if (!userSetState) {
             delegate.resume();
         }
         return this;
-    }
-
-    @Override
-    public Future<ServerWebSocket> toWebSocket() {
-        return delegate.toWebSocket();
     }
 }

@@ -5,7 +5,6 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
-import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
 import java.util.*;
@@ -226,9 +225,7 @@ public class VertxCoreRecorder {
             initializeClusterOptions(conf, options);
         }
 
-        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME,
-                System.getProperty("java.io.tmpdir", ".") + File.separator + "vertx-cache");
-
+        String fileCacheDir = System.getProperty("java.io.tmpdir", ".") + File.separator + "vertx-cache";
         options.setFileSystemOptions(new FileSystemOptions()
                 .setFileCachingEnabled(conf.caching)
                 .setFileCacheDir(fileCacheDir)

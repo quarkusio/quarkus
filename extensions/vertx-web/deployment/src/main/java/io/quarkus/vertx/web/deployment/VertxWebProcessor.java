@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -287,9 +288,10 @@ class VertxWebProcessor {
                 AnnotationValue typeValue = route.value(VALUE_TYPE);
                 Route.HandlerType routeHandlerType = typeValue == null ? Route.HandlerType.NORMAL
                         : Route.HandlerType.from(typeValue.asEnum());
-                HttpMethod[] methods = Arrays.stream(methodsValue.asEnumArray()).map(HttpMethod::valueOf)
-                        .toArray(HttpMethod[]::new);
-                Integer order = orderValue.asInt();
+                String[] methods = Arrays.stream(methodsValue.asStringArray())
+                        .map(String::toUpperCase)
+                        .toArray(String[]::new);
+                int order = orderValue.asInt();
 
                 if (regexValue == null) {
                     if (pathPrefix != null) {
@@ -336,7 +338,7 @@ class VertxWebProcessor {
                 }
 
                 HandlerType handlerType = HandlerType.NORMAL;
-                if (typeValue != null) {
+                if (routeHandlerType != null) {
                     switch (routeHandlerType) {
                         case NORMAL:
                             handlerType = HandlerType.NORMAL;
@@ -379,12 +381,23 @@ class VertxWebProcessor {
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
                         bodyHandler.getHandler());
 
-                routeProducer.produce(new RouteBuildItem(routeFunction, routeHandler, handlerType));
+                RouteBuildItem.Builder builder = RouteBuildItem.builder()
+                        .routeFunction(routeFunction)
+                        .handlerType(handlerType)
+                        .handler(routeHandler);
+                routeProducer.produce(builder.build());
 
                 if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
                     if (methods.length == 0) {
                         // No explicit method declared - match all methods
-                        methods = HttpMethod.values().toArray(new HttpMethod[0]);
+                        methods = HttpMethod.values().stream()
+                                .map(HttpMethod::name)
+                                .toArray(new IntFunction<String[]>() {
+                                    @Override
+                                    public String[] apply(int value) {
+                                        return new String[value];
+                                    }
+                                });
                     }
                     descriptions.produce(new RouteDescriptionBuildItem(
                             businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"

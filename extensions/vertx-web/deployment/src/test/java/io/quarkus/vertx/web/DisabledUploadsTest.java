@@ -54,7 +54,7 @@ public class DisabledUploadsTest {
                 .post("/vertx-web/upload").then().statusCode(200)
                 .extract().body().asString();
         Assertions.assertTrue(uploadedPath.isEmpty());
-        Assertions.assertTrue(!new File(UPLOADS_DIR).exists());
+        Assertions.assertFalse(new File(UPLOADS_DIR).exists());
     }
 
     public static class Routes {

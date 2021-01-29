@@ -44,8 +44,8 @@ public class VertxWebRecorder {
                     route = router.route();
                 }
                 if (matcher.getMethods().length > 0) {
-                    for (HttpMethod method : matcher.getMethods()) {
-                        route.method(method);
+                    for (String method : matcher.getMethods()) {
+                        route.method(HttpMethod.valueOf(method));
                     }
                 }
                 if (matcher.getOrder() > 0) {

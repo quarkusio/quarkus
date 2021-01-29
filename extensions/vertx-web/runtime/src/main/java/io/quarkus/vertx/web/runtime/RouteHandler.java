@@ -84,7 +84,7 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
                 if (state == null) {
                     // Reactive routes can use async processing (e.g. mutiny Uni/Multi) and context propagation
                     // 1. Store the state (which is basically a shared Map instance)
-                    // 2. Terminate the context correcly when the response is disposed or an exception is thrown 
+                    // 2. Terminate the context correctly when the response is disposed or an exception is thrown
                     final ContextState endState = requestContext.getState();
                     context.put(REQUEST_CONTEXT_STATE, endState);
                     context.addEndHandler(new Handler<AsyncResult<Void>>() {

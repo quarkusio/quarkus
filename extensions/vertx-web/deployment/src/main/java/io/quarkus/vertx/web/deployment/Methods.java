@@ -34,6 +34,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniSubscribe;
 import io.smallrye.mutiny.subscription.Cancellable;
+import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -126,11 +127,11 @@ class Methods {
     static final MethodDescriptor MULTI_JSON_FAIL = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
             "fail", Void.TYPE, RoutingContext.class);
 
-    static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Void.TYPE);
+    static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Future.class);
     static final MethodDescriptor END_WITH_STRING = MethodDescriptor
-            .ofMethod(HttpServerResponse.class, "end", Void.TYPE, String.class);
+            .ofMethod(HttpServerResponse.class, "end", Future.class, String.class);
     static final MethodDescriptor END_WITH_BUFFER = MethodDescriptor
-            .ofMethod(HttpServerResponse.class, "end", Void.TYPE, Buffer.class);
+            .ofMethod(HttpServerResponse.class, "end", Future.class, Buffer.class);
     static final MethodDescriptor SET_STATUS = MethodDescriptor
             .ofMethod(HttpServerResponse.class, "setStatusCode", HttpServerResponse.class, Integer.TYPE);
     static final MethodDescriptor MUTINY_GET_DELEGATE = MethodDescriptor

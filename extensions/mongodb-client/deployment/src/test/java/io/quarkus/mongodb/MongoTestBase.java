@@ -16,7 +16,6 @@ import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.config.IRuntimeConfig;
 import de.flapdoodle.embed.process.config.io.ProcessOutput;
-import de.flapdoodle.embed.process.runtime.Network;
 
 public class MongoTestBase {
 
@@ -56,7 +55,7 @@ public class MongoTestBase {
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
             IMongodConfig config = new MongodConfigBuilder()
                     .version(version)
-                    .net(new Net(port, Network.localhostIsIPv6()))
+                    .net(new Net("127.0.0.1", port, false))
                     .build();
             MONGO = getMongodExecutable(config);
             try {

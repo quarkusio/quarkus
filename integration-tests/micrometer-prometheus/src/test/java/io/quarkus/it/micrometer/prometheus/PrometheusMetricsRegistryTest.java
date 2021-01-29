@@ -164,6 +164,14 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString(
                         "async_longCall_seconds_duration_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\",} 0.0"))
 
+                // Configured median, 95th percentile and histogram buckets
+                .body(containsString(
+                        "prime_number_test_seconds{env=\"test\",registry=\"prometheus\",quantile=\"0.5\",}"))
+                .body(containsString(
+                        "prime_number_test_seconds{env=\"test\",registry=\"prometheus\",quantile=\"0.95\",}"))
+                .body(containsString(
+                        "prime_number_test_seconds_bucket{env=\"test\",registry=\"prometheus\",le=\"0.001\",}"))
+
                 // this was defined by a tag to a non-matching registry, and should not be found
                 .body(not(containsString("class-should-not-match")))
 

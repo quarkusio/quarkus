@@ -22,7 +22,6 @@ import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointB
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
-import io.vertx.ext.web.handler.graphql.impl.GraphQLInputDeserializer;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
 
 class VertxGraphqlProcessor {
@@ -41,7 +40,6 @@ class VertxGraphqlProcessor {
     @BuildStep
     List<ReflectiveClassBuildItem> registerForReflection() {
         return Arrays.asList(
-                new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLBatch.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLQuery.class.getName()));
     }

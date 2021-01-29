@@ -5,7 +5,6 @@ import java.util.concurrent.CountDownLatch;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import io.vertx.core.Promise;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -16,7 +15,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 /**

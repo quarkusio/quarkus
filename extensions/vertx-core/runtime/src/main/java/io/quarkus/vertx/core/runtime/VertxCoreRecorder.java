@@ -8,11 +8,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -186,20 +182,21 @@ public class VertxCoreRecorder {
         }
 
         Vertx vertx;
-        // TODO Unable to check if Vert.x is clustered from config anymore.
-//        if (options.isClustered()) {
-//            CompletableFuture<Vertx> latch = new CompletableFuture<>();
-//            Vertx.clusteredVertx(options, ar -> {
-//                if (ar.failed()) {
-//                    latch.completeExceptionally(ar.cause());
-//                } else {
-//                    latch.complete(ar.result());
-//                }
-//            });
-//            vertx = latch.join();
-//        } else {
+
+        if (conf != null && conf.cluster != null && conf.cluster.clustered) {
+            CompletableFuture<Vertx> latch = new CompletableFuture<>();
+            Vertx.clusteredVertx(options, ar -> {
+                if (ar.failed()) {
+                    latch.completeExceptionally(ar.cause());
+                } else {
+                    latch.complete(ar.result());
+                }
+            });
+            vertx = latch.join();
+        } else {
             vertx = Vertx.vertx(options);
-//        }
+        }
+
         vertx.exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable error) {
@@ -214,7 +211,8 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options, boolean allowClustering) {
+    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
+            boolean allowClustering) {
 
         if (!conf.useAsyncDNS) {
             System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
@@ -299,8 +297,6 @@ public class VertxCoreRecorder {
 
     private static void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
         ClusterConfiguration cluster = conf.cluster;
-        // TODO isClustered has been removed ??????
-//        options.getEventBusOptions().setClustered(cluster.clustered);
         options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
         options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval.toMillis());
         if (cluster.host != null) {
@@ -321,7 +317,6 @@ public class VertxCoreRecorder {
         opts.setAcceptBacklog(eb.acceptBacklog.orElse(-1));
         opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth.toUpperCase()));
         opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout.toMillis())));
-        // todo: use timeUnit cleverly
         opts.setIdleTimeout(
                 eb.idleTimeout.isPresent() ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout.get().getSeconds()))
                         : 0);

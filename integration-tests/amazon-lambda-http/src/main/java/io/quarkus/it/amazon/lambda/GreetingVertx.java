@@ -3,7 +3,6 @@ package io.quarkus.it.amazon.lambda;
 import static io.quarkus.vertx.web.Route.HttpMethod.GET;
 import static io.quarkus.vertx.web.Route.HttpMethod.POST;
 
-
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.ext.web.RoutingContext;

@@ -43,7 +43,7 @@ public class VertxProducerResource {
         // Use the event bus bean.
         MessageConsumer<String> consumer = eventBus.consumer(address);
         consumer.handler(m -> {
-            m.replyAndForget("hello " + m.body());
+            m.reply("hello " + m.body());
             consumer.unregister();
         });
 

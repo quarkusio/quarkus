@@ -4,7 +4,10 @@ import java.io.File;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -15,9 +18,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
@@ -83,29 +90,43 @@ public class Http2ServerPushTestCase {
             //            });
             //            request.end();
 
-            vertx.createHttpClient(options)
-                    .request(HttpMethod.GET, sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
-                    .onSuccess(request -> {
-                        pushedPath.complete(request.path());
-                        request.send(aResult -> {
-                            if (aResult.succeeded()) {
-                                HttpClientResponse response = aResult.result();
-                                response.body(aResult2 -> {
-                                    if (aResult2.succeeded()) {
-                                        Buffer body = aResult2.result();
-                                        pushedBody.complete(new String(body.getBytes(), StandardCharsets.UTF_8));
-                                    } else if (aResult2.cause() != null) {
-                                        // error receiving response
-                                        pushedBody.completeExceptionally(aResult.cause());
-                                        pushedPath.completeExceptionally(aResult.cause());
-                                    }
-                                });
-                            } else if (aResult.cause() != null) {
-                                // error sending request
-                                pushedBody.completeExceptionally(aResult.cause());
-                                pushedPath.completeExceptionally(aResult.cause());
-                            }
-                        });
+            HttpClient client = vertx.createHttpClient(options);
+            client.request(HttpMethod.GET, sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
+                    .toCompletionStage()
+                    .thenAccept(new Consumer<HttpClientRequest>() {
+                        @Override
+                        public void accept(HttpClientRequest req) {
+                            req.response().onComplete(new Handler<AsyncResult<HttpClientResponse>>() {
+                                @Override
+                                public void handle(AsyncResult<HttpClientResponse> r) {
+                                    // Ignored
+                                }
+                            });
+
+                            req.pushHandler(new Handler<HttpClientRequest>() {
+                                @Override
+                                public void handle(HttpClientRequest pushedRequest) {
+                                    pushedPath.complete(pushedRequest.path());
+                                    pushedRequest.response().toCompletionStage()
+                                            .thenCompose(new Function<HttpClientResponse, CompletionStage<Buffer>>() {
+                                                @Override
+                                                public CompletionStage<Buffer> apply(
+                                                        HttpClientResponse resp) {
+                                                    return resp.body().toCompletionStage();
+                                                }
+                                            })
+                                            .thenAccept(new Consumer<Buffer>() {
+                                                @Override
+                                                public void accept(Buffer buffer) {
+                                                    pushedBody.complete(
+                                                            new String(buffer.getBytes(), StandardCharsets.UTF_8));
+                                                }
+                                            });
+                                }
+                            });
+
+                            req.end();
+                        }
                     });
 
             Assertions.assertEquals("/pushed", pushedPath.get(10, TimeUnit.SECONDS));

@@ -1,11 +1,10 @@
 package io.quarkus.grpc.runtime;
 
-import java.util.Map;
-
+import io.grpc.Context;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
 
-import io.grpc.Context;
+import java.util.Map;
 
 public class GrpcContextProvider implements ThreadContextProvider {
 
@@ -25,7 +24,7 @@ public class GrpcContextProvider implements ThreadContextProvider {
             currentContext.attach();
             return () -> {
                 // restore the previous context
-                previousContext.attach();
+                currentContext.detach(previousContext);
             };
         };
     }

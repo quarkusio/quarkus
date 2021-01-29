@@ -164,7 +164,7 @@ public class SwaggerUiProcessor {
                             .build());
             routes.produce(
                     new RouteBuildItem.Builder()
-                            .route(swaggerUiConfig.path + "/*")
+                            .route(swaggerUiConfig.path + "*")
                             .handler(handler)
                             .nonApplicationRoute()
                             .build());

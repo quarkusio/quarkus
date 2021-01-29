@@ -107,7 +107,6 @@ import io.quarkus.vertx.web.runtime.devmode.ResourceNotFoundRecorder;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
@@ -389,9 +388,11 @@ class VertxWebProcessor {
 
                 if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
                     if (methods.length == 0) {
-                        // No explicit method declared - match all methods
-                        methods = HttpMethod.values().stream()
-                                .map(HttpMethod::name)
+                        // No explicit method declared - match all methods in the
+                        // Route.HttpMethod enum, which is a much smaller set than
+                        // all io.vertx.core.http.HttpMethod.values()
+                        methods = Arrays.asList(Route.HttpMethod.values()).stream()
+                                .map(x -> x.toString())
                                 .toArray(new IntFunction<String[]>() {
                                     @Override
                                     public String[] apply(int value) {

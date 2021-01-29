@@ -102,7 +102,6 @@ import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.XStreamDeepClone;
 
-//todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
         ParameterResolver {
@@ -119,7 +118,6 @@ public class QuarkusTestExtension
     private static Object actualTestInstance;
     private static ClassLoader originalCl;
     private static RunningQuarkusApplication runningQuarkusApplication;
-    private static Path testClassLocation;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private static List<Object> beforeClassCallbacks;
@@ -133,7 +131,7 @@ public class QuarkusTestExtension
 
     private static DeepClone deepClone;
     //needed for @Nested
-    private static Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
+    private static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     private static ScheduledExecutorService hangDetectionExecutor;
     private static Duration hangTimeout;
     private static ScheduledFuture<?> hangTaskKey;
@@ -192,7 +190,7 @@ public class QuarkusTestExtension
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
             Class<?> requiredTestClass = context.getRequiredTestClass();
-            testClassLocation = getTestClassesLocation(requiredTestClass);
+            Path testClassLocation = getTestClassesLocation(requiredTestClass);
             final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
             PathsCollection.Builder rootBuilder = PathsCollection.builder();
@@ -220,7 +218,7 @@ public class QuarkusTestExtension
                     .setMode(QuarkusBootstrap.Mode.TEST);
             QuarkusTestProfile profileInstance = null;
             if (profile != null) {
-                profileInstance = profile.newInstance();
+                profileInstance = profile.getConstructor().newInstance();
                 Map<String, String> additional = new HashMap<>(profileInstance.getConfigOverrides());
                 if (!profileInstance.getEnabledAlternatives().isEmpty()) {
                     additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives().stream()

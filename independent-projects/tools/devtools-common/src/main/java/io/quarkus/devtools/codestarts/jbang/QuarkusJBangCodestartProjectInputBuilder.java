@@ -3,6 +3,7 @@ package io.quarkus.devtools.codestarts.jbang;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
+import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.Extensions;
 import java.util.ArrayList;
@@ -59,6 +60,12 @@ public class QuarkusJBangCodestartProjectInputBuilder extends CodestartProjectIn
 
     @Override
     public QuarkusJBangCodestartProjectInputBuilder putData(String key, Object value) {
+        super.putData(key, value);
+        return this;
+    }
+
+    @Override
+    public QuarkusJBangCodestartProjectInputBuilder putData(DataKey key, Object value) {
         super.putData(key, value);
         return this;
     }

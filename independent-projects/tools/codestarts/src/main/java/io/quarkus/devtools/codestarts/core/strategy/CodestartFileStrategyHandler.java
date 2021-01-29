@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 public interface CodestartFileStrategyHandler {
 
     DefaultCodestartFileStrategyHandler DEFAULT_STRATEGY = new FailOnDuplicateCodestartFileStrategyHandler();
+    String SKIP_FILE_IDENTIFIER = "//:SKIP_FILE";
 
     Map<String, CodestartFileStrategyHandler> BY_NAME = Stream
             .of(DEFAULT_STRATEGY,
@@ -51,7 +52,9 @@ public interface CodestartFileStrategyHandler {
     }
 
     default void writeFile(final Path targetPath, final String content) throws IOException {
-        Files.write(targetPath, content.getBytes(StandardCharsets.UTF_8));
+        if (!SKIP_FILE_IDENTIFIER.equals(content)) {
+            Files.write(targetPath, content.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
 }

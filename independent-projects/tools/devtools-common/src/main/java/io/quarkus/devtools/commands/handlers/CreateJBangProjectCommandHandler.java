@@ -1,5 +1,8 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog.JBangDataKey.QUARKUS_BOM_ARTIFACT_ID;
+import static io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog.JBangDataKey.QUARKUS_BOM_GROUP_ID;
+import static io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog.JBangDataKey.QUARKUS_BOM_VERSION;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
@@ -30,12 +33,9 @@ public class CreateJBangProjectCommandHandler implements QuarkusCommandHandler {
         final QuarkusJBangCodestartProjectInput input = QuarkusJBangCodestartProjectInput.builder()
                 .addExtensions(extensionsToAdd)
                 .setNoJBangWrapper(invocation.getBooleanValue("noJBangWrapper"))
-                .putData(QuarkusJBangCodestartCatalog.DataKey.QUARKUS_BOM_GROUP_ID.getKey(),
-                        invocation.getPlatformDescriptor().getBomGroupId())
-                .putData(QuarkusJBangCodestartCatalog.DataKey.QUARKUS_BOM_ARTIFACT_ID.getKey(),
-                        invocation.getPlatformDescriptor().getBomArtifactId())
-                .putData(QuarkusJBangCodestartCatalog.DataKey.QUARKUS_BOM_VERSION.getKey(),
-                        invocation.getPlatformDescriptor().getBomVersion())
+                .putData(QUARKUS_BOM_GROUP_ID, invocation.getPlatformDescriptor().getBomGroupId())
+                .putData(QUARKUS_BOM_ARTIFACT_ID, invocation.getPlatformDescriptor().getBomArtifactId())
+                .putData(QUARKUS_BOM_VERSION, invocation.getPlatformDescriptor().getBomVersion())
                 .build();
 
         final Path projectDir = invocation.getQuarkusProject().getProjectDirPath();

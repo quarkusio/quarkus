@@ -1,6 +1,6 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.ProjectTestUtil.checkContains;
+import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,16 +12,16 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 public class CreateJBangProjectTest extends PlatformAwareTestBase {
     @Test
     public void createRESTEasy() throws Exception {
         final File file = new File("target/jbang-resteasy");
         final Path projectDir = file.toPath();
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         assertCreateJBangProject(newCreateJBangProject(projectDir)
                 .setValue("noJBangWrapper", false));
 
@@ -37,7 +37,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
     public void createRESTEasyWithNoJBangWrapper() throws Exception {
         final File file = new File("target/jbang-resteasy");
         final Path projectDir = file.toPath();
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         assertCreateJBangProject(newCreateJBangProject(projectDir)
                 .setValue("noJBangWrapper", true));
 
@@ -53,7 +53,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
     public void createRESTEasyWithExtensions() throws Exception {
         final File file = new File("target/jbang-resteasy");
         final Path projectDir = file.toPath();
-        ProjectTestUtil.delete(file);
+        SnapshotTesting.deleteTestDirectory(file);
         Set<String> extensions = new HashSet<>();
         extensions.add("resteasy-jsonb");
 

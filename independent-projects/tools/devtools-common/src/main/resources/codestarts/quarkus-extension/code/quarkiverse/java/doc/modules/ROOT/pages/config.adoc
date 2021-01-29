@@ -1,0 +1,112 @@
+//
+// This content is generated using mvn compile and copied manually to here
+//
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[[quarkus-freemarker_configuration]]link:#quarkus-freemarker_configuration[Configuration property]
+
+h|Type
+h|Default
+
+a|icon:lock[title=Fixed at build time] [[quarkus-freemarker_quarkus.freemarker.resource-paths]]`link:#quarkus-freemarker_quarkus.freemarker.resource-paths[quarkus.freemarker.resource-paths]`
+
+[.description]
+--
+Comma-separated list of absolute resource paths to scan recursively for templates. All tree folder from 'resource-paths' will be added as a resource. Unprefixed locations or locations starting with classpath will be processed in the same way.
+--|list of string
+|`freemarker/templates`
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.file-paths]]`link:#quarkus-freemarker_quarkus.freemarker.file-paths[quarkus.freemarker.file-paths]`
+
+[.description]
+--
+Comma-separated of file system paths where freemarker templates are located
+--|list of string
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.default-encoding]]`link:#quarkus-freemarker_quarkus.freemarker.default-encoding[quarkus.freemarker.default-encoding]`
+
+[.description]
+--
+Set the preferred charset template files are stored in.
+--|string
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.template-exception-handler]]`link:#quarkus-freemarker_quarkus.freemarker.template-exception-handler[quarkus.freemarker.template-exception-handler]`
+
+[.description]
+--
+Sets how errors will appear. rethrow, debug, html-debug, ignore.
+--|string
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.log-template-exceptions]]`link:#quarkus-freemarker_quarkus.freemarker.log-template-exceptions[quarkus.freemarker.log-template-exceptions]`
+
+[.description]
+--
+If false, don't log exceptions inside FreeMarker that it will be thrown at you anyway.
+--|boolean
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.wrap-unchecked-exceptions]]`link:#quarkus-freemarker_quarkus.freemarker.wrap-unchecked-exceptions[quarkus.freemarker.wrap-unchecked-exceptions]`
+
+[.description]
+--
+Wrap unchecked exceptions thrown during template processing into TemplateException-s.
+--|boolean
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.fallback-on-null-loop-variable]]`link:#quarkus-freemarker_quarkus.freemarker.fallback-on-null-loop-variable[quarkus.freemarker.fallback-on-null-loop-variable]`
+
+[.description]
+--
+If false, do not fall back to higher scopes when reading a null loop variable.
+--|boolean
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.boolean-format]]`link:#quarkus-freemarker_quarkus.freemarker.boolean-format[quarkus.freemarker.boolean-format]`
+
+[.description]
+--
+The string value for the boolean `true` and `false` values, usually intended for human consumption (not for a computer language), separated with comma.
+--|string
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.number-format]]`link:#quarkus-freemarker_quarkus.freemarker.number-format[quarkus.freemarker.number-format]`
+
+[.description]
+--
+Sets the default number format used to convert numbers to strings.
+--|string
+|
+
+
+a| [[quarkus-freemarker_quarkus.freemarker.object-wrapper-expose-fields]]`link:#quarkus-freemarker_quarkus.freemarker.object-wrapper-expose-fields[quarkus.freemarker.object-wrapper-expose-fields]`
+
+[.description]
+--
+If true, the object wrapper will be configured to expose fields.
+--|boolean
+|
+
+
+a|icon:lock[title=Fixed at build time] [[quarkus-freemarker_quarkus.freemarker.directive-directive]]`link:#quarkus-freemarker_quarkus.freemarker.directive-directive[quarkus.freemarker.directive]`
+
+[.description]
+--
+List of directives to register with format name=classname
+--|`Map<String,String>`
+|
+
+|===

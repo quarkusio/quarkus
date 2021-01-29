@@ -8,11 +8,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 
-import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<String>> {
@@ -24,7 +24,7 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
 
     @Override
     protected List<String> createProject() throws IOException, QuarkusCommandException {
-        ProjectTestUtil.delete(getProjectPath().toFile());
+        SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
         new CreateProject(getProjectPath(), getPlatformDescriptor())
                 .buildTool(BuildTool.GRADLE)
                 .groupId("org.acme")

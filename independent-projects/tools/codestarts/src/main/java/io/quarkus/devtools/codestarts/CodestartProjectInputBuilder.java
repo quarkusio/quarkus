@@ -42,8 +42,14 @@ public class CodestartProjectInputBuilder {
     }
 
     public CodestartProjectInputBuilder putData(String key, Object value) {
-        this.data.put(key, value);
+        if (value != null) {
+            this.data.put(key, value);
+        }
         return this;
+    }
+
+    public CodestartProjectInputBuilder putData(DataKey dataKey, Object value) {
+        return this.putData(dataKey.key(), value);
     }
 
     public CodestartProjectInputBuilder messageWriter(MessageWriter messageWriter) {
@@ -53,5 +59,13 @@ public class CodestartProjectInputBuilder {
 
     public CodestartProjectInput build() {
         return new CodestartProjectInput(this);
+    }
+
+    public boolean containsData(DataKey dataKey) {
+        return this.containsData(dataKey.key());
+    }
+
+    public boolean containsData(String key) {
+        return this.data.containsKey(key);
     }
 }

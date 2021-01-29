@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
+import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ public final class QuarkusCodestartData {
     private QuarkusCodestartData() {
     }
 
-    public enum DataKey {
+    public enum QuarkusDataKey implements DataKey {
         BOM_GROUP_ID("quarkus.platform.group-id"),
         BOM_ARTIFACT_ID("quarkus.platform.artifact-id"),
         BOM_VERSION("quarkus.platform.version"),
@@ -52,16 +53,17 @@ public final class QuarkusCodestartData {
 
         private final String key;
 
-        DataKey(String key) {
+        QuarkusDataKey(String key) {
             this.key = key;
         }
 
-        public String getKey() {
+        @Override
+        public String key() {
             return key;
         }
     }
 
-    public enum LegacySupport {
+    public enum LegacySupport implements DataKey {
         BOM_GROUP_ID("bom_groupId"),
         BOM_ARTIFACT_ID("bom_artifactId"),
         BOM_VERSION("bom_version"),
@@ -100,17 +102,18 @@ public final class QuarkusCodestartData {
         }
 
         LegacySupport(Function<Map<String, Object>, Object> converter) {
-            this.key = DataKey.valueOf(this.name()).getKey();
+            this.key = QuarkusDataKey.valueOf(this.name()).key();
             this.converter = converter;
         }
 
-        public String getKey() {
+        @Override
+        public String key() {
             return key;
         }
 
         public static Map<String, Object> convertFromLegacy(Map<String, Object> legacy) {
             return NestedMaps.unflatten(Stream.of(values())
-                    .map(v -> new HashMap.SimpleImmutableEntry<>(v.getKey(), v.converter.apply(legacy)))
+                    .map(v -> new HashMap.SimpleImmutableEntry<>(v.key(), v.converter.apply(legacy)))
                     .filter(v -> v.getValue() != null)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         }

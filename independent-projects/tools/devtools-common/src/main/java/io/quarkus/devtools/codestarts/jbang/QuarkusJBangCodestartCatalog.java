@@ -5,6 +5,7 @@ import static io.quarkus.devtools.codestarts.QuarkusPlatformCodestartResourceLoa
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
 import io.quarkus.devtools.codestarts.CodestartPathLoader;
+import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
@@ -16,23 +17,29 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
 
     public static final String QUARKUS_JBANG_CODESTARTS_DIR = "codestarts/quarkus-jbang";
 
-    public enum DataKey implements KeySupplier {
+    public enum JBangDataKey implements DataKey {
         QUARKUS_BOM_GROUP_ID("quarkus.bom.group-id"),
         QUARKUS_BOM_ARTIFACT_ID("quarkus.bom.artifact-id"),
         QUARKUS_BOM_VERSION("quarkus.bom.version");
 
         private final String key;
 
-        DataKey(String key) {
+        JBangDataKey(String key) {
             this.key = key;
         }
 
-        public String getKey() {
+        @Override
+        public String key() {
             return key;
         }
     }
 
-    public enum Tooling implements KeySupplier {
+    public enum ExampleCodestart implements DataKey {
+        PICOCLI,
+        RESTEASY
+    }
+
+    public enum ToolingCodestart implements DataKey {
         JBANG_WRAPPER
     }
 
@@ -53,9 +60,9 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
 
         if (projectInput.getSelection().getNames().isEmpty()) {
             if (projectInput.getDependencies().stream().anyMatch(s -> s.contains("picocli"))) {
-                projectInput.getSelection().addName("picocli");
+                projectInput.getSelection().addName(ExampleCodestart.PICOCLI.key());
             } else {
-                projectInput.getSelection().addName("resteasy");
+                projectInput.getSelection().addName(ExampleCodestart.RESTEASY.key());
             }
         }
 
@@ -68,15 +75,8 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
     private List<String> getToolingCodestarts(QuarkusJBangCodestartProjectInput projectInput) {
         final List<String> codestarts = new ArrayList<>();
         if (!projectInput.noJBangWrapper()) {
-            codestarts.add(Tooling.JBANG_WRAPPER.getKey());
+            codestarts.add(ToolingCodestart.JBANG_WRAPPER.key());
         }
         return codestarts;
     }
-
-    interface KeySupplier {
-        default String getKey() {
-            return this.toString().toLowerCase().replace("_", "-");
-        }
-    }
-
 }

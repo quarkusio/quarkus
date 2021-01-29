@@ -55,8 +55,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse addCloseHandler(Runnable onClose) {
-        this.response.closeHandler(v -> {
-            onClose.run();
+        this.response.closeHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void v) {
+                onClose.run();
+            }
         });
         return this;
     }
@@ -118,7 +121,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public String getRequestMethod() {
-        return request.rawMethod();
+        return request.method().name();
     }
 
     @Override

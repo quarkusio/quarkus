@@ -1,4 +1,0 @@
-io.quarkus.resteasy.runtime.vertx.JsonObjectWriter
-io.quarkus.resteasy.runtime.vertx.JsonArrayWriter
-io.quarkus.resteasy.runtime.vertx.JsonObjectReader
-io.quarkus.resteasy.runtime.vertx.JsonArrayReader

@@ -1,18 +1,10 @@
 package io.quarkus.reactive.pg.client.runtime;
 
 import io.quarkus.reactive.datasource.runtime.ThreadLocalPool;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.PreparedQuery;
-import io.vertx.sqlclient.Query;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Transaction;
+import io.vertx.sqlclient.*;
 
 public class ThreadLocalPgPool extends ThreadLocalPool<PgPool> implements PgPool {
 
@@ -31,15 +23,19 @@ public class ThreadLocalPgPool extends ThreadLocalPool<PgPool> implements PgPool
     private class PgPoolWrapper implements PgPool {
 
         private final PgPool delegate;
-        private boolean open = true;
 
-        private PgPoolWrapper(PgPool delegate) {
+        PgPoolWrapper(PgPool delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
             delegate.getConnection(handler);
+        }
+
+        @Override
+        public Future<SqlConnection> getConnection() {
+            return delegate.getConnection();
         }
 
         @Override
@@ -53,16 +49,18 @@ public class ThreadLocalPgPool extends ThreadLocalPool<PgPool> implements PgPool
         }
 
         @Override
-        public void begin(Handler<AsyncResult<Transaction>> handler) {
-            delegate.begin(handler);
+        public void close(Handler<AsyncResult<Void>> handler) {
+            delegate.close()
+                    .onComplete(x -> ThreadLocalPgPool.this.removeSelfFromTracking(this))
+                    .onComplete(handler);
         }
 
         @Override
-        public void close() {
-            if (open) {
-                delegate.close();
-                ThreadLocalPgPool.this.removeSelfFromTracking(this);
-            }
+        public Future<Void> close() {
+            Promise<Void> promise = Promise.promise();
+            close(promise);
+            return promise.future();
         }
+
     }
 }

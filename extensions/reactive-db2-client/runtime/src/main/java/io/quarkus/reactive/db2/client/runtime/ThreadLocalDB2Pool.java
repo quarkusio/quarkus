@@ -1,18 +1,10 @@
 package io.quarkus.reactive.db2.client.runtime;
 
 import io.quarkus.reactive.datasource.runtime.ThreadLocalPool;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.db2client.DB2ConnectOptions;
 import io.vertx.db2client.DB2Pool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.PreparedQuery;
-import io.vertx.sqlclient.Query;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Transaction;
+import io.vertx.sqlclient.*;
 
 public class ThreadLocalDB2Pool extends ThreadLocalPool<DB2Pool> implements DB2Pool {
 
@@ -31,15 +23,19 @@ public class ThreadLocalDB2Pool extends ThreadLocalPool<DB2Pool> implements DB2P
     private class DB2PoolWrapper implements DB2Pool {
 
         private final DB2Pool delegate;
-        private boolean open = true;
 
-        private DB2PoolWrapper(DB2Pool delegate) {
+        DB2PoolWrapper(DB2Pool delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
             delegate.getConnection(handler);
+        }
+
+        @Override
+        public Future<SqlConnection> getConnection() {
+            return delegate.getConnection();
         }
 
         @Override
@@ -53,16 +49,17 @@ public class ThreadLocalDB2Pool extends ThreadLocalPool<DB2Pool> implements DB2P
         }
 
         @Override
-        public void begin(Handler<AsyncResult<Transaction>> handler) {
-            delegate.begin(handler);
+        public void close(Handler<AsyncResult<Void>> handler) {
+            delegate.close()
+                    .onComplete(x -> ThreadLocalDB2Pool.this.removeSelfFromTracking(this))
+                    .onComplete(handler);
         }
 
         @Override
-        public void close() {
-            if (open) {
-                delegate.close();
-                ThreadLocalDB2Pool.this.removeSelfFromTracking(this);
-            }
+        public Future<Void> close() {
+            Promise<Void> promise = Promise.promise();
+            close(promise);
+            return promise.future();
         }
     }
 }

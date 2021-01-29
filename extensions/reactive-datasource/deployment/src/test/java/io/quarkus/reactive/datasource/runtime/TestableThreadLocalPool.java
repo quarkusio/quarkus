@@ -1,13 +1,14 @@
 package io.quarkus.reactive.datasource.runtime;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Transaction;
 
 final class TestableThreadLocalPool extends ThreadLocalPool<TestPoolInterface> {
 
@@ -35,6 +36,13 @@ final class TestableThreadLocalPool extends ThreadLocalPool<TestPoolInterface> {
         }
 
         @Override
+        public Future<SqlConnection> getConnection() {
+            Promise<SqlConnection> promise = Promise.promise();
+            getConnection(promise);
+            return promise.future();
+        }
+
+        @Override
         public Query<RowSet<Row>> query(String s) {
             return delegate.query(s);
         }
@@ -45,16 +53,21 @@ final class TestableThreadLocalPool extends ThreadLocalPool<TestPoolInterface> {
         }
 
         @Override
-        public void begin(Handler<AsyncResult<Transaction>> handler) {
-            delegate.begin(handler);
-        }
-
-        @Override
-        public void close() {
+        public void close(Handler<AsyncResult<Void>> handler) {
             if (open) {
                 delegate.close();
                 TestableThreadLocalPool.this.removeSelfFromTracking(this);
             }
+            handler.handle(Future.succeededFuture());
+        }
+
+        @Override
+        public Future<Void> close() {
+            if (open) {
+                delegate.close();
+                TestableThreadLocalPool.this.removeSelfFromTracking(this);
+            }
+            return Future.succeededFuture();
         }
 
         @Override

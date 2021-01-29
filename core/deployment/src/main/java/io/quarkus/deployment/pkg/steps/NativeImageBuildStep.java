@@ -87,7 +87,7 @@ public class NativeImageBuildStep {
 
         String noPIE = "";
 
-        boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
+        boolean isContainerBuild = isContainerBuild(nativeConfig);
         if (!isContainerBuild && SystemUtils.IS_OS_LINUX) {
             noPIE = detectNoPIE();
         }
@@ -287,10 +287,13 @@ public class NativeImageBuildStep {
         }
     }
 
+    public static boolean isContainerBuild(NativeConfig nativeConfig) {
+        return nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild || nativeConfig.remoteContainerBuild;
+    }
+
     private static NativeImageBuildRunner getNativeImageBuildRunner(NativeConfig nativeConfig, Path outputDir,
             String nativeImageName) {
-        boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
-        if (!isContainerBuild) {
+        if (!isContainerBuild(nativeConfig)) {
             NativeImageBuildLocalRunner localRunner = getNativeImageBuildLocalRunner(nativeConfig);
             if (localRunner != null) {
                 return localRunner;

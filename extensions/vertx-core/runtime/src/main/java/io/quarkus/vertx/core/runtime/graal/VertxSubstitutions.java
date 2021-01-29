@@ -131,22 +131,16 @@ final class Target_io_vertx_core_eventbus_impl_clustered_ClusteredEventBusCluste
     }
 }
 
-@TargetClass(className = "io.vertx.core.spi.json.JsonCodec", onlyWith = JacksonMissingSelector.class)
-final class Target_io_vertx_core_spi_json_JsonCodec {
+@TargetClass(className = "io.vertx.core.json.Json", onlyWith = JacksonMissingSelector.class)
+final class Target_io_vertx_core_json_Json {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    static JsonCodec INSTANCE;
+    static JsonCodec CODEC;
 }
 
 @TargetClass(className = "io.vertx.core.json.jackson.JacksonCodec", onlyWith = JacksonMissingSelector.class)
 @Delete
 final class Target_io_vertx_core_json_jackson_JacksonCodec {
-
-}
-
-@TargetClass(className = "io.vertx.core.json.Json", onlyWith = JacksonMissingSelector.class)
-@Delete
-final class Target_io_vertx_core_json_Json {
 
 }
 

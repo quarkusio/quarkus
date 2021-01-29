@@ -1,24 +1,8 @@
 package io.quarkus.vault.runtime.client;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static io.quarkus.vault.runtime.client.MutinyVertxClientFactory.createHttpClient;
-import static java.util.Collections.emptyMap;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
-
-import org.jboss.logging.Logger;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.VaultConfigHolder;
@@ -82,6 +66,19 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import org.jboss.logging.Logger;
+
+import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static io.quarkus.vault.runtime.client.MutinyVertxClientFactory.createHttpClient;
+import static java.util.Collections.emptyMap;
 
 @Singleton
 public class VertxVaultClient implements VaultClient {
@@ -466,23 +463,19 @@ public class VertxVaultClient implements VaultClient {
     }
 
     private <T> T exec(HttpRequest<Buffer> request, Object body, Class<T> resultClass, int expectedCode) {
-        try {
-            Uni<HttpResponse<Buffer>> uni = body == null ? request.send()
-                    : request.sendBuffer(Buffer.buffer(requestBody(body)));
-            HttpResponse<Buffer> response = uni.await().atMost(getRequestTimeout());
 
-            if (response.statusCode() != expectedCode) {
-                throwVaultException(response);
-            }
-            Buffer responseBuffer = response.body();
-            if (responseBuffer != null) {
-                return resultClass == null ? null : mapper.readValue(responseBuffer.toString(), resultClass);
-            } else {
-                return null;
-            }
-        } catch (JsonProcessingException e) {
-            throw new VaultException(e);
+        Uni<HttpResponse<Buffer>> uni = body == null
+                ? request.send()
+                // : request.sendJson(body);
+                : request.sendBuffer(Buffer.buffer(requestBody(body)));
+
+        HttpResponse<Buffer> response = uni.await().atMost(getRequestTimeout());
+
+        if (response.statusCode() != expectedCode) {
+            throwVaultException(response);
         }
+
+        return resultClass == null ? null : response.bodyAsJson(resultClass);
     }
 
     private Duration getRequestTimeout() {

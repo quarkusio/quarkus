@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.Dependent;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 
 import org.jboss.logging.Logger;
@@ -220,7 +220,7 @@ class LiquibaseProcessor {
         for (String dataSourceName : dataSourceNames) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(LiquibaseFactory.class)
-                    .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
+                    .scope(ApplicationScoped.class) // this is what the existing code does, but it doesn't seem reasonable
                     .setRuntimeInit()
                     .unremovable()
                     .supplier(recorder.liquibaseSupplier(dataSourceName));

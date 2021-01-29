@@ -1,5 +1,8 @@
 package io.quarkus.reactive.db2.client.deployment;
 
+import java.util.List;
+import java.util.Optional;
+
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -7,6 +10,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -19,6 +23,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
@@ -47,19 +52,22 @@ class ReactiveDB2ClientProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config) {
+            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_DB2_CLIENT));
 
         createPoolIfDefined(recorder, vertx, shutdown, db2Pool, vertxPool, syntheticBeans,
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactiveDB2Config);
+                dataSourcesReactiveDB2Config, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
             createPoolIfDefined(recorder, vertx, shutdown, db2Pool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourcesReactiveRuntimeConfig, dataSourcesReactiveDB2Config);
+                    dataSourcesReactiveRuntimeConfig, dataSourcesReactiveDB2Config, defaultDataSourceDbKindBuildItems,
+                    curateOutcomeBuildItem);
         }
 
         // Enable SSL support by default
@@ -76,8 +84,11 @@ class ReactiveDB2ClientProcessor {
     void addHealthCheck(
             BuildProducer<HealthBuildItem> healthChecks,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig) {
-        if (!hasPools(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig)) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        if (!hasPools(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, defaultDataSourceDbKindBuildItems,
+                curateOutcomeBuildItem)) {
             return;
         }
 
@@ -97,9 +108,12 @@ class ReactiveDB2ClientProcessor {
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config) {
+            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
-        if (!isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName)) {
+        if (!isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
+                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
             return;
         }
 
@@ -138,17 +152,21 @@ class ReactiveDB2ClientProcessor {
     }
 
     private static boolean isReactiveDB2PoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
                 .getDataSourceRuntimeConfig(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
-        if (!dataSourceBuildTimeConfig.dbKind.isPresent()) {
+        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind,
+                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
+        if (!dbKind.isPresent()) {
             return false;
         }
 
-        if (!DatabaseKind.isDB2(dataSourceBuildTimeConfig.dbKind.get())
+        if (!DatabaseKind.isDB2(dbKind.get())
                 || !dataSourceReactiveBuildTimeConfig.enabled) {
             return false;
         }
@@ -157,15 +175,17 @@ class ReactiveDB2ClientProcessor {
     }
 
     private boolean hasPools(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
-                DataSourceUtil.DEFAULT_DATASOURCE_NAME)) {
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
             return true;
         }
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
             if (isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourceName)) {
+                    dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 return true;
             }
         }

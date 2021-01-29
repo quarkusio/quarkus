@@ -40,6 +40,22 @@ please refer to the link:reactive-sql-clients[Reactive SQL clients guide].
 This is a quick introduction to datasource configuration.
 If you want a better understanding of how all this works, this guide has a lot more information in the subsequent paragraphs.
 
+=== Zero Config Setup (DevServices)
+
+When testing or running in dev mode Quarkus can even provide you with a zero config database out of the box, a feature
+we refer to as DevServices. Depending on your database type you may need docker installed in order to use this feature. DevServices
+is supported for the following open source databases:
+
+* Postgresql (container)
+* MySQL (container)
+* MariaDB (container)
+* H2 (in-process)
+* Apache Derby (in-process)
+
+If you want to use DevServices then all you need to do is include the relevant extension for the type of database you want (either reactive or
+JDBC, or both), and don't configure a database URL, username and password, Quarkus will provide the database and you can just start
+coding without worrying about config.
+
 === JDBC datasource
 
 Add the `agroal` extension plus one of `jdbc-db2`, `jdbc-derby`, `jdbc-h2`, `jdbc-mariadb`, `jdbc-mssql`, `jdbc-mysql`, or `jdbc-postgresql`.
@@ -48,13 +64,16 @@ Then configure your datasource:
 
 [source, properties]
 ----
-quarkus.datasource.db-kind=postgresql
+quarkus.datasource.db-kind=postgresql <1>
 quarkus.datasource.username=<your username>
 quarkus.datasource.password=<your password>
 
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
 quarkus.datasource.jdbc.max-size=16
 ----
+<1> If you only have a single JDBC extension, or you are running tests and only have a single test scoped JDBC extension installed then this is
+optional. If there is only one possible extension we assume this is the correct one, and if a driver has been added with test scope then
+we assume that this should be used in testing.
 
 === Reactive datasource
 
@@ -64,20 +83,22 @@ Then configure your reactive datasource:
 
 [source, properties]
 ----
-quarkus.datasource.db-kind=postgresql
+quarkus.datasource.db-kind=postgresql <1>
 quarkus.datasource.username=<your username>
 quarkus.datasource.password=<your password>
 
 quarkus.datasource.reactive.url=postgresql:///your_database
 quarkus.datasource.reactive.max-size=20
 ----
+<1> As specified above this is optional.
 
 == Default datasource
 
 A datasource can be either a JDBC datasource, a reactive one or both.
 It all depends on how you configure it and which extensions you added to your project.
 
-To define a datasource, start with the following:
+To define a datasource, start with the following (note that this is only required if you have more than one
+database type installed):
 
 [source, properties]
 ----
@@ -382,6 +403,10 @@ quarkus.datasource.inventory.jdbc.max-size=12
 Notice there is an extra bit in the key.
 The syntax is as follows: `quarkus.datasource.[optional name.][datasource property]`.
 
+NOTE: Even when only one database extension is installed, named databases need to specify at least one build time
+property so that Quarkus knows they exist. Generally this will be the `db-kind` property, although you can also
+specify DevServices properties to create named datasources (covered later in this guide).
+
 === Named Datasource Injection
 
 When using multiple datasources, each `DataSource` also has the `io.quarkus.agroal.DataSource` qualifier with the name of the datasource as the value.
@@ -434,6 +459,28 @@ for this data source, all values will be zero.
 If the Narayana JTA extension is also available, integration is automatic.
 
 You can override this by setting the `transactions` configuration property - see the <<configuration-reference, Configuration Reference>> below.
+
+== DevServices (Configuration Free Databases)
+
+As mentioned above Quarkus supports a feature called DevServices that allows you to create datasources without any config. If
+you have a database extension that supports it and no config is provided, Quarkus will automatically start a database (either
+using Testcontainers, or by starting a Java DB in process), and automatically configure a connection to this database.
+
+Production databases need to be configured as normal, so if you want to include a production database config in your
+application.properties and continue to use DevServices we recommend that you use the `%prod.` profile to define your
+database settings.
+
+=== Configuring DevServices
+
+DevServices supports the following config options:
+
+include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+=== Named Datasources
+
+When using DevServices the default datasource will always be created, but to specify a named datasource you need to have
+at least one build time property so Quarkus knows to create the datasource. In general you will usually either specify
+the `db-kind` property, or explicitly enable DevDb: `quarkus.datasource."named".devservices=true`.
 
 [[in-memory-databases]]
 == Testing with in-memory databases

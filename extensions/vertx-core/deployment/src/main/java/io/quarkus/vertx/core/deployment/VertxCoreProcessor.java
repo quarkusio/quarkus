@@ -43,6 +43,9 @@ class VertxCoreProcessor {
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.VertxHttp2ClientUpgradeCodec")
                 .addRuntimeInitializedClass("io.vertx.core.eventbus.impl.clustered.ClusteredEventBus")
 
+                .addRuntimeInitializedClass("io.vertx.core.spi.JsonFactory")
+                .addRuntimeInitializedClass("io.vertx.core.json.Json")
+
                 .addNativeImageSystemProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true")
                 .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",
                         VertxLogDelegateFactory.class.getName())
@@ -93,7 +96,8 @@ class VertxCoreProcessor {
 
     @BuildStep
     LogCleanupFilterBuildItem filterNettyHostsFileParsingWarn() {
-        return new LogCleanupFilterBuildItem("io.netty.resolver.HostsFileParser", "Failed to load and parse hosts file");
+        return new LogCleanupFilterBuildItem("io.netty.resolver.HostsFileParser",
+                "Failed to load and parse hosts file");
     }
 
     @BuildStep

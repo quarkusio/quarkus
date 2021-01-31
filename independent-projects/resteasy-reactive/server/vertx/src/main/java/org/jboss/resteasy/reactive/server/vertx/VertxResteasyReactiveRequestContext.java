@@ -245,7 +245,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setStatusCode(int code) {
-        response.setStatusCode(code);
+        if (! response.headWritten()) {
+            response.setStatusCode(code);
+        }
         return this;
     }
 

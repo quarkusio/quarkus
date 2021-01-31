@@ -50,11 +50,12 @@ final class CodestartProjectGeneration {
         });
 
         processor.writeFiles();
+
         log.info("\napplying codestarts...");
         log.info(projectDefinition.getCodestarts().stream()
                 .map(c -> c.getType().getIcon() + " "
                         + c.getName())
-                .collect(Collectors.joining("\n")));
+                .collect(Collectors.joining(System.lineSeparator())));
     }
 
     private static Map<String, String> mergeStrategies(CodestartProjectDefinition projectDefinition) {

@@ -53,6 +53,7 @@
         <maven-model-helper.version>18</maven-model-helper.version>
         <commons-io.version>2.8.0</commons-io.version>
         <quarkus-http.version>3.0.18.Final</quarkus-http.version>
+        <smallrye-commons.version>1.5.0</smallrye-commons.version>
     </properties>
     <modules>
         <module>platform-descriptor-api</module>
@@ -204,6 +205,11 @@
                 <scope>test</scope>
                 <version>${quarkus.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-os</artifactId>
+                <version>${smallrye-commons.version}</version>
+            </dependency>
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -212,7 +218,6 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 

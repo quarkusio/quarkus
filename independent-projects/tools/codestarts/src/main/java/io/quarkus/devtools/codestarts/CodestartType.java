@@ -1,5 +1,7 @@
 package io.quarkus.devtools.codestarts;
 
+import io.smallrye.common.os.OS;
+
 public enum CodestartType {
     LANGUAGE(true, 1, "\uD83D\uDD20"),
     BUILDTOOL(true, 2, "\uD83E\uDDF0"),
@@ -24,7 +26,7 @@ public enum CodestartType {
     }
 
     public String getIcon() {
-        return icon;
+        return OS.WINDOWS.isCurrent() ? ">>" : icon;
     }
 
     public int getProcessingOrder() {

@@ -24,7 +24,6 @@ import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBoot
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
-import org.hibernate.search.util.common.reflect.spi.ValueReadHandleFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -136,7 +135,6 @@ public class HibernateSearchElasticsearchRecorder {
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
                 BiConsumer<String, Object> propertyCollector) {
             HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
-                    .valueReadHandleFactory(ValueReadHandleFactory.usingJavaLangReflect())
                     .build();
             booter.preBoot(propertyCollector);
         }

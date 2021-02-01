@@ -1,43 +1,85 @@
 package io.quarkus.arc.test.interceptors.bridge;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.interceptors.Counter;
-import io.quarkus.arc.test.interceptors.Simple;
-import io.quarkus.arc.test.interceptors.SimpleInterceptor;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BridgeMethodInterceptionTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Base.class, Submarine.class, Counter.class, Simple.class,
-            SimpleInterceptor.class);
+    public ArcTestContainer container = new ArcTestContainer(Base.class, Submarine.class, Ubot.class, Ponorka.class,
+            Counter.class, Simple.class, SimpleInterceptor.class, ExampleApi.class, ExampleResource.class,
+            AbstractResource.class);
 
     @Test
     public void testInterception() {
         ArcContainer container = Arc.container();
-
-        Submarine submarine = container.instance(Submarine.class).get();
         Counter counter = container.instance(Counter.class).get();
 
-        assertEquals("0foo1", submarine.echo("foo"));
-        assertEquals(1, counter.get());
-
+        counter.reset();
+        Submarine submarine = container.instance(Submarine.class).get();
+        assertEquals("foo", submarine.echo("foo"));
+        assertEquals(Submarine.class.getSimpleName(), submarine.getName());
+        assertEquals(2, counter.get());
         // Now let's invoke the bridge method...
         Base<String> base = submarine;
-        assertEquals("1foo2", base.echo("foo"));
+        assertEquals("foo", base.echo("foo"));
+        assertEquals(Submarine.class.getSimpleName(), base.getName());
+        assertEquals(4, counter.get());
+
+        counter.reset();
+        Ubot ubot = container.instance(Ubot.class).get();
+        assertEquals("1", ubot.echo(1));
+        assertEquals(42, ubot.getName());
         assertEquals(2, counter.get());
+        Base<Integer> baseUbot = ubot;
+        assertEquals("1", baseUbot.echo(1));
+        assertEquals(42, ubot.getName());
+        assertEquals(4, counter.get());
+
+        counter.reset();
+        Ponorka ponorka = container.instance(Ponorka.class).get();
+        assertEquals("TRUE", ponorka.echo(true));
+        assertNull(ponorka.getName());
+        assertEquals(2, counter.get());
+        Base<Boolean> basePonorka = ponorka;
+        assertEquals("TRUE", basePonorka.echo(true));
+        assertNull(basePonorka.getName());
+        assertEquals(4, counter.get());
+    }
+
+    @Test
+    public void testHierarchyWithInterface() {
+        ArcContainer container = Arc.container();
+        Counter counter = container.instance(Counter.class).get();
+
+        counter.reset();
+        ExampleResource exampleResource = container.instance(ExampleResource.class).get();
+        assertEquals("foo", exampleResource.create("foo"));
+        assertEquals(1, counter.get());
+
+        counter.reset();
+        ExampleApi exampleApi = container.instance(ExampleApi.class).get();
+        assertEquals("foo", exampleApi.create("foo"));
+        assertEquals(1, counter.get());
     }
 
     static class Base<T> {
 
         String echo(T payload) {
             return payload.toString().toUpperCase();
+        }
+
+        T getName() {
+            return null;
         }
 
     }
@@ -50,6 +92,34 @@ public class BridgeMethodInterceptionTest {
         String echo(String payload) {
             return payload.toString();
         }
+
+        @Simple
+        @Override
+        String getName() {
+            return Submarine.class.getSimpleName();
+        }
+
+    }
+
+    @Simple
+    @ApplicationScoped
+    static class Ubot extends Base<Integer> {
+
+        @Override
+        String echo(Integer payload) {
+            return payload.toString();
+        }
+
+        @Override
+        Integer getName() {
+            return 42;
+        }
+
+    }
+
+    @Simple
+    @Singleton
+    static class Ponorka extends Base<Boolean> {
 
     }
 

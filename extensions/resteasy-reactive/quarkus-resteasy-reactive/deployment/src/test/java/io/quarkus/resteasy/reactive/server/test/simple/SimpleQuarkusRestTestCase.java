@@ -330,7 +330,7 @@ public class SimpleQuarkusRestTestCase {
                 .queryParam("queryList", "two")
                 .queryParam("int", "666")
                 .get("/injection/field")
-                .then().body(Matchers.equalTo("OK"));
+                .then().statusCode(200).body(Matchers.equalTo("OK"));
         RestAssured
                 .with()
                 .header("header", "one-header")
@@ -339,7 +339,7 @@ public class SimpleQuarkusRestTestCase {
                 .queryParam("queryList", "two")
                 .queryParam("int", "666")
                 .get("/injection/param")
-                .then().body(Matchers.equalTo("OK"));
+                .then().statusCode(200).body(Matchers.equalTo("OK"));
     }
 
     @Test

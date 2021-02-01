@@ -28,23 +28,37 @@ public class SpringCloudConfigServerClientConfigSourceProvider implements Config
         this.applicationName = applicationName;
         this.activeProfile = activeProfile;
 
-        springCloudConfigClientGateway = new DefaultSpringCloudConfigClientGateway(springCloudConfigClientConfig);
+        springCloudConfigClientGateway = new VertxSpringCloudConfigGateway(springCloudConfigClientConfig);
     }
 
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
+        List<ConfigSource> result = new ArrayList<>();
         try {
-            final Response response = springCloudConfigClientGateway.exchange(applicationName, activeProfile);
-            final List<Response.PropertySource> propertySources = response.getPropertySources();
-            Collections.reverse(propertySources); // reverse the property sources so we can increment the ordinal from lower priority to higher
-            final List<ConfigSource> result = new ArrayList<>(propertySources.size());
-            for (int i = 0; i < propertySources.size(); i++) {
-                final Response.PropertySource propertySource = propertySources.get(i);
-                // Property sources obtained from Spring Cloud Config are expected to have a higher priority than even system properties
-                // 400 is the ordinal of SysPropConfigSource, so we use 450 here
-                result.add(new InMemoryConfigSource(450 + i, propertySource.getName(), propertySource.getSource()));
+            boolean connectionTimeoutIsGreaterThanZero = !springCloudConfigClientConfig.connectionTimeout.isNegative()
+                    && !springCloudConfigClientConfig.connectionTimeout.isZero();
+            boolean readTimeoutIsGreaterThanZero = !springCloudConfigClientConfig.readTimeout.isNegative()
+                    && !springCloudConfigClientConfig.readTimeout.isZero();
+            Response response;
+            // Check if configured timeouts are greater than zero in order to avoid an exception on atMost method
+            if (connectionTimeoutIsGreaterThanZero || readTimeoutIsGreaterThanZero)
+                response = springCloudConfigClientGateway.exchange(applicationName, activeProfile).await()
+                        .atMost(springCloudConfigClientConfig.connectionTimeout
+                                .plus(springCloudConfigClientConfig.readTimeout.multipliedBy(2)));
+            else {
+                response = springCloudConfigClientGateway.exchange(applicationName, activeProfile).await().indefinitely();
             }
-            return result;
+            if (response != null) {
+                final List<Response.PropertySource> propertySources = response.getPropertySources();
+                Collections.reverse(propertySources); // reverse the property sources so we can increment the ordinal from lower priority to higher
+                for (int i = 0; i < propertySources.size(); i++) {
+                    final Response.PropertySource propertySource = propertySources.get(i);
+                    // Property sources obtained from Spring Cloud Config are expected to have a higher priority than even system properties
+                    // 400 is the ordinal of SysPropConfigSource, so we use 450 here
+                    result.add(new InMemoryConfigSource(450 + i, propertySource.getName(),
+                            propertySource.getSource()));
+                }
+            }
         } catch (Exception e) {
             final String errorMessage = "Unable to obtain configuration from Spring Cloud Config Server at "
                     + springCloudConfigClientConfig.url;
@@ -54,7 +68,11 @@ public class SpringCloudConfigServerClientConfigSourceProvider implements Config
                 log.error(errorMessage, e);
                 return Collections.emptyList();
             }
+        } finally {
+            springCloudConfigClientGateway.close();
         }
+        return result;
+
     }
 
     private static final class InMemoryConfigSource implements ConfigSource {

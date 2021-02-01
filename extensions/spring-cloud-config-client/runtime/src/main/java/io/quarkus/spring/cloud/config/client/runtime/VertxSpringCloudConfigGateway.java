@@ -1,0 +1,225 @@
+package io.quarkus.spring.cloud.config.client.runtime;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.KeyStoreOptionsBase;
+import io.vertx.core.net.PfxOptions;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.WebClient;
+
+public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGateway {
+
+    private static final Logger log = Logger.getLogger(VertxSpringCloudConfigGateway.class);
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    private static final String PKS_12 = "PKS12";
+    private static final String JKS = "JKS";
+
+    private final SpringCloudConfigClientConfig springCloudConfigClientConfig;
+    private final Vertx vertx;
+    private final WebClient webClient;
+    private final URI baseURI;
+
+    public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig) {
+        this.springCloudConfigClientConfig = springCloudConfigClientConfig;
+        try {
+            this.baseURI = determineBaseUri(springCloudConfigClientConfig);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Value: '" + springCloudConfigClientConfig.url
+                    + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
+        }
+        this.vertx = Vertx.vertx();
+        this.webClient = createHttpClient(vertx, springCloudConfigClientConfig);
+    }
+
+    public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig) {
+
+        WebClientOptions webClientOptions = new WebClientOptions()
+                .setConnectTimeout((int) springCloudConfig.connectionTimeout.toMillis())
+                .setIdleTimeout((int) springCloudConfig.readTimeout.getSeconds());
+
+        boolean trustAll = springCloudConfig.trustCerts;
+        try {
+            if (springCloudConfig.trustStore.isPresent()) {
+                Path trustStorePath = springCloudConfig.trustStore.get();
+                String type = determineStoreType(trustStorePath);
+                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, springCloudConfig.trustStorePassword,
+                        createStoreOptions(type));
+                if (isPfx(type)) {
+                    webClientOptions.setPfxTrustOptions((PfxOptions) storeOptions);
+                } else {
+                    webClientOptions.setTrustStoreOptions((JksOptions) storeOptions);
+                }
+            } else if (trustAll) {
+                skipVerify(webClientOptions);
+            } else if (springCloudConfig.keyStore.isPresent()) {
+                Path trustStorePath = springCloudConfig.keyStore.get();
+                String type = determineStoreType(trustStorePath);
+                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, springCloudConfig.keyStorePassword,
+                        createStoreOptions(type));
+                if (isPfx(type)) {
+                    webClientOptions.setPfxTrustOptions((PfxOptions) storeOptions);
+                } else {
+                    webClientOptions.setTrustStoreOptions((JksOptions) storeOptions);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return WebClient.create(vertx, webClientOptions);
+    }
+
+    private static void skipVerify(WebClientOptions options) {
+        options.setTrustAll(true);
+        options.setVerifyHost(false);
+    }
+
+    private static KeyStoreOptionsBase createStoreOptions(String type) {
+        if (isPfx(type)) {
+            return new PfxOptions();
+        }
+        return new JksOptions();
+    }
+
+    private static boolean isPfx(String type) {
+        return PKS_12.equals(type);
+    }
+
+    private static <T extends KeyStoreOptionsBase> KeyStoreOptionsBase storeOptions(Path storePath,
+            Optional<String> storePassword, T store) throws Exception {
+        return store
+                .setPassword(storePassword.orElse(""))
+                .setValue(io.vertx.core.buffer.Buffer.buffer(storeBytes(storePath)));
+    }
+
+    private static String determineStoreType(Path keyStorePath) {
+        String pathName = keyStorePath.toString().toLowerCase();
+        if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
+            return PKS_12;
+        }
+        return JKS;
+    }
+
+    private static byte[] storeBytes(Path keyStorePath)
+            throws Exception {
+        InputStream classPathResource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(keyStorePath.toString());
+        if (classPathResource != null) {
+            try (InputStream is = classPathResource) {
+                return allBytes(is);
+            }
+        } else {
+            try (InputStream is = Files.newInputStream(keyStorePath)) {
+                return allBytes(is);
+            }
+        }
+    }
+
+    private static byte[] allBytes(InputStream inputStream) throws Exception {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[1024];
+        while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
+    }
+
+    private URI determineBaseUri(SpringCloudConfigClientConfig springCloudConfigClientConfig) throws URISyntaxException {
+        String url = springCloudConfigClientConfig.url;
+        if (null == url || url.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "The 'quarkus.spring-cloud-config.url' property cannot be empty");
+        }
+        if (url.endsWith("/")) {
+            return new URI(url.substring(0, url.length() - 1));
+        }
+        return new URI(url);
+    }
+
+    private String finalURI(String applicationName, String profile) throws URISyntaxException {
+        String path = baseURI.getPath();
+        List<String> finalPathSegments = new ArrayList<String>();
+        finalPathSegments.add(path);
+        finalPathSegments.add(applicationName);
+        finalPathSegments.add(profile);
+        if (springCloudConfigClientConfig.label.isPresent()) {
+            finalPathSegments.add(springCloudConfigClientConfig.label.get());
+        }
+        return finalPathSegments.stream().collect(Collectors.joining("/"));
+    }
+
+    @Override
+    public Uni<Response> exchange(String applicationName, String profile) throws Exception {
+        final String requestURI = finalURI(applicationName, profile);
+        String finalURI = getFinalURI(applicationName, profile);
+        HttpRequest<Buffer> request = webClient
+                .get(baseURI.getPort(), baseURI.getHost(), requestURI)
+                .ssl(baseURI.getScheme().contains("https") ? true : false)
+                .putHeader("Accept", "application/json");
+        if (springCloudConfigClientConfig.usernameAndPasswordSet()) {
+            request.basicAuthentication(springCloudConfigClientConfig.username.get(),
+                    springCloudConfigClientConfig.password.get());
+        }
+        for (Map.Entry<String, String> entry : springCloudConfigClientConfig.headers.entrySet()) {
+            request.putHeader(entry.getKey(), entry.getValue());
+        }
+        log.debug("Attempting to read configuration from '" + finalURI + "'.");
+        return request.send().map(r -> {
+            if (r.statusCode() != 200) {
+                throw new RuntimeException("Got unexpected HTTP response code " + r.statusCode()
+                        + " from " + finalURI);
+            } else {
+                String bodyAsString = r.bodyAsString();
+                if (bodyAsString.isEmpty()) {
+                    throw new RuntimeException("Got empty HTTP response body " + finalURI);
+                }
+                try {
+                    return OBJECT_MAPPER.readValue(bodyAsString, Response.class);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Got unexpected error " + e.getOriginalMessage());
+                }
+            }
+        });
+    }
+
+    private String getFinalURI(String applicationName, String profile) {
+        String finalURI = baseURI.toString() + "/" + applicationName + "/" + profile;
+        if (springCloudConfigClientConfig.label.isPresent()) {
+            finalURI = "/" + springCloudConfigClientConfig.label.get();
+        }
+        return finalURI;
+    }
+
+    @Override
+    public void close() {
+        this.webClient.close();
+        this.vertx.closeAndAwait();
+    }
+
+}

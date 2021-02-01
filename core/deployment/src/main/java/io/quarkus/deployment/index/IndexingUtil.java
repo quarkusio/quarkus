@@ -82,7 +82,7 @@ public class IndexingUtil {
             try (InputStream stream = IoUtil.readClass(classLoader, beanClass)) {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new IllegalStateException("Failed to index: " + beanClass, e);
             }
         } else {

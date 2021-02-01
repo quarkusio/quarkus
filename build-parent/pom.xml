@@ -441,6 +441,7 @@
                                             <exclude>org.jboss.resteasy:resteasy-context-propagation</exclude>
                                             <exclude>com.google.android:annotations</exclude>
                                             <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
+                                            <exclude>junit:junit</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

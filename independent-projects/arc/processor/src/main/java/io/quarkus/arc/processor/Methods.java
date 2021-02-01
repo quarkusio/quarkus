@@ -22,6 +22,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
@@ -142,16 +143,19 @@ final class Methods {
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses) {
         return addInterceptedMethodCandidates(beanDeployment, classInfo, candidates, classLevelBindings,
-                bytecodeTransformerConsumer, transformUnproxyableClasses, Methods::skipForSubclass, false);
+                bytecodeTransformerConsumer, transformUnproxyableClasses, new SubclassSkipPredicate(), false);
     }
 
     static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
-            boolean transformUnproxyableClasses, Predicate<MethodInfo> skipPredicate, boolean ignoreMethodLevelBindings) {
+            boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings) {
 
         Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
+        List<MethodInfo> methods = classInfo.methods();
+        skipPredicate.extractBridgeMethods(methods);
+
         for (MethodInfo method : classInfo.methods()) {
             if (skipPredicate.test(method)) {
                 continue;
@@ -196,34 +200,25 @@ final class Methods {
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClassInfo != null) {
-                finalMethodsFoundAndNotChanged.addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
-                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses));
+                finalMethodsFoundAndNotChanged
+                        .addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
+                                classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses, skipPredicate,
+                                ignoreMethodLevelBindings));
             }
         }
 
         // Interface default methods can be intercepted too
+        skipPredicate.setIgnoreDefaultMethods();
         for (DotName i : classInfo.interfaceNames()) {
             ClassInfo interfaceInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), i);
             if (interfaceInfo != null) {
                 //interfaces can't have final methods
                 addInterceptedMethodCandidates(beanDeployment, interfaceInfo, candidates,
                         classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses,
-                        Methods::skipForDefaultMethods, true);
+                        skipPredicate, true);
             }
         }
         return finalMethodsFoundAndNotChanged;
-    }
-
-    private static boolean skipForDefaultMethods(MethodInfo method) {
-        if (skipForSubclass(method)) {
-            return true;
-        }
-        if (Modifier.isInterface(method.declaringClass().flags()) && Modifier.isPublic(method.flags())
-                && !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags())) {
-            // Do not skip default methods - public non-abstract instance methods declared in an interface
-            return false;
-        }
-        return true;
     }
 
     static class NameAndDescriptor {
@@ -261,20 +256,6 @@ final class Methods {
         public int hashCode() {
             return Objects.hash(name, descriptor);
         }
-    }
-
-    private static boolean skipForSubclass(MethodInfo method) {
-        if (Modifier.isStatic(method.flags()) || isBridge(method)) {
-            return true;
-        }
-        if (IGNORED_METHODS.contains(method.name())) {
-            return true;
-        }
-        if (method.declaringClass().name().equals(DotNames.OBJECT)) {
-            return true;
-        }
-        // We intentionally do not skip final methods here - these are handled later
-        return false;
     }
 
     static class MethodKey {
@@ -405,6 +386,90 @@ final class Methods {
                     return super.visitMethod(access, name, descriptor, signature, exceptions);
                 }
             };
+        }
+    }
+
+    static class SubclassSkipPredicate implements Predicate<MethodInfo> {
+
+        private boolean ignoreDefaultMethods = false;
+        private Set<MethodInfo> bridgeMethods = new HashSet<>();
+
+        void extractBridgeMethods(List<MethodInfo> methods) {
+            for (MethodInfo method : methods) {
+                if (isBridge(method)) {
+                    bridgeMethods.add(method);
+                }
+            }
+        }
+
+        void setIgnoreDefaultMethods() {
+            this.ignoreDefaultMethods = true;
+        }
+
+        @Override
+        public boolean test(MethodInfo method) {
+            if (isBridge(method) || bridgeMethodsContainsMethod(method)) {
+                return true;
+            }
+            if (Modifier.isStatic(method.flags())) {
+                return true;
+            }
+            if (IGNORED_METHODS.contains(method.name())) {
+                return true;
+            }
+            if (method.declaringClass().name().equals(DotNames.OBJECT)) {
+                return true;
+            }
+            if (ignoreDefaultMethods && Modifier.isInterface(method.declaringClass().flags()) && Modifier.isPublic(method.flags())
+                    && !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags())) {
+                // Do not skip default methods - public non-abstract instance methods declared in an interface
+                return false;
+            }
+            // Note that we intentionally do not skip final methods here - these are handled later
+            return false;
+        }
+
+        private boolean bridgeMethodsContainsMethod(MethodInfo method) {
+            for (MethodInfo bridge : bridgeMethods) {
+                if (method.name().equals(bridge.name())) {
+                    List<Type> bridgeParams = bridge.parameters();
+                    List<Type> params = method.parameters();
+                    if (bridgeParams.size() != params.size()) {
+                        continue;
+                    }
+                    // Test parameters
+                    for (int i = 0; i < params.size(); i++) {
+                        Type param = params.get(i);
+                        Type bridgeParam = bridgeParams.get(i);
+                        if (bridgeParam.equals(param)) {
+                            continue;
+                        }
+                        if (bridgeParam.kind() == Kind.CLASS && param.kind() == Kind.TYPE_VARIABLE) {
+                            // String echo(java.lang.Object) matches String echo(T payload)
+                            continue;
+                        }
+                        return false;
+                    }
+                    // Test return type
+                    if (bridge.returnType().name().equals(DotNames.OBJECT) || Modifier.isAbstract(method.flags())) {
+                        // bridge method with matching signature has Object as return type
+                        // or the method we compare against is abstract meaning the bridge overrides it
+                        // both cases are a match
+                        return true;
+                    } else {
+                        if (bridge.returnType().kind() == Kind.CLASS
+                                && method.returnType().kind() == Kind.TYPE_VARIABLE) {
+                            // in this case we have encountered a bridge method with specific return type in subclass
+                            // and we are observing a TypeVariable return type in superclass, this is a match
+                            return true;
+                        } else {
+                            // as a last resort, we simply check equality of return Type
+                            return bridge.returnType().equals(method.returnType());
+                        }
+                    }
+                }
+            }
+            return false;
         }
     }
 

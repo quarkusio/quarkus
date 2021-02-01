@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.serialisers;
 
-import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageBodyWriterUtil.*;
+import static org.jboss.resteasy.reactive.server.vertx.providers.serialisers.json.JsonMessageBodyWriterUtil.setContentTypeIfNecessary;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 
-public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object> {
+public class JacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private static final String JSON_VIEW_NAME = JsonView.class.getName();
     private static final String CUSTOM_SERIALIZATION = CustomSerialization.class.getName();
@@ -63,11 +63,6 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return true;
-    }
-
-    @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         setContentTypeIfNecessary(httpHeaders);
@@ -85,11 +80,6 @@ public class JacksonMessageBodyWriter implements ServerMessageBodyWriter<Object>
             }
             entityStream.write(defaultWriter.writeValueAsBytes(o));
         }
-    }
-
-    @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
-        return true;
     }
 
     @Override

@@ -294,9 +294,7 @@ public class RuntimeResourceDeployment {
                                     + "#" + method.getName() + "(" + Arrays.toString(method.getParameters()) + ")");
                             handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
-                        } else if (buildTimeWriters.size() == 1) {
-                            //only a single handler that can handle the response
-                            //this is a very common case
+                        } else if (isSingleEffectiveWriter(buildTimeWriters)) {
                             MessageBodyWriter<?> writer = buildTimeWriters.get(0);
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
                                     writer, serialisers)));
@@ -364,6 +362,16 @@ public class RuntimeResourceDeployment {
                 lazyMethod,
                 pathParameterIndexes, score, sseElementType, clazz.resourceExceptionMapper());
         return runtimeResource;
+    }
+
+    private boolean isSingleEffectiveWriter(List<MessageBodyWriter<?>> buildTimeWriters) {
+        if (buildTimeWriters.size() == 1) { // common case of single writer
+            return true;
+        }
+
+        // in the case where the first Writer is an instance of AllWriteableMessageBodyWriter,
+        // it doesn't matter that we have multiple writers as the first one will always be used to serialize
+        return buildTimeWriters.get(0) instanceof ServerMessageBodyWriter.AllWriteableMessageBodyWriter;
     }
 
     private void addHandlers(List<ServerRestHandler> handlers, ServerResourceMethod method, DeploymentInfo info,

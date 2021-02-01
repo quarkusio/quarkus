@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,6 +87,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
     private final BiConsumer<Set<String>, ClassScanResult> restartCallback;
     private final BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification;
+    private final BiFunction<String, byte[], byte[]> classTransformers;
 
     /**
      * The index for the last successful start. Used to determine if the class has changed its structure
@@ -95,13 +97,15 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, ClassLoaderCompiler compiler,
             DevModeType devModeType, BiConsumer<Set<String>, ClassScanResult> restartCallback,
-            BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification) {
+            BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification,
+            BiFunction<String, byte[], byte[]> classTransformers) {
         this.applicationRoot = applicationRoot;
         this.context = context;
         this.compiler = compiler;
         this.devModeType = devModeType;
         this.restartCallback = restartCallback;
         this.copyResourceNotification = copyResourceNotification;
+        this.classTransformers = classTransformers;
     }
 
     @Override
@@ -202,7 +206,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         byte[] bytes = Files.readAllBytes(i);
                         String name = indexer.index(new ByteArrayInputStream(bytes)).name().toString();
                         defs[index++] = new ClassDefinition(Thread.currentThread().getContextClassLoader().loadClass(name),
-                                bytes);
+                                classTransformers.apply(name, bytes));
                     }
                     Index current = indexer.complete();
                     boolean ok = true;

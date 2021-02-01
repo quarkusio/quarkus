@@ -551,12 +551,7 @@ public class SmallRyeGraphQLProcessor {
                     smallRyeGraphQLBuildItem.getGraphqlUiPath(), runtimeConfig);
             routeProducer.produce(new RouteBuildItem.Builder()
                     .nonApplicationRoute(true)
-                    .route(graphQLConfig.ui.rootPath)
-                    .handler(handler)
-                    .build());
-            routeProducer.produce(new RouteBuildItem.Builder()
-                    .nonApplicationRoute(true)
-                    .route(graphQLConfig.ui.rootPath + "/*")
+                    .route(graphQLConfig.ui.rootPath + "*")
                     .handler(handler)
                     .build());
         }

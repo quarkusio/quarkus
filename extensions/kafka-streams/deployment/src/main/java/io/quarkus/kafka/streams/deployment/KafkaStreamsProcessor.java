@@ -68,6 +68,12 @@ class KafkaStreamsProcessor {
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultPartitionGrouper.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultProductionExceptionHandler.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
+                org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class));
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
+                org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class));
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
+                org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class));
     }
 
     private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,

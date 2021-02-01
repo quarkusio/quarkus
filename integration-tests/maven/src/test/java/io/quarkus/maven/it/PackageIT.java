@@ -22,7 +22,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
@@ -203,7 +203,7 @@ public class PackageIT extends MojoTestBase {
         assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
 
         final Path runnerJar = targetDir.toPath().resolve("acme-1.0-SNAPSHOT-runner.jar");
-        Assert.assertTrue("Runner jar " + runnerJar + " is missing", Files.exists(runnerJar));
+        Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
     }
 
@@ -229,7 +229,7 @@ public class PackageIT extends MojoTestBase {
         assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
 
         final Path runnerJar = targetDir.toPath().resolve("acme-1.0-SNAPSHOT-runner.jar");
-        Assert.assertTrue("Runner jar " + runnerJar + " is missing", Files.exists(runnerJar));
+        Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
     }
 
@@ -250,7 +250,7 @@ public class PackageIT extends MojoTestBase {
         assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
 
         final Path runnerJar = targetDir.toPath().resolve("quarkus-quickstart-multimodule-main-1.0-SNAPSHOT-runner.jar");
-        Assert.assertTrue("Runner jar " + runnerJar + " is missing", Files.exists(runnerJar));
+        Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
     }
 

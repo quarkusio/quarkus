@@ -27,7 +27,7 @@ import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.InvokerLogger;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -93,7 +93,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
                 "\"/bonjour\"");
 
         checkContent(generatedProjectPath.resolve("src/test/java/com/andy/NativeBonjourResourceIT.java"),
-                "package comandy;",
+                "package com.andy;",
                 "class NativeBonjourResourceIT extends BonjourResourceTest");
     }
 

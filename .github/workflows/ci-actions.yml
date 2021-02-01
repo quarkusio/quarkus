@@ -103,7 +103,7 @@ jobs:
           fi
       - name: Tar Maven Repo
         shell: bash
-        run: tar -czf maven-repo.tgz -C ~ .m2/repository
+        run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
         uses: actions/upload-artifact@v1
         with:

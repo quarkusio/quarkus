@@ -333,16 +333,16 @@ class LiquibaseProcessor {
 
     private Optional<String> extractChangeFile(Change change) {
         if (change instanceof LoadDataChange) {
-            return Optional.of(((LoadDataChange) change).getFile());
+            return Optional.ofNullable(((LoadDataChange) change).getFile());
         }
         if (change instanceof SQLFileChange) {
-            return Optional.of(((SQLFileChange) change).getPath());
+            return Optional.ofNullable(((SQLFileChange) change).getPath());
         }
         if (change instanceof CreateProcedureChange) {
-            return Optional.of(((CreateProcedureChange) change).getPath());
+            return Optional.ofNullable(((CreateProcedureChange) change).getPath());
         }
         if (change instanceof CreateViewChange) {
-            return Optional.of(((CreateViewChange) change).getPath());
+            return Optional.ofNullable(((CreateViewChange) change).getPath());
         }
         return Optional.empty();
     }

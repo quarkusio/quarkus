@@ -6,5 +6,7 @@
 
     <include relativeToChangelogFile="true" file="create-tables.xml" />
 
+    <include relativeToChangelogFile="true" file="create-views.xml" />
+
     <include relativeToChangelogFile="true" file="test/test.xml" />
 </databaseChangeLog>

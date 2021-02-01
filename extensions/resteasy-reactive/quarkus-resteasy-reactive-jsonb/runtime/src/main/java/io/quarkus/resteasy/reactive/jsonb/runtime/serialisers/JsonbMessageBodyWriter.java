@@ -13,22 +13,16 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-public class JsonbMessageBodyWriter implements ServerMessageBodyWriter<Object> {
+public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private final Jsonb json;
 
     @Inject
     public JsonbMessageBodyWriter(Jsonb json) {
         this.json = json;
-    }
-
-    @Override
-    public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return true;
     }
 
     @Override
@@ -40,11 +34,6 @@ public class JsonbMessageBodyWriter implements ServerMessageBodyWriter<Object> {
         } else {
             json.toJson(o, type, entityStream);
         }
-    }
-
-    @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
-        return true;
     }
 
     @Override

@@ -45,6 +45,15 @@ public class ClassTransformingBuildStep {
      * Cache used for dev mode to save the result for classes that have not changed.
      */
     private static final Map<String, TransformedClassesBuildItem.TransformedClass> transformedClassesCache = new ConcurrentHashMap<>();
+    private static volatile BiFunction<String, byte[], byte[]> lastTransformers;
+
+    public static byte[] transform(String className, byte[] classData) {
+        if (lastTransformers == null) {
+            return null;
+        }
+
+        return lastTransformers.apply(className, classData);
+    }
 
     @BuildStep
     TransformedClassesBuildItem handleClassTransformation(List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems,
@@ -84,8 +93,43 @@ public class ClassTransformingBuildStep {
         final ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed = new ConcurrentLinkedDeque<>();
         final Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
+        ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
+        lastTransformers = new BiFunction<String, byte[], byte[]>() {
+            @Override
+            public byte[] apply(String className, byte[] originalBytes) {
+                List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers.get(className);
+                if (visitors == null) {
+                    return originalBytes;
+                }
+                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                try {
+                    Thread.currentThread().setContextClassLoader(transformCl);
+                    String classFileName = className.replace(".", "/") + ".class";
+                    List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
+                    if (!archives.isEmpty()) {
+                        ClassPathElement classPathElement = archives.get(0);
+                        Path jar = classPathElement.getRoot();
+                        byte[] classData = classPathElement.getResource(classFileName).getData();
+                        Set<String> constValues = constScanning.get(className);
+                        if (constValues != null && !noConstScanning.contains(className)) {
+                            if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
+                                return originalBytes;
+                            }
+                        }
+                        byte[] data = transformClass(className, visitors, classData);
+                        TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
+                                className, data,
+                                classFileName, eager.contains(className));
+                        return transformedClass.getData();
+                    } else {
+                        return originalBytes;
+                    }
+                } finally {
+                    Thread.currentThread().setContextClassLoader(old);
+                }
+            }
+        };
         try {
-            ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
             for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : bytecodeTransformers
                     .entrySet()) {
                 String className = entry.getKey();
@@ -125,29 +169,7 @@ public class ClassTransformingBuildStep {
                                         return null;
                                     }
                                 }
-                                ClassReader cr = new ClassReader(classData);
-                                ClassWriter writer = new QuarkusClassWriter(cr,
-                                        ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                                ClassVisitor visitor = writer;
-                                for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
-                                    visitor = i.apply(className, visitor);
-                                }
-                                cr.accept(visitor, 0);
-                                byte[] data = writer.toByteArray();
-                                if (BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR != null) {
-                                    File debugPath = new File(BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR);
-                                    if (!debugPath.exists()) {
-                                        debugPath.mkdir();
-                                    }
-                                    File classFile = new File(debugPath, className.replace(".", "/") + ".class");
-                                    classFile.getParentFile().mkdirs();
-                                    try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
-                                        classWriter.write(data);
-                                    } catch (Exception e) {
-                                        log.errorf(e, "Failed to write transformed class %s", className);
-                                    }
-                                    log.infof("Wrote transformed class to %s", classFile.getAbsolutePath());
-                                }
+                                byte[] data = transformClass(className, visitors, classData);
                                 TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                         className, data,
                                         classFileName, eager.contains(className));
@@ -178,6 +200,34 @@ public class ClassTransformingBuildStep {
             }
         }
         return new TransformedClassesBuildItem(transformedClassesByJar);
+    }
+
+    private byte[] transformClass(String className, List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors,
+            byte[] classData) {
+        ClassReader cr = new ClassReader(classData);
+        ClassWriter writer = new QuarkusClassWriter(cr,
+                ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+        ClassVisitor visitor = writer;
+        for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
+            visitor = i.apply(className, visitor);
+        }
+        cr.accept(visitor, 0);
+        byte[] data = writer.toByteArray();
+        if (BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR != null) {
+            File debugPath = new File(BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR);
+            if (!debugPath.exists()) {
+                debugPath.mkdir();
+            }
+            File classFile = new File(debugPath, className.replace(".", "/") + ".class");
+            classFile.getParentFile().mkdirs();
+            try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
+                classWriter.write(data);
+            } catch (Exception e) {
+                log.errorf(e, "Failed to write transformed class %s", className);
+            }
+            log.infof("Wrote transformed class to %s", classFile.getAbsolutePath());
+        }
+        return data;
     }
 
     private void handleTransformedClass(Map<String, Path> transformedToArchive,

@@ -59,7 +59,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         } else {
             suspended = false;
             if (executor == null) {
-                getEventLoop().execute(this);
+                Executor ctxtExecutor = getContextExecutor();
+                if (ctxtExecutor == null) {
+                    // Won't use the TCCL.
+                    getEventLoop().execute(this);
+                } else {
+                    // Use the TCCL.
+                    ctxtExecutor.execute(this);
+                }
             } else {
                 executor.execute(this);
             }
@@ -88,6 +95,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     }
 
     protected abstract Executor getEventLoop();
+
+    protected Executor getContextExecutor() {
+        return null;
+    }
 
     protected boolean isRequestScopeManagementRequired() {
         return true;

@@ -9,6 +9,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 import java.io.InputStream;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -36,6 +38,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     protected final RoutingContext context;
     protected final HttpServerRequest request;
     protected final HttpServerResponse response;
+    private final Executor contextExecutor;
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
     ContinueState continueState = ContinueState.NONE;
 
@@ -48,9 +51,16 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         this.response = context.response();
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
+        ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
         if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
             continueState = ContinueState.REQUIRED;
         }
+        this.contextExecutor = new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                internal.execute(command);
+            }
+        };
     }
 
     @Override
@@ -81,6 +91,10 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     protected EventLoop getEventLoop() {
         return ((ConnectionBase) context.request().connection()).channel().eventLoop();
+    }
+
+    protected Executor getContextExecutor() {
+        return contextExecutor;
     }
 
     @Override
@@ -245,7 +259,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setStatusCode(int code) {
-        if (! response.headWritten()) {
+        if (!response.headWritten()) {
             response.setStatusCode(code);
         }
         return this;

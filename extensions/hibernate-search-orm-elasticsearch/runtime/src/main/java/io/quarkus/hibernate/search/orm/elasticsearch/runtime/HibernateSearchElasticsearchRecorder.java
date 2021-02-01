@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 
 import javax.enterprise.inject.literal.NamedLiteral;
 
+import org.graalvm.home.Version;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
@@ -111,6 +112,8 @@ public class HibernateSearchElasticsearchRecorder {
     private static final class HibernateSearchIntegrationStaticInitListener
             implements HibernateOrmIntegrationStaticInitListener {
 
+        private static final Version GRAAL_VM_VERSION_21 = Version.create(21);
+
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
 
         private HibernateSearchIntegrationStaticInitListener(
@@ -135,8 +138,15 @@ public class HibernateSearchElasticsearchRecorder {
         @Override
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
                 BiConsumer<String, Object> propertyCollector) {
+            Version graalVMVersion = Version.getCurrent();
+            boolean isGraalVM20OrBelow = !graalVMVersion.isSnapshot() // isSnapshot() will be true on OpenJDK
+                    && graalVMVersion.compareTo(GRAAL_VM_VERSION_21) < 0;
             HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
-                    .valueReadHandleFactory(ValueReadHandleFactory.usingJavaLangReflect())
+                    .valueReadHandleFactory(
+                            // GraalVM 20 or below doesn't support method handles
+                            isGraalVM20OrBelow ? ValueReadHandleFactory.usingJavaLangReflect()
+                                    // GraalVM 21+ and OpenJDK can handle the default (method handles)
+                                    : null)
                     .build();
             booter.preBoot(propertyCollector);
         }

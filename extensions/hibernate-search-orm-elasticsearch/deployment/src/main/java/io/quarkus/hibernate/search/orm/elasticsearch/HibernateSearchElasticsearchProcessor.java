@@ -2,17 +2,13 @@ package io.quarkus.hibernate.search.orm.elasticsearch;
 
 import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.GSON_CLASSES;
 import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.INDEXED;
-import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.PROPERTY_MAPPING_META_ANNOTATION;
-import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.TYPE_MAPPING_META_ANNOTATION;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
@@ -20,20 +16,8 @@ import org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrate
 import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.ArrayType;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
-import org.jboss.jandex.PrimitiveType;
-import org.jboss.jandex.Type;
-import org.jboss.jandex.UnresolvedTypeVariable;
-import org.jboss.jandex.VoidType;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Feature;
@@ -100,7 +84,7 @@ class HibernateSearchElasticsearchProcessor {
                     configuredPersistenceUnits, integrations);
         }
 
-        registerReflectionForClasses(index, reflectiveClass);
+        registerReflectionForGson(reflectiveClass);
     }
 
     private void buildForPersistenceUnit(HibernateSearchElasticsearchRecorder recorder,
@@ -207,86 +191,8 @@ class HibernateSearchElasticsearchProcessor {
         return keyBuilder.toString();
     }
 
-    private void registerReflectionForClasses(IndexView index, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        Set<DotName> reflectiveClassCollector = new HashSet<>();
-
-        for (AnnotationInstance propertyMappingMetaAnnotationInstance : index
-                .getAnnotations(PROPERTY_MAPPING_META_ANNOTATION)) {
-            for (AnnotationInstance propertyMappingAnnotationInstance : index
-                    .getAnnotations(propertyMappingMetaAnnotationInstance.name())) {
-                AnnotationTarget annotationTarget = propertyMappingAnnotationInstance.target();
-                if (annotationTarget.kind() == Kind.FIELD) {
-                    FieldInfo fieldInfo = annotationTarget.asField();
-                    addReflectiveClass(index, reflectiveClassCollector, fieldInfo.declaringClass());
-                    addReflectiveType(index, reflectiveClassCollector, fieldInfo.type());
-                } else if (annotationTarget.kind() == Kind.METHOD) {
-                    MethodInfo methodInfo = annotationTarget.asMethod();
-                    addReflectiveClass(index, reflectiveClassCollector, methodInfo.declaringClass());
-                    addReflectiveType(index, reflectiveClassCollector, methodInfo.returnType());
-                }
-            }
-        }
-
-        for (AnnotationInstance typeBridgeMappingInstance : index.getAnnotations(TYPE_MAPPING_META_ANNOTATION)) {
-            for (AnnotationInstance typeBridgeInstance : index.getAnnotations(typeBridgeMappingInstance.name())) {
-                addReflectiveClass(index, reflectiveClassCollector, typeBridgeInstance.target().asClass());
-            }
-        }
-
-        reflectiveClassCollector.addAll(GSON_CLASSES);
-
-        String[] reflectiveClasses = reflectiveClassCollector.stream().map(DotName::toString).toArray(String[]::new);
+    private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        String[] reflectiveClasses = GSON_CLASSES.stream().map(DotName::toString).toArray(String[]::new);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
-    }
-
-    private static void addReflectiveClass(IndexView index, Set<DotName> reflectiveClassCollector,
-            ClassInfo classInfo) {
-        if (skipClass(classInfo.name(), reflectiveClassCollector)) {
-            return;
-        }
-
-        reflectiveClassCollector.add(classInfo.name());
-
-        for (ClassInfo subclass : index.getAllKnownSubclasses(classInfo.name())) {
-            reflectiveClassCollector.add(subclass.name());
-        }
-        for (ClassInfo implementor : index.getAllKnownImplementors(classInfo.name())) {
-            reflectiveClassCollector.add(implementor.name());
-        }
-
-        Type superClassType = classInfo.superClassType();
-        while (superClassType != null && !superClassType.name().toString().equals("java.lang.Object")) {
-            reflectiveClassCollector.add(superClassType.name());
-            if (superClassType instanceof ClassType) {
-                superClassType = index.getClassByName(superClassType.name()).superClassType();
-            } else if (superClassType instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = superClassType.asParameterizedType();
-                for (Type typeArgument : parameterizedType.arguments()) {
-                    addReflectiveType(index, reflectiveClassCollector, typeArgument);
-                }
-                superClassType = parameterizedType.owner();
-            }
-        }
-    }
-
-    private static void addReflectiveType(IndexView index, Set<DotName> reflectiveClassCollector, Type type) {
-        if (type instanceof VoidType || type instanceof PrimitiveType || type instanceof UnresolvedTypeVariable) {
-            return;
-        } else if (type instanceof ClassType) {
-            ClassInfo classInfo = index.getClassByName(type.name());
-            addReflectiveClass(index, reflectiveClassCollector, classInfo);
-        } else if (type instanceof ArrayType) {
-            addReflectiveType(index, reflectiveClassCollector, type.asArrayType().component());
-        } else if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = type.asParameterizedType();
-            addReflectiveType(index, reflectiveClassCollector, parameterizedType.owner());
-            for (Type typeArgument : parameterizedType.arguments()) {
-                addReflectiveType(index, reflectiveClassCollector, typeArgument);
-            }
-        }
-    }
-
-    private static boolean skipClass(DotName name, Set<DotName> processedClasses) {
-        return name.toString().startsWith("java.") || processedClasses.contains(name);
     }
 }

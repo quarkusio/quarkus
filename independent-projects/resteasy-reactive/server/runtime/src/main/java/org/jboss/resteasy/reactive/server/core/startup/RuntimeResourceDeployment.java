@@ -417,7 +417,7 @@ public class RuntimeResourceDeployment {
             case CUSTOM:
                 return customExtractor;
             default:
-                throw new RuntimeException("Unkown param type: " + type);
+                throw new RuntimeException("Unknown param type: " + type);
         }
     }
 

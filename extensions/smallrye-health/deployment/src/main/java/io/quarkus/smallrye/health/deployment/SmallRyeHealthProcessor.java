@@ -467,12 +467,7 @@ class SmallRyeHealthProcessor {
             Handler<RoutingContext> handler = recorder.uiHandler(smallRyeHealthBuildItem.getHealthUiFinalDestination(),
                     smallRyeHealthBuildItem.getHealthUiPath(), runtimeConfig);
             routeProducer.produce(new RouteBuildItem.Builder()
-                    .route(healthConfig.ui.rootPath)
-                    .handler(handler)
-                    .nonApplicationRoute()
-                    .build());
-            routeProducer.produce(new RouteBuildItem.Builder()
-                    .route(healthConfig.ui.rootPath + "/*")
+                    .route(healthConfig.ui.rootPath + "*")
                     .handler(handler)
                     .nonApplicationRoute()
                     .build());

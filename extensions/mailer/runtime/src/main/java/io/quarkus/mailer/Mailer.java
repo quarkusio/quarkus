@@ -1,5 +1,7 @@
 package io.quarkus.mailer;
 
+import io.quarkus.mailer.reactive.ReactiveMailer;
+
 /**
  * A mailer to send email.
  *

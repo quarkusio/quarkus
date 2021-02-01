@@ -39,7 +39,6 @@ class MailerImplTest {
     private static Wiser wiser;
     private static Vertx vertx;
     private MutinyMailerImpl mailer;
-    private ReactiveMailerImpl legacyMailer;
 
     @BeforeAll
     static void startWiser() {
@@ -65,36 +64,18 @@ class MailerImplTest {
                 new MailConfig().setPort(wiser.getServer().getPort()));
 
         wiser.getMessages().clear();
-
-        legacyMailer = new ReactiveMailerImpl();
-        legacyMailer.client = mailer;
     }
 
     @Test
     void testTextMail() throws MessagingException, IOException {
-        String content = UUID.randomUUID().toString();
-        mailer.send(Mail.withText(TO, "Test", content)).await().indefinitely();
+        String uuid = UUID.randomUUID().toString();
+        mailer.send(Mail.withText(TO, "Test", uuid)).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
-        assertThat(getContent(actual)).contains(content);
+        assertThat(getContent(actual)).contains(uuid);
         MimeMessage msg = actual.getMimeMessage();
-        List<String> types = getContentTypesFromMimeMultipart((MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(types).containsExactly(TEXT_CONTENT_TYPE);
-        assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
-        assertThat(msg.getAllRecipients()).hasSize(1).contains(new InternetAddress(TO));
-    }
-
-    @Test
-    void testTextMailLegacy() throws MessagingException, IOException {
-        String content = UUID.randomUUID().toString();
-        legacyMailer.send(Mail.withText(TO, "Test", content)).toCompletableFuture().join();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        assertThat(getContent(actual)).contains(content);
-        MimeMessage msg = actual.getMimeMessage();
-        List<String> types = getContentTypesFromMimeMultipart((MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(types).containsExactly(TEXT_CONTENT_TYPE);
+        String content = (String) actual.getMimeMessage().getContent();
+        assertThat(content).isEqualTo(uuid + "\r\n");
         assertThat(msg.getSubject()).isEqualTo("Test");
         assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
         assertThat(msg.getAllRecipients()).hasSize(1).contains(new InternetAddress(TO));
@@ -117,34 +98,10 @@ class MailerImplTest {
     }
 
     @Test
-    void testHTMLMailLegacy() throws MessagingException, IOException {
-        String content = UUID.randomUUID().toString();
-        legacyMailer.send(Mail.withHtml(TO, "Test", "<h1>" + content + "</h1>")).toCompletableFuture().join();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        assertThat(getContent(actual)).contains("<h1>" + content + "</h1>");
-        List<String> types = getContentTypesFromMimeMultipart((MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(types).containsExactly("text/html");
-        MimeMessage msg = actual.getMimeMessage();
-        assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getContentType()).startsWith("multipart/");
-        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
-        assertThat(msg.getAllRecipients()).hasSize(1).contains(new InternetAddress(TO));
-    }
-
-    @Test
     void testWithSeveralMails() {
         Mail mail1 = Mail.withText(TO, "Mail 1", "Mail 1").addCc("cc@quarkus.io").addBcc("bcc@quarkus.io");
         Mail mail2 = Mail.withHtml(TO, "Mail 2", "<strong>Mail 2</strong>").addCc("cc2@quarkus.io").addBcc("bcc2@quarkus.io");
         mailer.send(mail1, mail2).await().indefinitely();
-        assertThat(wiser.getMessages()).hasSize(6);
-    }
-
-    @Test
-    void testWithSeveralMailsLegacy() {
-        Mail mail1 = Mail.withText(TO, "Mail 1", "Mail 1").addCc("cc@quarkus.io").addBcc("bcc@quarkus.io");
-        Mail mail2 = Mail.withHtml(TO, "Mail 2", "<strong>Mail 2</strong>").addCc("cc2@quarkus.io").addBcc("bcc2@quarkus.io");
-        legacyMailer.send(mail1, mail2).toCompletableFuture().join();
         assertThat(wiser.getMessages()).hasSize(6);
     }
 
@@ -164,42 +121,11 @@ class MailerImplTest {
     }
 
     @Test
-    void testHeadersLegacy() throws MessagingException {
-        legacyMailer.send(Mail.withText(TO, "Test", "testHeaders")
-                .addHeader("X-header", "value")
-                .addHeader("X-header-2", "value1", "value2"))
-                .toCompletableFuture().join();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        MimeMessage msg = actual.getMimeMessage();
-        assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
-        assertThat(msg.getHeader("X-header")).hasSize(1).contains("value");
-        assertThat(msg.getHeader("X-header-2")).hasSize(2).contains("value1", "value2");
-    }
-
-    @Test
     void testAttachment() throws MessagingException, IOException {
         String payload = UUID.randomUUID().toString();
         mailer.send(Mail.withText(TO, "Test", "testAttachment")
                 .addAttachment("my-file.txt", payload.getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE))
                 .await().indefinitely();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        assertThat(getContent(actual)).contains("testAttachment");
-        MimeMessage msg = actual.getMimeMessage();
-        assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
-        String value = getAttachment("my-file.txt", (MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(value).isEqualTo(payload);
-    }
-
-    @Test
-    void testAttachmentLegacy() throws MessagingException, IOException {
-        String payload = UUID.randomUUID().toString();
-        legacyMailer.send(Mail.withText(TO, "Test", "testAttachment")
-                .addAttachment("my-file.txt", payload.getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE))
-                .toCompletableFuture().join();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testAttachment");
@@ -242,60 +168,11 @@ class MailerImplTest {
     }
 
     @Test
-    void testAttachmentAsStreamLegacy() throws MessagingException, IOException {
-        String payload = UUID.randomUUID().toString();
-        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
-        Iterable<Byte> iterable = () -> new Iterator<Byte>() {
-            private int index = 0;
-
-            @Override
-            public boolean hasNext() {
-                return bytes.length > index;
-            }
-
-            @Override
-            public Byte next() {
-                return bytes[index++];
-            }
-        };
-
-        legacyMailer.send(Mail.withText(TO, "Test", "testAttachmentAsStream")
-                .addAttachment("my-file.txt", Multi.createFrom().iterable(iterable), TEXT_CONTENT_TYPE))
-                .toCompletableFuture().join();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        assertThat(getContent(actual)).contains("testAttachment");
-        MimeMessage msg = actual.getMimeMessage();
-        assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
-        String value = getAttachment("my-file.txt", (MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(value).isEqualTo(payload);
-    }
-
-    @Test
     void testInlineAttachment() throws MessagingException, IOException {
         String cid = UUID.randomUUID().toString() + "@acme";
         mailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment")
                 .addInlineAttachment("inline.txt", "my inlined text".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE, cid))
                 .await().indefinitely();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        assertThat(getContent(actual)).contains("testInlineAttachment");
-        MimeMessage msg = actual.getMimeMessage();
-        assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
-
-        String value = getInlineAttachment("<" + cid + ">", (MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(value).isEqualTo("my inlined text");
-    }
-
-    @Test
-    void testInlineAttachmentLegacy() throws MessagingException, IOException {
-        String cid = UUID.randomUUID().toString() + "@acme";
-        legacyMailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment")
-                .addInlineAttachment("inline.txt", "my inlined text".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE, cid))
-                .toCompletableFuture()
-                .join();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testInlineAttachment");
@@ -326,24 +203,6 @@ class MailerImplTest {
     }
 
     @Test
-    void testAttachmentsLegacy() throws MessagingException, IOException {
-        legacyMailer.send(Mail.withText(TO, "Test", "Simple Test")
-                .addAttachment("some-data.txt", "Hello".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE)
-                .addAttachment("some-data-2.txt", "Hello 2".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE))
-                .toCompletableFuture().join();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        assertThat(getContent(actual)).contains("Simple Test");
-        MimeMessage msg = actual.getMimeMessage();
-        assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
-        String value = getAttachment("some-data.txt", (MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(value).isEqualTo("Hello");
-        value = getAttachment("some-data-2.txt", (MimeMultipart) actual.getMimeMessage().getContent());
-        assertThat(value).isEqualTo("Hello 2");
-    }
-
-    @Test
     void testReplyToHeaderIsSet() throws MessagingException {
         mailer.send(Mail.withText(TO, "Test", "testHeaders")
                 .setReplyTo("reply-to@quarkus.io"))
@@ -355,21 +214,13 @@ class MailerImplTest {
         assertThat(msg.getReplyTo()).containsExactly(InternetAddress.parse("reply-to@quarkus.io"));
     }
 
-    @Test
-    void testReplyToHeaderIsSetLegacy() throws MessagingException {
-        legacyMailer.send(Mail.withText(TO, "Test", "testHeaders")
-                .setReplyTo("reply-to@quarkus.io"))
-                .toCompletableFuture().join();
-        assertThat(wiser.getMessages()).hasSize(1);
-        WiserMessage actual = wiser.getMessages().get(0);
-        MimeMessage msg = actual.getMimeMessage();
-        assertThat(msg.getHeader("Reply-To")).containsExactly("reply-to@quarkus.io");
-        assertThat(msg.getReplyTo()).containsExactly(InternetAddress.parse("reply-to@quarkus.io"));
-    }
-
     private String getContent(WiserMessage msg) {
         try {
-            return getTextFromMimeMultipart((MimeMultipart) msg.getMimeMessage().getContent());
+            Object content = msg.getMimeMessage().getContent();
+            if (content instanceof String) {
+                return content.toString();
+            }
+            return getTextFromMimeMultipart((MimeMultipart) content);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -397,6 +248,10 @@ class MailerImplTest {
                         assertThat(nested.getContentType()).startsWith(TEXT_CONTENT_TYPE);
                         return read(nested);
                     }
+                }
+            } else if (bodyPart.getContent() instanceof String) {
+                if (bodyPart.getHeader("Content-ID") != null && bodyPart.getHeader("Content-ID")[0].equalsIgnoreCase(cid)) {
+                    return (String) bodyPart.getContent();
                 }
             }
         }

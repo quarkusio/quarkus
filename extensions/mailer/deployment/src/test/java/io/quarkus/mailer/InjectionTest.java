@@ -51,9 +51,6 @@ public class InjectionTest {
     BeanUsingReactiveMailer beanUsingReactiveMailer;
 
     @Inject
-    BeanUsingLegacyReactiveMailer beanUsingLegacyReactiveMailer;
-
-    @Inject
     BeanUsingBlockingMailer beanUsingBlockingMailer;
 
     @Inject
@@ -65,7 +62,6 @@ public class InjectionTest {
         beanUsingBare.verify();
         beanUsingBlockingMailer.verify();
         beanUsingReactiveMailer.verify().toCompletableFuture().join();
-        beanUsingLegacyReactiveMailer.verify().toCompletableFuture().join();
         templates.send1();
         templates.send2().await();
         templates.sendNative().await();
@@ -102,17 +98,6 @@ public class InjectionTest {
         CompletionStage<Void> verify() {
             return mailer.send(Mail.withText("quarkus@quarkus.io", "test mailer", "reactive test!"))
                     .subscribeAsCompletionStage();
-        }
-    }
-
-    @ApplicationScoped
-    static class BeanUsingLegacyReactiveMailer {
-
-        @Inject
-        ReactiveMailer mailer;
-
-        CompletionStage<Void> verify() {
-            return mailer.send(Mail.withText("quarkus@quarkus.io", "test mailer", "reactive test!"));
         }
     }
 

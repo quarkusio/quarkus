@@ -20,7 +20,6 @@ class MockMailerImplTest {
 
     private static Vertx vertx;
     private MutinyMailerImpl mailer;
-    private ReactiveMailerImpl legacyMailer;
 
     @BeforeAll
     static void start() {
@@ -39,26 +38,12 @@ class MockMailerImplTest {
         mailer.vertx = vertx;
         mailer.mockMailbox = new MockMailboxImpl();
         mailer.mockMailbox.clear();
-        legacyMailer = new ReactiveMailerImpl();
-        legacyMailer.client = mailer;
     }
 
     @Test
     void testTextMail() {
         String content = UUID.randomUUID().toString();
         mailer.send(Mail.withText(TO, "Test", content)).await().indefinitely();
-
-        List<Mail> sent = mailer.mockMailbox.getMessagesSentTo(TO);
-        assertThat(sent).hasSize(1);
-        Mail actual = sent.get(0);
-        assertThat(actual.getText()).contains(content);
-        assertThat(actual.getSubject()).isEqualTo("Test");
-    }
-
-    @Test
-    void testTextMailLegacy() {
-        String content = UUID.randomUUID().toString();
-        legacyMailer.send(Mail.withText(TO, "Test", content)).toCompletableFuture().join();
 
         List<Mail> sent = mailer.mockMailbox.getMessagesSentTo(TO);
         assertThat(sent).hasSize(1);
@@ -76,12 +61,4 @@ class MockMailerImplTest {
         assertThat(mailer.mockMailbox.getTotalMessagesSent()).isEqualTo(6);
     }
 
-    @Test
-    void testWithSeveralMailsLegacy() {
-        Mail mail1 = Mail.withText(TO, "Mail 1", "Mail 1").addCc("cc@quarkus.io").addBcc("bcc@quarkus.io");
-        Mail mail2 = Mail.withHtml(TO, "Mail 2", "<strong>Mail 2</strong>").addCc("cc2@quarkus.io")
-                .addBcc("bcc2@quarkus.io");
-        legacyMailer.send(mail1, mail2).toCompletableFuture().join();
-        assertThat(mailer.mockMailbox.getTotalMessagesSent()).isEqualTo(6);
-    }
 }

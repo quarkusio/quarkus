@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.quarkus.registry.RepositoryIndexer;
 import io.quarkus.registry.TestArtifactResolver;
 import io.quarkus.registry.catalog.model.Repository;
@@ -38,7 +38,7 @@ class RegistryBuilderTest {
         if (Boolean.getBoolean("generateTmpRegistry")) {
             ObjectMapper mapper = new ObjectMapper()
                     .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                    .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+                    .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
             mapper.writeValue(new java.io.File("/tmp/registry.json"), registry);
         }
     }

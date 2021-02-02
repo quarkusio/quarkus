@@ -2,7 +2,7 @@ package io.quarkus.registry.catalog.model;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import java.io.IOException;
@@ -29,7 +29,7 @@ public abstract class Repository {
      */
     public static Repository parse(Path rootPath, ObjectMapper mapper) {
         ObjectReader reader = mapper.reader()
-                .with(mapper.getDeserializationConfig().with(PropertyNamingStrategy.KEBAB_CASE));
+                .with(mapper.getDeserializationConfig().with(PropertyNamingStrategies.KEBAB_CASE));
         return ImmutableRepository.builder()
                 .addAllPlatforms(parse(rootPath.resolve("platforms.json"), Platform.class, reader))
                 .addAllIndividualExtensions(parse(rootPath.resolve("extensions"), Extension.class, reader))

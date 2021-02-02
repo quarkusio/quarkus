@@ -147,3 +147,45 @@ There is also a Maven plugin goal that validates the platform properties content
   </executions>
 </plugin>
 ----
+
+==== Merging Quarkus Platform Properties
+
+In case an application is importing more than one Quarkus platform and those platforms include their own platform properties artifacts, the content of those platform properties artifacts will be merged to form a single set of properties that will be used for the application build.
+The order in which the properties artifacts are merged will correspond to the order in which they appear in the list of dependency version constraints of the application (in the Maven terms that will correspond to the effective list of application's managed dependencies, i.e. the flattened `managedDependencies` POM section).
+
+IMPORTANT: The content of the properties artifacts found earlier will dominate over those found later among the application's dependency constraints!
+
+That means if a platform needs to override a certain property value defined in the platform it is based on, it will need to include its platform properties artifact into the `managedDependencies` section of its BOM before importing the base platform.
+
+For example, the `quarkus-universe-bom` platform is based on the `quarkus-bom` platform. In case, the `quarkus-universe-bom` platform were to override certain properties defined in `quarkus-bom-quarkus-platform-properties` included into the `quarkus-bom` platform, the `quarkus-universe-bom` would have to be composed as
+[source,xml]
+----
+  <!-- skipped content -->
+
+  <artifactId>quarkus-universe-bom</artifactId>
+  <name>Quarkus universe - BOM</name>
+  <packaging>pom</packaging>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- universe platform properties -->
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-universe-bom-quarkus-platform-properties</artifactId>
+        <type>properties</type>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Quarkus Core BOM -->
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+  <!-- skipped content -->
+----
+
+That way, the `quarkus-universe-bom` platform properties will appear before the `quarkus-bom` platform properties and so will be dominating during merging.

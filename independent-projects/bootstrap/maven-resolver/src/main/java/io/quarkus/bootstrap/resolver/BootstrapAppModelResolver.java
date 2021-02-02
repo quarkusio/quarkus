@@ -295,6 +295,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             throws AppModelResolverException {
         final Set<AppArtifactKey> descriptorKeys = new HashSet<>(4);
         final Set<AppArtifactKey> propertyKeys = new HashSet<>(2);
+        final Map<String, String> collectedProps = new HashMap<String, String>();
         for (Dependency d : managedDeps) {
             final Artifact artifact = d.getArtifact();
             final String extension = artifact.getExtension();
@@ -314,14 +315,12 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 } catch (IOException e) {
                     throw new AppModelResolverException("Failed to read properties from " + propsPath, e);
                 }
-                final Map<String, String> map = new HashMap<String, String>(props.size());
                 for (Map.Entry<?, ?> prop : props.entrySet()) {
                     final String name = String.valueOf(prop.getKey());
                     if (name.startsWith(BootstrapConstants.PLATFORM_PROPERTY_PREFIX)) {
-                        map.put(prop.getKey().toString(), prop.getValue().toString());
+                        collectedProps.putIfAbsent(prop.getKey().toString(), prop.getValue().toString());
                     }
                 }
-                appBuilder.addPlatformProperties(map);
                 propertyKeys.add(new AppArtifactKey(artifact.getGroupId(),
                         artifactId.substring(0,
                                 artifactId.length() - BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX.length()),
@@ -343,6 +342,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             }
             throw new AppModelResolverException(buf.toString());
         }
+        appBuilder.addPlatformProperties(collectedProps);
     }
 
     @Override

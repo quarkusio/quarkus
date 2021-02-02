@@ -22,7 +22,8 @@ ifdef::context[:parent-context: {context}]
 include::./attributes.adoc[]
 
 ifdef::product-docs[]
-include::common/making-open-source-more-inclusive.adoc[]
+//file not present in upstream repo, commented out to allow build to pass
+//include::common/making-open-source-more-inclusive.adoc[]
 endif::[]
 
 [role="_abstract"]

@@ -15,7 +15,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.funqy.knative.events.AbstractCloudEvent;
 import io.quarkus.funqy.knative.events.CloudEvent;
@@ -38,7 +37,6 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     final ObjectMapper mapper;
     final Type dataType;
     private ObjectReader reader;
-    private ObjectWriter writer;
 
     public JsonCloudEventImpl(JsonNode event, Type dataType, ObjectMapper mapper, ObjectReader reader) {
         this.event = event;

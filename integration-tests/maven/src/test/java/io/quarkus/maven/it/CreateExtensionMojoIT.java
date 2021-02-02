@@ -23,13 +23,10 @@ import org.apache.maven.shared.invoker.PrintStreamLogger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import io.quarkus.maven.it.verifier.RunningInvoker;
-
 @DisableForNative
 public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
     private Invoker invoker;
-    private RunningInvoker running;
     private File testDir;
 
     @Test

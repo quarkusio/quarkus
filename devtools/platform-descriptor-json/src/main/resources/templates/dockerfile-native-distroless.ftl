@@ -14,10 +14,10 @@
 # docker run -i --rm -p 8080:8080 quarkus/${project_artifactId}
 #
 ###
-FROM quay.io/quarkus/quarkus-distroless-image:20.3-java11
+FROM quay.io/quarkus/quarkus-distroless-image:1.0
 COPY ${build-dir}/*-runner /application
 
 EXPOSE 8080
-USER 1001
+USER nonroot
 
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

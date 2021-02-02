@@ -8,6 +8,7 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -23,44 +24,7 @@ public class ResteasyStandaloneRecorder {
 
     public static final String META_INF_RESOURCES = "META-INF/resources";
 
-    /**
-     * TODO: configuration
-     */
-    protected static final int BUFFER_SIZE = 8 * 1024;
-
     private static boolean useDirect = true;
-
-    //TODO: clean this up
-    private static BufferAllocator ALLOCATOR = new BufferAllocator() {
-        @Override
-        public ByteBuf allocateBuffer() {
-            return allocateBuffer(useDirect);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct) {
-            return allocateBuffer(direct, BUFFER_SIZE);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(int bufferSize) {
-            return allocateBuffer(useDirect, bufferSize);
-        }
-
-        @Override
-        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
-            if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
-            } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
-            }
-        }
-
-        @Override
-        public int getBufferSize() {
-            return BUFFER_SIZE;
-        }
-    };
 
     private static ResteasyDeployment deployment;
     private static String contextPath;
@@ -87,12 +51,50 @@ public class ResteasyStandaloneRecorder {
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,
-            BeanContainer beanContainer, Executor executor, HttpConfiguration readTimeout) {
+            BeanContainer beanContainer, Executor executor, HttpConfiguration readTimeout, ResteasyVertxConfig config) {
         if (deployment != null) {
-            return new VertxRequestHandler(vertx.get(), beanContainer, deployment, contextPath, ALLOCATOR, executor,
+            return new VertxRequestHandler(vertx.get(), beanContainer, deployment, contextPath,
+                    new ResteasyVertxAllocator(config.responseBufferSize), executor,
                     readTimeout.readTimeout.toMillis());
         }
         return null;
     }
 
+    private static class ResteasyVertxAllocator implements BufferAllocator {
+
+        private final int bufferSize;
+
+        private ResteasyVertxAllocator(int bufferSize) {
+            this.bufferSize = bufferSize;
+        }
+
+        @Override
+        public ByteBuf allocateBuffer() {
+            return allocateBuffer(useDirect);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct) {
+            return allocateBuffer(direct, bufferSize);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(int bufferSize) {
+            return allocateBuffer(useDirect, bufferSize);
+        }
+
+        @Override
+        public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
+            if (direct) {
+                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
+            } else {
+                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
+            }
+        }
+
+        @Override
+        public int getBufferSize() {
+            return bufferSize;
+        }
+    }
 }

@@ -44,7 +44,6 @@ public class JBangDevModeLauncherImpl implements Closeable {
         try (DataInputStream contextStream = new DataInputStream(
                 JBangDevModeLauncherImpl.class.getClassLoader().getResourceAsStream("jbang-dev.dat"))) {
             String pomContents = contextStream.readUTF();
-            Path appClasses = Paths.get(contextStream.readUTF());
             Path sourceFile = Paths.get(contextStream.readUTF());
             int depCount = contextStream.readInt();
             Map<String, Path> deps = new HashMap<>();

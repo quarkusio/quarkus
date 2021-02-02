@@ -20,4 +20,6 @@ public final class OidcConstants {
     public static final String CLIENT_SECRET = "client_secret";
 
     public static final String BEARER_SCHEME = "Bearer";
+
+    public static final String EXPIRES_IN = "expires_in";
 }

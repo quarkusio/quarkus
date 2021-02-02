@@ -100,7 +100,7 @@ public class ClassComparisonUtil {
             return false;
         }
         Map<DotName, AnnotationInstance> lookup = b.stream()
-                .collect(Collectors.toMap(AnnotationInstance::name, Function.identity()));
+                .collect(Collectors.toMap(AnnotationInstance::name, Function.identity(), (i1, i2) -> i1));
 
         for (AnnotationInstance i1 : a) {
             AnnotationInstance i2 = lookup.get(i1.name());

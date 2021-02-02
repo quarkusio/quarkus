@@ -22,10 +22,7 @@ public class VaultConfigSource implements ConfigSource {
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
     private VaultBootstrapConfig vaultBootstrapConfig;
 
-    private int ordinal;
-
-    public VaultConfigSource(int ordinal, VaultBootstrapConfig vaultBootstrapConfig) {
-        this.ordinal = ordinal;
+    public VaultConfigSource(VaultBootstrapConfig vaultBootstrapConfig) {
         this.vaultBootstrapConfig = vaultBootstrapConfig;
     }
 
@@ -36,7 +33,7 @@ public class VaultConfigSource implements ConfigSource {
 
     @Override
     public int getOrdinal() {
-        return ordinal;
+        return vaultBootstrapConfig.configOrdinal;
     }
 
     /**

@@ -8,19 +8,15 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
-public class ReadBodyHandler implements ServerRestHandler {
+public class FormBodyHandler implements ServerRestHandler {
 
     private static final byte[] NO_BYTES = new byte[0];
 
-    private boolean alsoSetInputStream;
+    private final boolean alsoSetInputStream;
 
-    public ReadBodyHandler(boolean alsoSetInputStream) {
+    public FormBodyHandler(boolean alsoSetInputStream) {
         this.alsoSetInputStream = alsoSetInputStream;
     }
-
-    // FIXME: we should be able to use this, but I couldn't figure out how:
-    // every time I try to forward to it, I end up with a 404
-    //    BodyHandler bodyHandler = BodyHandler.create();
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -30,17 +26,17 @@ public class ReadBodyHandler implements ServerRestHandler {
             // let's not set it twice
             return;
         }
-        ServerHttpRequest vertxRequest = requestContext.serverRequest();
-        if (vertxRequest.isRequestEnded()) {
+        ServerHttpRequest serverHttpRequest = requestContext.serverRequest();
+        if (serverHttpRequest.isRequestEnded()) {
             if (alsoSetInputStream) {
                 // do not use the EmptyInputStream.INSTANCE marker
                 requestContext.setInputStream(new ByteArrayInputStream(NO_BYTES));
             }
         } else {
-            vertxRequest.setExpectMultipart(true);
+            serverHttpRequest.setExpectMultipart(true);
             requestContext.suspend();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            vertxRequest.setReadListener(new ServerHttpRequest.ReadCallback() {
+            serverHttpRequest.setReadListener(new ServerHttpRequest.ReadCallback() {
                 @Override
                 public void done() {
                     requestContext.setInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
@@ -56,8 +52,8 @@ public class ReadBodyHandler implements ServerRestHandler {
                     data.get(buf);
                     try {
                         outputStream.write(buf);
-                    } catch (IOException e) {
-                        //unpossible
+                    } catch (IOException ignored) {
+                        //impossible
                     }
                 }
             });

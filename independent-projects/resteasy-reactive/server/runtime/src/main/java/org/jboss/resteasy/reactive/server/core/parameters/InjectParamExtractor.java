@@ -5,11 +5,11 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
-public class BeanParamExtractor implements ParameterExtractor {
+public class InjectParamExtractor implements ParameterExtractor {
 
     private final BeanFactory<Object> factory;
 
-    public BeanParamExtractor(BeanFactory<Object> factory) {
+    public InjectParamExtractor(BeanFactory<Object> factory) {
         this.factory = factory;
     }
 

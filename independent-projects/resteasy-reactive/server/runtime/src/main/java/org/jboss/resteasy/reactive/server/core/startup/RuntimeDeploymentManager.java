@@ -42,6 +42,7 @@ import org.jboss.resteasy.reactive.server.model.Features;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -50,7 +51,7 @@ public class RuntimeDeploymentManager {
     public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
     private final DeploymentInfo info;
     private final Supplier<Executor> executorSupplier;
-    private final Supplier<ServerRestHandler> blockingInputHandlerSupplier;
+    private final CustomServerRestHandlers customServerRestHandlers;
     private final Consumer<Closeable> closeTaskHandler;
     private final RequestContextFactory requestContextFactory;
     private final ThreadSetupAction threadSetupAction;
@@ -58,12 +59,12 @@ public class RuntimeDeploymentManager {
 
     public RuntimeDeploymentManager(DeploymentInfo info,
             Supplier<Executor> executorSupplier,
-            Supplier<ServerRestHandler> blockingInputHandlerSupplier,
+            CustomServerRestHandlers customServerRestHandlers,
             Consumer<Closeable> closeTaskHandler,
             RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath) {
         this.info = info;
         this.executorSupplier = executorSupplier;
-        this.blockingInputHandlerSupplier = blockingInputHandlerSupplier;
+        this.customServerRestHandlers = customServerRestHandlers;
         this.closeTaskHandler = closeTaskHandler;
         this.requestContextFactory = requestContextFactory;
         this.threadSetupAction = threadSetupAction;
@@ -94,8 +95,9 @@ public class RuntimeDeploymentManager {
                         return info.getFactoryCreator().apply(aClass).createInstance();
                     }
                 });
+        List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = new ArrayList<>();
         RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
-                blockingInputHandlerSupplier,
+                customServerRestHandlers,
                 interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler, requestContextFactory.isDefaultBlocking());
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
         possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
@@ -103,10 +105,9 @@ public class RuntimeDeploymentManager {
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> templates = new HashMap<>();
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (ResourceMethod method : clazz.getMethods()) {
-                //TODO: add DynamicFeature for these
-                //TODO: remove the cast
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
                         clazz, (ServerResourceMethod) method, true, classPathTemplate, info);
+                addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
 
                 RuntimeMappingDeployment.buildMethodMapper(templates, method, runtimeResource);
             }
@@ -128,6 +129,7 @@ public class RuntimeDeploymentManager {
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
                         clazz, (ServerResourceMethod) method, false, classTemplate, info);
+                addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
 
                 RuntimeMappingDeployment.buildMethodMapper(perClassMappers, method, runtimeResource);
             }
@@ -199,7 +201,17 @@ public class RuntimeDeploymentManager {
         return new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
-                threadSetupAction, requestContextFactory, preMatchHandlers, classMappers);
+                threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
+                runtimeConfigurableServerRestHandlers);
+    }
+
+    private void addRuntimeConfigurableHandlers(RuntimeResource runtimeResource,
+            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers) {
+        for (ServerRestHandler serverRestHandler : runtimeResource.getHandlerChain()) {
+            if (serverRestHandler instanceof RuntimeConfigurableServerRestHandler) {
+                runtimeConfigurableServerRestHandlers.add((RuntimeConfigurableServerRestHandler) serverRestHandler);
+            }
+        }
     }
 
     //TODO: this needs plenty more work to support all possible types and provide all information the FeatureContext allows

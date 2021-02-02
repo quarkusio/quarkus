@@ -5,6 +5,10 @@ package io.quarkus.security.jpa;
  */
 public enum PasswordType {
     /**
+     * The password is stored hashed using a custom format.
+     */
+    CUSTOM,
+    /**
      * The password is stored hashed using bcrypt in the Modular Crypt Format.
      */
     MCF,

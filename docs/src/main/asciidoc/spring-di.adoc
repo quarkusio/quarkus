@@ -11,10 +11,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 // TODO: consider moving this to the attributes file
 :doctype: book
 
-//TODO: Determine if title can be replaced by attribute
 //Top-Level Assembly
 [id="using-the-quarkus-extension-for-spring-di-api_{context}"]
-= Using the Quarkus extension for Spring Dependency Injection (DI) API
+= Using the Quarkus Extension for Spring DI API
 
 ifdef::context[:parent-context: {context}]
 
@@ -65,17 +64,12 @@ However, when you add arbitrary libraries that are part of Spring Framework to y
 .Prerequisites
 
 // comment out the following prerequisite in the alternative 1 layout of the document.
-ifdef::product-docs[]
 * Have a {ProductName} Maven project.
-endif::[]
-ifndef::product-docs[]
-* Have access to an IDE
-endif::[]
 * Have OpenJDK 8 installed.
 * Have Maven {maven-version} installed.
 
-ifndef::product-docs[]
 // Alternative 1: generate project form scratch
+////
 [id="creating-the-spring-di-example-maven-project_{context}"]
 == Creating the Spring DI example Maven project
 
@@ -84,7 +78,7 @@ You can create new a new Maven project for the Spring DI example application on 
 
 .Procedure
 
-. Enter the following commands to:
+. Execute the following commands to:
 
 * generate the directory structure of the project.
 * create the main class file of the example application.
@@ -102,7 +96,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy,spring-di"
 cd spring-di-quickstart
 ----
-endif::[]
+////
 
 //Alternative 2: you have a project and need to add the required extension.
 [id="setting-up-your-spring-di-maven-project_{context}"]
@@ -120,7 +114,7 @@ Add the required {ProductName} extension as a dependency of your Maven project.
 cd <name-of-your-project-directory>
 ----
 
-. Enter the following command to add the `quarkus-spring-di` extension to the `pom.xml` file of your project:
+. Execute the following command to add the `quarkus-spring-di` extension to the `pom.xml` file of your project:
 +
 [source,bash]
 ----
@@ -191,7 +185,12 @@ public class AppConfiguration {
     }
 }
 ----
+<<<<<<< HEAD
 As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs link:cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
+=======
++
+As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs https://quarkus.io/guides/cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
+>>>>>>> f8979760ea (QUARKUS-184: add information introduced in Aurea's PR)
 In the same vein, Quarkus does not support the Spring `@Import` annotation.
 
 . Create a `NoOpSingleStringFunction` bean inside the the `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file.
@@ -377,7 +376,7 @@ Package and start your Spring DI example application using Maven.
 cd <name-of-your-project-directory>
 ----
 
-. Enter the following command to compile and start your application in development mode:
+. Execute the following command to compile and start your application in development mode:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -460,6 +459,14 @@ The following table lists Spring DI annotations and their equivalent CDI annotat
 |`@Scope`
 |
 |Does not have a one-to-one mapping to a CDI annotation. Depending on the value of `@Scope`, you can use `@Singleton`, `@ApplicationScoped`, `@SessionScoped`, `@RequestScoped`, or `@Dependent`
+
+|`@ComponentScan`
+|
+|Does not have a one-to-one mapping to a CDI annotation. It is not used in Quarkus because Quarkus does all classpath scanning at build time.
+
+|`@Import`
+|
+|Does not have a one-to-one mapping to a CDI annotation.
 |===
 //END: REFERENCE module
 

@@ -1,11 +1,15 @@
 package io.quarkus.cache.deployment;
 
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_INVALIDATE_LIST;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_KEY;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_NAME;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_NAME_PARAM;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_RESULT;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTORS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDINGS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDING_CONTAINERS;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.REGISTER_REST_CLIENT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.reflect.Modifier;
@@ -43,6 +47,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 
@@ -105,7 +110,7 @@ class CacheProcessor {
                  */
                 if (container.target().kind() == Kind.METHOD) {
                     MethodInfo methodInfo = container.target().asMethod();
-                    if (methodInfo.declaringClass().classAnnotation(CacheDeploymentConstants.REGISTER_REST_CLIENT) != null) {
+                    if (methodInfo.declaringClass().classAnnotation(REGISTER_REST_CLIENT) != null) {
                         throwables.add(new UnsupportedRepeatedAnnotationException(methodInfo));
                     }
                 }
@@ -201,5 +206,47 @@ class CacheProcessor {
                 .scope(ApplicationScoped.class)
                 .supplier(cacheManagerSupplier)
                 .done();
+    }
+
+    @BuildStep
+    List<BytecodeTransformerBuildItem> enhanceRestClientMethods(CombinedIndexBuildItem combinedIndex) {
+        List<BytecodeTransformerBuildItem> bytecodeTransformers = new ArrayList<>();
+        for (AnnotationInstance registerRestClientAnnotation : combinedIndex.getIndex().getAnnotations(REGISTER_REST_CLIENT)) {
+            if (registerRestClientAnnotation.target().kind() == Kind.CLASS) {
+                ClassInfo classInfo = registerRestClientAnnotation.target().asClass();
+                for (MethodInfo methodInfo : classInfo.methods()) {
+                    if (methodInfo.hasAnnotation(CACHE_INVALIDATE) || methodInfo.hasAnnotation(CACHE_INVALIDATE_LIST)
+                            || methodInfo.hasAnnotation(CACHE_RESULT)) {
+                        short[] cacheKeyParameterPositions = getCacheKeyParameterPositions(methodInfo);
+                        /*
+                         * The bytecode transformation is always performed even if `cacheKeyParameterPositions` is empty because
+                         * the method parameters would be inspected using reflection at run time otherwise.
+                         */
+                        bytecodeTransformers.add(new BytecodeTransformerBuildItem(classInfo.toString(),
+                                new RestClientMethodEnhancer(methodInfo.name(), cacheKeyParameterPositions)));
+                    }
+                }
+            }
+        }
+        return bytecodeTransformers;
+    }
+
+    /**
+     * Returns an array containing the positions of the given method parameters annotated with
+     * {@link io.quarkus.cache.CacheKey @CacheKey}, or an empty array if no such parameter is found.
+     * 
+     * @param methodInfo method info
+     * @return cache key parameters positions
+     */
+    private short[] getCacheKeyParameterPositions(MethodInfo methodInfo) {
+        List<Short> positions = new ArrayList<>();
+        for (AnnotationInstance annotation : methodInfo.annotations(CACHE_KEY)) {
+            positions.add(annotation.target().asMethodParameter().position());
+        }
+        short[] result = new short[positions.size()];
+        for (int i = 0; i < positions.size(); i++) {
+            result[i] = positions.get(i);
+        }
+        return result;
     }
 }

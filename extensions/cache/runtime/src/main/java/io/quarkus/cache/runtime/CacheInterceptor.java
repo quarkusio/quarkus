@@ -12,6 +12,8 @@ import javax.inject.Inject;
 import javax.interceptor.Interceptor.Priority;
 import javax.interceptor.InvocationContext;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheManager;
@@ -19,6 +21,9 @@ import io.quarkus.cache.CacheManager;
 public abstract class CacheInterceptor {
 
     public static final int BASE_PRIORITY = Priority.PLATFORM_BEFORE;
+
+    private static final Logger LOGGER = Logger.getLogger(CacheInterceptor.class);
+    private static final String PERFORMANCE_WARN_MSG = "Cache key resolution based on reflection calls. Please create a GitHub issue in the Quarkus repository, the maintainers might be able to improve your application performance.";
 
     @Inject
     CacheManager cacheManager;
@@ -31,12 +36,12 @@ public abstract class CacheInterceptor {
      * underlying synchronized blocks which are bad for performances) to retrieve the interceptor bindings.
      */
     protected <T extends Annotation> CacheInterceptionContext<T> getInterceptionContext(InvocationContext invocationContext,
-            Class<T> interceptorBindingClass) {
+            Class<T> interceptorBindingClass, boolean supportsCacheKey) {
         return getArcCacheInterceptionContext(invocationContext, interceptorBindingClass)
                 .orElseGet(new Supplier<CacheInterceptionContext<T>>() {
                     @Override
                     public CacheInterceptionContext<T> get() {
-                        return getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass);
+                        return getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass, supportsCacheKey);
                     }
                 });
     }
@@ -63,16 +68,28 @@ public abstract class CacheInterceptor {
     }
 
     private <T extends Annotation> CacheInterceptionContext<T> getNonArcCacheInterceptionContext(
-            InvocationContext invocationContext, Class<T> interceptorBindingClass) {
+            InvocationContext invocationContext, Class<T> interceptorBindingClass, boolean supportsCacheKey) {
         List<T> interceptorBindings = new ArrayList<>();
         List<Short> cacheKeyParameterPositions = new ArrayList<>();
+        boolean cacheKeyParameterPositionsFound = false;
         for (Annotation annotation : invocationContext.getMethod().getAnnotations()) {
-            if (interceptorBindingClass.isInstance(annotation)) {
+            if (annotation instanceof CacheKeyParameterPositions) {
+                cacheKeyParameterPositionsFound = true;
+                for (short position : ((CacheKeyParameterPositions) annotation).value()) {
+                    cacheKeyParameterPositions.add(position);
+                }
+            } else if (interceptorBindingClass.isInstance(annotation)) {
                 interceptorBindings.add(cast(annotation, interceptorBindingClass));
             }
         }
-        Parameter[] parameters = invocationContext.getMethod().getParameters();
-        if (parameters.length > 0) {
+        if (supportsCacheKey && !cacheKeyParameterPositionsFound) {
+            /*
+             * This block is a fallback that should ideally never be executed because of the poor performance of reflection
+             * calls. If the following warn message is displayed, then it means that we should update the build time bytecode
+             * generation to cover the missing case. See RestClientMethodEnhancer for more details.
+             */
+            LOGGER.warn(PERFORMANCE_WARN_MSG);
+            Parameter[] parameters = invocationContext.getMethod().getParameters();
             for (short i = 0; i < parameters.length; i++) {
                 if (parameters[i].isAnnotationPresent(CacheKey.class)) {
                     cacheKeyParameterPositions.add(i);

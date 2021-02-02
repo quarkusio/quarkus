@@ -33,8 +33,8 @@
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <kotlin.version>1.3.72</kotlin.version>
-        <scala.version>2.12.8</scala.version>
-        <scala-plugin.version>4.1.1</scala-plugin.version>
+        <scala.version>2.12.13</scala.version>
+        <scala-plugin.version>4.4.0</scala-plugin.version>
 
         <!-- Versions -->
         <assertj.version>3.18.1</assertj.version>

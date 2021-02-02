@@ -722,6 +722,18 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<String> header = Optional.empty();
 
+        /**
+         * Allow the remote introspection of JWT tokens when no matching JWK key is available.
+         *
+         * Note this property is set to 'true' by default for backward-compatibility reasons and will be set to `false`
+         * instead in one of the next releases.
+         *
+         * Also note this property will be ignored if JWK endpoint URI is not available and introspecting the tokens is
+         * the only verification option.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean allowJwtIntrospection = true;
+
         public Optional<String> getIssuer() {
             return issuer;
         }
@@ -792,6 +804,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setRefreshTokenTimeSkew(Duration refreshTokenTimeSkew) {
             this.refreshTokenTimeSkew = Optional.of(refreshTokenTimeSkew);
+        }
+
+        public boolean isAllowJwtIntrospection() {
+            return allowJwtIntrospection;
+        }
+
+        public void setAllowJwtIntrospection(boolean allowJwtIntrospection) {
+            this.allowJwtIntrospection = allowJwtIntrospection;
         }
     }
 

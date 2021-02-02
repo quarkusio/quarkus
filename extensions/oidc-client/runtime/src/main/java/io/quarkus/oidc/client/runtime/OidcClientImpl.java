@@ -29,9 +29,6 @@ public class OidcClientImpl implements OidcClient {
 
     private static final Logger LOG = Logger.getLogger(OidcClientImpl.class);
 
-    private static final String ACCESS_TOKEN = "access_token";
-    private static final String REFRESH_TOKEN = "refresh_token";
-
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
     private final WebClient client;
@@ -51,26 +48,8 @@ public class OidcClientImpl implements OidcClient {
         this.commonRefreshGrantParams = commonRefreshGrantParams;
         this.grantType = grantType;
         this.oidcConfig = oidcClientConfig;
-        this.clientSecretBasicAuthScheme = initClientSecretBasicAuth(oidcClientConfig);
-        this.clientJwtKey = initClientJwtKey(oidcClientConfig);
-    }
-
-    private static String initClientSecretBasicAuth(OidcClientConfig oidcClientConfig) {
-        if (OidcCommonUtils.isClientSecretBasicAuthRequired(oidcClientConfig.credentials)) {
-            return "Basic "
-                    + Base64.getEncoder().encodeToString(
-                            (oidcClientConfig.getClientId().get() + ":"
-                                    + OidcCommonUtils.clientSecret(oidcClientConfig.credentials))
-                                            .getBytes(StandardCharsets.UTF_8));
-        }
-        return null;
-    }
-
-    private static Key initClientJwtKey(OidcClientConfig oidcClientConfig) {
-        if (OidcCommonUtils.isClientJwtAuthRequired(oidcClientConfig.credentials)) {
-            return OidcCommonUtils.clientJwtKey(oidcClientConfig.credentials);
-        }
-        return null;
+        this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig);
+        this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcClientConfig);
     }
 
     @Override
@@ -84,7 +63,7 @@ public class OidcClientImpl implements OidcClient {
             throw new OidcClientException("Refresh token is null");
         }
         MultiMap refreshGrantParams = copyMultiMap(commonRefreshGrantParams);
-        refreshGrantParams.add(REFRESH_TOKEN, refreshToken);
+        refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
         return getJsonResponse(refreshGrantParams, true);
     }
 
@@ -115,8 +94,8 @@ public class OidcClientImpl implements OidcClient {
         if (resp.statusCode() == 200) {
             LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.getId().get(), (refresh ? "refreshed" : "acquired"));
             JsonObject json = resp.bodyAsJsonObject();
-            final String accessToken = json.getString(ACCESS_TOKEN);
-            final String refreshToken = json.getString(REFRESH_TOKEN);
+            final String accessToken = json.getString(OidcConstants.ACCESS_TOKEN_VALUE);
+            final String refreshToken = json.getString(OidcConstants.REFRESH_TOKEN_VALUE);
             Long accessTokenExpiresAt;
             Long accessTokenExpiresIn = json.getLong(OidcConstants.EXPIRES_IN);
             if (accessTokenExpiresIn != null) {

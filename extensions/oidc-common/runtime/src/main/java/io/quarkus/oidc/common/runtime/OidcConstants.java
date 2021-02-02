@@ -25,4 +25,6 @@ public final class OidcConstants {
     public static final String CODE_FLOW_CODE = "code";
     public static final String CODE_FLOW_STATE = "state";
     public static final String CODE_FLOW_REDIRECT_URI = "redirect_uri";
+
+    public static final String EXPIRES_IN = "expires_in";
 }

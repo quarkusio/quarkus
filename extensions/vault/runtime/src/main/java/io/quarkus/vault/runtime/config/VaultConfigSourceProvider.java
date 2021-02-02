@@ -18,6 +18,7 @@ public class VaultConfigSourceProvider implements ConfigSourceProvider {
 
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
-        return Arrays.asList(new VaultConfigSource(150, vaultRuntimeConfig));
+        // 270 is higher than the file system or jar ordinals, but lower than env vars
+        return Arrays.asList(new VaultConfigSource(270, vaultRuntimeConfig));
     }
 }

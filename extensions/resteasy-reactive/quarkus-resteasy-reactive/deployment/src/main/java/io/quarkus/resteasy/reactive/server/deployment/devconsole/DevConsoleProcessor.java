@@ -7,9 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Stack;
 
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsDevelopment;
@@ -18,7 +18,6 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.resteasy.reactive.server.runtime.EndpointScoresSupplier;
-import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
@@ -32,55 +31,65 @@ public class DevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleTemplateInfoBuildItem collectAdditionalEndpoints(
             List<NotFoundPageDisplayableEndpointBuildItem> additionalEndpoint) {
-
         return new DevConsoleTemplateInfoBuildItem("additionalEndpointInfo", additionalEndpoint);
     }
 
-    // knownPaths variable contain set of static file resources that are available from classpath
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleTemplateInfoBuildItem collectStaticResourcesInfo(
             ApplicationArchivesBuildItem applicationArchivesBuildItem) throws Exception {
 
-        Set<String> knownPaths = new TreeSet<>();
+        StaticResourceInfo staticResourceInfo = new StaticResourceInfo();
+
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
             Path resource = i.getChildPath(StaticResourcesRecorder.META_INF_RESOURCES);
             if (resource != null && Files.exists(resource)) {
-                collectKnownPaths(resource, knownPaths);
+                collectKnownPaths(resource, staticResourceInfo);
             }
         }
-
-        ClassPathUtils.consumeAsPaths(StaticResourcesRecorder.META_INF_RESOURCES, resource -> {
-            collectKnownPaths(resource, knownPaths);
-        });
-
-        return new DevConsoleTemplateInfoBuildItem("staticResourcesInfo", knownPaths);
+        return new DevConsoleTemplateInfoBuildItem("staticResourceInfo", staticResourceInfo);
     }
 
-    private void collectKnownPaths(Path resource, Set<String> staticResources) {
+    private void collectKnownPaths(Path resource, StaticResourceInfo staticResourceInfo) {
+
         try {
             Files.walkFileTree(resource, new SimpleFileVisitor<Path>() {
+                final Stack<StaticResourceInfo.StaticFile> currentFolder = new Stack<>();
 
                 @Override
-                public FileVisitResult visitFile(Path p, BasicFileAttributes attributes) throws IOException {
-                    String simpleName = p.getFileName().toString();
-                    String file = resource.relativize(p).toString();
-                    if (simpleName.equals("index.html") || simpleName.equals("index.htm")) {
-                        Path parent = resource.relativize(p).getParent();
-                        if (parent == null) {
-                            staticResources.add("/");
-                        } else {
-                            String parentString = parent.toString();
-                            if (!parentString.startsWith("/")) {
-                                parentString = "/" + parentString;
-                            }
-                            staticResources.add(parentString + "/");
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+
+                    Path relativeFile = resource.relativize(dir);
+                    String relativeFileString = "/" + relativeFile.toString();
+                    Path dirName = dir.getFileName();
+                    StaticResourceInfo.StaticFile getStaticFile = staticResourceInfo.resourceMap.get(relativeFileString);
+                    if (getStaticFile == null) {
+                        getStaticFile = new StaticResourceInfo.StaticFile(dirName.toString(), true);
+                        staticResourceInfo.resourceMap.put(relativeFileString, getStaticFile);
+
+                        // adding to parent
+                        if (!currentFolder.isEmpty()) {
+                            currentFolder.peek().children.add(getStaticFile);
                         }
                     }
-                    if (!file.startsWith("/")) {
-                        file = "/" + file;
-                    }
-                    file = file.replace('\\', '/');
-                    staticResources.add(file);
+                    currentFolder.push(getStaticFile);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    String fileName = file.getFileName().toString();
+                    StaticResourceInfo.StaticFile newStaticFile = new StaticResourceInfo.StaticFile(fileName, false);
+
+                    List<StaticResourceInfo.StaticFile> childrenList = currentFolder.peek().children;
+                    childrenList.add(newStaticFile);
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Collections.sort(currentFolder.peek().children);
+                    currentFolder.pop();
                     return FileVisitResult.CONTINUE;
                 }
             });
@@ -88,5 +97,4 @@ public class DevConsoleProcessor {
             throw new UncheckedIOException(e);
         }
     }
-
 }

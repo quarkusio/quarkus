@@ -5,6 +5,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -47,7 +49,11 @@ public class QuarkusServerEndpointIndexer
     private final MethodCreator initConverters;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
+    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
     private final DefaultProducesHandler defaultProducesHandler;
+
+    private final Map<String, String> multipartGeneratedPopulators = new HashMap<>();
+
     private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             DotName.createSimple(HttpServerRequest.class.getName()),
             DotName.createSimple(HttpServerResponse.class.getName()),
@@ -58,6 +64,7 @@ public class QuarkusServerEndpointIndexer
         this.initConverters = builder.initConverters;
         this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
         this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
+        this.reflectiveClassProducer = builder.reflectiveClassProducer;
         this.defaultProducesHandler = builder.defaultProducesHandler;
     }
 
@@ -200,10 +207,42 @@ public class QuarkusServerEndpointIndexer
                 initConverters.getMethodParam(0));
     }
 
+    protected void handleMultipart(ClassInfo multipartClassInfo) {
+        String className = multipartClassInfo.name().toString();
+        if (multipartGeneratedPopulators.containsKey(className)) {
+            // we've already seen this class before and have done all we need to make it work
+            return;
+        }
+        reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, className));
+        String populatorClassName = MultipartPopulatorGenerator.generate(multipartClassInfo,
+                new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), index);
+        multipartGeneratedPopulators.put(className, populatorClassName);
+
+        // transform the multipart pojo (and any super-classes) so we can access its fields no matter what
+        ClassInfo currentClassInHierarchy = multipartClassInfo;
+        while (true) {
+            bytecodeTransformerBuildProducer
+                    .produce(new BytecodeTransformerBuildItem(currentClassInHierarchy.name().toString(),
+                            new MultipartTransformer(populatorClassName)));
+
+            DotName superClassDotName = currentClassInHierarchy.superName();
+            if (superClassDotName.equals(DotNames.OBJECT_NAME)) {
+                break;
+            }
+            ClassInfo newCurrentClassInHierarchy = index.getClassByName(superClassDotName);
+            if (newCurrentClassInHierarchy == null) {
+                break;
+            }
+            currentClassInHierarchy = newCurrentClassInHierarchy;
+        }
+
+    }
+
     public static final class Builder extends AbstractBuilder<Builder> {
 
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
         private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
+        private BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
         private MethodCreator initConverters;
         private DefaultProducesHandler defaultProducesHandler = DefaultProducesHandler.Noop.INSTANCE;
 
@@ -225,6 +264,12 @@ public class QuarkusServerEndpointIndexer
         public Builder setGeneratedClassBuildItemBuildProducer(
                 BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
             this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
+            return this;
+        }
+
+        public Builder setReflectiveClassProducer(
+                BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+            this.reflectiveClassProducer = reflectiveClassProducer;
             return this;
         }
 

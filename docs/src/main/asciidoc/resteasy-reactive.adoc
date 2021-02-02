@@ -373,6 +373,77 @@ link:{jsonpapi}/javax/json/JsonArray.html[`JsonStructure`], link:{jsonpapi}/java
 
 NOTE: You can add support for more <<readers-writers,body parameter types>>.
 
+=== Handling Multipart Form data
+
+To handle HTTP requests that have `multipart/form-data` as their content type, RESTEasy Reactive introduces the `@org.jboss.resteasy.reactive.MultipartForm` annotation.
+Let us look at an example of its use.
+
+Assuming an HTTP request containing a file upload and a form value containing a string description need to be handled, we could write a POJO
+that will hold this information like so:
+
+[source,java]
+----
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
+
+public class FormData {
+
+    @RestForm
+    @PartType(MediaType.TEXT_PLAIN)
+    public String description;
+
+    @RestForm("image")
+    public FileUpload file;
+}
+----
+
+The `name` field will contain the data contained in the part of HTTP request called `description` (because `@RestForm` does not define a value, the field name is used),
+while the `file` field will contain data about the uploaded file in the `image` part of HTTP request.
+
+NOTE: `FileUpload` provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.
+
+NOTE: `@PartType` is used to aid in deserialization of the corresponding part of the request into the desired Java type. It is very useful when for example the corresponding body part is JSON
+and needs to be converted to a POJO.
+
+This POJO could be used in a Resource method like so:
+
+[source,java]
+----
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.MultipartForm;
+
+@Path("multipart")
+public class Endpoint {
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("form")
+    public String form(@MultipartForm FormData formData) {
+        // return something
+    }
+}
+----
+
+The use of `@MultipartForm` as method parameter makes RESTEasy Reactive handle the request as a multipart form request.
+
+WARNING: When handling file uploads, it is very important to move the file to permanent storage (like a database, a dedicated file system or a cloud storage) in your code that handles the POJO.
+Otherwise, the file will no longer be accessible when the request terminates.
+Moreoever if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Quarkus will delete the uploaded file when the HTTP response is sent. If the setting is disabled,
+the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
+with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
+
+
 === Returning a response body
 
 In order to return an HTTP response, simply return the resource you want from your method. The method

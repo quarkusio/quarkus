@@ -4,7 +4,10 @@ import java.nio.ByteBuffer;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -14,6 +17,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
+import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.jdk.JDK11OrLater;
@@ -52,6 +56,87 @@ final class Target_io_netty_util_internal_logging_InternalLoggerFactory {
 
 // SSL
 // This whole section is mostly about removing static analysis references to openssl/tcnative
+
+@TargetClass(className = "io.netty.handler.ssl.SslProvider")
+final class Target_io_netty_handler_ssl_SslProvider {
+    @Substitute
+    public static boolean isAlpnSupported(final SslProvider provider) {
+        switch (provider) {
+            case JDK:
+                return Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator.isAlpnSupported();
+            case OPENSSL:
+            case OPENSSL_REFCNT:
+                return false;
+            default:
+                throw new Error("SslProvider unsupported on Quarkus " + provider);
+        }
+    }
+}
+
+@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator")
+final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator {
+    @Alias
+    static boolean isAlpnSupported() {
+        return true;
+    }
+}
+
+/** Hardcode io.netty.handler.ssl.OpenSsl as non-available */
+@TargetClass(className = "io.netty.handler.ssl.OpenSsl")
+final class Target_io_netty_handler_ssl_OpenSsl {
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static Throwable UNAVAILABILITY_CAUSE = new RuntimeException("OpenSsl unsupported on Quarkus");
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    static List<String> DEFAULT_CIPHERS = Collections.emptyList();
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    static Set<String> AVAILABLE_CIPHER_SUITES = Collections.emptySet();
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static Set<String> AVAILABLE_OPENSSL_CIPHER_SUITES = Collections.emptySet();
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static Set<String> AVAILABLE_JAVA_CIPHER_SUITES = Collections.emptySet();
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static boolean SUPPORTS_KEYMANAGER_FACTORY = false;
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    private static boolean SUPPORTS_OCSP = false;
+
+    @Alias
+    @RecomputeFieldValue(kind = Kind.FromAlias)
+    static Set<String> SUPPORTED_PROTOCOLS_SET = Collections.emptySet();
+
+    @Substitute
+    public static boolean isAvailable() {
+        return false;
+    }
+
+    @Substitute
+    public static int version() {
+        return -1;
+    }
+
+    @Substitute
+    public static String versionString() {
+        return null;
+    }
+
+    @Substitute
+    public static boolean isCipherSuiteAvailable(String cipherSuite) {
+        return false;
+    }
+}
 
 @TargetClass(className = "io.netty.handler.ssl.JdkSslServerContext")
 final class Target_io_netty_handler_ssl_JdkSslServerContext {

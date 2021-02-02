@@ -2,23 +2,15 @@ package io.quarkus.smallrye.reactivemessaging.runtime.devconsole;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.reactive.messaging.spi.Connector;
-import org.eclipse.microprofile.reactive.messaging.spi.IncomingConnectorFactory;
-import org.eclipse.microprofile.reactive.messaging.spi.OutgoingConnectorFactory;
 
-import io.quarkus.arc.ClientProxy;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevReactiveMessagingInfos.Component;
 import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevReactiveMessagingInfos.ComponentType;
@@ -35,27 +27,7 @@ public class Connectors {
         outgoingConnectors = new HashMap<>();
     }
 
-    void collect(@Observes StartupEvent event, @Any Instance<IncomingConnectorFactory> incoming,
-            @Any Instance<OutgoingConnectorFactory> outgoing, Config config) {
-
-        Set<String> connectors = new HashSet<>();
-        for (IncomingConnectorFactory incomingConnector : incoming) {
-            if (incomingConnector instanceof ClientProxy) {
-                incomingConnector = (IncomingConnectorFactory) ((ClientProxy) incomingConnector)
-                        .arc_contextualInstance();
-            }
-            Connector connector = incomingConnector.getClass().getAnnotation(Connector.class);
-            connectors.add(connector.value());
-        }
-        for (OutgoingConnectorFactory outgoingConnector : outgoing) {
-            if (outgoingConnector instanceof ClientProxy) {
-                outgoingConnector = (OutgoingConnectorFactory) ((ClientProxy) outgoingConnector)
-                        .arc_contextualInstance();
-            }
-            Connector connector = outgoingConnector.getClass().getAnnotation(Connector.class);
-            connectors.add(connector.value());
-
-        }
+    void collect(@Observes StartupEvent event, Config config) {
 
         String outgoingPrefix = "mp.messaging.outgoing.";
         String incomingPrefix = "mp.messaging.incoming.";

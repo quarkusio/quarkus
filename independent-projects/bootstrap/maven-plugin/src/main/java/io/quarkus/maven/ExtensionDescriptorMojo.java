@@ -538,7 +538,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
-    private final class QuarkusCoreDeploymentVersionLocator implements DependencyVisitor {
+    private static final class QuarkusCoreDeploymentVersionLocator implements DependencyVisitor {
         String coreVersion;
         private boolean skipTheRest;
 

@@ -21,6 +21,10 @@ ifdef::context[:parent-context: {context}]
 
 include::./attributes.adoc[]
 
+ifdef::product-docs[]
+include::common/making-open-source-more-inclusive.adoc[]
+endif::[]
+
 [role="_abstract"]
 The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection that you can use as an alternative to MicroProfile CDI annotations in your {ProductName} application.
 This guide explains how your {ProductName} application can leverage Dependency Injection annotations provided by the Spring Framework.

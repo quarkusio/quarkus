@@ -114,6 +114,10 @@ public class KeycloakPolicyEnforcerAuthorizer
             adapterConfig.setAllowAnyHostname(true);
         }
 
+        if (oidcConfig.defaultTenant.proxy.host.isPresent()) {
+            adapterConfig.setProxyUrl(oidcConfig.defaultTenant.proxy.host.get() + ":" + oidcConfig.defaultTenant.proxy.port);
+        }
+
         PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(config, adapterConfig);
 
         if (enforcerConfig == null) {

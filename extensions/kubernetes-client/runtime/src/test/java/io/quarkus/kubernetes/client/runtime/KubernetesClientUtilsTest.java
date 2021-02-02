@@ -32,7 +32,8 @@ class KubernetesClientUtilsTest {
     void shouldGetClientWithTrustCerts() throws Exception {
         System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE,
                 new File(getClass().getResource("/test-kubeconfig").toURI()).getAbsolutePath());
-        KubernetesClient client = KubernetesClientUtils.createClient();
-        assertTrue(client.getConfiguration().isTrustCerts());
+        try (KubernetesClient client = KubernetesClientUtils.createClient()) {
+            assertTrue(client.getConfiguration().isTrustCerts());
+        }
     }
 }

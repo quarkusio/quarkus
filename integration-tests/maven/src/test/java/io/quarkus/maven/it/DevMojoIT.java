@@ -1028,4 +1028,12 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         assertThat(running.log()).contains("Copying 1 resource"); // maven-resource-plugin
         assertThat(running.log()).contains("Compiling 2 source files"); // maven-compiler-plugin
     }
+
+    @Test
+    public void testPropertyExpansion() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/property-expansion");
+        runAndCheck();
+        assertThat(DevModeTestUtils.getHttpResponse("/app/hello/")).isEqualTo("hello");
+        assertThat(DevModeTestUtils.getHttpResponse("/app/hello/applicationName")).isEqualTo("myapp");
+    }
 }

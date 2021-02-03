@@ -4,6 +4,7 @@ import java.util.regex.Pattern;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.qute.TemplateExtension;
@@ -19,17 +20,16 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
     private final String matchName;
     private final String matchRegex;
     private final Pattern matchPattern;
-    private final ClassInfo matchClass;
+    private final Type matchType;
     private final int priority;
     private final String namespace;
 
-    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, String matchRegex, ClassInfo matchClass,
-            int priority,
-            String namespace) {
+    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, String matchRegex, Type matchType,
+            int priority, String namespace) {
         this.method = method;
         this.matchName = matchName;
         this.matchRegex = matchRegex;
-        this.matchClass = matchClass;
+        this.matchType = matchType;
         this.priority = priority;
         this.namespace = namespace;
         this.matchPattern = (matchRegex == null || matchRegex.isEmpty()) ? null : Pattern.compile(matchRegex);
@@ -47,8 +47,8 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
         return matchRegex;
     }
 
-    public ClassInfo getMatchClass() {
-        return matchClass;
+    public Type getMatchType() {
+        return matchType;
     }
 
     public int getPriority() {
@@ -60,7 +60,7 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
     }
 
     boolean matchesClass(ClassInfo clazz) {
-        return matchClass.name().equals(clazz.name());
+        return matchType.name().equals(clazz.name());
     }
 
     boolean matchesName(String name) {

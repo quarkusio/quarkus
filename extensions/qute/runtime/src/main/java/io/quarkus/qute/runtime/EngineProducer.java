@@ -77,6 +77,8 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.logicalAndResolver());
         builder.addValueResolver(ValueResolvers.logicalOrResolver());
         builder.addValueResolver(ValueResolvers.orEmpty());
+        // Note that arrays are handled specifically during validation
+        builder.addValueResolver(ValueResolvers.arrayResolver());
 
         // If needed use a specific result mapper for the selected strategy  
         switch (runtimeConfig.propertyNotFoundStrategy) {

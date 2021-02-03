@@ -82,7 +82,8 @@ public final class EngineBuilder {
         return addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.mapperResolver(),
                 ValueResolvers.mapEntryResolver(), ValueResolvers.collectionResolver(), ValueResolvers.listResolver(),
                 ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
-                ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver(), ValueResolvers.orEmpty());
+                ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver(), ValueResolvers.orEmpty(),
+                ValueResolvers.arrayResolver());
     }
 
     public EngineBuilder addDefaults() {

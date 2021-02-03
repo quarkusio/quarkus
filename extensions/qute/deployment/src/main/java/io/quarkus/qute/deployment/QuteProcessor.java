@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -45,6 +46,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
@@ -572,55 +574,100 @@ public class QuteProcessor {
         }
 
         while (iterator.hasNext()) {
-            // Now iterate over all parts of the expression and check each part against the current "match class"
+            // Now iterate over all parts of the expression and check each part against the current match type
             Info info = iterator.next();
             if (!match.isEmpty()) {
-                // By default, we only consider properties
-                Set<String> membersUsed = implicitClassToMembersUsed.get(match.clazz().name());
-                if (membersUsed == null) {
-                    membersUsed = new HashSet<>();
-                    implicitClassToMembersUsed.put(match.clazz().name(), membersUsed);
-                }
-                AnnotationTarget member = null;
-                // First try to find a java member
-                if (info.isVirtualMethod()) {
-                    member = findMethod(info.part.asVirtualMethod(), match.clazz(), expression, index, templateIdToPathFun,
-                            results);
-                    if (member != null) {
-                        membersUsed.add(member.asMethod().name());
+
+                // Arrays are handled specifically
+                // We use the built-in resolver at runtime because the extension methods cannot be used to cover all combinations of dimensions and component types 
+                if (match.isArray()) {
+                    if (info.isProperty()) {
+                        String name = info.asProperty().name;
+                        if (name.equals("length")) {
+                            // myArray.length
+                            match.setValues(null, PrimitiveType.INT);
+                            continue;
+                        } else {
+                            // myArray[0], myArray.1
+                            try {
+                                Integer.parseInt(name);
+                                match.setValues(null, match.type().asArrayType().component());
+                                continue;
+                            } catch (NumberFormatException e) {
+                                // not an integer index
+                            }
+                        }
+                    } else if (info.isVirtualMethod() && info.asVirtualMethod().name.equals("get")) {
+                        // array.get(84)
+                        List<Expression> params = info.asVirtualMethod().part.asVirtualMethod().getParameters();
+                        if (params.size() == 1) {
+                            Expression param = params.get(0);
+                            Object literalValue;
+                            try {
+                                literalValue = param.getLiteralValue().get();
+                            } catch (InterruptedException | ExecutionException e) {
+                                literalValue = null;
+                            }
+                            if (literalValue == null || literalValue instanceof Integer) {
+                                match.setValues(null, match.type().asArrayType().component());
+                                continue;
+                            }
+                        }
                     }
-                } else if (info.isProperty()) {
-                    member = findProperty(info.asProperty().name, match.clazz(), index);
-                    if (member != null) {
-                        membersUsed.add(member.kind() == Kind.FIELD ? member.asField().name() : member.asMethod().name());
-                    }
-                }
-                if (member == null) {
-                    // Then try to find an etension method
-                    member = findTemplateExtensionMethod(info, match.clazz(), templateExtensionMethods, expression,
-                            index,
-                            templateIdToPathFun, results);
                 }
 
-                if (member == null) {
-                    // Test whether the validation should be skipped
-                    TypeCheck check = new TypeCheck(info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
-                            match.clazz(),
-                            info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
-                    if (isExcluded(check, excludes)) {
-                        LOGGER.debugf(
-                                "Expression part [%s] excluded from validation of [%s] against class [%s]",
-                                info.value,
-                                expression.toOriginalString(), match.clazz());
-                        match.clearValues();
-                        break;
+                AnnotationTarget member = null;
+
+                if (!match.isPrimitive()) {
+                    Set<String> membersUsed = implicitClassToMembersUsed.get(match.type().name());
+                    if (membersUsed == null) {
+                        membersUsed = new HashSet<>();
+                        implicitClassToMembersUsed.put(match.type().name(), membersUsed);
+                    }
+                    // First try to find a java member
+                    if (match.clazz() != null) {
+                        if (info.isVirtualMethod()) {
+                            member = findMethod(info.part.asVirtualMethod(), match.clazz(), expression, index,
+                                    templateIdToPathFun,
+                                    results);
+                            if (member != null) {
+                                membersUsed.add(member.asMethod().name());
+                            }
+                        } else if (info.isProperty()) {
+                            member = findProperty(info.asProperty().name, match.clazz(), index);
+                            if (member != null) {
+                                membersUsed
+                                        .add(member.kind() == Kind.FIELD ? member.asField().name() : member.asMethod().name());
+                            }
+                        }
+                    }
+                    if (member == null) {
+                        // Then try to find an etension method
+                        member = findTemplateExtensionMethod(info, match.type(), templateExtensionMethods, expression,
+                                index,
+                                templateIdToPathFun, results);
+                    }
+                    if (member == null) {
+                        // Test whether the validation should be skipped
+                        TypeCheck check = new TypeCheck(
+                                info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
+                                match.clazz(),
+                                info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
+                        if (isExcluded(check, excludes)) {
+                            LOGGER.debugf(
+                                    "Expression part [%s] excluded from validation of [%s] against type [%s]",
+                                    info.value,
+                                    expression.toOriginalString(), match.type());
+                            match.clearValues();
+                            break;
+                        }
                     }
                 }
 
                 if (member == null) {
                     // No member found - incorrect expression
                     incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                            info.value, match.clazz().toString(), expression.getOrigin()));
+                            info.value, match.type().toString(), expression.getOrigin()));
                     match.clearValues();
                     break;
                 } else {
@@ -637,9 +684,6 @@ public class QuteProcessor {
                             processHints(templateAnalysis, hint, match, index, expression, generatedIdsToMatches,
                                     incorrectExpressions);
                         }
-                    }
-                    if (match.isPrimitive()) {
-                        break;
                     }
                 }
             } else {
@@ -736,8 +780,7 @@ public class QuteProcessor {
             matchRegex = matchRegexValue.asString();
         }
         extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchRegex,
-                namespace.isEmpty() ? index.getClassByName(method.parameters().get(0).name()) : null,
-                priority, namespace));
+                method.parameters().get(0), priority, namespace));
     }
 
     private void validateInjectExpression(TemplateAnalysis templateAnalysis, Expression expression, IndexView index,
@@ -1352,7 +1395,8 @@ public class QuteProcessor {
         }
 
         boolean isEmpty() {
-            return clazz == null;
+            // For arrays the class is null 
+            return type == null;
         }
 
         void autoExtractType() {
@@ -1371,7 +1415,7 @@ public class QuteProcessor {
         }
     }
 
-    private static AnnotationTarget findTemplateExtensionMethod(Info info, ClassInfo matchClass,
+    private static AnnotationTarget findTemplateExtensionMethod(Info info, Type matchType,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods, Expression expression, IndexView index,
             Function<String, String> templateIdToPathFun, Map<String, Match> results) {
         if (!info.isProperty() && !info.isVirtualMethod()) {
@@ -1383,7 +1427,7 @@ public class QuteProcessor {
                 // Skip namespace extensions
                 continue;
             }
-            if (!Types.isAssignableFrom(extensionMethod.getMatchClass().name(), matchClass.name(), index)) {
+            if (!Types.isAssignableFrom(extensionMethod.getMatchType(), matchType, index)) {
                 // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"   
                 continue;
             }

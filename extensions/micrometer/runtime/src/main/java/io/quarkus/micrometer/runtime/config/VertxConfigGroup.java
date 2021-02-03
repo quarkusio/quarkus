@@ -6,17 +6,18 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
- * Build / static runtime config for outbound HTTP requests
+ * Build / static runtime config for the Vert.x Binder
  */
 @ConfigGroup
-public class HttpClientConfig implements MicrometerConfig.CapabilityEnabled {
+public class VertxConfigGroup implements MicrometerConfig.CapabilityEnabled {
     /**
-     * Outbound HTTP request metrics support.
+     * Vert.x metrics support.
      * <p>
-     * Support for HTTP client metrics will be enabled if Micrometer
-     * support is enabled, the REST client feature is enabled,
+     * Support for Vert.x metrics will be enabled if Micrometer
+     * support is enabled, Vert.x MetricsOptions is on the classpath
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.binder-enabled-default} is true.
+     *
      */
     @ConfigItem
     public Optional<Boolean> enabled;

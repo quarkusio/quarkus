@@ -39,6 +39,6 @@ public class AllRegistriesDisabledTest {
     @Test
     public void testNoPrometheusEndpoint() {
         // Micrometer is enabled, prometheus is not.
-        RestAssured.when().get("/prometheus").then().statusCode(404);
+        RestAssured.when().get("/q/metrics").then().statusCode(404);
     }
 }

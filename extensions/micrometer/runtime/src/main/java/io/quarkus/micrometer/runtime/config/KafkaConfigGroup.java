@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
  * Build / static runtime config for Kafka Binders
  */
 @ConfigGroup
-public class KafkaConfig implements MicrometerConfig.CapabilityEnabled {
+public class KafkaConfigGroup implements MicrometerConfig.CapabilityEnabled {
     /**
      * Kafka metrics support.
      * <p>

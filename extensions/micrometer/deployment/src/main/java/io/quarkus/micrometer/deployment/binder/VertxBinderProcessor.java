@@ -5,12 +5,15 @@ import java.util.function.BooleanSupplier;
 import javax.interceptor.Interceptor;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
@@ -18,7 +21,6 @@ import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterFilter;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
@@ -46,10 +48,9 @@ public class VertxBinderProcessor {
     static final String RESTEASY_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRestEasyContainerFilter";
     static final String QUARKUS_REST_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderQuarkusRestContainerFilter";
 
-    @BuildStep(onlyIf = { VertxBinderEnabled.class })
+    @BuildStep(onlyIf = { VertxBinderEnabled.class, MicrometerProcessor.HttpServerBinderEnabled.class })
     void enableJaxRsSupport(Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviders,
-            BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilter,
             BuildProducer<CustomContainerRequestFilterBuildItem> customContainerRequestFilter,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
@@ -77,7 +78,7 @@ public class VertxBinderProcessor {
                 .setUnremovable().build();
     }
 
-    @BuildStep(onlyIf = VertxBinderEnabled.class)
+    @BuildStep(onlyIf = { VertxBinderEnabled.class, MicrometerProcessor.HttpServerBinderEnabled.class })
     FilterBuildItem addVertxMeterFilter() {
         return new FilterBuildItem(new VertxMeterFilter(), Integer.MAX_VALUE);
     }
@@ -90,7 +91,9 @@ public class VertxBinderProcessor {
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    void setVertxConfig(VertxMeterBinderRecorder recorder, VertxConfig config) {
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    void setVertxConfig(VertxMeterBinderRecorder recorder,
+            VertxConfig config) {
         recorder.setVertxConfig(config);
     }
 }

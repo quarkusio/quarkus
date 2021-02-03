@@ -10,16 +10,23 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
+import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 
 public class VertxHttpServerMetricsTest {
 
     @Test
     public void testHttpServerMetricsIgnorePatterns() {
-        VertxConfig runtimeConfig = new VertxConfig();
-        runtimeConfig.ignorePatterns = Optional.of(new ArrayList<>(Arrays.asList("/item/.*")));
-        VertxHttpServerMetrics metrics = new VertxHttpServerMetrics(new SimpleMeterRegistry(), runtimeConfig);
+        HttpServerConfig serverConfig = new HttpServerConfig();
+        serverConfig.ignorePatterns = Optional.of(new ArrayList<>(Arrays.asList("/item/.*")));
 
+        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
+                true, false,
+                serverConfig, new HttpClientConfig(), new VertxConfig());
+
+        VertxHttpServerMetrics metrics = new VertxHttpServerMetrics(new SimpleMeterRegistry(), binderConfig);
         Assertions.assertFalse(metrics.ignorePatterns.isEmpty());
         Pattern p = metrics.ignorePatterns.get(0);
         Assertions.assertEquals("/item/.*", p.pattern());
@@ -28,9 +35,14 @@ public class VertxHttpServerMetricsTest {
 
     @Test
     public void testHttpServerMetricsMatchPatterns() {
-        VertxConfig runtimeConfig = new VertxConfig();
-        runtimeConfig.matchPatterns = Optional.of(new ArrayList<>(Arrays.asList("/item/\\d+=/item/{id}")));
-        VertxHttpServerMetrics metrics = new VertxHttpServerMetrics(new SimpleMeterRegistry(), runtimeConfig);
+        HttpServerConfig serverConfig = new HttpServerConfig();
+        serverConfig.matchPatterns = Optional.of(new ArrayList<>(Arrays.asList("/item/\\d+=/item/{id}")));
+
+        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
+                true, false,
+                serverConfig, new HttpClientConfig(), new VertxConfig());
+
+        VertxHttpServerMetrics metrics = new VertxHttpServerMetrics(new SimpleMeterRegistry(), binderConfig);
 
         Assertions.assertFalse(metrics.matchPatterns.isEmpty());
         Map.Entry<Pattern, String> entry = metrics.matchPatterns.entrySet().iterator().next();

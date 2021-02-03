@@ -31,9 +31,13 @@ import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.core.instrument.binder.system.UptimeMetrics;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.quarkus.arc.Arc;
+import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.JVMInfoBinder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
+import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
+import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
+import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -170,5 +174,18 @@ public class MicrometerRecorder {
             return throwable.getClass().getSimpleName();
         }
         return throwable.getCause().getClass().getSimpleName();
+    }
+
+    /* RUNTIME_INIT */
+    public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(
+            boolean httpServerMetricsEnabled,
+            boolean httpClientMetricsEnabled,
+            HttpServerConfig serverConfig,
+            HttpClientConfig clientConfig,
+            VertxConfig vertxConfig) {
+        return new RuntimeValue<HttpBinderConfiguration>(
+                new HttpBinderConfiguration(httpServerMetricsEnabled,
+                        httpClientMetricsEnabled,
+                        serverConfig, clientConfig, vertxConfig));
     }
 }

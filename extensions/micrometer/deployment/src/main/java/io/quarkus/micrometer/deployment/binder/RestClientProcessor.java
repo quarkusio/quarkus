@@ -7,10 +7,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
-public class HttpClientProcessor {
+public class RestClientProcessor {
     // Avoid referencing optional dependencies
 
     // Rest client listener SPI
@@ -23,7 +24,7 @@ public class HttpClientProcessor {
     // Http Client runtime config (injected programmatically)
     private static final String REST_CLIENT_HTTP_CONFIG = "io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig";
 
-    static class HttpClientEnabled implements BooleanSupplier {
+    static class RestClientEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
@@ -31,7 +32,7 @@ public class HttpClientProcessor {
         }
     }
 
-    @BuildStep(onlyIf = HttpClientEnabled.class)
+    @BuildStep(onlyIf = { RestClientEnabled.class, MicrometerProcessor.HttpClientBinderEnabled.class })
     UnremovableBeanBuildItem registerRestClientListener(BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         resource.produce(new NativeImageResourceBuildItem(

@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class JsonConfig implements MicrometerConfig.CapabilityEnabled {
+public class JsonConfigGroup implements MicrometerConfig.CapabilityEnabled {
     /**
      * Support for export to JSON format. Off by default.
      */

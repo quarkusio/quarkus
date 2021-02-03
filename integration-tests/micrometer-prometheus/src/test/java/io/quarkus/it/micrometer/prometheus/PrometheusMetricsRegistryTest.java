@@ -49,7 +49,7 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     void testPathParameter() {
         given()
                 .when().get("/message/item/123")
@@ -58,7 +58,7 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
-    @Order(4)
+    @Order(6)
     void testPanacheCalls() {
         given()
                 .when().get("/fruit/create")
@@ -72,7 +72,7 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
-    @Order(5)
+    @Order(7)
     void testPrimeEndpointCalls() {
         given()
                 .when().get("/prime/7")
@@ -82,7 +82,7 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
-    @Order(6)
+    @Order(8)
     void testAllTheThings() {
         given()
                 .when().get("/all-the-things")

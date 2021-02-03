@@ -1,22 +1,11 @@
 package io.quarkus.micrometer.runtime.binder;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
-import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.http.Outcome;
 
 public class HttpMetricsCommon {
-    private static final Logger log = Logger.getLogger(HttpMetricsCommon.class);
-
     public static final Tag URI_NOT_FOUND = Tag.of("uri", "NOT_FOUND");
     public static final Tag URI_REDIRECTION = Tag.of("uri", "REDIRECTION");
     public static final Tag URI_ROOT = Tag.of("uri", "root");
@@ -88,40 +77,5 @@ public class HttpMetricsCommon {
 
         // Use first segment of request path
         return Tag.of("uri", pathInfo);
-    }
-
-    public static List<Pattern> getIgnorePatterns(Optional<List<String>> configInput) {
-        if (configInput.isPresent()) {
-            List<String> input = configInput.get();
-            List<Pattern> ignorePatterns = new ArrayList<>(input.size());
-            for (String s : input) {
-                ignorePatterns.add(Pattern.compile(s));
-            }
-            return ignorePatterns;
-        }
-        return Collections.emptyList();
-    }
-
-    public static Map<Pattern, String> getMatchPatterns(Optional<List<String>> configInput) {
-        if (configInput.isPresent()) {
-            List<String> input = configInput.get();
-            Map<Pattern, String> matchPatterns = new HashMap<>(input.size());
-            for (String s : input) {
-                int pos = s.indexOf("=");
-                if (pos > 0 && s.length() > 2) {
-                    String pattern = s.substring(0, pos);
-                    String replacement = s.substring(pos + 1);
-                    try {
-                        matchPatterns.put(Pattern.compile(pattern), replacement);
-                    } catch (PatternSyntaxException pse) {
-                        log.errorf("Invalid pattern in replacement string (%s=%s): %s", pattern, replacement, pse);
-                    }
-                } else {
-                    log.errorf("Invalid pattern in replacement string (%s). Should be pattern=replacement", s);
-                }
-            }
-            return matchPatterns;
-        }
-        return Collections.emptyMap();
     }
 }

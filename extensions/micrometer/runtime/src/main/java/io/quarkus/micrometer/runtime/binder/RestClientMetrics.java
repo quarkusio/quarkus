@@ -1,9 +1,6 @@
 package io.quarkus.micrometer.runtime.binder;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -19,36 +16,55 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.Arc;
-import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 
+/**
+ * This is initialized via ServiceFactory (static/non-CDI initialization)
+ */
 public class RestClientMetrics implements RestClientListener {
     private static final String HTTP_CLIENT_METRIC_NAME = "http.client.requests";
     private final static String REQUEST_METRIC_PROPERTY = "restClientMetrics";
 
-    final List<Pattern> ignorePatterns;
-    final Map<Pattern, String> matchPatterns;
-
     final MeterRegistry registry = Metrics.globalRegistry;
-    final MetricsClientRequestFilter clientRequestFilter = new MetricsClientRequestFilter();
-    final MetricsClientResponseFilter clientResponseFilter = new MetricsClientResponseFilter();
-
-    public RestClientMetrics() {
-        HttpClientConfig clientConfig = Arc.container().instance(HttpClientConfig.class).get();
-        ignorePatterns = HttpMetricsCommon.getIgnorePatterns(clientConfig.ignorePatterns);
-        matchPatterns = HttpMetricsCommon.getMatchPatterns(clientConfig.matchPatterns);
-    }
+    MetricsClientRequestFilter clientRequestFilter;
+    MetricsClientResponseFilter clientResponseFilter;
 
     @Override
     public void onNewClient(Class<?> serviceInterface, RestClientBuilder builder) {
-        builder.register(clientRequestFilter);
-        builder.register(clientResponseFilter);
+        builder.register(getClientRequestFilter());
+        builder.register(getClientResponseFilter());
+    }
+
+    // Lazy init: multiple instances aren't harmful, synchronization not necessary
+    MetricsClientRequestFilter getClientRequestFilter() {
+        MetricsClientRequestFilter clientFilter = this.clientRequestFilter;
+        if (clientFilter == null) {
+            HttpBinderConfiguration httpMetricsConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
+            clientFilter = this.clientRequestFilter = new MetricsClientRequestFilter(httpMetricsConfig);
+        }
+        return clientFilter;
+    }
+
+    // Lazy init: multiple instances aren't harmful, synchronization not necessary
+    MetricsClientResponseFilter getClientResponseFilter() {
+        MetricsClientResponseFilter clientFilter = this.clientResponseFilter;
+        if (clientFilter == null) {
+            clientFilter = this.clientResponseFilter = new MetricsClientResponseFilter();
+        }
+        return clientFilter;
     }
 
     class MetricsClientRequestFilter implements ClientRequestFilter {
+        HttpBinderConfiguration binderConfiguration;
+
+        MetricsClientRequestFilter(HttpBinderConfiguration binderConfiguration) {
+            this.binderConfiguration = binderConfiguration;
+        }
+
         @Override
         public void filter(ClientRequestContext requestContext) throws IOException {
             HttpRequestMetric requestMetric = new HttpRequestMetric();
-            requestMetric.parseUriPath(matchPatterns, ignorePatterns, requestContext.getUri().getPath());
+            requestMetric.parseUriPath(binderConfiguration.getClientMatchPatterns(),
+                    binderConfiguration.getClientIgnorePatterns(), requestContext.getUri().getPath());
             if (requestMetric.isMeasure()) {
                 requestMetric.setSample(Timer.start(registry));
                 requestContext.setProperty(REQUEST_METRIC_PROPERTY, requestMetric);

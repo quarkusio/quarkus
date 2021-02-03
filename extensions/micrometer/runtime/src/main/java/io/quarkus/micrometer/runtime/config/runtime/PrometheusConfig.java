@@ -10,8 +10,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * Runtime configuration for Micrometer meter registries.
  */
 @SuppressWarnings("unused")
-@ConfigRoot(name = "micrometer.export", phase = ConfigPhase.RUN_TIME)
-public class ExportConfig {
+@ConfigRoot(name = "micrometer.export.prometheus", phase = ConfigPhase.RUN_TIME)
+public class PrometheusConfig {
     // @formatter:off
     /**
      * Prometheus registry configuration properties.
@@ -22,6 +22,6 @@ public class ExportConfig {
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigItem
+    @ConfigItem(name = ConfigItem.PARENT)
     Map<String, String> prometheus;
 }

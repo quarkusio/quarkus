@@ -7,6 +7,7 @@ import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.http.HttpServerOptions;
@@ -23,12 +24,14 @@ public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetr
     private final static AtomicReference<MeterRegistry> meterRegistryRef = new AtomicReference<>();
 
     private VertxConfig config;
+    private HttpBinderConfiguration httpBinderConfiguration;
 
     public VertxMeterBinderAdapter() {
     }
 
-    public void setVertxConfig(VertxConfig config) {
+    public void setVertxConfig(VertxConfig config, HttpBinderConfiguration httpBinderConfiguration) {
         this.config = config;
+        this.httpBinderConfiguration = httpBinderConfiguration;
     }
 
     public static void setMeterRegistry(MeterRegistry meterRegistry) {
@@ -57,7 +60,6 @@ public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetr
 
     @Override
     public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(HttpServerOptions options, SocketAddress localAddress) {
-        log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
         log.debugf("Bind registry %s to Vertx Metrics", meterRegistryRef.get());
         MeterRegistry registry = meterRegistryRef.get();
         if (registry == null) {
@@ -66,6 +68,10 @@ public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetr
         if (config == null) {
             throw new IllegalStateException("VertxConfig was not found");
         }
-        return new VertxHttpServerMetrics(registry, config);
+        if (httpBinderConfiguration.isServerEnabled()) {
+            log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
+            return new VertxHttpServerMetrics(registry, httpBinderConfiguration);
+        }
+        return null;
     }
 }

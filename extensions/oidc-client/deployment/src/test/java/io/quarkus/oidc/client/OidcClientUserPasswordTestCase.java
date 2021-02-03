@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -58,7 +59,11 @@ public class OidcClientUserPasswordTestCase {
 
     }
 
+    /**
+     * TODO: Vert.x 4 Migration: need non-Vert.x OIDC impl
+     */
     @Test
+    @Disabled
     public void testRefreshPasswordGrantTokens() {
         String[] tokens = RestAssured.when().get("/client/tokens").body().asString().split(" ");
         assertTokensNotNull(tokens);

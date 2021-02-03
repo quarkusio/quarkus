@@ -17,13 +17,4 @@ public class ExampleResourceTest {
              .statusCode(200)
              .body(is("Hello from Test"));
     }
-
-    @Test
-    public void testTestOnly() {
-      given()
-          .when().get("test-only")
-          .then()
-              .statusCode(200)
-              .body(is("Test only"));
-    }
 }

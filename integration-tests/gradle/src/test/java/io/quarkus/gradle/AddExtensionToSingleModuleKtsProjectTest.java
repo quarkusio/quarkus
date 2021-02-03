@@ -39,7 +39,8 @@ public class AddExtensionToSingleModuleKtsProjectTest extends QuarkusGradleWrapp
 
         final File projectDir = getProjectDir("add-remove-extension-single-module-kts");
 
-        runGradleWrapper(projectDir, "clean", "build");
+        BuildResult buildResult = runGradleWrapper(projectDir, "clean", "build");
+        assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
 
         final Path buildKts = projectDir.toPath().resolve("build.gradle.kts");
         assertThat(buildKts).exists();

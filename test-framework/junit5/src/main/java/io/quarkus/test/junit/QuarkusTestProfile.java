@@ -59,6 +59,16 @@ public interface QuarkusTestProfile {
         return false;
     }
 
+    /**
+     * The tags this profile is associated with.
+     * When the {@code quarkus.test.profile.tags} System property is set (its value is a comma separated list of strings)
+     * then Quarkus will only execute tests that are annotated with a {@code @TestProfile} that has at least one of the
+     * supplied (via the aforementioned system property) tags.
+     */
+    default Set<String> tags() {
+        return Collections.emptySet();
+    }
+
     final class TestResourceEntry {
         private final Class<? extends QuarkusTestResourceLifecycleManager> clazz;
         private final Map<String, String> args;

@@ -55,6 +55,8 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -102,10 +104,9 @@ import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.XStreamDeepClone;
 
-//todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
-        ParameterResolver {
+        ParameterResolver, ExecutionCondition {
 
     private static final Logger log = Logger.getLogger(QuarkusTestExtension.class);
 
@@ -119,7 +120,6 @@ public class QuarkusTestExtension
     private static Object actualTestInstance;
     private static ClassLoader originalCl;
     private static RunningQuarkusApplication runningQuarkusApplication;
-    private static Path testClassLocation;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private static List<Object> beforeClassCallbacks;
@@ -133,7 +133,7 @@ public class QuarkusTestExtension
 
     private static DeepClone deepClone;
     //needed for @Nested
-    private static Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
+    private static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     private static ScheduledExecutorService hangDetectionExecutor;
     private static Duration hangTimeout;
     private static ScheduledFuture<?> hangTaskKey;
@@ -192,7 +192,7 @@ public class QuarkusTestExtension
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
             Class<?> requiredTestClass = context.getRequiredTestClass();
-            testClassLocation = getTestClassesLocation(requiredTestClass);
+            Path testClassLocation = getTestClassesLocation(requiredTestClass);
             final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
             PathsCollection.Builder rootBuilder = PathsCollection.builder();
@@ -220,7 +220,7 @@ public class QuarkusTestExtension
                     .setMode(QuarkusBootstrap.Mode.TEST);
             QuarkusTestProfile profileInstance = null;
             if (profile != null) {
-                profileInstance = profile.newInstance();
+                profileInstance = profile.getConstructor().newInstance();
                 Map<String, String> additional = new HashMap<>(profileInstance.getConfigOverrides());
                 if (!profileInstance.getEnabledAlternatives().isEmpty()) {
                     additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives().stream()
@@ -607,11 +607,7 @@ public class QuarkusTestExtension
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        TestProfile annotation = extensionContext.getRequiredTestClass().getAnnotation(TestProfile.class);
-        Class<? extends QuarkusTestProfile> selectedProfile = null;
-        if (annotation != null) {
-            selectedProfile = annotation.value();
-        }
+        Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         if ((state == null && !failedBoot) || wrongProfile) {
             if (wrongProfile) {
@@ -634,6 +630,15 @@ public class QuarkusTestExtension
             }
         }
         return state;
+    }
+
+    private Class<? extends QuarkusTestProfile> getQuarkusTestProfile(ExtensionContext extensionContext) {
+        TestProfile annotation = extensionContext.getRequiredTestClass().getAnnotation(TestProfile.class);
+        Class<? extends QuarkusTestProfile> selectedProfile = null;
+        if (annotation != null) {
+            selectedProfile = annotation.value();
+        }
+        return selectedProfile;
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {
@@ -979,6 +984,42 @@ public class QuarkusTestExtension
             default:
                 return null;
         }
+    }
+
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        if (!context.getTestClass().isPresent()) {
+            return ConditionEvaluationResult.enabled("No test class specified");
+        }
+        if (context.getTestInstance().isPresent()) {
+            return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
+        }
+        String tagsStr = System.getProperty("quarkus.test.profile.tags");
+        if ((tagsStr == null) || tagsStr.isEmpty()) {
+            return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
+        }
+        Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
+        if (testProfile == null) {
+            return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
+                    + "' is not annotated with '@QuarkusTestProfile' but 'quarkus.profile.test.tags' was set");
+        }
+        QuarkusTestProfile profileInstance;
+        try {
+            profileInstance = testProfile.getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Set<String> testProfileTags = profileInstance.tags();
+        String[] tags = tagsStr.split(",");
+        for (String tag : tags) {
+            String trimmedTag = tag.trim();
+            if (testProfileTags.contains(trimmedTag)) {
+                return ConditionEvaluationResult.enabled("Tag '" + trimmedTag + "' is present on '" + testProfile
+                        + "' which is used on test '" + context.getRequiredTestClass());
+            }
+        }
+        return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
+                + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
     }
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {

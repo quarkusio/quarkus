@@ -538,6 +538,103 @@ Now we have defined our profile we need to include it on our test class. We do t
 All the test profile config is stored in a single class, which makes it easy to tell if the previous test ran with the
 same configuration.
 
+=== Running specific tests
+
+Quarkus provides the ability to limit test execution to tests with specific  `@TestProfile` annotations.
+This works by leveraging the `tags` method of `QuarkusTestProfile` in conjunction with the `quarkus.test.profile.tags` system property.
+
+Essentially, any `QuarkusTestProfile` with at least one matching tag matching the value of `quarkus.test.profile.tags` will be considered active
+and all the tests annotated with `@TestProfile` of active profiles, will be run while the rest will be skipped.
+This is best shown in the following example.
+
+First let's define a few `QuarkusTestProfile` implementations like so:
+[source,java]
+----
+public class Profiles {
+
+    public static class NoTags implements QuarkusTestProfile {
+
+    }
+
+    public static class SingleTag implements QuarkusTestProfile {
+        @Override
+        public Set<String> tags() {
+            return Collections.singleton("test1");
+        }
+    }
+
+    public static class MultipleTags implements QuarkusTestProfile {
+        @Override
+        public Set<String> tags() {
+            return new HashSet<>(Arrays.asList("test1", "test2"));
+        }
+    }
+}
+----
+
+Now let's assume that we have the following tests:
+
+[source,java]
+----
+@QuarkusTest
+public class NoQuarkusProfileTest {
+
+    @Test
+    public void test() {
+        // test something
+    }
+}
+----
+
+[source,java]
+----
+@QuarkusTest
+@TestProfile(Profiles.NoTags.class)
+public class NoTagsTest {
+
+    @Test
+    public void test() {
+        // test something
+    }
+}
+----
+
+[source,java]
+----
+@QuarkusTest
+@TestProfile(Profiles.SingleTag.class)
+public class SingleTagTest {
+
+    @Test
+    public void test() {
+        // test something
+    }
+}
+----
+
+[source,java]
+----
+@QuarkusTest
+@TestProfile(Profiles.MultipleTags.class)
+public class MultipleTagsTest {
+
+    @Test
+    public void test() {
+        // test something
+    }
+}
+----
+
+Let's consider the following scenarios:
+
+* `quarkus.test.profile.tags` is not set: All tests will be executed.
+* `quarkus.test.profile.tags=foo`: In this case none of tests will be executed because none of the tags defined on the `QuarkusTestProfile` implementations match the value of `quarkus.test.profile.tags`.
+Note that `NoQuarkusProfileTest` is not executed either because it is not annotated with `@TestProfile`.
+* `quarkus.test.profile.tags=test1`: In this case `SingleTagTest` and `MultipleTagsTest` will be run because the tags on their respective `QuarkusTestProfile` implementations
+match the value of `quarkus.test.profile.tags`.
+* `quarkus.test.profile.tags=test1,test3`: This case results in the same tests being executed as the previous case.
+* `quarkus.test.profile.tags=test2,test3`: In this case only `MultipleTagsTest` will be run because `MultipleTagsTest` is the only `QuarkusTestProfile` implementation whose `tags` method
+matches the value of `quarkus.test.profile.tags`.
 
 == Mock Support
 

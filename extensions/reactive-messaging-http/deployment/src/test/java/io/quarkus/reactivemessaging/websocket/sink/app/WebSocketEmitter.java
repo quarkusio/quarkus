@@ -18,11 +18,11 @@ public class WebSocketEmitter {
 
     @Inject
     @Channel("my-ws-sink")
-    Emitter emitter;
+    Emitter<Object> emitter;
 
     @Inject
     @Channel("ws-sink-with-serializer")
-    Emitter emitterWithCustomSerializer;
+    Emitter<Object> emitterWithCustomSerializer;
 
     public void sendMessage(Message<?> message) {
         emitter.send(message);

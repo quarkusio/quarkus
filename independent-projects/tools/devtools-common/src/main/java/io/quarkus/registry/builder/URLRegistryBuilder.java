@@ -2,7 +2,7 @@ package io.quarkus.registry.builder;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.quarkus.registry.model.ImmutableRegistry;
 import io.quarkus.registry.model.Registry;
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class URLRegistryBuilder {
         }
         ObjectMapper mapper = new ObjectMapper()
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
         if (urls.size() == 1) {
             // Just one
             return mapper.readValue(urls.get(0), Registry.class);

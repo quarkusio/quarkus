@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.registry.builder.RegistryBuilder;
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 class DefaultExtensionRegistryTest {
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE)
+            .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     static DefaultExtensionRegistry extensionRegistry;
 

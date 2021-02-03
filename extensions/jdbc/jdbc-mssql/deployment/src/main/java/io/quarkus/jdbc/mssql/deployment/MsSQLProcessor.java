@@ -17,6 +17,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.mssql.runtime.MsSQLAgroalConnectionConfigurer;
+import io.quarkus.jdbc.mssql.runtime.MsSQLServiceBindingConverter;
 
 public class MsSQLProcessor {
 
@@ -60,7 +61,9 @@ public class MsSQLProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            //TODO: add binding class
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                            MsSQLServiceBindingConverter.class.getName()));
             dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MSSQL));
         }
     }

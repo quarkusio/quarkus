@@ -119,8 +119,8 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.18</postgresql-jdbc.version>
-        <mariadb-jdbc.version>2.7.1</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.22</mysql-jdbc.version>
+        <mariadb-jdbc.version>2.7.2</mariadb-jdbc.version>
+        <mysql-jdbc.version>8.0.23</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.4.0</db2-jdbc.version>
@@ -175,7 +175,7 @@
         <sentry.version>3.2.0</sentry.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.0.0</kubernetes-client.version>
+        <kubernetes-client.version>5.0.1</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>

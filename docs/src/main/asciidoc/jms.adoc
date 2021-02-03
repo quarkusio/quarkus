@@ -334,7 +334,7 @@ and then run with:
 
 [source,bash]
 ----
-./target/jms-quickstart-1.0-SNAPSHOT-runner
+./target/jms-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 Open `http://localhost:8080/prices.html` in your browser.

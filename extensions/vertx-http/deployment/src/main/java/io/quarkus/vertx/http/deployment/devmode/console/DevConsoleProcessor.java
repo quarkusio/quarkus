@@ -25,6 +25,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -56,14 +58,17 @@ import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.RawString;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
+import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -345,6 +350,9 @@ public class DevConsoleProcessor {
             });
         }).build());
 
+        // JavaDoc formatting
+        builder.addValueResolver(new JavaDocResolver());
+
         // Add templates and tags
         Map<String, String> templates = new HashMap<>();
         for (DevTemplatePathBuildItem devTemplatePath : devTemplatePaths) {
@@ -478,5 +486,30 @@ public class DevConsoleProcessor {
                 }
             });
         }
+    }
+
+    public static class JavaDocResolver implements ValueResolver {
+
+        private final Pattern codePattern = Pattern.compile("(\\{@code )([^}]+)(\\})");
+        private final Pattern linkPattern = Pattern.compile("(\\{@link )([^}]+)(\\})");
+
+        @Override
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() instanceof String && context.getName().equals("fmtJavadoc");
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            String val = context.getBase().toString();
+            // Replace {@code} and {@link}
+            val = codePattern.matcher(val).replaceAll("<code>$2</code>");
+            val = linkPattern.matcher(val).replaceAll("<code>$2</code>");
+            // Add br before @see and @deprecated
+            val = val.replace("@see", "<br><strong>@see</strong>").replace("@deprecated",
+                    "<br><strong>@deprecated</strong>");
+            // No need to escape special characters
+            return CompletableFuture.completedFuture(new RawString(val));
+        }
+
     }
 }

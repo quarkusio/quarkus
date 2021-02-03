@@ -164,6 +164,11 @@ public class MicrometerProcessor {
 
         reflectiveClasses.produce(createReflectiveBuildItem(COUNTED_ANNOTATION, index));
         reflectiveClasses.produce(createReflectiveBuildItem(TIMED_ANNOTATION, index));
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder("org.HdrHistogram.Histogram",
+                        "org.HdrHistogram.DoubleHistogram",
+                        "org.HdrHistogram.ConcurrentHistogram")
+                .constructors(true).build());
 
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(keepMe));
     }

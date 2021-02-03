@@ -306,7 +306,7 @@ Now compile the application and run it:
 [source,bash]
 ----
 ./mvnw clean install
-java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
+java -jar target/vault-quickstart-1.0.0-SNAPSHOT-runner.jar
 ----
 
 Finally test the new endpoint:

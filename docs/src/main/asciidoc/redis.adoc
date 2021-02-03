@@ -505,7 +505,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/redis-quickstart-1.0-SNAPSHOT-runner.jar
+java -jar ./target/redis-quickstart-1.0.0-SNAPSHOT-runner.jar
 ----
 
 == Running Native
@@ -528,7 +528,7 @@ Once the build is finished, you can run the executable with:
 
 [source,bash]
 ----
-./target/redis-quickstart-1.0-SNAPSHOT-runner
+./target/redis-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 == Connection Health Check

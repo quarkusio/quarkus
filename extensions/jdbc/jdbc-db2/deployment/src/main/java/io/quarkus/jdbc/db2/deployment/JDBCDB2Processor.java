@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.db2.runtime.DB2AgroalConnectionConfigurer;
+import io.quarkus.jdbc.db2.runtime.DB2ServiceBindingConverter;
 
 public class JDBCDB2Processor {
 
@@ -64,7 +65,9 @@ public class JDBCDB2Processor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            //TODO: add binding class
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                            DB2ServiceBindingConverter.class.getName()));
             dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
         }
     }

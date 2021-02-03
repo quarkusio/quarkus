@@ -2,6 +2,7 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static io.quarkus.devtools.ProjectTestUtil.checkContains;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.DataKey.*;
+import static io.quarkus.platform.tools.ToolsUtils.readQuarkusProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,8 @@ import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.platform.tools.ToolsUtils;
 
 class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
@@ -41,6 +45,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     static Map<String, Object> getTestInputData(final QuarkusPlatformDescriptor descriptor,
             final Map<String, Object> override) {
         final HashMap<String, Object> data = new HashMap<>();
+        final Properties quarkusProp = readQuarkusProperties(descriptor);
         data.put(PROJECT_GROUP_ID.getKey(), "org.test");
         data.put(PROJECT_ARTIFACT_ID.getKey(), "test-codestart");
         data.put(PROJECT_VERSION.getKey(), "1.0.0-codestart");
@@ -48,11 +53,16 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         data.put(BOM_ARTIFACT_ID.getKey(), descriptor.getBomArtifactId());
         data.put(BOM_VERSION.getKey(), descriptor.getBomVersion());
         data.put(QUARKUS_VERSION.getKey(), descriptor.getQuarkusVersion());
-        data.put(QUARKUS_MAVEN_PLUGIN_GROUP_ID.getKey(), "io.quarkus");
-        data.put(QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID.getKey(), "quarkus-maven-plugin");
-        data.put(QUARKUS_MAVEN_PLUGIN_VERSION.getKey(), descriptor.getQuarkusVersion());
-        data.put(QUARKUS_GRADLE_PLUGIN_ID.getKey(), "io.quarkus");
-        data.put(QUARKUS_GRADLE_PLUGIN_VERSION.getKey(), descriptor.getQuarkusVersion());
+        data.put(QUARKUS_MAVEN_PLUGIN_GROUP_ID.getKey(), ToolsUtils.getMavenPluginGroupId(quarkusProp));
+        data.put(QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID.getKey(), ToolsUtils.getMavenPluginArtifactId(quarkusProp));
+        data.put(QUARKUS_MAVEN_PLUGIN_VERSION.getKey(), ToolsUtils.getMavenPluginVersion(quarkusProp));
+        data.put(QUARKUS_GRADLE_PLUGIN_ID.getKey(), ToolsUtils.getMavenPluginGroupId(quarkusProp));
+        data.put(QUARKUS_GRADLE_PLUGIN_VERSION.getKey(), ToolsUtils.getGradlePluginVersion(quarkusProp));
+        data.put(KOTLIN_VERSION.getKey(), quarkusProp.getProperty(ToolsConstants.PROP_KOTLIN_VERSION));
+        data.put(SCALA_VERSION.getKey(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_VERSION));
+        data.put(SCALA_MAVEN_PLUGIN_VERSION.getKey(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_PLUGIN_VERSION));
+        data.put(MAVEN_COMPILER_PLUGIN_VERSION.getKey(), quarkusProp.getProperty(ToolsConstants.PROP_COMPILER_PLUGIN_VERSION));
+        data.put(MAVEN_SUREFIRE_PLUGIN_VERSION.getKey(), quarkusProp.getProperty(ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION));
         data.put(JAVA_VERSION.getKey(), "11");
         if (override != null)
             data.putAll(override);

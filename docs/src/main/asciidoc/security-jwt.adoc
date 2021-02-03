@@ -174,11 +174,11 @@ $ ./mvnw compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ----------------------< org.acme:security-jwt-quickstart >-----------------------
-[INFO] Building security-jwt-quickstart 1.0-SNAPSHOT
+[INFO] Building security-jwt-quickstart 1.0.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 ...
 Listening for transport dt_socket at address: 5005
-2020-07-15 16:09:50,883 INFO  [io.quarkus] (Quarkus Main Thread) security-jwt-quickstart 1.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.073s. Listening on: http://0.0.0.0:8080
+2020-07-15 16:09:50,883 INFO  [io.quarkus] (Quarkus Main Thread) security-jwt-quickstart 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.073s. Listening on: http://0.0.0.0:8080
 2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
 2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, mutiny, resteasy, resteasy-jackson, security, smallrye-context-propagation, smallrye-jwt, vertx, vertx-web]
 ----
@@ -486,7 +486,7 @@ hold of the caller `JsonWebToken` interface by casting the `SecurityContext#getU
 The `JsonWebToken` interface defines methods for accessing claims in the underlying JWT. It provides accessors for common
 claims that are required by the {mp-jwt} specification as well as arbitrary claims that may exist in the JWT.
 
-All the JWT claims can also be injected. Let's expand our `TokenSecuredResource` with another endpoint /secured/roles-allowed-admin which users the injected `birthdate` claim
+All the JWT claims can also be injected. Let's expand our `TokenSecuredResource` with another endpoint /secured/roles-allowed-admin which uses the injected `birthdate` claim
 (as opposed to getting it from `JsonWebToken`):
 
 [source, java]

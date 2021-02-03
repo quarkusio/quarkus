@@ -192,7 +192,7 @@ $ ./mvnw clean compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 INFO] --------------------< org.acme.example:apache-tika >--------------------
-[INFO] Building apache-tika 1.0-SNAPSHOT
+[INFO] Building apache-tika 1.0.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 ...
 Listening for transport dt_socket at address: 5005
@@ -224,7 +224,7 @@ Hello Quarkus
 == Building a native executable
 
 You can build a native executable with the usual command `./mvnw package -Pnative`.
-Running it is as simple as executing `./target/tika-quickstart-1.0-SNAPSHOT-runner`.
+Running it is as simple as executing `./target/tika-quickstart-1.0.0-SNAPSHOT-runner`.
 
 == Configuration Reference
 

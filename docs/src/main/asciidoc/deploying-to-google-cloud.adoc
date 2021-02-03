@@ -83,7 +83,7 @@ Finally, use `gcloud` to deploy your application as an App Engine service.
 
 [source, shell script]
 ----
-gcloud app deploy target/getting-started-1.0-SNAPSHOT-runner.jar
+gcloud app deploy target/getting-started-1.0.0-SNAPSHOT-runner.jar
 ----
 
 This command will upload your application jar and launch it on App Engine.

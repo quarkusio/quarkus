@@ -31,7 +31,6 @@ import org.awaitility.core.ConditionTimeoutException;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
@@ -138,7 +137,7 @@ public class JarRunnerIT extends MojoTestBase {
         Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
                 Collections.emptyList()).start();
         try {
-            Assert.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }
@@ -163,7 +162,7 @@ public class JarRunnerIT extends MojoTestBase {
         Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
                 Collections.emptyList()).start();
         try {
-            Assert.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }

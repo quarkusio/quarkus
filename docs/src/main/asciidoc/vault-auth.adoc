@@ -82,7 +82,7 @@ Compile and start the application:
 [source,bash, subs=attributes+]
 ----
 ./mvnw clean install
-java -jar target/vault-quickstart-1.0-SNAPSHOT-runner.jar
+java -jar target/vault-quickstart-1.0.0-SNAPSHOT-runner.jar
 ----
 
 Finally test the application endpoint:
@@ -423,7 +423,7 @@ __  ____  __  _____   ___  __ ____  ______
 2020-04-15 18:30:01,779 DEBUG [io.qua.vau.run.VaultAuthManager] (main) created new login token: {clientToken: ***, renewable: true, leaseDuration: 3600s, valid_until: Wed Apr 15 19:30:01 GMT 2020}
 2020-04-15 18:30:01,802 DEBUG [io.qua.vau.run.con.VaultConfigSource] (main) loaded 1 properties from vault
 2020-04-15 18:30:02,722 DEBUG [io.qua.vau.run.VaultAuthManager] (Agroal_7305849841) extended login token: {clientToken: ***, renewable: true, leaseDuration: 3600s, valid_until: Wed Apr 15 19:30:02 GMT 2020}
-2020-04-15 18:30:03,274 INFO  [io.quarkus] (main) vault-quickstart 1.0-SNAPSHOT (powered by Quarkus 999-SNAPSHOT) started in 4.255s. Listening on: http://0.0.0.0:8080
+2020-04-15 18:30:03,274 INFO  [io.quarkus] (main) vault-quickstart 1.0.0-SNAPSHOT (powered by Quarkus 999-SNAPSHOT) started in 4.255s. Listening on: http://0.0.0.0:8080
 2020-04-15 18:30:03,276 INFO  [io.quarkus] (main) Profile prod activated.
 2020-04-15 18:30:03,276 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, jdbc-postgresql, narayana-jta, resteasy, vault]
 ----

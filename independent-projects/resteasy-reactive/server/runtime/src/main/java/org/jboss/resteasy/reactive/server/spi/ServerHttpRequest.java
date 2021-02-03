@@ -48,6 +48,8 @@ public interface ServerHttpRequest {
 
     InputStream createInputStream(ByteBuffer existingData);
 
+    InputStream createInputStream();
+
     ServerHttpResponse pauseRequestInput();
 
     ServerHttpResponse resumeRequestInput();

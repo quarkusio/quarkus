@@ -116,6 +116,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                                     }
                                     requestScopeActivated = false;
                                 }
+                            } else {
+                                requestScopeActivated = false;
+                                requestScopeDeactivated();
                             }
                             if (this.executor != null) {
                                 //resume happened in the meantime
@@ -155,8 +158,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 close();
             } else {
                 if (disasociateRequestScope) {
-                    currentRequestScope.deactivate();
                     requestScopeDeactivated();
+                    currentRequestScope.deactivate();
                 }
                 beginAsyncProcessing();
             }
@@ -179,12 +182,16 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             return;
         }
         requestScopeActivated = true;
-        if (currentRequestScope == null) {
-            currentRequestScope = requestContext.activateInitial();
-            handleRequestScopeActivation();
+        if (isRequestScopeManagementRequired()) {
+            if (currentRequestScope == null) {
+                currentRequestScope = requestContext.activateInitial();
+            } else {
+                currentRequestScope.activate();
+            }
         } else {
-            currentRequestScope.activate();
+            currentRequestScope = requestContext.currentState();
         }
+        handleRequestScopeActivation();
     }
 
     protected abstract void handleRequestScopeActivation();

@@ -4,6 +4,8 @@ public interface ThreadSetupAction {
 
     ThreadState activateInitial();
 
+    ThreadState currentState();
+
     interface ThreadState {
         void close();
 
@@ -31,6 +33,11 @@ public interface ThreadSetupAction {
 
                 }
             };
+        }
+
+        @Override
+        public ThreadState currentState() {
+            return activateInitial();
         }
     };
 }

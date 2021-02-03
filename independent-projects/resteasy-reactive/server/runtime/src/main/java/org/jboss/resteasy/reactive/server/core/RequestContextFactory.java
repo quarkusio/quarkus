@@ -9,4 +9,12 @@ public interface RequestContextFactory {
     ResteasyReactiveRequestContext createContext(Deployment deployment, ProvidersImpl providers,
             Object context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain);
+
+    /**
+     * @return <code>true</code> if requests default to blocking when created by this factory
+     */
+    default boolean isDefaultBlocking() {
+        return false;
+    }
+
 }

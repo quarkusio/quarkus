@@ -73,7 +73,7 @@
         <microprofile-graphql-api.version>1.0.3</microprofile-graphql-api.version>
 
         <!-- Antlr is used by the PanacheQL parser-->
-        <antlr.version>4.7.2</antlr.version>
+        <antlr.version>4.8</antlr.version>
 
         <!-- Defaults for integration tests -->
         <elasticsearch-server.version>7.10.0</elasticsearch-server.version>

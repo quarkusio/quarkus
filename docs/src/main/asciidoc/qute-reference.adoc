@@ -1657,6 +1657,47 @@ hello_name=Hallo {name}! <1> <2>
 <1> Each line in a localized file represents a message template. 
 <2> Keys and values are separated by the equals sign.
 
+Once we have the localized bundles defined we need a way to _select_ a correct bundle.
+If you use a message bundle expression in a template you'll have to specify the `locale` attribute of a template instance.
+
+.`locale` Attribute Example
+[source,java]
+----
+@Singleton
+public class MyBean {
+   
+    @Inject
+    Template hello;
+    
+    String render() {
+       return hello.instance().setAttribute("locale", Locale.forLanguageTag("cs")).render(); <1>
+    }
+}
+----
+<1> You can set a `Locale` instance or a locale tag string (IETF).
+
+
+NOTE: When using <<quarkus-resteasy-qute,resteasy_integration>> the `locale` attribute is derived from the the `Accept-Language` header if not set by a user.
+
+The `@Localized` qualifier can be used to inject a localized message bundle interface.
+
+.Injected Localized Message Bundle Example
+[source,java]
+----
+@Singleton
+public class MyBean {
+   
+    @Localized("cs") <1>
+    AppMessages msg;
+    
+    String render() {
+       return msg.hello_name("Jachym");
+    }
+}
+----
+<1> The annotation value is a locale tag string (IETF).
+
+
 === Configuration Reference
 
 include::{generated-dir}/config/quarkus-qute.adoc[leveloffset=+1, opts=optional]

@@ -21,6 +21,8 @@ import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.MessageBundleRecorder.BundleContext;
 
 public final class MessageBundles {
@@ -81,10 +83,21 @@ public final class MessageBundles {
                 public CompletionStage<Object> resolve(EvalContext context) {
                     Object locale = context.getAttribute(ATTRIBUTE_LOCALE);
                     if (locale == null) {
-                        return defaultResolver.resolve(context);
+                        Object selectedVariant = context.getAttribute(TemplateInstance.SELECTED_VARIANT);
+                        if (selectedVariant != null) {
+                            locale = ((Variant) selectedVariant).getLocale();
+                        }
+                        if (locale == null) {
+                            return defaultResolver.resolve(context);
+                        }
                     }
+                    // First try the exact match
                     Resolver localeResolver = interfaces
                             .get(locale instanceof Locale ? ((Locale) locale).toLanguageTag() : locale.toString());
+                    if (localeResolver == null && locale instanceof Locale) {
+                        // Next try the language
+                        localeResolver = interfaces.get(((Locale) locale).getLanguage());
+                    }
                     return localeResolver != null ? localeResolver.resolve(context) : defaultResolver.resolve(context);
                 }
 

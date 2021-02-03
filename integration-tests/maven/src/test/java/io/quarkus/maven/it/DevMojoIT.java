@@ -29,6 +29,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
@@ -197,6 +198,28 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
+    }
+
+    @Test
+    public void testThatInstrumentationBasedReloadWorks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-inst", "projects/project-intrumentation-reload");
+        runAndCheck();
+
+        //if there is an insturmentation based reload this will stay the same
+        String firstUuid = DevModeTestUtils.getHttpResponse("/app/uuid");
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+
+        //verify that this was an instrumentation based reload
+        Assertions.assertEquals(firstUuid, DevModeTestUtils.getHttpResponse("/app/uuid"));
     }
 
     @Test

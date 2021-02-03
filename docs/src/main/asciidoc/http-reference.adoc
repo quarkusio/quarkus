@@ -156,6 +156,19 @@ If you want to disable HTTP/2 you can set:
 quarkus.http.http2=false
 ----
 
+== Listening on a Random Port
+
+If you don't want to specify a port you can set `quarkus.http.port=0` or `quarkus.http.test-port=0`. A random open port
+will be picked by the OS, and a log message printed in the console. When the port is bound the `quarkus.http.port` system
+property will be set to the actual port that was selected, so you can use this to get the actual port number from inside
+the application. If you are in a test you can inject the URL normally and this will be configured with the actual port,
+and REST Assured will also be configured appropriately.
+
+WARNING: As this sets a system property you can access `quarkus.http.port` via MicroProfile Config, however if you use
+injection the injected value may not always be correct. This port allocation is one of the last things to happen in
+Quarkus startup, so if your object that is being injected is created eagerly before the port has opened the injected
+value will not be correct.
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that

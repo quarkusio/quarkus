@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -925,17 +926,26 @@ public class VertxHttpRecorder {
                         }
                         portPropertiesToRestore = new HashMap<>();
                         String portPropertyValue = String.valueOf(actualPort);
-                        String portPropertyName = (launchMode == LaunchMode.TEST ? "quarkus." + schema + ".test-port"
-                                : "quarkus." + schema + ".port");
+                        //we always set the .port property, even if we are in test mode, so this will always
+                        //reflect the current port
+                        String portPropertyName = "quarkus." + schema + ".port";
                         String prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
-                        if (prevPortPropertyValue != null) {
+                        if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
                             portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
+                        }
+                        if (launchMode == LaunchMode.TEST) {
+                            //we also set the test-port property in a test
+                            String testPropName = "quarkus." + schema + ".test-port";
+                            String prevTestPropPrevValue = System.setProperty(testPropName, portPropertyValue);
+                            if (!Objects.equals(prevTestPropPrevValue, portPropertyValue)) {
+                                portPropertiesToRestore.put(testPropName, prevTestPropPrevValue);
+                            }
                         }
                         if (launchMode.isDevOrTest()) {
                             // set the profile property as well to make sure we don't have any inconsistencies
                             portPropertyName = propertyWithProfilePrefix(portPropertyName);
                             prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
-                            if (prevPortPropertyValue != null) {
+                            if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
                                 portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
                             }
                         }
@@ -970,8 +980,14 @@ public class VertxHttpRecorder {
                     System.clearProperty(propertyWithProfilePrefix(portPropertyName));
                 }
             }
-            if (portPropertiesToRestore != null && !portPropertiesToRestore.isEmpty()) {
-                System.getProperties().putAll(portPropertiesToRestore);
+            if (portPropertiesToRestore != null) {
+                for (Map.Entry<String, String> entry : portPropertiesToRestore.entrySet()) {
+                    if (entry.getValue() == null) {
+                        System.clearProperty(entry.getKey());
+                    } else {
+                        System.setProperty(entry.getKey(), entry.getValue());
+                    }
+                }
             }
 
             final AtomicInteger remainingCount = new AtomicInteger(0);

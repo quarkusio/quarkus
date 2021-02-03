@@ -1,11 +1,16 @@
 package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.logging.Formatter;
+import java.util.logging.Level;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
+import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -17,10 +22,9 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusUnitTest;
 
-/**
- * This is just a visual test for the warning.
- */
-public class MultiplePersistenceUnitsUnaffectedEntities {
+public class MultiplePersistenceUnitsUnaffectedEntitiesTest {
+
+    private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -29,7 +33,18 @@ public class MultiplePersistenceUnitsUnaffectedEntities {
                     .addClass(User.class)
                     .addClass(Plane.class)
                     .addAsResource("application-multiple-persistence-units-unaffected-entities.properties",
-                            "application.properties"));
+                            "application.properties"))
+            // Expect a warning on startup
+            .setLogRecordPredicate(
+                    record -> record.getMessage().contains("Could not find a suitable persistence unit for model classes"))
+            .assertLogRecords(records -> assertThat(records)
+                    .hasSize(1)
+                    .element(0).satisfies(record -> {
+                        assertThat(record.getLevel()).isEqualTo(Level.WARNING);
+                        assertThat(LOG_FORMATTER.formatMessage(record))
+                                .contains(DefaultEntity.class.getName())
+                                .contains(User.class.getName());
+                    }));
 
     @Inject
     @PersistenceUnit("inventory")

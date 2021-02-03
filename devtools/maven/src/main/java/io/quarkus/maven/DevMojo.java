@@ -271,6 +271,14 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${quarkus.enforceBuildGoal}")
     private boolean enforceBuildGoal = true;
 
+    /**
+     * Whether or not Quarkus should disable it's ability to not do a full restart
+     * when changes to classes are compatible with JVM instrumentation.
+     * If this is set to true, Quarkus will always restart on changes and never perform class redefinition.
+     */
+    @Parameter(defaultValue = "${disableInstrumentation}")
+    private boolean disableInstrumentation = false;
+
     @Component
     private WorkspaceReader wsReader;
 
@@ -823,7 +831,9 @@ public class DevMojo extends AbstractMojo {
                     && appDep.getArtifact().getArtifactId().equals("quarkus-ide-launcher"))) {
                 if (appDep.getArtifact().getGroupId().equals("io.quarkus")
                         && appDep.getArtifact().getArtifactId().equals("quarkus-class-change-agent")) {
-                    builder.jvmArgs("-javaagent:" + appDep.getArtifact().getFile().getAbsolutePath());
+                    if (!disableInstrumentation) {
+                        builder.jvmArgs("-javaagent:" + appDep.getArtifact().getFile().getAbsolutePath());
+                    }
                 } else {
                     builder.classpathEntry(appDep.getArtifact().getFile());
                 }

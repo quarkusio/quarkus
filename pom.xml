@@ -90,6 +90,14 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>hibernate-reactive-beta</id>
+            <name>hibernate-reactive-bera</name>
+            <url>https://dl.bintray.com/davided/artifacts/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>    
     </repositories>
 
     <distributionManagement>

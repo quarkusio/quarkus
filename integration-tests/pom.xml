@@ -79,6 +79,7 @@
         <module>liquibase</module>
         <module>oidc</module>
         <module>oidc-client</module>
+        <module>oidc-client-wiremock</module>
         <module>oidc-token-propagation</module>
         <module>oidc-code-flow</module>
         <module>oidc-tenancy</module>

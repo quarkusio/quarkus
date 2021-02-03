@@ -35,12 +35,12 @@
             <artifactId>quarkus-smallrye-jwt</artifactId>
         </dependency>
 
-        <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-jwt-build-deployment</artifactId>
-            <scope>test</scope>
         </dependency>
+
+        <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>

@@ -83,7 +83,7 @@ public class ClientEndpointIndexer
             String elementType, boolean single, String signature) {
         return new MethodParameter(name,
                 elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index), signature, type, single,
-                defaultValue, parameterResult.isObtainedAsCollection(), encoded);
+                defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded);
     }
 
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {

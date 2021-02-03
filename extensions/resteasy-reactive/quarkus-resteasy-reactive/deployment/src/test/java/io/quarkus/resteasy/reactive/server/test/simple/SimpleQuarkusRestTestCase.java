@@ -379,12 +379,13 @@ public class SimpleQuarkusRestTestCase {
                 .urlEncodingEnabled(false)
                 .cookie("c", "cv")
                 .queryParam("q", "qv")
+                .queryParam("q3", "999")
                 .header("h", "123")
                 .formParam("f", "fv")
                 .post("/new-params/myklass;m=mv/myregex/params/pv")
                 .then()
                 .log().ifError()
-                .body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv, m: mv, c: cv"));
+                .body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv, m: mv, c: cv, q2: empty, q3: 999"));
         RestAssured.get("/new-params/myklass/myregex/sse")
                 .then()
                 .log().ifError()

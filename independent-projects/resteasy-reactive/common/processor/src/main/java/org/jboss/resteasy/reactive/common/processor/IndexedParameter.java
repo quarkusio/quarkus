@@ -27,6 +27,7 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
     protected ParameterType type;
     protected String elementType;
     protected boolean single;
+    protected boolean optional;
 
     public boolean isObtainedAsCollection() {
         return !single
@@ -198,4 +199,12 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
         return (T) this;
     }
 
+    public boolean isOptional() {
+        return optional;
+    }
+
+    public T setOptional(boolean optional) {
+        this.optional = optional;
+        return (T) this;
+    }
 }

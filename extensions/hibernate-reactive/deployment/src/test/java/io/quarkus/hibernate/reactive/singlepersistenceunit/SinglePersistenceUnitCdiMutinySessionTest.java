@@ -29,10 +29,8 @@ public class SinglePersistenceUnitCdiMutinySessionTest {
     public void test() {
         DefaultEntity entity = new DefaultEntity("default");
 
-        DefaultEntity retrievedEntity = session.persist(entity)
-                .chain(() -> session.flush())
-                .invoke(() -> session.clear())
-                .chain(() -> session.find(DefaultEntity.class, entity.getId()))
+        DefaultEntity retrievedEntity = session.withTransaction(tx -> session.persist(entity))
+                .chain(() -> session.withTransaction(tx -> session.clear().find(DefaultEntity.class, entity.getId())))
                 .await().indefinitely();
 
         assertThat(retrievedEntity)

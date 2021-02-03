@@ -29,10 +29,8 @@ public class SinglePersistenceUnitCdiStageSessionTest {
     public void test() {
         DefaultEntity entity = new DefaultEntity("default");
 
-        DefaultEntity retrievedEntity = session.persist(entity)
-                .thenCompose($ -> session.flush())
-                .thenApply($ -> session.clear())
-                .thenCompose($ -> session.find(DefaultEntity.class, entity.getId()))
+        DefaultEntity retrievedEntity = session.withTransaction(tx -> session.persist(entity))
+                .thenCompose($ -> session.withTransaction(tx -> session.clear().find(DefaultEntity.class, entity.getId())))
                 .toCompletableFuture().join();
 
         assertThat(retrievedEntity)

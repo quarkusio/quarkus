@@ -2,18 +2,18 @@ name: spring-web-example
 ref: spring-web
 type: code
 tags: example
+metadata:
+  title: Spring Web example
+  description: Spring, the Quarkus way! A Hello World Spring Web Controller.
+  related-guide-section: https://quarkus.io/guides/spring-web#greetingcontroller
 language:
   base:
     data:
-      title: Spring Web
-      description: |
-        <p>A Hello World Spring Web Controller</p>
       resource:
         class-name: SpringGreetingController
         path: "/hello-spring"
         response: "Hello Spring"
       package-name: org.acme
-      guide: https://quarkus.io/guides/spring-web
     dependencies:
       - io.quarkus:quarkus-spring-web
     test-dependencies:

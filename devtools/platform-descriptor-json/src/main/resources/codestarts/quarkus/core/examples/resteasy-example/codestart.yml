@@ -2,17 +2,17 @@ name: resteasy-example
 ref: resteasy
 type: code
 tags: example
+metadata:
+  title: RESTEasy JAX-RS example
+  description: REST is easy peasy with this Hello World RESTEasy resource.
+  related-guide-section: https://quarkus.io/guides/getting-started#the-jax-rs-resources
 language:
   base:
     data:
-      title: RESTEasy JAX-RS
-      description: |
-        <p>A Hello World RESTEasy resource</p>
       resource:
         class-name: GreetingResource
         path: "/hello-resteasy"
         response: "Hello RESTEasy"
-      guide: https://quarkus.io/guides/rest-json
     dependencies:
       - io.quarkus:quarkus-resteasy
     test-dependencies:

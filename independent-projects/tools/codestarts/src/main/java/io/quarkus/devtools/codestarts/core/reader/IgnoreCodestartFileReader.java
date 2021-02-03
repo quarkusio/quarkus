@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
+import io.quarkus.devtools.codestarts.CodestartResource;
 import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import java.io.IOException;
 import java.util.Collections;
@@ -22,7 +23,7 @@ final class IgnoreCodestartFileReader implements CodestartFileReader {
     }
 
     @Override
-    public Optional<String> read(Source source, String languageName, Map<String, Object> data)
+    public Optional<String> read(CodestartResource project, Source source, String languageName, Map<String, Object> data)
             throws IOException {
         return Optional.empty();
     }

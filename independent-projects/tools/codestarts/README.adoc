@@ -1,5 +1,5 @@
 Quarkus - Extension Codestarts
-====================
+==============================
 :toc: preamble
 :toclevels: 3
 :showtitle:
@@ -69,7 +69,7 @@ As we discussed before, the base project files (pom.xml, dockerfiles, ...) are a
 Here is the flow I am using to develop a new extension codestart:
 
 . duplicate the example (e.g. link:./examples/quarkus/my-example[./examples/quarkus/my-example])
-. update the codestart.yml (1 & 2 will be replaced by https://github.com/quarkusio/quarkus/issues/13614)
+. adapt the codestart.yml with your codestarts details and metadata (steps 1 & 2 will be replaced by https://github.com/quarkusio/quarkus/issues/13614)
 . use the `qcd@quarkusio` jbang script to generate the project using your new extension codestart named `my-example` located in `./examples/quarkus` in java and kotlin:
 +
 [source,bash]
@@ -78,7 +78,7 @@ jbang qcd@quarkusio -l java,kotlin -c ./examples/quarkus my-example
 ----
 
 . Make sure the generated project(s) are as expected. You can use `-t` option to automatically build and test the generated project(s).
-. You can either edit the codestart files and start again from 3 or also, open the generated project(s) using you IDE and edit the files. You need to manually copy the changes back to your codestart files (and iterate again from 3)
+. You can either edit the codestart files and start again from step 3 or also, open the generated project(s) using you IDE and edit the files. You need to manually copy the changes back to your codestart files (and iterate again from 3)
 
 *NOTE 1* You can start with java and add kotlin later in another PR
 
@@ -134,13 +134,12 @@ name: resteasy-example // the codestart unique name
 ref: resteasy // the codestart reference (the name is used if not set)
 type: code // the type of codestart (other types are used for other project files)
 tags: example // indicate that this is optional example code
+metadata: // metadata for this example to describe it outside (also available as data in the qute templates)
+  title: RESTEasy JAX-RS example
+  description: Rest is easy peasy with this Hello World RESTEasy resource.
+  related-guide-section: https://quarkus.io/guides/getting-started#the-jax-rs-resources
 language:
   base: //  most of the time, only base is needed (we may also define java, kotlin, scala overrides)
-    data:
-      title: RESTEasy JAX-RS
-      description: |
-        <p>A Hello World RESTEasy resource</p>
-      guide: https://quarkus.io/guides/rest-json
     dependencies:
       - io.quarkus:quarkus-resteasy // You need to specify the dependencies to add (even if it's the one attached)
     test-dependencies:
@@ -171,6 +170,16 @@ Those templates are able to use data which contains:
 You may add a `README.md` or `README.tpl.qute.md` in the `base` directory, it will be appended to the others.
 So just add the info relative to your extension codestart.
 
+base/readme.tpl.qute.md
+[source,html]
+----
+{#include readme-header /}
+
+[Optionally, Here you may add information about how to use the example, settings, ...]
+----
+
+NOTE: The `{#include readme-header /}` will use a template located in the Quarkus project codestart which displays standard info from the `codestart.yml` metadata.
+
 === application.properties
 
 As a convention, you should always provide the Quarkus configuration as a yaml file (`src/test/resources/application.yml`).
@@ -184,44 +193,14 @@ It is going to be:
 
 Extension codestarts may provide a snippet for the generated index.html by adding this file:
 
-base/src/main/resources/META-INF/resources/index.tpl.qute.html:
+base/src/main/resources/META-INF/resources/index.entry.qute.html:
 [source,html]
 ----
-<div class="example">
-    <div class="example-header">
-        <h4>{title}</h4>
-        <a href="{guide}" target="_blank" class="guide-link">Guide</a>
-    </div>
-    <div class="example-description">
-        {description}
-    </div>
-    <div class="example-paths">
-        {#for item in paths}
-        <a href="{item.path}" class="path-link" target="_blank">{item.method} {item.path}</a>
-        {/for}
-    </div>
-</div>
+{#include index-entry /}
 ----
 
-You also need to add this data to the `codestart.yml`:
+NOTE: The `{#include index-entry /}` will use a template located in the Quarkus project codestart which displays standard info from the `codestart.yml` metadata.
 
-codestart.yml:
-[source,yaml]
-----
-...
-language:
-  base:
-    data:
-      title: My example
-      description: |
-        <p>My example description.</p>
-        <p><b>A Quarkus catch phrase!</b></p>
-      paths:
-        - method: GET
-          path: /the-rest-path-of-my-example
-      guide: https://quarkus.io/guides/my-example
-...
-----
 
 === Singleton example
 

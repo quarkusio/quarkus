@@ -46,7 +46,7 @@ final class CodestartProcessor {
         this.data = data;
     }
 
-    void process(final Codestart codestart) {
+    void process(final CodestartResource projectResource, final Codestart codestart) {
         log.debug("processing codestart '%s'...", codestart.getName());
         addBuiltinData();
         codestart.use(l -> {
@@ -54,7 +54,7 @@ final class CodestartProcessor {
             log.debug("codestart data: %s", finalData);
             Stream.of(BASE_LANGUAGE, languageName)
                     .filter(l::dirExists)
-                    .forEach(languageDir -> processLanguageDir(l, languageDir, finalData));
+                    .forEach(languageDir -> processLanguageDir(projectResource, l, languageDir, finalData));
         });
     }
 
@@ -103,9 +103,11 @@ final class CodestartProcessor {
         data.put("gen-info", Collections.singletonMap("time", System.currentTimeMillis()));
     }
 
-    void processLanguageDir(final CodestartResource resource, final String languageDir, final Map<String, Object> finalData) {
+    void processLanguageDir(final CodestartResource projectResource, final CodestartResource resource, final String languageDir,
+            final Map<String, Object> finalData) {
         log.debug("processing dir: %s", resource.pathName());
         final List<Source> sources = resource.listSources(languageDir);
+
         for (Source source : sources) {
             log.debug("found sourceName file: %s", resource.pathName(), source.absolutePath());
             final String sourceFileName = source.getFileName();
@@ -132,7 +134,7 @@ final class CodestartProcessor {
                     getSelectedDefaultStrategy().copyStaticFile(source, targetPath);
                     continue;
                 }
-                final Optional<String> content = reader.read(source,
+                final Optional<String> content = reader.read(projectResource, source,
                         languageName, finalData);
                 if (content.isPresent()) {
                     log.debug("adding file to processing stack: %s", source.absolutePath());

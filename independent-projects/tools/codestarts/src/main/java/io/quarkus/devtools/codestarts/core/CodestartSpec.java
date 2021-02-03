@@ -20,6 +20,7 @@ public final class CodestartSpec {
     private final CodestartType type;
     private final boolean isFallback;
     private final Set<String> tags;
+    private final Map<String, String> metadata;
     private final Map<String, String> outputStrategy;
     private final Map<String, LanguageSpec> languagesSpec;
 
@@ -30,6 +31,7 @@ public final class CodestartSpec {
             @JsonProperty("fallback") boolean isFallback,
             @JsonProperty("preselected") boolean isPreselected,
             @JsonProperty("tags") Set<String> tags,
+            @JsonProperty("metadata") Map<String, String> metadata,
             @JsonProperty("output-strategy") Map<String, String> outputStrategy,
             @JsonProperty("language") Map<String, LanguageSpec> languagesSpec) {
         this.name = requireNonNull(name, "name is required");
@@ -39,6 +41,7 @@ public final class CodestartSpec {
         this.isFallback = isFallback;
         this.isPreselected = isPreselected;
         this.outputStrategy = outputStrategy != null ? outputStrategy : Collections.emptyMap();
+        this.metadata = metadata != null ? metadata : Collections.emptyMap();
         this.languagesSpec = languagesSpec != null ? languagesSpec : Collections.emptyMap();
     }
 
@@ -64,6 +67,10 @@ public final class CodestartSpec {
 
     public boolean isPreselected() {
         return isPreselected;
+    }
+
+    public Map<String, String> getMetadata() {
+        return metadata;
     }
 
     public Map<String, String> getOutputStrategy() {

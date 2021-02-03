@@ -5,6 +5,10 @@ tags:
   - example
   - singleton-example
   - maven-only
+metadata:
+  title: Azure Functions HTTP Integration example
+  description: This example contains a HTTP function ready for Azure.
+  related-guide-section: https://quarkus.io/guides/azure-functions-http
 language:
   base:
     data:

@@ -2,7 +2,6 @@ package io.quarkus.resteasy.jsonb.vertx;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 import javax.json.bind.Jsonb;
@@ -49,7 +48,7 @@ class VertxJsonTest {
                 .put("int", 2)
                 .put("true", true)
                 .put("false", false)
-                .put("binary", Base64.getEncoder().encodeToString("hello".getBytes()))
+                .put("binary", "hello".getBytes())
                 .put("instant", instant)
                 .putNull("null");
 
@@ -63,7 +62,7 @@ class VertxJsonTest {
         Instant instant = Instant.now();
         JsonArray array = new JsonArray()
                 .add("s").add(MyEnum.VALUE).add(2222222L).add(21.3f).add(12).add(55.55).add(true).add(false)
-                .add(Base64.getEncoder().encodeToString("hello".getBytes()))
+                .add("hello".getBytes())
                 .add(instant)
                 .add(new JsonObject().put("hello", "world")).add(new JsonArray().add(1).add(2).add("3"));
 

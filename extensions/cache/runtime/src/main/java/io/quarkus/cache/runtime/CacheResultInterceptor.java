@@ -26,7 +26,7 @@ public class CacheResultInterceptor extends CacheInterceptor {
     @AroundInvoke
     public Object intercept(InvocationContext invocationContext) throws Throwable {
         CacheInterceptionContext<CacheResult> interceptionContext = getInterceptionContext(invocationContext,
-                CacheResult.class);
+                CacheResult.class, true);
 
         if (interceptionContext.getInterceptorBindings().isEmpty()) {
             // This should never happen.

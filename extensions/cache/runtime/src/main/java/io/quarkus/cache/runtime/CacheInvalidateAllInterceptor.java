@@ -20,7 +20,7 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
     @AroundInvoke
     public Object intercept(InvocationContext invocationContext) throws Exception {
         CacheInterceptionContext<CacheInvalidateAll> interceptionContext = getInterceptionContext(invocationContext,
-                CacheInvalidateAll.class);
+                CacheInvalidateAll.class, false);
         if (interceptionContext.getInterceptorBindings().isEmpty()) {
             // This should never happen.
             LOGGER.warn(INTERCEPTOR_BINDINGS_ERROR_MSG);

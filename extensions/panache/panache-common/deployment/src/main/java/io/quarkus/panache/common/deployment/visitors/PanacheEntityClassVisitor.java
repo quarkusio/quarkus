@@ -42,7 +42,6 @@ import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
-import io.quarkus.panache.common.deployment.PanacheFieldAccessMethodVisitor;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerVisitor;
 import io.quarkus.panache.common.deployment.PanacheMovingAnnotationVisitor;
@@ -53,7 +52,6 @@ public abstract class PanacheEntityClassVisitor extends ClassVisitor {
     protected Type thisClass;
     protected final Map<String, ? extends EntityField> fields;
     private final Set<String> userMethods = new HashSet<>();
-    private final MetamodelInfo modelInfo;
     protected TypeBundle typeBundle;
     protected final ClassInfo panacheEntityBaseClassInfo;
     protected ClassInfo entityInfo;
@@ -72,7 +70,6 @@ public abstract class PanacheEntityClassVisitor extends ClassVisitor {
 
         String className = entityInfo.name().toString();
         thisClass = Type.getType("L" + className.replace('.', '/') + ";");
-        this.modelInfo = modelInfo;
         this.typeBundle = typeBundle;
         EntityModel entityModel = modelInfo.getEntityModel(className);
         fields = entityModel != null ? entityModel.fields : null;
@@ -162,8 +159,7 @@ public abstract class PanacheEntityClassVisitor extends ClassVisitor {
             }
             superVisitor = new PanacheMethodCustomizerVisitor(superVisitor, method, thisClass, methodCustomizers);
         }
-        return new PanacheFieldAccessMethodVisitor(superVisitor, thisClass.getInternalName(), methodName, descriptor,
-                modelInfo);
+        return superVisitor;
     }
 
     @Override

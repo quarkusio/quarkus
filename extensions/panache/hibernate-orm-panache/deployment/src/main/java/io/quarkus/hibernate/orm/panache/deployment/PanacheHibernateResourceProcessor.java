@@ -154,17 +154,29 @@ public final class PanacheHibernateResourceProcessor {
         PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers,
                 JavaJpaTypeBundle.BUNDLE);
         Set<String> modelClasses = new HashSet<>();
-        Set<String> modelClassNamesInternal = new HashSet<>();
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
             modelClasses.add(entityClassName);
             modelEnhancer.collectFields(entityClass.get());
-            modelClassNamesInternal.add(entityClassName.replace(".", "/"));
             transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, modelEnhancer));
         }
 
-        MetamodelInfo modelInfo = modelEnhancer.getModelInfo();
+        replaceFieldAccesses(transformers, applicationArchivesBuildItem, modelEnhancer.getModelInfo());
+
+        panacheEntities.addAll(modelClasses);
+
+        recordPanacheEntityPersistenceUnits(recorder, jpaModelPersistenceUnitMapping, panacheEntities);
+    }
+
+    private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            MetamodelInfo modelInfo) {
         if (modelInfo.hasEntities()) {
+            Set<String> entityClassNamesInternal = new HashSet<>();
+            for (String entityClassName : modelInfo.getEntityClassNames()) {
+                entityClassNamesInternal.add(entityClassName.replace(".", "/"));
+            }
+
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
             QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
@@ -176,11 +188,9 @@ public final class PanacheHibernateResourceProcessor {
             //we only do this for hibernate, as it is more common to have an additional annotation processor
             for (ClassInfo i : applicationArchivesBuildItem.getRootArchive().getIndex().getKnownClasses()) {
                 String cn = i.name().toString();
-                if (!modelClasses.contains(cn)) {
-                    produced.add(cn);
-                    transformers.produce(
-                            new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
-                }
+                produced.add(cn);
+                transformers.produce(
+                        new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
             }
 
             for (ClassPathElement i : archives) {
@@ -190,19 +200,13 @@ public final class PanacheHibernateResourceProcessor {
                         if (produced.contains(cn)) {
                             continue;
                         }
-                        if (!modelClasses.contains(cn)) {
-                            produced.add(cn);
-                            transformers.produce(
-                                    new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
-                        }
+                        produced.add(cn);
+                        transformers.produce(
+                                new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
                     }
                 }
             }
         }
-
-        panacheEntities.addAll(modelClasses);
-
-        recordPanacheEntityPersistenceUnits(recorder, jpaModelPersistenceUnitMapping, panacheEntities);
     }
 
     @BuildStep

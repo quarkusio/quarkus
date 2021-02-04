@@ -118,17 +118,24 @@ public final class PanacheHibernateResourceProcessor {
             if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }
-        Set<String> modelClassNamesInternal = new HashSet<>();
-        for (String modelClass : modelClasses) {
-            modelClassNamesInternal.add(modelClass.replace(".", "/"));
-            transformers.produce(new BytecodeTransformerBuildItem(true, modelClass, modelEnhancer));
+
+        for (String entityClassName : modelClasses) {
+            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, modelEnhancer));
         }
         if (!modelClasses.isEmpty()) {
             entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
         }
 
-        MetamodelInfo modelInfo = modelEnhancer.getModelInfo();
+        replaceFieldAccesses(transformers, modelEnhancer.getModelInfo());
+    }
+
+    private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
         if (modelInfo.hasEntities()) {
+            Set<String> entityClassNamesInternal = new HashSet<>();
+            for (String entityClassName : modelInfo.getEntityClassNames()) {
+                entityClassNamesInternal.add(entityClassName.replace(".", "/"));
+            }
+
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
             QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
@@ -136,10 +143,8 @@ public final class PanacheHibernateResourceProcessor {
                 for (String res : i.getProvidedResources()) {
                     if (res.endsWith(".class")) {
                         String cn = res.replace("/", ".").substring(0, res.length() - 6);
-                        if (!modelClasses.contains(cn)) {
-                            transformers.produce(
-                                    new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
-                        }
+                        transformers.produce(
+                                new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
                     }
                 }
             }

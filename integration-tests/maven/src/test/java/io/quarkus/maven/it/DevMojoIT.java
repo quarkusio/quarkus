@@ -38,9 +38,9 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
- *
+ *         <p>
  *         NOTE to anyone diagnosing failures in this test, to run a single method use:
- *
+ *         <p>
  *         mvn install -Dit.test=DevMojoIT#methodName
  */
 @DisableForNative
@@ -234,6 +234,48 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         //verify that this was an instrumentation based reload
         Assertions.assertEquals(firstUuid, DevModeTestUtils.getHttpResponse("/app/uuid"));
+
+        source = new File(testDir, "src/main/java/org/acme/HelloService.java");
+        filter(source, Collections.singletonMap("\"Stuart\"", "\"Stuart Douglas\""));
+
+        // Wait until we get "Stuart Douglas"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/name").contains("Stuart Douglas"));
+
+        //this bean observes startup event, so it should be different UUID
+        String secondUUid = DevModeTestUtils.getHttpResponse("/app/uuid");
+        Assertions.assertNotEquals(secondUUid, firstUuid);
+
+        //now disable instrumentation based restart, and try again
+        //change it back to hello
+        DevModeTestUtils.getHttpResponse("/app/disable");
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
+
+        // Wait until we get "hello"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello"));
+
+        //verify that this was not instrumentation based reload
+        Assertions.assertNotEquals(secondUUid, DevModeTestUtils.getHttpResponse("/app/uuid"));
+        secondUUid = DevModeTestUtils.getHttpResponse("/app/uuid");
+
+        //now re-enable
+        //and repeat
+        DevModeTestUtils.getHttpResponse("/app/enable");
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get uuid
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+
+        //verify that this was an instrumentation based reload
+        Assertions.assertEquals(secondUUid, DevModeTestUtils.getHttpResponse("/app/uuid"));
     }
 
     @Test

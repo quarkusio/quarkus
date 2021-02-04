@@ -17,6 +17,10 @@ public class ArcThreadSetupAction implements ThreadSetupAction {
     public ThreadState activateInitial() {
         managedContext.activate();
         InjectableContext.ContextState state = managedContext.getState();
+        return toThreadState(state);
+    }
+
+    private ThreadState toThreadState(InjectableContext.ContextState state) {
         return new ThreadState() {
             @Override
             public void close() {
@@ -33,5 +37,10 @@ public class ArcThreadSetupAction implements ThreadSetupAction {
                 managedContext.deactivate();
             }
         };
+    }
+
+    @Override
+    public ThreadState currentState() {
+        return toThreadState(managedContext.getState());
     }
 }

@@ -25,7 +25,6 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
-import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
@@ -128,7 +127,7 @@ public abstract class ResteasyReactiveRequestContext
     /**
      * The input stream, if an entity is present.
      */
-    private InputStream inputStream = EmptyInputStream.INSTANCE;
+    private InputStream inputStream;
 
     /**
      * used for {@link UriInfo#getMatchedURIs()}
@@ -634,6 +633,7 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     protected void requestScopeDeactivated() {
+        CurrentRequestManager.set(null);
     }
 
     @Override
@@ -698,7 +698,14 @@ public abstract class ResteasyReactiveRequestContext
         return matchedURIs;
     }
 
+    public boolean hasInputStream() {
+        return inputStream != null;
+    }
+
     public InputStream getInputStream() {
+        if (inputStream == null) {
+            inputStream = serverRequest().createInputStream();
+        }
         return inputStream;
     }
 

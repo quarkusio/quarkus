@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -27,7 +26,7 @@ public class ReadBodyHandler implements ServerRestHandler {
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         // in some cases, with sub-resource locators or via request filters, 
         // it's possible we've already read the entity
-        if (requestContext.getInputStream() != EmptyInputStream.INSTANCE) {
+        if (requestContext.hasInputStream()) {
             // let's not set it twice
             return;
         }

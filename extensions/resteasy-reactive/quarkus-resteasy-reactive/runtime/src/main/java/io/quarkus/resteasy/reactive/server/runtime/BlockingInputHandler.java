@@ -34,10 +34,12 @@ public class BlockingInputHandler implements ServerRestHandler {
                 context.serverRequest().getRequestMethod().equals(HttpMethod.HEAD)) {
             return;
         }
-
-        VertxResteasyReactiveRequestContext vertxContext = (VertxResteasyReactiveRequestContext) context;
-        RoutingContext routingContext = vertxContext.getContext();
-        vertxContext.setInputStream(new VertxInputStream(routingContext, timeout));
+        if (context instanceof VertxResteasyReactiveRequestContext) {
+            //TODO: this should not be installed for servlet
+            VertxResteasyReactiveRequestContext vertxContext = (VertxResteasyReactiveRequestContext) context;
+            RoutingContext routingContext = vertxContext.getContext();
+            vertxContext.setInputStream(new VertxInputStream(routingContext, timeout));
+        }
     }
 
 }

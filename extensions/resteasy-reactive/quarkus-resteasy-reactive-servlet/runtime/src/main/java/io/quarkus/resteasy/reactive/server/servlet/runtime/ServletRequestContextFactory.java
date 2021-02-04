@@ -26,4 +26,9 @@ public class ServletRequestContextFactory implements RequestContextFactory {
                 (HttpServletResponse) src.getServletResponse(), requestContext, handlerChain, abortHandlerChain,
                 (RoutingContext) ((VertxHttpExchange) src.getExchange().getDelegate()).getContext(), src.getExchange());
     }
+
+    @Override
+    public boolean isDefaultBlocking() {
+        return true;
+    }
 }

@@ -102,6 +102,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
                             handlerChain,
                             abortHandlerChain, currentIdentityAssociation);
                 }
+
             };
         }
 

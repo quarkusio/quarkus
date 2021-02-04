@@ -424,7 +424,9 @@ public class QuarkusUnitTest
                     }
                 });
             } catch (ClassNotFoundException e) {
-                //ignore
+                System.err.println("Couldn't make the test class " + testClass.getSimpleName() + " an unremovable bean"
+                        + " (probably because a dependency on io.quarkus:quarkus-arc-deployment is missing);"
+                        + " other beans may also be removed and injection may not work as expected");
             }
 
             final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);

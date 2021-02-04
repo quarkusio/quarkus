@@ -46,6 +46,15 @@ public class NativeConfig {
     public boolean enableJni;
 
     /**
+     * Defines the user language used for building the native executable.
+     * <p>
+     * Defaults to the system one.
+     */
+    @ConfigItem(defaultValue = "${user.language:}")
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> userLanguage;
+
+    /**
      * Defines the file encoding as in -Dfile.encoding=...
      *
      * Native image runtime uses the host's (i.e. build time) value of file.encoding

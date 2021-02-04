@@ -19,19 +19,25 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 /**
- * Generate deployoment package zip for lambda.
+ * Generate deployment package zip for lambda.
  *
  */
 public class FunctionZipProcessor {
     private static final Logger log = Logger.getLogger(FunctionZipProcessor.class);
 
+    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    public void requireLegacy(BuildProducer<LegacyJarRequiredBuildItem> required) {
+        required.produce(new LegacyJarRequiredBuildItem());
+    }
+
     /**
-     * Function.zip is same as the jar plus dependencies in lib/ if not uberjar
+     * Function.zip is same as the runner jar plus dependencies in lib/
      * plus anything in src/main/zip.jvm
      *
      * @param target

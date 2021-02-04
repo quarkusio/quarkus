@@ -208,7 +208,7 @@ public final class HibernateReactiveProcessor {
         // we found one
         ParsedPersistenceXmlDescriptor desc = new ParsedPersistenceXmlDescriptor(null); //todo URL
         desc.setName("default-reactive");
-        desc.setTransactionType(PersistenceUnitTransactionType.JTA);
+        desc.setTransactionType(PersistenceUnitTransactionType.RESOURCE_LOCAL);
         desc.getProperties().setProperty(AvailableSettings.DIALECT, dialectClassName);
         desc.setExcludeUnlistedClasses(true);
         desc.addClasses(new ArrayList<>(domainObjects.getAllModelClassNames()));

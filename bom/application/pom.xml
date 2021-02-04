@@ -39,7 +39,7 @@
         <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <smallrye-common.version>1.5.0</smallrye-common.version>
-        <smallrye-config.version>2.0.1</smallrye-config.version>
+        <smallrye-config.version>2.0.2</smallrye-config.version>
         <smallrye-health.version>3.0.0</smallrye-health.version>
         <smallrye-metrics.version>3.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.1</smallrye-open-api.version>

@@ -28,6 +28,6 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
         populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry,
                 multiTenancyStrategy);
         SessionFactoryOptions options = optionsBuilder.buildOptions();
-        return new ReactiveSessionFactoryImpl(metadata.getOriginalMetadata(), options);
+        return new ReactiveSessionFactoryImpl(metadata, options);
     }
 }

@@ -36,7 +36,8 @@ public class AddExtensionToSingleModuleProjectTest extends QuarkusGradleWrapperT
 
         final File projectDir = getProjectDir("add-remove-extension-single-module");
 
-        runGradleWrapper(projectDir, "clean", "build");
+        BuildResult buildResult = runGradleWrapper(projectDir, "clean", "build");
+        assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
 
         final Path build = projectDir.toPath().resolve("build.gradle");
         assertThat(build).exists();

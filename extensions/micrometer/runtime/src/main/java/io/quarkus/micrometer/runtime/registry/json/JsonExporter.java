@@ -88,8 +88,9 @@ public class JsonExporter {
     private Map<String, JsonValue> exportGauges(Collection<Gauge> gauges) {
         Map<String, JsonValue> result = new HashMap<String, JsonValue>(gauges.size());
         for (Gauge g : gauges) {
-            if (Double.isFinite(g.value())) {
-                result.put(createExportKey(g.getId()), JSON_PROVIDER.createValue(g.value()));
+            double value = g.value();
+            if (Double.isFinite(value)) {
+                result.put(createExportKey(g.getId()), JSON_PROVIDER.createValue(value));
             }
         }
         return result;
@@ -98,8 +99,9 @@ public class JsonExporter {
     private Map<String, JsonValue> exportTimeGauges(Collection<TimeGauge> timeGauges) {
         Map<String, JsonValue> result = new HashMap<String, JsonValue>(timeGauges.size());
         for (TimeGauge g : timeGauges) {
-            if (Double.isFinite(g.value())) {
-                result.put(createExportKey(g.getId()), JSON_PROVIDER.createValue(g.value()));
+            double value = g.value();
+            if (Double.isFinite(value)) {
+                result.put(createExportKey(g.getId()), JSON_PROVIDER.createValue(value));
             }
         }
         return result;

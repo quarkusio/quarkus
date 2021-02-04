@@ -79,6 +79,7 @@ import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
+import io.quarkus.vertx.http.runtime.logstream.LogStreamFilter;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -265,6 +266,14 @@ public class DevConsoleProcessor {
         initializeVirtual();
 
         newRouter(buildEngine(devTemplatePaths), httpRootPathBuildItem, nonApplicationRootPathBuildItem);
+
+        // Add the log stream
+        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
+                .route("/dev/logstream")
+                .handler(new LogStreamFilter())
+                .nonApplicationRoute(false)
+                .build());
+
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance

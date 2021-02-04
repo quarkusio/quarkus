@@ -1,5 +1,7 @@
-package io.quarkus.panache.common.deployment;
+package io.quarkus.hibernate.orm.panache.deployment;
 
+import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
+import io.quarkus.panache.common.deployment.TypeBundle;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 

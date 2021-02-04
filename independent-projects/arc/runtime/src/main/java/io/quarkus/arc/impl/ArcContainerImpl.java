@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -60,10 +59,6 @@ import javax.inject.Scope;
 import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
-/**
- *
- * @author Martin Kouba
- */
 public class ArcContainerImpl implements ArcContainer {
 
     private static final Logger LOGGER = Logger.getLogger(ArcContainerImpl.class.getPackage().getName());
@@ -78,6 +73,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableObserverMethod<?>> observers;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
+    private final Map<String, Set<String>> qualifierNonbindingMembers;
 
     private final Map<Class<? extends Annotation>, Collection<InjectableContext>> contexts;
     private final ManagedContext requestContext;
@@ -102,6 +98,7 @@ public class ArcContainerImpl implements ArcContainer {
         interceptors = new ArrayList<>();
         observers = new ArrayList<>();
         transitiveInterceptorBindings = new HashMap<>();
+        qualifierNonbindingMembers = new HashMap<>();
 
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
@@ -134,10 +131,8 @@ public class ArcContainerImpl implements ArcContainer {
                 }
                 putContext(context);
             }
-            for (Entry<Class<? extends Annotation>, Set<Annotation>> entry : components.getTransitiveInterceptorBindings()
-                    .entrySet()) {
-                transitiveInterceptorBindings.put(entry.getKey(), entry.getValue());
-            }
+            transitiveInterceptorBindings.putAll(components.getTransitiveInterceptorBindings());
+            qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
         // register built-in beans
         addBuiltInBeans();
@@ -685,7 +680,7 @@ public class ArcContainerImpl implements ArcContainer {
         for (InjectableObserverMethod<?> observer : observers) {
             if (EventTypeAssignabilityRules.matches(observer.getObservedType(), eventTypes)) {
                 if (observer.getObservedQualifiers().isEmpty()
-                        || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers)) {
+                        || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers, qualifierNonbindingMembers)) {
                     resolvedObservers.add((InjectableObserverMethod<? super T>) observer);
                 }
             }
@@ -723,7 +718,7 @@ public class ArcContainerImpl implements ArcContainer {
         // The method or constructor has all the interceptor bindings of the interceptor
         for (Annotation binding : interceptor.getInterceptorBindings()) {
             // The resolution rules are the same for qualifiers
-            if (!Qualifiers.hasQualifier(bindings, binding)) {
+            if (!Qualifiers.hasQualifier(bindings, binding, qualifierNonbindingMembers)) {
                 return false;
             }
         }
@@ -752,7 +747,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (!BeanTypeAssignabilityRules.matches(requiredType, beanTypes)) {
             return false;
         }
-        return Qualifiers.hasQualifiers(beanQualifiers, qualifiers);
+        return Qualifiers.hasQualifiers(beanQualifiers, qualifierNonbindingMembers, qualifiers);
     }
 
     static ArcContainerImpl unwrap(ArcContainer container) {

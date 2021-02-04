@@ -137,7 +137,8 @@ public class ArcProcessor {
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
             List<ObserverTransformerBuildItem> observerTransformers,
-            List<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrarBuildItems,
+            List<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrars,
+            List<QualifierRegistrarBuildItem> qualifierRegistrars,
             List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
             List<AdditionalBeanBuildItem> additionalBeans,
@@ -243,8 +244,12 @@ public class ArcProcessor {
             builder.addObserverTransformer(transformer.getInstance());
         }
         // register additional interceptor bindings
-        for (InterceptorBindingRegistrarBuildItem bindingRegistrar : interceptorBindingRegistrarBuildItems) {
-            builder.addInterceptorbindingRegistrar(bindingRegistrar.getInterceptorBindingRegistrar());
+        for (InterceptorBindingRegistrarBuildItem registrar : interceptorBindingRegistrars) {
+            builder.addInterceptorBindingRegistrar(registrar.getInterceptorBindingRegistrar());
+        }
+        // register additional qualifiers
+        for (QualifierRegistrarBuildItem registrar : qualifierRegistrars) {
+            builder.addQualifierRegistrar(registrar.getQualifierRegistrar());
         }
         for (BeanRegistrarBuildItem item : beanRegistrars) {
             builder.addBeanRegistrar(item.getBeanRegistrar());

@@ -13,22 +13,24 @@ public final class Components {
     private final Collection<InjectableObserverMethod<?>> observers;
     private final Collection<InjectableContext> contexts;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
+    private final Map<String, Set<String>> qualifierNonbindingMembers;
 
     public Components(Collection<InjectableBean<?>> beans, Collection<InjectableObserverMethod<?>> observers,
             Collection<InjectableContext> contexts,
             Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings) {
-        this(beans, observers, contexts, transitiveInterceptorBindings, Collections.emptyList());
+        this(beans, observers, contexts, transitiveInterceptorBindings, Collections.emptyList(), Collections.emptyMap());
     }
 
     public Components(Collection<InjectableBean<?>> beans, Collection<InjectableObserverMethod<?>> observers,
             Collection<InjectableContext> contexts,
             Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings,
-            Collection<RemovedBean> removedBeans) {
+            Collection<RemovedBean> removedBeans, Map<String, Set<String>> qualifierNonbindingMembers) {
         this.beans = beans;
         this.observers = observers;
         this.contexts = contexts;
         this.transitiveInterceptorBindings = transitiveInterceptorBindings;
         this.removedBeans = removedBeans;
+        this.qualifierNonbindingMembers = qualifierNonbindingMembers;
     }
 
     public Collection<InjectableBean<?>> getBeans() {
@@ -49,6 +51,10 @@ public final class Components {
 
     public Collection<RemovedBean> getRemovedBeans() {
         return removedBeans;
+    }
+
+    public Map<String, Set<String>> getQualifierNonbindingMembers() {
+        return qualifierNonbindingMembers;
     }
 
 }

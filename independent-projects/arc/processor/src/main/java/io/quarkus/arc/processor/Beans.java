@@ -593,22 +593,25 @@ final class Beans {
     }
 
     static boolean hasQualifier(BeanInfo bean, AnnotationInstance required) {
-        return hasQualifier(bean.getDeployment().getQualifier(required.name()), required, bean.getQualifiers());
+        return hasQualifier(bean.getDeployment(), required, bean.getQualifiers());
     }
 
-    static boolean hasQualifier(ClassInfo requiredInfo, AnnotationInstance required,
+    static boolean hasQualifier(BeanDeployment beanDeployment, AnnotationInstance requiredQualifier,
             Collection<AnnotationInstance> qualifiers) {
-        List<AnnotationValue> binding = new ArrayList<>();
-        for (AnnotationValue val : required.values()) {
-            if (!requiredInfo.method(val.name()).hasAnnotation(DotNames.NONBINDING)) {
-                binding.add(val);
+        ClassInfo requiredClazz = beanDeployment.getQualifier(requiredQualifier.name());
+        List<AnnotationValue> values = new ArrayList<>();
+        Set<String> nonBindingFields = beanDeployment.getQualifierNonbindingMembers(requiredQualifier.name());
+        for (AnnotationValue val : requiredQualifier.values()) {
+            if (!requiredClazz.method(val.name()).hasAnnotation(DotNames.NONBINDING)
+                    && !nonBindingFields.contains(val.name())) {
+                values.add(val);
             }
         }
         for (AnnotationInstance qualifier : qualifiers) {
-            if (required.name().equals(qualifier.name())) {
+            if (requiredQualifier.name().equals(qualifier.name())) {
                 // Must have the same annotation member value for each member which is not annotated @Nonbinding
                 boolean matches = true;
-                for (AnnotationValue value : binding) {
+                for (AnnotationValue value : values) {
                     if (!value.equals(qualifier.value(value.name()))) {
                         matches = false;
                         break;

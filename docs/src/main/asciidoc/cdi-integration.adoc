@@ -436,7 +436,7 @@ _Solution_: You can inject the `CustomScopeAnnotationsBuildItem` in a build step
 
 In rare cases it might be handy to programmatically register an existing annotation that is not annotated with `@javax.interceptor.InterceptorBinding` as an interceptor binding.
 This is similar to what CDI achieves through `BeforeBeanDiscovery#addInterceptorBinding()`.
-Though here we are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
+We are going to use `InterceptorBindingRegistrarBuildItem` to get it done.
 
 .`InterceptorBindingRegistrarBuildItem` Example
 [source,java]
@@ -445,8 +445,29 @@ Though here we are going to use `InterceptorBindingRegistrarBuildItem` to get it
 InterceptorBindingRegistrarBuildItem addInterceptorBindings() {
     return new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
         @Override
-        public Map<DotName, Set<String>> registerAdditionalBindings() { <1>
+        public Map<DotName, Set<String>> registerAdditionalBindings() {
             return Collections.singletonMap(DotName.createSimple(NotAnInterceptorBinding.class.getName()),
+                                        Collections.emptySet());
+        }
+    });
+}
+----
+
+== Use Case - Additional Qualifiers
+
+Sometimes it might be useful to register an existing annotation that is not annotated with `@javax.inject.Qualifier` as a CDI qualifier.
+This is similar to what CDI achieves through `BeforeBeanDiscovery#addQualifier()`.
+We are going to use `QualifierRegistrarBuildItem` to get it done.
+
+.`QualifierRegistrarBuildItem` Example
+[source,java]
+----
+@BuildStep
+QualifierRegistrarBuildItem addQualifiers() {
+    return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
+        @Override
+        public Map<DotName, Set<String>> getAdditionalQualifiers() {
+            return Collections.singletonMap(DotName.createSimple(NotAQualifier.class.getName()),
                                         Collections.emptySet());
         }
     });

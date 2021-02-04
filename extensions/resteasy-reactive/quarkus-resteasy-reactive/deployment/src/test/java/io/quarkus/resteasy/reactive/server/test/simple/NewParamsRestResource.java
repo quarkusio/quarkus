@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import java.util.Optional;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -42,11 +44,14 @@ public class NewParamsRestResource {
     @Path("params/{p}")
     public String params(@RestPath String p,
             @RestQuery String q,
+            @RestQuery Optional<String> q2,
+            @RestQuery Optional<Integer> q3,
             @RestHeader int h,
             @RestForm String f,
             @RestMatrix String m,
             @RestCookie String c) {
-        return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f + ", m: " + m + ", c: " + c;
+        return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f + ", m: " + m + ", c: " + c + ", q2: "
+                + q2.orElse("empty") + ", q3: " + q3.orElse(-1);
     }
 
     @GET

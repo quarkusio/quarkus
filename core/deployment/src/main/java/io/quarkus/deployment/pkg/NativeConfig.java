@@ -55,6 +55,15 @@ public class NativeConfig {
     public Optional<String> userLanguage;
 
     /**
+     * Defines the user country used for building the native executable.
+     * <p>
+     * Defaults to the system one.
+     */
+    @ConfigItem(defaultValue = "${user.country:}")
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> userCountry;
+
+    /**
      * Defines the file encoding as in -Dfile.encoding=...
      *
      * Native image runtime uses the host's (i.e. build time) value of file.encoding

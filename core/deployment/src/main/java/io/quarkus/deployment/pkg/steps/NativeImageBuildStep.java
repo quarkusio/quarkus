@@ -153,6 +153,9 @@ public class NativeImageBuildStep {
             if (nativeConfig.userLanguage.isPresent()) {
                 command.add("-J-Duser.language=" + nativeConfig.userLanguage.get());
             }
+            if (nativeConfig.userCountry.isPresent()) {
+                command.add("-J-Duser.country=" + nativeConfig.userCountry.get());
+            }
             command.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding);
 
             if (enableSslNative) {

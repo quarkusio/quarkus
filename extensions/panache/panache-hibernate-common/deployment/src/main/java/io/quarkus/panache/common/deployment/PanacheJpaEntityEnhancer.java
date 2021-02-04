@@ -14,7 +14,7 @@ import org.objectweb.asm.ClassVisitor;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.panache.common.deployment.visitors.PanacheJpaEntityClassVisitor;
 
-public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
+public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer {
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
     private TypeBundle typeBundle;
 
@@ -22,7 +22,7 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInf
             TypeBundle typeBundle) {
         super(index, methodCustomizers);
         this.typeBundle = typeBundle;
-        modelInfo = new MetamodelInfo<>();
+        modelInfo = new MetamodelInfo();
     }
 
     @Override
@@ -33,7 +33,7 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInf
 
     @Override
     public void collectFields(ClassInfo classInfo) {
-        EntityModel<EntityField> entityModel = new EntityModel<>(classInfo);
+        EntityModel entityModel = new EntityModel(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
             if (Modifier.isPublic(fieldInfo.flags())

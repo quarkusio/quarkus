@@ -1,10 +1,10 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
-import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
-import io.quarkus.panache.common.deployment.TypeBundle;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
+import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassVisitor;
 
 public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {

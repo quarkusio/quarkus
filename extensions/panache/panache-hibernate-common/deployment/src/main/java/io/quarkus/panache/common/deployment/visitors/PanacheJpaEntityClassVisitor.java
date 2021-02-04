@@ -11,15 +11,14 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.panache.common.deployment.EntityField;
-import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
 
-public class PanacheJpaEntityClassVisitor extends PanacheEntityClassVisitor<EntityField> {
+public class PanacheJpaEntityClassVisitor extends PanacheEntityClassVisitor {
 
     public PanacheJpaEntityClassVisitor(ClassVisitor outputClassVisitor,
-            MetamodelInfo<EntityModel<EntityField>> modelInfo, ClassInfo entityInfo,
+            MetamodelInfo modelInfo, ClassInfo entityInfo,
             List<PanacheMethodCustomizer> methodCustomizers, IndexView indexView, TypeBundle bundle) {
         super(outputClassVisitor, modelInfo, bundle, entityInfo, methodCustomizers, indexView);
     }

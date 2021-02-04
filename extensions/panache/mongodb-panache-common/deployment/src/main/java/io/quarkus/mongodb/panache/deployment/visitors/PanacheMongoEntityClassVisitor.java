@@ -9,16 +9,15 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.panache.common.deployment.EntityField;
-import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassVisitor;
 
-public class PanacheMongoEntityClassVisitor extends PanacheEntityClassVisitor<EntityField> {
+public class PanacheMongoEntityClassVisitor extends PanacheEntityClassVisitor {
 
     public PanacheMongoEntityClassVisitor(ClassVisitor outputClassVisitor,
-            MetamodelInfo<EntityModel<EntityField>> modelInfo,
+            MetamodelInfo modelInfo,
             ClassInfo entityInfo,
             List<PanacheMethodCustomizer> methodCustomizers,
             TypeBundle typeBundle, IndexView indexView) {

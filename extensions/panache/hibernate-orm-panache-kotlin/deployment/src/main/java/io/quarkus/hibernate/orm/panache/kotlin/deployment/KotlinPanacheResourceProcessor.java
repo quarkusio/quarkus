@@ -83,7 +83,7 @@ public final class KotlinPanacheResourceProcessor {
                 bundle.entityCompanionBase(), bundle.entityCompanion());
     }
 
-    public PanacheEntityEnhancer<?> createEntityEnhancer(CombinedIndexBuildItem index,
+    public PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
         return new KotlinPanacheEntityEnhancer(index.getIndex(), methodCustomizers);
     }
@@ -124,7 +124,7 @@ public final class KotlinPanacheResourceProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             PanacheKotlinHibernateOrmRecorder recorder,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            PanacheEntityEnhancer<?> entityEnhancer,
+            PanacheEntityEnhancer entityEnhancer,
             ByteCodeType baseType,
             ByteCodeType type) {
 

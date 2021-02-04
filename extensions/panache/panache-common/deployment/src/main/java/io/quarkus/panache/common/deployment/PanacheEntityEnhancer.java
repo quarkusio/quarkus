@@ -10,7 +10,7 @@ import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.panache.common.impl.GenerateBridge;
 
-public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<?>>
+public abstract class PanacheEntityEnhancer
         implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     public static final DotName DOTNAME_GENERATE_BRIDGE = DotName.createSimple(GenerateBridge.class.getName());
@@ -26,7 +26,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
     public static final DotName JSON_IGNORE_DOT_NAME = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
     public static final DotName JSON_PROPERTY_DOT_NAME = DotName.createSimple("com.fasterxml.jackson.annotation.JsonProperty");
 
-    protected MetamodelType modelInfo;
+    protected MetamodelInfo modelInfo;
     protected final IndexView indexView;
     protected final List<PanacheMethodCustomizer> methodCustomizers;
 
@@ -40,7 +40,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
     public abstract void collectFields(ClassInfo classInfo);
 
-    public MetamodelType getModelInfo() {
+    public MetamodelInfo getModelInfo() {
         return modelInfo;
     }
 }

@@ -3,14 +3,14 @@ package io.quarkus.panache.common.deployment;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MetamodelInfo<EntityModelType extends EntityModel<?>> {
-    final Map<String, EntityModelType> entities = new HashMap<>();
+public class MetamodelInfo {
+    final Map<String, EntityModel> entities = new HashMap<>();
 
-    public EntityModelType getEntityModel(String className) {
+    public EntityModel getEntityModel(String className) {
         return entities.get(className);
     }
 
-    public void addEntityModel(EntityModelType entityModel) {
+    public void addEntityModel(EntityModel entityModel) {
         entities.put(entityModel.name, entityModel);
     }
 

@@ -78,7 +78,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
     }
 
     @Override
-    public PanacheEntityEnhancer<?> createEntityEnhancer(CombinedIndexBuildItem index,
+    public PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
         return new KotlinPanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers, getImperativeTypeBundle());
     }
@@ -94,7 +94,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
     }
 
     @Override
-    public PanacheEntityEnhancer<?> createReactiveEntityEnhancer(CombinedIndexBuildItem index,
+    public PanacheEntityEnhancer createReactiveEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
         return new KotlinPanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers, getImperativeTypeBundle());
     }
@@ -115,7 +115,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            PanacheEntityEnhancer<?> entityEnhancer, TypeBundle typeBundle) {
+            PanacheEntityEnhancer entityEnhancer, TypeBundle typeBundle) {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes

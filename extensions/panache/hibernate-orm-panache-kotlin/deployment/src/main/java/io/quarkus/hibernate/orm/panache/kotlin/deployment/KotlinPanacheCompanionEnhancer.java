@@ -21,13 +21,13 @@ import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
 
-public class KotlinPanacheCompanionEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
+public class KotlinPanacheCompanionEnhancer extends PanacheEntityEnhancer {
 
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     public KotlinPanacheCompanionEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
         super(index, methodCustomizers);
-        modelInfo = new MetamodelInfo<>();
+        modelInfo = new MetamodelInfo();
     }
 
     @Override
@@ -39,7 +39,7 @@ public class KotlinPanacheCompanionEnhancer extends PanacheEntityEnhancer<Metamo
 
     @Override
     public void collectFields(ClassInfo classInfo) {
-        EntityModel<EntityField> entityModel = new EntityModel<>(classInfo);
+        EntityModel entityModel = new EntityModel(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
             if (Modifier.isPublic(fieldInfo.flags())

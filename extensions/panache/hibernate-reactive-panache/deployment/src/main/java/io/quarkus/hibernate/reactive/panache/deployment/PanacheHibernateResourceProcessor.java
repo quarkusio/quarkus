@@ -32,8 +32,6 @@ import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
-import io.quarkus.panache.common.deployment.EntityField;
-import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
@@ -129,7 +127,7 @@ public final class PanacheHibernateResourceProcessor {
             entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
         }
 
-        MetamodelInfo<EntityModel<EntityField>> modelInfo = modelEnhancer.getModelInfo();
+        MetamodelInfo modelInfo = modelEnhancer.getModelInfo();
         if (modelInfo.hasEntities()) {
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
             QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();

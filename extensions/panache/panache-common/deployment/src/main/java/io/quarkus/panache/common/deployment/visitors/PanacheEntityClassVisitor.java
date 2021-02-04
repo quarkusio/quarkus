@@ -48,12 +48,12 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizerVisitor;
 import io.quarkus.panache.common.deployment.PanacheMovingAnnotationVisitor;
 import io.quarkus.panache.common.deployment.TypeBundle;
 
-public abstract class PanacheEntityClassVisitor<EntityFieldType extends EntityField> extends ClassVisitor {
+public abstract class PanacheEntityClassVisitor extends ClassVisitor {
 
     protected Type thisClass;
-    protected final Map<String, ? extends EntityFieldType> fields;
+    protected final Map<String, ? extends EntityField> fields;
     private final Set<String> userMethods = new HashSet<>();
-    private final MetamodelInfo<?> modelInfo;
+    private final MetamodelInfo modelInfo;
     protected TypeBundle typeBundle;
     protected final ClassInfo panacheEntityBaseClassInfo;
     protected ClassInfo entityInfo;
@@ -64,7 +64,7 @@ public abstract class PanacheEntityClassVisitor<EntityFieldType extends EntityFi
     private final Map<String, String> erasures = new HashMap<>();
 
     public PanacheEntityClassVisitor(ClassVisitor outputClassVisitor,
-            MetamodelInfo<? extends EntityModel<? extends EntityFieldType>> modelInfo,
+            MetamodelInfo modelInfo,
             TypeBundle typeBundle,
             ClassInfo entityInfo,
             List<PanacheMethodCustomizer> methodCustomizers, IndexView indexView) {
@@ -74,7 +74,7 @@ public abstract class PanacheEntityClassVisitor<EntityFieldType extends EntityFi
         thisClass = Type.getType("L" + className.replace('.', '/') + ";");
         this.modelInfo = modelInfo;
         this.typeBundle = typeBundle;
-        EntityModel<? extends EntityFieldType> entityModel = modelInfo.getEntityModel(className);
+        EntityModel entityModel = modelInfo.getEntityModel(className);
         fields = entityModel != null ? entityModel.fields : null;
         this.panacheEntityBaseClassInfo = indexView.getClassByName(typeBundle.entityBase().dotName());
         this.entityInfo = entityInfo;

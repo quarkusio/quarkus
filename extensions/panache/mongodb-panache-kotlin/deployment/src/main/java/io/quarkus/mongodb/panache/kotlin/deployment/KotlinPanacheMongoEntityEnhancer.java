@@ -21,13 +21,13 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
 
-public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
+public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
     private final TypeBundle types;
 
     public KotlinPanacheMongoEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers,
             TypeBundle types) {
         super(index, methodCustomizers);
-        modelInfo = new MetamodelInfo<>();
+        modelInfo = new MetamodelInfo();
         this.types = types;
     }
 
@@ -40,7 +40,7 @@ public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer<Meta
 
     @Override
     public void collectFields(ClassInfo classInfo) {
-        EntityModel<EntityField> entityModel = new EntityModel<>(classInfo);
+        EntityModel entityModel = new EntityModel(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
             if (Modifier.isPublic(fieldInfo.flags())

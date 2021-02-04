@@ -139,10 +139,10 @@ public abstract class BasePanacheMongoResourceProcessor {
         return replacementMap.isEmpty() ? Collections.emptyMap() : replacementMap;
     }
 
-    protected abstract PanacheEntityEnhancer<?> createEntityEnhancer(CombinedIndexBuildItem index,
+    protected abstract PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers);
 
-    protected abstract PanacheEntityEnhancer<?> createReactiveEntityEnhancer(CombinedIndexBuildItem index,
+    protected abstract PanacheEntityEnhancer createReactiveEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers);
 
     protected abstract PanacheRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index,
@@ -242,7 +242,7 @@ public abstract class BasePanacheMongoResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            PanacheEntityEnhancer<?> entityEnhancer, TypeBundle typeBundle) {
+            PanacheEntityEnhancer entityEnhancer, TypeBundle typeBundle) {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
@@ -274,8 +274,8 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers,
-            PanacheEntityEnhancer<?> entityEnhancer, Set<String> modelClasses) {
-        MetamodelInfo<?> modelInfo = entityEnhancer.getModelInfo();
+            PanacheEntityEnhancer entityEnhancer, Set<String> modelClasses) {
+        MetamodelInfo modelInfo = entityEnhancer.getModelInfo();
         Set<String> modelClassNamesInternal = new HashSet<>();
         for (String entityClassName : modelClasses) {
             modelClassNamesInternal.add(entityClassName.replace(".", "/"));
@@ -348,7 +348,7 @@ public abstract class BasePanacheMongoResourceProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
             TypeBundle typeBundle, PanacheRepositoryEnhancer repositoryEnhancer,
-            PanacheEntityEnhancer<?> entityEnhancer) {
+            PanacheEntityEnhancer entityEnhancer) {
 
         processRepositories(index, transformers, reflectiveClass, propertyMappingClass,
                 repositoryEnhancer, typeBundle);

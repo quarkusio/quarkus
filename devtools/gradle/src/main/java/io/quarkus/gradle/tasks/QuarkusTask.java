@@ -26,7 +26,7 @@ public abstract class QuarkusTask extends DefaultTask {
         return extension;
     }
 
-    protected Properties getBuildSystemProperties(AppArtifact appArtifact) {
+    protected Properties getBuildSystemProperties() {
         final Map<String, ?> properties = getProject().getProperties();
         final Properties realProperties = new Properties();
         for (Map.Entry<String, ?> entry : properties.entrySet()) {
@@ -36,8 +36,6 @@ public abstract class QuarkusTask extends DefaultTask {
                 realProperties.setProperty(key, (String) value);
             }
         }
-        realProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
-        realProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
         return realProperties;
     }
 }

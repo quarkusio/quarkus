@@ -288,6 +288,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 .setAppArtifact(appArtifact)
                 .addFullDeploymentDeps(fullDeploymentDeps)
                 .addRuntimeDeps(userDeps)
+                .addBuildSystemProperties(collectBuildSystemProperties(appArtifact))
                 .build();
     }
 
@@ -343,6 +344,13 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             throw new AppModelResolverException(buf.toString());
         }
         appBuilder.addPlatformProperties(collectedProps);
+    }
+
+    private Properties collectBuildSystemProperties(AppArtifact appArtifact) {
+        Properties buildSystemProperties = new Properties();
+        buildSystemProperties.put("quarkus.application.name", appArtifact.getArtifactId());
+        buildSystemProperties.put("quarkus.application.version", appArtifact.getVersion());
+        return buildSystemProperties;
     }
 
     @Override

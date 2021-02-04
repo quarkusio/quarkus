@@ -125,7 +125,7 @@ public class QuarkusBuild extends QuarkusTask {
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
         final AppModelResolver modelResolver = extension().getAppModelResolver();
 
-        final Properties effectiveProperties = getBuildSystemProperties(appArtifact);
+        final Properties effectiveProperties = getBuildSystemProperties();
         if (ignoredEntries != null && ignoredEntries.size() > 0) {
             String joinedEntries = String.join(",", ignoredEntries);
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);

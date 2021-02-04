@@ -271,7 +271,7 @@ public class AugmentActionImpl implements AugmentAction {
                     .addFinal(ApplicationClassNameBuildItem.class)
                     .setTargetDir(quarkusBootstrap.getTargetDirectory())
                     .setDeploymentClassLoader(deploymentClassLoader)
-                    .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
+                    .setBuildSystemProperties(curatedApplication.getAppModel().getBuildSystemProperties())
                     .setEffectiveModel(curatedApplication.getAppModel());
             if (quarkusBootstrap.getBaseName() != null) {
                 builder.setBaseName(quarkusBootstrap.getBaseName());

@@ -72,6 +72,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.model.QuarkusModel;
 import io.quarkus.bootstrap.runner.Timing;
@@ -113,6 +114,9 @@ public class QuarkusTestExtension
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
     public static final String QUARKUS_TEST_HANG_DETECTION_TIMEOUT = "quarkus.test.hang-detection-timeout";
+
+    private static final String QUARKUS_APPLICATION_NAME = "quarkus.application.name";
+    private static final String QUARKUS_APPLICATION_VERSION = "quarkus.application.version";
 
     private static boolean failedBoot;
 
@@ -235,8 +239,8 @@ public class QuarkusTestExtension
                 if (profileInstance.getConfigProfile() != null) {
                     System.setProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP, profileInstance.getConfigProfile());
                 }
-                //we just use system properties for now
-                //its a lot simpler
+                // we just use system properties for now
+                // its a lot simpler
                 for (Map.Entry<String, String> i : additional.entrySet()) {
                     sysPropRestore.put(i.getKey(), System.getProperty(i.getKey()));
                 }

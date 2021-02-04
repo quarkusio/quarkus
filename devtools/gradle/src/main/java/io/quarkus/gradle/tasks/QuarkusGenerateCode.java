@@ -49,7 +49,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
 
         final AppModelResolver modelResolver = extension().getAppModelResolver();
-        final Properties realProperties = getBuildSystemProperties(appArtifact);
+        final Properties realProperties = getBuildSystemProperties();
 
         Path buildDir = getProject().getBuildDir().toPath();
         try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()

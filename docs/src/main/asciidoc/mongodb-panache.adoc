@@ -513,6 +513,10 @@ Here are some query examples:
 - `lastname is not null` will be mapped to `{'lastname':{'$exists': true}}`
 - `status in ?1` will be mapped to `{'status':{$in: [?1]}}`
 
+WARNING: MongoDB queries must be valid JSON documents,
+using the same field multiple times in a query is not allowed using PanacheQL as it would generate an invalid JSON
+(see link:https://github.com/quarkusio/quarkus/issues/12086[this issue on github]).
+
 We also handle some basic date type transformations: all fields of type `Date`, `LocalDate`, `LocalDateTime` or `Instant` will be mapped to the
 link:https://docs.mongodb.com/manual/reference/bson-types/#document-bson-type-date[BSON Date] using the `ISODate` type (UTC datetime).
 The MongoDB POJO codec doesn't support `ZonedDateTime` and `OffsetDateTime` so you should convert them prior usage.

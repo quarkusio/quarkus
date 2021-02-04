@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.test.QuarkusUnitTest;
@@ -37,6 +38,7 @@ public class InjectionTest {
         assertEquals("bar", simpleBean.foo.render("bar"));
         assertEquals("<strong>bar</strong>", simpleBean.foo2.render("bar"));
         assertEquals("bar", simpleBean.bar.render("bar"));
+        assertEquals("bar", simpleBean.barLocation.render("bar"));
     }
 
     @Dependent
@@ -53,6 +55,9 @@ public class InjectionTest {
 
         @ResourcePath("bars/bar")
         Template bar;
+
+        @Location("bars/bar")
+        Template barLocation;
 
     }
 

@@ -54,12 +54,14 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
@@ -225,9 +227,14 @@ public class QuteProcessor {
         // template path -> checked template method
         Map<String, MethodInfo> checkedTemplateMethods = new HashMap<>();
 
-        for (AnnotationInstance annotation : index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE)) {
-            if (annotation.target().kind() != Kind.CLASS)
+        Set<AnnotationInstance> checkedTemplateAnnotations = new HashSet<>();
+        checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE_OLD));
+        checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE));
+
+        for (AnnotationInstance annotation : checkedTemplateAnnotations) {
+            if (annotation.target().kind() != Kind.CLASS) {
                 continue;
+            }
             ClassInfo classInfo = annotation.target().asClass();
             NativeCheckedTemplateEnhancer enhancer = new NativeCheckedTemplateEnhancer();
             for (MethodInfo methodInfo : classInfo.methods()) {
@@ -1013,13 +1020,15 @@ public class QuteProcessor {
         }
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
-
             if (injectionPoint.getRequiredType().name().equals(Names.TEMPLATE)) {
-
-                AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(Names.RESOURCE_PATH);
+                AnnotationInstance location = injectionPoint.getRequiredQualifier(Names.LOCATION);
+                if (location == null) {
+                    // Try the deprecated @ResourcePath
+                    location = injectionPoint.getRequiredQualifier(Names.RESOURCE_PATH);
+                }
                 String name;
-                if (resourcePath != null) {
-                    name = resourcePath.value().asString();
+                if (location != null) {
+                    name = location.value().asString();
                 } else if (injectionPoint.hasDefaultedQualifier()) {
                     name = getName(injectionPoint);
                 } else {
@@ -1027,7 +1036,7 @@ public class QuteProcessor {
                 }
                 if (name != null) {
                     // For "@Inject Template items" we try to match "items"
-                    // For "@ResourcePath("github/pulls") Template pulls" we try to match "github/pulls"
+                    // For "@Location("github/pulls") Template pulls" we try to match "github/pulls"
                     if (filePaths.stream().noneMatch(path -> path.endsWith(name))) {
                         validationErrors.produce(new ValidationErrorBuildItem(
                                 new TemplateException("No template found for " + injectionPoint.getTargetInfo())));
@@ -1184,6 +1193,17 @@ public class QuteProcessor {
                         }
                     }
                 });
+            }
+        });
+    }
+
+    @BuildStep
+    QualifierRegistrarBuildItem turnLocationIntoQualifier() {
+        return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
+
+            @Override
+            public Map<DotName, Set<String>> getAdditionalQualifiers() {
+                return Collections.singletonMap(Names.LOCATION, Collections.singleton("value"));
             }
         });
     }

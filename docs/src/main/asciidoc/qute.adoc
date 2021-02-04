@@ -116,7 +116,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @Path("hello")
 public class HelloResource {
@@ -176,7 +176,7 @@ package org.acme.quarkus.sample;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @CheckedTemplate
 public class Templates {
@@ -239,7 +239,7 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @Path("item")
 public class ItemResource {

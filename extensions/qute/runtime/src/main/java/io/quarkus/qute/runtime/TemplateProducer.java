@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
@@ -71,22 +72,26 @@ public class TemplateProducer {
     }
 
     @Produces
+    @Location("ignored")
     @ResourcePath("ignored")
     Template getTemplate(InjectionPoint injectionPoint) {
-        ResourcePath path = null;
+        String path = null;
         for (Annotation qualifier : injectionPoint.getQualifiers()) {
-            if (qualifier.annotationType().equals(ResourcePath.class)) {
-                path = (ResourcePath) qualifier;
+            if (qualifier.annotationType().equals(Location.class)) {
+                path = ((Location) qualifier).value();
+                break;
+            } else if (qualifier.annotationType().equals(ResourcePath.class)) {
+                path = ((ResourcePath) qualifier).value();
                 break;
             }
         }
-        if (path == null || path.value().isEmpty()) {
-            throw new IllegalStateException("No template reource path specified");
+        if (path == null || path.isEmpty()) {
+            throw new IllegalStateException("No template location specified");
         }
         // We inject a delegating template in order to:
         // 1. Be able to select an appropriate variant if needed
         // 2. Be able to reload the template when needed, i.e. when the cache is cleared
-        return new InjectableTemplate(path.value(), templateVariants, engine);
+        return new InjectableTemplate(path, templateVariants, engine);
     }
 
     /**

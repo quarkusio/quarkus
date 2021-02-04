@@ -1,12 +1,10 @@
-package io.quarkus.qute.api;
+package io.quarkus.qute;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
-import io.quarkus.qute.TemplateInstance;
 
 /**
  * If you place this annotation on a class, all its <code>native static</code> methods will be used to declare
@@ -51,14 +49,10 @@ import io.quarkus.qute.TemplateInstance;
  *     }
  * }
  * </pre>
- * 
- * @deprecated Use {@link io.quarkus.qute.CheckedTemplate} instead. This annotation will be removed at some point post Quarkus
- *             1.13.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Deprecated
 public @interface CheckedTemplate {
 
     /**

@@ -8,27 +8,32 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * A value resolver is automatically generated for a method annotated with this annotation. If declared on a class a value
- * resolver is generated for every non-private static method declared on the class. Method-level annotations override the
- * behavior defined on the class.
+ * Instructs a fully integrated environment to generate a {@link ValueResolver} for a method annotated with this annotation.
  * <p>
- * Methods that do not meet the following requirements are ignored.
+ * If declared on a class a value resolver is generated for every non-private static method declared on the class. Method-level
+ * annotations override the behavior defined on the class. Methods that do not meet the following requirements are ignored.
+ * 
  * <p>
  * A template extension method:
  * <ul>
+ * <li>must not be private</li>
  * <li>must be static,</li>
  * <li>must not return {@code void},</li>
  * <li>must accept at least one parameter, unless the namespace is specified.</li>
  * </ul>
+ * 
  * The class of the first parameter is used to match the base object unless the namespace is specified. In such case, the
  * namespace is used to match an expression.
+ * 
  * <p>
  * By default, the method name is used to match the property name. However, it is possible to specify the matching name with
  * {@link #matchName()}. A special constant - {@link #ANY} - may be used to specify that the extension method matches any name.
  * It is also possible to match the name against a regular expression specified in {@link #matchRegex()}. In both cases, a
  * string method parameter is used to pass the property name.
+ * 
  * <p>
  * If both {@link #matchName()} and {@link #matchRegex()} are set the regular expression is used for matching.
+ * 
  * <p>
  * If a namespace is specified the method must declare at least one parameter and the first parameter must be a string. If no
  * namespace is specified the method must declare at least two parameters and the second parameter must be a string.

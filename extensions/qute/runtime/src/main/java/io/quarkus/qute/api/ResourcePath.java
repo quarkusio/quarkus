@@ -15,10 +15,13 @@ import javax.inject.Qualifier;
 /**
  * Qualifies an injected template. The {@link #value()} is used to locate the template; it represents the path relative from
  * the base path.
+ * 
+ * @deprecated Use {@link io.quarkus.qute.Location} instead. This annotation will be removed at some point post Quarkus 1.13.
  */
 @Qualifier
 @Retention(RUNTIME)
 @Target({ FIELD, PARAMETER, METHOD })
+@Deprecated
 public @interface ResourcePath {
 
     /**

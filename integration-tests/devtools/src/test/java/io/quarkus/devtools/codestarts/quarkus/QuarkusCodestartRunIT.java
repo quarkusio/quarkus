@@ -85,24 +85,18 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
         generateProjectRunTests("gradle-kotlin-dsl", language, codestarts, Collections.emptyMap());
     }
 
-    /** Vert.x 4 Migration: resteasy reactive fixes */
-    @Disabled
     @ParameterizedTest
     @MethodSource("provideRunAloneExamples")
     public void testRunAloneCodestartsJava(String codestart) throws Exception {
         generateProjectRunTests("maven", "java", singletonList(codestart), Collections.emptyMap());
     }
 
-    /** Vert.x 4 Migration: resteasy reactive fixes */
-    @Disabled
     @ParameterizedTest
     @MethodSource("provideRunAloneExamples")
     public void testRunAloneCodestartsKotlin(String codestart) throws Exception {
         generateProjectRunTests("maven", "kotlin", singletonList(codestart), Collections.emptyMap());
     }
 
-    /** Vert.x 4 Migration: resteasy reactive fixes */
-    @Disabled
     @ParameterizedTest
     @MethodSource("provideRunAloneExamples")
     public void testRunAloneCodestartsScala(String codestart) throws Exception {

@@ -3,6 +3,7 @@ package io.quarkus.kafka.client.serialization;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import javax.json.bind.Jsonb;
@@ -15,18 +16,32 @@ import org.apache.kafka.common.serialization.Deserializer;
 public class JsonbDeserializer<T> implements Deserializer<T> {
 
     private final Jsonb jsonb;
-    private final Class<T> type;
+    private final Type type;
     private final boolean jsonbNeedsClosing;
 
-    public JsonbDeserializer(Class<T> type) {
+    public JsonbDeserializer(Class<T> clazz) {
+        this(clazz, JsonbProducer.get(), true);
+    }
+
+    public JsonbDeserializer(Class<T> clazz, Jsonb jsonb) {
+        this(clazz, jsonb, false);
+    }
+
+    private JsonbDeserializer(Class<T> clazz, Jsonb jsonb, boolean jsonbNeedsClosing) {
+        this.type = clazz;
+        this.jsonb = jsonb;
+        this.jsonbNeedsClosing = jsonbNeedsClosing;
+    }
+
+    public JsonbDeserializer(Type type) {
         this(type, JsonbProducer.get(), true);
     }
 
-    public JsonbDeserializer(Class<T> type, Jsonb jsonb) {
+    public JsonbDeserializer(Type type, Jsonb jsonb) {
         this(type, jsonb, false);
     }
 
-    private JsonbDeserializer(Class<T> type, Jsonb jsonb, boolean jsonbNeedsClosing) {
+    private JsonbDeserializer(Type type, Jsonb jsonb, boolean jsonbNeedsClosing) {
         this.type = type;
         this.jsonb = jsonb;
         this.jsonbNeedsClosing = jsonbNeedsClosing;

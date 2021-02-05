@@ -260,6 +260,52 @@ quarkus.elasticsearch.hosts = localhost:9200
 
 If you need a more advanced configuration, you can find the comprehensive list of supported configuration properties at the end of this guide.
 
+== Programmatically Configuring Elasticsearch
+On top of the parametric configuration, you can also programmatically apply additional configuration to the client by implementing a `RestClientBuilder.HttpClientConfigCallback` and annotating it with `ElasticsearchClientConfig`. You may provide multiple implementations and configuration provided by each implementation will be applied in a randomly ordered cascading manner.
+
+For example, when accessing an Elasticsearch cluster that is set up for TLS on the HTTP layer, the client needs to trust the certificate that Elasticsearch is using. The following is an example of setting up the client to trust the CA that has signed the certificate that Elasticsearch is using, when that CA certificate is available in a PKCS#12 keystore.
+
+[source,java]
+----
+import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
+import org.elasticsearch.client.RestClientBuilder;
+
+import javax.enterprise.context.Dependent;
+import javax.net.ssl.SSLContext;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+
+@ElasticsearchClientConfig
+@Dependent
+public class SSLContextConfigurator implements RestClientBuilder.HttpClientConfigCallback {
+    @Override
+    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+        try {
+            String keyStorePass = "password-for-keystore";
+            Path trustStorePath = Paths.get("/path/to/truststore.p12");
+            KeyStore truststore = KeyStore.getInstance("pkcs12");
+            try (InputStream is = Files.newInputStream(trustStorePath)) {
+                truststore.load(is, keyStorePass.toCharArray());
+            }
+            SSLContextBuilder sslBuilder = SSLContexts.custom()
+                    .loadTrustMaterial(truststore, null);
+            SSLContext sslContext = sslBuilder.build();
+            httpClientBuilder.setSSLContext(sslContext);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return httpClientBuilder;
+    }
+}
+----
+See https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/_encrypted_communication.html[Elasticsearch documentation] for more details on this particular example.
 
 == Running an Elasticsearch cluster
 

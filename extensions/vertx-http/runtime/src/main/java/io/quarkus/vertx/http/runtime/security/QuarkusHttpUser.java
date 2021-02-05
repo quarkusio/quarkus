@@ -10,6 +10,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.AuthProvider;
 import io.vertx.ext.auth.User;
+import io.vertx.ext.auth.authorization.Authorization;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -35,13 +36,18 @@ public class QuarkusHttpUser implements User {
     }
 
     @Override
-    public User isAuthorized(String authority, Handler<AsyncResult<Boolean>> resultHandler) {
-        resultHandler.handle(Future.succeededFuture(securityIdentity.hasRole(authority)));
-        return this;
+    public JsonObject attributes() {
+        // Vert.x 4 Migration: Check this, probably wrong.
+        return principal();
     }
 
     @Override
-    public User isAuthorised(String authority, Handler<AsyncResult<Boolean>> resultHandler) {
+    public User isAuthorized(Authorization authority, Handler<AsyncResult<Boolean>> resultHandler) {
+        return null;
+    }
+
+    @Override
+    public User isAuthorized(String authority, Handler<AsyncResult<Boolean>> resultHandler) {
         resultHandler.handle(Future.succeededFuture(securityIdentity.hasRole(authority)));
         return this;
     }

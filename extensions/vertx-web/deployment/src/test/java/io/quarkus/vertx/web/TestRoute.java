@@ -1,8 +1,8 @@
 package io.quarkus.vertx.web;
 
-import static io.vertx.core.http.HttpMethod.GET;
-import static io.vertx.core.http.HttpMethod.OPTIONS;
-import static io.vertx.core.http.HttpMethod.POST;
+import static io.quarkus.vertx.web.Route.HttpMethod.GET;
+import static io.quarkus.vertx.web.Route.HttpMethod.OPTIONS;
+import static io.quarkus.vertx.web.Route.HttpMethod.POST;
 
 import io.vertx.ext.web.RoutingContext;
 

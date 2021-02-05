@@ -17,8 +17,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.smallrye.mutiny.Multi;
-import io.vertx.core.http.HttpMethod;
 
 public class MultiValidationTest {
 

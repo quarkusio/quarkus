@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.core.http.HttpMethod;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
 public class ConflictingRouteTest {

@@ -46,8 +46,8 @@ Then in a _bean_, you can use the `@Route` annotation as follows:
 package org.acme.reactive.routes;
 
 import io.quarkus.vertx.web.Route;
-import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.core.http.HttpMethod;
+import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.ext.web.RoutingContext;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -56,7 +56,7 @@ import javax.enterprise.context.ApplicationScoped;
 public class MyDeclarativeRoutes {
 
     // neither path nor regex is set - match a path derived from the method name
-    @Route(methods = HttpMethod.GET) <2> 
+    @Route(methods = HttpMethod.GET) <2>
     void hello(RoutingContext rc) { <3>
         rc.response().end("hello");
     }

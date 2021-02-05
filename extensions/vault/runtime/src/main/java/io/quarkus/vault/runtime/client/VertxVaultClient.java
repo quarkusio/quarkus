@@ -87,6 +87,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class VertxVaultClient implements VaultClient {
 
     private static final Logger log = Logger.getLogger(VertxVaultClient.class);
+    private static final HttpMethod LIST = HttpMethod.valueOf("LIST");
 
     private final Vertx vertx;
     private URL baseUrl;
@@ -394,7 +395,7 @@ public class VertxVaultClient implements VaultClient {
     }
 
     protected <T> T list(String path, String token, Class<T> resultClass) {
-        HttpRequest<Buffer> request = builder(path, token).rawMethod("LIST");
+        HttpRequest<Buffer> request = builder(path, token).method(LIST);
         return exec(request, resultClass);
     }
 

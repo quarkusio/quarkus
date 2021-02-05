@@ -1,9 +1,10 @@
 package io.quarkus.vertx.web;
 
+import static io.quarkus.vertx.web.Route.HttpMethod.DELETE;
+import static io.quarkus.vertx.web.Route.HttpMethod.GET;
+import static io.quarkus.vertx.web.Route.HttpMethod.POST;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
-import static io.vertx.core.http.HttpMethod.DELETE;
-import static io.vertx.core.http.HttpMethod.GET;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Objects;
@@ -24,7 +25,6 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -108,7 +108,7 @@ public class SimpleRouteTest {
             exchange.ok("deleted");
         }
 
-        @Route(path = "/body", methods = HttpMethod.POST, consumes = "text/plain")
+        @Route(path = "/body", methods = POST, consumes = "text/plain")
         void post(RoutingContext context) {
             context.response().setStatusCode(200).end("Hello " + context.getBodyAsString() + "!");
         }

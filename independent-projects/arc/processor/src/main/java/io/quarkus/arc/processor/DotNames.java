@@ -147,7 +147,6 @@ public final class DotNames {
     }
 
     /**
-     *
      * @param clazz
      * @return the simple name for the given top-level or nested class
      */
@@ -192,6 +191,22 @@ public final class DotNames {
             return "";
         }
         return name.substring(0, index);
+    }
+
+    /**
+     * Returns a package name with a trailing '/'. If the class is in the default package then this returns
+     * the empty string.
+     * <p>
+     * This method should be used to determine the package to generate classes in to ensure the default package is handled
+     * correctly.
+     */
+    public static String internalPackageNameWithTrailingSlash(DotName dotName) {
+        String name = dotName.toString();
+        int index = name.lastIndexOf('.');
+        if (index == -1) {
+            return "";
+        }
+        return name.substring(0, index).replace(".", "/") + "/";
     }
 
 }

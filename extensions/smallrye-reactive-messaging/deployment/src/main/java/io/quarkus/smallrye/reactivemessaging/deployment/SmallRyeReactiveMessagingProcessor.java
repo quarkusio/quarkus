@@ -432,8 +432,8 @@ public class SmallRyeReactiveMessagingProcessor {
         for (Type i : method.parameters()) {
             sigBuilder.append(i.name().toString());
         }
-        String targetPackage = DotNames.packageName(bean.getImplClazz().name());
-        String generatedName = (targetPackage.isEmpty() ? "" : targetPackage.replace('.', '/') + "/") + baseName
+        String targetPackage = DotNames.internalPackageNameWithTrailingSlash(bean.getImplClazz().name());
+        String generatedName = targetPackage + baseName
                 + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 

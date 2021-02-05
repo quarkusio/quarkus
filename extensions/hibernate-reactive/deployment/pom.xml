@@ -12,6 +12,10 @@
     <artifactId>quarkus-hibernate-reactive-deployment</artifactId>
     <name>Quarkus - Hibernate Reactive - Deployment</name>
 
+    <properties>
+        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

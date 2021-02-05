@@ -43,7 +43,7 @@
         <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
         <rest-assured.version>4.3.2</rest-assured.version>
         <mutiny-client.version>1.1.0</mutiny-client.version>
-        <vertx.version>3.9.2</vertx.version>
+        <vertx.version>4.0.3</vertx.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -107,10 +107,10 @@
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.12.3</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.30.2</grpc.version> <!--keep in sync with the BOM -->
+        <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
+        <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
 
-        <boring-ssl.version>2.0.30.Final</boring-ssl.version>
+        <boring-ssl.version>2.0.36.Final</boring-ssl.version>
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>

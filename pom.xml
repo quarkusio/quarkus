@@ -108,6 +108,15 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <!-- TODO This repository will need to be removed once the artifacts are published on Maven Central -->
+            <id>hibernate-reactive-beta</id>
+            <name>hibernate-reactive-bera</name>
+            <url>https://dl.bintray.com/davided/artifacts/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>    
     </repositories>
 
     <distributionManagement>

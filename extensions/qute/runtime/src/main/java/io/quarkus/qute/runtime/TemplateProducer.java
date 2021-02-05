@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -184,7 +185,8 @@ public class TemplateProducer {
             Variant selected = (Variant) getAttribute(TemplateInstance.SELECTED_VARIANT);
             String id;
             if (selected != null) {
-                id = variants.variantToTemplate.get(selected);
+                // Currently, we only use the content type to match the template
+                id = variants.getId(selected.getContentType());
                 if (id == null) {
                     id = variants.defaultTemplate;
                 }
@@ -206,6 +208,15 @@ public class TemplateProducer {
             this.defaultTemplate = defaultTemplate;
         }
 
+        String getId(String contentType) {
+            for (Entry<Variant, String> entry : variantToTemplate.entrySet()) {
+                if (entry.getKey().getContentType().equals(contentType)) {
+                    return entry.getValue();
+                }
+            }
+            return null;
+        }
+
         @Override
         public String toString() {
             return "TemplateVariants{default=" + defaultTemplate + ", variants=" + variantToTemplate + "}";
@@ -213,7 +224,7 @@ public class TemplateProducer {
     }
 
     private static Map<Variant, String> initVariants(String base, List<String> availableVariants, ContentTypes contentTypes) {
-        Map<Variant, String> map = new HashMap<>();
+        Map<Variant, String> map = new LinkedHashMap<>();
         for (String path : availableVariants) {
             if (!base.equals(path)) {
                 map.put(new Variant(null, contentTypes.getContentType(path), null), path);

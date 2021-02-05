@@ -25,7 +25,7 @@ public class VariantTemplateTest {
     @Test
     public void testVariant() {
         given().when().accept("text/plain").get("/item/10").then().body(Matchers.is("Item foo: 10"));
-        given().when().get("/item/20").then().body(Matchers.is("<html><body>Item foo: 20</body></html>"));
+        given().when().accept("text/html").get("/item/20").then().body(Matchers.is("<html><body>Item foo: 20</body></html>"));
     }
 
 }

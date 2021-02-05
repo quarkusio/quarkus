@@ -1,8 +1,9 @@
 package io.quarkus.resteasy.qute.runtime;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
@@ -18,6 +19,7 @@ import io.quarkus.qute.Variant;
 @Provider
 public class TemplateResponseFilter implements ContainerResponseFilter {
 
+    @SuppressWarnings("unchecked")
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
             throws IOException {
@@ -30,24 +32,30 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
             TemplateInstance instance = (TemplateInstance) entity;
             Object variantsAttr = instance.getAttribute(TemplateInstance.VARIANTS);
             if (variantsAttr != null) {
-                @SuppressWarnings("unchecked")
-                List<Variant> variants = (List<Variant>) variantsAttr;
+                List<javax.ws.rs.core.Variant> variants = new ArrayList<>();
+                for (Variant variant : (List<Variant>) variantsAttr) {
+                    variants.add(new javax.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
+                            variant.getEncoding()));
+                }
                 javax.ws.rs.core.Variant selected = requestContext.getRequest()
-                        .selectVariant(variants.stream()
-                                .map(v -> new javax.ws.rs.core.Variant(MediaType.valueOf(v.getMediaType()), v.getLocale(),
-                                        v.getEncoding()))
-                                .collect(Collectors.toList()));
+                        .selectVariant(variants);
+
                 if (selected != null) {
+                    Locale selectedLocale = selected.getLanguage();
+                    if (selectedLocale == null) {
+                        List<Locale> acceptableLocales = requestContext.getAcceptableLanguages();
+                        if (!acceptableLocales.isEmpty()) {
+                            selectedLocale = acceptableLocales.get(0);
+                        }
+                    }
                     instance.setAttribute(TemplateInstance.SELECTED_VARIANT,
-                            new Variant(selected.getLanguage(), selected.getMediaType().toString(), selected.getEncoding()));
+                            new Variant(selectedLocale, selected.getMediaType().toString(), selected.getEncoding()));
                     mediaType = selected.getMediaType();
                 } else {
-                    // TODO we should use the default
-                    mediaType = null;
+                    mediaType = responseContext.getMediaType();
                 }
             } else {
-                // TODO how to get media type from non-variant templates?
-                mediaType = null;
+                mediaType = responseContext.getMediaType();
             }
 
             try {

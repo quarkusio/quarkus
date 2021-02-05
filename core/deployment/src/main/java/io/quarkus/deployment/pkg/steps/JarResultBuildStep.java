@@ -75,6 +75,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
@@ -172,6 +173,7 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<UberJarRequiredBuildItem> uberJarRequired,
+            List<LegacyJarRequiredBuildItem> legacyJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
             MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
@@ -186,12 +188,18 @@ public class JarResultBuildStep {
                     "Cannot set quarkus.package.uber-jar=true and quarkus.package.type, if you want an uber-jar set quarkus.package.type=uber-jar.");
         }
 
-        if (!uberJarRequired.isEmpty() || packageConfig.uberJar
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
+        if (!uberJarRequired.isEmpty() && !legacyJarRequired.isEmpty()) {
+            throw new RuntimeException(
+                    "Extensions with conflicting package types. One extension requires uber-jar another requires legacy format");
+        }
+
+        if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty() || packageConfig.uberJar
+                || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, closeablesBuildItem,
                     mainClassBuildItem);
-        } else if (packageConfig.isLegacyJar()) {
+        } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
+                || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)) {
             return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);

@@ -5,7 +5,6 @@ import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Dire
 import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.OUTGOING;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -82,7 +81,7 @@ public class QuarkusHttpConnector implements IncomingConnectorFactory, OutgoingC
             return HttpMethod.valueOf(methodAsString);
         } catch (IllegalArgumentException e) {
             String error = "Unsupported HTTP method: " + methodAsString + ". The supported methods are: "
-                    + Arrays.toString(HttpMethod.values());
+                    + HttpMethod.values();
             log.warn(error, e);
             throw new IllegalArgumentException(error);
         }

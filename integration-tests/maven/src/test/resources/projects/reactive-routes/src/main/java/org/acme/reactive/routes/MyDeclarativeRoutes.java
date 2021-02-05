@@ -3,8 +3,9 @@ package org.acme.reactive.routes;
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.vertx.web.Route;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
+
+import io.quarkus.vertx.web.Route.HttpMethod;
 
 @ApplicationScoped
 public class MyDeclarativeRoutes {

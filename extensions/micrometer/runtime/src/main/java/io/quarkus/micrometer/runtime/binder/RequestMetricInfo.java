@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.vertx.core.spi.observability.HttpResponse;
 
 public class RequestMetricInfo {
     static final Logger log = Logger.getLogger(RequestMetricInfo.class);
@@ -28,10 +29,15 @@ public class RequestMetricInfo {
     protected Timer.Sample sample;
 
     /**
-     * Store the tags associated with the request (change 1.6.0).
+     * Store the tags associated with the request (change Micrometer 1.6.0).
      * Default is empty, value assigned @ requestBegin
      */
     protected Tags tags = Tags.empty();
+
+    /**
+     * Response associated with the request (Vert.x 4.0)
+     */
+    HttpResponse response;
 
     /**
      * Extract the path out of the uri. Return null if the path should be

@@ -3,7 +3,7 @@ package io.quarkus.vertx.devmode;
 import java.util.UUID;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.MessageConsumer;
 
 public class MyVerticle extends AbstractVerticle {
@@ -12,7 +12,7 @@ public class MyVerticle extends AbstractVerticle {
     private volatile MessageConsumer<Object> messageConsumer;
 
     @Override
-    public void start(Future<Void> done) {
+    public void start(Promise<Void> done) {
         messageConsumer = vertx.eventBus().consumer("address")
                 .handler(m -> m.reply("ok-" + id));
         messageConsumer
@@ -20,7 +20,7 @@ public class MyVerticle extends AbstractVerticle {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         messageConsumer.unregister();
     }
 }

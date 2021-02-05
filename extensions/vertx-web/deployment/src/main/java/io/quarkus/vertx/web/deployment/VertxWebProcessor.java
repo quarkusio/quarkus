@@ -97,6 +97,7 @@ import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.runtime.RouteHandler;
 import io.quarkus.vertx.web.runtime.RouteMatcher;
@@ -107,7 +108,6 @@ import io.quarkus.vertx.web.runtime.devmode.ResourceNotFoundRecorder;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
@@ -295,9 +295,10 @@ class VertxWebProcessor {
                 AnnotationValue typeValue = route.value(VALUE_TYPE);
                 Route.HandlerType routeHandlerType = typeValue == null ? Route.HandlerType.NORMAL
                         : Route.HandlerType.from(typeValue.asEnum());
-                HttpMethod[] methods = Arrays.stream(methodsValue.asEnumArray()).map(HttpMethod::valueOf)
-                        .toArray(HttpMethod[]::new);
-                Integer order = orderValue.asInt();
+                String[] methods = Arrays.stream(methodsValue.asStringArray())
+                        .map(String::toUpperCase)
+                        .toArray(String[]::new);
+                int order = orderValue.asInt();
 
                 if (regexValue == null) {
                     if (pathPrefix != null) {
@@ -344,7 +345,7 @@ class VertxWebProcessor {
                 }
 
                 HandlerType handlerType = HandlerType.NORMAL;
-                if (typeValue != null) {
+                if (routeHandlerType != null) {
                     switch (routeHandlerType) {
                         case NORMAL:
                             handlerType = HandlerType.NORMAL;
@@ -387,18 +388,24 @@ class VertxWebProcessor {
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
                         bodyHandler.getHandler());
 
-                routeProducer.produce(new RouteBuildItem(routeFunction, routeHandler, handlerType));
+                RouteBuildItem.Builder builder = RouteBuildItem.builder()
+                        .routeFunction(routeFunction)
+                        .handlerType(handlerType)
+                        .handler(routeHandler);
+                routeProducer.produce(builder.build());
 
                 if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
                     if (methods.length == 0) {
                         // No explicit method declared - match all methods
-                        methods = HttpMethod.values();
+                        methods = Arrays.stream(HttpMethod.values())
+                                .map(Enum::name)
+                                .toArray(String[]::new);
                     }
                     descriptions.produce(new RouteDescriptionBuildItem(
                             businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"
                                     + businessMethod.getMethod().name() + "()",
                             regex != null ? regex : path,
-                            Arrays.stream(methods).map(Object::toString).collect(Collectors.joining(", ")), produces,
+                            Arrays.stream(methods).collect(Collectors.joining(", ")), produces,
                             consumes));
                 }
             }

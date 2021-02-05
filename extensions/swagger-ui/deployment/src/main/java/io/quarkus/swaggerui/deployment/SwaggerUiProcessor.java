@@ -156,15 +156,17 @@ public class SwaggerUiProcessor {
                     finalDestinationBuildItem.getSwaggerUiPath(),
                     runtimeConfig);
 
-            routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+            routes.produce(new RouteBuildItem.Builder()
+                    .nonApplicationRoute()
                     .route(swaggerUiConfig.path)
                     .displayOnNotFoundPage("Open API UI")
                     .routeConfigKey("quarkus.swagger-ui.path")
                     .handler(handler)
                     .requiresLegacyRedirect()
                     .build());
-            routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route(swaggerUiConfig.path + "/*")
+            routes.produce(new RouteBuildItem.Builder()
+                    .nonApplicationRoute()
+                    .route(swaggerUiConfig.path + "*")
                     .handler(handler)
                     .requiresLegacyRedirect()
                     .build());

@@ -172,11 +172,20 @@ public class MyClass {
 }
 ----
 
+If your class is in a third-party jar, you can do it by using an empty class that will host the `@RegisterForReflection` for it.
+
+[source,java]
+----
+@RegisterForReflection(targets=MyClass.class)
+public class MyReflectionConfiguration {
+}
+----
+
+Note that `MyClass` will be registered for reflection but not `MyReflectionConfiguration`.
+
 ==== Using a configuration file
 
-Obviously, adding `@RegisterForReflection` is not possible if the class is in a third-party jar.
-
-In this case, you can use a configuration file to register classes for reflection.
+You can use a configuration file to register classes for reflection.
 
 As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflection-config.json` (the most common location is within `src/main/resources`)
 
@@ -330,10 +339,6 @@ public class SaxParserProcessor {
 ====
 More information about reflection in GraalVM can be found https://github.com/oracle/graal/blob/master/substratevm/Reflection.md[here].
 ====
-
-=== Alternative with @RegisterForReflection
-
-As for applications, you can also use the `@RegisterForReflection` annotation if the class is in your extension and not in a third-party jar.
 
 === Including resources
 

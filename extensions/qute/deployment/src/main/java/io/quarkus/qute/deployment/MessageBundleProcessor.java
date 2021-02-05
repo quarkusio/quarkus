@@ -531,8 +531,8 @@ public class MessageBundleProcessor {
             baseName = baseName + "_" + locale;
         }
 
-        String targetPackage = DotNames.packageName(bundleInterface.name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + SUFFIX;
+        String targetPackage = DotNames.internalPackageNameWithTrailingSlash(bundleInterface.name());
+        String generatedName = targetPackage + baseName + SUFFIX;
 
         // MyMessages_Bundle implements MyMessages, Resolver
         Builder builder = ClassCreator.builder().classOutput(classOutput).className(generatedName)

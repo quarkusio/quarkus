@@ -84,14 +84,14 @@ class EventBusConsumer {
         } else {
             baseName = DotNames.simpleName(bean.getImplClazz().name());
         }
-        String targetPackage = DotNames.packageName(bean.getImplClazz().name());
+        String targetPackage = DotNames.internalPackageNameWithTrailingSlash(bean.getImplClazz().name());
 
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
         for (Type i : method.parameters()) {
             sigBuilder.append(i.name().toString());
         }
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
+        String generatedName = targetPackage + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 
         boolean blocking;

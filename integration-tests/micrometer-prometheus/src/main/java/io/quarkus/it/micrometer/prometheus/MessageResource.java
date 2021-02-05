@@ -31,4 +31,16 @@ public class MessageResource {
     public String item(@PathParam("id") String id) {
         return "return message with id " + id;
     }
+
+    @GET
+    @Path("match/{id}/{sub}")
+    public String match(@PathParam("id") String id, @PathParam("sub") String sub) {
+        return "return message with id " + id + ", and sub " + sub;
+    }
+
+    @GET
+    @Path("match/{text}")
+    public String optional(@PathParam("text") String text) {
+        return "return message with text " + text;
+    }
 }

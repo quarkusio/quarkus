@@ -62,9 +62,11 @@ public class RestClientMetrics implements RestClientListener {
 
         @Override
         public void filter(ClientRequestContext requestContext) throws IOException {
-            HttpRequestMetric requestMetric = new HttpRequestMetric();
-            requestMetric.parseUriPath(binderConfiguration.getClientMatchPatterns(),
-                    binderConfiguration.getClientIgnorePatterns(), requestContext.getUri().getPath());
+            HttpRequestMetric requestMetric = new HttpRequestMetric(
+                    binderConfiguration.getClientMatchPatterns(),
+                    binderConfiguration.getClientIgnorePatterns(),
+                    requestContext.getUri().getPath());
+
             if (requestMetric.isMeasure()) {
                 requestMetric.setSample(Timer.start(registry));
                 requestContext.setProperty(REQUEST_METRIC_PROPERTY, requestMetric);

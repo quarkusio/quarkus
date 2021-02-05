@@ -20,9 +20,11 @@ public class HttpClientConfig {
      * Patterns specified here will take precedence over those computed
      * values.
      *
-     * For example, if `/item/\\d+=/item/custom` is specified in this list,
+     * For example, if `/item/\\\\d+=/item/custom` or
+     * `/item/[0-9]+=/item/custom` is specified in this list,
      * a request to a matching path (`/item/123`) will use the specified
      * replacement value (`/item/custom`) as the value for the uri label.
+     * Note that backslashes must be double escaped as {@code \\\\}.
      *
      * @asciidoclet
      */

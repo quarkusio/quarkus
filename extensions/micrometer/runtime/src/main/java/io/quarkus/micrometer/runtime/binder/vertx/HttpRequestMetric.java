@@ -6,7 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public class HttpRequestMetric extends RequestMetricInfo {
@@ -15,18 +16,17 @@ public class HttpRequestMetric extends RequestMetricInfo {
     /** Cache of vert.x resolved paths: /item/:id --> /item/{id} */
     final static ConcurrentHashMap<String, String> vertxWebToUriTemplate = new ConcurrentHashMap<>();
 
-    protected HttpServerRequest request;
+    protected HttpServerRequestInternal request;
     protected String initialPath;
     protected String templatePath;
-
-    protected RoutingContext routingContext;
+    protected String currentRoutePath;
 
     public HttpRequestMetric(String uri) {
         this.initialPath = uri;
     }
 
-    public HttpRequestMetric(HttpServerRequest request) {
-        this.request = request;
+    public HttpRequestMetric(HttpRequest request) {
+        this.request = (HttpServerRequestInternal) request;
         this.initialPath = this.request.path();
     }
 
@@ -35,8 +35,6 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     public String applyTemplateMatching(String path) {
-        String currentRoutePath = getCurrentRoute();
-
         // JAX-RS or Servlet container filter
         if (templatePath != null) {
             return normalizePath(templatePath);
@@ -57,32 +55,28 @@ public class HttpRequestMetric extends RequestMetricInfo {
         return path;
     }
 
-    public HttpServerRequest request() {
+    public HttpServerRequestInternal request() {
         return request;
     }
 
     public void setTemplatePath(String path) {
-        if (this.templatePath == null) {
-            this.templatePath = path;
+        this.templatePath = path;
+    }
+
+    public void appendCurrentRoutePath(String path) {
+        if (path != null && !path.isEmpty()) {
+            this.currentRoutePath = path;
         }
     }
 
-    String getCurrentRoute() {
-        return routingContext == null ? null : routingContext.currentRoute().getPath();
-    }
-
-    public void setRoutingContext(RoutingContext routingContext) {
-        this.routingContext = routingContext;
-    }
-
     public static HttpRequestMetric getRequestMetric(RoutingContext context) {
-        HttpRequestMetric metric = context.get(VertxHttpServerMetrics.METRICS_CONTEXT);
-        return metric;
+        HttpServerRequestInternal internalRequest = (HttpServerRequestInternal) context.request();
+        return (HttpRequestMetric) internalRequest.metric();
     }
 
     @Override
     public String toString() {
-        return "HttpRequestMetric [initialPath=" + initialPath + ", currentRoutePath=" + getCurrentRoute()
+        return "HttpRequestMetric [initialPath=" + initialPath + ", currentRoutePath=" + currentRoutePath
                 + ", templatePath=" + templatePath + ", request=" + request + "]";
     }
 }

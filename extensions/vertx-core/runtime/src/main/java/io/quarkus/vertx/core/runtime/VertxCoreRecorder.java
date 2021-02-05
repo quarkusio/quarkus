@@ -5,7 +5,6 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
-import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -44,6 +43,7 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
+import io.vertx.core.file.impl.FileResolver;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.spi.resolver.ResolverProvider;
@@ -188,7 +188,8 @@ public class VertxCoreRecorder {
         }
 
         Vertx vertx;
-        if (options.getEventBusOptions().isClustered()) {
+
+        if (conf != null && conf.cluster != null && conf.cluster.clustered) {
             CompletableFuture<Vertx> latch = new CompletableFuture<>();
             Vertx.clusteredVertx(options, new Handler<AsyncResult<Vertx>>() {
                 @Override
@@ -204,6 +205,7 @@ public class VertxCoreRecorder {
         } else {
             vertx = Vertx.vertx(options);
         }
+
         vertx.exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable error) {
@@ -233,7 +235,7 @@ public class VertxCoreRecorder {
             initializeClusterOptions(conf, options);
         }
 
-        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
+        String fileCacheDir = System.getProperty(FileResolver.CACHE_DIR_BASE_PROP_NAME);
         if (fileCacheDir == null) {
             File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
             if (!tmp.isDirectory()) {
@@ -343,7 +345,6 @@ public class VertxCoreRecorder {
 
     private static void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
         ClusterConfiguration cluster = conf.cluster;
-        options.getEventBusOptions().setClustered(cluster.clustered);
         options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
         options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval.toMillis());
         if (cluster.host != null) {
@@ -364,7 +365,6 @@ public class VertxCoreRecorder {
         opts.setAcceptBacklog(eb.acceptBacklog.orElse(-1));
         opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth.toUpperCase()));
         opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout.toMillis())));
-        // todo: use timeUnit cleverly
         opts.setIdleTimeout(
                 eb.idleTimeout.isPresent() ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout.get().getSeconds()))
                         : 0);

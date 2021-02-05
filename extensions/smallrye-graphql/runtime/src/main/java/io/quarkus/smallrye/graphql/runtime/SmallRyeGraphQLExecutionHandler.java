@@ -85,14 +85,14 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
 
         response.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
 
-        switch (request.method()) {
-            case OPTIONS:
+        switch (request.method().name()) {
+            case "OPTIONS":
                 handleOptions(response);
                 break;
-            case POST:
+            case "POST":
                 handlePost(response, ctx);
                 break;
-            case GET:
+            case "GET":
                 handleGet(response, ctx);
                 break;
             default:

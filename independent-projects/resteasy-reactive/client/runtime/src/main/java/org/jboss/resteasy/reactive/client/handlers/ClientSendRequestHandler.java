@@ -25,33 +25,34 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
+
     @Override
-    public void handle(RestClientRequestContext requestContext) throws Exception {
+    public void handle(RestClientRequestContext requestContext) {
         if (requestContext.getAbortedWith() != null) {
             return;
         }
         requestContext.suspend();
-        Future<HttpClientRequest> futureRequest = createRequest(requestContext);
-        futureRequest.onSuccess(new Handler<HttpClientRequest>() {
+        Future<HttpClientRequest> future = createRequest(requestContext);
+        future.onSuccess(new Handler<HttpClientRequest>() {
             @Override
-            public void handle(HttpClientRequest request) {
-                requestContext.setHttpClientRequest(request);
-                Buffer actualEntity = null;
+            public void handle(HttpClientRequest httpClientRequest) {
+                Buffer actualEntity;
                 try {
                     actualEntity = ClientSendRequestHandler.this
-                            .setRequestHeadersAndPrepareBody(request, requestContext);
+                            .setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
                 } catch (IOException e) {
                     requestContext.resume(new ProcessingException(e));
                     return;
                 }
-                Future<HttpClientResponse> future;
+
+                Future<HttpClientResponse> sent;
                 if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
-                    future = request.send();
+                    sent = httpClientRequest.send();
                 } else {
-                    future = request.send(actualEntity);
+                    sent = httpClientRequest.send(actualEntity);
                 }
 
-                future
+                sent
                         .onSuccess(new Handler<HttpClientResponse>() {
                             @Override
                             public void handle(HttpClientResponse clientResponse) {
@@ -111,7 +112,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         .setSsl(isHttps));
     }
 
-    private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest, RestClientRequestContext state)
+    private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
+            RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
@@ -121,10 +123,12 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             if (entity.getVariant() != null) {
                 Variant v = entity.getVariant();
                 headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
-                if (v.getLanguageString() != null)
+                if (v.getLanguageString() != null) {
                     headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
-                if (v.getEncoding() != null)
+                }
+                if (v.getEncoding() != null) {
                     headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
+                }
             }
 
             actualEntity = state.writeEntity(entity, headerMap,

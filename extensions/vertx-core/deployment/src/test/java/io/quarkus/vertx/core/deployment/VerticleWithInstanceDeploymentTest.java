@@ -15,7 +15,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 /**
@@ -54,7 +54,7 @@ public class VerticleWithInstanceDeploymentTest {
     public static class MyVerticle extends AbstractVerticle {
 
         @Override
-        public void start(Future<Void> done) {
+        public void start(Promise<Void> done) {
             vertx.createHttpServer()
                     .requestHandler(req -> req.response().end("OK-" + Thread.currentThread().getName()))
                     .listen(8080, ar -> done.handle(ar.mapEmpty()));

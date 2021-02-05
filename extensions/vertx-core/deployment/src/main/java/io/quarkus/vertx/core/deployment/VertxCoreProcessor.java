@@ -93,7 +93,8 @@ class VertxCoreProcessor {
 
     @BuildStep
     LogCleanupFilterBuildItem filterNettyHostsFileParsingWarn() {
-        return new LogCleanupFilterBuildItem("io.netty.resolver.HostsFileParser", "Failed to load and parse hosts file");
+        return new LogCleanupFilterBuildItem("io.netty.resolver.HostsFileParser",
+                "Failed to load and parse hosts file");
     }
 
     @BuildStep

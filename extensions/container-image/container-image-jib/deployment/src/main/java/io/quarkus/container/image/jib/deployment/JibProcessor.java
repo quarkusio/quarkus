@@ -134,7 +134,7 @@ public class JibProcessor {
         }
         setUser(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
-        JibContainer container = containerize(containerImageConfig, containerImage, jibContainerBuilder,
+        JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
@@ -165,7 +165,7 @@ public class JibProcessor {
                 nativeImage, containerImageLabels);
         setUser(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
-        JibContainer container = containerize(containerImageConfig, containerImage, jibContainerBuilder,
+        JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
@@ -173,8 +173,9 @@ public class JibProcessor {
     }
 
     private JibContainer containerize(ContainerImageConfig containerImageConfig,
-            ContainerImageInfoBuildItem containerImage, JibContainerBuilder jibContainerBuilder, boolean pushRequested) {
-        Containerizer containerizer = createContainerizer(containerImageConfig, containerImage, pushRequested);
+            JibConfig jibConfig, ContainerImageInfoBuildItem containerImage, JibContainerBuilder jibContainerBuilder,
+            boolean pushRequested) {
+        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, containerImage, pushRequested);
         for (String additionalTag : containerImage.getAdditionalTags()) {
             containerizer.withAdditionalTag(additionalTag);
         }
@@ -192,7 +193,7 @@ public class JibProcessor {
     }
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
-            ContainerImageInfoBuildItem containerImage,
+            JibConfig jibConfig, ContainerImageInfoBuildItem containerImage,
             boolean pushRequested) {
         Containerizer containerizer;
         ImageReference imageReference = ImageReference.of(containerImage.getRegistry().orElse(null),
@@ -216,6 +217,7 @@ public class JibProcessor {
             }
         });
         containerizer.setAllowInsecureRegistries(containerImageConfig.insecure);
+        containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage);
         return containerizer;
     }
 

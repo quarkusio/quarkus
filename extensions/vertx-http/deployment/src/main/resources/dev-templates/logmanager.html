@@ -33,7 +33,7 @@
                     </li>
                     <li id="logstreamCurrentFilter" class="navbar-text">
                     </li>
-                    <li id="logstreamResizeButton" class="nav-item"><a class="logstreamIcon nav-link"><i class="fas fa-arrows-alt-v"></i></a></li>
+                    <li id="logstreamResizeButton" class="nav-item"><a class="nav-link"><i class="fas fa-arrows-alt-v"></i></a></li>
                     <li id="logstreamHideLogButton" class="nav-item" data-toggle="tooltip" data-placement="left" title="Hide Log"><a class="logstreamIcon nav-link" onclick="hideLog();"><i class="fas fa-caret-down fa-lg"></i></a></li>
                 </ul>
             </div>
@@ -119,6 +119,11 @@
                 </div>
 
                 <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalHostNameSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalHostNameSwitch">Host Name</label>
+                </div>
+                
+                <div class="custom-control custom-switch">
                     <input checked type="checkbox" class="custom-control-input" id="logstreamColumnsModalDateSwitch">
                     <label class="custom-control-label" for="logstreamColumnsModalDateSwitch">Date</label>
                 </div>
@@ -134,7 +139,22 @@
                 </div>
 
                 <div class="custom-control custom-switch">
-                    <input checked type="checkbox" class="custom-control-input" id="logstreamColumnsModalSourceClassFullAbbreviatedSwitch">
+                    <input checked type="checkbox" class="custom-control-input" id="logstreamColumnsModalLoggerNameAbbreviatedSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalLoggerNameAbbreviatedSwitch">Logger Name (Abbreviated)</label>
+                </div>
+                
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalLoggerNameSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalLoggerNameSwitch">Logger Name</label>
+                </div>
+                
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalLoggerClassNameSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalLoggerClassNameSwitch">Logger Class Name</label>
+                </div>
+                
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalSourceClassFullAbbreviatedSwitch">
                     <label class="custom-control-label" for="logstreamColumnsModalSourceClassFullAbbreviatedSwitch">Full Class Name (Abbreviated)</label>
                 </div>
 
@@ -149,10 +169,30 @@
                 </div>
 
                 <div class="custom-control custom-switch">
-                    <input checked type="checkbox" class="custom-control-input" id="logstreamColumnsModalSourceMethodNameSwitch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalSourceMethodNameSwitch">
                     <label class="custom-control-label" for="logstreamColumnsModalSourceMethodNameSwitch">Method Name</label>
                 </div>
 
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalSourceFileNameSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalSourceFileNameSwitch">File Name</label>
+                </div>
+                
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalSourceLineNumberSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalSourceLineNumberSwitch">Line Number</label>
+                </div>
+                
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalProcessIdSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalProcessIdSwitch">Process Id</label>
+                </div>
+
+                <div class="custom-control custom-switch">
+                    <input checked type="checkbox" class="custom-control-input" id="logstreamColumnsModalProcessNameSwitch">
+                    <label class="custom-control-label" for="logstreamColumnsModalProcessNameSwitch">Process Name</label>
+                </div>
+                
                 <div class="custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="logstreamColumnsModalThreadIdSwitch">
                     <label class="custom-control-label" for="logstreamColumnsModalThreadIdSwitch">Thread Id</label>

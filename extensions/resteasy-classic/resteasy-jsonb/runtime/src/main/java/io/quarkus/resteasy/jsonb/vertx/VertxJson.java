@@ -1,6 +1,11 @@
 package io.quarkus.resteasy.jsonb.vertx;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.json.JsonNumber;
 import javax.json.JsonValue;
@@ -25,6 +30,8 @@ public class VertxJson {
     private VertxJson() {
         // avoid direct instantiation
     }
+
+    private final static Base64.Encoder BASE64_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
     public static void copy(JsonObject object, javax.json.JsonObject origin) {
         origin.keySet().forEach(key -> {
@@ -112,7 +119,15 @@ public class VertxJson {
     public static class JsonObjectSerializer implements JsonbSerializer<JsonObject> {
         @Override
         public void serialize(JsonObject json, JsonGenerator generator, SerializationContext ctxt) {
-            ctxt.serialize(json.getMap(), generator);
+            Map<String, Object> map = new HashMap<>();
+            for (Map.Entry<String, Object> entry : json.getMap().entrySet()) {
+                if (entry.getValue() instanceof byte[]) {
+                    map.put(entry.getKey(), BASE64_ENCODER.encodeToString((byte[]) entry.getValue()));
+                } else {
+                    map.put(entry.getKey(), entry.getValue());
+                }
+            }
+            ctxt.serialize(map, generator);
         }
     }
 
@@ -129,7 +144,16 @@ public class VertxJson {
     public static class JsonArraySerializer implements JsonbSerializer<JsonArray> {
         @Override
         public void serialize(JsonArray json, JsonGenerator generator, SerializationContext ctxt) {
-            ctxt.serialize(json.getList(), generator);
+            List<?> list = json.getList();
+            List<Object> copy = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof byte[]) {
+                    copy.add(BASE64_ENCODER.encodeToString((byte[]) o));
+                } else {
+                    copy.add(o);
+                }
+            }
+            ctxt.serialize(copy, generator);
         }
     }
 

@@ -1,9 +1,7 @@
 package io.quarkus.reactive.mysql.client.runtime;
 
 import io.quarkus.reactive.datasource.runtime.ThreadLocalPool;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -12,7 +10,6 @@ import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
-import io.vertx.sqlclient.Transaction;
 
 public class ThreadLocalMySQLPool extends ThreadLocalPool<MySQLPool> implements MySQLPool {
 
@@ -31,15 +28,19 @@ public class ThreadLocalMySQLPool extends ThreadLocalPool<MySQLPool> implements 
     private class MySQLPoolWrapper implements MySQLPool {
 
         private final MySQLPool delegate;
-        private boolean open = true;
 
-        private MySQLPoolWrapper(MySQLPool delegate) {
+        MySQLPoolWrapper(MySQLPool delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
             delegate.getConnection(handler);
+        }
+
+        @Override
+        public Future<SqlConnection> getConnection() {
+            return delegate.getConnection();
         }
 
         @Override
@@ -53,16 +54,17 @@ public class ThreadLocalMySQLPool extends ThreadLocalPool<MySQLPool> implements 
         }
 
         @Override
-        public void begin(Handler<AsyncResult<Transaction>> handler) {
-            delegate.begin(handler);
+        public void close(Handler<AsyncResult<Void>> handler) {
+            delegate.close()
+                    .onComplete(x -> ThreadLocalMySQLPool.this.removeSelfFromTracking(this))
+                    .onComplete(handler);
         }
 
         @Override
-        public void close() {
-            if (open) {
-                delegate.close();
-                ThreadLocalMySQLPool.this.removeSelfFromTracking(this);
-            }
+        public Future<Void> close() {
+            Promise<Void> promise = Promise.promise();
+            close(promise);
+            return promise.future();
         }
     }
 

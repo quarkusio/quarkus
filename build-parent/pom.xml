@@ -106,8 +106,10 @@
 
         <boring-ssl.version>2.0.30.Final</boring-ssl.version>
 
-        <!-- Used for integration tests, to make sure webjars work-->
-        <bootstrap.version>3.1.0</bootstrap.version>
+        <!-- Webjars -->
+        <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
+        <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
+        <webjar.jquery.version>3.5.1</webjar.jquery.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>
@@ -251,13 +253,7 @@
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
                 <scope>test</scope>
                 <version>${boring-ssl.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>bootstrap</artifactId>
-                <version>${bootstrap.version}</version>
-            </dependency>
-
+            </dependency>            
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
@@ -285,6 +281,23 @@
                 <artifactId>quarkus-security-test-utils</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
+            </dependency>
+            
+            <!-- Webjars for UI related -->
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>bootstrap</artifactId>
+                <version>${webjar.bootstrap.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>font-awesome</artifactId>
+                <version>${webjar.font-awesome.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>jquery</artifactId>
+                <version>${webjar.jquery.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

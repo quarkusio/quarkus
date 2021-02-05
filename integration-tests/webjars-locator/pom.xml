@@ -25,9 +25,9 @@
             <artifactId>quarkus-webjars-locator</artifactId>
         </dependency>
         <dependency>
-          <groupId>org.webjars</groupId>
-          <artifactId>jquery</artifactId>
-          <version>3.4.1</version>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.4.1</version>
         </dependency>
         <dependency>
           <groupId>org.webjars</groupId>

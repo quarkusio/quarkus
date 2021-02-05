@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
@@ -9,6 +10,7 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -23,73 +25,93 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
+
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
         if (requestContext.getAbortedWith() != null) {
             return;
         }
         requestContext.suspend();
-        HttpClientRequest httpClientRequest = createRequest(requestContext);
-        Buffer actualEntity = setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
-        httpClientRequest.handler(new Handler<HttpClientResponse>() {
+        Future<HttpClientRequest> future = createRequest(requestContext);
+        future.onSuccess(new Handler<HttpClientRequest>() {
             @Override
-            public void handle(HttpClientResponse clientResponse) {
+            public void handle(HttpClientRequest httpClientRequest) {
+                Buffer actualEntity = null;
                 try {
-                    requestContext.initialiseResponse(clientResponse);
-                    if (!requestContext.isRegisterBodyHandler()) {
-                        clientResponse.pause();
-                        requestContext.resume();
-                    } else {
-                        clientResponse.bodyHandler(new Handler<Buffer>() {
+                    actualEntity = ClientSendRequestHandler.this
+                            .setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+
+                Future<HttpClientResponse> sent;
+                if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
+                    sent = httpClientRequest.send();
+                } else {
+                    sent = httpClientRequest.send(actualEntity);
+                }
+
+                sent
+                        .onSuccess(new Handler<HttpClientResponse>() {
                             @Override
-                            public void handle(Buffer buffer) {
+                            public void handle(HttpClientResponse clientResponse) {
                                 try {
-                                    if (buffer.length() > 0) {
-                                        requestContext.setResponseEntityStream(new ByteArrayInputStream(buffer.getBytes()));
+                                    requestContext.initialiseResponse(clientResponse);
+                                    if (!requestContext.isRegisterBodyHandler()) {
+                                        clientResponse.pause();
+                                        requestContext.resume();
                                     } else {
-                                        requestContext.setResponseEntityStream(null);
+                                        clientResponse.bodyHandler(new Handler<Buffer>() {
+                                            @Override
+                                            public void handle(Buffer buffer) {
+                                                try {
+                                                    if (buffer.length() > 0) {
+                                                        requestContext.setResponseEntityStream(
+                                                                new ByteArrayInputStream(buffer.getBytes()));
+                                                    } else {
+                                                        requestContext.setResponseEntityStream(null);
+                                                    }
+                                                    requestContext.resume();
+                                                } catch (Throwable t) {
+                                                    requestContext.resume(t);
+                                                }
+                                            }
+                                        });
                                     }
-                                    requestContext.resume();
                                 } catch (Throwable t) {
                                     requestContext.resume(t);
                                 }
                             }
+                        })
+                        .onFailure(new Handler<Throwable>() {
+                            @Override
+                            public void handle(Throwable event) {
+                                if (event instanceof IOException) {
+                                    requestContext.resume(new ProcessingException(event));
+                                } else {
+                                    requestContext.resume(event);
+                                }
+                            }
                         });
-                    }
-                } catch (Throwable t) {
-                    requestContext.resume(t);
-                }
+
             }
         });
-        httpClientRequest.exceptionHandler(new Handler<Throwable>() {
-            @Override
-            public void handle(Throwable event) {
-                if (event instanceof IOException) {
-                    requestContext.resume(new ProcessingException(event));
-                } else {
-                    requestContext.resume(event);
-                }
-            }
-        });
-        if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
-            httpClientRequest.end();
-        } else {
-            httpClientRequest.end(actualEntity);
-        }
 
     }
 
-    public <T> HttpClientRequest createRequest(RestClientRequestContext state) {
+    public Future<HttpClientRequest> createRequest(RestClientRequestContext state) {
         HttpClient httpClient = state.getHttpClient();
         URI uri = state.getUri();
-        HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(state.getHttpMethod()), uri.getPort(),
+        return httpClient.request(
+                HttpMethod.valueOf(state.getHttpMethod()), uri.getPort(),
                 uri.getHost(),
-                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
-        state.setHttpClientRequest(httpClientRequest);
-        return httpClientRequest;
+                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()))
+                .onSuccess(state::setHttpClientRequest);
+
     }
 
-    private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest, RestClientRequestContext state)
+    private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
+            RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
@@ -99,10 +121,12 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             if (entity.getVariant() != null) {
                 Variant v = entity.getVariant();
                 headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
-                if (v.getLanguageString() != null)
+                if (v.getLanguageString() != null) {
                     headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
-                if (v.getEncoding() != null)
+                }
+                if (v.getEncoding() != null) {
                     headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
+                }
             }
 
             actualEntity = state.writeEntity(entity, headerMap,

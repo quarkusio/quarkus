@@ -8,7 +8,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
@@ -66,8 +66,8 @@ public class KeycloakPolicyEnforcerBuildStep {
     }
 
     @BuildStep
-    EnableAllSecurityServicesBuildItem security() {
-        return new EnableAllSecurityServicesBuildItem();
+    ExtensionSslNativeSupportBuildItem enableSslInNative() {
+        return new ExtensionSslNativeSupportBuildItem(Feature.KEYCLOAK_AUTHORIZATION);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

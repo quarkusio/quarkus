@@ -43,4 +43,16 @@ public class HelloResource {
     public String uuid() {
         return uuid.toString();
     }
+
+    @GET
+    @Path("disable")
+    public void disable() {
+        System.setProperty("quarkus.dev.instrumentation", "false");
+    }
+
+    @GET
+    @Path("enable")
+    public void enable() {
+        System.setProperty("quarkus.dev.instrumentation","true");
+    }
 }

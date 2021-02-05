@@ -26,6 +26,8 @@ import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import org.junit.jupiter.api.Assertions;
 
+import io.quarkus.runtime.BlockingOperationControl;
+import io.smallrye.common.annotation.Blocking;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -47,6 +49,16 @@ public class NewParamsRestResource {
             @RestMatrix String m,
             @RestCookie String c) {
         return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f + ", m: " + m + ", c: " + c;
+    }
+
+    @Blocking
+    @POST
+    @Path("form-blocking")
+    public String formBlocking(@RestForm String f) {
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return f;
     }
 
     @GET

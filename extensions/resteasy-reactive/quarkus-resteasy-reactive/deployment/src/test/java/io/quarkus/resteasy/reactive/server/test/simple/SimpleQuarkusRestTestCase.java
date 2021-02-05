@@ -389,6 +389,12 @@ public class SimpleQuarkusRestTestCase {
                 .then()
                 .log().ifError()
                 .body(Matchers.equalTo("data:OK\n\n"));
+        RestAssured.with()
+                .urlEncodingEnabled(false)
+                .formParam("f", "fv")
+                .post("/new-params/myklass;m=mv/myregex/form-blocking")
+                .then()
+                .body(Matchers.equalTo("fv"));
     }
 
     @Test

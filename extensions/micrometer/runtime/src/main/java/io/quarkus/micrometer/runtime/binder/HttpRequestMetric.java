@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
+import io.vertx.core.spi.observability.HttpResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class HttpRequestMetric {
@@ -36,10 +37,29 @@ public class HttpRequestMetric {
     Timer.Sample sample;
 
     /**
-     * Store the tags associated with the request (change 1.6.0).
+     * Store the tags associated with the request (change Micrometer 1.6.0).
      * Default is empty, value assigned @ requestBegin
      */
     Tags tags = Tags.empty();
+
+    /** Response associated with the request (Vert.x 4.0) */
+    HttpResponse response;
+
+    public Timer.Sample getSample() {
+        return sample;
+    }
+
+    public void setSample(Timer.Sample sample) {
+        this.sample = sample;
+    }
+
+    public Tags getTags() {
+        return tags;
+    }
+
+    public void setTags(Tags tags) {
+        this.tags = tags;
+    }
 
     /**
      * Extract the path out of the uri. Return null if the path should be

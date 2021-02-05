@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.reactive.deployment;
 
+import static io.quarkus.arc.deployment.AdditionalBeanBuildItem.unremovableOf;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
@@ -55,7 +56,6 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
-import io.quarkus.hibernate.reactive.runtime.ReactiveSessionProducer;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
@@ -83,8 +83,8 @@ public final class HibernateReactiveProcessor {
 
         if (descriptors.size() == 1) {
             // Only register those beans if their EMF dependency is also available, so use the same guard as the ORM extension
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionFactoryProducer.class));
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionProducer.class));
+            // Also: mark it as Unremovable as Panache will retrieve it programmatically only
+            additionalBeans.produce(unremovableOf(ReactiveSessionFactoryProducer.class));
         }
     }
 

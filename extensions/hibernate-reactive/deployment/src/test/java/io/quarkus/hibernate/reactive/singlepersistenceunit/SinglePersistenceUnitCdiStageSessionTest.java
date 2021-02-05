@@ -8,7 +8,6 @@ import javax.inject.Inject;
 import org.hibernate.reactive.stage.Stage;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,16 +22,16 @@ public class SinglePersistenceUnitCdiStageSessionTest {
                     .addAsResource("application.properties"));
 
     @Inject
-    Stage.Session session;
+    Stage.SessionFactory sessionFactory;
 
     @Test
-    @Disabled("#14812: We're getting a ContextNotActiveException for some (unknown) reason")
     @ActivateRequestContext
     public void test() {
         DefaultEntity entity = new DefaultEntity("default");
 
-        DefaultEntity retrievedEntity = session.withTransaction(tx -> session.persist(entity))
-                .thenCompose($ -> session.withTransaction(tx -> session.clear().find(DefaultEntity.class, entity.getId())))
+        DefaultEntity retrievedEntity = sessionFactory.withTransaction((session, tx) -> session.persist(entity))
+                .thenCompose(
+                        $ -> sessionFactory.withTransaction((session, tx) -> session.find(DefaultEntity.class, entity.getId())))
                 .toCompletableFuture().join();
 
         assertThat(retrievedEntity)

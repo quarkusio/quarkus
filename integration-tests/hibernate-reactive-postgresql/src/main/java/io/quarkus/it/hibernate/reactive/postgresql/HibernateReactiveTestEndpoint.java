@@ -19,10 +19,10 @@ import io.vertx.mutiny.sqlclient.Tuple;
 public class HibernateReactiveTestEndpoint {
 
     @Inject
-    Stage.Session stageSession;
+    Stage.SessionFactory stageSessionFactory;
 
     @Inject
-    Mutiny.Session mutinySession;
+    Mutiny.SessionFactory mutinySessionFactory;
 
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
@@ -34,23 +34,24 @@ public class HibernateReactiveTestEndpoint {
     public CompletionStage<GuineaPig> reactiveFind() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB().convert().toCompletionStage()
-                .thenCompose(junk -> stageSession.find(GuineaPig.class, expectedPig.getId()));
+                .thenCompose(junk -> stageSessionFactory.withTransaction(
+                        (session, transaction) -> session.find(GuineaPig.class, expectedPig.getId())));
     }
 
     @GET
     @Path("/reactiveFindMutiny")
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
-        return populateDB().chain(() -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
+        return populateDB()
+                .chain(() -> mutinySessionFactory.withTransaction(
+                        (session, transaction) -> session.find(GuineaPig.class, expectedPig.getId())));
     }
 
     @GET
     @Path("/reactivePersist")
     public Uni<String> reactivePersist() {
-        final GuineaPig pig = new GuineaPig(10, "Tulip");
-        return mutinySession
-                .persist(pig)
-                .chain(() -> mutinySession.flush())
+        return mutinySessionFactory
+                .withTransaction((session, transaction) -> session.persist(new GuineaPig(10, "Tulip")))
                 .chain(() -> selectNameFromId(10));
     }
 
@@ -59,11 +60,10 @@ public class HibernateReactiveTestEndpoint {
     public Uni<FriesianCow> reactiveCowPersist() {
         final FriesianCow cow = new FriesianCow();
         cow.name = "Carolina";
-        return mutinySession
-                .persist(cow)
-                .chain(() -> mutinySession.flush())
-                .chain(s -> mutinySession.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
-                        .setParameter("name", cow.name).getSingleResult());
+        return mutinySessionFactory.withTransaction((session, transaction) -> session.persist(cow))
+                .chain(() -> mutinySessionFactory.withTransaction((session, transaction) -> session
+                        .createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
+                        .setParameter("name", cow.name).getSingleResult()));
     }
 
     @GET
@@ -71,41 +71,30 @@ public class HibernateReactiveTestEndpoint {
     public Uni<String> reactiveRemoveTransientEntity() {
         return populateDB()
                 .chain(() -> selectNameFromId(5))
-                .invoke(name -> {
-                    if (name == null)
+                .map(name -> {
+                    if (name == null) {
                         throw new AssertionError("Database was not populated properly");
+                    }
+                    return name;
                 })
-                .chain(() -> mutinySession.merge(new GuineaPig(5, "Aloi")))
-                .chain(aloi -> mutinySession.remove(aloi))
-                .chain(() -> mutinySession.flush())
+                .chain(() -> mutinySessionFactory
+                        .withTransaction((session, transaction) -> session.merge(new GuineaPig(5, "Aloi"))
+                                .chain(aloi -> session.remove(aloi))))
                 .chain(() -> selectNameFromId(5))
-                .map(result -> {
-                    if (result == null)
-                        return "OK";
-                    else
-                        return result;
-                });
+                .onItem().ifNotNull().transform(result -> result)
+                .onItem().ifNull().continueWith("OK");
     }
 
     @GET
     @Path("/reactiveRemoveManagedEntity")
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
+                .chain(() -> mutinySessionFactory
+                        .withTransaction((session, transaction) -> session.find(GuineaPig.class, 5)
+                                .chain(aloi -> session.remove(aloi))))
                 .chain(() -> selectNameFromId(5))
-                .invoke(name -> {
-                    if (name == null)
-                        throw new AssertionError("Database was not populated properly");
-                })
-                .chain(() -> mutinySession.find(GuineaPig.class, 5))
-                .chain(aloi -> mutinySession.remove(aloi))
-                .chain(() -> mutinySession.flush())
-                .chain(() -> selectNameFromId(5))
-                .map(result -> {
-                    if (result == null)
-                        return "OK";
-                    else
-                        return result;
-                });
+                .onItem().ifNotNull().transform(result -> result)
+                .onItem().ifNull().continueWith("OK");
     }
 
     @GET
@@ -113,13 +102,15 @@ public class HibernateReactiveTestEndpoint {
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
         return populateDB()
-                .chain(() -> mutinySession.find(GuineaPig.class, 5))
-                .invoke(pig -> {
-                    if (NEW_NAME.equals(pig.getName()))
-                        throw new AssertionError("Pig already had name " + NEW_NAME);
-                    pig.setName(NEW_NAME);
-                })
-                .chain(() -> mutinySession.flush())
+                .chain(() -> mutinySessionFactory
+                        .withTransaction((session, transaction) -> session.find(GuineaPig.class, 5)
+                                .map(pig -> {
+                                    if (NEW_NAME.equals(pig.getName())) {
+                                        throw new AssertionError("Pig already had name " + NEW_NAME);
+                                    }
+                                    pig.setName(NEW_NAME);
+                                    return pig;
+                                })))
                 .chain(() -> selectNameFromId(5));
     }
 

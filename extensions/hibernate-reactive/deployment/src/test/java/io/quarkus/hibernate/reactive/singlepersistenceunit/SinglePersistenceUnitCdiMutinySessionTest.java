@@ -22,15 +22,18 @@ public class SinglePersistenceUnitCdiMutinySessionTest {
                     .addAsResource("application.properties"));
 
     @Inject
-    Mutiny.Session session;
+    Mutiny.SessionFactory sessionFactory;
 
     @Test
     @ActivateRequestContext
     public void test() {
         DefaultEntity entity = new DefaultEntity("default");
 
-        DefaultEntity retrievedEntity = session.withTransaction(tx -> session.persist(entity))
-                .chain(() -> session.withTransaction(tx -> session.clear().find(DefaultEntity.class, entity.getId())))
+        sessionFactory.withTransaction((session, transaction) -> session.persist(entity))
+                .await().indefinitely();
+
+        DefaultEntity retrievedEntity = sessionFactory
+                .withTransaction((session, transaction) -> session.find(DefaultEntity.class, entity.getId()))
                 .await().indefinitely();
 
         assertThat(retrievedEntity)

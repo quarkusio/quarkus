@@ -83,12 +83,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     // Private stuff
 
     public static Mutiny.Session getSession() {
-        Mutiny.Session session = Arc.container().instance(Mutiny.Session.class).get();
+        Mutiny.SessionFactory sessionFactory = Arc.container().instance(Mutiny.SessionFactory.class).get();
         // FIXME: handle null or exception?
-        if (session == null) {
-            throw new PersistenceException("No Mutiny.Session found. Do you have any JPA entities defined?");
+        if (sessionFactory == null) {
+            throw new PersistenceException("No Mutiny.SessionFactory found. Do you have any JPA entities defined?");
         }
-        return session;
+        return sessionFactory.openSession();
     }
 
     public static Mutiny.Query<?> bindParameters(Mutiny.Query<?> query, Object[] params) {

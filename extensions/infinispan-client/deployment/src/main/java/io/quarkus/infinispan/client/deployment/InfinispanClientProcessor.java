@@ -8,31 +8,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import org.infinispan.client.hotrod.annotation.ClientListener;
-import org.infinispan.client.hotrod.configuration.NearCacheMode;
-import org.infinispan.client.hotrod.exceptions.HotRodClientException;
-import org.infinispan.client.hotrod.impl.ConfigurationProperties;
-import org.infinispan.client.hotrod.logging.Log;
-import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.commons.marshall.ProtoStreamMarshaller;
-import org.infinispan.commons.util.Util;
-import org.infinispan.protostream.BaseMarshaller;
-import org.infinispan.protostream.EnumMarshaller;
-import org.infinispan.protostream.FileDescriptorSource;
-import org.infinispan.protostream.MessageMarshaller;
-import org.infinispan.protostream.RawProtobufMarshaller;
-import org.infinispan.protostream.SerializationContextInitializer;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -54,6 +36,25 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanRecorder;
+import org.infinispan.client.hotrod.annotation.ClientListener;
+import org.infinispan.client.hotrod.configuration.NearCacheMode;
+import org.infinispan.client.hotrod.exceptions.HotRodClientException;
+import org.infinispan.client.hotrod.impl.ConfigurationProperties;
+import org.infinispan.client.hotrod.logging.Log;
+import org.infinispan.client.hotrod.logging.LogFactory;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
+import org.infinispan.commons.util.Util;
+import org.infinispan.protostream.BaseMarshaller;
+import org.infinispan.protostream.EnumMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.MessageMarshaller;
+import org.infinispan.protostream.RawProtobufMarshaller;
+import org.infinispan.protostream.SerializationContextInitializer;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
@@ -67,26 +68,14 @@ class InfinispanClientProcessor {
      */
     InfinispanClientBuildTimeConfig infinispanClient;
 
+
+    /**
+     * Load the Hotrod client properties from classpath.
+     */
     @BuildStep
-    InfinispanPropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
-            CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
-
-        feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
-        systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
-        hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_PROPERTIES));
-
-        // Enable SSL support by default
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
-
+    HotrodPropertiesBuildItem defaultHotrodProperties() {
         InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
+
         Properties properties;
         if (stream == null) {
             properties = new Properties();
@@ -102,12 +91,46 @@ class InfinispanClientProcessor {
             } finally {
                 Util.close(stream);
             }
+        }
 
-            // We use caffeine for bounded near cache - so register that reflection if we have a bounded near cache
-            if (properties.containsKey(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES)) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.SSMS"));
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.PSMS"));
-            }
+        return new HotrodPropertiesBuildItem(properties, HotrodPropertiesBuildItem.LOWEST);
+    }
+
+    @BuildStep
+    InfinispanPropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
+            BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
+            CombinedIndexBuildItem applicationIndexBuildItem,
+            List<HotrodPropertiesBuildItem> hotRodPropertiesItem) throws ClassNotFoundException, IOException {
+
+        feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
+        systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
+        hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_PROPERTIES));
+
+        // Enable SSL support by default
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
+
+        if (hotRodPropertiesItem.size() > 1) {
+            // sort items by priority
+            hotRodPropertiesItem.sort(Comparator.comparingInt(HotrodPropertiesBuildItem::getOrder));
+        }
+
+        Properties properties = new Properties();
+
+        for (HotrodPropertiesBuildItem item : hotRodPropertiesItem) {
+            properties.putAll(item.getProperties());
+        }
+
+        // We use caffeine for bounded near cache - so register that reflection if we have a bounded near cache
+        if (properties.containsKey(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES)) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.SSMS"));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.PSMS"));
         }
 
         InfinispanClientProducer.replaceProperties(properties);

@@ -323,6 +323,13 @@ You should see:
 123456
 ----
 
+[NOTE]
+====
+The MicroProfile _Vault Config Source_ is configured with ordinal `270`, which is higher than the file system
+or jar ordinals, but lower than environment variables.
+This value can be changed using property `quarkus.vault.config-ordinal`.
+====
+
 == Programmatic access to the KV secret engine
 
 Sometimes secrets are retrieved from an arbitrary path that is known only at runtime through an application

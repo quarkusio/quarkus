@@ -25,6 +25,7 @@ import io.quarkus.vault.runtime.LogConfidentialityLevel;
 public class VaultBootstrapConfig {
 
     public static final String NAME = "vault";
+    public static final String DEFAULT_CONFIG_ORDINAL = "270";
     public static final String DEFAULT_KUBERNETES_JWT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";
     public static final String DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH = "secret";
     public static final String KV_SECRET_ENGINE_VERSION_V2 = "2";
@@ -37,10 +38,21 @@ public class VaultBootstrapConfig {
     public static final String DEFAULT_KUBERNETES_AUTH_MOUNT_PATH = "auth/kubernetes";
 
     /**
+     * Microprofile Config ordinal.
+     * <p>
+     * This is provided as an alternative to the `config_ordinal` property defined by the specification, to
+     * make it easier and more natural for applications to override the default ordinal.
+     * <p>
+     * The default value is higher than the file system or jar ordinals, but lower than env vars.
+     */
+    @ConfigItem(defaultValue = DEFAULT_CONFIG_ORDINAL)
+    public int configOrdinal;
+
+    /**
      * Vault server url.
-     *
+     * <p>
      * Example: https://localhost:8200
-     *
+     * <p>
      * See also the documentation for the `kv-secret-engine-mount-path` property for some insights on how
      * the full Vault url gets built.
      *
@@ -58,7 +70,7 @@ public class VaultBootstrapConfig {
 
     /**
      * Renew grace period duration.
-     *
+     * <p>
      * This value if used to extend a lease before it expires its ttl, or recreate a new lease before the current
      * lease reaches its max_ttl.
      * By default Vault leaseDuration is equal to 7 days (ie: 168h or 604800s).
@@ -78,7 +90,7 @@ public class VaultBootstrapConfig {
 
     /**
      * Vault config source cache period.
-     *
+     * <p>
      * Properties fetched from vault as MP config will be kept in a cache, and will not be fetched from vault
      * again until the expiration of that period.
      * This property is ignored if `secret-config-kv-path` is not set.
@@ -92,20 +104,20 @@ public class VaultBootstrapConfig {
     /**
      * List of comma separated vault paths in kv store,
      * where all properties will be available as MP config properties **as-is**, with no prefix.
-     *
+     * <p>
      * For instance, if vault contains property `foo`, it will be made available to the
      * quarkus application as `@ConfigProperty(name = "foo") String foo;`
-     *
+     * <p>
      * If 2 paths contain the same property, the last path will win.
-     *
+     * <p>
      * For instance if
-     *
+     * <p>
      * * `secret/base-config` contains `foo=bar` and
      * * `secret/myapp/config` contains `foo=myappbar`, then
-     *
+     * <p>
      * `@ConfigProperty(name = "foo") String foo` will have value `myappbar`
      * with application properties `quarkus.vault.secret-config-kv-path=base-config,myapp/config`
-     *
+     * <p>
      * See also the documentation for the `kv-secret-engine-mount-path` property for some insights on how
      * the full Vault url gets built.
      *
@@ -125,7 +137,7 @@ public class VaultBootstrapConfig {
     /**
      * Used to hide confidential infos, for logging in particular.
      * Possible values are:
-     *
+     * <p>
      * * low: display all secrets.
      * * medium: display only usernames and lease ids (ie: passwords and tokens are masked).
      * * high: hide lease ids and dynamic credentials username.
@@ -137,7 +149,7 @@ public class VaultBootstrapConfig {
 
     /**
      * Kv secret engine version.
-     *
+     * <p>
      * see https://www.vaultproject.io/docs/secrets/kv/index.html
      *
      * @asciidoclet
@@ -147,24 +159,24 @@ public class VaultBootstrapConfig {
 
     /**
      * KV secret engine path.
-     *
+     * <p>
      * This value is used when building the url path in the KV secret engine programmatic access
      * (i.e. `VaultKVSecretEngine`) and the vault config source (i.e. fetching configuration properties from Vault).
-     *
+     * <p>
      * For a v2 KV secret engine (default - see `kv-secret-engine-version property`)
      * the full url is built from the expression `<url>/v1/</kv-secret-engine-mount-path>/data/...`.
-     *
+     * <p>
      * With property `quarkus.vault.url=https://localhost:8200`, the following call
      * `vaultKVSecretEngine.readSecret("foo/bar")` would lead eventually to a `GET` on Vault with the following
      * url: `https://localhost:8200/v1/secret/data/foo/bar`.
-     *
+     * <p>
      * With a KV secret engine v1, the url changes to: `<url>/v1/</kv-secret-engine-mount-path>/...`.
-     *
+     * <p>
      * The same logic is applied to the Vault config source. With `quarkus.vault.secret-config-kv-path=config/myapp`
      * The secret properties would be fetched from Vault using a `GET` on
      * `https://localhost:8200/v1/secret/data/config/myapp` for a KV secret engine v2 (or
      * `https://localhost:8200/v1/secret/config/myapp` for a KV secret engine v1).
-     *
+     * <p>
      * see https://www.vaultproject.io/docs/secrets/kv/index.html
      *
      * @asciidoclet
@@ -193,10 +205,10 @@ public class VaultBootstrapConfig {
 
     /**
      * List of named credentials providers, such as: `quarkus.vault.credentials-provider.foo.kv-path=mypath`
-     *
+     * <p>
      * This defines a credentials provider `foo` returning key `password` from vault path `mypath`.
      * Once defined, this provider can be used in credentials consumers, such as the Agroal connection pool.
-     *
+     * <p>
      * Example: `quarkus.datasource.credentials-provider=foo`
      *
      * @asciidoclet
@@ -265,15 +277,15 @@ public class VaultBootstrapConfig {
         /**
          * List of comma separated vault paths in kv store,
          * where all properties will be available as **prefixed** MP config properties.
-         *
+         * <p>
          * For instance if the application properties contains
          * `quarkus.vault.secret-config-kv-path.myprefix=config`, and
          * vault path `secret/config` contains `foo=bar`, then `myprefix.foo`
          * will be available in the MP config.
-         *
+         * <p>
          * If the same property is available in 2 different paths for the same prefix, the last one
          * will win.
-         *
+         * <p>
          * See also the documentation for the `quarkus.vault.kv-secret-engine-mount-path` property for some insights on how
          * the full Vault url gets built.
          *

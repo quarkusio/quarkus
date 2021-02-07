@@ -13,6 +13,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <quarkus.package.type>uber-jar</quarkus.package.type>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -58,9 +59,6 @@
               <goal>generate-code-tests</goal>
               <goal>build</goal>
             </goals>
-            <configuration>
-              <uberJar>true</uberJar>
-            </configuration>
           </execution>
         </executions>
       </plugin>

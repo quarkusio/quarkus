@@ -25,6 +25,7 @@
     <functionResourceGroup>${resourceGroup}</functionResourceGroup>
     <function>${function}</function>
     <stagingDirectory>${project.build.directory}/azure-functions/${functionAppName}</stagingDirectory>
+    <quarkus.package.type>uber-jar</quarkus.package.type>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -79,9 +80,6 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus-plugin.version}</version>
-        <configuration>
-          <uberJar>true</uberJar>
-        </configuration>
         <executions>
           <execution>
             <goals>

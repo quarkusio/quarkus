@@ -53,7 +53,11 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.finalName}")
     private String finalName;
 
+    /**
+     * @deprecated use {@code quarkus.package.type} instead
+     */
     @Parameter(property = "uberJar", defaultValue = "false")
+    @Deprecated
     private boolean uberJar;
 
     /**
@@ -145,6 +149,10 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     }
 
     protected boolean uberJar() {
+        if (uberJar) {
+            getLog().warn(
+                    "The parameter uberJar is deprecated, and will be removed in a future version. To build an uber-jar set the config property quarkus.package.type=uber-jar. For more info see https://quarkus.io/guides/maven-tooling#uber-jar-maven");
+        }
         return uberJar;
     }
 

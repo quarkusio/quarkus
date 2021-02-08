@@ -53,6 +53,7 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
@@ -276,4 +277,12 @@ class FlywayProcessor {
         return FileSystems.newFileSystem(uri, env);
     }
 
+    /**
+     * Reinitialize {@code InsertRowLock} to avoid using a cached seed when invoking {@code getNextRandomString}
+     */
+    @BuildStep
+    public RuntimeReinitializedClassBuildItem reinitInsertRowLock() {
+        return new RuntimeReinitializedClassBuildItem(
+                "org.flywaydb.core.internal.database.InsertRowLock");
+    }
 }

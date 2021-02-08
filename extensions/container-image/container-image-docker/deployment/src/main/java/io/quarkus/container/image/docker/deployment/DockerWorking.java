@@ -25,7 +25,7 @@ public class DockerWorking implements BooleanSupplier {
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.warn("No Docker binary found");
+            LOGGER.warnf("No Docker binary found or general error: %s", e);
             return false;
         }
 

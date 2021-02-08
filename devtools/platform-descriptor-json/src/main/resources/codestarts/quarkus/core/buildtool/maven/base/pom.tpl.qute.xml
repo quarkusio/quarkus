@@ -18,6 +18,9 @@
         <quarkus-plugin.version>{quarkus.maven-plugin.version}</quarkus-plugin.version>
         <compiler-plugin.version>{maven-compiler-plugin.version}</compiler-plugin.version>
         <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
+        {#if uberjar}
+        <quarkus.package.type>uber-jar</quarkus.package.type>
+        {/if}
     </properties>
 
     <dependencyManagement>
@@ -102,11 +105,6 @@
                 <artifactId>{quarkus.maven-plugin.artifact-id}</artifactId>
                 <version>$\{quarkus-plugin.version}</version>
                 <extensions>true</extensions>
-                {#if uberjar}
-                <configuration>
-                    <uberJar>true</uberJar>
-                </configuration>
-                {/if}
                 <executions>
                     <execution>
                         <goals>

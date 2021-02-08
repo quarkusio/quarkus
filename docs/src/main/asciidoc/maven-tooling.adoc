@@ -506,7 +506,8 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 [[uber-jar-maven]]
 === Uber-Jar Creation
 
-Quarkus Maven plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type=uber-jar` configuration option in your `application.properties`.
+Quarkus Maven plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type=uber-jar` configuration option in your `application.properties`
+(or `<quarkus.package.type>uber-jar</quarkus.package.type>` in your `pom.xml`).
 
 The original jar will still be present in the `target` directory but it will be renamed to contain the `.original` suffix.
 

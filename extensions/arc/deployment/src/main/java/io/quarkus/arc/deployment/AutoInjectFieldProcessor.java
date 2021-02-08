@@ -24,10 +24,14 @@ public class AutoInjectFieldProcessor {
 
     @BuildStep
     void autoInjectQualifiers(BeanArchiveIndexBuildItem beanArchiveIndex,
-            BuildProducer<AutoInjectAnnotationBuildItem> autoInjectAnnotations) {
+            BuildProducer<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
+            List<QualifierRegistrarBuildItem> qualifierRegistrars) {
         List<DotName> qualifiers = new ArrayList<>();
         for (AnnotationInstance qualifier : beanArchiveIndex.getIndex().getAnnotations(DotNames.QUALIFIER)) {
             qualifiers.add(qualifier.target().asClass().name());
+        }
+        for (QualifierRegistrarBuildItem registrar : qualifierRegistrars) {
+            qualifiers.addAll(registrar.getQualifierRegistrar().getAdditionalQualifiers().keySet());
         }
         autoInjectAnnotations.produce(new AutoInjectAnnotationBuildItem(qualifiers));
     }

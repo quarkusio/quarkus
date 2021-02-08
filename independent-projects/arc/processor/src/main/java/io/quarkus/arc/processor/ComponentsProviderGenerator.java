@@ -124,10 +124,23 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             processRemovedBeans(componentsProvider, getComponents, removedBeansHandle, beanDeployment, classOutput);
         }
 
+        // Qualifier non-binding members
+        ResultHandle qualifiersNonbindingMembers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+        for (Entry<DotName, Set<String>> entry : beanDeployment.getQualifierNonbindingMembers().entrySet()) {
+            ResultHandle nonbindingMembers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            for (String member : entry.getValue()) {
+                getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, nonbindingMembers,
+                        getComponents.load(member));
+            }
+            getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, qualifiersNonbindingMembers,
+                    getComponents.load(entry.getKey().toString()), nonbindingMembers);
+        }
+
         ResultHandle componentsHandle = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
-                        Map.class, Collection.class),
-                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle, removedBeansHandle);
+                        Map.class, Collection.class, Map.class),
+                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle, removedBeansHandle,
+                qualifiersNonbindingMembers);
         getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode

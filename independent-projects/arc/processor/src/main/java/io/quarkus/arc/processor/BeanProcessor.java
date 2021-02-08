@@ -269,7 +269,8 @@ public class BeanProcessor {
         final List<BeanRegistrar> beanRegistrars;
         final List<ObserverRegistrar> observerRegistrars;
         final List<ContextRegistrar> contextRegistrars;
-        final List<InterceptorBindingRegistrar> additionalInterceptorBindingRegistrars;
+        final List<QualifierRegistrar> qualifierRegistrars;
+        final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         final List<BeanDeploymentValidator> beanDeploymentValidators;
 
         boolean removeUnusedBeans = false;
@@ -298,7 +299,8 @@ public class BeanProcessor {
             beanRegistrars = new ArrayList<>();
             observerRegistrars = new ArrayList<>();
             contextRegistrars = new ArrayList<>();
-            additionalInterceptorBindingRegistrars = new ArrayList<>();
+            qualifierRegistrars = new ArrayList<>();
+            interceptorBindingRegistrars = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
 
             removeUnusedBeans = false;
@@ -357,8 +359,13 @@ public class BeanProcessor {
             return this;
         }
 
-        public Builder addInterceptorbindingRegistrar(InterceptorBindingRegistrar bindingRegistrar) {
-            this.additionalInterceptorBindingRegistrars.add(bindingRegistrar);
+        public Builder addQualifierRegistrar(QualifierRegistrar qualifierRegistrar) {
+            this.qualifierRegistrars.add(qualifierRegistrar);
+            return this;
+        }
+
+        public Builder addInterceptorBindingRegistrar(InterceptorBindingRegistrar bindingRegistrar) {
+            this.interceptorBindingRegistrars.add(bindingRegistrar);
             return this;
         }
 

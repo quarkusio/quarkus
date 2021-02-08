@@ -438,4 +438,26 @@ public class OpenshiftConfig implements PlatformConfiguration {
     public EnvVarsConfig getEnv() {
         return env;
     }
+
+    /**
+     * If set, the secret will mounted to the application container and its contents will be used for application configuration.
+     */
+    @ConfigItem
+    Optional<String> appSecret;
+
+    /**
+     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * configuration.
+     */
+    @ConfigItem
+    Optional<String> appConfigMap;
+
+    public Optional<String> getAppSecret() {
+        return this.appSecret;
+    }
+
+    public Optional<String> getAppConfigMap() {
+        return this.appConfigMap;
+    }
+
 }

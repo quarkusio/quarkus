@@ -116,7 +116,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                             + invocation.getQuarkusProject().getProjectDirPath().toString() + "\n-----------");
 
         } catch (IOException e) {
-            throw new QuarkusCommandException("Failed to create project", e);
+            throw new QuarkusCommandException("Failed to create project: " + e.getMessage(), e);
         }
         return QuarkusCommandOutcome.success();
     }

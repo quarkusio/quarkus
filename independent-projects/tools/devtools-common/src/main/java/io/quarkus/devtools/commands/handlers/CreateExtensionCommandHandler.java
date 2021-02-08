@@ -73,7 +73,7 @@ public class CreateExtensionCommandHandler {
 
             return QuarkusCommandOutcome.success();
         } catch (IOException e) {
-            throw new QuarkusCommandException("Error while creating Quarkus extension", e);
+            throw new QuarkusCommandException("Error while creating Quarkus extension: " + e.getMessage(), e);
         }
     }
 

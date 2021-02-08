@@ -189,8 +189,8 @@ public class CreateExtension {
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
         final String extensionId = data.getRequiredStringValue(EXTENSION_ID);
 
-        final Path workingDir = resolveWorkingDir();
-        final Model baseModel = resolveBaseModel(workingDir);
+        final Path workingDir = resolveWorkingDir(baseDir);
+        final Model baseModel = resolveModel(baseDir);
         final LayoutType layoutType = detectLayoutType(baseModel, data.getStringValue(GROUP_ID).orElse(null));
 
         data.putIfAbsent(EXTENSION_NAME, toCapWords(extensionId));
@@ -287,7 +287,8 @@ public class CreateExtension {
         return toCapWords(namespaceId) + " - ";
     }
 
-    private Model resolveBaseModel(Path workingDir) throws QuarkusCommandException {
+    public static Model resolveModel(Path dir) throws QuarkusCommandException {
+        final Path workingDir = resolveWorkingDir(dir);
         final Path basePom = workingDir.resolve("pom.xml");
         if (!Files.isRegularFile(basePom)) {
             return null;
@@ -313,8 +314,8 @@ public class CreateExtension {
                 + data.getRequiredStringValue(EXTENSION_ID);
     }
 
-    private Path resolveWorkingDir() {
-        return baseDir.endsWith("extensions/") ? baseDir.resolve("..") : baseDir;
+    private static Path resolveWorkingDir(Path dir) {
+        return dir.endsWith("extensions/") ? dir.resolve("..") : dir;
     }
 
     public static LayoutType detectLayoutType(Model basePom, String groupId) {

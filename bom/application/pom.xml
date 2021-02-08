@@ -153,7 +153,6 @@
         <kotlin.version>1.4.20</kotlin.version>
         <dekorate.version>0.14.2</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
-        <jline.version>2.14.6</jline.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
         <awaitility.version>4.0.3</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
@@ -4677,11 +4676,6 @@
                         <artifactId>maven-artifact</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>jline</groupId>
-                <artifactId>jline</artifactId>
-                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven.shared</groupId>

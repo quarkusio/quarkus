@@ -21,7 +21,8 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "quarkus", aliases = {
         "qs" }, versionProvider = QuarkusVersion.class, usageHelpAutoWidth = true, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
                 Build.class,
-                Clean.class, Create.class, CreateJBang.class, List.class, Add.class, Remove.class, Dev.class })
+                Clean.class, Create.class, CreateJBang.class, List.class, Add.class, Remove.class, Dev.class,
+                CreateExtension.class })
 public class QuarkusCli implements QuarkusApplication {
 
     public void usage() {

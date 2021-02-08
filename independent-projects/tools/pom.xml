@@ -37,6 +37,7 @@
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
         <!-- Versions -->
+        <jline.version>2.14.6</jline.version>
         <assertj.version>3.19.0</assertj.version>
         <jackson.version>2.12.1</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
@@ -126,6 +127,11 @@
                         <artifactId>jboss-annotations-api_1.2_spec</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>jline</groupId>
+                <artifactId>jline</artifactId>
+                <version>${jline.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>

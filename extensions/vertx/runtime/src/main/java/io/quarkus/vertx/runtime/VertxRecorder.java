@@ -133,8 +133,10 @@ public class VertxRecorder {
         }
     }
 
-    private RuntimeException wrapIfNecessary(Exception e) {
-        if (e instanceof RuntimeException) {
+    static RuntimeException wrapIfNecessary(Throwable e) {
+        if (e instanceof Error) {
+            throw (Error) e;
+        } else if (e instanceof RuntimeException) {
             return (RuntimeException) e;
         } else {
             return new RuntimeException(e);

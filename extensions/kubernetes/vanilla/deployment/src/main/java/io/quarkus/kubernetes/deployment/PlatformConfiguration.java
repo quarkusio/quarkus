@@ -79,4 +79,9 @@ public interface PlatformConfiguration extends EnvVarHolder {
     default String getConfigName() {
         return getClass().getSimpleName().replaceAll("Config$", "").toLowerCase();
     }
+
+    public Optional<String> getAppSecret();
+
+    public Optional<String> getAppConfigMap();
+
 }

@@ -249,6 +249,19 @@ public class KubernetesConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "false")
     boolean deploy;
 
+    /**
+     * If set, the secret will mounted to the application container and its contents will be used for application configuration.
+     */
+    @ConfigItem
+    Optional<String> appSecret;
+
+    /**
+     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * configuration.
+     */
+    @ConfigItem
+    Optional<String> appConfigMap;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -425,4 +438,13 @@ public class KubernetesConfig implements PlatformConfiguration {
     public boolean isExpose() {
         return expose;
     }
+
+    public Optional<String> getAppSecret() {
+        return appSecret;
+    }
+
+    public Optional<String> getAppConfigMap() {
+        return appConfigMap;
+    }
+
 }

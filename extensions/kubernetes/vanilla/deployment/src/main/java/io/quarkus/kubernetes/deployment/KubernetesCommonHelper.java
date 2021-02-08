@@ -16,15 +16,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.dekorate.kubernetes.config.Annotation;
+import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
+import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.MountBuilder;
 import io.dekorate.kubernetes.config.PortBuilder;
+import io.dekorate.kubernetes.config.SecretVolumeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddHostAliasesDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
@@ -36,6 +42,7 @@ import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
 import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
+import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
 import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
 import io.dekorate.kubernetes.decorator.ApplyLimitsCpuDecorator;
@@ -143,6 +150,7 @@ public class KubernetesCommonHelper {
         result.addAll(createPodDecorators(project, target, name, config));
         result.addAll(createContainerDecorators(project, target, name, config));
         result.addAll(createMountAndVolumeDecorators(project, target, name, config));
+        result.addAll(createAppConfigVolumeAndEnvDecorators(project, target, name, config));
 
         //Handle Command and arguments
         command.ifPresent(c -> {
@@ -246,10 +254,52 @@ public class KubernetesCommonHelper {
         return result;
     }
 
+    private static List<DecoratorBuildItem> createAppConfigVolumeAndEnvDecorators(Optional<Project> project, String target,
+            String name,
+            PlatformConfiguration config) {
+
+        List<DecoratorBuildItem> result = new ArrayList<>();
+        Set<String> paths = new HashSet<>();
+
+        config.getAppSecret().ifPresent(s -> {
+            result.add(new DecoratorBuildItem(target, new AddSecretVolumeDecorator(new SecretVolumeBuilder()
+                    .withSecretName(s)
+                    .withNewVolumeName("app-secret")
+                    .build())));
+            result.add(new DecoratorBuildItem(target, new AddMountDecorator(new MountBuilder()
+                    .withName("app-secret")
+                    .withPath("/mnt/app-secret")
+                    .build())));
+            paths.add("/mnt/app-secret");
+        });
+
+        config.getAppConfigMap().ifPresent(s -> {
+            result.add(new DecoratorBuildItem(target, new AddConfigMapVolumeDecorator(new ConfigMapVolumeBuilder()
+                    .withConfigMapName(s)
+                    .withNewVolumeName("app-config-map")
+                    .build())));
+            result.add(new DecoratorBuildItem(target, new AddMountDecorator(new MountBuilder()
+                    .withName("app-config-map")
+                    .withPath("/mnt/app-config-map")
+                    .build())));
+            paths.add("/mnt/app-config-map");
+        });
+
+        if (!paths.isEmpty()) {
+            result.add(new DecoratorBuildItem(target,
+                    new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+                            .withName("SMALLRYE_CONFIG_LOCATIONS")
+                            .withValue(paths.stream().collect(Collectors.joining(",")))
+                            .build())));
+        }
+        return result;
+    }
+
     private static List<DecoratorBuildItem> createMountAndVolumeDecorators(Optional<Project> project, String target,
             String name,
             PlatformConfiguration config) {
         List<DecoratorBuildItem> result = new ArrayList<>();
+
         config.getMounts().entrySet().forEach(e -> {
             result.add(new DecoratorBuildItem(target, new AddMountDecorator(MountConverter.convert(e))));
         });

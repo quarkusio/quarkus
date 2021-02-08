@@ -4,6 +4,10 @@ type: code
 tags:
   - example
   - singleton-example
+metadata:
+  title: Google Cloud Functions HTTP Integration examples
+  description: Examples of Google Cloud HTTP functions for Quarkus written with RESTEasy (JAX-RS), Undertow (Servlet), Vert.x Web, or Funqy HTTP.
+  related-guide-section: https://quarkus.io/guides/gcp-functions-http#creating-the-endpoints
 language:
   base:
     dependencies:

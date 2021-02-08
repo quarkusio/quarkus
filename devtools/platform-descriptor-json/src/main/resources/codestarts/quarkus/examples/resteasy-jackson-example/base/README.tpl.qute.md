@@ -1,4 +1,1 @@
-# {title}
-
-{description}
-Guide: {guide}
+{#include readme-header /}

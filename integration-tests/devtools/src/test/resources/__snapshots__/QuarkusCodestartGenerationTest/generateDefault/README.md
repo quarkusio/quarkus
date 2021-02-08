@@ -11,6 +11,8 @@ You can run your application in dev mode that enables live coding using:
 mvn compile quarkus:dev
 ```
 
+> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+
 ## Packaging and running the application
 
 The application can be packaged using:
@@ -42,3 +44,4 @@ mvn package -Pnative -Dquarkus.native.container-build=true
 You can then execute your native executable with: `./target/test-codestart-1.0.0-codestart-runner`
 
 If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html.
+

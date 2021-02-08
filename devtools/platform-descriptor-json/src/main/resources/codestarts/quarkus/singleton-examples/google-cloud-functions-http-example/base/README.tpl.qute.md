@@ -1,8 +1,4 @@
-# Google Cloud Functions HTTP Integration examples
-
-Examples of Google Cloud HTTP functions for Quarkus written with RESTEasy (JAX-RS), Undertow (Servlet), Vert.x Web, or Funqy HTTP.
-
-Guide: https://quarkus.io/guides/gcp-functions-http
+{#include readme-header /}
 
 Inside the `src/main/java/org/acme/googlecloudfunctionshttp` directory, you will find examples for:
 

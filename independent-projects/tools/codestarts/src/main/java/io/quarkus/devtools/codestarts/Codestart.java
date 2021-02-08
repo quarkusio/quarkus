@@ -2,6 +2,7 @@ package io.quarkus.devtools.codestarts;
 
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -30,6 +31,14 @@ public final class Codestart {
 
     public String getName() {
         return spec.getName();
+    }
+
+    public Set<String> getTags() {
+        return spec.getTags();
+    }
+
+    public Map<String, String> getMetadata() {
+        return spec.getMetadata();
     }
 
     public String getRef() {
@@ -61,7 +70,8 @@ public final class Codestart {
     }
 
     public Map<String, Object> getLocalData(String languageName) {
-        return NestedMaps.deepMerge(Stream.of(getBaseLanguageSpec().getData(), getLanguageSpec(languageName).getData()));
+        return NestedMaps.deepMerge(Stream.of(new HashMap<>(getMetadata()), getBaseLanguageSpec().getData(),
+                getLanguageSpec(languageName).getData()));
     }
 
     public Map<String, Object> getSharedData(String languageName) {

@@ -31,6 +31,7 @@ import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Tag;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.testing.SnapshotTesting;
+import io.quarkus.devtools.testing.WrapperRunner;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QuarkusCodestartRunIT extends PlatformAwareTestBase {
@@ -40,7 +41,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     private static final Set<String> EXCLUDED = Sets.newHashSet(
             "azure-functions-http-example", "commandmode-example");
 
-    private static final Set<String> RUN_ALONE = Sets.newHashSet("resteasy-reactive-example");
+    private static final Set<String> RUN_ALONE = Sets.newHashSet("resteasy-reactive-example", "picocli-example");
 
     @BeforeAll
     static void setUp() throws IOException {

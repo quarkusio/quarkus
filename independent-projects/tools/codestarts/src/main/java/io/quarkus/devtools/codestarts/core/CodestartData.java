@@ -37,7 +37,10 @@ public final class CodestartData {
         final HashMap<String, Object> data = new HashMap<>();
         baseCodestarts.forEach((c) -> data.put("codestart-project." + c.getSpec().getType().toString().toLowerCase() + ".name",
                 c.getName()));
-        data.put("codestart-project.codestarts", extraCodestarts.stream().map(Codestart::getName).collect(Collectors.toList()));
+        data.put("codestart-project.base-codestarts",
+                baseCodestarts.stream().map(Codestart::getName).collect(Collectors.toList()));
+        data.put("codestart-project.extra-codestarts",
+                extraCodestarts.stream().map(Codestart::getName).collect(Collectors.toList()));
         return NestedMaps.unflatten(data);
     }
 

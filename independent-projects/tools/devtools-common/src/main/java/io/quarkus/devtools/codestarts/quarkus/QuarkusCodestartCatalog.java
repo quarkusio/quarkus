@@ -19,16 +19,19 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<QuarkusCodestartProjectInput> {
 
     public static final String QUARKUS_CODESTARTS_DIR = "codestarts/quarkus";
-    private final Map<String, String> extensionCodestartMapping;
+    private final Map<String, Extension> extensionsMapping;
 
     public enum Tag implements DataKey {
         EXAMPLE,
@@ -54,17 +57,17 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     }
 
     private QuarkusCodestartCatalog(Collection<Codestart> codestarts,
-            Map<String, String> extensionCodestartMapping) {
+            Map<String, Extension> extensionsMapping) {
         super(codestarts);
-        this.extensionCodestartMapping = extensionCodestartMapping;
+        this.extensionsMapping = extensionsMapping;
     }
 
     public static QuarkusCodestartCatalog fromQuarkusPlatformDescriptor(QuarkusPlatformDescriptor platformDescriptor)
             throws IOException {
         final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
         final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR);
-        final Map<String, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
-        return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
+        final Map<String, Extension> extensionsMapping = buildExtensionsMapping(platformDescriptor.getExtensions());
+        return new QuarkusCodestartCatalog(codestarts, extensionsMapping);
     }
 
     public static QuarkusCodestartCatalog fromQuarkusPlatformDescriptorAndDirectories(
@@ -80,8 +83,8 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             // On duplicates, directories override platform codestarts
             codestarts.putAll(dirCodestarts);
         }
-        final Map<String, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
-        return new QuarkusCodestartCatalog(codestarts.values(), extensionCodestartMapping);
+        final Map<String, Extension> extensionsMapping = buildExtensionsMapping(platformDescriptor.getExtensions());
+        return new QuarkusCodestartCatalog(codestarts.values(), extensionsMapping);
     }
 
     @Override
@@ -89,6 +92,8 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         // Add codestarts from extension and for tooling
         projectInput.getSelection().addNames(getExtensionCodestarts(projectInput));
         projectInput.getSelection().addNames(getToolingCodestarts(projectInput));
+
+        projectInput.getData().putAll(generateSelectedExtensionsData(projectInput));
 
         // Filter out examples if noExamples
         final List<Codestart> projectCodestarts = super.select(projectInput).stream()
@@ -128,15 +133,23 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                     "Only one extension with singleton example can be selected at a time (you can always use 'noExamples' if needed)");
         }
 
+        projectInput.getData().putAll(generateSelectedExamplesData(projectCodestarts));
+
         return projectCodestarts;
     }
 
     private Set<String> getExtensionCodestarts(QuarkusCodestartProjectInput projectInput) {
+        return getSelectedExtensionsAsStream(projectInput)
+                .map(Extension::getCodestart)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private Stream<Extension> getSelectedExtensionsAsStream(QuarkusCodestartProjectInput projectInput) {
         return projectInput.getExtensions().stream()
                 .map(Extensions::toGA)
-                .filter(extensionCodestartMapping::containsKey)
-                .map(extensionCodestartMapping::get)
-                .collect(Collectors.toSet());
+                .filter(extensionsMapping::containsKey)
+                .map(extensionsMapping::get);
     }
 
     private List<String> getToolingCodestarts(QuarkusCodestartProjectInput projectInput) {
@@ -161,13 +174,38 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return codestarts;
     }
 
+    private Map<String, Object> generateSelectedExamplesData(List<Codestart> projectCodestarts) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("selected-examples", projectCodestarts.stream().filter(QuarkusCodestartCatalog::isExample).map(c -> {
+            Map<String, Object> eData = new HashMap<>();
+            eData.put("name", c.getName());
+            eData.put("tags", c.getTags());
+            eData.putAll(c.getMetadata());
+            return eData;
+        }).collect(Collectors.toList()));
+        return data;
+    }
+
+    private Map<String, Object> generateSelectedExtensionsData(QuarkusCodestartProjectInput projectInput) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("selected-extensions-ga",
+                getSelectedExtensionsAsStream(projectInput).map(Extension::managementKey).collect(Collectors.toSet()));
+        data.put("selected-extensions", getSelectedExtensionsAsStream(projectInput).map(e -> {
+            Map<String, Object> eData = new HashMap<>();
+            eData.put("name", e.getName());
+            eData.put("description", e.getDescription());
+            eData.put("guide", e.getGuide());
+            return eData;
+        }).collect(Collectors.toList()));
+        return data;
+    }
+
     public static boolean isExample(Codestart codestart) {
         return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.key());
     };
 
-    private static Map<String, String> buildCodestartMapping(Collection<Extension> extensions) {
+    private static Map<String, Extension> buildExtensionsMapping(Collection<Extension> extensions) {
         return extensions.stream()
-                .filter(e -> e.getCodestart() != null)
-                .collect(Collectors.toMap(Extensions::toGA, Extension::getCodestart));
+                .collect(Collectors.toMap(Extensions::toGA, Function.identity()));
     }
 }

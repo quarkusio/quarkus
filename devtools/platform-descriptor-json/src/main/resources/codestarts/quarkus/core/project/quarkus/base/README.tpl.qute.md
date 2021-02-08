@@ -11,6 +11,8 @@ You can run your application in dev mode that enables live coding using:
 {buildtool.cli} {buildtool.cmd.dev}
 ```
 
+> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+
 ## Packaging and running the application
 
 The application can be packaged using:
@@ -42,4 +44,18 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 You can then execute your native executable with: `./{buildtool.build-dir}/{project.artifact-id}-{project.version}-runner`
 
 If you want to learn more about building native executables, please consult {buildtool.guide}.
+
+{#if selected-extensions}
+## Related guides
+
+{#for ext in selected-extensions}
+{#if ext.guide}
+- {ext.name} ([guide]({ext.guide})): {ext.description}
+{/if}
+{/for}
+
+{/if}
+{#if selected-examples}
+## Provided examples
+{/if}
 

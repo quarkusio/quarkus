@@ -1,7 +1,12 @@
-package io.quarkus.devtools.codestarts.quarkus;
+package io.quarkus.devtools.testing;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -9,11 +14,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import io.quarkus.deployment.util.ProcessUtil;
-
 public final class WrapperRunner {
 
-    enum Wrapper {
+    public enum Wrapper {
         GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build", "-i" }),
         MAVEN("mvnw", "mvnw.cmd", new String[] { "package" });
 
@@ -64,7 +67,7 @@ public final class WrapperRunner {
                     .command(command)
                     .start();
             try {
-                ProcessUtil.streamToSysOutSysErr(p);
+                streamToSysOutSysErr(p);
                 p.waitFor(10, TimeUnit.MINUTES);
                 return p.exitValue();
             } catch (InterruptedException e) {
@@ -75,6 +78,55 @@ public final class WrapperRunner {
             throw new UncheckedIOException(e);
         }
         return -1;
+    }
+
+    private static void streamToSysOutSysErr(final Process process) {
+        streamOutputToSysOut(process);
+        streamErrorToSysErr(process);
+    }
+
+    private static void streamOutputToSysOut(final Process process) {
+        final InputStream processStdOut = process.getInputStream();
+        final Thread t = new Thread(new Streamer(processStdOut, System.out));
+        t.setName("Process stdout streamer");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static void streamErrorToSysErr(final Process process) {
+        streamErrorTo(System.err, process);
+    }
+
+    private static void streamErrorTo(final PrintStream printStream, final Process process) {
+        final InputStream processStdErr = process.getErrorStream();
+        final Thread t = new Thread(new Streamer(processStdErr, printStream));
+        t.setName("Process stderr streamer");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static final class Streamer implements Runnable {
+
+        private final InputStream processStream;
+        private final PrintStream consumer;
+
+        private Streamer(final InputStream processStream, final PrintStream consumer) {
+            this.processStream = processStream;
+            this.consumer = consumer;
+        }
+
+        @Override
+        public void run() {
+            try (final BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(processStream, StandardCharsets.UTF_8))) {
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                    consumer.println(line);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
     }
 
 }

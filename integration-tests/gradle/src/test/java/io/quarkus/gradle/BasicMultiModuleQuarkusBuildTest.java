@@ -20,7 +20,8 @@ public class BasicMultiModuleQuarkusBuildTest extends QuarkusGradleWrapperTestBa
         assertThat(commonLibs).exists();
         assertThat(commonLibs.resolve("common.jar")).exists();
 
-        final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("lib");
+        final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus-app")
+                .resolve("lib").resolve("main");
         assertThat(applicationLib).exists();
         assertThat(applicationLib.resolve("quarkus-basic-multi-module-build.common.jar")).exists();
     }

@@ -68,7 +68,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "target"), Paths.get("acme-1.0-SNAPSHOT-runner.jar"), output,
+        Process process = doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 Collections.emptyList()).start();
         try {
             // Wait until server up
@@ -94,7 +94,7 @@ public class JarRunnerIT extends MojoTestBase {
         running.stop();
 
         Path jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
@@ -134,7 +134,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "app/target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
+        Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 Collections.emptyList()).start();
         try {
             Assertions.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
@@ -159,7 +159,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "app/target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "app/target"), Paths.get("acme-app-1.0-SNAPSHOT-runner.jar"), output,
+        Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 Collections.emptyList()).start();
         try {
             Assertions.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
@@ -186,6 +186,56 @@ public class JarRunnerIT extends MojoTestBase {
     @Test
     public void testThatMutableFastJarWorksProvidersDirOutsideOutputDir() throws Exception {
         assertThatMutableFastJarWorks("outsidedir", ".." + File.separator + "providers");
+    }
+
+    @Test
+    public void testThatLegacyJarFormatWorks() throws Exception {
+        File testDir = initProject("projects/rr-with-json-logging", "projects/rr-with-json-logging-legacy-jar");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running
+                .execute(Arrays.asList("package",
+                        "-DskipTests",
+                        "-Dquarkus.package.type=legacy-jar"), Collections.emptyMap());
+
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        Path jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target",
+                        JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME,
+                        "quarkus-run.jar"));
+        Assertions.assertFalse(Files.exists(jar));
+
+        jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+        Assertions.assertTrue(Files.exists(jar));
+
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(jar, output).start();
+        try {
+            // Wait until server up
+            dumpFileContentOnFailure(() -> {
+                await()
+                        .pollDelay(1, TimeUnit.SECONDS)
+                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThat(logs).isNotEmpty().contains("resteasy-reactive");
+
+            // test that the application name and version are properly set
+            assertApplicationPropertiesSetCorrectly();
+            assertResourceReadingFromClassPathWorksCorrectly("");
+            assertUsingProtectionDomainWorksCorrectly("");
+        } finally {
+            process.destroy();
+        }
     }
 
     private void assertThatMutableFastJarWorks(String targetDirSuffix, String providersDir) throws Exception {
@@ -290,7 +340,7 @@ public class JarRunnerIT extends MojoTestBase {
         running.stop();
 
         Path jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
@@ -332,7 +382,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         File targetDir = new File(testDir.getAbsoluteFile(), "runner" + File.separator + "target");
         Path jar = targetDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("acme-1.0-SNAPSHOT-runner.jar"));
+                .resolve(Paths.get("quarkus-app/quarkus-run.jar"));
         File output = new File(targetDir, "output.log");
         output.createNewFile();
 

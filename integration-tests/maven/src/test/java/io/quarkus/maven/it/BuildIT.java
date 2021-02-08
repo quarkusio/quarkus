@@ -7,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.List;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
@@ -38,12 +37,10 @@ public class BuildIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = new File(testDir, "runner" + File.separator + "target");
-        List<File> jars = getFilesEndingWith(targetDir, ".jar");
-        assertThat(jars).hasSize(1);
+        final File runnerJar = targetDir.toPath().resolve("quarkus-app").resolve("quarkus-run.jar").toFile();
 
         // make sure the jar can be read by JarInputStream
-        ensureManifestOfJarIsReadableByJarInputStream(
-                jars.stream().filter(f -> f.getName().contains("-runner")).findFirst().get());
+        ensureManifestOfJarIsReadableByJarInputStream(runnerJar);
     }
 
     private void ensureManifestOfJarIsReadableByJarInputStream(File jar) throws IOException {

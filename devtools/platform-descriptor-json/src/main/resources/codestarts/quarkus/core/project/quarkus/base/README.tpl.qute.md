@@ -19,15 +19,15 @@ The application can be packaged using:
 ```shell script
 {buildtool.cli} {buildtool.cmd.package}
 ```
-It produces the `{project.artifact-id}-{project.version}-runner.jar` file in the `/{buildtool.build-dir}` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `{buildtool.build-dir}/lib` directory.
+It produces the `quarkus-run.jar` file in the `{buildtool.build-dir}/quarkus-app/` directory.
+Be aware that it’s not an _über-jar_ as the dependencies are copied into the `{buildtool.build-dir}/quarkus-app/lib/` directory.
 
 If you want to build an _über-jar_, execute the following command:
 ```shell script
 {buildtool.cli} {buildtool.cmd.package-uber-jar}
 ```
 
-The application is now runnable using `java -jar {buildtool.build-dir}/{project.artifact-id}-{project.version}-runner.jar`.
+The application is now runnable using `java -jar {buildtool.build-dir}/quarkus-app/quarkus-run.jar`.
 
 ## Creating a native executable
 

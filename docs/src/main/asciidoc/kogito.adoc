@@ -243,7 +243,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/kogito-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 === Running in Native Mode

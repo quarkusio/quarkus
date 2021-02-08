@@ -41,9 +41,10 @@ public class JibConfig {
      * <ul>
      * <li>A valid entrypoint is jar package specific (see {@code quarkus.package.type})</li>
      * <li>A valid entrypoint depends on the location of both the launching scripts and the application jar file. To that
-     * end it's helpful to remember that when {@code fast-jar} packaging is used, all necessary application jars are added to
-     * the {@code /work} directory and that the same
-     * directory is also used as the working directory. When {@code legacy} or {@code uber-jar} are used, the application jars
+     * end it's helpful to remember that when {@code fast-jar} packaging is used (the default), all necessary application
+     * jars are added to the {@code /work} directory and that the same
+     * directory is also used as the working directory. When {@code legacy-jar} or {@code uber-jar} are used, the application
+     * jars
      * are unpacked under the {@code /app} directory
      * and that directory is used as the working directory.</li>
      * <li>Even if the {@code jvmArguments} field is set, it is ignored completely</li>

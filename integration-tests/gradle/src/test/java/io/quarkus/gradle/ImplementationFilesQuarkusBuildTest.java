@@ -23,7 +23,8 @@ public class ImplementationFilesQuarkusBuildTest extends QuarkusGradleWrapperTes
         assertThat(commonJar).exists();
 
         runGradleWrapper(projectDir, ":application:build");
-        final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("lib");
+        final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus-app")
+                .resolve("lib").resolve("main");
         assertThat(applicationLib).exists();
         String commonFileName = HashUtil.sha1(commonJar.getParent().toString()) + "." + commonJar.getFileName();
         assertThat(applicationLib.resolve(commonFileName)).exists();

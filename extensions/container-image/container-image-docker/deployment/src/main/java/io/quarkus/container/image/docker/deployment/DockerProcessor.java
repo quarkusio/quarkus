@@ -47,7 +47,7 @@ public class DockerProcessor {
     private static final Logger log = Logger.getLogger(DockerProcessor.class);
     private static final String DOCKER = "docker";
     private static final String DOCKERFILE_JVM = "Dockerfile.jvm";
-    private static final String DOCKERFILE_FAST_JAR = "Dockerfile.fast-jar";
+    private static final String DOCKERFILE_LEGACY_JAR = "Dockerfile.legacy-jar";
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
     private static final String DOCKER_DIRECTORY_NAME = "docker";
     static final String DOCKER_CONTAINER_IMAGE_NAME = "docker";
@@ -71,7 +71,7 @@ public class DockerProcessor {
             ContainerImageInfoBuildItem containerImageInfo,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
-            @SuppressWarnings("unused") Optional<AppCDSResultBuildItem> appCDSResult, // ensure docker build will be performed after AppCDS creation 
+            @SuppressWarnings("unused") Optional<AppCDSResultBuildItem> appCDSResult, // ensure docker build will be performed after AppCDS creation
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             PackageConfig packageConfig,
             @SuppressWarnings("unused") // used to ensure that the jar has been built
@@ -235,9 +235,8 @@ public class DockerProcessor {
         } else {
             if (dockerConfig.dockerfileJvmPath.isPresent()) {
                 return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileJvmPath.get()), outputDirectory);
-            } else if (packageConfig.type.equals(PackageConfig.FAST_JAR)
-                    || packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
-                return DockerfileDetectionResult.detect(DOCKERFILE_FAST_JAR, outputDirectory);
+            } else if (packageConfig.type.equals(PackageConfig.LEGACY_JAR)) {
+                return DockerfileDetectionResult.detect(DOCKERFILE_LEGACY_JAR, outputDirectory);
             } else {
                 return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);
             }

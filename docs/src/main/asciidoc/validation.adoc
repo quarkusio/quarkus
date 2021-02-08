@@ -269,7 +269,7 @@ Then, open your browser to http://localhost:8080/:
 
 image:validation-guide-screenshot.png[alt=Application]
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also build the native executable using `./mvnw package -Pnative`.
 
 == Going further

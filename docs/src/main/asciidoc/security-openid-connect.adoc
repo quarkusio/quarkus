@@ -251,7 +251,7 @@ Then run it:
 
 [source,bash]
 ----
-java -jar ./target/security-openid-connect-quickstart-runner.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 === Running in Native Mode

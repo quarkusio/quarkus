@@ -20,7 +20,7 @@ public class BasicJavaPlatformModuleTest extends QuarkusGradleWrapperTestBase {
         assertThat(p).exists();
         assertThat(p.resolve("application-1.0.0-SNAPSHOT.jar")).exists();
 
-        p = projectDir.toPath().resolve("application").resolve("build").resolve("application-1.0.0-SNAPSHOT-runner.jar");
+        p = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar");
         assertThat(p).exists();
     }
 }

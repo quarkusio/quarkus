@@ -206,7 +206,7 @@ Observe the console to verify that the following messages has been displayed:
 - `Fixed Rate expression configured in application.properties`
 These messages indicate that the executions of methods annotated with `@Scheduled` have been triggered.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 == Using Property Expressions

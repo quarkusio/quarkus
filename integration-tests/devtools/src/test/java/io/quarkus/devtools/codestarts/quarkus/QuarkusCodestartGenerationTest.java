@@ -636,9 +636,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
-        assertThat(projectDir.resolve("src/main/docker/Dockerfile.fast-jar")).exists()
-                .satisfies(checkContains("./mvnw package -Dquarkus.package.type=fast-jar"))
-                .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.fast-jar"))
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
+                .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
+                .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
@@ -656,9 +656,9 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
-        assertThat(projectDir.resolve("src/main/docker/Dockerfile.fast-jar")).exists()
-                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=fast-jar"))
-                .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.fast-jar"))
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
+                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=legacy-jar"))
+                .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.3"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));

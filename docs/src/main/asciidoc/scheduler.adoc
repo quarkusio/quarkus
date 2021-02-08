@@ -210,7 +210,7 @@ After a few seconds, re-run `curl localhost:8080/count` to verify the counter ha
 Observe the console to verify that the message `Cron expression configured in application.properties` has been displayed indicating
 that the cron job using an expression configured in `application.properties` has been triggered.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 [[scheduler-configuration-reference]]

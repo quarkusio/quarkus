@@ -19,8 +19,7 @@ public class TestResourcesInBuildStepsTest extends QuarkusGradleWrapperTestBase 
         runGradleWrapper(projectDir, "clean", "build");
 
         final Path buildDir = projectDir.toPath().resolve("application").resolve("build");
-
-        final Path libDir = buildDir.resolve("lib");
+        final Path libDir = buildDir.resolve("quarkus-app").resolve("lib").resolve("main");
         assertThat(libDir).exists();
         assertThat(libDir.resolve("org.acme.runtime-1.0-SNAPSHOT.jar")).exists();
 

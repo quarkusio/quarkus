@@ -13,6 +13,6 @@ import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Server {
+public @interface KubernetesTestServer {
 
 }

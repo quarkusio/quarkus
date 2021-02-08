@@ -5,6 +5,10 @@ import java.lang.annotation.Annotation;
 import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 
+/**
+ * @deprecated use {@link KubernetesServerTestResource}
+ */
+@Deprecated
 public class KubernetesMockServerTestResource extends AbstractKubernetesTestResource<KubernetesMockServer> {
 
     @Override

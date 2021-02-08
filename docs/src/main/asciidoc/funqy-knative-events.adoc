@@ -337,8 +337,7 @@ Open a separate terminal.  You'll first need to learn the URL of the broker.  Ex
 kubectl get broker default -o jsonpath='{.status.address.url}'
 ----
 
-This will provide you a url like this (exactly like this if you followed the knative tutorial): `http://default-broker.knativetutorial.svc.cluster.local`
-Remember this URL.
+This will provide you a URL similar to e.g.: `http://broker-ingress.knative-eventing.svc.cluster.local/knativetutorial/default`. Remember this URL.
 
 Next thing we need to do is ssh into our Kubernetes cluster so that we can send a curl request to our broker.
 Following command will create a simple OS pod so we can curl into our functions.

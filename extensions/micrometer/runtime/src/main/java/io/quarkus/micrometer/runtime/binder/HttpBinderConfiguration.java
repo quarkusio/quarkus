@@ -2,7 +2,7 @@ package io.quarkus.micrometer.runtime.binder;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,7 +21,7 @@ import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
  * other extension configuration).
  *
  * This is a synthetic bean created at runtime init (see MicrometerRecorder),
- * so references to this bean must be deferred until runtime.
+ * it cannot be referenced during build or static initialization.
  */
 public class HttpBinderConfiguration {
     private static final Logger log = Logger.getLogger(HttpBinderConfiguration.class);
@@ -35,6 +35,7 @@ public class HttpBinderConfiguration {
     List<Pattern> clientIgnorePatterns = Collections.emptyList();
     Map<Pattern, String> clientMatchPatterns = Collections.emptyMap();
 
+    @SuppressWarnings("deprecation")
     public HttpBinderConfiguration(boolean httpServerMetrics, boolean httpClientMetrics,
             HttpServerConfig serverConfig, HttpClientConfig clientConfig, VertxConfig vertxConfig) {
 
@@ -94,7 +95,7 @@ public class HttpBinderConfiguration {
     Map<Pattern, String> getMatchPatterns(Optional<List<String>> configInput) {
         if (configInput.isPresent()) {
             List<String> input = configInput.get();
-            Map<Pattern, String> matchPatterns = new HashMap<>(input.size());
+            Map<Pattern, String> matchPatterns = new LinkedHashMap<>(input.size());
             for (String s : input) {
                 int pos = s.indexOf("=");
                 if (pos > 0 && s.length() > 2) {

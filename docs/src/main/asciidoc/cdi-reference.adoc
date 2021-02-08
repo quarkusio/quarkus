@@ -441,7 +441,6 @@ When using the dev mode (running `./mvnw clean compile quarkus:dev`), you can se
 by enabling additional logging via the following line in your `application.properties`.
 
 ----
-quarkus.log.category."io.quarkus.arc.processor".min-level=DEBUG
 quarkus.log.category."io.quarkus.arc.processor".level=DEBUG
 ----
 

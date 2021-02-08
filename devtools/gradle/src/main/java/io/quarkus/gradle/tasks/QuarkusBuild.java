@@ -54,7 +54,11 @@ public class QuarkusBuild extends QuarkusTask {
         return uberJar;
     }
 
+    /**
+     * @deprecated use {@code quarkus.package.type} instead
+     */
     @Option(description = "Set to true if the build task should build an uberjar", option = "uber-jar")
+    @Deprecated
     public void setUberJar(boolean uberJar) {
         this.uberJar = uberJar;
     }
@@ -131,7 +135,9 @@ public class QuarkusBuild extends QuarkusTask {
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
         }
         boolean clear = false;
-        if (uberJar && System.getProperty("quarkus.package.uber-jar") == null) {
+        if (isUberJar() && System.getProperty("quarkus.package.uber-jar") == null) {
+            getLogger().lifecycle(
+                    "The uberJar option is deprecated, and will be removed in a future version. To build an uber-jar set the config property quarkus.package.type=uber-jar. For more info see https://quarkus.io/guides/gradle-tooling#building-uber-jars");
             System.setProperty("quarkus.package.uber-jar", "true");
             clear = true;
         }

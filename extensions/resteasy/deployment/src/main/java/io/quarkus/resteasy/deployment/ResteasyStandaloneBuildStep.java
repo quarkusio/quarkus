@@ -18,6 +18,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
+import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -91,6 +92,7 @@ public class ResteasyStandaloneBuildStep {
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             ExecutorBuildItem executorBuildItem,
+            ResteasyVertxConfig resteasyVertxConfig,
             HttpConfiguration httpConfiguration) throws Exception {
 
         if (standalone == null) {
@@ -101,7 +103,7 @@ public class ResteasyStandaloneBuildStep {
         // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
         // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(), beanContainer.getValue(),
-                executorBuildItem.getExecutorProxy(), httpConfiguration);
+                executorBuildItem.getExecutorProxy(), httpConfiguration, resteasyVertxConfig);
         // Exact match for resources matched to the root path
         routes.produce(new RouteBuildItem(
                 new BasicRoute(standalone.deploymentRootPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));

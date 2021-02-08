@@ -24,7 +24,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private boolean suspended = false;
     private volatile boolean requestScopeActivated = false;
     private volatile boolean running = false;
-    private volatile Executor executor;
+    private volatile Executor executor; // ephemerally set by handlers to signal that we resume, it needs to be on this executor
+    private volatile Executor lastExecutor; // contains the last executor which was provided during resume - needed to submit there if suspended again
     private Map<String, Object> properties;
     private final ThreadSetupAction requestContext;
     private ThreadSetupAction.ThreadState currentRequestScope;
@@ -55,11 +56,19 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             this.executor = executor;
             if (executor == null) {
                 suspended = false;
+            } else {
+                this.lastExecutor = executor;
             }
         } else {
             suspended = false;
             if (executor == null) {
-                getEventLoop().execute(this);
+                if (lastExecutor == null) {
+                    getEventLoop().execute(this);
+                } else {
+                    // we need to do this to ensure that if we suspended while not on the event-loop,
+                    // that we come back on a thread from this executor
+                    lastExecutor.execute(this);
+                }
             } else {
                 executor.execute(this);
             }

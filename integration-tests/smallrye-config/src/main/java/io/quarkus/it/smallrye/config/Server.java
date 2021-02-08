@@ -53,6 +53,9 @@ public interface Server {
 
         @JsonProperty
         String landingPage();
+
+        @JsonProperty
+        Optional<String> cookie();
     }
 
     interface Ssl {

@@ -152,11 +152,7 @@ public class NativeImageBuildStep {
                 }
             }
             command.add("-J-Duser.language=" + System.getProperty("user.language"));
-            // Native image runtime uses the host's (i.e. build time) value of file.encoding
-            // system property. We intentionally default this to UTF-8 to avoid platform specific
-            // defaults to be picked up which can then result in inconsistent behaviour in the
-            // generated native application
-            command.add("-J-Dfile.encoding=UTF-8");
+            command.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding);
 
             if (enableSslNative) {
                 nativeConfig.enableHttpsUrlHandler = true;
@@ -508,18 +504,20 @@ public class NativeImageBuildStep {
         final Path javaSourcesPath = outputTargetBuildItem.getOutputDirectory().resolve(
                 Paths.get("..", "src", "main", "java"));
 
-        try (Stream<Path> paths = Files.walk(javaSourcesPath)) {
-            paths.forEach(path -> {
-                Path targetPath = Paths.get(targetSrc.toString(),
-                        path.toString().substring(javaSourcesPath.toString().length()));
-                try {
-                    Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Unable to copy from " + path + " to " + targetPath, e);
-                }
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException("Unable to walk path " + javaSourcesPath, e);
+        if (Files.exists(javaSourcesPath)) {
+            try (Stream<Path> paths = Files.walk(javaSourcesPath)) {
+                paths.forEach(path -> {
+                    Path targetPath = Paths.get(targetSrc.toString(),
+                            path.toString().substring(javaSourcesPath.toString().length()));
+                    try {
+                        Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Unable to copy from " + path + " to " + targetPath, e);
+                    }
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException("Unable to walk path " + javaSourcesPath, e);
+            }
         }
     }
 

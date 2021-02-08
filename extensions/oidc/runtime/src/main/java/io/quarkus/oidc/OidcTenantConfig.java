@@ -174,7 +174,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * Default TokenStateManager keeps all tokens (ID, access and refresh)
          * returned in the authorization code grant response in a single session cookie by default.
-         * 
+         *
          * Enable this property to minimize a session cookie size
          */
         @ConfigItem(defaultValue = "false")
@@ -414,7 +414,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Access tokens obtained as part of the code flow will always be verified if `quarkus.oidc.roles.source`
          * property is set to `accesstoken` which means the authorization decision will be based on the roles extracted from the
          * access token.
-         * 
+         *
          * Bearer access tokens are always verified.
          */
         @ConfigItem(defaultValue = "false")
@@ -440,8 +440,17 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Map<String, String> extraParams;
 
         /**
-         * Cookie path parameter value which, if set, will be used for the session, state and post logout cookies.
-         * It may need to be set when the redirect path has a root different to that of the original request URL.
+         * If enabled the state, session and post logout cookies will have their 'secure' parameter set to 'true'
+         * when HTTP is used. It may be necessary when running behind an SSL terminating reverse proxy.
+         * The cookies will always be secure if HTTPS is used even if this property is set to false.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean cookieForceSecure;
+
+        /**
+         * Cookie path parameter value which, if set, will be used to set a path parameter for the session, state and post
+         * logout cookies.
+         * The `cookie-path-header` property, if set, will be checked first.
          */
         @ConfigItem
         public Optional<String> cookiePath = Optional.empty();
@@ -527,6 +536,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setRestorePathAfterRedirect(boolean restorePathAfterRedirect) {
             this.restorePathAfterRedirect = restorePathAfterRedirect;
+        }
+
+        public boolean isCookieForceSecure() {
+            return cookieForceSecure;
+        }
+
+        public void setCookieForceSecure(boolean cookieForceSecure) {
+            this.cookieForceSecure = cookieForceSecure;
         }
 
         public Optional<String> getCookiePath() {

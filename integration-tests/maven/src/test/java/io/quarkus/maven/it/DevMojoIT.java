@@ -29,6 +29,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
@@ -37,13 +38,27 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
- *
+ *         <p>
  *         NOTE to anyone diagnosing failures in this test, to run a single method use:
- *
+ *         <p>
  *         mvn install -Dit.test=DevMojoIT#methodName
  */
 @DisableForNative
 public class DevMojoIT extends RunAndCheckMojoTestBase {
+
+    @Test
+    public void testSystemPropertiesConfig() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-sys-props-config");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello, out there");
+    }
+
+    @Test
+    public void testEnvironmentVariablesConfig() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-env-vars-config");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello, WORLD");
+    }
 
     @Test
     public void testPropertyOverridesTest() throws MavenInvocationException, IOException {
@@ -52,7 +67,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
-    public void testSystemPropertyWithSpaces() throws MavenInvocationException, IOException {
+    public void testSystemPropertyWithSpacesOnCommandLine() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-prop-with-spaces");
         runAndCheck("-Dgreeting=\"1 2 3\"");
         final String greeting = DevModeTestUtils.getHttpResponse("/app/hello/greeting");
@@ -197,6 +212,70 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
+    }
+
+    @Test
+    public void testThatInstrumentationBasedReloadWorks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-inst", "projects/project-intrumentation-reload");
+        runAndCheck();
+
+        //if there is an insturmentation based reload this will stay the same
+        String firstUuid = DevModeTestUtils.getHttpResponse("/app/uuid");
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+
+        //verify that this was an instrumentation based reload
+        Assertions.assertEquals(firstUuid, DevModeTestUtils.getHttpResponse("/app/uuid"));
+
+        source = new File(testDir, "src/main/java/org/acme/HelloService.java");
+        filter(source, Collections.singletonMap("\"Stuart\"", "\"Stuart Douglas\""));
+
+        // Wait until we get "Stuart Douglas"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/name").contains("Stuart Douglas"));
+
+        //this bean observes startup event, so it should be different UUID
+        String secondUUid = DevModeTestUtils.getHttpResponse("/app/uuid");
+        Assertions.assertNotEquals(secondUUid, firstUuid);
+
+        //now disable instrumentation based restart, and try again
+        //change it back to hello
+        DevModeTestUtils.getHttpResponse("/app/disable");
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
+
+        // Wait until we get "hello"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello"));
+
+        //verify that this was not instrumentation based reload
+        Assertions.assertNotEquals(secondUUid, DevModeTestUtils.getHttpResponse("/app/uuid"));
+        secondUUid = DevModeTestUtils.getHttpResponse("/app/uuid");
+
+        //now re-enable
+        //and repeat
+        DevModeTestUtils.getHttpResponse("/app/enable");
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get uuid
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+
+        //verify that this was an instrumentation based reload
+        Assertions.assertEquals(secondUUid, DevModeTestUtils.getHttpResponse("/app/uuid"));
     }
 
     @Test

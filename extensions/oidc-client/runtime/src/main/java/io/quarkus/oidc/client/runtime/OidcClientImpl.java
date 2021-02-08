@@ -3,6 +3,7 @@ package io.quarkus.oidc.client.runtime;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.function.Supplier;
 
@@ -30,7 +31,6 @@ public class OidcClientImpl implements OidcClient {
 
     private static final String ACCESS_TOKEN = "access_token";
     private static final String REFRESH_TOKEN = "refresh_token";
-    private static final String EXPIRES_AT = "expires_at";
 
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
@@ -117,8 +117,11 @@ public class OidcClientImpl implements OidcClient {
             JsonObject json = resp.bodyAsJsonObject();
             final String accessToken = json.getString(ACCESS_TOKEN);
             final String refreshToken = json.getString(REFRESH_TOKEN);
-            Long accessTokenExpiresAt = json.getLong(EXPIRES_AT);
-            if (accessTokenExpiresAt == null) {
+            Long accessTokenExpiresAt;
+            Long accessTokenExpiresIn = json.getLong(OidcConstants.EXPIRES_IN);
+            if (accessTokenExpiresIn != null) {
+                accessTokenExpiresAt = Instant.now().getEpochSecond() + accessTokenExpiresIn;
+            } else {
                 accessTokenExpiresAt = getExpiresJwtClaim(accessToken);
             }
             return new Tokens(accessToken, accessTokenExpiresAt, refreshToken);

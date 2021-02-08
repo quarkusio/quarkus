@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
@@ -96,11 +97,18 @@ public class BlockingServerInterceptor implements ServerInterceptor {
 
         private synchronized void executeOnContextOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
             if (this.delegate != null) {
+                final Context grpcContext = Context.current();
                 vertx.executeBlocking(new Handler<Promise<Object>>() {
                     @Override
                     public void handle(Promise<Object> f) {
-                        consumer.accept(delegate);
-                        f.complete();
+                        final Context previous = Context.current();
+                        grpcContext.attach();
+                        try {
+                            consumer.accept(delegate);
+                            f.complete();
+                        } finally {
+                            grpcContext.detach(previous);
+                        }
                     }
                 }, true, null);
             } else {

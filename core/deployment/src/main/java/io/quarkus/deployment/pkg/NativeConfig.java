@@ -8,6 +8,8 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
@@ -42,6 +44,18 @@ public class NativeConfig {
     @Deprecated
     @ConfigItem(defaultValue = "true")
     public boolean enableJni;
+
+    /**
+     * Defines the file encoding as in -Dfile.encoding=...
+     *
+     * Native image runtime uses the host's (i.e. build time) value of file.encoding
+     * system property. We intentionally default this to UTF-8 to avoid platform specific
+     * defaults to be picked up which can then result in inconsistent behavior in the
+     * generated native executable.
+     */
+    @ConfigItem(defaultValue = "UTF-8")
+    @ConvertWith(TrimmedStringConverter.class)
+    public String fileEncoding;
 
     /**
      * If all character sets should be added to the native image. This increases image size

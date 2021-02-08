@@ -822,6 +822,7 @@ SmallRye JWT provides an API for securing the JWT claims using all of these opti
 ----
 
 Note you can use Smallrye JWT Build API without having to create MP JWT endpoints.
+It can also be excluded from `quarkus-smallrye-jwt` if MP JWT endpoints do not need to generate JWT tokens.
 
 === Create JwtClaimsBuilder and set the claims
 

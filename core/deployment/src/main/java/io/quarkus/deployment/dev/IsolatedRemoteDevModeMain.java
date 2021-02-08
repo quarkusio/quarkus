@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -38,6 +39,7 @@ import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.dev.spi.RemoteDevState;
@@ -128,6 +130,11 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         @Override
                         public void accept(DevModeContext.ModuleInfo moduleInfo, String s) {
                             copiedStaticResources.computeIfAbsent(moduleInfo, ss -> new HashSet<>()).add(s);
+                        }
+                    }, new BiFunction<String, byte[], byte[]>() {
+                        @Override
+                        public byte[] apply(String s, byte[] bytes) {
+                            return ClassTransformingBuildStep.transform(s, bytes);
                         }
                     });
 

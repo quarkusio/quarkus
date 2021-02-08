@@ -92,7 +92,7 @@
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
-        <wiremock-jre8.version>2.26.3</wiremock-jre8.version>
+        <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.0.0</wiremock-maven-plugin.version>
 
         <!-- Code Coverage Properties-->
@@ -240,7 +240,11 @@
                     <exclusion>
                         <groupId>com.google.code.findbugs</groupId>
                         <artifactId>jsr305</artifactId>
-                   </exclusion>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>

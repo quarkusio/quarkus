@@ -79,7 +79,7 @@ import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
-import io.quarkus.vertx.http.runtime.logstream.LogStreamFilter;
+import io.quarkus.vertx.http.runtime.logstream.LogStreamWebSocket;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -270,7 +270,7 @@ public class DevConsoleProcessor {
         // Add the log stream
         routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
                 .route("/dev/logstream")
-                .handler(new LogStreamFilter())
+                .handler(new LogStreamWebSocket())
                 .nonApplicationRoute(false)
                 .build());
 

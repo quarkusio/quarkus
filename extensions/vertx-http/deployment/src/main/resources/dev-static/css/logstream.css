@@ -6,7 +6,8 @@
 }
 
 .logstreamIcon:hover {
-    color: #3366ac !important;        
+    color: #3366ac !important;
+    cursor: pointer;
 }
 
 .logstreamFilteredOut {
@@ -21,6 +22,9 @@
 #logstreamLogTerminal {
     padding-bottom: 5px;
     line-height: 1.00;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-bottom: 6px;
 }
 
 #logstreamFollowLogButton {
@@ -28,6 +32,7 @@
     color: green;
     margin-top: 5px;
     right: 23px;
+    cursor: pointer;
 }
 
 #logstreamInformationSection {
@@ -66,7 +71,11 @@
     position: absolute;
     right: 50%;
     bottom: -3px;
-    cursor: row-resize;
+}
+
+#logstreamResizeButton:hover {
+    color: #3366ac !important;
+    cursor: row-resize !important;
 }
 
 #logstreamViewLogButtonIcon:hover {

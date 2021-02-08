@@ -18,6 +18,7 @@ public class HistoryHandler extends ExtHandler {
 
     public HistoryHandler() {
         setLevel(Level.INFO);
+        setFormatter(new JsonFormatter());
     }
 
     @Override

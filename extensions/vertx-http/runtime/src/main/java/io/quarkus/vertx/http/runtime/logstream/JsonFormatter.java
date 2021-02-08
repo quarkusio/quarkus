@@ -24,10 +24,18 @@ public class JsonFormatter extends ExtFormatter {
 
     private JsonObject toJsonObject(ExtLogRecord logRecord) {
         String formattedMessage = formatMessage(logRecord);
+
         JsonObject jsonObject = new JsonObject();
         jsonObject.put(TYPE, LOG_LINE);
         if (logRecord.getLoggerName() != null) {
+            jsonObject.put(LOGGER_NAME_SHORT, getShortFullClassName(logRecord.getLoggerName(), ""));
             jsonObject.put(LOGGER_NAME, logRecord.getLoggerName());
+        }
+        if (logRecord.getLoggerClassName() != null) {
+            jsonObject.put(LOGGER_CLASS_NAME, logRecord.getLoggerClassName());
+        }
+        if (logRecord.getHostName() != null) {
+            jsonObject.put(HOST_NAME, logRecord.getHostName());
         }
         if (logRecord.getLevel() != null) {
             jsonObject.put(LEVEL, logRecord.getLevel().getName());
@@ -38,11 +46,15 @@ public class JsonFormatter extends ExtFormatter {
         if (logRecord.getMessage() != null) {
             jsonObject.put(MESSAGE, logRecord.getMessage());
         }
+        jsonObject.put(SOURCE_LINE_NUMBER, logRecord.getSourceLineNumber());
         if (logRecord.getSourceClassName() != null) {
             String justClassName = getJustClassName(logRecord.getSourceClassName());
             jsonObject.put(SOURCE_CLASS_NAME_FULL_SHORT, getShortFullClassName(logRecord.getSourceClassName(), justClassName));
             jsonObject.put(SOURCE_CLASS_NAME_FULL, logRecord.getSourceClassName());
             jsonObject.put(SOURCE_CLASS_NAME, justClassName);
+        }
+        if (logRecord.getSourceFileName() != null) {
+            jsonObject.put(SOURCE_FILE_NAME, logRecord.getSourceFileName());
         }
         if (logRecord.getSourceMethodName() != null) {
             jsonObject.put(SOURCE_METHOD_NAME, logRecord.getSourceMethodName());
@@ -51,10 +63,11 @@ public class JsonFormatter extends ExtFormatter {
             jsonObject.put(STACKTRACE, getStacktraces(logRecord.getThrown()));
         }
         jsonObject.put(THREAD_ID, logRecord.getThreadID());
-        jsonObject.put(THREAD_NAME, Thread.currentThread().getName());
+        jsonObject.put(THREAD_NAME, logRecord.getThreadName());
+        jsonObject.put(PROCESS_ID, logRecord.getProcessId());
+        jsonObject.put(PROCESS_NAME, logRecord.getProcessName());
         jsonObject.put(TIMESTAMP, logRecord.getMillis());
         jsonObject.put(SEQUENCE_NUMBER, logRecord.getSequenceNumber());
-
         return jsonObject;
     }
 
@@ -94,7 +107,8 @@ public class JsonFormatter extends ExtFormatter {
     private String getShortFullClassName(String fullName, String justClassName) {
         String[] parts = fullName.split("\\" + DOT);
         try (StringWriter buffer = new StringWriter()) {
-            for (String part : parts) {
+            for (int i = 0; i < parts.length - 1; i++) {
+                String part = parts[i];
                 if (part.equals(justClassName) || part.length() < 3) {
                     buffer.write(part);
                 } else {
@@ -102,9 +116,8 @@ public class JsonFormatter extends ExtFormatter {
                 }
                 buffer.write(DOT);
             }
-            String r = buffer.toString();
-
-            return r.substring(0, r.lastIndexOf(DOT));
+            buffer.write(parts[parts.length - 1]);
+            return buffer.toString();
         } catch (IOException ex) {
             return fullName;
         }
@@ -114,13 +127,20 @@ public class JsonFormatter extends ExtFormatter {
     private static final String LEVEL = "level";
     private static final String MESSAGE = "message";
     private static final String FORMATTED_MESSAGE = "formattedMessage";
+    private static final String LOGGER_NAME_SHORT = "loggerNameShort";
     private static final String LOGGER_NAME = "loggerName";
+    private static final String LOGGER_CLASS_NAME = "loggerClassName";
+    private static final String HOST_NAME = "hostName";
+    private static final String SOURCE_LINE_NUMBER = "sourceLineNumber";
     private static final String SOURCE_CLASS_NAME_FULL = "sourceClassNameFull";
     private static final String SOURCE_CLASS_NAME_FULL_SHORT = "sourceClassNameFullShort";
     private static final String SOURCE_CLASS_NAME = "sourceClassName";
+    private static final String SOURCE_FILE_NAME = "sourceFileName";
     private static final String SOURCE_METHOD_NAME = "sourceMethodName";
     private static final String THREAD_ID = "threadId";
     private static final String THREAD_NAME = "threadName";
+    private static final String PROCESS_ID = "processId";
+    private static final String PROCESS_NAME = "processName";
     private static final String TIMESTAMP = "timestamp";
     private static final String STACKTRACE = "stacktrace";
     private static final String SEQUENCE_NUMBER = "sequenceNumber";

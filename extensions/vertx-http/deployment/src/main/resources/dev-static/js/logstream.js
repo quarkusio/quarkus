@@ -1,9 +1,10 @@
 var zoom = 0.90;
 var linespace = 1.00;
+var tabspace = 1;
 var increment = 0.05;
 
 var webSocket;
-var tab = "&nbsp;&nbsp;&nbsp;&nbsp";
+var tab = "&nbsp;";
 var space = "&nbsp;";
 
 var isRunning = true;
@@ -43,6 +44,7 @@ $('document').ready(function () {
     addEnterListener();
     addScrollListener();
     addLineSpaceListener();
+    addTabSizeListener();
     
     $('[data-toggle="tooltip"]').tooltip();    
 
@@ -76,6 +78,9 @@ function loadSettings(){
         linespace = state.linespace;
         applyLineSpacing();
 
+        tabspace = state.tabspace;
+        applyTabSpacing();
+
         logScrolling = state.logScrolling;
         applyFollowLog();
 
@@ -93,7 +98,15 @@ function loadSettings(){
         $('#logstreamColumnsModalSourceMethodNameSwitch').prop('checked', state.sourceMethodNameSwitch);
         $('#logstreamColumnsModalThreadIdSwitch').prop('checked', state.threadIdSwitch);
         $('#logstreamColumnsModalThreadNameSwitch').prop('checked', state.threadNameSwitch);
-        $('#logstreamColumnsModalMessageSwitch').prop('checked', state.messageSwitch);        
+        $('#logstreamColumnsModalMessageSwitch').prop('checked', state.messageSwitch);
+        $('#logstreamColumnsModalHostNameSwitch').prop("checked", state.hostNameSwitch);
+        $('#logstreamColumnsModalLoggerNameAbbreviatedSwitch').prop("checked", state.loggerNameAbbreviatedSwitch);
+        $('#logstreamColumnsModalLoggerNameSwitch').prop("checked", state.loggerNameSwitch);
+        $('#logstreamColumnsModalLoggerClassNameSwitch').prop("checked", state.loggerClassNameSwitch);
+        $('#logstreamColumnsModalSourceFileNameSwitch').prop("checked", state.sourceFileNameSwitch);
+        $('#logstreamColumnsModalSourceLineNumberSwitch').prop("checked", state.sourceLineNumberSwitch);
+        $('#logstreamColumnsModalProcessIdSwitch').prop("checked", state.processIdSwitch);
+        $('#logstreamColumnsModalProcessNameSwitch').prop("checked", state.processNameSwitch);
     }    
 }
 
@@ -102,6 +115,7 @@ function saveSettings(){
     var state = {
         "zoom": zoom,
         "linespace": linespace,
+        "tabspace": tabspace,
         "logScrolling": logScrolling,
         "filter": filter,
         "levelIconSwitch": $('#logstreamColumnsModalLevelIconSwitch').is(":checked"),
@@ -115,7 +129,15 @@ function saveSettings(){
         "sourceMethodNameSwitch": $('#logstreamColumnsModalSourceMethodNameSwitch').is(":checked"),
         "threadIdSwitch": $('#logstreamColumnsModalThreadIdSwitch').is(":checked"),
         "threadNameSwitch": $('#logstreamColumnsModalThreadNameSwitch').is(":checked"),
-        "messageSwitch": $('#logstreamColumnsModalMessageSwitch').is(":checked")
+        "messageSwitch": $('#logstreamColumnsModalMessageSwitch').is(":checked"),
+        "hostNameSwitch": $('#logstreamColumnsModalHostNameSwitch').is(":checked"),
+        "loggerNameAbbreviatedSwitch": $('#logstreamColumnsModalLoggerNameAbbreviatedSwitch').is(":checked"),
+        "loggerNameSwitch": $('#logstreamColumnsModalLoggerNameSwitch').is(":checked"),
+        "loggerClassNameSwitch": $('#logstreamColumnsModalLoggerClassNameSwitch').is(":checked"),
+        "sourceFileNameSwitch": $('#logstreamColumnsModalSourceFileNameSwitch').is(":checked"),
+        "sourceLineNumberSwitch": $('#logstreamColumnsModalSourceLineNumberSwitch').is(":checked"),
+        "processIdSwitch": $('#logstreamColumnsModalProcessIdSwitch').is(":checked"),
+        "processNameSwitch": $('#logstreamColumnsModalProcessNameSwitch').is(":checked")
     };
 
     localStorage.setItem(localstoragekey, JSON.stringify(state));
@@ -187,6 +209,16 @@ function addLineSpaceListener(){
     });
 }
 
+function addTabSizeListener(){
+    $(document).keydown(function (event) {
+        if (event.shiftKey && event.keyCode === 39) {
+            tabSpaceIncreaseEvent();
+        }else if (event.shiftKey && event.keyCode === 37) {
+            tabSpaceDecreaseEvent();
+        }
+    });
+}
+
 function addEnterListener(){
     $(document).keydown(function (e) {
         if (e.keyCode === 13 && !$('#logstreamFilterModal').hasClass('show')){
@@ -230,6 +262,14 @@ function applyLineSpacing(){
     $('#logstreamLogTerminal').css("line-height", linespace);
 }
 
+function applyTabSpacing(){
+    if(tabspace === null || isNaN(tabspace))tabspace = 1;
+    tab = "";
+    for (i = 0; i < tabspace; i++) {
+        tab = tab + space;
+    };
+}
+
 function lineSpaceDecreaseEvent() {
     linespace = parseFloat(linespace) - parseFloat(increment);
     linespace = parseFloat(linespace).toFixed(2);
@@ -242,6 +282,20 @@ function lineSpaceIncreaseEvent() {
     linespace = parseFloat(linespace).toFixed(2);
     showInfoMessage("<i class='fas fa-text-height'></i>" + space  + linespace);
     applyLineSpacing();
+}
+
+function tabSpaceDecreaseEvent() {
+    if(tabspace>1){
+        tabspace = tabspace - 1;
+        showInfoMessage("<i class='fas fa-text-width'></i>" + space  + tabspace);
+        applyTabSpacing();
+    }
+}
+
+function tabSpaceIncreaseEvent() {
+    tabspace = tabspace + 1;
+    showInfoMessage("<i class='fas fa-text-width'></i>" + space  + tabspace);
+    applyTabSpacing();
 }
 
 function applyZoom(){
@@ -362,6 +416,13 @@ function getLevelIcon(level) {
     return "";
 }
 
+function getHostName(hostName) {
+    if($('#logstreamColumnsModalHostNameSwitch').is(":checked")){
+        return hostName + tab;
+    }
+    return "";
+}
+
 function getSequenceNumber(sequenceNumber){
     if($('#logstreamColumnsModalSequenceNumberSwitch').is(":checked")){
         return "<span class='badge badge-info'>" + sequenceNumber + "</span>" + tab;   
@@ -371,14 +432,14 @@ function getSequenceNumber(sequenceNumber){
 
 function getDateString(timestamp){
     if($('#logstreamColumnsModalDateSwitch').is(":checked")){
-        return timestamp.toLocaleDateString() + space;
+      return timestamp.slice(0, 10) + space;
     }
     return "";
 }
 
 function getTimeString(timestamp){
     if($('#logstreamColumnsModalTimeSwitch').is(":checked")){
-        return timestamp.toLocaleTimeString() + tab;
+        return timestamp.slice(11, 23).replace(".", ",") + tab;
     }
     return "";
 }
@@ -400,23 +461,44 @@ function getLevelText(level) {
     return "";
 }
 
+function getLoggerNameAbbreviated(loggerNameAbbreviated){
+    if($('#logstreamColumnsModalLoggerNameAbbreviatedSwitch').is(":checked")){
+        return "<span class='text-primary'>[" + loggerNameAbbreviated + "]</span>" + tab;
+    }
+    return "";
+}
+
+function getLoggerName(loggerName){
+    if($('#logstreamColumnsModalLoggerNameSwitch').is(":checked")){
+        return "<span class='text-primary'>[" + loggerName + "]</span>" + tab;
+    }
+    return "";
+}
+
+function getLoggerClassName(loggerClassName){
+    if($('#logstreamColumnsModalLoggerClassNameSwitch').is(":checked")){
+        return "<span class='text-info'>[" + loggerClassName + "]</span>" + tab;
+    }
+    return "";
+}
+
 function getClassFullAbbreviatedName(sourceClassNameFull, sourceClassNameFullShort) {
     if($('#logstreamColumnsModalSourceClassFullAbbreviatedSwitch').is(":checked")){
-        return "<span class='text-primary' data-toggle='tooltip' data-placement='top' title='" + sourceClassNameFull + "'>[" + sourceClassNameFullShort + "]</span>" + space;
+        return "<span class='text-secondary' data-toggle='tooltip' data-placement='top' title='" + sourceClassNameFull + "'>[" + sourceClassNameFullShort + "]</span>" + tab;
     }
     return "";
 }
 
 function getFullClassName(sourceClassNameFull) {
     if($('#logstreamColumnsModalSourceClassFullSwitch').is(":checked")){
-        return "<span class='text-primary'>[" + sourceClassNameFull + "]</span>" + space;
+        return "<span class='text-secondary'>[" + sourceClassNameFull + "]</span>" + tab;
     }
     return "";
 }
 
 function getClassName(className) {
     if($('#logstreamColumnsModalSourceClassSwitch').is(":checked")){
-        return "<span class='text-primary'>[" + className + "]</span>" + space;
+        return "<span class='text-secondary'>[" + className + "]</span>" + tab;
     }
     return "";
 }
@@ -424,6 +506,34 @@ function getClassName(className) {
 function getMethodName(methodName) {
     if($('#logstreamColumnsModalSourceMethodNameSwitch').is(":checked")){
         return methodName + tab;
+    }
+    return "";
+}
+
+function getFileName(fileName){
+    if($('#logstreamColumnsModalSourceFileNameSwitch').is(":checked")){
+        return "<span class='text-monospace'>" + fileName + "</span>" + space;
+    }
+    return "";
+}
+
+function getLineNumber(lineNumber){
+    if($('#logstreamColumnsModalSourceLineNumberSwitch').is(":checked")){
+        return "<span class='text-monospace'>(line: " + lineNumber + ")</span>" + tab;
+    }
+    return "";
+}
+
+function getProcessId(processName, processId) {
+    if($('#logstreamColumnsModalProcessIdSwitch').is(":checked")){
+        return "<span class='text-info' data-toggle='tooltip' data-placement='top' title='Process Name: " + processName + "'>(" + processId + ")</span>" + tab;
+    }
+    return "";
+}
+
+function getProcessName(processName, processId) {
+    if($('#logstreamColumnsModalProcessNameSwitch').is(":checked")){
+        return "<span class='text-info' data-toggle='tooltip' data-placement='top' title='Process Id: " + processId + "'>(" + processName + ")</span>" + tab;
     }
     return "";
 }
@@ -444,9 +554,25 @@ function getThreadName(threadName, threadId) {
 
 function getLogMessage(message){
     if($('#logstreamColumnsModalMessageSwitch').is(":checked")){
+        if(message.includes("http://")){
+            message = makeLink(message, "http://");
+        }
+        if(message.includes("https://")){
+            message = makeLink(message, "https://");
+        }
         return message;
     }
     return "";
+}
+
+function makeLink(message, protocol){
+    var url = message.substring(message.indexOf(protocol));
+    if(url.includes(" ")){
+        url = url.substr(0,url.indexOf(' '));
+    }
+    var link = "<a href='" + url + "' class='text-primary' target='_blank'>" + url + "</a>";
+
+    return message.replace(url, link);    
 }
 
 function enhanceStacktrace(loggerName, stacktrace) {
@@ -464,7 +590,7 @@ function enhanceStacktrace(loggerName, stacktrace) {
                 if (isMyClass && loggerName) {
                     line = '<b>' + line + '</b>';
                 }
-                line = tab + tab + line;
+                line = space + space + space + space + space + space + line;
             }
         }
         enhanceStacktrace.push(line + '<br/>');
@@ -523,17 +649,26 @@ function openSocket() {
         
         var timestamp = new Date(json.timestamp);
         var level = json.level;
-
-        var htmlLine = "<span>" + 
-            getLevelIcon(level)
+        var isoDateTime = new Date(timestamp.getTime() - (timestamp.getTimezoneOffset() * 60000)).toISOString();
+        
+        var htmlLine = "<span>" 
+                + getLevelIcon(level)
                 + getSequenceNumber(json.sequenceNumber)
-                + getDateString(timestamp)
-                + getTimeString(timestamp)
+                + getHostName(json.hostName)
+                + getDateString(isoDateTime)
+                + getTimeString(isoDateTime)
                 + getLevelText(level)
+                + getLoggerNameAbbreviated(json.loggerNameShort)
+                + getLoggerName(json.loggerName)
+                + getLoggerClassName(json.loggerClassName)        
                 + getClassFullAbbreviatedName(json.sourceClassNameFull, json.sourceClassNameFullShort)
                 + getFullClassName(json.sourceClassNameFull)
                 + getClassName(json.sourceClassName)
                 + getMethodName(json.sourceMethodName)
+                + getFileName(json.sourceFileName)
+                + getLineNumber(json.sourceLineNumber)
+                + getProcessId(json.processName, json.processId)
+                + getProcessName(json.processName, json.ProcessId)
                 + getThreadId(json.threadName, json.threadId)
                 + getThreadName(json.threadName, json.threadId)
                 + getLogMessage(json.formattedMessage) + "<br/>";

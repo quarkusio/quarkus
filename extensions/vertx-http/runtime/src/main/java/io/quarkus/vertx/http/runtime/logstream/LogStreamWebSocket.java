@@ -17,9 +17,10 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
-import java.util.logging.MemoryHandler;
 
+import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.LogContext;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.AsyncResult;
@@ -32,18 +33,22 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Stream the log in json format over ws
  */
-public class LogStreamFilter implements Handler<RoutingContext> {
-    private static final Logger log = Logger.getLogger(LogStreamFilter.class.getName());
+public class LogStreamWebSocket implements Handler<RoutingContext> {
+    private static final Logger log = Logger.getLogger(LogStreamWebSocket.class.getName());
     private final HistoryHandler historyHandler = new HistoryHandler();
 
     private final JsonObject initMessage = new JsonObject();
 
-    public LogStreamFilter() {
+    private final ExtHandler rootHandler;
+    private final org.jboss.logmanager.Logger rootLogger;
+
+    public LogStreamWebSocket() {
+
         // Add history handler
-        Logger logger = Logger.getLogger("");
-        if (logger != null) {
-            logger.addHandler(historyHandler);
-        }
+        final LogContext logContext = LogContext.getLogContext();
+        rootLogger = logContext.getLogger("");
+        rootHandler = findCorrectHandler(rootLogger.getHandlers());
+        addHandler(historyHandler);
 
         initMessage.put(TYPE, INIT);
         initMessage.put("loggers", getLoggers());
@@ -60,7 +65,7 @@ public class LogStreamFilter implements Handler<RoutingContext> {
                         ServerWebSocket socket = event.result();
                         SessionState state = new SessionState();
                         WebSocketHandler webSocketHandler = new WebSocketHandler(socket);
-                        state.handler = new MemoryHandler(webSocketHandler, 1000, Level.FINEST);
+                        state.handler = webSocketHandler;
                         state.session = socket;
                         socket.closeHandler(new Handler<Void>() {
                             @Override
@@ -76,14 +81,6 @@ public class LogStreamFilter implements Handler<RoutingContext> {
                         });
                         socket.writeTextMessage(initMessage.toString());
                         start(state);
-
-                        // Polulate history
-                        if (historyHandler.hasHistory()) {
-                            List<ExtLogRecord> history = historyHandler.getHistory();
-                            for (ExtLogRecord lr : history) {
-                                webSocketHandler.doPublish(lr);
-                            }
-                        }
                     } else {
                         log.log(Level.SEVERE, "Failed to connect to log server", event.cause());
                     }
@@ -97,7 +94,7 @@ public class LogStreamFilter implements Handler<RoutingContext> {
 
     static class SessionState {
         ServerWebSocket session;
-        java.util.logging.Handler handler;
+        ExtHandler handler;
         boolean started;
     }
 
@@ -115,29 +112,22 @@ public class LogStreamFilter implements Handler<RoutingContext> {
 
     private void start(SessionState session) {
         if (!session.started) {
-            registerHandler(session.handler);
             session.started = true;
+            rootLogger.addHandler(session.handler);
+
+            // Polulate history
+            if (historyHandler.hasHistory()) {
+                List<ExtLogRecord> history = historyHandler.getHistory();
+                for (ExtLogRecord lr : history) {
+                    session.handler.publish(lr);
+                }
+            }
         }
     }
 
     private void stop(SessionState session) {
-        unregisterHandler(session.handler);
+        rootLogger.removeHandler(session.handler);
         session.started = false;
-    }
-
-    private void registerHandler(java.util.logging.Handler handler) {
-        Logger logger = Logger.getLogger("");
-        if (logger != null) {
-            logger.addHandler(handler);
-        }
-    }
-
-    private void unregisterHandler(java.util.logging.Handler handler) {
-        if (handler != null) {
-            Logger logger = Logger.getLogger("");
-            if (logger != null)
-                logger.removeHandler(handler);
-        }
     }
 
     private JsonArray getLevels() {
@@ -208,6 +198,53 @@ public class LogStreamFilter implements Handler<RoutingContext> {
                 logger.setLevel(level);
             }
         }
+    }
+
+    private void addHandler(ExtHandler extHandler) {
+        if (rootHandler != null) {
+            rootHandler.addHandler(extHandler);
+        } else {
+            rootLogger.addHandler(extHandler);
+        }
+    }
+
+    private void removeHandler(ExtHandler extHandler) {
+        if (rootHandler != null) {
+            rootHandler.removeHandler(extHandler);
+        } else {
+            rootLogger.removeHandler(extHandler);
+        }
+    }
+
+    private ExtHandler findCorrectHandler(java.util.logging.Handler[] handlers) {
+        for (java.util.logging.Handler h : handlers) {
+            if (h instanceof ExtHandler) {
+                ExtHandler exth = (ExtHandler) h;
+                ExtHandler consoleLogger = getConsoleHandler(exth.getHandlers());
+                if (consoleLogger != null) {
+                    return exth;
+                }
+            }
+        }
+        // Else return first ext handler
+        for (java.util.logging.Handler h : handlers) {
+            if (h instanceof ExtHandler) {
+                return (ExtHandler) h;
+            }
+        }
+        return null;
+    }
+
+    private ExtHandler getConsoleHandler(java.util.logging.Handler[] handlers) {
+        if (handlers != null && handlers.length > 0) {
+            for (java.util.logging.Handler h : handlers) {
+
+                if (h.getClass().equals(org.jboss.logmanager.handlers.ConsoleHandler.class)) {
+                    return (ExtHandler) h;
+                }
+            }
+        }
+        return null;
     }
 
     private static final String TYPE = "type";

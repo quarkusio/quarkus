@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import javax.inject.Singleton;
 
@@ -13,7 +12,6 @@ import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.NetUtil;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -184,9 +182,9 @@ class NettyProcessor {
         }
 
         // IMPLEMENTATION NOTE:
-        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next()
-        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method
-        // is not generated and the invocation upon the client proxy results in an AbstractMethodError
+        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next() 
+        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method 
+        // is not generated and the invocation upon the client proxy results in an AbstractMethodError 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
                 .supplier(boss)
                 .scope(Singleton.class)
@@ -241,15 +239,9 @@ class NettyProcessor {
     }
 
     @BuildStep
-    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
-        Stream.of(
-                EmptyByteBufStub.class, // holds a direct allocated byte buffer that needs to be initialized at run time
-                NetUtil.class)
-
-                .map(Class::getName)
-                .map(RuntimeInitializedClassBuildItem::new)
-                .forEach(runtimeInitializedClasses::produce);
-
+    RuntimeInitializedClassBuildItem runtimeInitBcryptUtil() {
+        // this holds a direct allocated byte buffer that needs to be initialised at run time
+        return new RuntimeInitializedClassBuildItem(EmptyByteBufStub.class.getName());
     }
 
     //if debug logging is enabled netty logs lots of exceptions

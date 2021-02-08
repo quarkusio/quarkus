@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
  * Build / static runtime config for the Microprofile Metrics Binder
  */
 @ConfigGroup
-public class MicroprofileMetricsConfig implements MicrometerConfig.CapabilityEnabled {
+public class MPMetricsConfigGroup implements MicrometerConfig.CapabilityEnabled {
     // @formatter:off
     /**
      * Eclipse MicroProfile Metrics support.

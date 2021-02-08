@@ -6,15 +6,15 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
- * Build / static runtime config for the Vert.x Binder
+ * Build / static runtime config for inbound HTTP traffic
  */
 @ConfigGroup
-public class VertxConfig implements MicrometerConfig.CapabilityEnabled {
+public class HttpServerConfigGroup implements MicrometerConfig.CapabilityEnabled {
     /**
-     * Vert.x metrics support.
+     * Inbound HTTP metrics support.
      * <p>
-     * Support for Vert.x metrics will be enabled if Micrometer
-     * support is enabled, Vert.x MetricsOptions is on the classpath
+     * Support for HTTP server metrics will be enabled if Micrometer
+     * support is enabled, an extension serving HTTP traffic is enabled,
      * and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.binder-enabled-default} is true.
      */

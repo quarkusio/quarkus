@@ -12,7 +12,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
-import io.quarkus.micrometer.runtime.config.PrometheusConfig;
+import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
 import io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProvider;
 import io.quarkus.micrometer.runtime.export.PrometheusRecorder;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -55,7 +55,7 @@ public class PrometheusRegistryProcessor {
             MicrometerConfig mConfig,
             PrometheusRecorder recorder) {
 
-        PrometheusConfig pConfig = mConfig.export.prometheus;
+        PrometheusConfigGroup pConfig = mConfig.export.prometheus;
         log.debug("PROMETHEUS CONFIG: " + pConfig);
 
         // Exact match for resources matched to the root path

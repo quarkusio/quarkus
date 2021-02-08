@@ -3,6 +3,7 @@ package io.quarkus.liquibase.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -312,7 +313,7 @@ class LiquibaseProcessor {
                     result.add(changeSet.getFilePath());
 
                     changeSet.getChanges().stream()
-                            .map(this::extractChangeFile)
+                            .map(change -> extractChangeFile(change, changeSet.getFilePath()))
                             .forEach(changeFile -> changeFile.ifPresent(result::add));
 
                     // get all parents of the changeSet
@@ -331,19 +332,38 @@ class LiquibaseProcessor {
         return Collections.emptySet();
     }
 
-    private Optional<String> extractChangeFile(Change change) {
+    private Optional<String> extractChangeFile(Change change, String changeSetFilePath) {
+        String path = null;
+        Boolean relative = null;
         if (change instanceof LoadDataChange) {
-            return Optional.ofNullable(((LoadDataChange) change).getFile());
+            LoadDataChange loadDataChange = (LoadDataChange) change;
+            path = loadDataChange.getFile();
+            relative = loadDataChange.isRelativeToChangelogFile();
+        } else if (change instanceof SQLFileChange) {
+            SQLFileChange sqlFileChange = (SQLFileChange) change;
+            path = sqlFileChange.getPath();
+            relative = sqlFileChange.isRelativeToChangelogFile();
+        } else if (change instanceof CreateProcedureChange) {
+            CreateProcedureChange createProcedureChange = (CreateProcedureChange) change;
+            path = createProcedureChange.getPath();
+            relative = createProcedureChange.isRelativeToChangelogFile();
+        } else if (change instanceof CreateViewChange) {
+            CreateViewChange createViewChange = (CreateViewChange) change;
+            path = createViewChange.getPath();
+            relative = createViewChange.getRelativeToChangelogFile();
         }
-        if (change instanceof SQLFileChange) {
-            return Optional.ofNullable(((SQLFileChange) change).getPath());
+
+        // unrelated change or change does not reference a file (e.g. inline view)
+        if (path == null) {
+            return Optional.empty();
         }
-        if (change instanceof CreateProcedureChange) {
-            return Optional.ofNullable(((CreateProcedureChange) change).getPath());
+        // absolute file path or changeSet has no file path
+        if (relative == null || !relative || changeSetFilePath == null) {
+            return Optional.of(path);
         }
-        if (change instanceof CreateViewChange) {
-            return Optional.ofNullable(((CreateViewChange) change).getPath());
-        }
-        return Optional.empty();
+
+        // relative file path needs to be resolved against changeSetFilePath
+        // notes: ClassLoaderResourceAccessor does not provide a suitable method and CLRA.getFinalPath() is not visible
+        return Optional.of(Paths.get(changeSetFilePath).resolveSibling(path).toString().replace('\\', '/'));
     }
 }

@@ -92,6 +92,8 @@ public class KafkaProcessor {
             FloatDeserializer.class
     };
 
+    static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
+
     @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<IndexDependencyBuildItem> indexDependency) {
@@ -109,7 +111,7 @@ public class KafkaProcessor {
     @BuildStep
     public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
-            Capabilities capabilities) {
+            Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> beans) {
         final Set<DotName> toRegister = new HashSet<>();
 
         collectImplementors(toRegister, indexBuildItem, Serializer.class);
@@ -141,6 +143,9 @@ public class KafkaProcessor {
                     new ReflectiveClassBuildItem(false, false, ObjectMapperSerializer.class, ObjectMapperDeserializer.class));
             collectSubclasses(toRegister, indexBuildItem, ObjectMapperSerializer.class);
             collectSubclasses(toRegister, indexBuildItem, ObjectMapperDeserializer.class);
+
+            // Make the `io.quarkus.jackson.runtime.ObjectMapperProducer` bean cannot be removed.
+            beans.produce(UnremovableBeanBuildItem.beanTypes(OBJECT_MAPPER));
         }
 
         for (DotName s : toRegister) {

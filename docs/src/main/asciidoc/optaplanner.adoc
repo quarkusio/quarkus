@@ -829,7 +829,6 @@ change the logging in the `application.properties` file or with a `-D` system pr
 
 [source,properties]
 ----
-quarkus.log.category."org.optaplanner".min-level=debug
 quarkus.log.category."org.optaplanner".level=debug
 ----
 

@@ -42,6 +42,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private final String name;
     private final List<ClassPathElement> elements;
     private final ConcurrentMap<ClassPathElement, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Package> definedPackages = new ConcurrentHashMap<>();
     private final ClassLoader parent;
     /**
      * If this is true it will attempt to load from the parent first
@@ -87,15 +88,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
-        //we need the parent to be null
-        //as MP has super broken class loading where it attempts to resolve stuff from the parent
-        //will hopefully be fixed in 1.4
-        //e.g. https://github.com/eclipse/microprofile-config/issues/390
-        //e.g. https://github.com/eclipse/microprofile-reactive-streams-operators/pull/130
-        //to further complicate things we also have https://github.com/quarkusio/quarkus/issues/8985
-        //where getParent must work to load JDK services on JDK9+
-        //to get around this we pass in the platform ClassLoader, if it exists
-        super(PLATFORM_CLASS_LOADER);
+        super(new GetPackageBlockingClassLoader(builder.parent));
         this.name = builder.name;
         this.elements = builder.elements;
         this.bannedElements = builder.bannedElements;
@@ -440,23 +433,25 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     private void definePackage(String name, ClassPathElement classPathElement) {
         final String pkgName = getPackageNameFromClassName(name);
-        if ((pkgName != null) && getPackage(pkgName) == null) {
+        //we can't use getPackage here
+        //if can return a package from the parent
+        if ((pkgName != null) && definedPackages.get(pkgName) == null) {
             synchronized (getClassLoadingLock(pkgName)) {
-                if (getPackage(pkgName) == null) {
+                if (definedPackages.get(pkgName) == null) {
                     Manifest mf = classPathElement.getManifest();
                     if (mf != null) {
                         Attributes ma = mf.getMainAttributes();
-                        definePackage(pkgName, ma.getValue(Attributes.Name.SPECIFICATION_TITLE),
+                        definedPackages.put(pkgName, definePackage(pkgName, ma.getValue(Attributes.Name.SPECIFICATION_TITLE),
                                 ma.getValue(Attributes.Name.SPECIFICATION_VERSION),
                                 ma.getValue(Attributes.Name.SPECIFICATION_VENDOR),
                                 ma.getValue(Attributes.Name.IMPLEMENTATION_TITLE),
                                 ma.getValue(Attributes.Name.IMPLEMENTATION_VERSION),
-                                ma.getValue(Attributes.Name.IMPLEMENTATION_VENDOR), null);
+                                ma.getValue(Attributes.Name.IMPLEMENTATION_VENDOR), null));
                         return;
                     }
 
                     // this could certainly be improved to use the actual manifest
-                    definePackage(pkgName, null, null, null, null, null, null, null);
+                    definedPackages.put(pkgName, definePackage(pkgName, null, null, null, null, null, null, null));
                 }
             }
         }
@@ -704,6 +699,26 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.loadableResources = loadableResources;
             this.bannedResources = bannedResources;
             this.parentFirstResources = parentFirstResources;
+        }
+    }
+
+    /**
+     * Horrible JDK8 hack
+     *
+     * getPackage() on JDK8 will always delegate to the parent, so QuarkusClassLoader will never define a package,
+     * which can cause issues if you then try and read package annotations as they will be from the wrong ClassLoader.
+     *
+     * We add this ClassLoader into the mix to block the getPackage() delegation.
+     */
+    private static class GetPackageBlockingClassLoader extends ClassLoader {
+
+        protected GetPackageBlockingClassLoader(ClassLoader parent) {
+            super(parent);
+        }
+
+        @Override
+        protected Package getPackage(String name) {
+            return null;
         }
     }
 }

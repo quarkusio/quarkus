@@ -423,7 +423,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String name, String value, long maxAge) {
         ServerCookie cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
-        cookie.setSecure(context.request().isSSL());
+        cookie.setSecure(oidcConfig.authentication.cookieForceSecure || context.request().isSSL());
         cookie.setMaxAge(maxAge);
         LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
         Authentication auth = oidcConfig.getAuthentication();

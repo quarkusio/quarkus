@@ -445,6 +445,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Map<String, String> extraParams;
 
         /**
+         * If enabled the state, session and post logout cookies will have their 'secure' parameter set to 'true'
+         * when HTTP is used. It may be necessary when running behind an SSL terminating reverse proxy.
+         * The cookies will always be secure if HTTPS is used even if this property is set to false.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean cookieForceSecure;
+
+        /**
          * Cookie path parameter value which, if set, will be used to set a path parameter for the session, state and post
          * logout cookies.
          * The `cookie-path-header` property, if set, will be checked first.
@@ -541,6 +549,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setRestorePathAfterRedirect(boolean restorePathAfterRedirect) {
             this.restorePathAfterRedirect = restorePathAfterRedirect;
+        }
+
+        public boolean isCookieForceSecure() {
+            return cookieForceSecure;
+        }
+
+        public void setCookieForceSecure(boolean cookieForceSecure) {
+            this.cookieForceSecure = cookieForceSecure;
         }
 
         public Optional<String> getCookiePath() {

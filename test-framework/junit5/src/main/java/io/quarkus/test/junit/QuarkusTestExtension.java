@@ -6,6 +6,7 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
@@ -400,14 +401,14 @@ public class QuarkusTestExtension
         try {
             Constructor<?> testResourceClassEntryConstructor = Class
                     .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
-                    .getConstructor(Class.class, Map.class, boolean.class);
+                    .getConstructor(Class.class, Map.class, Annotation.class, boolean.class);
 
             List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
             List<Object> result = new ArrayList<>(testResources.size());
             for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
                 Object instance = testResourceClassEntryConstructor.newInstance(
                         Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
-                        testResource.isParallel());
+                        null, testResource.isParallel());
                 result.add(instance);
             }
 

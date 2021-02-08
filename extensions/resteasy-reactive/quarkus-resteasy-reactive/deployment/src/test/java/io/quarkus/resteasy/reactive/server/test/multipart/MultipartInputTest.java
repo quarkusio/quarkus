@@ -6,9 +6,12 @@ import static org.hamcrest.CoreMatchers.not;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.function.Supplier;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -22,7 +25,7 @@ import io.restassured.RestAssured;
 
 public class MultipartInputTest {
 
-    private static final File uploadDir = new File("./file-uploads"); // the default used by Quarkus
+    private static final Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -33,7 +36,12 @@ public class MultipartInputTest {
                             .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormData.class, Status.class,
                                     OtherFormData.class,
                                     OtherFormDataBase.class,
-                                    MultipartResource.class, OtherMultipartResource.class);
+                                    MultipartResource.class, OtherMultipartResource.class)
+                            .addAsResource(new StringAsset(
+                                    // keep the files around so we can assert the outcome
+                                    "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
+                                            + uploadDir.toString() + "\n"),
+                                    "application.properties");
                 }
 
             });
@@ -44,12 +52,12 @@ public class MultipartInputTest {
 
     @BeforeEach
     public void assertEmptyUploads() {
-        Assertions.assertEquals(0, uploadDir.listFiles().length);
+        Assertions.assertEquals(0, uploadDir.toFile().listFiles().length);
     }
 
     @AfterEach
     public void clearDirectory() {
-        for (File file : uploadDir.listFiles()) {
+        for (File file : uploadDir.toFile().listFiles()) {
             if (!file.isDirectory()) {
                 file.delete();
             }
@@ -74,7 +82,7 @@ public class MultipartInputTest {
                 .body(equalTo("Alice - true - 50 - WORKING - text/html - true - true"));
 
         // ensure that the 3 uploaded files where created on disk
-        Assertions.assertEquals(3, uploadDir.listFiles().length);
+        Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
     }
 
     @Test
@@ -101,7 +109,7 @@ public class MultipartInputTest {
                 .header("txt-path", not(equalTo(filePath(TXT_FILE))));
 
         // ensure that the 3 uploaded files where created on disk
-        Assertions.assertEquals(3, uploadDir.listFiles().length);
+        Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
     }
 
     @Test
@@ -116,7 +124,7 @@ public class MultipartInputTest {
                 .statusCode(200)
                 .body(equalTo("foo - bar - final - static"));
 
-        Assertions.assertEquals(0, uploadDir.listFiles().length);
+        Assertions.assertEquals(0, uploadDir.toFile().listFiles().length);
     }
 
     private String filePath(File file) {

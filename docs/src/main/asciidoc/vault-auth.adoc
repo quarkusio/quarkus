@@ -334,7 +334,6 @@ quarkus.datasource.jdbc.url = jdbc:postgresql://<host>:5432/mydatabase
 
 quarkus.vault.authentication.kubernetes.role=vault-quickstart-role
 
-quarkus.log.category."io.quarkus.vault".min-level=DEBUG
 quarkus.log.category."io.quarkus.vault".level=DEBUG
 ----
 

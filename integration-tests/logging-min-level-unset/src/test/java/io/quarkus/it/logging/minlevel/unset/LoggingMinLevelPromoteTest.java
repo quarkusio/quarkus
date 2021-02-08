@@ -11,9 +11,9 @@ import io.quarkus.test.junit.QuarkusTest;
 /**
  * This test verifies that log levels are promoted to min-level when set below the default min-level.
  * 
- * So given the default min-level is INFO,
+ * So given the default min-level is DEBUG,
  * so if log level is set to TRACE,
- * it will be automatically promoted to INFO.
+ * it will be automatically promoted to DEBUG.
  */
 @QuarkusTest
 @QuarkusTestResource(SetRuntimeLogLevels.class)

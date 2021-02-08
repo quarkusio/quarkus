@@ -20,7 +20,7 @@ public class LogBuildTimeConfig {
     /**
      * The default minimum log level.
      */
-    @ConfigItem(defaultValue = "INFO")
+    @ConfigItem(defaultValue = "DEBUG")
     public Level minLevel;
 
     /**

@@ -70,7 +70,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
             populate(persistenceUnitName, optionsBuilder, standardServiceRegistry, multiTenancyStrategy);
-            return new SessionFactoryImpl(metadata.getOriginalMetadata(), optionsBuilder.buildOptions(), HQLQueryPlan::new);
+            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(), HQLQueryPlan::new);
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }

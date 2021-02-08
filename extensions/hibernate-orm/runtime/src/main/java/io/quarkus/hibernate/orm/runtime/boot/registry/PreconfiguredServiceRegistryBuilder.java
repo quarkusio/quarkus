@@ -63,7 +63,7 @@ public class PreconfiguredServiceRegistryBuilder {
         checkIsNotReactive(rs);
         this.initiators = buildQuarkusServiceInitiatorList(rs);
         this.integrators = rs.getIntegrators();
-        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata().getOriginalMetadata()
+        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
                 .getMetadataBuildingOptions()
                 .getServiceRegistry();
     }

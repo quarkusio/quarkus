@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
-@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
+@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedTest = true)
 @QuarkusTest
 public class ConfigMapPropertiesTest {
 

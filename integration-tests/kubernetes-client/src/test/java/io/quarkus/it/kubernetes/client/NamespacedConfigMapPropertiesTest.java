@@ -10,7 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
-@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
+@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedTest = true)
 @TestProfile(NamespacedConfigMapPropertiesTest.MyProfile.class)
 @QuarkusTest
 public class NamespacedConfigMapPropertiesTest {

@@ -374,7 +374,9 @@ public class UndertowDeploymentRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                event.request().pause();
+                if (!event.request().isEnded()) {
+                    event.request().pause();
+                }
                 //we handle auth failure directly
                 event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
                 VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event,

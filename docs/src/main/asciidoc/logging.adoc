@@ -411,16 +411,6 @@ These adapters are available for most of the common Open Source logging componen
 </dependency>
 ----
 
-JDK Logging:
-
-[source, xml]
-----
-<dependency>
-    <groupId>org.jboss.logging</groupId>
-    <artifactId>jboss-logging-jdk</artifactId>
-</dependency>
-----
-
 Log4j:
 
 [source, xml]

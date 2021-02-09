@@ -3,44 +3,23 @@ package io.quarkus.test.kubernetes.client;
 import java.lang.annotation.Annotation;
 import java.net.InetAddress;
 import java.util.Collections;
-import java.util.Map;
 
 import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
+import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
 
-public class KubernetesServerTestResource extends AbstractKubernetesTestResource<KubernetesServer> {
-
-    /**
-     * Configure HTTPS usage, defaults to false
-     */
-    public final static String HTTPS = "https";
-    /**
-     * Configure CRUD usage, defaults to true
-     */
-    public final static String CRUD = "crud";
-    /**
-     * Configure the port to use, defaults to 0, for the first available port
-     */
-    public final static String PORT = "port";
+public class KubernetesServerTestResource extends AbstractKubernetesTestResource<KubernetesServer>
+        implements QuarkusTestResourceConfigurableLifecycleManager<WithKubernetesTestServer> {
 
     private boolean https = false;
     private boolean crud = true;
     private int port = 0;
 
     @Override
-    public void init(Map<String, String> initArgs) {
-        String val = initArgs.get(HTTPS);
-        if (val != null) {
-            this.https = Boolean.parseBoolean(val);
-        }
-        val = initArgs.get(CRUD);
-        if (val != null) {
-            this.crud = Boolean.parseBoolean(val);
-        }
-        val = initArgs.get(PORT);
-        if (val != null) {
-            this.port = Integer.parseInt(val);
-        }
+    public void init(WithKubernetesTestServer annotation) {
+        this.https = annotation.https();
+        this.crud = annotation.crud();
+        this.port = annotation.port();
     }
 
     @Override

@@ -7,20 +7,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.quarkus.test.kubernetes.client.KubernetesTestServer;
+import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 
 @TestProfile(KubernetesTestServerTest.MyProfile.class)
-@QuarkusTestResource(value = KubernetesServerTestResource.class, initArgs = {
-        @ResourceArg(name = KubernetesServerTestResource.HTTPS, value = "false"),
-        @ResourceArg(name = KubernetesServerTestResource.CRUD, value = "false"),
-        @ResourceArg(name = KubernetesServerTestResource.PORT, value = "10001"),
-})
+@WithKubernetesTestServer(https = false, crud = true, port = 10001)
 @QuarkusTest
 public class KubernetesTestServerTest {
 
@@ -30,7 +24,7 @@ public class KubernetesTestServerTest {
     @Test
     public void testConfiguration() throws InterruptedException {
         // we can't really test CRUD, and HTTPS doesn't work
-        Assertions.assertEquals(mockServer.getMockServer().getPort(), 10001);
+        Assertions.assertEquals(10001, mockServer.getMockServer().getPort());
     }
 
     public static class MyProfile implements QuarkusTestProfile {

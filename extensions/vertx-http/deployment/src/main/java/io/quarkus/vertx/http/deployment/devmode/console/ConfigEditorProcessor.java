@@ -63,16 +63,22 @@ public class ConfigEditorProcessor {
                 int nameLine = -1;
                 for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
                     final String line = lines.get(i);
-                    if (line.startsWith(name)) {
+                    if (line.startsWith(name + "=")) {
                         nameLine = i;
                         break;
                     }
                 }
 
                 if (nameLine != -1) {
-                    lines.set(nameLine, name + "=" + value);
+                    if (value.isEmpty()) {
+                        lines.remove(nameLine);
+                    } else {
+                        lines.set(nameLine, name + "=" + value);
+                    }
                 } else {
-                    lines.add(name + "=" + value);
+                    if (!value.isEmpty()) {
+                        lines.add(name + "=" + value);
+                    }
                 }
 
                 try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {

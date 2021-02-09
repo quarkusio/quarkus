@@ -42,6 +42,13 @@ public @interface QuarkusTestResource {
      */
     boolean parallel() default false;
 
+    /**
+     * Whether this annotation should only be enabled if it is placed on the currently running test class.
+     * Note that this defaults to true for meta-annotations since meta-annotations are only considered
+     * for the current test class.
+     */
+    boolean restrictToAnnotatedTest() default false;
+
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @Documented

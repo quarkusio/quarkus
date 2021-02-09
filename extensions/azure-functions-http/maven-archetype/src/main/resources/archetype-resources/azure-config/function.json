@@ -1,5 +1,5 @@
 {
-  "scriptFile" : "../${project.build.finalName}-runner.jar",
+  "scriptFile" : "../${project.build.finalName}.jar",
   "entryPoint" : "io.quarkus.azure.functions.resteasy.runtime.Function.run",
   "bindings" : [ {
     "type" : "httpTrigger",

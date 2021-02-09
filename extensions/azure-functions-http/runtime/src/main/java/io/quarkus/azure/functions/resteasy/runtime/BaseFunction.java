@@ -34,12 +34,13 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 public class BaseFunction {
     private static final Logger log = Logger.getLogger("io.quarkus.azure");
 
-    protected static final String deploymentStatus;
+    protected static String deploymentStatus;
     protected static boolean started = false;
+    protected static boolean bootstrapError = false;
 
     private static final int BUFFER_SIZE = 8096;
 
-    static {
+    protected static void initQuarkus() {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
         if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock azure unit testing.
@@ -50,7 +51,8 @@ public class BaseFunction {
                 app.start(args);
                 errorWriter.println("Quarkus bootstrapped successfully.");
                 started = true;
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
+                bootstrapError = true;
                 errorWriter.println("Quarkus bootstrap failed.");
                 ex.printStackTrace(errorWriter);
             }

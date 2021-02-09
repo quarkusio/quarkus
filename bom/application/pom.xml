@@ -87,7 +87,6 @@
         <gizmo.version>1.0.6.Final</gizmo.version>
         <jackson.version>2.12.1</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jboss-logging-jdk.version>2.1.2.GA</jboss-logging-jdk.version>
         <commons-lang3.version>3.11</commons-lang3.version>
         <commons-codec.version>1.14</commons-codec.version>
         <classmate.version>1.3.4</classmate.version>
@@ -2440,11 +2439,6 @@
                         <artifactId>jboss-logmanager</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.logging</groupId>
-                <artifactId>jboss-logging-jdk</artifactId>
-                <version>${jboss-logging-jdk.version}</version>
             </dependency>
 
             <dependency>

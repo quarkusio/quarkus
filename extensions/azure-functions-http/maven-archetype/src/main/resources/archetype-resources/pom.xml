@@ -8,8 +8,8 @@
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
@@ -19,7 +19,7 @@
     <resources-plugin.version>3.1.0</resources-plugin.version>
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
 
-    <azure.functions.maven.plugin.version>1.3.2</azure.functions.maven.plugin.version>
+    <azure.functions.maven.plugin.version>1.9.1</azure.functions.maven.plugin.version>
     <functionAppName>${appName}</functionAppName>
     <functionAppRegion>${appRegion}</functionAppRegion>
     <functionResourceGroup>${resourceGroup}</functionResourceGroup>
@@ -112,19 +112,19 @@
           <resourceGroup>${functionResourceGroup}</resourceGroup>
           <appName>${functionAppName}</appName>
           <region>${functionAppRegion}</region>
+          <runtime>
+            <!-- runtime os, could be windows, linux or docker-->
+            <os>windows</os>
+            <javaVersion>11</javaVersion>
+            <!-- for docker function, please set the following parameters -->
+            <!-- <image>[hub-user/]repo-name[:tag]</image> -->
+            <!-- <serverId></serverId> -->
+            <!-- <registryUrl></registryUrl>  -->
+          </runtime>
           <appSettings>
-            <!-- Run Azure Function from package file by default -->
-            <property>
-              <name>WEBSITE_RUN_FROM_PACKAGE</name>
-              <value>1</value>
-            </property>
             <property>
               <name>FUNCTIONS_EXTENSION_VERSION</name>
-              <value>~2</value>
-            </property>
-            <property>
-              <name>FUNCTIONS_WORKER_RUNTIME</name>
-              <value>java</value>
+              <value>~3</value>
             </property>
           </appSettings>
         </configuration>
@@ -177,24 +177,23 @@
               </resources>
             </configuration>
           </execution>
-          <!-- copy the uber-jar into Azure staging directory -->
+        </executions>
+      </plugin>
+      <!-- azure plugin wants a specific name for the jar so need to copy runner jar and rename it -->
+      <plugin>
+        <groupId>com.coderplus.maven.plugins</groupId>
+        <artifactId>copy-rename-maven-plugin</artifactId>
+        <version>1.0.1</version>
+        <executions>
           <execution>
-            <id>copy-uberjar</id>
-            <phase>install</phase>
+            <id>rename-file</id>
+            <phase>package</phase>
             <goals>
-              <goal>copy-resources</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <overwrite>true</overwrite>
-              <outputDirectory>${stagingDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${project.build.directory}</directory>
-                  <includes>
-                    <include>${project.artifactId}-${project.version}-runner.jar</include>
-                  </includes>
-                </resource>
-              </resources>
+              <sourceFile>${project.build.directory}/${project.artifactId}-${project.version}-runner.jar</sourceFile>
+              <destinationFile>${stagingDirectory}/${project.artifactId}-${project.version}.jar</destinationFile>
             </configuration>
           </execution>
         </executions>

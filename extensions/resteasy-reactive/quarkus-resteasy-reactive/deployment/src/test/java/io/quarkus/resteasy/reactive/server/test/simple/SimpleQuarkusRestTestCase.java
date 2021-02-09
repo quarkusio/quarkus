@@ -9,6 +9,8 @@ import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
@@ -183,6 +185,7 @@ public class SimpleQuarkusRestTestCase {
                 .then().body(Matchers.equalTo("VERTX-BUFFER"));
     }
 
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     public void testAsync() {
         RestAssured.get("/simple/async/cs/ok")
@@ -364,6 +367,7 @@ public class SimpleQuarkusRestTestCase {
                 .then().body(Matchers.equalTo("OK"));
     }
 
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     public void testNewParams() {
         RestAssured.get("/new-params/myklass/myregex/context")

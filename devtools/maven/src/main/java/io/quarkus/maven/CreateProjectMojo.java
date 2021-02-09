@@ -452,19 +452,21 @@ public class CreateProjectMojo extends AbstractMojo {
                     }
                 }
             } else {
-                if (extensions.isEmpty()) {
-                    extensions = Arrays
-                            .stream(prompter.promptWithDefaultValue("What extensions do you wish to add (comma separated list)",
-                                    DEFAULT_EXTENSIONS)
-                                    .split(","))
-                            .map(String::trim).filter(StringUtils::isNotEmpty)
-                            .collect(Collectors.toSet());
+                if (examples.isEmpty()) {
+                    if (extensions.isEmpty()) {
+                        extensions = Arrays
+                                .stream(prompter
+                                        .promptWithDefaultValue("What extensions do you wish to add (comma separated list)",
+                                                DEFAULT_EXTENSIONS)
+                                        .split(","))
+                                .map(String::trim).filter(StringUtils::isNotEmpty)
+                                .collect(Collectors.toSet());
+                    }
+                    String answer = prompter.promptWithDefaultValue(
+                            "Do you want example code to get started (yes), or just an empty project (no)", "yes");
+                    noExamples = answer.startsWith("n");
                 }
-                String answer = prompter.promptWithDefaultValue(
-                        "Do you want example code to get started (yes), or just an empty project (no)", "yes");
-                noExamples = answer.startsWith("n");
             }
-
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
         }

@@ -3,7 +3,6 @@ package io.quarkus.logging.sentry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -15,7 +14,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusUnitTest;
+import io.sentry.HubAdapter;
 import io.sentry.Sentry;
+import io.sentry.SentryOptions;
+import io.sentry.jul.SentryHandler;
 
 public class SentryLoggerTest {
 
@@ -27,13 +29,10 @@ public class SentryLoggerTest {
     @Test
     public void sentryLoggerDefaultTest() {
         final Handler sentryHandler = getSentryHandler();
+        final SentryOptions options = HubAdapter.getInstance().getOptions();
         assertThat(sentryHandler).isNotNull();
-        assertThat(sentryHandler).extracting("options").extracting("InAppIncludes").satisfies(o -> {
-            assertThat(o).isInstanceOfSatisfying(Collection.class, c -> {
-                assertThat(c).isEmpty();
-            });
-        });
-        assertThat(sentryHandler).extracting("options").extracting("dsn").isEqualTo("https://123@default.com/22222");
+        assertThat(options.getInAppIncludes()).isEmpty();
+        assertThat(options.getDsn()).isEqualTo("https://123@default.com/22222");
         assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.WARN);
         assertThat(Sentry.isEnabled()).isTrue();
     }

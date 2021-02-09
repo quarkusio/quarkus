@@ -36,6 +36,23 @@ public class SentryConfig {
     public Level level;
 
     /**
+     * The minimum event level.
+     *
+     * Every log statement that is greater than minimum event level is turned into Sentry event.
+     */
+    @ConfigItem(defaultValue = "WARN")
+    public Level minimumEventLevel;
+
+    /**
+     * The minimum breadcrumb level.
+     *
+     * Every log statement that is greater than minimum breadcrumb level is added to Sentry scope as a breadcrumb,
+     * which can be later attached to SentryEvent if one is triggered.
+     */
+    @ConfigItem(defaultValue = "INFO")
+    public Level minimumBreadcrumbLevel;
+
+    /**
      * Sentry differentiates stack frames that are directly related to your application (“in application”) from stack frames
      * that come from other packages such as the standard library, frameworks, or other dependencies. The difference is visible
      * in the Sentry web interface where only the “in application” frames are displayed by default.
@@ -84,4 +101,12 @@ public class SentryConfig {
      */
     @ConfigItem
     public Optional<String> serverName;
+
+    /**
+     * Debug
+     *
+     * Enables Sentry debug mode.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean debug;
 }

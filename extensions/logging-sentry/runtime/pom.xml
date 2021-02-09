@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>io.sentry</groupId>
-            <artifactId>sentry</artifactId>
+            <artifactId>sentry-jul</artifactId>
         </dependency>
     </dependencies>
 

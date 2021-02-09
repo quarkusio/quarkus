@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.sentry.HubAdapter;
 import io.sentry.Sentry;
+import io.sentry.SentryOptions;
 
 public class SentryLoggerReleaseOptionTests {
 
@@ -21,8 +23,9 @@ public class SentryLoggerReleaseOptionTests {
     @Test
     public void sentryLoggerEnvironmentOptionTest() {
         final Handler sentryHandler = getSentryHandler();
+        final SentryOptions options = HubAdapter.getInstance().getOptions();
         assertThat(sentryHandler).isNotNull();
-        assertThat(sentryHandler).extracting("options").extracting("release").isEqualTo("releaseABC");
+        assertThat(options.getRelease()).isEqualTo("releaseABC");
         assertThat(Sentry.isEnabled()).isTrue();
     }
 

@@ -647,7 +647,6 @@ This can be achieved by setting to DEBUG the following log category inside your 
 
 [source,properties]
 ----
-quarkus.log.category."io.quarkus.mongodb.panache.runtime".min-level=DEBUG
 quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
 ----
 

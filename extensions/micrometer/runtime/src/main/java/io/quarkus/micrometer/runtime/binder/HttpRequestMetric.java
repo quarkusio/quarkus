@@ -24,13 +24,13 @@ public class HttpRequestMetric {
     volatile RoutingContext routingContext;
 
     /** Do not measure requests until/unless a uri path is set */
-    boolean measure = false;
+    final boolean measure;
 
     /** URI path used as a tag value for non-error requests */
-    String path;
+    final String path;
 
     /** True IFF the path was revised by a matcher expression */
-    boolean pathMatched = false;
+    final boolean pathMatched;
 
     /** Store the sample used to measure the request */
     Timer.Sample sample;
@@ -40,6 +40,56 @@ public class HttpRequestMetric {
      * Default is empty, value assigned @ requestBegin
      */
     Tags tags = Tags.empty();
+
+    /**
+     * Extract the path out of the uri. Return null if the path should be
+     * ignored.
+     */
+    public HttpRequestMetric(Map<Pattern, String> matchPattern, List<Pattern> ignorePatterns,
+            String uri) {
+        if (uri == null) {
+            this.measure = false;
+            this.pathMatched = false;
+            this.path = null;
+            return;
+        }
+
+        boolean matched = false;
+        String workingPath = extractPath(uri);
+        String finalPath = workingPath;
+        if ("/".equals(workingPath) || workingPath.isEmpty()) {
+            finalPath = "/";
+        } else {
+            // Label value consistency: result should begin with a '/' and should not end with one
+            workingPath = HttpMetricsCommon.MULTIPLE_SLASH_PATTERN.matcher('/' + workingPath).replaceAll("/");
+            workingPath = HttpMetricsCommon.TRAILING_SLASH_PATTERN.matcher(workingPath).replaceAll("");
+            if (workingPath.isEmpty()) {
+                finalPath = "/";
+            } else {
+                finalPath = workingPath;
+                // test path against configured patterns (whole path)
+                for (Map.Entry<Pattern, String> mp : matchPattern.entrySet()) {
+                    if (mp.getKey().matcher(workingPath).matches()) {
+                        finalPath = mp.getValue();
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+        }
+        this.path = finalPath;
+        this.pathMatched = matched;
+
+        // Compare path against "ignore this path" patterns
+        for (Pattern p : ignorePatterns) {
+            if (p.matcher(this.path).matches()) {
+                log.debugf("Path %s ignored; matches pattern %s", uri, p.pattern());
+                this.measure = false;
+                return;
+            }
+        }
+        this.measure = true;
+    }
 
     public Timer.Sample getSample() {
         return sample;
@@ -55,39 +105,6 @@ public class HttpRequestMetric {
 
     public void setTags(Tags tags) {
         this.tags = tags;
-    }
-
-    /**
-     * Extract the path out of the uri. Return null if the path should be
-     * ignored.
-     */
-    public void parseUriPath(Map<Pattern, String> matchPattern, List<Pattern> ignorePatterns,
-            String uri) {
-        if (uri == null) {
-            return;
-        }
-
-        String path = "/" + extractPath(uri);
-        path = HttpMetricsCommon.MULTIPLE_SLASH_PATTERN.matcher(path).replaceAll("/");
-        path = HttpMetricsCommon.TRAILING_SLASH_PATTERN.matcher(path).replaceAll("");
-
-        if (path.isEmpty()) {
-            path = "/";
-        }
-        this.path = path;
-        for (Map.Entry<Pattern, String> mp : matchPattern.entrySet()) {
-            this.path = mp.getKey().matcher(this.path).replaceAll(mp.getValue());
-        }
-        this.pathMatched = !path.equals(this.path);
-
-        // Compare path against "ignore this path" patterns
-        for (Pattern p : ignorePatterns) {
-            if (p.matcher(this.path).matches()) {
-                log.debugf("Path %s ignored; matches pattern %s", uri, p.pattern());
-                return;
-            }
-        }
-        this.measure = true;
     }
 
     public String getPath() {
@@ -165,5 +182,14 @@ public class HttpRequestMetric {
 
     public void setRoutingContext(RoutingContext routingContext) {
         this.routingContext = routingContext;
+    }
+
+    @Override
+    public String toString() {
+        return "HttpRequestMetric{path=" + path
+                + ",pathMatched=" + pathMatched
+                + ",measure=" + measure
+                + ",tags=" + tags
+                + '}';
     }
 }

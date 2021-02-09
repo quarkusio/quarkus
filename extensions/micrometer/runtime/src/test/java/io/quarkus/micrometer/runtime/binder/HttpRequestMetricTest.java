@@ -29,7 +29,7 @@ public class HttpRequestMetricTest {
 
     @Test
     public void testReturnPathFromHttpRequestPath() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/");
         requestMetric.routingContext = Mockito.mock(RoutingContext.class);
 
         Mockito.when(requestMetric.routingContext.get(HttpRequestMetric.HTTP_REQUEST_PATH))
@@ -40,7 +40,7 @@ public class HttpRequestMetricTest {
 
     @Test
     public void testReturnPathFromRoutingContext() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/");
         requestMetric.routingContext = Mockito.mock(RoutingContext.class);
         Route currentRoute = Mockito.mock(Route.class);
 
@@ -52,7 +52,7 @@ public class HttpRequestMetricTest {
 
     @Test
     public void testReturnGenericPathFromRoutingContext() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/");
         requestMetric.routingContext = Mockito.mock(RoutingContext.class);
         Route currentRoute = Mockito.mock(Route.class);
 
@@ -66,56 +66,54 @@ public class HttpRequestMetricTest {
 
     @Test
     public void testParsePathDoubleSlash() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "//");
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "//");
         Assertions.assertEquals("/", requestMetric.path);
-        Assertions.assertTrue(requestMetric.measure);
-        Assertions.assertFalse(requestMetric.pathMatched);
+        Assertions.assertTrue(requestMetric.measure, "Path should be measured");
+        Assertions.assertFalse(requestMetric.pathMatched, "Path should not be marked as matched");
     }
 
     @Test
     public void testParseEmptyPath() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "");
-        Assertions.assertTrue(requestMetric.measure);
-        Assertions.assertFalse(requestMetric.pathMatched);
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "");
         Assertions.assertEquals("/", requestMetric.path);
+        Assertions.assertTrue(requestMetric.measure, "Path should be measured");
+        Assertions.assertFalse(requestMetric.pathMatched, "Path should not be marked as matched");
     }
 
     @Test
     public void testParsePathNoLeadingSlash() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "path/with/no/leading/slash");
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS,
+                "path/with/no/leading/slash");
         Assertions.assertEquals("/path/with/no/leading/slash", requestMetric.path);
-        Assertions.assertTrue(requestMetric.measure);
-        Assertions.assertFalse(requestMetric.pathMatched);
+        Assertions.assertTrue(requestMetric.measure, "Path should be measured");
+        Assertions.assertFalse(requestMetric.pathMatched, "Path should not be marked as matched");
     }
 
     @Test
     public void testParsePathWithQueryString() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/path/with/query/string?stuff");
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS,
+                "/path/with/query/string?stuff");
         Assertions.assertEquals("/path/with/query/string", requestMetric.path);
-        Assertions.assertTrue(requestMetric.measure);
-        Assertions.assertFalse(requestMetric.pathMatched);
+        Assertions.assertTrue(requestMetric.measure, "Path should be measured");
+        Assertions.assertFalse(requestMetric.pathMatched, "Path should not be marked as matched");
     }
 
     @Test
     public void testParsePathIgnoreNoLeadingSlash() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(NO_MATCH_PATTERNS, ignorePatterns, "ignore/me/with/no/leading/slash");
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, ignorePatterns,
+                "ignore/me/with/no/leading/slash");
         Assertions.assertEquals("/ignore/me/with/no/leading/slash", requestMetric.path);
-        Assertions.assertFalse(requestMetric.measure);
-        Assertions.assertFalse(requestMetric.pathMatched);
+        Assertions.assertFalse(requestMetric.measure, "Path should be measured");
+        Assertions.assertFalse(requestMetric.pathMatched, "Path should not be marked as matched");
     }
 
     @Test
     public void testParsePathIgnoreWithQueryString() {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(NO_MATCH_PATTERNS, ignorePatterns, "/ignore/me/with/query/string?stuff");
+        HttpRequestMetric requestMetric = new HttpRequestMetric(NO_MATCH_PATTERNS, ignorePatterns,
+                "/ignore/me/with/query/string?stuff");
         Assertions.assertEquals("/ignore/me/with/query/string", requestMetric.path);
-        Assertions.assertFalse(requestMetric.measure);
-        Assertions.assertFalse(requestMetric.pathMatched);
+        Assertions.assertFalse(requestMetric.measure, "Path should be measured");
+        Assertions.assertFalse(requestMetric.pathMatched, "Path should not be marked as matched");
     }
 
     @Test
@@ -123,11 +121,10 @@ public class HttpRequestMetricTest {
         final Map<Pattern, String> matchPatterns = new HashMap<>();
         matchPatterns.put(Pattern.compile("/item/\\d+"), "/item/{id}");
 
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(matchPatterns, NO_IGNORE_PATTERNS, "item/123");
+        HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, NO_IGNORE_PATTERNS, "item/123");
         Assertions.assertEquals("/item/{id}", requestMetric.path);
-        Assertions.assertTrue(requestMetric.measure);
-        Assertions.assertTrue(requestMetric.pathMatched);
+        Assertions.assertTrue(requestMetric.measure, "Path should be measured");
+        Assertions.assertTrue(requestMetric.pathMatched, "Path should be marked as matched");
     }
 
     @Test
@@ -135,10 +132,9 @@ public class HttpRequestMetricTest {
         final Map<Pattern, String> matchPatterns = new HashMap<>();
         matchPatterns.put(Pattern.compile("/item/\\d+"), "/item/{id}");
 
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(matchPatterns, NO_IGNORE_PATTERNS, "/item/123");
+        HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, NO_IGNORE_PATTERNS, "/item/123");
         Assertions.assertEquals("/item/{id}", requestMetric.path);
-        Assertions.assertTrue(requestMetric.measure);
-        Assertions.assertTrue(requestMetric.pathMatched);
+        Assertions.assertTrue(requestMetric.measure, "Path should be measured");
+        Assertions.assertTrue(requestMetric.pathMatched, "Path should be marked as matched");
     }
 }

@@ -97,7 +97,7 @@ triage:
         - integration-tests/hibernate-validator/
     - labels: [area/jaeger]
       title: "jaeger"
-      notify: [kenfinnigan, pavolloffay]
+      notify: [kenfinnigan]
       directories:
         - extensions/jaeger/
     - labels: [area/kotlin]
@@ -189,7 +189,7 @@ triage:
         - extensions/rest-client/
     - labels: [area/smallrye]
       title: "smallrye"
-      notify: [kenfinnigan, phillip-kruger, jmartisk, radcortez, Ladicek]
+      notify: [phillip-kruger, jmartisk, radcortez, Ladicek]
       directories:
         - extensions/smallrye-
     - labels: [area/spring]

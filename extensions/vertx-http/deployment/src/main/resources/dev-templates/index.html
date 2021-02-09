@@ -1,46 +1,15 @@
 {#include main}
-  {#style}
-.card.extension {
-    background-color: white;
-    box-shadow: 0 0 0 1px #d4d4d5, 0 2px 4px 0 rgba(34,36,38,.12), 0 2px 10px 0 rgba(34,36,38,.15);
-    border-radius: 0.25em;
-    position: relative;
-}
-.card.extension .card-header {
-    background-color: #f8f8f8;
-    padding: 0.75rem 0.75rem;
-    margin-bottom: 0;
-    border-bottom: 1px solid rgba(0,0,0,.125);
-}
-.card.extension .card-header h5 {
-    margin-bottom: 0px;
-}
-.card.extension .card-text {
-    color: rgba(0,0,0,.6);
-}
-hr {
-    margin-top: 0;
-}
-.btn.btn-guide {
-    font-size: 0.7em;
-    padding-top: 0.1em;
-    padding-bottom: 0.1em;
-    padding-left: 0.4em;
-    padding-right: 0.4em;
-}
-{/style}
   {#title}Dev UI{/title}
   {#body}
    <div class="cards-index">
    <div class="row row-cols-1 row-cols-md-4">
    <div class="col mb-4">
-       <div class="card h-100 extension">
-           <div class="card-header">
-               <h5>Configuration
-               <a href="https://quarkus.io/guides/config" class="btn btn-primary btn-sm btn-guide float-right" title="Guide">
+       <div class="card h-100 shadow">
+           <div class="card-header bg-primary text-light">
+               Configuration 
+               <a href="https://quarkus.io/guides/config" class="text-light float-right" title="Guide">
                    <i class="fa fa-book"></i>
                </a>
-               </h5>
            </div>
            <div class="card-body">
                <p class="card-text">
@@ -52,14 +21,14 @@ hr {
        </div>
    </div>
    {#each actionableExtensions}
-       {#extension it/}
+       {#actionableExtension it/}
    {/each}
    </div>
    {#if nonActionableExtensions.size() > 0}
    <hr/>
    <div class="row row-cols-1 row-cols-md-4">
    {#each nonActionableExtensions}
-       {#extension it/}
+       {#nonActionableExtension it/}
    {/each}
    {/if}
    </div>

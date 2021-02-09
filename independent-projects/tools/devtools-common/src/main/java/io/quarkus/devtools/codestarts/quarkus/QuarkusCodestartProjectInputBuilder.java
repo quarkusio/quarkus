@@ -11,11 +11,14 @@ import io.quarkus.devtools.project.extensions.Extensions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
-    public Collection<AppArtifactCoords> extensions = new ArrayList<>();
+    Collection<AppArtifactCoords> extensions = new ArrayList<>();
+    Set<String> overrideExamples = new HashSet<>();
     boolean noExamples;
     boolean noDockerfiles;
     boolean noBuildToolWrapper;
@@ -37,6 +40,16 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
 
     public QuarkusCodestartProjectInputBuilder addExtension(AppArtifactKey extension) {
         return this.addExtension(Extensions.toCoords(extension, null));
+    }
+
+    public QuarkusCodestartProjectInputBuilder addOverrideExamples(Collection<String> overrideExamples) {
+        this.overrideExamples.addAll(overrideExamples);
+        return this;
+    }
+
+    public QuarkusCodestartProjectInputBuilder addExample(String overrideExample) {
+        this.overrideExamples.add(overrideExample);
+        return this;
     }
 
     @Override

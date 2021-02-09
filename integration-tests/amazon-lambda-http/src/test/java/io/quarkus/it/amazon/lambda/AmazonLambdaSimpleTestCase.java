@@ -40,7 +40,7 @@ public class AmazonLambdaSimpleTestCase {
         AwsProxyRequest request = request("/q/swagger-ui/");
         AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
-        Assertions.assertTrue(body(out).contains("Swagger UI"));
+        Assertions.assertTrue(body(out).contains("OpenAPI UI"));
 
     }
 

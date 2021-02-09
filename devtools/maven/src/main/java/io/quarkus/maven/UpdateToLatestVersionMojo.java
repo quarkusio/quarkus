@@ -27,17 +27,15 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 /**
- * Updates the Quarkus version properties to the latest version. The latest
- * version is retrieved from the release page on Github.
+ * Updates the Quarkus version properties in the pom.xml file to the latest version.
+ * 
+ * It is retrieved from the release page on Github.
  */
 @Mojo(name = "update-to-latest")
 public class UpdateToLatestVersionMojo extends AbstractMojo {
 
     private static final String QUARKUS_PLATFORM_VERSION = "quarkus.platform.version";
     private static final String QUARKUS_PLUGIN_VERSION = "quarkus-plugin.version";
-
-    // @Parameter(defaultValue = "${project}", readonly = false, required = true)
-    // private MavenProject project;
 
     @Parameter(property = QUARKUS_PLATFORM_VERSION, required = true)
     private String platformVersion;
@@ -53,6 +51,10 @@ public class UpdateToLatestVersionMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+
+        if (!isCommunity) {
+            throw new MojoExecutionException("not implemented yet");
+        }
 
         MavenXpp3Reader mavenreader = new MavenXpp3Reader();
         Model model;

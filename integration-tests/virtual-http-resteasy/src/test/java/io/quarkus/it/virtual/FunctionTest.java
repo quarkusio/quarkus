@@ -38,7 +38,7 @@ public class FunctionTest {
         // Verify
         Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);
         String body = new String((byte[]) ret.getBody(), StandardCharsets.UTF_8);
-        Assertions.assertTrue(body.contains("Swagger UI"));
+        Assertions.assertTrue(body.contains("OpenAPI UI"));
     }
 
     private ExecutionContext createContext() {

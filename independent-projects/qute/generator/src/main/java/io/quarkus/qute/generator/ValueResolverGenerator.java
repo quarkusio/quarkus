@@ -8,6 +8,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -88,21 +89,16 @@ public class ValueResolverGenerator {
     private final ClassOutput classOutput;
     private final Map<DotName, ClassInfo> nameToClass;
     private final Map<DotName, AnnotationInstance> nameToTemplateData;
+    private final Predicate<ClassInfo> forceGettersPredicate;
 
-    /**
-     * 
-     * @param index
-     * @param classOutput
-     * @param nameToClass
-     * @param nameToTemplateData
-     */
     ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<DotName, ClassInfo> nameToClass,
-            Map<DotName, AnnotationInstance> nameToTemplateData) {
+            Map<DotName, AnnotationInstance> nameToTemplateData, Predicate<ClassInfo> forceGettersPredicate) {
         this.generatedTypes = new HashSet<>();
         this.classOutput = classOutput;
         this.index = index;
         this.nameToClass = new HashMap<>(nameToClass);
         this.nameToTemplateData = new HashMap<>(nameToTemplateData);
+        this.forceGettersPredicate = forceGettersPredicate;
     }
 
     public Set<String> getGeneratedTypes() {
@@ -226,33 +222,9 @@ public class ValueResolverGenerator {
         ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
         ResultHandle params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
         ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
+        boolean forceGetters = forceGettersPredicate != null ? forceGettersPredicate.test(clazz) : false;
 
-        // Fields
-        List<FieldInfo> fields = clazz.fields().stream().filter(filter::test).collect(Collectors.toList());
-        if (!fields.isEmpty()) {
-            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
-            for (FieldInfo field : fields) {
-                LOGGER.debugf("Field added: %s", field);
-                // Match field name
-                BytecodeCreator fieldMatch = zeroParamsBranch
-                        .ifNonZero(
-                                zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
-                                        resolve.load(field.name()), name))
-                        .trueBranch();
-                ResultHandle value;
-                if (Modifier.isStatic(field.flags())) {
-                    value = fieldMatch
-                            .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
-                } else {
-                    value = fieldMatch
-                            .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                    base);
-                }
-                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
-            }
-        }
-
-        // Sort methods (getters must come before is/has properties, etc.)
+        // First collect and sort methods (getters must come before is/has properties, etc.)
         List<MethodKey> methods = clazz.methods().stream().filter(filter::test).map(MethodKey::new).sorted()
                 .collect(Collectors.toList());
         if (!ignoreSuperclasses) {
@@ -266,6 +238,58 @@ public class ValueResolverGenerator {
                 } else {
                     superName = null;
                     LOGGER.warnf("Skipping super class %s - not found in the index", clazz.superClassType());
+                }
+            }
+        }
+
+        List<FieldInfo> fields = clazz.fields().stream().filter(filter::test).collect(Collectors.toList());
+        if (!fields.isEmpty()) {
+            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
+            for (FieldInfo field : fields) {
+                String getterName;
+                if ((field.type().kind() == org.jboss.jandex.Type.Kind.PRIMITIVE
+                        && field.type().asPrimitiveType().equals(PrimitiveType.BOOLEAN))
+                        || (field.type().kind() == org.jboss.jandex.Type.Kind.CLASS
+                                && field.type().name().equals(BOOLEAN))) {
+                    getterName = IS_PREFIX + capitalize(field.name());
+                } else {
+                    getterName = GET_PREFIX + capitalize(field.name());
+                }
+                if (forceGetters && methods.stream().noneMatch(m -> m.name.equals(getterName))) {
+                    LOGGER.debugf("Forced getter added: %s", field);
+                    BytecodeCreator getterMatch = zeroParamsBranch.createScope();
+                    // Match the getter name
+                    BytecodeCreator notMatched = getterMatch.ifNonZero(getterMatch.invokeVirtualMethod(Descriptors.EQUALS,
+                            getterMatch.load(getterName),
+                            name))
+                            .falseBranch();
+                    // Match the property name
+                    notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
+                            notMatched.load(field.name()),
+                            name)).falseBranch().breakScope(getterMatch);
+                    ResultHandle value = getterMatch.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
+                                    DescriptorUtils.typeToString(field.type())),
+                            base);
+                    getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
+                } else {
+                    LOGGER.debugf("Field added: %s", field);
+                    // Match field name
+                    BytecodeCreator fieldMatch = zeroParamsBranch
+                            .ifNonZero(
+                                    zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
+                                            resolve.load(field.name()), name))
+                            .trueBranch();
+                    ResultHandle value;
+                    if (Modifier.isStatic(field.flags())) {
+                        value = fieldMatch
+                                .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
+                    } else {
+                        value = fieldMatch
+                                .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
+                                        base);
+                    }
+                    fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, value));
                 }
             }
         }
@@ -671,7 +695,6 @@ public class ValueResolverGenerator {
         // Match number of params
         if (methodParams >= 0) {
             matchScope.ifIntegerEqual(matchScope.load(methodParams), paramsCount).falseBranch().breakScope(matchScope);
-
         }
         return matchScope;
     }
@@ -700,6 +723,7 @@ public class ValueResolverGenerator {
         private ClassOutput classOutput;
         private final Map<DotName, ClassInfo> nameToClass = new HashMap<>();
         private final Map<DotName, AnnotationInstance> nameToTemplateData = new HashMap<>();
+        private Predicate<ClassInfo> forceGettersPredicate;
 
         public Builder setIndex(IndexView index) {
             this.index = index;
@@ -708,6 +732,17 @@ public class ValueResolverGenerator {
 
         public Builder setClassOutput(ClassOutput classOutput) {
             this.classOutput = classOutput;
+            return this;
+        }
+
+        /**
+         * If a class for which a value resolver is generated matches the predicate then all fields are accessed via getters.
+         * 
+         * @param forceGettersPredicate
+         * @return self
+         */
+        public Builder setForceGettersPredicate(Predicate<ClassInfo> forceGettersPredicate) {
+            this.forceGettersPredicate = forceGettersPredicate;
             return this;
         }
 
@@ -724,7 +759,7 @@ public class ValueResolverGenerator {
         }
 
         public ValueResolverGenerator build() {
-            return new ValueResolverGenerator(index, classOutput, nameToClass, nameToTemplateData);
+            return new ValueResolverGenerator(index, classOutput, nameToClass, nameToTemplateData, forceGettersPredicate);
         }
 
     }
@@ -830,6 +865,18 @@ public class ValueResolverGenerator {
         }
         char chars[] = name.toCharArray();
         chars[0] = Character.toLowerCase(chars[0]);
+        return new String(chars);
+    }
+
+    static String capitalize(String name) {
+        if (name == null || name.length() == 0) {
+            return name;
+        }
+        if (Character.isUpperCase(name.charAt(0))) {
+            return name;
+        }
+        char chars[] = name.toCharArray();
+        chars[0] = Character.toUpperCase(chars[0]);
         return new String(chars);
     }
 

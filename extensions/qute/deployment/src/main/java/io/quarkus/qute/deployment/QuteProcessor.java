@@ -78,6 +78,7 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.Expression;
@@ -798,7 +799,8 @@ public class QuteProcessor {
             List<ImplicitValueResolverBuildItem> implicitClasses,
             TemplatesAnalysisBuildItem templatesAnalysis,
             BuildProducer<GeneratedValueResolverBuildItem> generatedResolvers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            List<PanacheEntityClassesBuildItem> panacheEntityClasses) {
 
         IndexView index = beanArchiveIndex.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Predicate<String>() {
@@ -821,7 +823,22 @@ public class QuteProcessor {
             }
         });
 
-        ValueResolverGenerator.Builder builder = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput);
+        ValueResolverGenerator.Builder builder = ValueResolverGenerator.builder()
+                .setIndex(index).setClassOutput(classOutput);
+
+        if (!panacheEntityClasses.isEmpty()) {
+            Set<String> entityClasses = new HashSet<>();
+            for (PanacheEntityClassesBuildItem panaecheEntityClasses : panacheEntityClasses) {
+                entityClasses.addAll(panaecheEntityClasses.getEntityClasses());
+            }
+            builder.setForceGettersPredicate(new Predicate<ClassInfo>() {
+                @Override
+                public boolean test(ClassInfo clazz) {
+                    return entityClasses.contains(clazz.name().toString());
+                }
+            });
+        }
+
         Set<DotName> controlled = new HashSet<>();
         Map<DotName, AnnotationInstance> uncontrolled = new HashMap<>();
         for (AnnotationInstance templateData : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA)) {

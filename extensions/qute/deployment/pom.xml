@@ -25,6 +25,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
+        <!-- Panache SPI-like module to collect entity classes -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-panache-common-deployment</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus.qute</groupId>
             <artifactId>qute-generator</artifactId>

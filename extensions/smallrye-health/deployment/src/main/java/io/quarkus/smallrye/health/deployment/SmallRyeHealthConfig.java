@@ -43,4 +43,12 @@ public class SmallRyeHealthConfig {
     @ConfigItem
     @ConfigDocSection
     SmallRyeHealthUIConfig ui;
+
+    /**
+     * Configuration of built-in health checks provided by SmallRye Health.
+     */
+    @ConfigItem
+    @ConfigDocSection
+    SmallRyeHealthProvidedChecksConfig providedChecks;
+
 }

@@ -402,18 +402,18 @@ This task depends on `quarkusBuild`, so it will generate the native image before
 
 == Building Uber-Jars
 
-Quarkus Gradle plugin supports the generation of Uber-Jars by specifying an `--uber-jar` argument as follows:
+Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type` argument as follows:
 
 [source,bash]
 ----
-./gradlew quarkusBuild --uber-jar
+./gradlew quarkusBuild -Dquarkus.package.type=uber-jar
 ----
 
 When building an Uber-Jar you can specify entries that you want to exclude from the generated jar by using the `--ignored-entry` argument:
 
 [source,bash]
 ----
-./gradlew quarkusBuild --uber-jar --ignored-entry=META-INF/file1.txt
+./gradlew quarkusBuild -Dquarkus.package.type=uber-jar --ignored-entry=META-INF/file1.txt
 ----
 
 The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.

@@ -5,10 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
@@ -18,6 +20,8 @@ import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateNode.Origin;
 
 final class TypeInfos {
+
+    private static final String ARRAY_DIM = "[]";
 
     static List<Info> create(Expression expression, IndexView index, Function<String, String> templateIdToPathFun) {
         if (expression.isLiteral()) {
@@ -53,16 +57,24 @@ final class TypeInfos {
             if (classStr.equals(Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER)) {
                 return new Info(typeInfo, part);
             } else {
-                DotName rawClassName = rawClassName(classStr);
-                ClassInfo rawClass = index.getClassByName(rawClassName);
-                if (rawClass == null) {
-                    throw new TemplateException(
-                            "Class [" + rawClassName + "] used in the parameter declaration in template ["
-                                    + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
-                                    + expressionOrigin.getLine()
-                                    + " was not found in the application index. Make sure it is spelled correctly.");
+                // TODO make the parsing logic more robust 
+                ClassInfo rawClass;
+                Type resolvedType;
+                int idx = classStr.indexOf(ARRAY_DIM);
+                if (idx > 0) {
+                    // int[], java.lang.String[][], etc.
+                    String componentTypeStr = classStr.substring(0, idx);
+                    Type componentType = decodePrimitive(componentTypeStr);
+                    if (componentType == null) {
+                        componentType = resolveType(componentTypeStr);
+                    }
+                    String[] dimensions = classStr.substring(idx, classStr.length()).split("\\]");
+                    rawClass = null;
+                    resolvedType = ArrayType.create(componentType, dimensions.length);
+                } else {
+                    rawClass = getClassInfo(classStr, index, templateIdToPathFun, expressionOrigin);
+                    resolvedType = resolveType(classStr);
                 }
-                Type resolvedType = resolveType(classStr);
                 return new TypeInfo(typeInfo, part, helperHint(typeInfo.substring(endIdx, typeInfo.length())), resolvedType,
                         rawClass);
             }
@@ -75,6 +87,43 @@ final class TypeInfos {
                 return new VirtualMethodInfo(typeInfo, part.asVirtualMethod());
             }
             return new PropertyInfo(typeInfo, part, hint);
+        }
+    }
+
+    private static ClassInfo getClassInfo(String val, IndexView index, Function<String, String> templateIdToPathFun,
+            Origin expressionOrigin) {
+        DotName rawClassName = rawClassName(val);
+        ClassInfo clazz = index.getClassByName(rawClassName);
+        if (clazz == null) {
+            throw new TemplateException(
+                    "Class [" + rawClassName + "] used in the parameter declaration in template ["
+                            + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
+                            + expressionOrigin.getLine()
+                            + " was not found in the application index. Make sure it is spelled correctly.");
+        }
+        return clazz;
+    }
+
+    private static PrimitiveType decodePrimitive(String val) {
+        switch (val) {
+            case "byte":
+                return PrimitiveType.BYTE;
+            case "char":
+                return PrimitiveType.CHAR;
+            case "double":
+                return PrimitiveType.DOUBLE;
+            case "float":
+                return PrimitiveType.FLOAT;
+            case "int":
+                return PrimitiveType.INT;
+            case "long":
+                return PrimitiveType.LONG;
+            case "short":
+                return PrimitiveType.SHORT;
+            case "boolean":
+                return PrimitiveType.BOOLEAN;
+            default:
+                return null;
         }
     }
 

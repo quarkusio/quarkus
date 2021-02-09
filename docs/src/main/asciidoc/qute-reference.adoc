@@ -375,6 +375,30 @@ TIP: The condition in a ternary operator evaluates to `true` if the value is not
 
 NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation, i.e. `{person.name or 'John'}` is translated to `{person.name.or('John')}`.
 
+==== Arrays
+
+You can iterate over elements of an array with the <<loop_section>>. Moreover, it's also possible to get the length of the specified array and access the elements directly via an index value.
+
+.Array Examples
+[source,html]
+----
+<h1>Array of length: {myArray.length}</h1> <1>
+<ul>
+  <li>First: {myArray.0}</li> <2>
+  <li>Second: {myArray[1]}</li> <3>
+  <li>Third: {myArray.get(2)}</li> <4>
+</ul>
+<ol>
+ {#for element in myArray}
+ <li>{element}</li>
+ {/for}
+</ol>
+----
+<1> Outputs the length of the array.
+<2> Outputs the first element of the array.
+<3> Outputs the second element of the array using the bracket notation.
+<4> Outputs the third element of the array via the virtual method `get()`.
+
 ==== Character Escapes
 
 For HTML and XML templates the `'`, `"`, `<`, `>`, `&` characters are escaped by default if a template variant is set.
@@ -482,6 +506,7 @@ A section helper that defines the logic of a section can "execute" any of the bl
 {/if}
 ----
 
+[[loop_section]]
 ==== Loop Section
 
 The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set, `Stream` and an Integer.

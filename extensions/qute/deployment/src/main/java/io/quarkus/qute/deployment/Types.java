@@ -113,6 +113,9 @@ public final class Types {
 
     static boolean isAssignableFrom(Type type1, Type type2, IndexView index) {
         // TODO consider type params in assignability rules
+        if (type1.kind() == Kind.ARRAY && type2.kind() == Kind.ARRAY) {
+            return isAssignableFrom(type1.asArrayType().component(), type2.asArrayType().component(), index);
+        }
         return Types.isAssignableFrom(box(type1).name(), box(type2).name(), index);
     }
 

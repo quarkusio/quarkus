@@ -71,9 +71,9 @@ public class KubernetesClientProducer {
 
 == Testing
 
-To make testing against a mock Kubernetes API extremely simple, Quarkus provides the `KubernetesMockServerTestResource` which automatically launches
+To make testing against a mock Kubernetes API extremely simple, Quarkus provides the `WithKubernetesTestServer` annotation which automatically launches
 a mock of the Kubernetes API server and sets the proper environment variables needed so that the Kubernetes Client configures itself to use said mock.
-Tests can inject the mock and set it up in any way necessary for the particular testing using the `@MockServer` annotation.
+Tests can inject the mock server and set it up in any way necessary for the particular testing using the `@KubernetesTestServer` annotation.
 
 Let's assume we have a REST endpoint defined like so:
 
@@ -100,12 +100,13 @@ We could write a test for this endpoint very easily like so:
 
 [source%nowrap,java]
 ----
-@QuarkusTestResource(KubernetesMockServerTestResource.class)
+// you can even configure aspects like crud, https and port on this annotation
+@WithKubernetesTestServer
 @QuarkusTest
 public class KubernetesClientTest {
 
-    @MockServer
-    KubernetesMockServer mockServer;
+    @KubernetesTestServer
+    KubernetesServer mockServer;
 
     @BeforeEach
     public void before() {
@@ -139,14 +140,14 @@ Note that to take advantage of these features, the `quarkus-test-kubernetes-clie
 </dependency>
 ----
 
-You can create a `CustomKubernetesMockServerTestResource.java` to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup:
+Alternately, you can create a `CustomKubernetesMockServerTestResource.java` to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup:
 
 [source%nowrap,java]
 ----
-public class CustomKubernetesMockServerTestResource extends KubernetesMockServerTestResource {
+public class CustomKubernetesMockServerTestResource extends KubernetesServerTestResource {
 
     @Override
-    public void configureMockServer(KubernetesMockServer mockServer) {
+    public void configureMockServer(KubernetesServer mockServer) {
         mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
                 .andReturn(200, new PodList())
                 .always();

@@ -987,10 +987,67 @@ A very common need is to start some services on which your Quarkus application d
 By simply annotating any test in the test suite with `@QuarkusTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before any tests are run.
 A test suite is also free to utilize multiple `@QuarkusTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests. When using multiple test resources they can be started concurrently. For that you need to set `@QuarkusTestResource(parallel = true)`.
 
+NOTE: test resources are global, even if they are defined on a test class, which means they will all be activated for all tests, even though we do
+remove duplicates. If you want to only enable a test resource on a single test class, you can use `@QuarkusTestResource(restrictToAnnotatedTest = true)`.
+
 Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesMockServerTestResource` which starts a mock Kubernetes API server),
 but it is common to create custom implementations to address specific application needs.
 Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus-quickstarts/blob/master/kafka-quickstart/src/test/java/org/acme/kafka/KafkaResource.java[here]),
 or starting a mock HTTP server using http://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/master/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
+
+=== Annotation-based test resources
+
+It is possible to write test resources that are enabled and configured using annotations. This is enabled by placing the `@QuarkusTestResource`
+on an annotation which will be used to enable and configure the test resource.
+
+For example, this defines the `@WithKubernetesTestServer` annotation, which you can use on your tests to activate the `KubernetesServerTestResource`,
+but only for the annotated test class.
+
+[source,java]
+----
+@QuarkusTestResource(KubernetesServerTestResource.class)
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface WithKubernetesTestServer {
+    /**
+     * Start it with HTTPS
+     */
+    boolean https() default false;
+
+    /**
+     * Start it in CRUD mode
+     */
+    boolean crud() default true;
+
+    /**
+     * Port to use, defaults to any available port
+     */
+    int port() default 0;
+}
+----
+
+The `KubernetesServerTestResource` class has to implement the
+`QuarkusTestResourceConfigurableLifecycleManager` interface in order to be configured using the previous annotation:
+
+[source,java]
+----
+public class KubernetesServerTestResource
+        implements QuarkusTestResourceConfigurableLifecycleManager<WithKubernetesTestServer> {
+
+    private boolean https = false;
+    private boolean crud = true;
+    private int port = 0;
+
+    @Override
+    public void init(WithKubernetesTestServer annotation) {
+        this.https = annotation.https();
+        this.crud = annotation.crud();
+        this.port = annotation.port();
+    }
+
+    // ...
+}
+----
 
 == Hang Detection
 

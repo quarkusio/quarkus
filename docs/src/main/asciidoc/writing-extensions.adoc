@@ -898,18 +898,6 @@ ExecutorBuildItem createExecutor( // <2>
 <1> Note the `optional` attribute.
 <2> This example is using recorder proxies; see the section on <<bytecode-recording,bytecode recording>> for more information.
 
-==== Capabilities
-
-The `@BuildStep` annotation has a `providesCapabilities` property that can be used to provide capability information
-to other extensions about what is present in the current application. Capabilities are simply strings that are used to
-describe an extension. Capabilities should generally be named after an extensions root package, for example the transactions
-extension will provide `io.quarkus.transactions`.
-
-To check if a capability is present you can inject the `io.quarkus.deployment.Capabilities` object and call
-`isCapabilityPresent`.
-
-Capabilities should be used when checking for the presence of an extension rather than class path based checks.
-
 ==== Application Archives
 
 The `@BuildStep` annotation can also register marker files that determine which archives on the class path are considered
@@ -1353,6 +1341,9 @@ static class IsDevMode implements BooleanSupplier {
     }
 }
 ----
+
+If you need to make your build step conditional on the presence or absence of another extension, you can
+use <<capabilities>> for that.
 
 [id='bytecode-recording']
 === Bytecode Recording
@@ -2150,6 +2141,7 @@ cd rest-json
 A _capability_ represents a technical capability that can be queried by other extensions.
 An extension may provide multiple capabilities and multiple extensions can provide the same capability. 
 By default, capabilities are not displayed to users.
+Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
 Capabilities can be registered in a <<Build Step Processors>> method that produces a `CapabilityBuildItem`:
 

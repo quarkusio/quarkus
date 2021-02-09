@@ -1,21 +1,18 @@
+{#if it['metadata'] && it['metadata']['unlisted'] != true}
 <div class="col mb-4">
-    <div class="card h-100 extension">
+    <div class="card h-100">
         <div class="card-header">
-            <h5 class="card-title">
             {it['name']}
             {#if it['metadata'] && it['metadata']['guide']}
-            <a href="{it['metadata']['guide']}" class="btn btn-primary btn-sm btn-guide float-right" title="Guide">
-                <i class="fa fa-book"></i>
-            </a>
+            <a href="{it['metadata']['guide']}" class="text-muted float-right" title="Guide"><i class="fa fa-book"></i></a>
             {/if}
-            </h5>
         </div>
         <div class="card-body">
             <p class="card-text">
                 {#if it['metadata'] && it['metadata']['status'] == 'experimental'}
                 <span class="float-right badge badge-warning">EXPERIMENTAL</span>
                 {/if}
-                {it['description']}
+                <span class="card-subtitle mb-2 text-muted">{it['description']}</span>
                 <br/>
                 {#if it['_dev']}
                 {it['_dev'].raw}
@@ -24,3 +21,4 @@
         </div>
     </div>
 </div>
+{/if}

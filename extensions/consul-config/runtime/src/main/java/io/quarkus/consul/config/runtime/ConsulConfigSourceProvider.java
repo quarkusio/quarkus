@@ -12,6 +12,7 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.UniAwait;
 
 class ConsulConfigSourceProvider implements ConfigSourceProvider {
 
@@ -72,8 +73,12 @@ class ConsulConfigSourceProvider implements ConfigSourceProvider {
         }
 
         try {
-            Uni.combine().all().unis(allUnis).discardItems().await()
-                    .atMost(config.agent.connectionTimeout.plus(config.agent.readTimeout.multipliedBy(2)));
+            UniAwait<Void> await = Uni.combine().all().unis(allUnis).discardItems().await();
+            if (config.agent.connectionTimeout.isZero() && config.agent.readTimeout.isZero()) {
+                await.indefinitely();
+            } else {
+                await.atMost(config.agent.connectionTimeout.plus(config.agent.readTimeout.multipliedBy(2)));
+            }
         } catch (CompletionException e) {
             throw new RuntimeException("An error occurred while attempting to fetch configuration from Consul.", e);
         } finally {

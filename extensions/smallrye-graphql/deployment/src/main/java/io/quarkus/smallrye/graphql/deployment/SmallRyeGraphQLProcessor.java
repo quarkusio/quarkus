@@ -483,8 +483,8 @@ public class SmallRyeGraphQLProcessor {
             }
 
             String graphQLPath = httpRootPath.adjustPath(graphQLConfig.rootPath);
-            String graphQLUiPath = nonApplicationRootPathBuildItem
-                    .adjustPath(graphQLConfig.ui.rootPath);
+            String graphQLUiPath = httpRootPath
+                    .adjustPath(nonApplicationRootPathBuildItem.adjustPath(graphQLConfig.ui.rootPath));
 
             AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, GRAPHQL_UI_WEBJAR_GROUP_ID,
                     GRAPHQL_UI_WEBJAR_ARTIFACT_ID);
@@ -492,13 +492,15 @@ public class SmallRyeGraphQLProcessor {
                 Path tempPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, artifact,
                         GRAPHQL_UI_WEBJAR_PREFIX);
                 WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT);
-                WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), httpRootPath.adjustPath(graphQLUiPath),
+                WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLUiPath,
                         UI_LINE_TO_UPDATE, UI_LINE_FORMAT);
 
-                smallRyeGraphQLBuildProducer.produce(new SmallRyeGraphQLBuildItem(tempPath.toAbsolutePath().toString(),
-                        httpRootPath.adjustPath(graphQLUiPath)));
+                smallRyeGraphQLBuildProducer
+                        .produce(new SmallRyeGraphQLBuildItem(tempPath.toAbsolutePath().toString(), graphQLUiPath));
                 notFoundPageDisplayableEndpointProducer
-                        .produce(new NotFoundPageDisplayableEndpointBuildItem(graphQLUiPath + "/", "MicroProfile GraphQL UI"));
+                        .produce(new NotFoundPageDisplayableEndpointBuildItem(
+                                nonApplicationRootPathBuildItem.adjustPath(graphQLConfig.ui.rootPath) + "/",
+                                "MicroProfile GraphQL UI"));
 
                 // Handle live reload of branding files
                 if (liveReloadBuildItem.isLiveReload() && !liveReloadBuildItem.getChangedResources().isEmpty()) {
@@ -519,7 +521,7 @@ public class SmallRyeGraphQLProcessor {
                                         LINE_FORMAT)
                                 .getBytes(StandardCharsets.UTF_8);
                         content = WebJarUtil
-                                .updateUrl(new String(content, StandardCharsets.UTF_8), httpRootPath.adjustPath(graphQLUiPath),
+                                .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLUiPath,
                                         UI_LINE_TO_UPDATE,
                                         UI_LINE_FORMAT)
                                 .getBytes(StandardCharsets.UTF_8);
@@ -530,8 +532,7 @@ public class SmallRyeGraphQLProcessor {
                     nativeImageResourceProducer.produce(new NativeImageResourceBuildItem(fileName));
                 }
 
-                smallRyeGraphQLBuildProducer.produce(new SmallRyeGraphQLBuildItem(GRAPHQL_UI_FINAL_DESTINATION,
-                        httpRootPath.adjustPath(graphQLUiPath)));
+                smallRyeGraphQLBuildProducer.produce(new SmallRyeGraphQLBuildItem(GRAPHQL_UI_FINAL_DESTINATION, graphQLUiPath));
             }
         }
     }

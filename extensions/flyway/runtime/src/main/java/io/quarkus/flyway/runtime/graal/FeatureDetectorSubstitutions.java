@@ -42,4 +42,9 @@ public final class FeatureDetectorSubstitutions {
         return false;
     }
 
+    @Substitute
+    public boolean isLog4J2Available() {
+        return false;
+    }
+
 }

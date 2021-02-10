@@ -6,6 +6,7 @@ public enum ParameterType {
     QUERY,
     HEADER,
     FORM,
+    MULTI_PART_FORM,
     BODY,
     MATRIX,
     CONTEXT,

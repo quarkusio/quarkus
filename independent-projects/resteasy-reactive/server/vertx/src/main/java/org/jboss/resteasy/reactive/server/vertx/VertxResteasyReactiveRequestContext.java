@@ -236,6 +236,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T unwrap(Class<T> theType) {
         if (theType == RoutingContext.class) {
@@ -244,6 +245,8 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             return (T) request;
         } else if (theType == HttpServerResponse.class) {
             return (T) response;
+        } else if (theType == ResteasyReactiveRequestContext.class) {
+            return (T) this;
         }
         return null;
     }

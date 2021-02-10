@@ -20,6 +20,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
@@ -382,6 +383,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean suspended = false;
             boolean sse = false;
             boolean formParamRequired = false;
+            boolean multipart = false;
             boolean hasBodyParam = false;
             TypeArgMapper typeArgMapper = new TypeArgMapper(info.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
@@ -423,10 +425,38 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (injectableBean.isFormParamRequired()) {
                         formParamRequired = true;
                     }
-                } else if (type == ParameterType.FORM) {
+                } else if ((type == ParameterType.FORM)) {
                     formParamRequired = true;
+                } else if (type == ParameterType.MULTI_PART_FORM) {
+                    multipart = true;
+                    ClassInfo multipartClassInfo = index.getClassByName(paramType.name());
+                    handleMultipart(multipartClassInfo);
                 }
             }
+
+            if (multipart) {
+                if (hasBodyParam) {
+                    throw new RuntimeException(
+                            "'@MultipartForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
+                                    + info.declaringClass().name() + "#" + info.toString() + "'");
+                }
+                boolean validConsumes = false;
+                if (consumes != null) {
+                    for (String c : consumes) {
+                        if (c.equals(MediaType.MULTIPART_FORM_DATA)) {
+                            validConsumes = true;
+                            break;
+                        }
+                    }
+                }
+                // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
+                if (!validConsumes) {
+                    throw new RuntimeException(
+                            "'@MultipartForm' can only be used on methods that annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)'. Offending method is '"
+                                    + info.declaringClass().name() + "#" + info.toString() + "'");
+                }
+            }
+
             Type nonAsyncReturnType = getNonAsyncReturnType(info.returnType());
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
@@ -462,6 +492,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setSse(sse)
                     .setSseElementType(sseElementType)
                     .setFormParamRequired(formParamRequired)
+                    .setMultipart(multipart)
                     .setParameters(methodParameters)
                     .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?
@@ -474,6 +505,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    protected void handleMultipart(ClassInfo multipartClassInfo) {
+
     }
 
     private String determineReturnType(MethodInfo info, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
@@ -698,6 +733,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 .setSourceName(sourceName);
 
         AnnotationInstance beanParam = anns.get(BEAN_PARAM);
+        AnnotationInstance multiPartFormParam = anns.get(MULTI_PART_FORM_PARAM);
         AnnotationInstance pathParam = anns.get(PATH_PARAM);
         AnnotationInstance queryParam = anns.get(QUERY_PARAM);
         AnnotationInstance headerParam = anns.get(HEADER_PARAM);
@@ -782,6 +818,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (beanParam != null) {
             // no name required
             builder.setType(ParameterType.BEAN);
+        } else if (multiPartFormParam != null) {
+            builder.setType(ParameterType.MULTI_PART_FORM);
         } else if (suspendedAnnotation != null) {
             // no name required
             builder.setType(ParameterType.ASYNC_RESPONSE);
@@ -854,7 +892,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             addReaderForType(additionalReaders, paramType);
 
             if (type != ParameterType.CONTEXT && type != ParameterType.BEAN && type != ParameterType.BODY
-                    && type != ParameterType.ASYNC_RESPONSE) {
+                    && type != ParameterType.ASYNC_RESPONSE && type != ParameterType.MULTI_PART_FORM) {
                 handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
             if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
@@ -999,48 +1037,4 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         public abstract T build();
     }
 
-    private static class TypeArgMapper implements Function<String, String> {
-        private final ClassInfo declaringClass;
-        private final IndexView index;
-
-        public TypeArgMapper(ClassInfo declaringClass, IndexView index) {
-            this.declaringClass = declaringClass;
-            this.index = index;
-        }
-
-        @Override
-        public String apply(String v) {
-            //we attempt to resolve type variables
-            ClassInfo declarer = declaringClass;
-            int pos = -1;
-            for (;;) {
-                if (declarer == null) {
-                    return null;
-                }
-                List<TypeVariable> typeParameters = declarer.typeParameters();
-                for (int i = 0; i < typeParameters.size(); i++) {
-                    TypeVariable tv = typeParameters.get(i);
-                    if (tv.identifier().equals(v)) {
-                        pos = i;
-                    }
-                }
-                if (pos != -1) {
-                    break;
-                }
-                declarer = index.getClassByName(declarer.superName());
-            }
-            Type type = JandexUtil
-                    .resolveTypeParameters(declaringClass.name(), declarer.name(), index)
-                    .get(pos);
-            if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
-                List<Type> bounds = type.asTypeVariable().bounds();
-                if (bounds.isEmpty()) {
-                    return "Ljava/lang/Object;";
-                }
-                return AsmUtil.getSignature(bounds.get(0), this);
-            } else {
-                return AsmUtil.getSignature(type, this);
-            }
-        }
-    }
 }

@@ -59,6 +59,8 @@ public class ResourceMethod {
 
     private boolean isFormParamRequired;
 
+    private boolean isMultipart;
+
     public boolean isResourceLocator() {
         return httpMethod == null;
     }
@@ -177,6 +179,15 @@ public class ResourceMethod {
 
     public ResourceMethod setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
+        return this;
+    }
+
+    public boolean isMultipart() {
+        return isMultipart;
+    }
+
+    public ResourceMethod setMultipart(boolean isMultipart) {
+        this.isMultipart = isMultipart;
         return this;
     }
 

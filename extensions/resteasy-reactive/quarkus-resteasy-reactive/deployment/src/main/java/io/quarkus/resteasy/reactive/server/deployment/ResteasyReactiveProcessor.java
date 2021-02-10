@@ -97,6 +97,7 @@ import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandl
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxBufferMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -119,6 +120,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -221,6 +223,7 @@ public class ResteasyReactiveProcessor {
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder,
             RecorderContext recorderContext,
             ShutdownContextBuildItem shutdownContext,
@@ -305,6 +308,7 @@ public class ResteasyReactiveProcessor {
                     .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
                     .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
+                    .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
                     .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths)
                     .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
                             config.inputBufferSize.asLongValue(), config.singleDefaultProduces, config.defaultProduces))
@@ -520,6 +524,17 @@ public class ResteasyReactiveProcessor {
                         new RouteBuildItem(new BasicRoute(matchPath, VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1), handler));
             }
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void applyRuntimeConfig(ResteasyReactiveRuntimeRecorder recorder,
+            Optional<ResteasyReactiveDeploymentBuildItem> deployment,
+            HttpConfiguration httpConfiguration) {
+        if (!deployment.isPresent()) {
+            return;
+        }
+        recorder.configure(deployment.get().getDeployment(), httpConfiguration);
     }
 
     @BuildStep

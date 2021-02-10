@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.server.runtime;
 import static io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMapper.classMappers;
 
 import java.io.Closeable;
-import java.time.Duration;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -11,7 +10,6 @@ import java.util.function.Supplier;
 
 import javax.ws.rs.core.Application;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
@@ -22,6 +20,7 @@ import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.core.startup.CustomServerRestHandlers;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
@@ -61,7 +60,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
         }
     };
 
-    private static volatile Deployment currentDeployment;
+    static volatile Deployment currentDeployment;
 
     public static Deployment getCurrentDeployment() {
         return currentDeployment;
@@ -107,7 +106,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
-                new BlockingInputHandlerSupplier(),
+                new CustomServerRestHandlers(new BlockingInputHandlerSupplier(), new MultipartHandlerSupplier()),
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
                 vertxConfig.rootPath);
         Deployment deployment = runtimeDeploymentManager.deploy();
@@ -206,22 +205,17 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder {
 
     private static class BlockingInputHandlerSupplier implements Supplier<ServerRestHandler> {
 
-        private volatile Long readTimeout;
+        @Override
+        public ServerRestHandler get() {
+            return new BlockingInputHandler();
+        }
+    }
+
+    private static class MultipartHandlerSupplier implements Supplier<ServerRestHandler> {
 
         @Override
         public ServerRestHandler get() {
-            if (readTimeout == null) {
-                synchronized (this) {
-                    if (readTimeout == null) {
-                        // read the config like this in order to be able to keep ResteasyReactiveRecorder#createDeployment
-                        // as a static-init recorder
-                        // TODO: reevaluate this
-                        readTimeout = ConfigProvider.getConfig().getOptionalValue("quarkus.http.read-timeout", Duration.class)
-                                .orElse(Duration.ofSeconds(60)).toMillis();
-                    }
-                }
-            }
-            return new BlockingInputHandler(readTimeout);
+            return new MultipartFormHandler();
         }
     }
 

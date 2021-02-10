@@ -12,4 +12,6 @@ public interface ResteasyReactiveInjectionContext {
     String getCookieParameter(String name);
 
     Object getFormParameter(String name, boolean single, boolean encoded);
+
+    <T> T unwrap(Class<T> theType);
 }

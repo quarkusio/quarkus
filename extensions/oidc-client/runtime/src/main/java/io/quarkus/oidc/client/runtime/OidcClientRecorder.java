@@ -1,10 +1,11 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ public class OidcClientRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcClientRecorder.class);
     private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
+    private static final Duration INITIAL_BACKOFF_DURATION = Duration.ofSeconds(2);
 
     public OidcClients setup(OidcClientsConfig oidcClientsConfig, TlsConfig tlsConfig, Supplier<Vertx> vertx) {
 
@@ -157,41 +159,12 @@ public class OidcClientRecorder {
     }
 
     private static Uni<String> discoverTokenRequestUri(WebClient client, String authServerUrl, OidcClientConfig oidcConfig) {
+        final String discoveryUrl = authServerUrl + "/.well-known/openid-configuration";
         final long connectionRetryCount = OidcCommonUtils.getConnectionRetryCount(oidcConfig);
+        final long expireInDelay = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         if (connectionRetryCount > 1) {
             LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
         }
-
-        for (long i = 0; i < connectionRetryCount; i++) {
-            try {
-                if (oidcConfig.discoveryEnabled) {
-                    return discoverTokenEndpoint(client, authServerUrl);
-                }
-                break;
-            } catch (Throwable throwable) {
-                while (throwable instanceof CompletionException && throwable.getCause() != null) {
-                    throwable = throwable.getCause();
-                }
-                if (throwable instanceof OidcClientException) {
-                    if (i + 1 < connectionRetryCount) {
-                        try {
-                            Thread.sleep(2000);
-                        } catch (InterruptedException iex) {
-                            // continue connecting
-                        }
-                    } else {
-                        throw (OidcClientException) throwable;
-                    }
-                } else {
-                    throw new OidcClientException(throwable);
-                }
-            }
-        }
-        return Uni.createFrom().nullItem();
-    }
-
-    private static Uni<String> discoverTokenEndpoint(WebClient client, String authServerUrl) {
-        String discoveryUrl = authServerUrl + "/.well-known/openid-configuration";
         return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
             if (resp.statusCode() == 200) {
                 JsonObject json = resp.bodyAsJsonObject();
@@ -200,7 +173,10 @@ public class OidcClientRecorder {
                 LOG.tracef("Discovery has failed, status code: %d", resp.statusCode());
                 return null;
             }
-        });
+        }).onFailure(ConnectException.class)
+                .retry()
+                .withBackOff(INITIAL_BACKOFF_DURATION, INITIAL_BACKOFF_DURATION)
+                .expireIn(expireInDelay);
     }
 
     protected static OidcClientException toOidcClientException(String authServerUrlString, Throwable cause) {

@@ -258,4 +258,96 @@ public class SwaggerUiConfig {
      */
     @ConfigItem
     Optional<List<String>> presets;
+
+    /**
+     * OAuth default clientId - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<String> oauthClientId;
+
+    /**
+     * OAuth default clientSecret - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<String> oauthClientSecret;
+
+    /**
+     * OAuth1 Realm query parameter added to authorizationUrl and tokenUrl - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<String> oauthRealm;
+
+    /**
+     * OAuth application name, displayed in authorization popup - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<String> oauthAppName;
+
+    /**
+     * OAuth scope separator for passing scopes - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<String> oauthScopeSeparator;
+
+    /**
+     * OAuth Scopes, separated using the oauthScopeSeparator - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<String> oauthScopes;
+
+    /**
+     * OAuth additional query parameters added to authorizationUrl and tokenUrl - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<String> oauthAdditionalQueryStringParams;
+
+    /**
+     * OAuth only activated for the accessCode flow. During the authorization_code request to the tokenUrl, pass the Client
+     * Password using the HTTP Basic Authentication scheme - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<Boolean> oauthUseBasicAuthenticationWithAccessCodeGrant;
+
+    /**
+     * OAuth only applies to authorizatonCode flows. Proof Key for Code Exchange brings enhanced security for OAuth public
+     * clients - Used in the initOAuth method.
+     */
+    @ConfigItem
+    Optional<Boolean> oauthUsePkceWithAuthorizationCodeGrant;
+
+    /**
+     * Pre-authorize Basic Auth, programmatically set DefinitionKey for a Basic authorization scheme - Used in the
+     * preauthorizeBasic method.
+     */
+    @ConfigItem
+    Optional<String> preauthorizeBasicAuthDefinitionKey;
+
+    /**
+     * Pre-authorize Basic Auth, programmatically set Username for a Basic authorization scheme - Used in the preauthorizeBasic
+     * method.
+     */
+    @ConfigItem
+    Optional<String> preauthorizeBasicUsername;
+
+    /**
+     * Pre-authorize Basic Auth, programmatically set Password for a Basic authorization scheme - Used in the preauthorizeBasic
+     * method.
+     */
+    @ConfigItem
+    Optional<String> preauthorizeBasicPassword;
+
+    /**
+     * Pre-authorize ApiKey Auth, programmatically set DefinitionKey for an API key or Bearer authorization scheme - Used in the
+     * preauthorizeApiKey method.
+     */
+    @ConfigItem
+    Optional<String> preauthorizeApiKeyAuthDefinitionKey;
+
+    /**
+     * Pre-authorize ApiKey Auth, programmatically set ApiKeyValue for an API key or Bearer authorization scheme - Used in the
+     * preauthorizeApiKey method.
+     */
+    @ConfigItem
+    Optional<String> preauthorizeApiKeyApiKeyValue;
+
 }

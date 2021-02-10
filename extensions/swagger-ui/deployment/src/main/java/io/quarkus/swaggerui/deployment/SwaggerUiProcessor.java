@@ -31,7 +31,7 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.smallrye.openapi.ui.IndexCreator;
+import io.smallrye.openapi.ui.IndexHtmlCreator;
 import io.smallrye.openapi.ui.Option;
 import io.smallrye.openapi.ui.ThemeHref;
 import io.vertx.core.Handler;
@@ -317,7 +317,66 @@ public class SwaggerUiProcessor {
             options.put(Option.presets, presets);
         }
 
-        return IndexCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName.orElse(null), options);
+        if (swaggerUiConfig.oauthClientId.isPresent()) {
+            String oauthClientId = swaggerUiConfig.oauthClientId.get();
+            options.put(Option.oauthClientId, oauthClientId);
+        }
+        if (swaggerUiConfig.oauthClientSecret.isPresent()) {
+            String oauthClientSecret = swaggerUiConfig.oauthClientSecret.get();
+            options.put(Option.oauthClientSecret, oauthClientSecret);
+        }
+        if (swaggerUiConfig.oauthRealm.isPresent()) {
+            String oauthRealm = swaggerUiConfig.oauthRealm.get();
+            options.put(Option.oauthRealm, oauthRealm);
+        }
+        if (swaggerUiConfig.oauthAppName.isPresent()) {
+            String oauthAppName = swaggerUiConfig.oauthAppName.get();
+            options.put(Option.oauthAppName, oauthAppName);
+        }
+        if (swaggerUiConfig.oauthScopeSeparator.isPresent()) {
+            String oauthScopeSeparator = swaggerUiConfig.oauthScopeSeparator.get();
+            options.put(Option.oauthScopeSeparator, oauthScopeSeparator);
+        }
+        if (swaggerUiConfig.oauthScopes.isPresent()) {
+            String oauthScopes = swaggerUiConfig.oauthScopes.get();
+            options.put(Option.oauthScopes, oauthScopes);
+        }
+        if (swaggerUiConfig.oauthAdditionalQueryStringParams.isPresent()) {
+            String oauthAdditionalQueryStringParams = swaggerUiConfig.oauthAdditionalQueryStringParams.get();
+            options.put(Option.oauthAdditionalQueryStringParams, oauthAdditionalQueryStringParams);
+        }
+        if (swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant.isPresent()) {
+            String oauthUseBasicAuthenticationWithAccessCodeGrant = swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant
+                    .get().toString();
+            options.put(Option.oauthUseBasicAuthenticationWithAccessCodeGrant, oauthUseBasicAuthenticationWithAccessCodeGrant);
+        }
+        if (swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant.isPresent()) {
+            String oauthUsePkceWithAuthorizationCodeGrant = swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant.get()
+                    .toString();
+            options.put(Option.oauthUsePkceWithAuthorizationCodeGrant, oauthUsePkceWithAuthorizationCodeGrant);
+        }
+        if (swaggerUiConfig.preauthorizeBasicAuthDefinitionKey.isPresent()) {
+            String preauthorizeBasicAuthDefinitionKey = swaggerUiConfig.preauthorizeBasicAuthDefinitionKey.get();
+            options.put(Option.preauthorizeBasicAuthDefinitionKey, preauthorizeBasicAuthDefinitionKey);
+        }
+        if (swaggerUiConfig.preauthorizeBasicUsername.isPresent()) {
+            String preauthorizeBasicUsername = swaggerUiConfig.preauthorizeBasicUsername.get();
+            options.put(Option.preauthorizeBasicUsername, preauthorizeBasicUsername);
+        }
+        if (swaggerUiConfig.preauthorizeBasicPassword.isPresent()) {
+            String preauthorizeBasicPassword = swaggerUiConfig.preauthorizeBasicPassword.get();
+            options.put(Option.preauthorizeBasicPassword, preauthorizeBasicPassword);
+        }
+        if (swaggerUiConfig.preauthorizeApiKeyAuthDefinitionKey.isPresent()) {
+            String preauthorizeApiKeyAuthDefinitionKey = swaggerUiConfig.preauthorizeApiKeyAuthDefinitionKey.get();
+            options.put(Option.preauthorizeApiKeyAuthDefinitionKey, preauthorizeApiKeyAuthDefinitionKey);
+        }
+        if (swaggerUiConfig.preauthorizeApiKeyApiKeyValue.isPresent()) {
+            String preauthorizeApiKeyApiKeyValue = swaggerUiConfig.preauthorizeApiKeyApiKeyValue.get();
+            options.put(Option.preauthorizeApiKeyApiKeyValue, preauthorizeApiKeyApiKeyValue);
+        }
+
+        return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName.orElse(null), options);
     }
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig) {

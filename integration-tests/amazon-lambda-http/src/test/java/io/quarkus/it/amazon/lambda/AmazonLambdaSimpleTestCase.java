@@ -43,7 +43,7 @@ public class AmazonLambdaSimpleTestCase {
         APIGatewayV2HTTPEvent request = request("/q/swagger-ui/");
         APIGatewayV2HTTPResponse out = LambdaClient.invoke(APIGatewayV2HTTPResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);
-        Assertions.assertTrue(body(out).contains("Swagger UI"));
+        Assertions.assertTrue(body(out).contains("OpenAPI UI"));
 
     }
 

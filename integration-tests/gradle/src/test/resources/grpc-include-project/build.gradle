@@ -12,7 +12,6 @@ repositories {
     } else {
         mavenLocal()
     }
-    jcenter()
     mavenCentral()
     gradlePluginPortal()
 }

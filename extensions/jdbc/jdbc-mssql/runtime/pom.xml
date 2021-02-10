@@ -83,11 +83,15 @@
     </dependencies>
 
     <build>
-        <!-- Mark this as a runtime dependency, so to make sure it's included on the final classpath during native-image -->
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>com.microsoft.sqlserver:mssql-jdbc</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

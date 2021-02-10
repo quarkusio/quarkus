@@ -21,6 +21,10 @@ import org.elasticsearch.client.sniff.Sniffer;
 import org.elasticsearch.client.sniff.SnifferBuilder;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
+
 public final class RestClientBuilderHelper {
 
     private static final Logger LOG = Logger.getLogger(RestClientBuilderHelper.class);
@@ -77,7 +81,16 @@ public final class RestClientBuilderHelper {
                     httpClientBuilder.setSSLStrategy(NoopIOSessionStrategy.INSTANCE);
                 }
 
-                return httpClientBuilder;
+                // Apply configuration from RestClientBuilder.HttpClientConfigCallback implementations annotated with ElasticsearchClientConfig
+                HttpAsyncClientBuilder result = httpClientBuilder;
+                Iterable<InstanceHandle<RestClientBuilder.HttpClientConfigCallback>> handles = Arc.container()
+                        .select(RestClientBuilder.HttpClientConfigCallback.class, new ElasticsearchClientConfig.Literal())
+                        .handles();
+                for (InstanceHandle<RestClientBuilder.HttpClientConfigCallback> handle : handles) {
+                    result = handle.get().customizeHttpClient(result);
+                    handle.close();
+                }
+                return result;
             }
         });
 

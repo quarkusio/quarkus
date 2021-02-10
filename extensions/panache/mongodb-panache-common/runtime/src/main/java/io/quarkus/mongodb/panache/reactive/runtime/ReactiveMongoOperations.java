@@ -42,6 +42,14 @@ import io.smallrye.mutiny.Uni;
 public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public final String ID = "_id";
     private static final Logger LOGGER = Logger.getLogger(ReactiveMongoOperations.class);
+
+    // update operators: https://docs.mongodb.com/manual/reference/operator/update/
+    private static final List<String> UPDATE_OPERATORS = Arrays.asList(
+            "$currentDate", "$inc", "$min", "$max", "$mul", "$rename", "$set", "$setOnInsert", "$unset",
+            "$addToSet", "$pop", "$pull", "$push", "$pullAll",
+            "$each", "$position", "$slice", "$sort",
+            "$bit");
+
     private static final Map<String, String> defaultDatabaseName = new ConcurrentHashMap<>();
 
     protected abstract QueryType createQuery(ReactiveMongoCollection collection, Document query, Document sortDoc);
@@ -369,11 +377,11 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     /**
      * We should have a query like <code>{'firstname': ?1, 'lastname': ?2}</code> for native one
      * and like <code>firstname = ?1 and lastname = ?2</code> for PanacheQL one.
-     * As update document needs a <code>$set</code> operator we add it if needed.
+     * As update document needs an update operator, we add <code>$set</code> if none is provided.
      */
     String bindUpdate(Class<?> clazz, String query, Object[] params) {
         String bindUpdate = bindQuery(clazz, query, params);
-        if (!bindUpdate.contains("$set")) {
+        if (!containsUpdateOperator(query)) {
             bindUpdate = "{'$set':" + bindUpdate + "}";
         }
         LOGGER.debug(bindUpdate);
@@ -383,15 +391,24 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     /**
      * We should have a query like <code>{'firstname': :firstname, 'lastname': :lastname}</code> for native one
      * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
-     * As update document needs a <code>$set</code> operator we add it if needed.
+     * As update document needs an update operator, we add <code>$set</code> if none is provided.
      */
     String bindUpdate(Class<?> clazz, String query, Map<String, Object> params) {
         String bindUpdate = bindQuery(clazz, query, params);
-        if (!bindUpdate.contains("$set")) {
+        if (!containsUpdateOperator(query)) {
             bindUpdate = "{'$set':" + bindUpdate + "}";
         }
         LOGGER.debug(bindUpdate);
         return bindUpdate;
+    }
+
+    private boolean containsUpdateOperator(String update) {
+        for (String operator : UPDATE_OPERATORS) {
+            if (update.contains(operator)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     String bindQuery(Class<?> clazz, String query, Object[] params) {

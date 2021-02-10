@@ -8,19 +8,11 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.arc.DefaultBean;
-import io.quarkus.runtime.TlsConfig;
 
 @Singleton
 public class KubernetesClientProducer {
 
     private KubernetesClient client;
-
-    @DefaultBean
-    @Singleton
-    @Produces
-    public Config config(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
-        return KubernetesClientUtils.createConfig(buildConfig, tlsConfig);
-    }
 
     @DefaultBean
     @Singleton

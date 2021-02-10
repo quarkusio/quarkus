@@ -12,6 +12,8 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -24,6 +26,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
+import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 
 public class KubernetesClientProcessor {
@@ -39,9 +42,20 @@ public class KubernetesClientProcessor {
     private static final Logger log = Logger.getLogger(KubernetesClientProcessor.class.getName());
 
     @BuildStep
+    public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
+            Capabilities capabilities) {
+        // wire up the Config bean support
+        additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesConfigProducer.class));
+        // do not register our client producer if the openshift client is present, because it provides it too
+        if (capabilities.isMissing(Capability.OPENSHIFT_CLIENT)) {
+            // wire up the KubernetesClient bean support
+            additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
+        }
+    }
+
+    @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
             BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
@@ -125,9 +139,6 @@ public class KubernetesClientProcessor {
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));
-
-        // wire up the KubernetesClient bean support
-        additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
     }
 
     private void findWatchedClasses(final DotName implementor, final ApplicationIndexBuildItem applicationIndex,

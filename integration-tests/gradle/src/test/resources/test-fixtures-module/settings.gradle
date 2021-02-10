@@ -8,7 +8,6 @@ pluginManagement {
         } else {
             mavenLocal()
         }
-        jcenter()
         mavenCentral()
         gradlePluginPortal()
     }

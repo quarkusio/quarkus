@@ -6,7 +6,6 @@ buildscript {
         } else {
             mavenLocal()
         }
-        jcenter()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -44,7 +43,6 @@ subprojects {
         } else {
             mavenLocal()
         }
-        jcenter()
         mavenCentral()
     }
 }

@@ -297,7 +297,6 @@ quarkusPlatformGroupId=io.quarkus
 pluginManagement {
     repositories {
         mavenLocal() // add mavenLocal() to first position
-        jcenter()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -312,7 +311,6 @@ pluginManagement {
 ```
 repositories {
     mavenLocal() // add mavenLocal() to first position
-    jcenter()
     mavenCentral()
 }
 ```

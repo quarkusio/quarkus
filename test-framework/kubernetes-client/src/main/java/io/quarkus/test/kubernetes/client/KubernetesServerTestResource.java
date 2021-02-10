@@ -3,6 +3,7 @@ package io.quarkus.test.kubernetes.client;
 import java.lang.annotation.Annotation;
 import java.net.InetAddress;
 import java.util.Collections;
+import java.util.function.Consumer;
 
 import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
@@ -14,12 +15,18 @@ public class KubernetesServerTestResource extends AbstractKubernetesTestResource
     private boolean https = false;
     private boolean crud = true;
     private int port = 0;
+    private Consumer<KubernetesServer> setup;
 
     @Override
     public void init(WithKubernetesTestServer annotation) {
         this.https = annotation.https();
         this.crud = annotation.crud();
         this.port = annotation.port();
+        try {
+            this.setup = annotation.setup().newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -30,6 +37,12 @@ public class KubernetesServerTestResource extends AbstractKubernetesTestResource
     @Override
     protected void initServer() {
         server.before();
+    }
+
+    @Override
+    protected void configureServer() {
+        if (setup != null)
+            setup.accept(server);
     }
 
     @Override

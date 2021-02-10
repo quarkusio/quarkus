@@ -52,7 +52,7 @@ public interface QuarkusTestProfile {
     }
 
     /**
-     * If this is returns true then only the rest resources returned from {@link #testResources()} will be started,
+     * If this is returns true then only the test resources returned from {@link #testResources()} will be started,
      * global annotated test resources will be ignored.
      */
     default boolean disableGlobalTestResources() {

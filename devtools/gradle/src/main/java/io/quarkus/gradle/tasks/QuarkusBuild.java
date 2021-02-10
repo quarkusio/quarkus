@@ -55,6 +55,7 @@ public class QuarkusBuild extends QuarkusTask {
     }
 
     /**
+     * @param uberJar Set to true if the build task should build an uberjar
      * @deprecated use {@code quarkus.package.type} instead
      */
     @Option(description = "Set to true if the build task should build an uberjar", option = "uber-jar")

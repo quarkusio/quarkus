@@ -2,6 +2,7 @@ package io.quarkus.it.kubernetes.client;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -14,9 +15,20 @@ import io.quarkus.test.kubernetes.client.KubernetesTestServer;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 
 @TestProfile(KubernetesTestServerTest.MyProfile.class)
-@WithKubernetesTestServer(https = false, crud = true, port = 10001)
+@WithKubernetesTestServer(https = false, crud = true, port = 10001, setup = KubernetesTestServerTest.Setup.class)
 @QuarkusTest
 public class KubernetesTestServerTest {
+
+    private static KubernetesServer setupServer;
+
+    public static class Setup implements Consumer<KubernetesServer> {
+
+        @Override
+        public void accept(KubernetesServer t) {
+            setupServer = t;
+        }
+
+    }
 
     @KubernetesTestServer
     private KubernetesServer mockServer;
@@ -25,6 +37,7 @@ public class KubernetesTestServerTest {
     public void testConfiguration() throws InterruptedException {
         // we can't really test CRUD, and HTTPS doesn't work
         Assertions.assertEquals(10001, mockServer.getMockServer().getPort());
+        Assertions.assertSame(mockServer, setupServer);
     }
 
     public static class MyProfile implements QuarkusTestProfile {

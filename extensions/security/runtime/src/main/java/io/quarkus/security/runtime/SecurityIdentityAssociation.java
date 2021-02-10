@@ -48,7 +48,13 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
     }
 
     public Uni<SecurityIdentity> getDeferredIdentity() {
-        return deferredIdentity;
+        if (deferredIdentity != null) {
+            return deferredIdentity;
+        } else if (identity != null) {
+            return Uni.createFrom().item(identity);
+        } else {
+            return deferredIdentity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);
+        }
     }
 
     @Override

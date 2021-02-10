@@ -107,8 +107,7 @@ public class SwaggerUiProcessor {
                 WebJarUtil.updateFile(tempPath.resolve("index.html"),
                         generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig));
 
-                swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(tempPath.toAbsolutePath().toString(),
-                        nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
+                swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(tempPath.toAbsolutePath().toString(), swaggerUiPath));
                 displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
                         nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path + "/"), "Open API UI"));
 
@@ -136,8 +135,7 @@ public class SwaggerUiProcessor {
                         nativeImageResourceBuildItemBuildProducer.produce(new NativeImageResourceBuildItem(fileName));
                     }
                 }
-                swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(SWAGGER_UI_FINAL_DESTINATION,
-                        nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path)));
+                swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(SWAGGER_UI_FINAL_DESTINATION, swaggerUiPath));
             }
         }
     }

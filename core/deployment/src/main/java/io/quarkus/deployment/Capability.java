@@ -65,7 +65,8 @@ public enum Capability {
      */
     SMALLRYE_OPENTRACING,
     SPRING_WEB,
-    SMALLRYE_OPENAPI;
+    SMALLRYE_OPENAPI,
+    OPENSHIFT_CLIENT;
 
     /**
      *

@@ -104,7 +104,7 @@ public class JibConfig {
     /**
      * The ports to expose
      */
-    @ConfigItem(defaultValue = "8080")
+    @ConfigItem(defaultValue = "${quarkus.http.port:8080}")
     public List<Integer> ports;
 
     /**

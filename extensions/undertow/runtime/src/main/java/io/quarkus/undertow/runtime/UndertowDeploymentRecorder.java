@@ -221,7 +221,7 @@ public class UndertowDeploymentRecorder {
             public void handleNotification(SecurityNotification notification) {
                 if (notification.getEventType() == SecurityNotification.EventType.AUTHENTICATED) {
                     QuarkusUndertowAccount account = (QuarkusUndertowAccount) notification.getAccount();
-                    CDI.current().getBeanManager().fireEvent(account.getSecurityIdentity());
+                    CDI.current().select(CurrentIdentityAssociation.class).get().setIdentity(account.getSecurityIdentity());
                 }
             }
         });

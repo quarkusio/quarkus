@@ -54,14 +54,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     private String finalName;
 
     /**
-     * @deprecated use {@code quarkus.package.type} instead
-     */
-    @Parameter(property = "uberJar", defaultValue = "false")
-    @Deprecated
-    private boolean uberJar;
-
-    /**
-     * When using the uberJar option, this array specifies entries that should
+     * When building an uber-jar, this array specifies entries that should
      * be excluded from the final jar. The entries are relative to the root of
      * the file. An example of this configuration could be:
      * <code><pre>
@@ -146,14 +139,6 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected String[] ignoredEntries() {
         return ignoredEntries;
-    }
-
-    protected boolean uberJar() {
-        if (uberJar) {
-            getLog().warn(
-                    "The parameter uberJar is deprecated, and will be removed in a future version. To build an uber-jar set the config property quarkus.package.type=uber-jar. For more info see https://quarkus.io/guides/maven-tooling#uber-jar-maven");
-        }
-        return uberJar;
     }
 
     protected AppArtifactKey projectId() {

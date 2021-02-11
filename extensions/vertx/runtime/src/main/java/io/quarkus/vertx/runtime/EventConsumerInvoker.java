@@ -21,14 +21,18 @@ public abstract class EventConsumerInvoker {
     public void invoke(Message<Object> message) throws Exception {
         ManagedContext requestContext = Arc.container().requestContext();
         if (requestContext.isActive()) {
-            CompletionStage<Object> ret = invokeBean(message);
+            Object ret = invokeBean(message);
             if (ret != null) {
-                ret.whenComplete(new RequestActiveConsumer(message));
+                if (ret instanceof CompletionStage) {
+                    ((CompletionStage<?>) ret).whenComplete(new RequestActiveConsumer(message));
+                } else {
+                    message.reply(ret);
+                }
             }
         } else {
             // Activate the request context
             requestContext.activate();
-            CompletionStage<Object> ret;
+            Object ret;
             try {
                 ret = invokeBean(message);
             } catch (Exception e) {
@@ -37,18 +41,24 @@ public abstract class EventConsumerInvoker {
                 throw e;
             }
             if (ret == null) {
-                // No async computation - just terminate
+                // No result - just terminate
                 requestContext.terminate();
             } else {
-                // Capture the state, deactivate and destroy the context when the computation completes
-                ContextState endState = requestContext.getState();
-                requestContext.deactivate();
-                ret.whenComplete(new RequestActivatedConsumer(message, requestContext, endState));
+                if (ret instanceof CompletionStage) {
+                    // Capture the state, deactivate and destroy the context when the computation completes
+                    ContextState endState = requestContext.getState();
+                    requestContext.deactivate();
+                    ((CompletionStage<?>) ret).whenComplete(new RequestActivatedConsumer(message, requestContext, endState));
+                } else {
+                    // No async computation - just terminate and set reply
+                    requestContext.terminate();
+                    message.reply(ret);
+                }
             }
         }
     }
 
-    protected abstract CompletionStage<Object> invokeBean(Message<Object> message) throws Exception;
+    protected abstract Object invokeBean(Message<Object> message) throws Exception;
 
     private static class RequestActiveConsumer implements BiConsumer<Object, Throwable> {
 

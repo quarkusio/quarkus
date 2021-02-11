@@ -96,7 +96,7 @@ public class AppModelGradleResolver implements AppModelResolver {
             }
 
         }
-        return appArtifact.getPath();
+        return appArtifact.getPaths().getSinglePath();
     }
 
     @Override

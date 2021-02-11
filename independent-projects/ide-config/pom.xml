@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-      <parent>
-            <groupId>org.jboss</groupId>
-            <artifactId>jboss-parent</artifactId>
-            <version>37</version>
-        </parent>
-         <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-parent</artifactId>
+        <version>37</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-ide-config</artifactId>
@@ -64,6 +64,16 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>jdk-8-classpath</id>
+            <activation>
+                <!-- activate this on any JDK from 9 onwards -->
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
         <profile>
             <id>quick-build</id>
             <activation>

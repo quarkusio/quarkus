@@ -31,7 +31,7 @@ public class MDCScope implements Scope {
         this.originalSpanId = MDC.get(SPAN_ID);
         this.originalParentId = MDC.get(PARENT_ID);
         this.originalSampled = MDC.get(SAMPLED);
-        if (scope.span().context() instanceof JaegerSpanContext) {
+        if (scope.span() != null && (scope.span().context() instanceof JaegerSpanContext)) {
             putContext((JaegerSpanContext) scope.span().context());
         }
     }

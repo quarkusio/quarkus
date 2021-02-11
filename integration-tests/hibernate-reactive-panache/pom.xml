@@ -17,7 +17,6 @@
         PanacheQuery.project(Class) needs it.
     -->
     <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
         <postgres.image>postgres:13.1</postgres.image>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
     </properties>

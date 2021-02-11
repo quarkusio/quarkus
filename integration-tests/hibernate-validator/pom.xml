@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Hibernate Validator</name>
     <description>Module that contains Hibernate Validator/Bean Validation related tests</description>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

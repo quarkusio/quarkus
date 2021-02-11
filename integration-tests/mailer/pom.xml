@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Mailer</name>
     <description>The Quarkus Mailer integration tests module</description>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

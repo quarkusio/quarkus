@@ -12,10 +12,6 @@
     <artifactId>quarkus-integration-test-elytron-security-oauth2</artifactId>
     <name>Quarkus - Integration Tests - Elytron Security OAuth2</name>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

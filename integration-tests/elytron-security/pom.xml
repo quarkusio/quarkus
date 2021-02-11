@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Elytron Security</name>
     <description>The elytron-security integration tests module</description>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

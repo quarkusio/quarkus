@@ -14,7 +14,6 @@
     <description>The Apache Kafka Avro integration tests module</description>
 
     <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
         <apicurio.version>1.2.2.Final</apicurio.version>
     </properties>
 

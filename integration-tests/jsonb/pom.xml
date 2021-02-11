@@ -13,10 +13,6 @@
     <artifactId>quarkus-integration-test-jsonb</artifactId>
     <name>Quarkus - Integration Tests - JSON-B</name>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -608,7 +608,6 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <release>8</release>
-                            <parameters>true</parameters>
                         </configuration>
                     </plugin>
                 </plugins>

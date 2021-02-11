@@ -9,10 +9,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <artifactId>quarkus-hibernate-orm-panache-deployment</artifactId>
     <name>Quarkus - Hibernate ORM with Panache - Deployment</name>
     <dependencies>

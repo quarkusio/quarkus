@@ -469,7 +469,7 @@ public class QuarkusTestExtension
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             return;
         }
         resetHangTimeout();
@@ -538,7 +538,7 @@ public class QuarkusTestExtension
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             return;
         }
         resetHangTimeout();
@@ -602,9 +602,9 @@ public class QuarkusTestExtension
                 constructor.newInstance(actualTestInstance, actualTestMethod));
     }
 
-    private boolean isNativeTest() {
+    private boolean isNativeOrIntegrationTest() {
         for (Class<?> i : currentTestClassStack) {
-            if (i.isAnnotationPresent(NativeImageTest.class)) {
+            if (i.isAnnotationPresent(NativeImageTest.class) || i.isAnnotationPresent(QuarkusIntegrationTest.class)) {
                 return true;
             }
         }
@@ -674,7 +674,7 @@ public class QuarkusTestExtension
         currentTestClassStack.push(context.getRequiredTestClass());
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.TEST);
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             return;
         }
         resetHangTimeout();
@@ -713,7 +713,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             invocation.proceed();
             return;
         }
@@ -730,7 +730,7 @@ public class QuarkusTestExtension
     @Override
     public <T> T interceptTestClassConstructor(Invocation<T> invocation,
             ReflectiveInvocationContext<Constructor<T>> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             return invocation.proceed();
         }
         resetHangTimeout();
@@ -824,7 +824,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             invocation.proceed();
             return;
         }
@@ -835,7 +835,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             invocation.proceed();
             return;
         }
@@ -846,7 +846,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             invocation.proceed();
             return;
         }
@@ -858,7 +858,7 @@ public class QuarkusTestExtension
     @Override
     public <T> T interceptTestFactoryMethod(Invocation<T> invocation,
             ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             return invocation.proceed();
         }
         T result = (T) runExtensionMethod(invocationContext, extensionContext);
@@ -869,7 +869,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             invocation.proceed();
             return;
         }
@@ -880,7 +880,7 @@ public class QuarkusTestExtension
     @Override
     public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeTest()) {
+        if (isNativeOrIntegrationTest()) {
             invocation.proceed();
             return;
         }
@@ -947,7 +947,7 @@ public class QuarkusTestExtension
     public void afterAll(ExtensionContext context) throws Exception {
         resetHangTimeout();
         try {
-            if (!isNativeTest() && (runningQuarkusApplication != null)) {
+            if (!isNativeOrIntegrationTest() && (runningQuarkusApplication != null)) {
                 popMockContext();
             }
             if (originalCl != null) {

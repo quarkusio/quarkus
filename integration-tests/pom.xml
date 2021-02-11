@@ -158,6 +158,7 @@
         <module>elasticsearch-rest-high-level-client</module>
         <module>micrometer-mp-metrics</module>
         <module>micrometer-prometheus</module>
+        <module>opentelemetry</module>
         <module>logging-json</module>
         <module>jaxp</module>
         <module>mailer</module>

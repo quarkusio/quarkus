@@ -26,6 +26,8 @@
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
+        <opentelemetry.version>1.0.1</opentelemetry.version>
+        <opentelemetry-alpha.version>1.0.1-alpha</opentelemetry-alpha.version>
         <jaeger.version>0.34.3</jaeger.version>
         <quarkus-http.version>3.1.0.Beta2</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
@@ -331,6 +333,23 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- OpenTelemetry components, imported as a BOM -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom-alpha</artifactId>
+                <version>${opentelemetry-alpha.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Quarkus core -->
 
             <dependency>
@@ -2335,6 +2354,26 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-jaeger-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-exporter-jaeger</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

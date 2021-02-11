@@ -1,0 +1,12 @@
+---
+name: "Logging manager"
+metadata:
+  short-name: "logging manager"
+  keywords:
+  - "logging manager"
+  - "log"
+  - "logging levels"
+  - "log file"
+  categories:
+  - "logging"
+  status: "stable"

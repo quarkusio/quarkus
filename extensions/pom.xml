@@ -190,6 +190,7 @@
         <module>smallrye-graphql</module>
 
         <!-- Logging -->
+        <module>logging-manager</module>
         <module>logging-json</module>
         <module>logging-sentry</module>
         <module>logging-gelf</module>

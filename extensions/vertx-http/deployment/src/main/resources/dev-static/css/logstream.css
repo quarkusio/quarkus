@@ -56,9 +56,19 @@
     top: 0px;
 }
 
-#logstreamViewLogButton, #logstreamHideLogButton {
+#logstreamManagerNavAppInfo, #logstreamManagerNavBrand {
+    display: none;
+}
+
+#logstreamViewLogButton, #logstreamHideLogButton, #logstreamFullScreenButton {
     color: #9a9da0;
     font-size:0.73em;
+}
+
+#logstreamFullScreenButton {
+    position: absolute;
+    right: 25px;
+    bottom: -3px;
 }
 
 #logstreamHideLogButton {

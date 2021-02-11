@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/bootstrap.min.css">
+        <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/fontawesome/css/all.min.css">
+        <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/logstream.css">
+
+        <link rel="shortcut icon" type="image/png" href="{frameworkRootPath}/dev/resources/images/favicon.ico" >
+
+        <title>Logging manager | {applicationName} {applicationVersion}</title>
+        
+        <style>
+            body {
+                background: #343a40;
+            }
+            #logstreamManagerNav {
+                padding-top: 29px !important;
+                padding-bottom: 29px !important;
+                border-bottom: 1px solid #414850 !important;
+            }
+            
+            #logstreamHideLogButton, #logstreamResizeButton, #logstreamFullScreenButton {
+                display: none;
+            }
+            #logstreamManagerNav{
+                border: none;
+            }
+            #logstreamManagerNavAppInfo, #logstreamManagerNavBrand{
+                display: unset;
+            }
+            .navbar-brand img {
+                border-right: 1px solid darkgrey;
+                padding-right: 10px;
+                margin-right: 5px;
+            }
+            .navbar-text {
+                font-size: 0.9em;
+            }
+        </style>
+    </head>
+    <body>
+
+        {navContent}
+        {logContent}
+        {modalsContent}
+        
+        <script src="{frameworkRootPath}/dev/resources/js/jquery.min.js"></script>
+        <script src="{frameworkRootPath}/dev/resources/js/bootstrap.bundle.min.js"></script>
+        <script src="{frameworkRootPath}/dev/resources/js/logstream.js" 
+                data-frameworkRootPath="{frameworkRootPath}" 
+                data-showOnStart="true"
+                data-streamingPath="{streamingPath}">
+                    
+        </script>
+
+    </body>
+</html>

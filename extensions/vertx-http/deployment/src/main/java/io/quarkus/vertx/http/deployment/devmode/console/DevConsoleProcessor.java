@@ -38,6 +38,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -179,6 +180,7 @@ public class DevConsoleProcessor {
     }
 
     protected static void newRouter(Engine engine,
+            Capabilities capabilities,
             HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
@@ -202,7 +204,7 @@ public class DevConsoleProcessor {
                 .handler(new FlashScopeHandler());
         router.route().method(HttpMethod.GET)
                 .order(Integer.MIN_VALUE + 1)
-                .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
+                .handler(new DevConsole(engine, capabilities, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
         mainRouter.route(httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath("/dev/*")))
@@ -262,10 +264,11 @@ public class DevConsoleProcessor {
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             HttpRootPathBuildItem httpRootPathBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Capabilities capabilities) {
         initializeVirtual();
 
-        newRouter(buildEngine(devTemplatePaths), httpRootPathBuildItem, nonApplicationRootPathBuildItem);
+        newRouter(buildEngine(devTemplatePaths), capabilities, httpRootPathBuildItem, nonApplicationRootPathBuildItem);
 
         // Add the log stream
         routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()

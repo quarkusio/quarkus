@@ -18,6 +18,8 @@ import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.builder.Version;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
@@ -42,10 +44,13 @@ public class DevConsole implements Handler<RoutingContext> {
 
     final Config config = ConfigProvider.getConfig();
 
-    DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
+    DevConsole(Engine engine, Capabilities capabilities, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
+        this.globalData.put("loggerManagerAvailable", capabilities.isPresent(Capability.LOGGING_MANAGER));
         this.globalData.put("httpRootPath", httpRootPath);
         this.globalData.put("frameworkRootPath", frameworkRootPath);
+        this.globalData.put("loggingManagerUiPath", frameworkRootPath
+                + config.getOptionalValue("quarkus.logging-manager.ui.root-path", String.class).orElse("/logging-manager-ui"));
         this.globalData.put("quarkusVersion", Version.getVersion());
         this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         this.globalData.put("applicationVersion",

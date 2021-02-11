@@ -1,3 +1,27 @@
+var myself = $('script[src*=logstream]');
+
+// Get the non application root path
+var frameworkRootPath = myself.attr('data-frameworkRootPath');   
+if (typeof frameworkRootPath === "undefined" ) {
+    var pathname = window.location.pathname;
+    var frameworkRootPath = pathname.substr(0, pathname.indexOf('/dev/'));
+}
+// Get the streaming path
+var streamingPath = myself.attr('data-streamingPath');
+if (typeof streamingPath === "undefined" ) {
+   var streamingPath = "/dev/logstream";
+}
+// Get tge path to the logging manager ui (if extension is added)
+var loggingManagerUiPath = myself.attr('data-loggingManagerUiPath');
+if (typeof loggingManagerUiPath === "undefined" ) {
+   var loggingManagerUiPath = "#";
+}
+
+var showOnStart = myself.attr('data-showOnStart');   
+if (typeof showOnStart === "undefined" ) {
+   var showOnStart = false;
+}
+
 var zoom = 0.90;
 var linespace = 1.00;
 var tabspace = 1;
@@ -15,7 +39,9 @@ var filter = "";
 var localstoragekey = "quarkus_logging_manager_state";
 
 $('document').ready(function () {
-    hideLog();
+    if(!showOnStart){
+        hideLog();
+    }
     loadSettings();
     
     openSocket();
@@ -141,6 +167,10 @@ function saveSettings(){
     };
 
     localStorage.setItem(localstoragekey, JSON.stringify(state));
+}
+
+function fullScreenLog(){
+    window.open(loggingManagerUiPath, '_blank');
 }
 
 function showLog(){
@@ -616,15 +646,14 @@ function openSocket() {
         return;
     }
     // Create a new instance of the websocket
-    var loc = window.location, new_uri;
-    if (loc.protocol === "https:") {
+    var new_uri;
+    if (window.location.protocol === "https:") {
         new_uri = "wss:";
     } else {
         new_uri = "ws:";
     }
-    var pathname = loc.pathname;
-    var devpath = pathname.substr(0, pathname.indexOf('/dev/'));
-    new_uri += "//" + loc.host + devpath + "/dev/logstream";
+    
+    new_uri += "//" + window.location.host + frameworkRootPath + streamingPath;
     webSocket = new WebSocket(new_uri);
 
     webSocket.onmessage = function (event) {

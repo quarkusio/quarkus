@@ -77,6 +77,9 @@
           <name>native</name>
         </property>
       </activation>
+      <properties>
+        <quarkus.package.type>native</quarkus.package.type>
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -85,21 +88,6 @@
             <configuration>
               <skipTests>${native.surefire.skip}</skipTests>
             </configuration>
-          </plugin>
-          <plugin>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-maven-plugin</artifactId>
-            <version>@project.version@</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>native-image</goal>
-                </goals>
-                <configuration>
-                  <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>

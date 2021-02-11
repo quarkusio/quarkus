@@ -1,5 +1,6 @@
 package io.quarkus.oidc.client;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +30,15 @@ public class OidcClientConfig extends OidcCommonConfig {
      */
     @ConfigItem
     public Optional<List<String>> scopes = Optional.empty();
+
+    /**
+     * Refresh token time skew in seconds.
+     * If this property is enabled then the configured number of seconds is added to the current time
+     * when checking whether the access token should be refreshed. If the sum is greater than this access token's
+     * expiration time then a refresh is going to happen.
+     */
+    @ConfigItem
+    public Optional<Duration> refreshTokenTimeSkew = Optional.empty();
 
     public Grant grant = new Grant();
 
@@ -105,5 +115,13 @@ public class OidcClientConfig extends OidcCommonConfig {
 
     public void setScopes(List<String> scopes) {
         this.scopes = Optional.of(scopes);
+    }
+
+    public Optional<Duration> getRefreshTokenTimeSkew() {
+        return refreshTokenTimeSkew;
+    }
+
+    public void setRefreshTokenTimeSkew(Duration refreshTokenTimeSkew) {
+        this.refreshTokenTimeSkew = Optional.of(refreshTokenTimeSkew);
     }
 }

@@ -143,6 +143,15 @@ The `Tokens` producer will acquire and refresh the tokens and the custom filter 
 
 See also the previous section about delaying the token acquisition in some cases.
 
+=== Refreshing Access Tokens
+
+Both `OidcClientRequestFilter` and `Tokens` producer will refresh the current expired access token if the refresh token is available.
+Additionally, `quarkus.oidc-client.refresh-token-time-skew` property can be used for a preemptive access token refreshment to avoid sending nearly expired access tokens which may cause HTTP 401 errors. For example if this property is set to `3S` and the access token will expire in less than 3 seconds then this token will be auto-refreshed.
+
+If the access token needs to be refreshed but no refresh token is available then an attempt will be made to acquire a new token using the configured grant such as `client_credentials`.
+
+Please note that some OpenId Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12 a refresh token will not be returned by default for `client_credentials`. The providers may also restrict a number of times a refresh token can be used.
+
 === OidcClients
 
 `io.quarkus.oidc.client.OidcClients` is a container of `OidcClient`s - it includes a default `OidcClient` (which can also be injected directly as described above) and named clients which can be configured like this:

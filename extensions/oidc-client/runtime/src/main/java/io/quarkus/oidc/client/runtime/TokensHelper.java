@@ -39,7 +39,7 @@ public class TokensHelper {
                 return currentState.tokenUni;
             } else {
                 Tokens tokens = currentState.tokens;
-                if (tokens.isAccessTokenExpired()) {
+                if (tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
                     newState = new TokenRequestState(prepareUni(tokens.getRefreshToken() != null
                             ? oidcClient.refreshTokens(tokens.getRefreshToken())
                             : oidcClient.getTokens()));

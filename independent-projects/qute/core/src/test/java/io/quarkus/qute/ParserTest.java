@@ -290,7 +290,7 @@ public class ParserTest {
     @Test
     public void testStringLiteralWithTagEndDelimiter() {
         Engine engine = Engine.builder().addDefaults().addValueResolver(ValueResolver.builder().applyToBaseClass(String.class)
-                .applyToName("lines").resolveSync(ctx -> ctx.getBase().toString().lines()).build()).build();
+                .applyToName("lines").resolveSync(ctx -> ctx.getBase().toString().split("\\n")).build()).build();
         Map<String, String> map = new HashMap<>();
         map.put("path", "/foo/bar");
         Template template = engine.parse("{#for line in map.get('{foo}').lines.orEmpty}{line}{/for}");

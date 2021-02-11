@@ -1,0 +1,503 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Creating Your First Application
+
+include::./attributes.adoc[]
+
+:toc: macro
+:toclevels: 4
+:doctype: book
+:icons: font
+:docinfo1:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+
+Learn how to create a Hello World Quarkus app.
+This guide covers:
+
+* Bootstrapping an application
+* Creating a JAX-RS endpoint
+* Injecting beans
+* Functional tests
+* Packaging of the application
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 8 or 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+
+[TIP]
+.Verify Maven is using the Java you expect
+====
+If you have multiple JDK's installed it is not certain Maven will pick up the expected java
+and you could end up with unexpected results.
+You can verify which JDK Maven uses by running `mvn --version`. 
+====
+
+
+== Architecture
+
+In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
+dependency injection, this endpoint uses a `greeting` bean.
+
+image::getting-started-architecture.png[alt=Architecture]
+
+This guide also covers the testing of the endpoint.
+
+== Solution
+
+We recommend that you follow the instructions from <<bootstrapping-the-project,Bootstrapping project>> and onwards to create the application step by step.
+
+However, you can go right to the completed example.
+
+Download an {quickstarts-archive-url}[archive] or clone the git repository:
+
+[source,bash,subs=attributes+]
+----
+git clone {quickstarts-clone-url}
+----
+
+The solution is located in the `getting-started` {quickstarts-tree-url}/getting-started[directory].
+
+== Bootstrapping the project
+
+The easiest way to create a new Quarkus project is to open a terminal and run the following command:
+
+For Linux & MacOS users
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=getting-started \
+    -DclassName="org.acme.getting.started.GreetingResource" \
+    -Dpath="/hello"
+cd getting-started
+----
+
+For Windows users
+
+- If using cmd , (don't use backward slash `\`)
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started -DclassName="org.acme.getting.started.GreetingResource" -Dpath="/hello"
+----
+
+- If using Powershell , wrap `-D` parameters in double quotes
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started" "-DclassName=org.acme.getting.started.GreetingResource" "-Dpath=/hello"
+----
+
+It generates the following in  `./getting-started`:
+
+* the Maven structure
+* an `org.acme.getting.started.GreetingResource` resource exposed on `/hello`
+* an associated unit test
+* a landing page that is accessible on `http://localhost:8080` after starting the application
+* example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
+* the application configuration file
+
+Once generated, look at the `pom.xml`.
+You will find the import of the Quarkus BOM, allowing you to omit the version on the different Quarkus dependencies.
+In addition, you can see the `quarkus-maven-plugin` responsible of the packaging of the application and also providing the development mode.
+
+[source,xml,subs=attributes+]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-universe-bom</artifactId>
+            <version>${quarkus.platform.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus-plugin.version}</version>
+            <extensions>true</extensions>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                        <goal>generate-code</goal>
+                        <goal>generate-code-tests</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+If we focus on the dependencies section, you can see the extension allowing the development of REST applications:
+
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy</artifactId>
+    </dependency>
+----
+
+=== The JAX-RS resources
+
+During the project creation, the `src/main/java/org/acme/getting/started/GreetingResource.java` file has been created with the following content:
+
+[source,java]
+----
+package org.acme.getting.started;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+It's a very simple REST endpoint, returning "hello" to requests on "/hello".
+
+[TIP]
+.Differences with vanilla JAX-RS
+====
+With Quarkus, there is no need to create an `Application` class. It's supported, but not required. In addition, only one instance
+of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).
+====
+
+== Running the application
+
+Now we are ready to run our application.
+Use: `./mvnw compile quarkus:dev`:
+
+[source,shell]
+----
+$ ./mvnw compile quarkus:dev
+[INFO] --------------------< org.acme:getting-started >---------------------
+[INFO] Building getting-started 1.0.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ getting-started ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/src/main/resources
+[INFO]
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ getting-started ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 2 source files to /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/target/classes
+[INFO]
+[INFO] --- quarkus-maven-plugin:<version>:dev (default-cli) @ getting-started ---
+Listening for transport dt_socket at address: 5005
+2019-02-28 17:05:22,347 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
+2019-02-28 17:05:22,635 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 288ms
+2019-02-28 17:05:22,770 INFO  [io.quarkus] (main) Quarkus started in 0.668s. Listening on: http://localhost:8080
+2019-02-28 17:05:22,771 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+----
+
+Once started, you can request the provided endpoint:
+
+[source,shell]
+----
+$ curl -w "\n" http://localhost:8080/hello
+hello
+----
+
+Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.
+
+[TIP]
+.Automatically add newline with `curl -w "\n"`
+====
+We are using `curl -w "\n"` in this example to avoid your terminal printing a '%' or put both result and next command prompt on the same line.
+====
+
+== Using injection
+
+Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
+If you're new to CDI then we recommend you to read the link:cdi[Introduction to CDI] guide.
+
+Quarkus only implements a subset of the CDI features and comes with non-standard features and specific APIS, you can learn more about it in the link:cdi-reference[Contexts and Dependency Injection guide].
+
+ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
+
+Let's modify the application and add a companion bean.
+Create the `src/main/java/org/acme/getting/started/GreetingService.java` file with the following content:
+
+[source, java]
+----
+package org.acme.getting.started;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class GreetingService {
+
+    public String greeting(String name) {
+        return "hello " + name;
+    }
+
+}
+----
+
+Edit the `GreetingResource` class to inject the `GreetingService` and create a new endpoint using it:
+
+[source, java]
+----
+package org.acme.getting.started;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @Inject
+    GreetingService service;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/greeting/{name}")
+    public String greeting(@PathParam String name) {
+        return service.greeting(name);
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+If you stopped the application, restart the application with `./mvnw compile quarkus:dev`.
+Then check that the endpoint returns `hello quarkus` as expected:
+
+[source,shell,subs=attributes+]
+----
+$ curl -w "\n" http://localhost:8080/hello/greeting/quarkus
+hello quarkus
+----
+
+
+
+== Development Mode
+
+`quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
+that when you modify your Java files and/or your resource files and refresh your browser, these changes will automatically take effect.
+This works too for resource files like the configuration property file.
+Refreshing the browser triggers a scan of the workspace, and if any changes are detected, the Java files are recompiled
+and the application is redeployed; your request is then serviced by the redeployed application. If there are any issues
+with compilation or deployment an error page will let you know.
+
+This will also listen for a debugger on port `5005`. If you want to wait for the debugger to attach before running you
+can pass `-Dsuspend` on the command line. If you don't want the debugger at all you can use `-Ddebug=false`.
+
+== Testing
+
+All right, so far so good, but wouldn't it be better with a few tests, just in case.
+
+In the generated `pom.xml` file, you can see 2 test dependencies:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Quarkus supports https://junit.org/junit5/[Junit 5] tests.
+Because of this, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must
+be set, as the default version does not support Junit 5:
+
+[source,xml,subs=attributes+]
+----
+<plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>${surefire-plugin.version}</version>
+    <configuration>
+       <systemPropertyVariables>
+          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          <maven.home>${maven.home}</maven.home>
+       </systemPropertyVariables>
+    </configuration>
+</plugin>
+----
+
+We also set the `java.util.logging` system property to make sure tests will use the correct logmanager and `maven.home` to ensure that custom configuration
+from `${maven.home}/conf/settings.xml` is applied (if any).
+
+The generated project contains a simple test.
+Edit the `src/test/java/org/acme/getting/started/GreetingResourceTest.java` to match the following content:
+
+[source,java]
+----
+package org.acme.getting.started;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@QuarkusTest
+public class GreetingResourceTest {
+
+    @Test    // <1>
+    public void testHelloEndpoint() {
+        given()
+          .when().get("/hello")
+          .then()
+             .statusCode(200)    // <2>
+             .body(is("hello"));
+    }
+
+    @Test
+    public void testGreetingEndpoint() {
+        String uuid = UUID.randomUUID().toString();
+        given()
+          .pathParam("name", uuid)
+          .when().get("/hello/greeting/{name}")
+          .then()
+            .statusCode(200)
+            .body(is("hello " + uuid));
+    }
+
+}
+----
+<1> By using the `QuarkusTest` runner, you instruct JUnit to start the application before the tests.
+<2> Check the HTTP response status code and content
+
+These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
+
+You can run these using Maven:
+
+[source,bash,subs=attributes+]
+----
+./mvnw test
+----
+
+You can also run the test from your IDE directly (be sure you stopped the application first).
+
+By default, tests will run on port `8081` so as not to conflict with the running application. We automatically
+configure RestAssured to use this port. If you want to use a different client you should use the `@TestHTTPResource`
+annotation to directly inject the URL of the tested application into a field on the test class. This field can be of the type
+`String`, `URL` or `URI`. This annotation can also be given a value for the test path. For example, if I want to test
+a Servlet mapped to `/myservlet` I would just add the following to my test:
+
+
+[source,java]
+----
+@TestHTTPResource("/myservlet")
+URL testUrl;
+----
+
+The test port can be controlled via the `quarkus.http.test-port` config property. Quarkus also creates a system
+property called `test.url` that is set to the base test URL for situations where you cannot use injection.
+
+== Working with multi-module project or external modules
+
+Quarkus heavily utilizes https://github.com/wildfly/jandex[Jandex] at build time, to discover various classes or annotations. One immediately recognizable application of this, is CDI bean discovery.
+As a result, most of the Quarkus extensions will not work properly if this build time discovery isn't properly setup.
+
+This index is created by default on the project on which Quarkus is configured for, thanks to our Maven and Gradle plugins.
+
+However, when working with a multi-module project, be sure to read the `Working with multi-module projects` section of the
+link:maven-tooling#multi-module-maven[Maven] or link:gradle-tooling#multi-module-maven[Gradle] guides.
+
+If you plan to use external modules (for example, an external library for all your domain objects),
+you will need to make these modules known to the indexing process either by adding the Jandex plugin (if you can modify them)
+or via the `quarkus.index-dependency` property inside your `application.properties` (useful in cases where you can't modify the module).
+
+Be sure to read the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide for more information.
+
+== Packaging and run the application
+
+The application is packaged using `./mvnw package`.
+It produces several outputs in `/target`:
+
+* `getting-started-1.0.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
+artifact produced by the Maven build - it is *not* the runnable jar;
+* the `quarkus-app` directory which contains the `quarkus-run.jar` jar file - being an executable _jar_. Be aware that it's not an _über-jar_ as
+the dependencies are copied into subdirectories of `quarkus-app/lib/`.
+
+You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`
+
+NOTE: If you want to deploy your application soemwhere (typically in a container), you need to deploy the whole `quarkus-app` directory.
+
+NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
+
+=== Using fast-jar
+
+The previous section assumes that the configuration property `quarkus.package.type` has either not been configured explicitly,
+or that it has been set to `legacy-jar` (in `application.properties` or any of the other supported configuration sources).
+When the property has been set to `fast-jar` (which will become in Quarkus 1.12), then the result of executing
+`./mvnw package` is a new directory under `target` named `quarkus-app`.
+
+You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
+
+WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
+might not function correctly.
+
+TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
+because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
+on the classpath that the legacy jar necessitates, when loading a class or resource.
+
+[#banner]
+== Configuring the banner
+
+By default when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,
+by setting the `-Dquarkus.banner.enabled=false` Java System Property, or by setting the `QUARKUS_BANNER_ENABLED` environment variable to `false`.
+Furthermore, users can supply a custom banner by placing the banner file in `src/main/resources` and configuring `quarkus.banner.path=name-of-file` in `application.properties`.
+
+== What's next?
+
+This guide covered the creation of an application using Quarkus.
+However, there is much more.
+We recommend continuing the journey with the link:building-native-image[building a native executable guide], where you learn about creating a native executable and packaging it in a container.
+If you are interested in reactive, we recommend the link:getting-started-reactive[Getting started with reactive guide], where you can see how to implement reactive applications with Quarkus.
+
+In addition, the link:tooling[tooling guide] document explains how to:
+
+* scaffold a project in a single command line
+* enable the _development mode_ (hot reload)
+* import the project in your favorite IDE
+* and more

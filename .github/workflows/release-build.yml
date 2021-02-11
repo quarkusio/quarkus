@@ -1,0 +1,48 @@
+name: Quarkus Release Test Build
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+env:
+  LANG: en_US.UTF-8
+jobs:
+  build:
+    name: "Prepare release"
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Set up JDK 8
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 8
+      - name: Create maven repo
+        run: mkdir -p $HOME/release/repository
+      - name: Build and Test
+        run: |
+          mvn --settings .github/mvn-settings.xml \
+            -B \
+            -DskipITs -Dinvoker.skip=true \
+            -Dmaven.repo.local=$HOME/release/repository \
+            clean install
+      - name: Report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          STATUS: ${{ job.status }}
+          ISSUE_NUMBER: "13058"
+        run: |
+          echo "The report step got status: ${STATUS}"
+          sudo apt-get update -o Dir::Etc::sourcelist="sources.list" \
+            -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
+          sudo apt-get install -y gnupg2 gnupg-agent
+          echo Installing SDKMAN
+          curl -s "https://get.sdkman.io" | bash
+          source ~/.sdkman/bin/sdkman-init.sh && \
+          sdk install jbang 0.52.1
+          jbang .github/NativeBuildReport.java token="${GITHUB_TOKEN}" status="${STATUS}" issueRepo="${GITHUB_REPOSITORY}" issueNumber="${ISSUE_NUMBER}" thisRepo="${GITHUB_REPOSITORY}" runId="${GITHUB_RUN_ID}"

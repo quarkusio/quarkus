@@ -1,0 +1,10 @@
+---
+name: "Container Image Jib"
+metadata:
+  keywords:
+    - "jib"
+    - "container"
+    - "image"
+  categories:
+    - "cloud"
+  status: "preview"

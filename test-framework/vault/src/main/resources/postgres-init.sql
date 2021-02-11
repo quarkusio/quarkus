@@ -1,0 +1,1 @@
+CREATE TABLE "public"."gift" (id bigint PRIMARY KEY NOT NULL, name varchar(255));

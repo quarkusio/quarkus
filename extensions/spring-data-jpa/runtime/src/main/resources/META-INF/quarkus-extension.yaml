@@ -1,0 +1,10 @@
+---
+name: "Quarkus Extension for Spring Data JPA API"
+metadata:
+  keywords:
+  - "spring-data"
+  - "spring"
+  guide: "https://quarkus.io/guides/spring-data-jpa"
+  categories:
+  - "compatibility"
+  status: "preview"

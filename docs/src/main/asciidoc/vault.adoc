@@ -1,0 +1,528 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using HashiCorp Vault
+
+include::./attributes.adoc[]
+:config-file: application.properties
+:vault-version: 1.6.0
+:root-token: s.5VUS8pte13RqekCB2fmMT3u2
+:client-token: s.s93BVzJPzBiIGuYJHBTkG8Uw
+:extension-status: preview
+:vault-auth-guide: link:vault-auth[Vault Authentication guide]
+:vault-transit-guide: link:vault-transit[Vault Transit Secret Engine Guide]
+:vault-datasource-guide: link:vault-datasource[Vault Datasource Guide]
+
+https://www.vaultproject.io/[HashiCorp Vault] is a multi-purpose tool aiming at protecting sensitive data, such as
+credentials, certificates, access tokens, encryption keys, ... In the context of Quarkus, several use cases
+are supported:
+
+* mounting a map of properties stored into the
+https://www.vaultproject.io/docs/secrets/kv/index.html[Vault kv secret engine] as an Eclipse MicroProfile config source
+* fetching credentials from Vault when configuring an Agroal datasource, as documented in the {vault-datasource-guide}
+* accessing Vault _kv secret engine_ programmatically
+* support for the https://www.vaultproject.io/docs/secrets/totp[TOTP Secret Engine]
+* support for the https://www.vaultproject.io/docs/secrets/transit[Transit Secret Engine] as documented
+in the {vault-transit-guide}
+* support for several authentication methods as documented in the {vault-auth-guide}
+
+Under the hood, the Quarkus Vault extension takes care of authentication when negotiating a client Vault token plus
+any transparent token or lease renewals according to _ttl_ and _max-ttl._
+
+include::./status-include.adoc[]
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* roughly 20 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* Docker installed
+
+== Starting Vault
+
+Let's start Vault in development mode:
+
+[source,bash, subs=attributes+]
+----
+docker run --rm --cap-add=IPC_LOCK -e VAULT_ADDR=http://localhost:8200 -p 8200:8200 -d --name=dev-vault vault:{vault-version}
+----
+
+You can check that vault is running with:
+[source,bash, subs=attributes+]
+----
+docker logs dev-vault
+----
+
+You should see:
+
+[source,text, subs=attributes+]
+----
+==> Vault server configuration:
+
+             Api Address: http://0.0.0.0:8200
+                     Cgo: disabled
+         Cluster Address: https://0.0.0.0:8201
+              Listener 1: tcp (addr: "0.0.0.0:8200", cluster address: "0.0.0.0:8201", max_request_duration: "1m30s", max_request_size: "33554432", tls: "disabled")
+               Log Level: info
+                   Mlock: supported: true, enabled: false
+                 Storage: inmem
+                 Version: Vault v{vault-version}
+
+WARNING! dev mode is enabled! In this mode, Vault runs entirely in-memory
+and starts unsealed with a single unseal key. The root token is already
+authenticated to the CLI, so you can immediately begin using Vault.
+
+You may need to set the following environment variable:
+
+    $ export VAULT_ADDR='http://0.0.0.0:8200'
+
+The unseal key and root token are displayed below in case you want to
+seal/unseal the Vault or re-authenticate.
+
+Unseal Key: 0lZ2/vzpa92pH8gersSn2h9b5tmzd4m5sqIdMC/4PDs=
+Root Token: {root-token}
+
+Development mode should NOT be used in production installations!
+
+==> Vault server started! Log data will stream in below:
+----
+
+In development mode, Vault gets configured with several options that makes it convenient:
+
+* Vault is already initialized with one key share (whereas in normal mode this has to be done explicitly and the
+number of key shares is 5 by default)
+* the unseal key and the root token are displayed in the logs (please write down the root token, we will need it
+in the following step)
+* Vault is unsealed
+* in-memory storage
+* TLS is disabled
+* a _kv secret engine v2_ is mounted at `secret/`
+
+[NOTE]
+====
+By default Quarkus assumes that a _kv secret engine_ in version *2* mounted at path `secret/` will be used.
+If that is not the case, please use properties `quarkus.vault.kv-secret-engine-version`
+and `quarkus.vault.kv-secret-engine-mount-path` accordingly.
+====
+
+In the following step, we are going to add a `userpass` authentication that we will use from the Quarkus application,
+to access a secret stored in the _kv secret engine_.
+
+First open a shell inside the vault container:
+
+[source,bash, subs=attributes+]
+----
+docker exec -it dev-vault sh
+----
+
+Set the `VAULT_TOKEN` with the value that was printed in the logs:
+
+[source,bash, subs=attributes+]
+----
+export VAULT_TOKEN={root-token}
+----
+
+You can check Vault's status using the CLI command `vault status`:
+
+[source,text]
+----
+Key             Value
+---             -----
+Seal Type       shamir
+Initialized     true
+Sealed          false
+Total Shares    1
+Threshold       1
+Version         1.6.0
+Cluster Name    vault-cluster-b07e80d8
+Cluster ID      55bd74b6-eaaf-3862-f7ce-3473ab86c57f
+HA Enabled      false
+----
+
+Now let's add a secret configuration for our application:
+
+[source,bash]
+----
+vault kv put secret/myapps/vault-quickstart/config a-private-key=123456
+----
+
+We have defined a path `secret/myapps/vault-quickstart` in Vault that we need to give access to from the Quarkus application.
+
+Create a policy that gives read access to `secret/myapps/vault-quickstart` and subpaths:
+
+[source,bash]
+----
+cat <<EOF | vault policy write vault-quickstart-policy -
+path "secret/data/myapps/vault-quickstart/*" {
+  capabilities = ["read"]
+}
+EOF
+----
+
+[NOTE]
+====
+When using a _kv secret engine version 2_, secrets are written and fetched at path `<mount>/*data*/<secret-path>`
+as opposed to `<mount>/<secret-path>` in a _kv secret engine version 1_.
+It does not change any of the CLI commands (i.e. you do not specify `data` in your path).
+However it does change the policies, since capabilities are applied to the real path. In the example above,
+the path is `secret/*data*/myapps/vault-quickstart/\*` since we are working with a _kv secret engine version 2_.
+It would be `secret/myapps/vault-quickstart/*` with a _kv secret engine version 1_.
+====
+
+And finally, let's enable the _userpass auth secret engine_, and create user `bob` with access to the `vault-quickstart-policy`:
+
+[source,bash]
+----
+vault auth enable userpass
+vault write auth/userpass/users/bob password=sinclair policies=vault-quickstart-policy
+----
+
+[NOTE]
+====
+Quarkus supports additional Vault Authentication methods. Check the {vault-auth-guide} for details.
+====
+
+To check that the configuration is correct, try logging in:
+
+[source,bash]
+----
+vault login -method=userpass username=bob password=sinclair
+----
+
+You should see:
+
+[source,text, subs=attributes+]
+----
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run "vault login"
+again. Future Vault requests will automatically use this token.
+
+Key                    Value
+---                    -----
+token                  {client-token}
+token_accessor         OKNipTAgxWbxsrjixASNiwdY
+token_duration         768h
+token_renewable        true
+token_policies         ["default" "vault-quickstart-policy"]
+identity_policies      []
+policies               ["default" "vault-quickstart-policy"]
+token_meta_username    bob
+----
+
+Now set `VAULT_TOKEN` to the `token` above (instead of the root token), and try reading the vault-quickstart secret config:
+
+[source,bash, subs=attributes+]
+----
+export VAULT_TOKEN={client-token}
+vault kv get secret/myapps/vault-quickstart/config
+----
+
+You should see:
+
+[source,text]
+----
+======== Data ========
+Key              Value
+---              -----
+a-private-key    123456
+----
+
+== Create a Quarkus application with a secret configuration
+
+[source,bash, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=vault-quickstart \
+    -DclassName="org.acme.quickstart.GreetingResource" \
+    -Dpath="/hello" \
+    -Dextensions="resteasy,vault"
+cd vault-quickstart
+----
+
+If you already have your Quarkus project configured, you can add the `vault` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="vault"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-vault</artifactId>
+</dependency>
+----
+
+Configure access to Vault from the `{config-file}`:
+
+[source, properties]
+----
+# vault url
+quarkus.vault.url=http://localhost:8200
+
+# vault authentication
+quarkus.vault.authentication.userpass.username=bob
+quarkus.vault.authentication.userpass.password=sinclair
+
+# path within the kv secret engine where is located the vault-quickstart secret configuration
+quarkus.vault.secret-config-kv-path=myapps/vault-quickstart/config
+----
+
+This should mount whatever keys are stored in `secret/myapps/vault-quickstart` as MicroProfile Config properties.
+
+Let's verify that by adding a new endpoint in GreetingResource:
+
+[source, java]
+----
+@Path("/hello")
+public class GreetingResource {
+
+    @ConfigProperty(name = "a-private-key")
+    String privateKey;
+
+    ...
+
+    @GET
+    @Path("/private-key")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String privateKey() {
+        return privateKey;
+    }
+}
+----
+
+Now compile the application and run it:
+
+[source,bash]
+----
+./mvnw clean install
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+Finally test the new endpoint:
+
+[source,bash]
+----
+curl http://localhost:8080/hello/private-key
+----
+
+You should see:
+
+[source,text]
+----
+123456
+----
+
+[NOTE]
+====
+The MicroProfile _Vault Config Source_ is configured with ordinal `270`, which is higher than the file system
+or jar ordinals, but lower than environment variables.
+This value can be changed using property `quarkus.vault.config-ordinal`.
+====
+
+== Programmatic access to the KV secret engine
+
+Sometimes secrets are retrieved from an arbitrary path that is known only at runtime through an application
+specific property, or a method argument for instance.
+In that case it is possible to inject a Quarkus `VaultKVSecretEngine`, and retrieve secrets programmatically.
+
+For instance, in `GreetingResource`, add:
+
+[source, java]
+----
+@Inject
+VaultKVSecretEngine kvSecretEngine;
+
+...
+
+@GET
+@Path("/secrets/{vault-path}")
+@Produces(MediaType.TEXT_PLAIN)
+public String getSecrets(@PathParam("vault-path") String vaultPath) {
+    return kvSecretEngine.readSecret("myapps/vault-quickstart/" + vaultPath).toString();
+}
+----
+
+Add a new key in Vault:
+[source,bash]
+----
+vault kv put secret/myapps/vault-quickstart/private mysecret=abc
+----
+
+Restart the application after rebuilding it, and test it with the new endpoint:
+
+[source,bash]
+----
+curl http://localhost:8080/hello/secrets/private
+----
+
+You should see:
+[source,text]
+----
+{mysecret=abc}
+----
+
+[[totp]]
+== TOTP Secrets Engine
+
+The https://www.vaultproject.io/docs/secrets/totp/[Vault TOTP secrets engine] generates time-based credentials according to the TOTP standard.
+
+Vault TOTP supports both the generator scenario (like Google Authenticator) and the provider scenario (like the Google.com sign in).
+
+The Vault extension integrates with the Vault TOTP secret engine by providing an `io.quarkus.vault.VaultTOTPSecretEngine` class.
+
+[source, java]
+----
+import io.quarkus.vault.VaultTOTPSecretEngine;
+import io.quarkus.vault.secrets.totp.CreateKeyParameters;
+import io.quarkus.vault.secrets.totp.KeyConfiguration;
+import io.quarkus.vault.secrets.totp.KeyDefinition;
+
+@Inject
+VaultTOTPSecretEngine vaultTOTPSecretEngine;
+
+CreateKeyParameters createKeyParameters = new CreateKeyParameters("Google", "test@gmail.com");
+createKeyParameters.setPeriod("30m");
+
+/** Google Authentication logic */
+
+final Optional<KeyDefinition> myKey = vaultTOTPSecretEngine
+                                            .createKey("my_key_2", createKeyParameters); // <1> <2>
+
+final String keyCode = vaultTOTPSecretEngine.generateCode("my_key_2"); // <3>
+
+/** Google Login logic */
+
+boolean valid = vaultTOTPSecretEngine.validateCode("my_key_2", keyCode); // <4>
+----
+<1> Create a key to generate codes.
+<2> `KeyDefinition` class contains an embeddable base64 QR code that can be used by third-party code generators.
+<3> Generates a code (not using third-party generator).
+<4> Validates that the code is valid.
+
+== Vault Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-vault` can add a readiness health check
+to validate the connection to the Vault server. This is disabled by default.
+
+If enabled, when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be enabled by setting the `quarkus.vault.health.enabled` property to `true` in your `application.properties`.
+
+Only if Vault is initialized, unsealed and active, the health endpoint returns that Vault is ready to serve requests.
+
+You can change a bit this behaviour by using `quarkus.vault.health.stand-by-ok` and `quarkus.vault.health.performance-stand-by-ok` to `true` in your `application.properties`.
+
+stand-by-ok:: Specifies if being a standby should still return the active status code instead of the standby status code.
+
+performance-stand-by-ok:: Specifies if being a performance standby should still return the active status code instead of the performance standby status code.
+
+You can inject `io.quarkus.vault.VaultSystemBackendEngine` to run system operations programmatically.
+
+WARNING: When the readiness probe is failing in Kubernetes, then the application is not reachable. This means that if Vault is failing, all services depending on Vault will become unreachable and maybe this is not the desired state, so use this flag according to your requirements.
+
+== TLS
+
+In production mode, TLS should be activated between the Quarkus application and Vault to prevent _man-in-the-middle_ attacks.
+
+There are several ways to configure the Quarkus application:
+
+* through the standard `javax.net.ssl.trustStore` system property, which should refer to a JKS truststore containing
+the trusted certificates
+* using property `quarkus.vault.tls.ca-cert`, which should refer to a pem encoded file.
+
+If `quarkus.vault.tls.ca-cert` is not set and the Quarkus application is using the Kubernetes authentication,
+TLS will be active and use the CA certificate bundle located in `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt`.
+If you want to disable this behavior (for instance when using a trust store), you need to set it explicitly using:
+`quarkus.vault.tls.use-kubernetes-ca-cert=false`.
+
+The last relevant property is `quarkus.vault.tls.skip-verify`, which allows to communicate with Vault using TLS,
+but without checking the certificate authenticity. This may be convenient in development, but is strongly
+discouraged in production as it is not more secure than talking to Vault in plain HTTP.
+
+== Vault Provisioning
+
+Beside the typical client use cases, the Quarkus extension can be used to provision Vault as well, 
+for instance as part of a CD pipeline. Specific CDI beans and operations support this scenario:
+
+* `VaultSystemBackendEngine`: create Vault Policies. See the https://www.vaultproject.io/api-docs/system/policy[Vault documentation].
+* `VaultKubernetesAuthService`. See the https://www.vaultproject.io/api-docs/auth/kubernetes[Vault documentation].
+** Configure the Kubernetes Auth Method (Kubernetes host, certificates, keys, ...)
+** Create Kubernetes Auth Roles (association between Kubernetes service accounts, Kubernetes namespaces and Vault policies)
+* `VaultTransitSecretEngine`: _CRUD_ operations on keys. See the https://www.vaultproject.io/api-docs/secret/transit[Vault documentation].
+
+For instance:
+
+[source, java]
+----
+@Inject
+VaultSystemBackendEngine vaultSystemBackendEngine;
+
+@Inject
+VaultKubernetesAuthService vaultKubernetesAuthService;
+
+...
+
+  String rules = "path \"transit/*\" {\n" +
+          "  capabilities = [ \"create\", \"read\", \"update\" ]\n" +
+          "}";
+  String policyName = "sys-test-policy";
+  vaultSystemBackendEngine.createUpdatePolicy(policyName, rules);
+
+  String roleName = "test-auth-k8s";
+  List<String> boundServiceAccountNames = asList("vault-auth");
+  List<String> boundServiceAccountNamespaces = asList("default");
+  List<String> tokenPolicies = asList(policyName);
+
+  vaultKubernetesAuthService.createRole(roleName, new VaultKubernetesAuthRole()
+          .setBoundServiceAccountNames(boundServiceAccountNames)
+          .setBoundServiceAccountNamespaces(boundServiceAccountNamespaces)
+          .setTokenPolicies(tokenPolicies));
+
+----
+
+Like any client, a provisioning program would have to authenticate using one of the supported Auth methods, and get the appropriate grants through one or more policies. Example:
+
+[source]
+----
+# create Policies
+path "sys/policy/*" {
+  capabilities = ["read", "create", "update", "delete"]
+}
+
+# create Kubernetes Auth Roles
+path "auth/kubernetes/role/*" {
+  capabilities = ["read", "create", "update", "delete"]
+}
+----
+
+You should adjust to the minimal set of access rights depending on your specific use case.
+
+== Conclusion
+
+As a general matter, you should consider reading the extensive https://www.vaultproject.io/docs/[Vault documentation]
+and apply best practices.
+
+The features exposed today through the Vault extension covers only a small fraction of what the product is capable of.
+Still, it addresses already some of the most common microservices scenarii (e.g. sensitive configuration and database
+credentials), which goes a long way towards creating secured applications.
+
+[[configuration-reference]]
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-vault.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* https://www.vaultproject.io/[HashiCorp Vault]
+* link:security[Quarkus Security]

@@ -1,0 +1,80 @@
+plugins {
+    id 'java-gradle-plugin'
+}
+
+if (JavaVersion.current().isJava9Compatible()) {
+    compileJava.options.compilerArgs.addAll(['--release', '8'])
+}
+compileJava {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
+    mavenCentral()
+}
+
+configurations.all {
+    exclude group: 'io.quarkus', module: 'quarkus-bootstrap-maven-resolver'
+}
+
+dependencies {
+    testImplementation "io.quarkus:quarkus-bootstrap-core:${version}"
+    testImplementation "io.quarkus:quarkus-core-deployment:${version}"
+    testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
+    testImplementation "io.quarkus:quarkus-devtools-common:${version}"
+    testImplementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
+    testImplementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
+    testImplementation "io.quarkus:io.quarkus.gradle.plugin:${version}"
+    testImplementation 'org.mockito:mockito-core:3.7.7'
+    testImplementation 'org.assertj:assertj-core:3.19.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    testImplementation 'org.awaitility:awaitility:4.0.3'
+}
+
+test {
+    // propagate the custom local maven repo, in case it's configured
+    if (System.properties.containsKey('maven.repo.local')) {
+        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+    }
+    useJUnitPlatform()
+
+    // Kotlin compiler does not support Java 14
+    if(JavaVersion.current() == JavaVersion.VERSION_14) {
+        exclude 'io/quarkus/gradle/devmode/MultiModuleKotlinProjectDevModeTest.class'
+    }
+    // Native Build test are run in an other task
+    exclude 'io/quarkus/gradle/nativeimage/*.class'
+}
+
+task nativeTest(type: Test) {
+    description = "Runs native tests"
+    group = "verification"
+    useJUnitPlatform()
+
+    systemProperties project.properties.subMap(["quarkus.native.container-build", "quarkus.native.builder-image"])
+    // propagate the custom local maven repo, in case it's configured
+    if (System.properties.containsKey('maven.repo.local')) {
+        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+    }
+
+    // Include only native build test package
+    include 'io/quarkus/gradle/nativeimage/*.class'
+}
+
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+}

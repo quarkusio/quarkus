@@ -1,0 +1,192 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using Flyway
+
+include::./attributes.adoc[]
+:migrations-path: src/main/resources/db/migration
+:config-file: application.properties
+
+https://flywaydb.org/[Flyway] is a popular database migration tool that is commonly used in JVM environments.
+
+Quarkus provides first class support for using Flyway as will be explained in this guide.
+
+== Setting up support for Flyway
+
+To start using Flyway with your project, you just need to:
+
+* add your migrations to the `{migrations-path}` folder as you usually do with Flyway
+* activate the `migrate-at-start` option to migrate the schema automatically or inject the `Flyway` object and run
+your migration as you normally do
+
+In your `pom.xml`, add the following dependencies:
+
+* the Flyway extension
+* your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
+
+[source,xml]
+----
+<dependencies>
+    <!-- Flyway specific dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-flyway</artifactId>
+    </dependency>
+
+    <!-- JDBC driver dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-jdbc-postgresql</artifactId>
+    </dependency>
+</dependencies>
+----
+
+Flyway support relies on the Quarkus datasource config.
+It can be customized for the default datasource as well as for every <<multiple-datasources,named datasource>>.
+First, you need to add the datasource config to the `{config-file}` file
+in order to allow Flyway to manage the schema.
+Also, you can customize the Flyway behaviour by using the following properties:
+
+include::{generated-dir}/config/quarkus-flyway.adoc[opts=optional, leveloffset=+1]
+
+
+The following is an example for the `{config-file}` file:
+
+[source,properties]
+----
+# configure your datasource
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=sarah
+quarkus.datasource.password=connor
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/mydatabase
+
+# Flyway minimal config properties
+quarkus.flyway.migrate-at-start=true
+
+# Flyway optional config properties
+# quarkus.flyway.baseline-on-migrate=true
+# quarkus.flyway.baseline-version=1.0.0
+# quarkus.flyway.baseline-description=Initial version
+# quarkus.flyway.connect-retries=10
+# quarkus.flyway.schemas=TEST_SCHEMA
+# quarkus.flyway.table=flyway_quarkus_history
+# quarkus.flyway.locations=db/location1,db/location2
+# quarkus.flyway.sql-migration-prefix=X
+# quarkus.flyway.repeatable-sql-migration-prefix=K
+----
+
+Add a SQL migration to the default folder following the Flyway naming conventions: `{migrations-path}/V1.0.0__Quarkus.sql`
+
+[source,sql]
+----
+CREATE TABLE quarkus
+(
+  id   INT,
+  name VARCHAR(20)
+);
+INSERT INTO quarkus(id, name)
+VALUES (1, 'QUARKED');
+----
+
+Now you can start your application and Quarkus will run the Flyway's migrate method according to your config:
+
+[source,java]
+----
+@ApplicationScoped
+public class MigrationService {
+    // You can Inject the object if you want to use it manually
+    @Inject
+    Flyway flyway; <1>
+
+    public void checkMigration() {
+        // This will print 1.0.0
+        System.out.println(flyway.info().current().getVersion().toString());
+    }
+}
+----
+
+<1> Inject the Flyway object if you want to use it directly
+
+== Multiple datasources
+
+Flyway can be configured for multiple datasources.
+The Flyway properties are prefixed exactly the same way as the named datasources, for example:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=h2
+quarkus.datasource.username=username-default
+quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:default
+quarkus.datasource.jdbc.max-size=13
+
+quarkus.datasource.users.db-kind=h2
+quarkus.datasource.users.username=username1
+quarkus.datasource.users.jdbc.url=jdbc:h2:tcp://localhost/mem:users
+quarkus.datasource.users.jdbc.max-size=11
+
+quarkus.datasource.inventory.db-kind=h2
+quarkus.datasource.inventory.username=username2
+quarkus.datasource.inventory.jdbc.url=jdbc:h2:tcp://localhost/mem:inventory
+quarkus.datasource.inventory.jdbc.max-size=12
+
+# Flyway configuration for the default datasource
+quarkus.flyway.schemas=DEFAULT_TEST_SCHEMA
+quarkus.flyway.locations=db/default/location1,db/default/location2
+quarkus.flyway.migrate-at-start=true
+
+# Flyway configuration for the "users" datasource
+quarkus.flyway.users.schemas=USERS_TEST_SCHEMA
+quarkus.flyway.users.locations=db/users/location1,db/users/location2
+quarkus.flyway.users.migrate-at-start=true
+
+# Flyway configuration for the "inventory" datasource
+quarkus.flyway.inventory.schemas=INVENTORY_TEST_SCHEMA
+quarkus.flyway.inventory.locations=db/inventory/location1,db/inventory/location2
+quarkus.flyway.inventory.migrate-at-start=true
+----
+
+Notice there's an extra bit in the key.
+The syntax is as follows: `quarkus.flyway.[optional name.][datasource property]`.
+
+NOTE: Without configuration, Flyway is set up for every datasource using the default settings.
+
+== Using the Flyway object
+
+In case you are interested in using the `Flyway` object directly, you can inject it as follows:
+
+NOTE: If you enabled the `quarkus.flyway.migrate-at-start` property, by the time you use the Flyway instance,
+Quarkus will already have run the migrate operation
+
+[source,java]
+----
+@ApplicationScoped
+public class MigrationService {
+    // You can Inject the object if you want to use it manually
+    @Inject
+    Flyway flyway; <1>
+
+    @Inject
+    @FlywayDataSource("inventory") <2>
+    Flyway flywayForInventory;
+
+    @Inject
+    @Named("flyway_users") <3>
+    Flyway flywayForUsers;
+
+    public void checkMigration() {
+        // Use the flyway instance manually
+        flyway.clean(); <4>
+        flyway.migrate();
+        // This will print 1.0.0
+        System.out.println(flyway.info().current().getVersion().toString());
+    }
+}
+----
+
+<1> Inject the Flyway object if you want to use it directly
+<2> Inject Flyway for named datasources using the Quarkus `FlywayDataSource` qualifier
+<3> Inject Flyway for named datasources
+<4> Use the Flyway instance directly
+

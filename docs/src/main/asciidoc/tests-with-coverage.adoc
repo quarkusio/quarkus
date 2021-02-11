@@ -1,0 +1,276 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Measuring the coverage of your tests
+
+include::./attributes.adoc[]
+
+:toc: macro
+:toclevels: 4
+:doctype: book
+:icons: font
+:docinfo1:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+
+Learn how to measure the test coverage of your application. This guide covers:
+
+* Measuring the coverage of your Unit Tests
+* Measuring the coverage of your Integration Tests
+* Separating the execution of your Unit Tests and Integration Tests
+* Consolidating the coverage for all your tests
+
+Please note that code coverage is not supported in native mode.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with JAVA_HOME configured appropriately
+* Apache Maven {maven-version}
+* Having completed the link:https://quarkus.io/guides/getting-started-testing[Testing your application guide]
+
+== Architecture
+
+The application built in this guide is just a JAX-RS endpoint (hello world) that relies on dependency injection to use a service.
+The service will be tested with JUnit 5 and the endpoint will be annotated via a `@QuarkusTest` annotation.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step. However, you can go right to the completed example.
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `tests-with-coverage-quickstart` {quickstarts-tree-url}/tests-with-coverage-quickstart[directory].
+
+== Starting from a simple project and two tests
+
+Let's start from an empty application created with the Quarkus Maven plugin: 
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=tests-with-coverage-quickstart
+cd tests-with-coverage-quickstart
+----
+
+Now we'll be adding all the elements necessary to have an application that is properly covered with tests.
+
+First, an application serving a hello endpoint:
+
+[source,java]
+----
+package org.acme.testcoverage;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class GreetingResource {
+
+    private final GreetingService service;
+
+    @Inject
+    public GreetingResource(GreetingService service) {
+        this.service = service;
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/greeting/{name}")
+    public String greeting(@PathParam("name") String name) {
+        return service.greeting(name);
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+This endpoint uses a greeting service:
+
+[source,java]
+----
+package org.acme.testcoverage;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class GreetingService {
+
+    public String greeting(String name) {
+        return "hello " + name;
+    }
+
+}
+----
+
+The project will also need a test:
+
+[source,java]
+----
+package org.acme.testcoverage;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
+
+import java.util.UUID;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@QuarkusTest
+public class GreetingResourceTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+          .when().get("/hello")
+          .then()
+             .statusCode(200)  
+             .body(is("hello"));
+    }
+
+    @Test
+    public void testGreetingEndpoint() {
+        String uuid = UUID.randomUUID().toString();
+        given()
+          .pathParam("name", uuid)
+          .when().get("/hello/greeting/{name}")
+          .then()
+            .statusCode(200)
+            .body(is("hello " + uuid));
+    }
+}
+----
+
+== Setting up Jacoco
+
+Now we need to add Jacoco to our project. To do this we need to add the following to the `pom.xml` dependencies section:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jacoco</artifactId>
+  <scope>test</scope>
+</dependency>
+----
+
+This Quarkus extension takes care of everything that would usually be done via the Jacoco maven plugin, so no additional
+config is required.
+
+== Running the tests with coverage
+
+Run `mvn verify`, the tests will be run and the results will end up in `target/jacoco-reports`. This is all that is needed,
+the `quarkus-jacoco` extension allows Jacoco to just work out of the box.
+
+There are some config options that affect this:
+
+include::{generated-dir}/config/quarkus-jacoco-jacoco-config.adoc[opts=optional, leveloffset=+1]
+
+== Coverage for tests not using @QuarkusTest
+
+The Quarkus automatic Jacoco config will only work for tests that are annotated with `@QuarkusTest`. If you want to check
+the coverage of other tests as well then you will need to fall back to the Jacoco maven plugin.
+
+Because Quarkus uses class file transformation it is not possible to use online transformation with the Jacoco agent.
+Instead we need to use offline transformation.
+
+Instead of including the `quarkus-jacoco` extension in your pom you will need the following config:
+
+[source,xml,subs=attributes+]
+----
+<project>
+    ...
+    <dependencies>
+    ...
+        <dependency>
+          <groupId>org.jacoco</groupId>
+          <artifactId>org.jacoco.agent</artifactId>
+          <classifier>runtime</classifier>
+          <scope>test</scope>
+          <version>${jacoco.version}</version>
+        </dependency>
+    ...
+    </dependencies>
+    <build>
+        <plugins>
+            ...
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>instrument-ut</id>
+                        <goals>
+                            <goal>instrument</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>restore-ut</id>
+                        <goals>
+                            <goal>restore-instrumented-classes</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report-ut</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.reporting.outputDirectory}/jacoco-reports</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+----
+
+It also requires a small change in the Surefire configuration. Note below that we specified `jacoco-agent.destfile` as a system property in the default case (unit tests) and for the integration tests.
+
+[source,xml,subs=attributes+]
+----
+<project>
+    ...
+    <build>
+        <plugins>
+            ...
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <jacoco-agent.destfile>${project.build.directory}/jacoco.exec</jacoco-agent.destfile>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+----
+
+== Conclusion
+
+You now have all the information you need to study the coverage of your tests!
+But remember, some code that is not covered is certainly not well tested. But some code that is covered is not necessarily *well* tested. Make sure to write good tests!

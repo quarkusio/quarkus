@@ -1,0 +1,215 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using Liquibase
+
+include::./attributes.adoc[]
+:change-log: src/main/resources/db/changeLog.xml
+:config-file: application.properties
+
+https://www.liquibase.org/[Liquibase] is an open source tool for database schema change management.
+
+Quarkus provides first class support for using Liquibase as will be explained in this guide.
+
+== Setting up support for Liquibase
+
+To start using Liquibase with your project, you just need to:
+
+* add your changeLog to the `{change-log}` file as you usually do with Liquibase
+* activate the `migrate-at-start` option to migrate the schema automatically or inject the `Liquibase` object and run
+your migration as you normally do.
+
+In your `pom.xml`, add the following dependencies:
+
+* the Liquibase extension
+* your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
+
+[source,xml]
+----
+<dependencies>
+    <!-- Liquibase specific dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-liquibase</artifactId>
+    </dependency>
+
+    <!-- JDBC driver dependencies -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-jdbc-postgresql</artifactId>
+    </dependency>
+</dependencies>
+----
+
+Liquibase support relies on the Quarkus datasource config.
+It can be customized for the default datasource as well as for every <<multiple-datasources,named datasource>>.
+First, you need to add the datasource config to the `{config-file}` file
+in order to allow Liquibase to manage the schema.
+
+The following is an example for the `{config-file}` file:
+
+[source,properties]
+----
+# configure your datasource
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=sarah
+quarkus.datasource.password=connor
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/mydatabase
+
+# Liquibase minimal config properties
+quarkus.liquibase.migrate-at-start=true
+
+# Liquibase optional config properties
+# quarkus.liquibase.change-log=db/changeLog.xml
+# quarkus.liquibase.validate-on-migrate=true
+# quarkus.liquibase.clean-at-start=false
+# quarkus.liquibase.database-change-log-lock-table-name=DATABASECHANGELOGLOCK
+# quarkus.liquibase.database-change-log-table-name=DATABASECHANGELOG
+# quarkus.liquibase.contexts=Context1,Context2
+# quarkus.liquibase.labels=Label1,Label2
+# quarkus.liquibase.default-catalog-name=DefaultCatalog
+# quarkus.liquibase.default-schema-name=DefaultSchema
+# quarkus.liquibase.liquibase-catalog-name=liquibaseCatalog
+# quarkus.liquibase.liquibase-schema-name=liquibaseSchema
+# quarkus.liquibase.liquibase-tablespace-name=liquibaseSpace
+----
+
+Add a changeLog file to the default folder following the Liquibase naming conventions: `{change-log}`
+The yaml, json, xml and sql changeLog file formats are also supported.
+
+[source,xml]
+----
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet author="quarkus" id="1">
+        <createTable tableName="quarkus">
+            <column name="ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
+----
+
+Now you can start your application and Quarkus will run the Liquibase's update method according to your config:
+
+[source,java]
+----
+import org.quarkus.liquibase.LiquibaseFactory; <1>
+
+@ApplicationScoped
+public class MigrationService {
+    // You can Inject the object if you want to use it manually
+    @Inject
+    LiquibaseFactory liquibaseFactory; <2>
+
+    public void checkMigration() {
+        // Get the list of liquibase change set statuses
+        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+            List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+        }
+    }
+}
+----
+<1> The Quarkus extension provides a factory to initialize a Liquibase instance
+<2> Inject the Quarkus liquibase factory if you want to use the liquibase methods directly
+
+== Multiple datasources
+
+Liquibase can be configured for multiple datasources.
+The Liquibase properties are prefixed exactly the same way as the named datasources, for example:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=h2
+quarkus.datasource.username=username-default
+quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:default
+quarkus.datasource.jdbc.max-size=13
+
+quarkus.datasource.users.db-kind=h2
+quarkus.datasource.users.username=username1
+quarkus.datasource.users.jdbc.url=jdbc:h2:tcp://localhost/mem:users
+quarkus.datasource.users.jdbc.max-size=11
+
+quarkus.datasource.inventory.db-kind=h2
+quarkus.datasource.inventory.username=username2
+quarkus.datasource.inventory.jdbc.url=jdbc:h2:tcp://localhost/mem:inventory
+quarkus.datasource.inventory.jdbc.max-size=12
+
+# Liquibase configuration for the default datasource
+quarkus.liquibase.schemas=DEFAULT_TEST_SCHEMA
+quarkus.liquibase.change-log=db/changeLog.xml
+quarkus.liquibase.migrate-at-start=true
+
+# Liquibase configuration for the "users" datasource
+quarkus.liquibase.users.schemas=USERS_TEST_SCHEMA
+quarkus.liquibase.users.change-log=db/users.xml
+quarkus.liquibase.users.migrate-at-start=true
+
+# Liquibase configuration for the "inventory" datasource
+quarkus.liquibase.inventory.schemas=INVENTORY_TEST_SCHEMA
+quarkus.liquibase.inventory.change-log=db/inventory.xml
+quarkus.liquibase.inventory.migrate-at-start=true
+----
+
+Notice there's an extra bit in the key.
+The syntax is as follows: `quarkus.liquibase.[optional name.][datasource property]`.
+
+NOTE: Without configuration, Liquibase is set up for every datasource using the default settings.
+
+== Using the Liquibase object
+
+In case you are interested in using the `Liquibase` object directly, you can inject it as follows:
+
+NOTE: If you enabled the `quarkus.liquibase.migrate-at-start` property, by the time you use the Liquibase instance,
+Quarkus will already have run the migrate operation.
+
+[source,java]
+----
+import org.quarkus.liquibase.LiquibaseFactory;
+
+@ApplicationScoped
+public class MigrationService {
+    // You can Inject the object if you want to use it manually
+    @Inject
+    LiquibaseFactory liquibaseFactory; <1>
+
+    @Inject
+    @LiquibaseDataSource("inventory") <2>
+    LiquibaseFactory liquibaseFactoryForInventory;
+
+    @Inject
+    @Named("liquibase_users") <3>
+    LiquibaseFactory liquibaseFactoryForUsers;
+
+    public void checkMigration() {
+        // Use the liquibase instance manually
+        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+            liquibase.dropAll(); <4>
+            liquibase.validate();
+            liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+            // Get the list of liquibase change set statuses
+            List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseFactory.createContexts(), liquibaseFactory.createLabels()); <5>
+        }
+    }
+}
+----
+<1> Inject the LiquibaseFactory object
+<2> Inject Liquibase for named datasources using the Quarkus `LiquibaseDataSource` qualifier
+<3> Inject Liquibase for named datasources
+<4> Use the Liquibase instance directly
+<5> List of applied or not applied liquibase ChangeSets
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-liquibase.adoc[opts=optional, leveloffset=+2]

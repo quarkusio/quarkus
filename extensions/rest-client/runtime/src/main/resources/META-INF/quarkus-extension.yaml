@@ -1,0 +1,10 @@
+---
+name: "REST Client"
+metadata:
+  keywords:
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  guide: "https://quarkus.io/guides/rest-client"
+  categories:
+  - "web"

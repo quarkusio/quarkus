@@ -1,0 +1,27 @@
+name: quarkus-bot.yml lint
+
+on:
+  push:
+    paths:
+      - '.github/quarkus-bot.yml'
+      - '.github/quarkus-bot-java.yml'
+  pull_request:
+    paths:
+      - '.github/quarkus-bot.yml'
+      - '.github/quarkus-bot-java.yml'
+
+jobs:
+  lint:
+    name: "quarkus-bot.yml validation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install yamllint
+        shell: bash
+        run: sudo apt-get install -y yamllint
+      - name: run yamllint for probot
+        shell: bash
+        run: yamllint -c .github/yamllint.conf .github/quarkus-bot.yml
+      - name: run yamllint for java
+        shell: bash
+        run: yamllint -c .github/yamllint.conf .github/quarkus-bot-java.yml

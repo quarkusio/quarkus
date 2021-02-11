@@ -1,0 +1,48 @@
+{#include main fluid=true}
+{#style}
+.annotation {
+color: gray;
+}
+{/style}
+{#title}Config Editor{/title}
+{#body}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Property</th>
+        <th scope="col">Value</th>
+        <th scope="col">Update</th>
+        <th scope="col">Default Value</th>
+        <th scope="col">Source</th>
+        <th scope="col">Description</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for item in info:config}
+    <tr>
+        <form method="post" enctype="application/x-www-form-urlencoded">
+            <input type="hidden" name="name" value="{item.configValue.name}"/>
+            <td>
+                {item.configValue.name}
+            </td>
+            <td>
+                <input type="text" name="value" value="{item.configValue.value}"/>
+            </td>
+            <td>
+                <input type="submit" value="Update" >
+            </td>
+            <td>
+                {item.defaultValue}
+            </td>
+            <td>
+                {item.configValue.configSourceName}
+            </td>
+            <td>
+                {item.description.fmtJavadoc}
+            </td>
+        </form>
+        {/for}
+    </tbody>
+</table>
+{/body}
+{/include}

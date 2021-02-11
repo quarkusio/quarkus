@@ -1,0 +1,13 @@
+---
+name: "RESTEasy JAXB"
+metadata:
+  keywords:
+  - "resteasy-jaxb"
+  - "resteasy"
+  - "jaxrs"
+  - "xml"
+  - "jaxb"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"

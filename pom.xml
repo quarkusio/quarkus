@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-parent</artifactId>
+        <version>37</version>
+    </parent>
+
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-parent</artifactId>
+    <name>Quarkus - Parent pom</name>
+    <version>999-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/quarkusio/quarkus</url>
+        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
+        <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
+
+        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+
+        <skipDocs>false</skipDocs>
+        <skip.gradle.tests>false</skip.gradle.tests>
+
+        <sonar.projectKey>quarkusio_quarkus</sonar.projectKey>
+        <sonar.organization>quarkusio</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    </properties>
+
+    <modules>
+
+        <!-- External projects -->
+        <module>independent-projects/ide-config</module>
+        <module>independent-projects/revapi</module>
+        <module>independent-projects/arc</module>
+        <module>independent-projects/bootstrap</module>
+        <module>independent-projects/qute</module>
+        <module>independent-projects/tools</module>
+        <module>independent-projects/enforcer-rules</module>
+        <module>independent-projects/resteasy-reactive</module>
+
+        <!-- BOMs and parent POM -->
+        <module>bom/application</module>
+        <module>bom/test</module>
+        <module>build-parent</module>
+
+        <!-- Core components -->
+        <module>core</module>
+        <module>test-framework</module>
+
+        <!-- Extensions -->
+        <module>extensions</module>
+
+        <!-- Devtools (Maven, cli, gradle) -->
+        <!-- MUST BE BUILT AFTER EXTENSIONS BUT BEFORE IT -->
+        <!-- the tools are generating the JSON descriptor for the BOM -->
+        <!-- relying on the fact that the extension descriptor, generated as part of an extension build, is available -->
+        <module>devtools</module>
+
+        <!-- Integration Tests -->
+        <module>integration-tests</module>
+
+        <!-- Misc. -->
+        <module>docs</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Repository Switchboard</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>sonatype-nexus-release</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <!-- please check quick-build-ci as well when modifying these properties -->
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <skipDocs>true</skipDocs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
+                <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+            <id>quick-build-ci</id>
+            <activation>
+                <property>
+                    <name>quickly-ci</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <skipDocs>true</skipDocs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
+                <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+            </properties>
+        </profile>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${nexus-staging-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <serverId>ossrh</serverId>
+                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
+                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <!--
+                        ## IMPORTANT ##
+                        In your ~/.m2/settings.xml you need to add and edit the following profile:
+                        <profile>
+                            <id>release</id>
+                            <properties>
+                                <gpg.useagent>false</gpg.useagent>
+                                <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
+                                <gpg.homedir>~/.gnupg</gpg.homedir>  <- Update to your own directory
+                                <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
+                            </properties>
+                        </profile>
+                         -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>tcks</id>
+            <activation>
+                <property>
+                    <name>tcks</name>
+                </property>
+            </activation>
+            <modules>
+                <module>tcks</module>
+            </modules>
+        </profile>
+    </profiles>
+
+</project>

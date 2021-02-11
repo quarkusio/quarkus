@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+
+#
+# To run this script remotely type this in your shell
+# (where <args>... are the arguments you want to pass to Jbang):
+#   curl -Ls https://sh.jbang.dev | bash -s - <args>...
+#
+
+# The Java version to install when it's not installed on the system yet
+javaVersion=${JBANG_DEFAULT_JAVA_VERSION:-11}
+
+absolute_path() {
+  # if the given path to the jbang launcher is absolute (i.e. it is either starting with / or a
+  # 'letter:/' when using gitbash on windows) it is returned unchanged, otherwise we construct an absolute path
+  [[ $1 = /* ]] || [[ $1 =~ ^[A-z]:/ ]] && echo "$1" || echo "$PWD/${1#./}"
+}
+
+resolve_symlink() {
+  if [[ $OSTYPE != darwin* ]]; then minusFarg="-f"; fi
+  sym_resolved=$(readlink ${minusFarg} $1)
+
+  if [[ -n $sym_resolved ]]; then
+    echo $sym_resolved
+  else
+    echo $1
+  fi
+}
+
+download() {
+  if [ -x "$(command -v curl)" ]; then
+    curl -sLf -H "Accept: application/gzip, application/octet-stream" -o "$2" $1
+    retval=$?
+  elif [ -x "$(command -v wget)" ]; then
+    wget -q --header="Accept: application/gzip, application/octet-stream" -O "$2" $1
+    retval=$?
+  else
+    echo "Error: curl or wget not found, please make sure one of them is installed" 1>&2
+    exit 1
+  fi
+}
+
+abs_jbang_path=$(resolve_symlink $(absolute_path $0))
+
+case "$(uname -s)" in
+  Linux*)
+    os=linux;;
+  Darwin*)
+    os=mac;;
+  CYGWIN*|MINGW*|MSYS*)
+    os=windows;;
+  *)        echo "Unsupported Operating System: $(uname -s)" 1>&2; exit 1;;
+esac
+
+case "$(uname -m)" in
+  i?86)
+    arch=x32;;
+  x86_64|amd64)
+    arch=x64;;
+  aarch64)
+    arch=aarch64;;
+  armv7l)
+    arch=arm;;
+  *)
+    echo "Unsupported Architecture: $(uname -m)" 1>&2; exit 1;;
+esac
+
+## when mingw/git bash or cygwin fall out to just running the bat file.
+if [[ $os == windows ]]; then
+  $(dirname $abs_jbang_path)/jbang.cmd $*
+  exit $?
+fi
+
+if [[ -z "$JBANG_DIR" ]]; then JBDIR="$HOME/.jbang"; else JBDIR="$JBANG_DIR"; fi
+if [[ -z "$JBANG_CACHE_DIR" ]]; then TDIR="$JBDIR/cache"; else TDIR="$JBANG_CACHE_DIR"; fi
+
+## resolve application jar path from script location
+if [ -f "$(dirname $abs_jbang_path)/jbang.jar" ]; then
+  jarPath=$(dirname $abs_jbang_path)/jbang.jar
+elif [ -f "$(dirname $abs_jbang_path)/.jbang/jbang.jar" ]; then
+  jarPath=$(dirname $abs_jbang_path)/.jbang/jbang.jar
+else
+  if [ ! -f "$JBDIR/bin/jbang.jar" ]; then
+    echo "Downloading JBang..." 1>&2
+    mkdir -p "$TDIR/urls"
+    jburl="https://github.com/jbangdev/jbang/releases/latest/download/jbang.tar"
+    download $jburl "$TDIR/urls/jbang.tar"
+    if [ $retval -ne 0 ]; then echo "Error downloading JBang" 1>&2; exit $retval; fi
+    echo "Installing JBang..." 1>&2
+    rm -rf "$TDIR/urls/jbang"
+    tar xf "$TDIR/urls/jbang.tar" -C "$TDIR/urls"
+    if [ $retval -ne 0 ]; then echo "Error installing JBang" 1>&2; exit $retval; fi
+    mkdir -p "$JBDIR/bin"
+    rm -f "$JBDIR/bin/jbang" "$JBDIR/bin"/jbang.*
+    cp -f "$TDIR/urls/jbang/bin"/* "$JBDIR/bin"
+  fi
+  eval "exec $JBDIR/bin/jbang $*"
+fi
+
+# Find/get a JDK
+unset JAVA_EXEC
+if [[ -n "$JAVA_HOME" ]]; then
+  # Determine if a (working) JDK is available in JAVA_HOME
+  if [ -x "$(command -v $JAVA_HOME/bin/javac)" ]; then
+    JAVA_EXEC="$JAVA_HOME/bin/java";
+  else
+    echo "JAVA_HOME is set but does not seem to point to a valid Java JDK" 1>&2
+  fi
+fi
+if [[ -z "$JAVA_EXEC" ]]; then
+  # Determine if a (working) JDK is available on the PATH
+  if [ -x "$(command -v javac)" ]; then
+    JAVA_EXEC="java";
+  elif [ -x "$JBDIR/currentjdk/bin/javac" ]; then
+    export JAVA_HOME="$JBDIR/currentjdk"
+    JAVA_EXEC="$JBDIR/currentjdk/bin/java";
+  else
+    export JAVA_HOME="$TDIR/jdks/$javaVersion"
+    JAVA_EXEC="$JAVA_HOME/bin/java"
+    # Check if we installed a JDK before
+    if [ ! -d "$TDIR/jdks/$javaVersion" ]; then
+      # If not, download and install it
+      mkdir -p "$TDIR/jdks"
+      echo "Downloading JDK $javaVersion. Be patient, this can take several minutes..." 1>&2
+      jdkurl="https://api.adoptopenjdk.net/v3/binary/latest/$javaVersion/ga/$os/$arch/jdk/hotspot/normal/adoptopenjdk"
+      download $jdkurl "$TDIR/bootstrap-jdk.tgz"
+      if [ $retval -ne 0 ]; then echo "Error downloading JDK" 1>&2; exit $retval; fi
+      echo "Installing JDK $javaVersion..." 1>&2
+      rm -rf "$TDIR/jdks/$javaVersion.tmp/"
+      mkdir -p "$TDIR/jdks/$javaVersion.tmp"
+      tar xf "$TDIR/bootstrap-jdk.tgz" -C "$TDIR/jdks/$javaVersion.tmp" --strip-components=1
+      retval=$?
+      if [[ $os == mac && $retval -eq 0 ]]; then
+        mv "$TDIR/jdks/$javaVersion.tmp/Contents/Home/"* "$TDIR/jdks/$javaVersion.tmp/"
+        retval=$?
+      fi
+      if [ $retval -ne 0 ]; then
+        # Check if the JDK was installed properly
+        javac -version > /dev/null 2>&1
+        retval=$?
+      fi
+      if [ $retval -ne 0 ]; then echo "Error installing JDK" 1>&2; exit $retval; fi
+      # Activate the downloaded JDK giving it its proper name
+      mv "$TDIR/jdks/$javaVersion.tmp" "$TDIR/jdks/$javaVersion"
+      # Set the current JDK
+      ${JAVA_EXEC} -classpath ${jarPath} dev.jbang.Main jdk default $javaVersion
+    fi
+  fi
+fi
+
+## https://stackoverflow.com/questions/1668649/how-to-keep-quotes-in-bash-arguments
+## attempt to ensure each argument keeps its original quoting
+
+## run it using command substitution to have just the user process once jbang is done
+output=$(CLICOLOR_FORCE=1 ${JAVA_EXEC} ${JBANG_JAVA_OPTIONS} -classpath ${jarPath} dev.jbang.Main "$@")
+err=$?
+if [ $err -eq 255 ]; then
+  eval "exec $output"
+elif [ ! -z "$output" ]; then
+  echo "$output"
+  exit $err
+else
+  exit $err
+fi

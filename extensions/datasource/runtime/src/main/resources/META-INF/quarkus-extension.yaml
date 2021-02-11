@@ -1,0 +1,9 @@
+---
+name: "Datasource configuration"
+metadata:
+  keywords:
+  - "datasource"
+  categories:
+  - "data"
+  status: "stable"
+  unlisted: true

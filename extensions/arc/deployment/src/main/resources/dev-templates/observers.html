@@ -1,0 +1,47 @@
+{#include main fluid=true}
+  {#title}Observers{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Source</th>
+      <th scope="col">Observed Type/Qualifiers</th>
+      <th scope="col">Priority</th>
+      <th scope="col">Reception</th>
+      <th scope="col">Transaction Phase</th>
+      <th scope="col">Async</th>
+    </tr>
+   </thead>
+   <tbody>
+    {#for observer in info:devBeanInfos.observers}
+    <tr>
+      <td>{count}.</td>
+      <td>
+       {#if observer.name != null}
+       <span title="{observer.name.name}">{observer.name.localName}</span>.{observer.methodName}()
+       {#else}
+       <span class="badge badge-secondary">Synthetic</span>
+       {/if}
+      </td>
+      <td>
+       <code>{observer.observedType}</code>
+      </td>
+      <td>
+       {observer.priority}
+      </td>
+      <td>
+       {observer.reception}
+      </td>
+      <td>
+       {observer.transactionPhase}
+      </td>
+      <td>
+       {observer.async}
+      </td>
+     </tr>
+    {/for}
+   </tbody>
+  </table>
+ {/body}
+{/include}

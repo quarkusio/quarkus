@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../build-parent/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-test-framework</artifactId>
+    <name>Quarkus - Test Framework</name>
+    <packaging>pom</packaging>
+
+    <properties>
+        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
+    </properties>
+
+    <modules>
+        <module>artemis</module>
+        <module>common</module>
+        <module>h2</module>
+        <module>derby</module>
+        <module>kubernetes-client</module>
+        <module>openshift-client</module>
+        <module>junit5-internal</module>
+        <module>junit5</module>
+        <module>junit5-mockito</module>
+        <module>amazon-lambda</module>
+        <module>arquillian</module>
+        <module>devmode-test-utils</module>
+        <module>maven</module>
+        <module>vault</module>
+        <module>ldap</module>
+        <module>security</module>
+        <module>jacoco</module>
+    </modules>
+
+</project>

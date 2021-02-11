@@ -1,0 +1,140 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using Security with .properties File
+
+include::./attributes.adoc[]
+
+Quarkus provides support for properties file based authentication that is intended for
+development and testing purposes. It is not recommended that this be used in production as at present only
+plaintext and MD5 hashed passwords are used, and properties files are generally too limited to use in production.
+
+Add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elytron-security-properties-file</artifactId>
+</dependency>
+----
+
+== Configuration
+
+The elytron-security-properties-file extension currently supports two different realms for the storage of authentication
+and authorization information. Both support storage of this information in properties files. The following sections
+detail the specific configuration properties.
+
+include::{generated-dir}/config/quarkus-elytron-security.adoc[opts=optional, leveloffset=+2]
+
+=== Properties Files Realm Configuration
+
+The properties files realm supports mapping of users to password and users to roles with a combination of properties files. They are configured with properties starting with `quarkus.security.users.file`.
+
+.example application.properties file section for property files realm
+[source,properties]
+----
+quarkus.security.users.file.enabled=true
+quarkus.security.users.file.users=test-users.properties
+quarkus.security.users.file.roles=test-roles.properties
+quarkus.security.users.file.realm-name=MyRealm
+quarkus.security.users.file.plain-text=true
+----
+
+==== Users.properties
+
+The `quarkus.security.users.file.users` configuration property specifies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<test-users-example>> illustrates the format:
+
+[#test-users-example]
+.example test-users.properties file
+[source,properties]
+----
+scott=jb0ss <1>
+jdoe=p4ssw0rd <2>
+stuart=test
+noadmin=n0Adm1n
+----
+<1> User `scott` has password defined as `jb0ss`
+<2> User `jdoe` has password defined as `p4ssw0rd`
+
+This file has the usernames and passwords stored in plain text, which is not recommended. If plain-text is set to false
+(or omitted) in the config then passwords must be stored in the form `MD5 ( username : realm : password )`. This can
+be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
+
+==== Roles.properties
+
+.example test-roles.properties file
+[source,properties]
+----
+scott=Admin,admin,Tester,user <1>
+jdoe=NoRolesUser <2>
+stuart=admin,user <3>
+noadmin=user
+----
+<1> User `scott` has been assigned the roles `Admin`, `admin`, `Tester` and `user`
+<2> User `jdoe` has been assigned the role `NoRolesUser`
+<3> User `stuart` has been assigned the roles `admin` and `user`.
+
+=== Embedded Realm Configuration
+
+The embedded realm also supports mapping of users to password and users to roles. It uses the main `application.properties` Quarkus configuration file to embed this information. They are configured with properties starting with `quarkus.security.users.embedded`.
+
+The following is an example application.properties file section illustrating the embedded realm configuration:
+
+.example application.properties file section for embedded realm
+[source,properties]
+----
+quarkus.security.users.embedded.enabled=true
+quarkus.security.users.embedded.plain-text=true
+quarkus.security.users.embedded.users.scott=jb0ss
+quarkus.security.users.embedded.users.stuart=test
+quarkus.security.users.embedded.users.jdoe=p4ssw0rd
+quarkus.security.users.embedded.users.noadmin=n0Adm1n
+quarkus.security.users.embedded.roles.scott=Admin,admin,Tester,user
+quarkus.security.users.embedded.roles.stuart=admin,user
+quarkus.security.users.embedded.roles.jdoe=NoRolesUser
+quarkus.security.users.embedded.roles.noadmin=user
+----
+
+As with the first example this file has the usernames and passwords stored in plain text, which is not recommended. If plain-text is set to false
+(or omitted) in the config then passwords must be stored in the form `MD5 ( username : realm : password )`. This can
+be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
+
+
+==== Embedded Users
+
+The user to password mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.users.<user>=<password>`. The following <<password-example>> illustrates the syntax with 4 user to password mappings:
+
+[#password-example]
+.Example Passwords
+[source,properties,linenums]
+----
+quarkus.security.users.embedded.users.scott=jb0ss # <1>
+quarkus.security.users.embedded.users.stuart=test # <2>
+quarkus.security.users.embedded.users.jdoe=p4ssw0rd
+quarkus.security.users.embedded.users.noadmin=n0Adm1n
+----
+<1> User `scott` has password `jb0ss`
+<2> User `stuart` has password `test`
+
+==== Embedded Roles
+
+The user to role mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<roles-example>> illustrates the syntax with 4 user to role mappings:
+
+[#roles-example]
+.Example Roles
+[source,properties,linenums]
+----
+quarkus.security.users.embedded.roles.scott=Admin,admin,Tester,user # <1>
+quarkus.security.users.embedded.roles.stuart=admin,user # <2>
+quarkus.security.users.embedded.roles.jdoe=NoRolesUser
+quarkus.security.users.embedded.roles.noadmin=user
+----
+<1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
+<2> User `stuart` has roles `admin` and `user`
+
+== References
+
+* link:security[Quarkus Security]

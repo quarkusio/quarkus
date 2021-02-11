@@ -1,0 +1,11 @@
+---
+name: "Undertow Servlet"
+metadata:
+  short-name: "servlet"
+  keywords:
+  - "undertow"
+  - "servlet"
+  categories:
+  - "web"
+  - "http"
+  status: "stable"

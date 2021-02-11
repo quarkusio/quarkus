@@ -1,0 +1,63 @@
+# kv engine default (v2)
+path "secret/data/foo" {
+  capabilities = ["read"]
+}
+
+# vault config source kv engine v2
+path "secret/data/config" {
+  capabilities = ["read"]
+}
+
+# vault config source kv engine v2 with multi paths
+path "secret/data/multi/*" {
+  capabilities = ["read"]
+}
+
+# kv engine v1
+path "secret-v1/foo" {
+  capabilities = ["read"]
+}
+
+# vault config source kv engine v1
+path "secret-v1/config" {
+  capabilities = ["read"]
+}
+
+# dynamic secrets
+path "database/creds/mydbrole" {
+  capabilities = [ "read" ]
+}
+
+# transit
+path "transit/*" {
+  capabilities = [ "create", "read", "update", "delete", "list" ]
+}
+#path "transit/encrypt/my-key" {
+#  capabilities = [ "read", "update" ]
+#}
+#path "transit/decrypt/my-key" {
+#  capabilities = [ "read", "update" ]
+#}
+#path "transit/sign/my-sign-key" {
+#  capabilities = [ "read", "update" ]
+#}
+
+path "secret/data/crud" {
+  capabilities = ["read", "create", "update", "delete"]
+}
+
+path "secret-v1/crud" {
+  capabilities = ["read", "create", "update", "delete"]
+}
+
+path "totp/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}
+
+path "sys/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}
+
+path "auth/kubernetes/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}

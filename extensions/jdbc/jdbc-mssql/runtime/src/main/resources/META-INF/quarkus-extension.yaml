@@ -1,0 +1,11 @@
+---
+name: "JDBC Driver - Microsoft SQL Server"
+metadata:
+  keywords:
+  - "jdbc-mssql"
+  - "jdbc"
+  - "mssql"
+  - "sql-server"
+  categories:
+  - "data"
+  status: "stable"

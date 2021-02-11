@@ -1,0 +1,10 @@
+---
+name: "OpenShift Client"
+metadata:
+  keywords:
+  - "openshift-client"
+  - "openshift"
+  guide: https://quarkus.io/guides/kubernetes-client
+  categories:
+  - "cloud"
+  status: "stable"

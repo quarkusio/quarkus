@@ -1,0 +1,106 @@
+= Quarkus
+
+include::./attributes.adoc[]
+
+include::quarkus-intro.adoc[tag=intro]
+
+== Getting Started
+
+* link:getting-started.html[Getting Started]
+* link:building-native-image.html[Building Native Executable]
+* link:deploying-to-kubernetes.html[Deploy Application on Kubernetes]
+* link:getting-started-knative.html[Deploy as Knative Application on Kubernetes]
+* link:tooling.html[Project Scaffolding and IDE]
+
+== Other guides
+
+* link:tooling.html[Use tooling with Quarkus]
+* link:config.html[Configuring Your Application]
+* link:logging.html[Configuring Logging]
+* link:centralized-log-management.html[Central log management]
+* link:lifecycle.html[Application Initialization and Termination]
+* link:rest-json.html[Writing JSON REST Services]
+* link:scheduler.html[Schedule Periodic Tasks]
+* link:quartz.html[Schedule Periodic Tasks with Quartz]
+* link:websockets.html[Using Websockets]
+* link:validation.html[Validation with Hibernate Validator]
+* link:transaction.html[Using Transactions]
+* link:software-transactional-memory.html[Using Software Transactional Memory]
+* link:hibernate-orm.html[Using Hibernate ORM]
+* link:hibernate-orm-panache.html[Simplified Hibernate ORM with Panache]
+* link:blaze-persistence.html[Using Blaze-Persistence]
+* link:rest-client.html[Using REST Client]
+* link:native-and-ssl.html[Native executables and SSL]
+* link:opentracing.html[Using OpenTracing]
+* link:security.html[Using Security]
+* link:security-jwt.html[Using JWT RBAC Security]
+* link:infinispan-client.html[Using Infinispan Client]
+* link:spring-di.html[Quarkus Extension for Spring DI API]
+* link:spring-web.html[Quarkus Extension for Spring Web API]
+* link:spring-data-jpa.html[Quarkus Extension for Spring Data API]
+* link:kotlin.html[Using Kotlin]
+* link:microprofile-health.html[Using MicroProfile Health]
+* link:microprofile-fault-tolerance.html[Using Fault Tolerance]
+* link:context-propagation.html[Context Propagation]
+* link:http-reference.html[HTTP Reference]
+* link:writing-extensions.html[Write Your Own Extension] _(advanced)_
+* link:writing-native-applications-tips.html[Tips for writing native applications] _(advanced)_
+* link:performance-measure.html[Measuring Performance] _(advanced)_
+* link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
+* link:security-openid-connect.html[Using OpenID Connect Adapter to Protect JAX-RS Applications]
+* link:security-openid-connect-web-authentication.html[Protecting Web Applications Using OpenID Connect]
+* link:security-openid-connect-multitenancy.html[Supporting Multi-Tenancy in OpenID Connect Applications]
+* link:security-keycloak-authorization.html[Keycloak Authorization]
+* link:kogito.html[Using Kogito (business automation with processes and rules)]
+* link:optaplanner.html[Using AI to optimize a schedule with OptaPlanner]
+* link:security-oauth2.html[Using OAuth2 RBAC]
+* link:tika.html[Using Apache Tika]
+* link:mongodb.html[Using MongoDB]
+* link:mongodb-panache.html[Simplified MongoDB with Panache]
+* link:jms.html[Using Artemis JMS Client]
+* link:reactive-routes.html[Using Reactive Routes]
+* link:camel.html[Apache Camel]
+* link:command-mode-reference.html[Command Mode Applications]
+* link:grpc.html[Using gRPC]
+* link:picocli.html[Command Mode with Picocli]
+* link:redis.html[Connecting to Redis]
+* link:reactive-messaging-http.html[]
+
+* link:faq.html[FAQs]
+
+== Recommended tooling
+
+_Mandatory:_
+
+* https://adoptopenjdk.net/[Java - OpenJDK 1.8+]
+* https://maven.apache.org/install.html[Maven 3.5+]
+
+_Recommended:_
+
+* https://docs.docker.com/install/[Docker]
+* http://www.graalvm.org/docs/getting-started/[GraalVM {graalvm-version}]
+
+
+== Feedback, looking for help?
+
+You can contact the project team using:
+
+* the https://groups.google.com/forum/#!forum/quarkus-dev[quarkus-dev Google Groups]
+* chat using https://quarkus.zulipchat.com[Zulip]
+
+Your help is more than welcome! Don't hesitate to join the crowd.
+
+== Contributing
+
+Check the https://github.com/quarkus-project/quarkus/blob/master/CONTRIBUTING.md[Contribution Guide] for details on reporting issues and the process for submitting pull requests.
+
+Every contribution is valuable.
+It can be a bug report, an example application, a feature request, a fix in the documentation or just feedback.
+
+== Versioning
+
+We are in an incubation phase, so we don't have a 1.0.0 release yet.
+
+== License
+
+This project is licensed under the Apache Software License 2.0 - see the https://github.com/quarkus-project/quarkus/blob/master/LICENSE.txt[License file] for details.

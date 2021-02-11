@@ -1,0 +1,32 @@
+.quarkus-logo {
+    margin-right: 15px;
+}
+
+.main-container {
+    margin-top: 1em;
+}
+
+.cards-index {
+    padding-top: 1em;
+}
+
+.navbar-brand img {
+    border-right: 1px solid darkgrey;
+    padding-right: 10px;
+    margin-right: 5px;
+}
+
+.navbar-text {
+    font-size: 0.9em;
+}
+
+.breadcrumb {
+    border-radius: 0px;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 0 6px 0px rgba(0, 0, 0, 0.2);
+}
+
+h1 {
+    margin-bottom: 0.75em;
+}

@@ -1,0 +1,9 @@
+---
+name: "Apache Kafka Client"
+metadata:
+  keywords:
+  - "kafka"
+  guide: "https://quarkus.io/guides/kafka"
+  categories:
+  - "messaging"
+  status: "stable"

@@ -1,0 +1,451 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using OAuth2 RBAC
+
+include::./attributes.adoc[]
+:extension-name: Elytron Security OAuth2
+:extension-status: preview
+
+This guide explains how your Quarkus application can utilize OAuth2 tokens to provide secured access to the JAX-RS endpoints.
+
+OAuth2 is an authorization framework that enables applications to obtain access to an HTTP resource on behalf of a user. 
+It can be used to implement an application authentication mechanism based on tokens by delegating to an external server (the authentication server) the user authentication and providing a token for the authentication context.
+
+This extension provides a light-weight support for using the opaque Bearer Tokens and validating them by calling an introspection endpoint.
+
+If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either link:security-openid-connect[OpenId Connect] or link:security-jwt[MicroProfile JWT RBAC] extensions instead.
+OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide for more information.
+
+include::./status-include.adoc[]
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: git clone https://github.com/quarkusio/quarkus-quickstarts.git, or download an archive.
+
+The solution is located in the `security-oauth2-quickstart` {quickstarts-tree-url}/security-oauth2-quickstart[directory].
+It contains a very simple UI to use the JAX-RS resources created here, too.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=security-oauth2-quickstart \
+    -DclassName="org.acme.security.oauth2.TokenSecuredResource" \
+    -Dpath="/secured" \
+    -Dextensions="resteasy,resteasy-jackson,security-oauth2"
+cd security-oauth2-quickstart
+----
+
+This command generates the Maven project with a REST endpoint and imports the `elytron-security-oauth2` extension, which includes the OAuth2 opaque token support.
+
+If you don't want to use the Maven plugin, you can just include the dependency in your pom.xml:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elytron-security-oauth2</artifactId>
+</dependency>
+----
+
+
+=== Examine the JAX-RS resource
+
+Open the `src/main/java/org/acme/security/oauth2/TokenSecuredResource.java` file and see the following content:
+
+[source,java]
+----
+package org.acme.security.oauth2;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/secured")
+public class TokenSecuredResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+This is a basic REST endpoint that does not have any of the {extension-name} specific features, so let's add some.
+
+We will use the JSR 250 common security annotations, they are described in the link:security[Using Security] guide. 
+
+[source,java]
+----
+package org.acme.security.oauth2;
+
+import java.security.Principal;
+
+import javax.annotation.security.PermitAll;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.SecurityContext;
+
+@Path("/secured")
+@ApplicationScoped
+public class TokenSecuredResource {
+
+
+    @GET()
+    @Path("permit-all")
+    @PermitAll // <1>
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello(@Context SecurityContext ctx) { // <2>
+        Principal caller =  ctx.getUserPrincipal(); <3>
+        String name = caller == null ? "anonymous" : caller.getName();
+        String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme());
+        return helloReply; // <4>
+    }
+}
+----
+<1> `@PermitAll` indicates that the given endpoint is accessible by any caller, authenticated or not.
+<2> Here we inject the JAX-RS `SecurityContext` to inspect the security state of the call.
+<3> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the user name by checking `caller` against null.
+<4> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`.
+
+
+=== Setting up application.properties
+
+You need to configure your application with the following minimal properties:
+
+[source, properties]
+----
+quarkus.oauth2.client-id=client_id
+quarkus.oauth2.client-secret=secret
+quarkus.oauth2.introspection-url=http://oauth-server/introspect
+----
+
+You need to specify the introspection URL of your authentication server and the `client-id` / `client-secret` that your application will use to authenticate itself to the authentication server. +
+The extension will then use this information to validate the token and recover the information associate with it.
+
+For all configuration properties, see the link:#config-reference[Configuration reference] section at the end of this guide.
+
+== Run the application
+
+Now we are ready to run our application. Use:
+
+[source,bash]
+----
+./mvnw quarkus:dev
+----
+
+Now that the REST endpoint is running, we can access it using a command line tool like curl:
+
+[source,shell]
+----
+$ curl http://127.0.0.1:8080/secured/permit-all; echo
+hello + anonymous, isSecure: false, authScheme: null
+----
+
+We have not provided any token in our request, so we would not expect that there is any security state seen by the endpoint, and the response is consistent with that:
+
+* user name is anonymous
+* `isSecure` is false as https is not used
+* `authScheme` is null
+
+=== Securing the endpoint
+
+So now let's actually secure something. Take a look at the new endpoint method `helloRolesAllowed` in the following:
+
+[source,java]
+----
+package org.acme.security.oauth2;
+
+import java.security.Principal;
+
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.SecurityContext;
+
+@Path("/secured")
+@ApplicationScoped
+public class TokenSecuredResource {
+
+    @GET()
+    @Path("permit-all")
+    @PermitAll
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello(@Context SecurityContext ctx) {
+        Principal caller =  ctx.getUserPrincipal();
+        String name = caller == null ? "anonymous" : caller.getName();
+        String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme());
+        return helloReply;
+    }
+
+    @GET()
+    @Path("roles-allowed") // <1>
+    @RolesAllowed({"Echoer", "Subscriber"}) // <2>
+    @Produces(MediaType.TEXT_PLAIN)
+    public String helloRolesAllowed(@Context SecurityContext ctx) {
+        Principal caller =  ctx.getUserPrincipal();
+        String name = caller == null ? "anonymous" : caller.getName();
+        String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme());
+        return helloReply;
+    }
+}
+----
+<1> This new endpoint will be located at `/secured/roles-allowed`
+<2> `@RolesAllowed` indicates that the given endpoint is accessible by a caller if they have either a "Echoer" or "Subscriber" role assigned.
+
+After you make this addition to your `TokenSecuredResource`, try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint. Your output should be:
+
+[source,shell]
+----
+$ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* Connected to 127.0.0.1 (127.0.0.1) port 8080 (#0)
+> GET /secured/roles-allowed HTTP/1.1
+> Host: 127.0.0.1:8080
+> User-Agent: curl/7.54.0
+> Accept: */*
+>
+< HTTP/1.1 401 Unauthorized
+< Connection: keep-alive
+< Content-Type: text/html;charset=UTF-8
+< Content-Length: 14
+< Date: Sun, 03 Mar 2019 16:32:34 GMT
+<
+* Connection #0 to host 127.0.0.1 left intact
+Not authorized
+----
+
+Excellent, we have not provided any OAuth2 token in the request, so we should not be able to access the endpoint, and we were not. Instead we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid OAuth2 token to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate the token, and 2) generating a matching token with the appropriate claims.
+
+=== Generating a token
+
+You need to obtain the token from a standard OAuth2 authentication server (https://www.keycloak.org/[Keycloak] for example) using the token endpoint.
+
+You can find below a curl example of such call for a `client_credential` flow:
+
+[source,bash]
+----
+curl -X POST "http://oauth-server/token?grant_type=client_credentials" \
+-H  "Accept: application/json" -H  "Authorization: Basic Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ="
+----
+
+It should respond something like that...
+
+[source,json]
+----
+{"access_token":"60acf56d-9daf-49ba-b3be-7a423d9c7288","token_type":"bearer","expires_in":1799,"scope":"READER"}
+----
+
+
+=== Finally, make a secured request to /secured/roles-allowed
+Now let's use this to make a secured request to the `/secured/roles-allowed` endpoint
+
+[source,shell]
+----
+$ curl -H "Authorization: Bearer 60acf56d-9daf-49ba-b3be-7a423d9c7288" http://127.0.0.1:8080/secured/roles-allowed; echo
+hello + client_id isSecure: false, authScheme: OAuth2
+----
+
+Success! We now have:
+
+* a non-anonymous caller name of client_id
+* an authentication scheme of OAuth2
+
+== Roles mapping
+
+Roles are mapped from one of the claims of the introspection endpoint response. By default, it's the `scope` claim. Roles are obtained by splitting the claim with a space separator. If the claim is an array, no splitting is done, the roles are obtained from the array.
+
+You can customize the name of the claim to use for the roles with the `quarkus.oauth2.role-claim` property.
+
+== Package and run the application
+
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file:
+
+[source,shell,subs=attributes+]
+----
+$ ./mvnw clean package
+[INFO] Scanning for projects...
+...
+$ java -jar target/quarkus-app/quarkus-run.jar
+2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, security-oauth2]
+----
+
+You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+[source,shell]
+----
+$ ./mvnw clean package -Pnative
+[INFO] Scanning for projects...
+...
+[security-oauth2-quickstart-runner:25602]     universe:     493.17 ms
+[security-oauth2-quickstart-runner:25602]      (parse):     660.41 ms
+[security-oauth2-quickstart-runner:25602]     (inline):   1,431.10 ms
+[security-oauth2-quickstart-runner:25602]    (compile):   7,301.78 ms
+[security-oauth2-quickstart-runner:25602]      compile:  10,542.16 ms
+[security-oauth2-quickstart-runner:25602]        image:   2,797.62 ms
+[security-oauth2-quickstart-runner:25602]        write:     988.24 ms
+[security-oauth2-quickstart-runner:25602]      [total]:  43,778.16 ms
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  51.500 s
+[INFO] Finished at: 2019-06-28T14:30:56-07:00
+[INFO] ------------------------------------------------------------------------
+
+$ ./target/security-oauth2-quickstart-runner
+2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 0.006s. Listening on: http://[::]:8080
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, security-oauth2]
+----
+
+[[integration-testing]]
+== Integration testing
+
+If you don't want to use a real OAuth2 authorization server for your integration tests, you can use the
+link:security-properties[Properties based security] extension for your test, or mock an authorization server using Wiremock.
+
+First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.github.tomakehurst</groupId>
+    <artifactId>wiremock-jre8</artifactId>
+    <scope>test</scope>
+    <version>${wiremock.version}</version> // <1>
+</dependency>
+----
+
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
+
+In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
+annotation to specify a `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which can start the service and supply configuration
+values that Quarkus will use.
+
+[NOTE]
+====
+For more details about `@QuarkusTestResource` refer to  link:getting-started-testing#quarkus-test-resource[this part of the documentation].
+====
+
+Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `MockAuthorizationServerTestResource` like so:
+
+[source,java]
+----
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+import java.util.Collections;
+import java.util.Map;
+
+public class MockAuthorizationServerTestResource implements QuarkusTestResourceLifecycleManager {  // <1>
+
+    private WireMockServer wireMockServer;
+
+    @Override
+    public Map<String, String> start() {
+        wireMockServer = new WireMockServer();
+        wireMockServer.start(); // <2>
+
+        // define the mock for the introspect endpoint
+        WireMock.stubFor(WireMock.post("/introspect").willReturn(WireMock.aResponse() // <3>
+                .withBody(
+                        "{\"active\":true,\"scope\":\"Echoer\",\"username\":null,\"iat\":1562315654,\"exp\":1562317454,\"expires_in\":1458,\"client_id\":\"my_client_id\"}")));
+
+
+        return Collections.singletonMap("quarkus.oauth2.introspection-url", wireMockServer.baseUrl() + "/introspect"); // <4>
+    }
+
+    @Override
+    public void stop() {
+        if (null != wireMockServer) {
+            wireMockServer.stop();  // <5>
+        }
+    }
+}
+----
+
+<1> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
+<2> Launch Wiremock.
+<3> Configure Wiremock to stub the calls to `/introspect` by returning an OAuth2 introspect response. You need to customize this line to return what's needed for your application (at least the scope property as roles are derived from the scope).
+<4> As the `start` method returns configuration that applies for tests, we set the `quarkus.oauth2.introspection-url` property that controls the URL of the introspect endpoint used by the OAuth2 extension.
+<5> When all tests have finished, shutdown Wiremock.
+
+
+Your test class needs to be annotated like with `@QuarkusTestResource(MockAuthorizationServerTestResource.class)` to use this `QuarkusTestResourceLifecycleManager`.
+
+Below is an example of a test that uses the `MockAuthorizationServerTestResource`.
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(MockAuthorizationServerTestResource.class) // <1>
+class TokenSecuredResourceTest {
+    // use whatever token you want as the mock OAuth server will accept all tokens
+    private static final String BEARER_TOKEN = "337aab0f-b547-489b-9dbd-a54dc7bdf20d"; // <2>
+
+    @Test
+    void testPermitAll() {
+        RestAssured.given()
+                .when()
+                .header("Authorization", "Bearer: " + BEARER_TOKEN) // <3>
+                .get("/secured/permit-all")
+                .then()
+                .statusCode(200)
+                .body(containsString("hello"));
+    }
+
+    @Test
+    void testRolesAllowed() {
+        RestAssured.given()
+                .when()
+                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .get("/secured/roles-allowed")
+                .then()
+                .statusCode(200)
+                .body(containsString("hello"));
+    }
+}
+----
+
+<1> Use the previously created `MockAuthorizationServerTestResource` as a Quarkus test resource.
+<2> Define whatever token you want, it will not be validated by the OAuth2 mock authorization server.
+<3> Use this token inside the `Authorization` header to trigger OAuth2 authentication.
+
+
+[WARNING]
+====
+`@QuarkusTestResource` applies to all tests, not just `TokenSecuredResourceTest`.
+====
+
+
+== References
+
+* https://tools.ietf.org/html/rfc6749[OAuth2]
+* link:security[Quarkus Security]
+
+[[config-reference]]
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-elytron-security-oauth2.adoc[opts=optional, leveloffset=+1]

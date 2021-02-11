@@ -1,0 +1,49 @@
+= How to Create Quarkus Documentation
+include::./attributes.adoc[]
+
+This guide describes the asciidoc format and conventions that Quarkus has adopted.
+
+== References
+
+The following links provide background on the general conventions and Asciidoc syntax.
+
+* https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Documentation]
+* http://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual]
+* http://asciidoctor.org/docs/asciidoc-syntax-quick-reference/[AsciiDoc Syntax Quick Reference]
+
+== Variables for Use in Documents
+
+The following variables externalize key information that can change over time, and so references
+to such information should be done by using the variable inside of {} curly brackets. The
+complete list of externalized variables for use is given in the following table:
+
+.Variables
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Value|Description
+|\{quarkus-version}|{quarkus-version}|The current version of the project.
+|\{quarkus-home-url}|{quarkus-home-url}| The location of the project home page.
+|\{quarkus-site-getting-started}|{quarkus-site-getting-started}| The location of the getting started page.
+
+|\{quarkus-org-url}|{quarkus-org-url}| The location of the project github organization.
+|\{quarkus-base-url}|{quarkus-base-url}| Quarkus GitHub URL common base prefix.
+|\{quarkus-clone-url}|{quarkus-clone-url}| Quarkus URL for git clone referenced by the documentation.
+|\{quarkus-archive-url}|{quarkus-archive-url}| Quarkus URL to master source archive.
+|\{quarkus-blob-url}|{quarkus-blob-url}| Quarkus URL to master blob source tree; used for referencing source files.
+|\{quarkus-tree-url}|{quarkus-tree-url}| Quarkus URL to master source tree root; used for referencing directories.
+|\{quarkus-issues-url}|{quarkus-issues-url}| Quarkus URL to the issues page.
+|\{quarkus-images-url}|{quarkus-images-url}| Quarkus URL to set of container images delivered for Quarkus.
+
+|\{quarkus-chat-url}|{quarkus-chat-url} | URL of our chat.
+|\{quarkus-mailing-list-subscription-email}|{quarkus-mailing-list-subscription-email} | Email used to subscribe to our mailing list.
+|\{quarkus-mailing-list-index}|{quarkus-mailing-list-index} | Mailing list index page.
+
+|\{quickstarts-base-url}|{quickstarts-base-url}| Quickstarts URL common base prefix.
+|\{quickstarts-clone-url}|{quickstarts-clone-url}| Quickstarts URL for git clone referenced by the documentation.
+|\{quickstarts-archive-url}|{quickstarts-archive-url}| Quickstarts URL to master source archive.
+|\{quickstarts-blob-url}|{quickstarts-blob-url}| Quickstarts URL to master blob source tree; used for referencing source files.
+|\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to master source tree root; used for referencing directories.
+
+|\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
+|\{graalvm-flavor}|{graalvm-flavor}| The full flavor of GraaVM to use e.g. `19.3.1-java11`. Make sure to use a `java11` version.
+|===

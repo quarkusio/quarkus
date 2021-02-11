@@ -1,0 +1,162 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Security Architecture and Guides
+
+include::./attributes.adoc[]
+
+Quarkus Security provides the architecture, multiple authentication and authorization mechanisms, and other tools for the developers to build a production-quality security for their Quarkus applications.
+
+This document provides a brief overview of Quarkus Security and links to the individual guides.
+
+== Architecture
+
+`HttpAuthenticationMechanism` is the main entry into Quarkus HTTP Security.
+   
+Quarkus Security Manager uses `HttpAuthenticationMechanism` to extract the authentication credentials from the HTTP request and delegates to `IdentityProvider` to
+complete the conversion of these credentials to `SecurityIdentity`.
+
+For example, the credentials may be coming with the HTTP `Authorization` header, client HTTPS certificates or cookies.
+
+`IdentityProvider` verifies the authentication credentials and maps them to `SecurityIdentity` which contains the username, roles, the original authentication credentials, and other attributes.
+
+For every authenticated resource, you can inject a `SecurityIdentity` instance to get the authenticated identity information.
+
+In some other contexts you may have other parallel representations of the same information (or parts of it) such as `SecurityContext`
+for JAX-RS or `JsonWebToken` for JWT.
+
+== Authentication mechanisms
+
+Quarkus supports several sources to load authentication information from.
+
+=== Basic and Form Authentication Mechanisms
+
+Basic and Form HTTP-based authentication mechanisms are the core authentication mechanisms supported in Quarkus.
+Please see link:security-built-in-authentication#basic-auth[Basic HTTP Authentication] and link:security-built-in-authentication#form-auth[Form HTTP Authentication] for more information.
+
+=== Mutual TLS Authentication
+
+Quarkus provides Mutual TLS authentication so that you can authenticate users based on their X.509 certificates.
+
+Please see link:security-built-in-authentication#mutual-tls[Mutual TLS Authentication] for more information.
+
+=== OpenId Connect
+
+`quarkus-oidc` extension provides a reactive, interoperable, multi-tenant enabled OpenId Connect adapter which supports `Bearer Token` and `Authorization Code Flow` authentication mechanisms.
+
+`Bearer Token` mechanism extracts the token from HTTP `Authorization` header. 
+`Authorization Code Flow` mechanism uses OpenId Connect Authorization Code flow. It redirects the user to IDP to authenticate and completes the authentication process after the user has been redirected back to Quarkus by exchanging the provided code grant for ID, access and refresh tokens.
+
+ID and access `JWT` tokens are verified with the refreshable `JWK` key set but both JWT and opaque (binary) tokens can be introspected remotely. 
+
+See the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism.
+
+See the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Application] guide for more information about `Authorization Code Flow` authentication mechanism.
+
+[NOTE]
+====
+Both `quarkus-oidc` `Bearer` and `Authorization Code Flow` Authentication mechanisms use  <<smallrye-jwt, SmallRye JWT>> to represent JWT tokens as Microprofile JWT `org.eclipse.microprofile.jwt.JsonWebToken`. 
+====
+
+See link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] for more information about multiple tenants which can support `Bearer` or `Authorization Code Flow` authentication mechanism and configured statically or dynamically.
+
+[NOTE]
+====
+If you would like to have Quarkus OIDC extension enabled at runtime then set `quarkus.oidc.tenant-enabled=false` at build time and re-enable it at runtime using a system property.
+See also link:security-openid-connect-multitenancy#disable-tenant[Disabling Tenant Configurations] for more information about managing the individual tenant configurations in the multi-tenant OIDC deployments.
+====
+
+If you use Keycloak and Bearer tokens then also see the link:security-keycloak-authorization[Using Keycloak to Centralize Authorization] guide.  
+
+[NOTE]
+====
+If you need to configure Keycloak programmatically then consider using https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API] with the help of the `quarkus-keycloak-admin-client` extension.
+====
+
+=== OpenId Connect Client and Filters
+
+`quarkus-oidc-client` extension provides `OidcClient` for acquiring and refreshing access tokens from OpenId Connect and OAuth2 providers which support `client-credentials`, `password` and `refresh_token` token grants.
+
+`quarkus-oidc-client-filter` extension depends on the `quarkus-oidc-client` extension and provides JAX-RS `OidcClientRequestFilter` which sets the access token acquired by `OidcClient` as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint but it is not related to the authentication requirements of this service endpoint. For example, it can be a public endpoint or it can be protected with MTLS - the important point is that this Quarkus endpoint does not have to be protected itself with the Quarkus OpenId Connect adapter.
+
+`quarkus-oidc-token-propagation` extension depends on the `quarkus-oidc` extension and provides JAX-RS `TokenCredentialRequestFilter` which sets the OpenId Connect Bearer or Authorization Code Flow access token as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint and the Quarkus endpoint must be protected itself with the Quarkus OpenId Connect adapter. This filter can be used to propagate the access token to the downstream services.
+
+See the link:security-openid-connect-client[Using OpenID Connect and OAuth2 Client] guide for more information.
+
+[[smallrye-jwt]]
+=== SmallRye JWT
+
+`quarkus-smallrye-jwt` provides Microprofile JWT 1.1.1 implementation and many more options to verify signed and encrypted `JWT` tokens and represent them as `org.eclipse.microprofile.jwt.JsonWebToken`.
+
+It provides an alternative to `quarkus-oidc` Bearer Token Authentication Mechanism. It can currently verify only `JWT` tokens using the PEM keys or refreshable `JWK` key set.
+
+Additionally it provides `JWT Generation API` for creating `signed`, `inner-signed` and/or `encrypted` `JWT` tokens with ease.
+
+See the link:security-jwt[Using SmallRye JWT] guide for more information.
+
+=== OAuth2
+
+`quarkus-elytron-security-oauth2` provides an alternative to `quarkus-oidc` Bearer Token Authentication Mechanism. It is based on `Elytron` and is primarily meant for introspecting the opaque tokens remotely.
+
+See the link:security-oauth2[Using OAuth2] guide for more information.
+
+=== LDAP
+
+Please see the link:security-ldap[Authenticate with LDAP] guide for more information about LDAP authentication mechanism.
+
+[[identity-providers]]
+== Identity Providers
+
+`IdentityProvider` converts the authentication credentials provided by `HttpAuthenticationMechanism` to `SecurityIdentity`.
+
+Some extensions such as `OIDC`, `OAuth2`, `SmallRye JWT`, `LDAP` have the inlined `IdentityProvider` implementations which are specific to the supported authentication flow.
+For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token to `SecurityIdentity`. 
+
+If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a user name and password to `SecurityIdentity`.
+
+See link:security-jpa[JPA IdentityProvider] and link:security-jdbc[JDBC IdentityProvider] for more information.
+You can also use link:security-testing#configuring-user-information[User Properties IdentityProvider] for testing.
+
+== Combining Authentication Mechanisms
+
+One can combine multiple authentication mechanisms if they get the authentication credentials from the different sources.
+For example, combining built-in `Basic` and `quarkus-oidc` `Bearer` authentication mechanisms is allowed, but combining `quarkus-oidc` `Bearer` and `smallrye-jwt` authentication mechanisms is not allowed because both will attempt to verify the token extracted from the HTTP `Authorization Bearer` scheme.
+
+== Proactive Authentication
+
+By default, Quarkus does what we call proactive authentication. This means that if an incoming request has a
+credential then that request will always be authenticated (even if the target page does not require authentication).
+
+See link:security-built-in-authentication#proactive-authentication[Proactive Authentication] for more information.
+
+== Authorization
+
+See link:security-authorization[Security Authorization] for more information about Role Based Access Control and other authorization options.
+
+== Customization and other useful tips
+
+Quarkus Security is highly customizable. One can register custom ``HttpAuthenticationMechanism``s, ``IdentityProvider``s and ``SecurityidentityAugmentor``s.
+
+See link:security-customization[Security Customization] for more information about customizing Quarkus Security and other useful tips about the reactive security, registering the security providers, etc.
+
+== Secure connections with SSL
+
+See the link:http-reference#ssl[Supporting secure connections with SSL] guide for more information.
+
+== Cross-Origin Resource Sharing
+
+If you plan to make your Quarkus application accessible to another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more information.
+
+== SameSite cookies
+
+Please see link:vertx#same-site-cookie[SameSite cookies] for information about adding a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
+
+== Testing
+
+See link:security-testing[Security Testing] for more information about testing Quarkus Security.
+
+== Secret Engines
+=== Vault
+Quarkus provides a very comprehensive HashiCorp Vault support, please see the link:vault[Quarkus and HashiCorp Vault] documentation for more information.

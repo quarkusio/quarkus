@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-kotlin-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quarkus-kotlin</artifactId>
+    <name>Quarkus - Kotlin - Runtime</name>
+    <description>Write your services in Kotlin</description>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk8</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk7</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-reflect</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib</parentFirstArtifact>
+                        <parentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-common</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                    <runnerParentFirstArtifacts>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk8</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-jdk7</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-reflect</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jetbrains.kotlin:kotlin-stdlib-common</runnerParentFirstArtifact>
+                    </runnerParentFirstArtifacts>
+                    <lesserPriorityArtifacts>
+                        <!--
+                        see https://github.com/quarkusio/quarkus/issues/8405
+                        -->
+                        <lesserPriorityArtifact>org.jetbrains.kotlin:kotlin-compiler</lesserPriorityArtifact>
+                    </lesserPriorityArtifacts>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
+        </dependency>
+    </dependencies>
+</project>

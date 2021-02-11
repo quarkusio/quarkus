@@ -1,0 +1,25 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Funqy HTTP Binding with Azure Functions
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+You can use link:funqy-http[Funqy HTTP] on Azure Functions.  This allows you to invoke on multiple Funqy functions
+using HTTP deployed as one Azure Function.
+
+WARNING: The Funqy HTTP + Azure Functions binding is not a replacement for REST over HTTP.  Because Funqy
+needs to be portable cross a lot of different protocols and function providers its HTTP binding
+is very minimalistic and you will lose REST features like linking and the ability to leverage
+HTTP features like cache-control and conditional GETs.  You may want to consider using Quarkus's
+JAX-RS, Spring MVC, or Vert.x Web Reactive Route link:azure-functions-http[support] instead.  They also work with Quarkus and Azure Functions.
+
+
+include::./status-include.adoc[]
+
+Follow the link:azure-functions-http[Azure Functions Http Guide].  It walks through using a variety of HTTP
+frameworks on Azure Functions.  Including Funqy.
+

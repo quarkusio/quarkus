@@ -1,0 +1,241 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using WebSockets
+
+include::./attributes.adoc[]
+
+This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
+Because it's the _canonical_ web socket application, we are going to create a simple chat application.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+
+
+
+== Architecture
+
+In this guide, we create a straightforward chat application using web sockets to receive and send messages to the other connected users.
+
+image:websocket-guide-architecture.png[alt=Architecture]
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can skip right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `websockets-quickstart` {quickstarts-tree-url}/websockets-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=websockets-quickstart \
+    -Dextensions="websockets" \
+    -DnoExamples
+cd websockets-quickstart
+----
+
+This command generates the Maven project (without any classes) and import the `websockets` extension.
+
+If you already have your Quarkus project configured, you can add the `websockets` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="websockets"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-websockets</artifactId>
+</dependency>
+----
+
+== Handling web sockets
+
+Our application contains a single class that handles the web sockets.
+Create the `org.acme.websockets.ChatSocket` class in the `src/main/java` directory.
+Copy the following content into the created file:
+
+[source,java]
+----
+package org.acme.websockets;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.server.PathParam;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.Session;
+
+@ServerEndpoint("/chat/{username}")         // <1>
+@ApplicationScoped
+public class ChatSocket {
+
+    Map<String, Session> sessions = new ConcurrentHashMap<>(); // <2>
+
+    @OnOpen
+    public void onOpen(Session session, @PathParam("username") String username) {
+        sessions.put(username, session);
+        broadcast("User " + username + " joined");
+    }
+
+    @OnClose
+    public void onClose(Session session, @PathParam("username") String username) {
+        sessions.remove(username);
+        broadcast("User " + username + " left");
+    }
+
+    @OnError
+    public void onError(Session session, @PathParam("username") String username, Throwable throwable) {
+        sessions.remove(username);
+        broadcast("User " + username + " left on error: " + throwable);
+    }
+
+    @OnMessage
+    public void onMessage(String message, @PathParam("username") String username) {
+        broadcast(">> " + username + ": " + message);
+    }
+
+    private void broadcast(String message) {
+        sessions.values().forEach(s -> {
+            s.getAsyncRemote().sendObject(message, result ->  {
+                if (result.getException() != null) {
+                    System.out.println("Unable to send message: " + result.getException());
+                }
+            });
+        });
+    }
+
+}
+----
+1. Configures the web socket URL
+2. Stores the currently opened web sockets
+
+== A slick web frontend
+
+All chat applications need a _nice_ UI, well, this one may not be that nice, but does the work.
+Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
+Create the `src/main/resources/META-INF/resources` directory and copy this {quickstarts-blob-url}/websockets-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+
+== Run the application
+
+Now, let's see our application in action. Run it with:
+
+[source,bash]
+----
+./mvnw compile quarkus:dev
+----
+
+Then open your 2 browser windows to http://localhost:8080/:
+
+1. Enter a name in the top text area (use 2 different names).
+2. Click on connect
+3. Send and receive messages
+
+image:websocket-guide-screenshot.png[alt=Application]
+
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
+You can also build the native executable using `./mvnw package -Pnative`.
+
+You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].
+
+== WebSocket Clients
+
+Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection.
+
+When you connect to the server you can either pass in the Class of the annotated client endpoint you want to use, or an instance of `javax.websocket.Endpoint`. If you
+are using the annotated endpoint then you can use the exact same annotations as you can on the server, except it must be annotated with `@ClientEndpoint` instead of
+`@ServerEndpoint`.
+
+The example below shows the client being used to test the chat endpoint above.
+
+[source,java]
+----
+package org.acme.websockets;
+
+import java.net.URI;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ContainerProvider;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class ChatTest {
+
+    private static final LinkedBlockingDeque<String> MESSAGES = new LinkedBlockingDeque<>();
+
+    @TestHTTPResource("/chat/stu")
+    URI uri;
+
+    @Test
+    public void testWebsocketChat() throws Exception {
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(Client.class, uri)) {
+            Assertions.assertEquals("CONNECT", MESSAGES.poll(10, TimeUnit.SECONDS));
+            Assertions.assertEquals("User stu joined", MESSAGES.poll(10, TimeUnit.SECONDS));
+            session.getAsyncRemote().sendText("hello world");
+            Assertions.assertEquals(">> stu: hello world", MESSAGES.poll(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @ClientEndpoint
+    public static class Client {
+
+        @OnOpen
+        public void open(Session session) {
+            MESSAGES.add("CONNECT");
+            // Send a message to indicate that we are ready,
+            // as the message handler may not be registered immediately after this callback.
+            session.getAsyncRemote().sendText("_ready_");
+        }
+
+        @OnMessage
+        void message(String msg) {
+            MESSAGES.add(msg);
+        }
+
+    }
+
+}
+----
+
+
+== More WebSocket Information
+
+The Quarkus WebSocket implementation is an implementation of link:https://eclipse-ee4j.github.io/websocket-api/[Jakarta Websockets].
+
+

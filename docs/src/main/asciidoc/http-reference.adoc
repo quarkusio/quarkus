@@ -1,0 +1,286 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - HTTP Reference
+
+include::./attributes.adoc[]
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:toc:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+
+This document explains various HTTP features that you can use in Quarkus.
+
+HTTP is provided using Eclipse Vert.x as the base HTTP layer. Servlet's are supported using a modified version of Undertow that
+runs on top of Vert.x, and RESTEasy is used to provide JAX-RS support. If Undertow is present RESTEasy will run as a
+Servlet filter, otherwise it will run directly on top of Vert.x with no Servlet involvement.
+
+== Serving Static Resources
+
+To serve static resources you must place them in the `META-INF/resources` directory of your application. This location
+was chosen as it is the standard location for resources in `jar` files as defined by the Servlet spec. Even though
+Quarkus can be used without Servlet following this convention allows existing code that places its resources in this
+location to function correctly.
+
+=== WebJar Locator Support
+
+If you are using webjars, like the following JQuery one
+[source, xml]
+----
+<dependency>
+    <groupId>org.webjars</groupId>
+    <artifactId>jquery</artifactId>
+    <version>3.1.1</version>
+</dependency>
+----
+and rather write `/webjars/jquery/jquery.min.js` instead of `/webjars/jquery/3.1.1/jquery.min.js`
+in your HTML files, you can add the `quarkus-webjars-locator` extension to your project.
+To use it, add the following to your project's dependencies:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-webjars-locator</artifactId>
+</dependency>
+----
+
+== Configuring the Context path
+
+By default Quarkus will serve content from under the root context. If you want to change this you can use the
+`quarkus.http.root-path` config key to set the context path.
+
+If you are using Servlet you can control the Servlet context path via `quarkus.servlet.context-path`. This item is relative
+to the http root above, and will only affect Servlet and things that run on top of Servlet. Most applications will
+want to use the HTTP root as this affects everything that Quarkus serves.
+
+If both are specified then all non-Servlet web endpoints will be relative to `quarkus.http.root-path`, while Servlet's
+will be served relative to `{quarkus.http.root-path}/{quarkus.servlet.context-path}`.
+
+If REST Assured is used for testing and `quarkus.http.root-path` is set then Quarkus will automatically configure the
+base URL for use in Quarkus tests, so test URL's should not include the root path.
+
+[[ssl]]
+== Supporting secure connections with SSL
+
+In order to have Quarkus support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
+
+In both cases, a password must be provided. See the designated paragraph for a detailed description of how to provide it.
+
+[TIP]
+====
+To enable SSL support with native executables, please refer to our link:native-and-ssl[Using SSL With Native Executables guide].
+====
+
+=== Providing a certificate and key file
+
+If the certificate has not been loaded into a keystore, it can be provided directly using the properties listed below.
+Quarkus will first try to load the given files as resources, and uses the filesystem as a fallback.
+The certificate / key pair will be loaded into a newly created keystore on startup.
+
+Your `application.properties` would then look like this:
+
+[source,properties]
+----
+quarkus.http.ssl.certificate.file=/path/to/certificate
+quarkus.http.ssl.certificate.key-file=/path/to/key
+----
+
+=== Providing a keystore
+
+An alternate solution is to directly provide a keystore which already contains a default entry with a certificate
+ You will need to at least provide the file and a password.
+
+As with the certificate/key file combination, Quarkus will first try to resolve the given path as a resource, before attempting to read it from the filesystem.
+
+Add the following property to your `application.properties`:
+
+[source,bash]
+----
+quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
+----
+
+As an optional hint, the type of keystore can be provided as one of the options listed.
+If the type is not provided, Quarkus will try to deduce it from the file extensions, defaulting to type JKS.
+
+[source,properties]
+----
+quarkus.http.ssl.certificate.key-store-file-type=[one of JKS, JCEKS, P12, PKCS12, PFX]
+----
+
+=== Setting the password
+
+In both aforementioned scenarios, a password needs to be provided to create/load the keystore with.
+The password can be set in your `application.properties` (in plain-text) using the following property:
+
+[source, properties]
+----
+quarkus.http.ssl.certificate.key-store-password=your-password
+----
+
+However, instead of providing the password as plain-text in the configuration file (which is considered bad practice), it can instead be supplied (using link:https://microprofile.io/project/eclipse/microprofile-config[MicroProfile config])
+as the environment variable `QUARKUS_HTTP_SSL_CERTIFICATE_KEY_STORE_PASSWORD`.
+This will also work in tandem with link:https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables[Kubernetes secrets].
+
+_Note: in order to remain compatible with earlier versions of Quarkus (before 0.16) the default password is set to "password". It is therefore not a mandatory parameter!_
+
+=== Disable the HTTP port
+
+It is possible to disable the HTTP port and only support secure requests. This is done via the
+`quarkus.http.insecure-requests` property in `application.properties`. There are three possible
+values:
+
+`enabled`:: The default, HTTP works as normal
+`redirect`:: HTTP requests will be redirected to the HTTPS port
+`disabled`:: The HTTP port will not be opened.
+
+NOTE: if you use `redirect` or `disabled` and have not added a SSL certificate or keystore, your server will not start!
+
+== HTTP/2 Support
+
+HTTP/2 is enabled by default, and will be used by browsers if SSL is in use on JDK11 or higher. JDK8 does not support
+ALPN so cannot be used to run HTTP/2 over SSL. Even if SSL is not in use HTTP/2 via cleartext upgrade is supported,
+and may be used by non-browser clients.
+
+If you want to disable HTTP/2 you can set:
+
+[source, properties]
+----
+quarkus.http.http2=false
+----
+
+== Listening on a Random Port
+
+If you don't want to specify a port you can set `quarkus.http.port=0` or `quarkus.http.test-port=0`. A random open port
+will be picked by the OS, and a log message printed in the console. When the port is bound the `quarkus.http.port` system
+property will be set to the actual port that was selected, so you can use this to get the actual port number from inside
+the application. If you are in a test you can inject the URL normally and this will be configured with the actual port,
+and REST Assured will also be configured appropriately.
+
+WARNING: As this sets a system property you can access `quarkus.http.port` via MicroProfile Config, however if you use
+injection the injected value may not always be correct. This port allocation is one of the last things to happen in
+Quarkus startup, so if your object that is being injected is created eagerly before the port has opened the injected
+value will not be correct.
+
+== CORS filter
+
+link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
+allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
+was served.
+
+Quarkus comes with a CORS filter which implements the `javax.servlet.Filter` interface and intercepts all incoming HTTP
+requests. It can be enabled in the Quarkus configuration file, `src/main/resources/application.properties`:
+
+[source, properties]
+----
+quarkus.http.cors=true
+----
+
+If the filter is enabled and an HTTP request is identified as cross-origin, the CORS policy and headers defined using the
+following properties will be applied before passing the request on to its actual target (servlet, JAX-RS resource, etc.):
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not set or set to '*'.
+|quarkus.http.cors.methods|*|The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
+not set or set to '*'.
+|quarkus.http.cors.headers|*|The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
+not set or set to '*'.
+|quarkus.http.cors.exposed-headers|*|The comma-separated list of HTTP headers exposed in CORS. The filter allows any headers to be exposed if this is
+not set or set to '*'.
+|quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
+This value will be returned in a `Access-Control-Max-Age` response header.
+|quarkus.http.cors.access-control-allow-credentials||Boolean value to tell the browsers to expose the response to front-end JavaScript code
+when the request’s credentials mode Request.credentials is “include”
+|===
+
+
+include::duration-format-note.adoc[]
+
+Here's what a full CORS filter configuration could look like:
+
+[source, properties]
+----
+quarkus.http.cors=true
+quarkus.http.cors.origins=http://foo.com,http://www.bar.io
+quarkus.http.cors.methods=GET,PUT,POST
+quarkus.http.cors.headers=X-Custom
+quarkus.http.cors.exposed-headers=Content-Disposition
+quarkus.http.cors.access-control-max-age=24H
+quarkus.http.cors.access-control-allow-credentials=true
+----
+
+== HTTP Limits Configuration
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-server-limits-config.adoc[leveloffset=+1, opts=optional]
+
+== Configuring HTTP Access Logs
+
+You can add HTTP request logging by configuring it in `application.properties`. There are two options for logging,
+either logging to the standard JBoss logging output, or logging to a dedicated file.
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-config.adoc[opts=optional, leveloffset=+1]
+
+[frame="topbot",options="header"]
+|===
+|Attribute                                                                    |Short Form|Long Form
+|Remote IP address                                                            | `%a`     | `%{REMOTE_IP}`
+|Local IP address                                                             | `%A`     | `%{LOCAL_IP}`
+|Bytes sent, excluding HTTP headers, or '-' if no bytes were sent             | `%b`     |
+|Bytes sent, excluding HTTP headers                                           | `%B`     | `%{BYTES_SENT}`
+|Remote host name                                                             | `%h`     | `%{REMOTE_HOST}`
+|Request protocol                                                             | `%H`     | `%{PROTOCOL}`
+|Request method                                                               | `%m`     | `%{METHOD}`
+|Local port                                                                   | `%p`     | `%{LOCAL_PORT}`
+|Query string (prepended with a '?' if it exists, otherwise an empty string)  | `%q`     | `%{QUERY_STRING}`
+|First line of the request                                                    | `%r`     | `%{REQUEST_LINE}`
+|HTTP status code of the response                                             | `%s`     | `%{RESPONSE_CODE}`
+|Date and time, in Common Log Format format                                   | `%t`     | `%{DATE_TIME}`
+|Remote user that was authenticated                                           | `%u`     | `%{REMOTE_USER}`
+|Requested URL path                                                           | `%U`     | `%{REQUEST_URL}`
+|Request relative path                                                        | `%R`     | `%{RELATIVE_PATH}`
+|Local server name                                                            | `%v`     | `%{LOCAL_SERVER_NAME}`
+|Time taken to process the request, in millis                                 | `%D`     | `%{RESPONSE_TIME}`
+|Time taken to process the request, in seconds                                | `%T`     |
+|Time taken to process the request, in micros                                 |          | `%{RESPONSE_TIME_MICROS}`
+|Time taken to process the request, in nanos                                  |          | `%{RESPONSE_TIME_NANOS}`
+|Current request thread name                                                  | `%I`     | `%{THREAD_NAME}`
+|SSL cypher                                                                   |          | `%{SSL_CIPHER}`
+|SSL client certificate                                                       |          | `%{SSL_CLIENT_CERT}`
+|SSL session id                                                               |          | `%{SSL_SESSION_ID}`
+|All request headers                                                          |          | `%{ALL_REQUEST_HEADERS}`
+|Cookie value                                                                 |          | `%{c,cookie_name}`
+|Query parameter                                                              |          | `%{q,query_param_name}`
+|Request header                                                               |          | `%{i,request_header_name}`
+|Response header                                                              |          | `%{o,response_header_name}`
+|===
+
+== Servlet Config
+
+To use Servlet you need to explicitly include `quarkus-undertow`:
+
+[source, xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-undertow</artifactId>
+</dependency>
+----
+
+=== undertow-handlers.conf
+
+You can make use of the Undertow predicate language using an `undertow-handlers.conf` file. This file should be placed
+in the `META-INF` directory of your application jar. This file contains handlers defined using the
+link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
+
+=== web.xml
+
+If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.

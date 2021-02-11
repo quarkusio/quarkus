@@ -1,0 +1,9 @@
+---
+name: "Jackson"
+metadata:
+  keywords:
+  - "jackson"
+  - "json"
+  categories:
+  - "serialization"
+  status: "stable"

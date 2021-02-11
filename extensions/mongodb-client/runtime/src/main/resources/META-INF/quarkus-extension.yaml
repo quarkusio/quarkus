@@ -1,0 +1,12 @@
+---
+name: "MongoDB client"
+metadata:
+  keywords:
+  - "mongo"
+  - "mongodb"
+  - "nosql"
+  - "datastore"
+  guide: "https://quarkus.io/guides/mongodb"
+  categories:
+  - "data"
+  status: "stable"

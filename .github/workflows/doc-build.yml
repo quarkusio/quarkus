@@ -1,0 +1,52 @@
+name: Quarkus Documentation CI
+
+on:
+  push:
+    paths:
+      - 'docs/src/main/asciidoc/**'
+      - '.github/workflows/doc-build.yml'
+  pull_request:
+    paths:
+      - 'docs/src/main/asciidoc/**'
+      - '.github/workflows/doc-build.yml'
+
+
+jobs:
+  ci-sanity-check:
+    name: "CI Sanity Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build
+        run: sleep 30
+  build-doc:
+    name: "Documentation Build"
+    runs-on: ubuntu-latest
+    # Skip master in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 11
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          # refresh cache every month to avoid unlimited growth
+          key: q2maven-doc-${{ steps.get-date.outputs.date }}
+      - name: Build
+        run: |
+          mvn -Dquickly-ci -B --settings .github/mvn-settings.xml install
+      - name: Build Docs
+        run: |
+          mvn -e -B --settings .github/mvn-settings.xml clean org.asciidoctor:asciidoctor-maven-plugin:process-asciidoc -pl docs -Ddocumentation-pdf

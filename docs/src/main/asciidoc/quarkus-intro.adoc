@@ -1,0 +1,79 @@
+= What is Quarkus
+
+include::./attributes.adoc[]
+:toc: macro
+:toclevels: 4
+:doctype: book
+:icons: font
+:docinfo1:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+// tag::intro[]
+
+[quote]
+--
+Quarkus is a Cloud Native, Container First framework for writing Java applications.
+--
+
+Container First::
+Minimal footprint Java applications optimized for running in containers
+Cloud Native::
+Embraces 12 factor architecture in environments like Kubernetes
+Unify imperative and reactive::
+Brings under one programming model non blocking and imperative styles of development
+Standards-based::
+Based on the standards and the libraries you love and use (RESTEasy, Hibernate, Netty, Eclipse Vert.x, Apache Camel...)
+Microservice First::
+Brings lightning fast startup time to Java applications
+Extreme productivity::
+Instant hot code replacement: don't allow build, deploy, boot delays disrupt your flow
+Developer Joy::
+Development-centric experience without compromises to bring your amazing applications to life in no time
+
+All under one framework.
+
+// end::intro[]
+
+== Scratch pad
+
+
+Quarkus believes in developer Joy.
+
+
+It unifies imperative and reactive.
+It is a Microservice first toolkit.
+
+Standards based
+Quarkus brings all the standards and frameworks you love and use: RESTEasy, Hibernate, Netty, vert.x, Camel...)
+
+Imperative and Reactive
+
+* ahead-of-time native binary (executable binary)
+* Cloud Native
+* Java
+* modular
+* Substrate VM native
+
+Seamlessly build container optimal
+
+Container affinity
+
+Container optimal
+
+* low memory
+* low startup time
+* ahead of time optimal
+
+Unifying Imperative and Reactive under one framework.
+
+Usability
+* easy to use
+* productive environment
+* hot reload
+
+Standards based
+
+

@@ -1,0 +1,653 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using the MongoDB Client
+include::./attributes.adoc[]
+
+MongoDB is a well known NoSQL Database that is widely used.
+
+In this guide, we see how you can get your REST services to use the MongoDB database.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* MongoDB installed or Docker installed
+
+== Architecture
+
+The application built in this guide is quite simple: the user can add elements in a list using a form and the list is updated.
+
+All the information between the browser and the server is formatted as JSON.
+
+The elements are stored in MongoDB.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `mongodb-quickstart` {quickstarts-tree-url}/mongodb-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,bash,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=mongodb-quickstart \
+    -DclassName="org.acme.mongodb.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy,resteasy-jackson,mongodb-client,resteasy-mutiny,context-propagation"
+cd mongodb-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson, Mutiny, Context Propagation and MongoDB Client extensions.
+After this, the quarkus-mongodb-client extension has been added to your `pom.xml`.
+
+If you already have your Quarkus project configured, you can add the `mongodb-client` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="mongodb-client"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mongodb-client</artifactId>
+</dependency>
+----
+
+== Creating your first JSON REST service
+
+In this example, we will create an application to manage a list of fruits.
+
+First, let's create the `Fruit` bean as follows:
+
+[source,java]
+----
+package org.acme.mongodb;
+
+import java.util.Objects;
+
+public class Fruit {
+
+    private String name;
+    private String description;
+    private String id;
+
+    public Fruit() {
+    }
+
+    public Fruit(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Fruit)) {
+            return false;
+        }
+
+        Fruit other = (Fruit) obj;
+
+        return Objects.equals(other.name, this.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.name);
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getId() {
+        return id;
+    }
+}
+----
+
+Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
+
+Now create a `org.acme.mongodb.FruitService` that will be the business layer of our application and store/load the fruits from the mongoDB database.
+
+[source,java]
+----
+package org.acme.mongodb;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import org.bson.Document;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+
+@ApplicationScoped
+public class FruitService {
+
+    @Inject MongoClient mongoClient;
+
+    public List<Fruit> list(){
+        List<Fruit> list = new ArrayList<>();
+        MongoCursor<Document> cursor = getCollection().find().iterator();
+
+        try {
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                Fruit fruit = new Fruit();
+                fruit.setName(document.getString("name"));
+                fruit.setDescription(document.getString("description"));
+                list.add(fruit);
+            }
+        } finally {
+            cursor.close();
+        }
+        return list;
+    }
+
+    public void add(Fruit fruit){
+        Document document = new Document()
+                .append("name", fruit.getName())
+                .append("description", fruit.getDescription());
+        getCollection().insertOne(document);
+    }
+
+    private MongoCollection getCollection(){
+        return mongoClient.getDatabase("fruit").getCollection("fruit");
+    }
+}
+----
+
+Now, edit the `org.acme.mongodb.FruitResource` class as follows:
+
+[source,java]
+----
+@Path("/fruits")
+public class FruitResource {
+
+    @Inject FruitService fruitService;
+
+    @GET
+    public List<Fruit> list() {
+        return fruitService.list();
+    }
+
+    @POST
+    public List<Fruit> add(Fruit fruit) {
+        fruitService.add(fruit);
+        return list();
+    }
+}
+----
+
+The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations and use the `FruitService` to list/add new fruits.
+
+== Configuring the MongoDB database
+The main property to configure is the URL to access to MongoDB, almost all configuration can be included in the connection URI so we advise you to do so, you can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
+
+A sample configuration should look like this:
+
+[source,properties]
+----
+# configure the mongoDB client for a replica set of two nodes
+quarkus.mongodb.connection-string = mongodb://mongo1:27017,mongo2:27017
+----
+
+In this example, we are using a single instance running on localhost:
+
+[source,properties]
+----
+# configure the mongoDB client for a single instance on localhost
+quarkus.mongodb.connection-string = mongodb://localhost:27017
+----
+
+If you need more configuration properties, there is a full list at the end of this guide.
+
+== Multiple MongoDB Clients
+
+MongoDB allows you to configure multiple clients.
+Using several clients works the same way as having a single client.
+
+[source,properties]
+----
+quarkus.mongodb.connection-string = mongodb://login:pass@mongo1:27017/database
+
+quarkus.mongodb.users.connection-string = mongodb://mongo2:27017/userdb
+quarkus.mongodb.inventory.connection-string = mongodb://mongo3:27017/invdb,mongo4:27017/invdb
+----
+
+Notice there's an extra bit in the key (the `users` and `inventory` segments).
+The syntax is as follows: `quarkus.mongodb.[optional name.][mongo connection property]`.
+If the name is omitted, it configures the default client.
+
+[NOTE]
+====
+The use of multiple MongoDB clients enables multi-tenancy for MongoDB by allowing to connect to multiple MongoDB clusters. +
+If you want to connect to multiple databases inside the same cluster,
+multiple clients are **not** necessary as a single client is able to access all databases in the same cluster
+(like a JDBC connection is able to access to multiple schemas inside the same database).
+====
+
+=== Named Mongo client Injection
+
+When using multiple clients, each `MongoClient`, you can select the client to inject using the `io.quarkus.mongodb.MongoClientName` qualifier.
+Using the above properties to configure three different clients, you can also inject each one as follows:
+
+[source,java,indent=0]
+----
+@Inject
+MongoClient defaultMongoClient;
+
+@Inject
+@MongoClientName("users")
+MongoClient mongoClient1;
+
+@Inject
+@MongoClientName("inventory")
+ReactiveMongoClient mongoClient2;
+----
+
+[NOTE]
+====
+The old `io.quarkus.mongodb.runtime.MongoClientName` has been deprecated. It still works, but will soon be removed, therefore users are encouraged to not use it.
+====
+
+== Running a MongoDB Database
+As by default, `MongoClient` is configured to access a local MongoDB database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!
+
+If you want to use Docker to run a MongoDB database, you can use the following command to launch one:
+[source,bash]
+----
+docker run -ti --rm -p 27017:27017 mongo:4.0
+----
+
+== Creating a frontend
+
+Now let's add a simple web page to interact with our `FruitResource`.
+Quarkus automatically serves static resources located under the `META-INF/resources` directory.
+In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this {quickstarts-blob-url}/mongodb-quickstart/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
+
+You can now interact with your REST service:
+
+ * start Quarkus with `./mvnw compile quarkus:dev`
+ * open a browser to `http://localhost:8080/fruits.html`
+ * add new fruits to the list via the form
+
+[[reactive]]
+== Reactive MongoDB Client
+A reactive MongoDB Client is included in Quarkus.
+Using it is as easy as using the classic MongoDB Client.
+You can rewrite the previous example to use it like the following.
+
+[NOTE]
+.Deprecation
+====
+The `io.quarkus.mongodb.ReactiveMongoClient` client is deprecated and will be removed in the future.
+It is recommended to switch to the `io.quarkus.mongodb.reactive.ReactiveMongoClient` client providing the `Mutiny` API.
+====
+
+[TIP]
+.Mutiny
+====
+The MongoDB reactive client uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+====
+
+[source,java]
+----
+package org.acme.mongodb;
+
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
+import io.smallrye.mutiny.Uni;
+import org.bson.Document;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import java.util.List;
+
+@ApplicationScoped
+public class ReactiveFruitService {
+
+    @Inject
+    ReactiveMongoClient mongoClient;
+
+    public Uni<List<Fruit>> list() {
+        return getCollection().find()
+                .map(doc -> {
+                    Fruit fruit = new Fruit();
+                    fruit.setName(doc.getString("name"));
+                    fruit.setDescription(doc.getString("description"));
+                    return fruit;
+                }).collectItems().asList();
+    }
+
+    public Uni<Void> add(Fruit fruit) {
+        Document document = new Document()
+                .append("name", fruit.getName())
+                .append("description", fruit.getDescription());
+        return getCollection().insertOne(document)
+                .onItem().ignore().andContinueWithNull();
+    }
+
+    private ReactiveMongoCollection<Document> getCollection() {
+        return mongoClient.getDatabase("fruit").getCollection("fruit");
+    }
+}
+----
+
+
+[source,java]
+----
+package org.acme.mongodb;
+
+import io.smallrye.mutiny.Uni;
+
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.core.MediaType;
+
+@Path("/reactive_fruits")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class ReactiveFruitResource {
+
+    @Inject
+    ReactiveFruitService fruitService;
+
+    @GET
+    public Uni<List<Fruit>> list() {
+        return fruitService.list();
+    }
+
+    @POST
+    public Uni<List<Fruit>> add(Fruit fruit) {
+        return fruitService.add(fruit)
+                .onItem().ignore().andSwitchTo(this::list);
+    }
+}
+----
+
+== Simplifying MongoDB Client usage using BSON codec
+
+By using a Bson `Codec`, the MongoDB Client will take care of the transformation of your domain object to/from a MongoDB `Document` automatically.
+
+First you need to create a Bson `Codec` that will tell Bson how to transform your entity to/from a MongoDB `Document`.
+Here we use a `CollectibleCodec` as our object is retrievable from the database (it has a MongoDB identifier), if not we would have used a `Codec` instead.
+More information in the codec documentation: https://mongodb.github.io/mongo-java-driver/3.10/bson/codecs.
+
+[source,java]
+----
+package org.acme.mongodb.codec;
+
+import com.mongodb.MongoClientSettings;
+import org.acme.mongodb.Fruit;
+import org.bson.Document;
+import org.bson.BsonWriter;
+import org.bson.BsonValue;
+import org.bson.BsonReader;
+import org.bson.BsonString;
+import org.bson.codecs.Codec;
+import org.bson.codecs.CollectibleCodec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.EncoderContext;
+
+import java.util.UUID;
+
+public class FruitCodec implements CollectibleCodec<Fruit> {
+
+    private final Codec<Document> documentCodec;
+
+    public FruitCodec() {
+        this.documentCodec = MongoClientSettings.getDefaultCodecRegistry().get(Document.class);
+    }
+
+    @Override
+    public void encode(BsonWriter writer, Fruit fruit, EncoderContext encoderContext) {
+        Document doc = new Document();
+        doc.put("name", fruit.getName());
+        doc.put("description", fruit.getDescription());
+        documentCodec.encode(writer, doc, encoderContext);
+    }
+
+    @Override
+    public Class<Fruit> getEncoderClass() {
+        return Fruit.class;
+    }
+
+    @Override
+    public Fruit generateIdIfAbsentFromDocument(Fruit document) {
+        if (!documentHasId(document)) {
+            document.setId(UUID.randomUUID().toString());
+        }
+        return document;
+    }
+
+    @Override
+    public boolean documentHasId(Fruit document) {
+        return document.getId() != null;
+    }
+
+    @Override
+    public BsonValue getDocumentId(Fruit document) {
+        return new BsonString(document.getId());
+    }
+
+    @Override
+    public Fruit decode(BsonReader reader, DecoderContext decoderContext) {
+        Document document = documentCodec.decode(reader, decoderContext);
+        Fruit fruit = new Fruit();
+        if (document.getString("id") != null) {
+            fruit.setId(document.getString("id"));
+        }
+        fruit.setName(document.getString("name"));
+        fruit.setDescription(document.getString("description"));
+        return fruit;
+    }
+}
+----
+
+
+Then you need to create a `CodecProvider` to link this `Codec` to the `Fruit` class.
+
+[source,java]
+----
+package org.acme.mongodb.codec;
+
+import org.acme.mongodb.Fruit;
+import org.bson.codecs.Codec;
+import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.configuration.CodecRegistry;
+
+public class FruitCodecProvider implements CodecProvider {
+    @Override
+    public <T> Codec<T> get(Class<T> clazz, CodecRegistry registry) {
+        if (clazz == Fruit.class) {
+            return (Codec<T>) new FruitCodec();
+        }
+        return null;
+    }
+
+}
+----
+
+Quarkus takes care of registering the `CodecProvider` for you.
+
+Finally, when getting the `MongoCollection` from the database you can use directly the `Fruit` class instead of the `Document` one, the codec will automatically map the `Document` to/from your `Fruit` class.
+
+Here is an example of using a `MongoCollection` with the `FruitCodec`.
+
+[source,java]
+----
+package org.acme.mongodb;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+
+@ApplicationScoped
+public class CodecFruitService {
+
+    @Inject MongoClient mongoClient;
+
+    public List<Fruit> list(){
+        List<Fruit> list = new ArrayList<>();
+        MongoCursor<Fruit> cursor = getCollection().find().iterator();
+
+        try {
+            while (cursor.hasNext()) {
+                list.add(cursor.next());
+            }
+        } finally {
+            cursor.close();
+        }
+        return list;
+    }
+
+    public void add(Fruit fruit){
+        getCollection().insertOne(fruit);
+    }
+
+    private MongoCollection<Fruit> getCollection(){
+        return mongoClient.getDatabase("fruit").getCollection("fruit", Fruit.class);
+    }
+}
+----
+
+== The POJO Codec
+
+The link:http://mongodb.github.io/mongo-java-driver/3.12/bson/pojos[POJO Codec] provides a set of annotations that enable the customization of
+the way a POJO is mapped to a MongoDB collection and this codec is initialized automatically by Quarkus
+
+One of these annotations is the `@BsonDiscriminator` annotation that allows to storage multiple Java types in a single MongoDB collection by adding
+a discriminator field inside the document. It can be useful when working with abstract types or interfaces.
+
+Quarkus will automatically register all the classes annotated with `@BsonDiscriminator` with the POJO codec.
+
+The POJO Codec have enhanced generic support via `PropertyCodecProvider`,
+Quarkus will automatically register any `PropertyCodecProvider` with the POJO Codec.
+When building native executables and using generic types, you might need to register the type arguments for reflection.
+
+== Simplifying MongoDB with Panache
+
+The link:mongodb-panache[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+
+== Connection Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb-client` will automatically add a readiness health check
+to validate the connection to the cluster.
+
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` property to `false` in your `application.properties`.
+
+== Metrics
+
+If you are using the `quarkus-micrometer` or `quarkus-smallrye-metrics` extension, `quarkus-mongodb-client` can provide metrics about the connection pools.
+This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enabled` property to `true` in your `application.properties`.
+
+So when you access the `/q/metrics` endpoint of your application you will have information about the connection pool status.
+When using link:microprofile-metrics[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
+
+
+== The legacy client
+
+We don't include the legacy MongoDB client by default. It contains the now retired MongoDB Java API (DB, DBCollection,... )
+and the `com.mongodb.MongoClient` that is now superseded by `com.mongodb.client.MongoClient`.
+
+If you want to use the legacy API, you need to add the following dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.mongodb</groupId>
+    <artifactId>mongodb-driver-legacy</artifactId>
+</dependency>
+----
+
+== Building a native executable
+
+You can use the MongoDB client in a native executable.
+
+If you want to use SSL/TLS encryption, you need to add these properties in your `application.properties`:
+
+[source,properties]
+----
+quarkus.mongodb.tls=true
+quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
+----
+
+You can then build a native executable with the usual command `./mvnw package -Pnative`.
+
+Running it is as simple as executing `./target/mongodb-quickstart-1.0.0-SNAPSHOT-runner`.
+
+You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
+
+[WARNING]
+====
+Currently, Quarkus doesn't support the `mongodb+srv` protocol in native mode.
+
+link:https://docs.mongodb.com/manual/core/security-client-side-encryption/[Client-Side Field Level Encryption] is also not supported in native mode.
+====
+
+[TIP]
+====
+If you encounter the following error when running your application in native mode: +
+`Failed to encode 'MyObject'. Encoding 'myVariable' errored with: Can't find a codec for class org.acme.MyVariable.` +
+This means that the `org.acme.MyVariable` class is not known to GraalVM, the remedy is to add the `@RegisterForReflection` annotation to your `MyVariable class`.
+====
+
+== Conclusion
+
+Accessing a MongoDB database from a MongoDB Client is easy with Quarkus as it provides configuration and native support for it.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-mongodb.adoc[opts=optional, leveloffset=+1]

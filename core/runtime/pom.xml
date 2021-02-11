@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-core-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quarkus-core</artifactId>
+    <name>Quarkus - Core - Runtime</name>
+    <description>Quarkus core components</description>
+
+    <dependencies>
+        <dependency>
+          <groupId>jakarta.annotation</groupId>
+          <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-ide-launcher</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.config</groupId>
+            <artifactId>smallrye-config</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.enterprise</groupId>
+                    <artifactId>cdi-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager-embedded</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging-annotations</artifactId>
+         </dependency>
+        <dependency>
+            <groupId>org.jboss.threads</groupId>
+            <artifactId>jboss-threads</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.slf4j</groupId>
+            <artifactId>slf4j-jboss-logmanager</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.common</groupId>
+            <artifactId>wildfly-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-runner</artifactId>
+        </dependency>
+
+        <!--
+          This is required to ensure that the extension processor is built.
+          If we move the extension processor to a separate project, this can be removed.
+        -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-extension-processor</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
+                        <parentFirstArtifact>io.smallrye.common:smallrye-common-io</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.common:wildfly-common</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:graal-sdk</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.nativeimage:svm</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-app-model</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-maven-resolver</parentFirstArtifact>
+                        <parentFirstArtifact>org.slf4j:slf4j-api</parentFirstArtifact>
+                        <parentFirstArtifact>org.jboss.slf4j:slf4j-jboss-logmanager</parentFirstArtifact>
+                        <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
+                        <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
+                        <parentFirstArtifact>org.codehaus.plexus:plexus-utils</parentFirstArtifact>
+                        <parentFirstArtifact>xml-apis:xml-apis</parentFirstArtifact>
+                        <!--
+                        This is a temporary fix, we need a better way to be able to
+                        add these exclusions outside the quarkus-extension.properties file.
+                        -->
+                        <parentFirstArtifact>org.opentest4j:opentest4j</parentFirstArtifact>
+                        <parentFirstArtifact>org.mockito:mockito-core</parentFirstArtifact>
+                        <parentFirstArtifact>org.objenesis:objenesis</parentFirstArtifact>
+                        <parentFirstArtifact>net.bytebuddy:byte-buddy</parentFirstArtifact>
+                        <parentFirstArtifact>net.bytebuddy:byte-buddy-agent</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.jupiter:junit-jupiter-api</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.jupiter:junit-jupiter-engine</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.jupiter:junit-jupiter-params</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
+                        <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                    <runnerParentFirstArtifacts>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>
+                        <!-- logging dependencies always need to be loaded by the JDK ClassLoader -->
+                        <runnerParentFirstArtifact>org.jboss.logging:jboss-logging</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</runnerParentFirstArtifact>
+                        <!-- This is needed as it's a dependency of the JBoss Logging so it too needs to be loaded by the JDK ClassLoader -->
+                        <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
+                        <!-- This is needed because it contains some jar handling classes -->
+                        <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
+                    </runnerParentFirstArtifacts>
+                    <excludedArtifacts>
+                        <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>
+                        <excludedArtifact>javax.enterprise:cdi-api</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec</excludedArtifact>
+                        <excludedArtifact>javax.inject:javax.inject</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec</excludedArtifact>
+                        <excludedArtifact>org.glassfish:javax.el</excludedArtifact>
+                        <excludedArtifact>javax.annotation:javax.annotation-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

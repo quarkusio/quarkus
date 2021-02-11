@@ -1,0 +1,10 @@
+---
+name: "JDBC Driver - H2"
+metadata:
+  keywords:
+  - "jdbc-h2"
+  - "jdbc"
+  - "h2"
+  categories:
+  - "data"
+  status: "stable"

@@ -1,0 +1,14 @@
+---
+name: "SmallRye Health"
+metadata:
+  short-name: "health"
+  keywords:
+  - "smallrye-health"
+  - "health-check"
+  - "health"
+  - "microprofile-health"
+  - "microprofile-health-check"
+  guide: "https://quarkus.io/guides/microprofile-health"
+  categories:
+  - "cloud"
+  status: "stable"

@@ -1,0 +1,433 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Introduction to Contexts and Dependency Injection
+
+include::./attributes.adoc[]
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:toc:
+
+In this guide we're going to describe the basic principles of the Quarkus programming model that is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+
+== OK. Let's start simple. What is a bean?
+
+Well, a bean is a _container-managed_ object that supports a set of basic services, such as injection of dependencies, lifecycle callbacks and interceptors.
+
+== Wait a minute. What does "container-managed" mean?
+
+Simply put, you don't control the lifecycle of the object instance directly.
+Instead, you can affect the lifecycle through declarative means, such as annotations, configuration, etc.
+The container is the _environment_ where your application runs.
+It creates and destroys the instances of beans, associates the instances with a designated context, and injects them into other beans.
+
+== What is it good for?
+
+An application developer can focus on the business logic rather than finding out "where and how" to obtain a fully initialized component with all of its dependencies.
+
+NOTE: You've probably heard of the _inversion of control_ (IoC) programming principle. Dependency injection is one of the implementation techniques of IoC. 
+
+== What does a bean look like?
+
+There are several kinds of beans.
+The most common ones are class-based beans:
+
+.Simple Bean Example
+[source,java]
+----
+import javax.inject.Inject;
+import javax.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+
+@ApplicationScoped <1>
+public class Translator {
+
+    @Inject
+    Dictionary dictionary; <2>
+    
+    @Counted  <3>
+    String translate(String sentence) { 
+      // ...
+    }
+}
+----
+<1> This is a scope annotation. It tells the container which context to associate the bean instance with. In this particular case, a *single bean instance* is created for the application and used by all other beans that inject `Translator`.
+<2> This is a field injection point. It tells the container that `Translator` depends on the `Dictionary` bean. If there is no matching bean the build fails.
+<3> This is an interceptor binding annotation. In this case, the annotation comes from the MicroProfile Metrics. The relevant interceptor intercepts the invocation and updates the relevant metrics. We will talk about <<interceptors,interceptors>> later.
+
+[[typesafe_resolution]]
+== Nice. How does the dependency resolution work? I see no names or identifiers.
+
+That's a good question.
+In CDI the process of matching a bean to an injection point is *type-safe*.
+Each bean declares a set of bean types.
+In our example above, the `Translator` bean has two bean types: `Translator` and `java.lang.Object`.
+Subsequently, a bean is assignable to an injection point if the bean has a bean type that matches the _required type_ and has all the _required qualifiers_.
+We'll talk about qualifiers later.
+For now, it's enough to know that the bean above is assignable to an injection point of type `Translator` and `java.lang.Object`.
+
+== Hm, wait a minute. What happens if multiple beans declare the same type?
+
+There is a simple rule: *exactly one bean must be assignable to an injection point, otherwise the build fails*.
+If none is assignable the build fails with `UnsatisfiedResolutionException`.
+If multiple are assignable the build fails with `AmbiguousResolutionException`.
+This is very useful because your application fails fast whenever the container is not able to find an unambiguous dependency for any injection point.
+
+[TIP]
+====
+Your can use programmatic lookup via  `javax.enterprise.inject.Instance` to resolve ambiguities at runtime and even iterate over all beans implementing a given type:
+
+[source,java]
+----
+public class Translator {
+
+    @Inject
+    Instance<Dictionary> dictionaries; <1>
+    
+    String translate(String sentence) { 
+      for (Dictionary dict : dictionaries) { <2>
+         // ...
+      }
+    }
+}
+----
+<1> This injection point will not result in an ambiguous dependency even if there are multiple beans that implement the `Dictionary` type.
+<2> `javax.enterprise.inject.Instance` extends `Iterable`.
+====
+
+== Can I use setter and constructor injection?
+
+Yes, you can.
+In fact, in CDI the "setter injection" is superseded by more powerful https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#initializer_methods[initializer methods, window="_blank"].
+Initializers may accept multiple parameters and don't have to follow the JavaBean naming conventions.
+
+.Initialized and Constructor Injection Example
+[source,java]
+----
+@ApplicationScoped
+public class Translator {
+
+    private final TranslatorHelper helper;
+
+    Translator(TranslatorHelper helper) { <1>
+       this.helper = helper;
+    }
+
+    @Inject <2>
+    void setDeps(Dictionary dic, LocalizationService locService) { <3>
+      / ...
+    }
+}
+----
+<1> This is a constructor injection. 
+In fact, this code would not work in regular CDI implementations where a bean with a normal scope must always declare a no-args constructor and the bean constructor must be annotated with `@Inject`. 
+However, in Quarkus we detect the absence of no-args constructor and "add" it directly in the bytecode.
+It's also not necessary to add `@Inject` if there is only one constructor present.
+<2> An initializer method must be annotated with `@Inject`. 
+<3> An initializer may accept multiple parameters - each one is an injection point.
+
+== You talked about some qualifiers?
+
+https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#qualifiers[Qualifiers, window="_blank"] are annotations that help the container to distinguish beans that implement the same type.
+As we already said a bean is assignable to an injection point if it has all the required qualifiers.
+If you declare no qualifier at an injection point the `@Default` qualifier is assumed.
+
+A qualifier type is a Java annotation defined as `@Retention(RUNTIME)` and annotated with the `@javax.inject.Qualifier` meta-annotation:
+
+.Qualifier Example
+[source,java]
+----
+@Qualifier
+@Retention(RUNTIME)
+@Target({METHOD, FIELD, PARAMETER, TYPE})
+public @interface Superior {}
+----
+
+The qualifiers of a bean are declared by annotating the bean class or producer method or field with the qualifier types:
+
+.Bean With Custom Qualifier Example
+[source,java]
+----
+@Superior <1>
+@ApplicationScoped
+public class SuperiorTranslator extends Translator {
+
+    String translate(String sentence) { 
+      // ...
+    }
+}
+----
+<1> `@Superior` is a https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#defining_qualifier_types[qualifier annotation, window="_blank"].
+
+This bean would be assignable to `@Inject @Superior Translator` and `@Inject @Superior SuperiorTranslator` but not to `@Inject Translator`.
+The reason is that `@Inject Translator` is automatically transformed to `@Inject @Default Translator` during typesafe resolution.
+And since our `SuperiorTranslator` does not declare `@Default` only the original `Translator` bean is assignable.
+
+== Looks good. What is the bean scope?
+
+The scope of a bean determines the lifecycle of its instances, i.e. when and where an instance should be created and destroyed.
+
+NOTE: Every bean has exactly one scope.
+
+== What scopes can I actually use in my Quarkus application?
+
+You can use all the built-in scopes mentioned by the specification except for `javax.enterprise.context.ConversationScoped`.
+
+[options="header",cols="1,1"]
+|===
+|Annotation   |Description   
+//----------------------
+|`@javax.enterprise.context.ApplicationScoped`   | A single bean instance is used for the application and shared among all injection points. The instance is created lazily, i.e. once a method is invoked upon the <<client_proxies, client proxy>>. 
+|`@javax.inject.Singleton`   | Just like `@ApplicationScoped` except that no client proxy is used. The instance is created when an injection point that resolves to a @Singleton bean is being injected.
+|`@javax.enterprise.context.RequestScoped`   | The bean instance is associated with the current _request_ (usually an HTTP request). 
+|`@javax.enterprise.context.Dependent`   | This is a pseudo-scope. The instances are not shared and every injection point spawns a new instance of the dependent bean. The lifecycle of dependent bean is bound to the bean injecting it - it will be created and destroyed along with the bean injecting it.
+|`@javax.enterprise.context.SessionScoped`   | This scope is backed by a `javax.servlet.http.HttpSession` object. It's only available if the `quarkus-undertow` extension is used.
+|===
+
+NOTE: There can be other custom scopes provided by Quarkus extensions. For example, `quarkus-narayana-jta` provides `javax.transaction.TransactionScoped`.
+
+== `@ApplicationScoped` and `@Singleton` look very similar. Which one should I choose for my Quarkus application?
+
+It depends ;-).
+
+A `@Singleton` bean has no <<client_proxies,client proxy>> and hence an instance is _created eagerly_ when the bean is injected. By contrast, an instance of an `@ApplicationScoped` bean is _created lazily_, i.e.
+when a method is invoked upon an injected instance for the first time.
+
+Furthermore, client proxies only delegate method invocations and thus you should never read/write fields of an injected `@ApplicationScoped` bean directly.
+You can read/write fields of an injected `@Singleton` safely.
+
+`@Singleton` should have a slightly better performance because the is no indirection (no proxy that delegates to the current instance from the context).
+
+On the other hand, you cannot mock `@Singleton` beans using <<getting-started-testing.adoc#quarkus_mock,QuarkusMock>>.
+
+`@ApplicationScoped` beans can be also destroyed and recreated at runtime.
+Existing injection points just work because the injected proxy delegates to the current instance.
+
+Therefore, we recommend to stick with `@ApplicationScoped` by default unless there's a good reason to use `@Singleton`.
+
+[[client_proxies]]
+== I don't understand the concept of client proxies.
+
+Indeed, the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#client_proxies[client proxies, window="_blank"] could be hard to grasp but they provide some useful functionality.
+A client proxy is basically an object that delegates all method invocations to a target bean instance.
+It's a container construct that implements `io.quarkus.arc.ClientProxy` and extends the bean class.
+
+IMPORTANT: Client proxies only delegate method invocations. So never read or write a field of a normal scoped bean, otherwise you will work with non-contextual or stale data. 
+
+.Generated Client Proxy Example
+[source,java]
+----
+@ApplicationScoped
+class Translator {
+
+    String translate(String sentence) { 
+      // ...
+    }
+}
+
+// The client proxy class is generated and looks like...
+class Translator_ClientProxy extends Translator { <1>
+
+    String translate(String sentence) { 
+      // Find the correct translator instance...
+      Translator translator = getTranslatorInstanceFromTheApplicationContext();
+      // And delegate the method invocation...
+      return translator.translate(sentence);
+    }
+}
+----
+<1> The `Translator_ClientProxy` instance is always injected instead of a direct reference to a https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#contextual_instance[contextual instance, window="_blank"] of the `Translator` bean.
+
+Client proxies allow for:
+
+* Lazy instantiation - the instance is created once a method is invoked upon the proxy.
+* Ability to inject a bean with "narrower" scope to a bean with "wider" scope; i.e. you can inject a `@RequestScoped` bean into an `@ApplicationScoped` bean.
+* Circular dependencies in the dependency graph. Having circular dependencies is often an indication that a redesign should be considered, but sometimes it's inevitable. 
+* In rare cases it's practical to destroy the beans manually. A direct injected reference would lead to a stale bean instance.
+ 
+ 
+== OK. You said that there are several kinds of beans?
+
+Yes. In general, we distinguish:
+
+1. Class beans
+2. Producer methods
+3. Producer fields
+4. Synthetic beans
+
+NOTE: Synthetic beans are usually provided by extensions. Therefore, we are not going to cover them in this guide.
+
+Producer methods and fields are useful if you need additional control over instantiation of a bean.
+They are also useful when integrating third-party libraries where you don't control the class source and may not add additional annotations etc.
+
+.Producers Example
+[source,java]
+----
+@ApplicationScoped
+public class Producers {
+
+    @Produces <1>
+    double pi = Math.PI; <2>
+    
+    @Produces <3>
+    List<String> names() {
+       List<String> names = new ArrayList<>();
+       names.add("Andy");
+       names.add("Adalbert");
+       names.add("Joachim");
+       return names; <4>
+    }
+}
+
+@ApplicationScoped
+public class Consumer {
+
+   @Inject
+   double pi;
+   
+   @Inject
+   List<String> names;
+   
+   // ...   
+} 
+----
+<1> The container analyses the field annotations to build a bean metadata.
+The _type_ is used to build the set of bean types. 
+In this case, it will be `double` and `java.lang.Object`.
+No scope annotation is declared and so it's defaulted to `@Dependent`.
+<2> The container will read this field when creating the bean instance.
+<3> The container analyses the method annotations to build a bean metadata.
+The _return type_ is used to build the set of bean types. 
+In this case, it will be `List<String>`, `Collection<String>`, `Iterable<String>` and `java.lang.Object`.
+No scope annotation is declared and so it's defaulted to `@Dependent`.
+<4> The container will call this method when creating the bean instance.
+
+There's more about producers. 
+You can declare qualifiers, inject dependencies into the producer methods parameters, etc. 
+You can read more about producers for example in the https://docs.jboss.org/weld/reference/latest/en-US/html/producermethods.html[Weld docs, window="_blank"].
+
+== OK, injection looks cool. What other services are provided?
+
+=== Lifecycle Callbacks
+
+A bean class may declare lifecycle `@PostConstruct` and `@PreDestroy` callbacks:
+
+.Lifecycle Callbacks Example
+[source,java]
+----
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+@ApplicationScoped
+public class Translator {
+
+    @PostConstruct <1>
+    void init() {
+       // ...
+    }
+    
+    @PreDestroy <2>
+    void destroy() {
+      // ...
+    }
+}
+----
+<1> This callback is invoked before the bean instance is put into service. It is safe to perform some initialization here.
+<2> This callback is invoked before the bean instance is destroyed. It is safe to perform some cleanup tasks here.
+
+TIP: It's a good practice to keep the logic in the callbacks "without side effects", i.e. you should avoid calling other beans inside the callbacks.
+
+[[interceptors]]
+=== Interceptors
+
+Interceptors are used to separate cross-cutting concerns from business logic. 
+There is a separate specification - Java Interceptors - that defines the basic programming model and semantics.
+
+.Simple Interceptor Example
+[source,java]
+----
+import javax.interceptor.Interceptor;
+import javax.annotation.Priority;
+
+@Logged <1>
+@Priority(2020) <2>
+@Interceptor <3>
+public class LoggingInterceptor {
+
+   @Inject <4>
+   Logger logger;
+
+   @AroundInvoke <5>
+   Object logInvocation(InvocationContext context) {
+      // ...log before
+      Object ret = context.proceed(); <6>
+      // ...log after
+      return ret;
+   }
+    
+}
+----
+<1> This is an interceptor binding annotation that is used to bind our interceptor to a bean. Simply annotate a bean class with `@Logged`.
+<2> `Priority` enables the interceptor and affects the interceptor ordering. Interceptors with smaller priority values are called first. 
+<3> Marks an interceptor component.
+<4> An interceptor instance may be the target of dependency injection.
+<5> `AroundInvoke` denotes a method that interposes on business methods.
+<6> Proceed to the next interceptor in the interceptor chain or invoke the intercepted business method.
+
+NOTE: Instances of interceptors are dependent objects of the bean instance they intercept, i.e. a new interceptor instance is created for each intercepted bean.
+
+=== Events and Observers
+	
+Beans may also produce and consume events to interact in a completely decoupled fashion.
+Any Java object can serve as an event payload.
+The optional qualifiers act as topic selectors.
+
+.Simple Event Example
+[source,java]
+----
+
+class TaskCompleted {
+  // ...
+}
+
+@ApplicationScoped
+class ComplicatedService {
+
+   @Inject
+   Event<TaskCompleted> event; <1>
+
+   void doSomething() {
+      // ...
+      event.fire(new TaskCompleted()); <2>
+   }
+
+}
+
+@ApplicationScoped
+class Logger {
+
+   void onTaskCompleted(@Observes TaskCompleted task) { <3>
+      // ...log the task
+   }
+
+}
+----
+<1> `javax.enterprise.event.Event` is used to fire events.
+<2> Fire the event synchronously.
+<3> This method is notified when a `TaskCompleted` event is fired.
+
+TIP: For more info about events/observers visit https://docs.jboss.org/weld/reference/latest/en-US/html/events.html[Weld docs, window="_blank"].
+
+== Conclusion
+
+In this guide, we've covered some of the basic topics of the Quarkus programming model that is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+However, a full CDI implementation is not used under the hood.
+Quarkus only implements a subset of the CDI features - see also <<cdi-reference.adoc#supported_features,the list of supported features>> and <<cdi-reference.adoc#limitations,the list of limitations>>.
+On the other hand, there are quite a few <<cdi-reference#nonstandard_features,non-standard features>> and <<cdi-reference.adoc#build_time_apis,Quarkus-specific APIs>>.
+We believe that our efforts will drive the innovation of the CDI specification towards the build-time oriented developer stacks in the future.
+
+TIP: If you wish to learn more about Quarkus-specific features and limitations there is a Quarkus link:cdi-reference[CDI Reference Guide].
+We also recommend you to read the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[CDI specification] and the https://docs.jboss.org/weld/reference/latest/en-US/html/[Weld documentation] (Weld is a CDI Reference Implementation) to get acquainted with more complex topics.

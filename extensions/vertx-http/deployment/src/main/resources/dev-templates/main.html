@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/dev-console.css">
+  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/logstream.css">
+  
+  <link rel="shortcut icon" type="image/png" href="{frameworkRootPath}/dev/resources/images/favicon.ico" >
+  
+  <style>
+  {#insert style/}
+  </style>
+  
+  <title>
+    {#if currentExtensionName && currentExtensionName != 'Eclipse Vert.x - HTTP'}
+      {currentExtensionName} /
+    {/if}
+    {#insert title/}
+    {#if applicationName and applicationVersion} | {applicationName} {applicationVersion}{/if}
+  </title>
+ </head>
+ <body>
+  
+  <nav class="navbar sticky-top navbar-dark bg-dark">
+    <a class="navbar-brand" href="{frameworkRootPath}/dev/">
+      <img src="{frameworkRootPath}/dev/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
+      <span id="navbar_title" class="align-middle">Dev UI</span>
+    </a>
+    <span class="navbar-text">
+      {#if applicationName and applicationVersion}{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion}){/if}
+    </span>
+  </nav>
+
+  <div class="container{#if fluid}-fluid{/if} main-container">
+    {#if currentExtensionName}
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
+        <li class="breadcrumb-item" aria-current="page">{#insert title/}</li>
+        {#else}
+        <li class="breadcrumb-item">{currentExtensionName}</li>
+        <li class="breadcrumb-item" aria-current="page">{#insert title/}</li>
+        {/if}
+      </ol>
+    </nav>
+    {/}
+
+   {#if flash['message']}
+     <div class="alert alert-{flash['message']['class']} show fade" role="alert" data-timer="{flash['displayTime']}">
+      {flash['message']['text']}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+     </div>
+   {/if}
+   {#insert body/}
+  </div>
+
+    <div id="logstreamFooter" class="footer fixed-bottom">
+
+    <button id="logstreamViewLogButton" type="button" class="btn float-right" onclick="showLog();">
+        <i id="logstreamViewLogButtonIcon" class="fas fa-caret-up fa-lg" data-toggle='tooltip' data-placement='left' title='Show Log'></i>
+    </button>
+    <div id="logstreamManager">
+        {#include logmanagerNav}{/include}
+        {#include logmanagerLog}{/include}
+    </div>
+  </div>
+  {#include logmanagerModals}{/include}
+
+  <script src="{frameworkRootPath}/dev/resources/js/jquery.min.js"></script>
+  <script src="{frameworkRootPath}/dev/resources/js/bootstrap.bundle.min.js"></script>
+  <script src="{frameworkRootPath}/dev/resources/js/logstream.js"></script>
+  {|
+  <script>
+    if (jQuery(".alert").length) {
+     // dismiss alert
+     jQuery(function() {
+       window.setTimeout(function(){
+         jQuery(".alert").alert("close");
+       }, jQuery(".alert").data("timer"));
+     });
+    }
+  </script>
+  |}
+ </body>
+</html>

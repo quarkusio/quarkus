@@ -1,0 +1,10 @@
+---
+name: "JDBC Driver - MySQL"
+metadata:
+  keywords:
+  - "jdbc-mysql"
+  - "jdbc"
+  - "mysql"
+  categories:
+  - "data"
+  status: "stable"

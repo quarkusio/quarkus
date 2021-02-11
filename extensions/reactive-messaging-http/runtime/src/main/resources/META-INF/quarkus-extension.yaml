@@ -1,0 +1,12 @@
+---
+name: "Reactive HTTP and WebSocket Connector"
+metadata:
+  keywords:
+    - "http-connector"
+  categories:
+    - "web"
+    - "http"
+    - "websockets"
+    - "reactive"
+    - "messaging"
+  status: "experimental"

@@ -1,0 +1,10 @@
+---
+name: "JSON-P"
+metadata:
+  keywords:
+  - "jsonp"
+  - "json-p"
+  - "json"
+  categories:
+  - "serialization"
+  status: "stable"

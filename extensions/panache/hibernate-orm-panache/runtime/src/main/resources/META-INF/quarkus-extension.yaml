@@ -1,0 +1,12 @@
+---
+name: "Hibernate ORM with Panache"
+metadata:
+  keywords:
+  - "hibernate-orm-panache"
+  - "panache"
+  - "hibernate"
+  - "jpa"
+  guide: "https://quarkus.io/guides/hibernate-orm-panache"
+  categories:
+  - "data"
+  status: "stable"

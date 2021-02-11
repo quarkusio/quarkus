@@ -1,0 +1,10 @@
+---
+name: "Reactive datasource configuration"
+metadata:
+  keywords:
+  - "datasource"
+  - "reactive"
+  categories:
+  - "data"
+  status: "stable"
+  unlisted: true

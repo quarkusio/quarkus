@@ -1,0 +1,159 @@
+table.configuration-reference.tableblock {
+  border-collapse: separate;
+  border-spacing: 1px;
+  border: none;
+}
+
+table.configuration-reference.tableblock span.icon {
+  color: #0D1C2C;
+}
+
+table.configuration-reference.tableblock > thead > tr > th.tableblock {
+  background-color: transparent;
+  border: none;
+  color: white;
+  font-weight: bold;
+}
+
+table.configuration-reference.tableblock > tbody > tr:nth-child(even) > th {
+  background: transparent;
+}
+
+table.configuration-reference.tableblock > tbody > tr > th {
+  background-color: transparent;
+  font-size: 1rem;
+  height: 60px;
+  border: none;
+  border-bottom: 1px solid #4695eb;
+  vertical-align: bottom;
+}
+
+table.configuration-reference.tableblock > tbody > tr:first-child > th {
+  height: 30px;
+}
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(2),
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(3),
+table.configuration-reference.tableblock > tbody > tr > td:nth-child(2),
+table.configuration-reference.tableblock > tbody > tr > td:nth-child(3) {
+  text-align: right;
+}
+
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(2) p,
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(3) p {
+  font-weight: normal;
+  color: black;
+}
+
+table.configuration-reference.tableblock > tbody > tr > th > p {
+  font-weight: bold;
+}
+
+table.configuration-reference.tableblock > tbody > tr > td {
+  padding-left: 30px;
+  border: none;
+}
+
+table.configuration-reference.tableblock > tbody > tr > td > .content > .paragraph .icon {
+  margin-left: -19px;
+  margin-top: 5px;
+  float: left;
+}
+
+table.configuration-reference.tableblock .hidden {
+  display: none;
+}
+
+table.configuration-reference.tableblock .configuration-highlight {
+  background-color: #4695eb;
+  color: black;
+}
+
+table.configuration-reference.tableblock caption {
+  color: inherit;
+}
+
+table.configuration-reference.tableblock .configuration-legend input {
+  float: center;
+}
+
+table.configuration-reference.tableblock .description-collapsed {
+  height: 19px;
+  overflow: hidden;
+}
+
+table.configuration-reference.tableblock .description-decoration {
+  height: 10px;
+  margin: 0px;
+  padding: 0px;
+  text-align: center;
+
+  cursor: pointer;
+}
+
+table.configuration-reference.tableblock .description-decoration i {
+  margin-right: 5px;
+}
+
+table.configuration-reference.tableblock a.link-collapsible {
+  float: right;
+}
+
+table.configuration-reference.tableblock a.link-collapsible i.fa {
+  margin: 0 4px;
+  font-size: 8px;
+}
+
+table.configuration-reference.tableblock tr.row-collapsible td {
+  cursor: pointer;
+}
+
+table.configuration-reference.tableblock td.tableblock > .content > :last-child {
+  margin-bottom: inherit;
+}
+
+input#config-search-0 {
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 24px;
+  transition: transform 250ms ease-in-out;
+  font-size: 14px;
+  line-height: 18px;
+  color: color(#4695eb a(0.8));
+  background-color: transparent;
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath stroke='white' fill='white' d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  background-position: 98% center;
+  border: 1px solid #4695eb;
+  transition: all 250ms ease-in-out;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  letter-spacing: 1.5px;
+}
+
+input#config-search-0:hover,
+input#config-search-0:focus {
+  padding: 12px 2px;
+  outline: 0;
+  border: 1px solid transparent;
+  border-bottom: 1px dashed #4695eb;
+  border-radius: 0;
+  background-image: none;
+}
+
+table.configuration-reference .configuration-legend p,
+table.configuration-reference .configuration-legend input,
+table.configuration-reference p,
+table.configuration-reference pre code {
+  font-size: 1.2rem;
+}
+
+table.configuration-reference.tableblock .description-decoration span,
+table.configuration-reference.tableblock .description-decoration i {
+  font-size: 0.7rem;
+  color: #4695eb;
+}
+
+.configuration-legend span.icon { color: #0D1C2C; }

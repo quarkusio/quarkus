@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019 Red Hat, Inc.
+  ~
+  ~ Red Hat licenses this file to you under the Apache License, version 2.0
+  ~ (the "License"); you may not use this file except in compliance with the
+  ~ License.  You may obtain a copy of the License at:
+  ~
+  ~ https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-reactive-mysql-client-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quarkus-reactive-mysql-client-deployment</artifactId>
+
+    <name>Quarkus - Reactive MySQL Client - Deployment</name>
+
+    <properties>
+        <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
+        <mariadb.image>mariadb:10.4</mariadb.image>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-credentials-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-mysql-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-spi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
+                            <version>${project.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>test-mariadb</id>
+            <activation>
+                <property>
+                    <name>test-containers</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>docker-mariadb</id>
+            <activation>
+                <property>
+                    <name>start-containers</name>
+                </property>
+            </activation>
+            <properties>
+                <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mysql.url>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <name>${mariadb.image}</name>
+                                    <alias>quarkus-test-mariadb</alias>
+                                    <run>
+                                        <network>
+                                            <mode>bridge</mode>
+                                        </network>
+                                        <ports>
+                                            <port>3308:3306</port>
+                                        </ports>
+                                        <env>
+                                            <MYSQL_USER>hibernate_orm_test</MYSQL_USER>
+                                            <MYSQL_PASSWORD>hibernate_orm_test</MYSQL_PASSWORD>
+                                            <MYSQL_DATABASE>hibernate_orm_test</MYSQL_DATABASE>
+                                            <MYSQL_RANDOM_ROOT_PASSWORD>true</MYSQL_RANDOM_ROOT_PASSWORD>
+                                        </env>
+                                        <log>
+                                            <prefix>MariaDB:</prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
+                                        <!-- Speed things up a bit by not actually flushing writes to disk -->
+                                        <tmpfs>/var/lib/mysql</tmpfs>
+                                        <wait>
+                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <tcp>
+                                                <mode>direct</mode>
+                                                <ports>
+                                                    <port>3306</port>
+                                                </ports>
+                                            </tcp>
+                                            <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
+                                            <time>40000</time>
+                                        </wait>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d/:Z</volume>
+                                            </bind>
+                                        </volumes>
+                                    </run>
+                                </image>
+                            </images>
+                            <!--Stops all mariadb:10.4 images currently running, not just those we just started.
+                              Useful to stop processes still running from a previously failed integration test run -->
+                            <allContainers>true</allContainers>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker-start</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker-stop</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-prune</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${docker-prune.location}</executable>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

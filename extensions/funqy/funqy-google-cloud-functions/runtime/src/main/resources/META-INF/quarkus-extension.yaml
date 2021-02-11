@@ -1,0 +1,15 @@
+---
+name: "Funqy Google Cloud Functions"
+metadata:
+  keywords:
+    - "google cloud"
+    - "gcloud"
+    - "gcp"
+    - "function"
+    - "funqy"
+    - "cloud event"
+  categories:
+    - "cloud"
+  guide: "https://quarkus.io/guides/funqy-gcp-functions"
+  status: "experimental"
+  codestart: funqy-google-cloud-functions-example

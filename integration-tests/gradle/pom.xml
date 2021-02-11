@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-integration-tests-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>quarkus-integration-test-gradle-plugin</artifactId>
+
+    <name>Quarkus - Integration Tests - Gradle tooling</name>
+    <description>Quarkus - Integration Tests - Gradle tooling</description>
+
+    <properties>
+        <gradle.executable>./gradlew</gradle.executable>
+        <maven.test.skip>true</maven.test.skip>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>skip-gradle-build</id>
+            <activation>
+                <property>
+                    <name>skip.gradle.build</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <skip.gradle.tests>true</skip.gradle.tests>
+            </properties>
+        </profile>
+        <profile>
+            <id>Gradle-IT</id>
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <build>
+               <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>gradle</id>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <executable>${gradle.executable}</executable>
+                                    <arguments>
+                                        <argument>clean</argument>
+                                        <argument>test</argument>
+                                        <argument>-Pdescription=${project.description}</argument>
+                                        <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
+                                        <argument>-i</argument> <!-- info logging -->
+                                        <argument>-S</argument>
+                                        <argument>--stacktrace</argument>
+                                    </arguments>
+                                    <environmentVariables>
+                                        <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>
+                                        <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
+                                    </environmentVariables>
+                                    <skip>${skip.gradle.tests}</skip>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <gradle.executable>gradlew.bat</gradle.executable>
+            </properties>
+        </profile>
+        <profile>
+            <id>native-image</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <!-- add some custom config, the rest comes from parent -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>gradle</id>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <executable>${gradle.executable}</executable>
+                                    <arguments>
+                                        <argument>clean</argument>
+                                        <argument>nativeTest</argument>
+                                        <argument>-Pdescription=${project.description}</argument>
+                                        <argument>-Pquarkus.native.container-build=${quarkus.native.container-build}</argument>
+                                        <argument>-Pquarkus.native.builder-image=${quarkus.native.builder-image}</argument>
+                                        <argument>-S</argument>
+                                        <argument>--stacktrace</argument>
+                                    </arguments>
+                                    <environmentVariables>
+                                        <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
+                                        <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
+                                    </environmentVariables>
+                                    <skip>${skip.gradle.build}</skip>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

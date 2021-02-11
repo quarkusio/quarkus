@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+    id 'application'
+}
+
+repositories {
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-resteasy'
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
+application {
+    mainClass = 'org.acme.EntryPoint'
+}
+
+run {
+    // propagate the custom local maven repo, in case it's configured
+    if (System.properties.containsKey('maven.repo.local')) {
+        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+    }
+}

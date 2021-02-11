@@ -1,0 +1,48 @@
+buildscript {
+
+    repositories {
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+}
+
+apply plugin: 'java'
+
+group = 'com.quarkus.demo'
+version = '1.0'
+
+
+subprojects {
+
+    apply plugin: 'java'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    test {
+        dependsOn 'cleanTest'
+        useJUnitPlatform()
+        forkEvery 1
+    }
+
+    repositories {
+        if (System.properties.containsKey('maven.repo.local')) {
+            maven {
+                url System.properties.get('maven.repo.local')
+            }
+        } else {
+            mavenLocal()
+        }
+        mavenCentral()
+    }
+}

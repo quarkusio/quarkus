@@ -1,0 +1,10 @@
+---
+name: "JDBC Driver - Derby"
+metadata:
+  keywords:
+  - "jdbc-derby"
+  - "jdbc"
+  - "derby"
+  categories:
+  - "data"
+  status: "stable"

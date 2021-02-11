@@ -1,0 +1,11 @@
+---
+name: "Picocli"
+metadata:
+  keywords:
+  - "picocli"
+  - "command-line"
+  guide: "https://quarkus.io/guides/picocli"
+  categories:
+  - "miscellaneous"
+  status: "experimental"
+  codestart: picocli

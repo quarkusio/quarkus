@@ -1,0 +1,12 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <include relativeToChangelogFile="true" file="xml/changeLog.xml" />
+    <include relativeToChangelogFile="true" file="json/changeLog.json" />
+    <include relativeToChangelogFile="true" file="sql/changeLog.sql" />
+    <include relativeToChangelogFile="true" file="yaml/changeLog.yaml" />
+    <include relativeToChangelogFile="true" file="complex-schema/changeLog.xml" />
+</databaseChangeLog>

@@ -1,0 +1,13 @@
+---
+name: "RESTEasy Server Common"
+metadata:
+  keywords:
+  - "resteasy"
+  - "jaxrs"
+  - "web"
+  - "rest"
+  guide: "https://quarkus.io/guides/rest-json"
+  categories:
+  - "web"
+  status: "stable"
+  unlisted: true

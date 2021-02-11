@@ -1,0 +1,10 @@
+---
+name: "Elytron Security JDBC"
+metadata:
+  keywords:
+  - "security"
+  - "jdbc"
+  guide: "https://quarkus.io/guides/security-jdbc"
+  categories:
+  - "security"
+  status: "stable"

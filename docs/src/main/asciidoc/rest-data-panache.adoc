@@ -1,0 +1,380 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Generating JAX-RS resources with Panache
+
+include::./attributes.adoc[]
+:extension-status: experimental
+
+A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
+To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
+
+While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
+Currently this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
+
+include::./status-include.adoc[]
+
+== Setting up REST Data with Panache
+
+=== Hibernate ORM
+
+* Add the required dependencies to your `pom.xml`
+** Hibernate ORM REST Data with Panache extension (`quarkus-hibernate-orm-rest-data-panache`)
+** A JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
+** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`)
+
+[source,xml]
+----
+<dependencies>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-jdbc-postgresql</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
+    </dependency>
+</dependencies>
+----
+
+* Implement the Panache entities and/or repositories as explained in the link:hibernate-orm-panache[Hibernate ORM with Panache guide].
+* Define the interfaces for generation as explained in the resource generation section.
+
+=== MongoDB
+
+* Add the required dependencies to your `pom.xml`
+** MongoDB REST Data with Panache extension (`quarkus-mongodb-rest-data-panache`)
+** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`)
+
+[source,xml]
+----
+<dependencies>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
+    </dependency>
+</dependencies>
+----
+
+* Implement the Panache entities and/or repositories as explained in the link:mongodb-panache[MongoDB with Panache guide].
+* Define the interfaces for generation as explained in the resource generation section.
+
+== Generating resources
+
+REST Data with Panache generates JAX-RS resources based on the interfaces available in your application.
+For each entity and repository that you want to generate, provide a resource interface.
+_Do not implement these interfaces and don't provide custom methods because they will be ignored._ You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
+
+=== PanacheEntityResource
+
+If your application has an entity (e.g. `Person`) that extends either `PanacheEntity` or `PanacheEntityBase` class, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+
+[source,java]
+----
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+}
+----
+
+=== PanacheRepositoryResource
+
+If your application has a simple entity (e.g. `Person`) and a repository (e.g. `PersonRepository`) that implements either `PanacheRepository` or `PanacheRepositoryBase` interface, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+
+[source,java]
+----
+public interface PeopleResource extends PanacheRepositoryResource<PersonRepository, Person, Long> {
+}
+----
+
+=== PanacheMongoEntityResource
+
+If your application has an entity (e.g. `Person`) that extends either `PanacheMongoEntity` or `PanacheMongoEntityBase` class, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+
+[source,java]
+----
+public interface PeopleResource extends PanacheMongoEntityResource<Person, Long> {
+}
+----
+
+=== PanacheMongoRepositoryResource
+
+If your application has a simple entity (e.g. `Person`) and a repository (e.g. `PersonRepository`) that implements either `PanacheMongoRepository` or `PanacheMongoRepositoryBase` interface, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+
+[source,java]
+----
+public interface PeopleResource extends PanacheMongoRepositoryResource<PersonRepository, Person, Long> {
+}
+----
+
+=== The generated resource
+
+The generated resources will be functionally equivalent for both entities and repositories.
+The only difference being the particular data access pattern and data storage in use.
+
+If you have defined one of the `PeopleResource` interfaces mentioned above, this extension will generate its implementation using a particular data access strategy.
+The implemented class then will be used by a generated JAX-RS resource, which will look like this:
+
+[source,java]
+----
+public class PeopleResourceJaxRs { // The actual class name is going to be unique
+    @Inject
+    PeopleResource resource;
+
+    @GET
+    @Path("{id}")
+    @Produces("application/json")
+    public Person get(@PathParam("id") Long id){
+        Person person = resource.get(id);
+        if (person == null) {
+            throw new WebApplicationException(404);
+        }
+        return person;
+    }
+
+    @GET
+    @Produces("application/json")
+    public Response list(@QueryParam("sort") List<String> sortQuery,
+            @QueryParam("page") @DefaultValue("0") int pageIndex,
+            @QueryParam("size") @DefaultValue("20") int pageSize) {
+        Page page = Page.of(pageIndex, pageSize);
+        Sort sort = getSortFromQuery(sortQuery);
+        List<Person> people = resource.list(page, sort);
+        // ... build a response with page links and return a 200 response with a list
+    }
+
+    @Transactional
+    @POST
+    @Consumes("application/json")
+    @Produces("application/json")
+    public Response add(Person personToSave) {
+        Person person = resource.add(person);
+        // ... build a new location URL and return 201 response with an entity
+    }
+
+    @Transactional
+    @PUT
+    @Path("{id}")
+    @Consumes("application/json")
+    @Produces("application/json")
+    public Response update(@PathParam("id") Long id, Person personToSave) {
+        if (resource.get(id) == null) {
+            Person person = resource.update(id, personToSave);
+            return Response.status(204).build();
+        }
+        Person person = resource.update(id, personToSave);
+        // ... build a new location URL and return 201 response with an entity
+    }
+
+    @Transactional
+    @DELETE
+    @Path("{id}")
+    public void delete(@PathParam("id") Long id) {
+        if (!resource.delete(id)) {
+            throw new WebApplicationException(404);
+        }
+    }
+}
+----
+
+== Resource customisation
+
+REST Data with Panache provides a `@ResourceProperties` and `@MethodProperties` annotations that can be used to customize certain features of the resource.
+It can be used in your resource interface:
+
+[source,java]
+----
+@ResourceProperties(hal = true, path = "my-people")
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+    @MethodProperties(path = "all")
+    List<Person> list(Page page, Sort sort);
+
+    @MethodProperties(exposed = false)
+    boolean delete(Long id);
+}
+----
+
+=== Available options
+
+`@ResourceProperties`
+
+* `exposed` - whether resource could be exposed. A global resource property that can be overridden for each method. Default is `true`.
+* `path` - resource base path. Default path is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
+* `paged` - whether collection responses should be paged or not.
+First, last, previous and next page URIs are included in the response headers if they exist.
+Request page index and size are taken from the `page` and `size` query parameters that default to `0` and `20` respectively.
+Default is `true`.
+* `hal` - in addition to the standard `application/json` responses, generates additional methods that can return `application/hal+json` responses if requested via an `Accept` header.
+Default is `false`.
+* `halCollectionName` - name that should be used when generating a hal collection response. Default name is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
+
+`@MethodProperties`
+
+* `exposed` - does not expose a particular HTTP verb when set to `false`. Default is `true`.
+* `path` - operation path (this is appended to the resource base path). Default is an empty string.
+
+== Query parameters
+
+REST Data with Panache supports the following query parameters with the generated resources.
+
+* `page` - a page number which should be returned by a list operation.
+It applies to the paged resources only and is a number starting with 0. Default is 0.
+* `size` - a page size which should be returned by a list operation.
+It applies to the paged resources only and is a number starting with 1. Default is 20.
+* `sort` - a comma separated list of fields which should be used for sorting a result of a list operation.
+Fields are sorted in the ascending order unless they're prefixed with a `-`.
+E.g. `?sort=name,-age` will sort the result by the name ascending by the age descending.
+
+== Response body examples
+
+As mentioned above REST Data with Panache supports the `application/json` and `application/hal+json` response content types.
+Here are a couple of examples of how a response body would look like for the `get` and `list` operations assuming there are five `Person` records in a database.
+
+=== GET /people/1
+
+`Accept: application/json`
+
+[source,json]
+----
+{
+  "id": 1,
+  "name": "John Johnson",
+  "birth": "1988-01-10"
+}
+----
+
+`Accept: application/hal+json`
+
+[source,json]
+----
+{
+  "id": 1,
+  "name": "John Johnson",
+  "birth": "1988-01-10",
+  "_links": {
+    "self": {
+      "href": "http://example.com/people/1"
+    },
+    "remove": {
+      "href": "http://example.com/people/1"
+    },
+    "update": {
+      "href": "http://example.com/people/1"
+    },
+    "add": {
+      "href": "http://example.com/people"
+    },
+    "list": {
+      "href": "http://example.com/people"
+    }
+  }
+}
+----
+
+=== GET /people?page=0&size=2
+
+`Accept: application/json`
+
+[source,json]
+----
+[
+  {
+    "id": 1,
+    "name": "John Johnson",
+    "birth": "1988-01-10"
+  },
+  {
+    "id": 2,
+    "name": "Peter Peterson",
+    "birth": "1986-11-20"
+  }
+]
+
+----
+
+`Accept: application/hal+json`
+
+[source,json]
+----
+{
+  "_embedded": [
+    {
+      "id": 1,
+      "name": "John Johnson",
+      "birth": "1988-01-10",
+      "_links": {
+        "self": {
+          "href": "http://example.com/people/1"
+        },
+        "remove": {
+          "href": "http://example.com/people/1"
+        },
+        "update": {
+          "href": "http://example.com/people/1"
+        },
+        "add": {
+          "href": "http://example.com/people"
+        },
+        "list": {
+          "href": "http://example.com/people"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Peter Peterson",
+      "birth": "1986-11-20",
+      "_links": {
+        "self": {
+          "href": "http://example.com/people/2"
+        },
+        "remove": {
+          "href": "http://example.com/people/2"
+        },
+        "update": {
+          "href": "http://example.com/people/2"
+        },
+        "add": {
+          "href": "http://example.com/people"
+        },
+        "list": {
+          "href": "http://example.com/people"
+        }
+      }
+    }
+  ],
+  "_links": {
+    "add": {
+      "href": "http://example.com/people"
+    },
+    "list": {
+      "href": "http://example.com/people"
+    },
+    "first": {
+      "href": "http://example.com/people?page=0&size=2"
+    },
+    "last": {
+      "href": "http://example.com/people?page=2&size=2"
+    },
+    "next": {
+      "href": "http://example.com/people?page=1&size=2"
+    }
+  }
+}
+----
+
+Both responses would also contain these headers:
+
+* Link: < http://example.com/people?page=0&size=2 >; rel="first"
+* Link: < http://example.com/people?page=2&size=2 >; rel="last"
+* Link: < http://example.com/people?page=1&size=2 >; rel="next"
+
+A `previous` link header (and hal link) would not be included, because the previous page does not exist.

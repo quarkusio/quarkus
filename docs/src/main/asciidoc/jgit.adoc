@@ -1,0 +1,56 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - JGit
+
+include::./attributes.adoc[]
+
+
+Quarkus includes the `jgit` extension which enables the use of https://www.eclipse.org/jgit/[Eclipse JGit]
+in native mode.
+
+== Configuration
+
+Once you have your Quarkus project configured you can add the `jgit` extension
+to your project by running the following command in your project base directory.
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="jgit"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jgit</artifactId>
+</dependency>
+----
+
+== Usage
+
+The https://wiki.eclipse.org/JGit/User_Guide#API[JGit] dependency is resolved transitively when the extension is added to your project.
+Here is an example using it in a JAX-RS endpoint:
+
+[source,java]
+----
+    @GET
+    @Path("/clone")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String cloneRepository(@QueryParam("url") String url) throws Exception {
+        File tmpDir = Files.createTempDirectory("tmpgit").toFile();
+        try (Git git = Git.cloneRepository().setDirectory(tmpDir).setURI(url).call()) {
+            return tmpDir.toString();
+        }
+    }
+----
+
+
+[WARNING]
+====
+When running in native mode, make sure that the link:native-and-ssl#the-truststore-path[SSL access is configured correctly].
+====

@@ -1,0 +1,26 @@
+<configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
+    <core xmlns="urn:activemq:core">
+        <paging-directory>./target/artemis/paging</paging-directory>
+        <bindings-directory>./target/artemis/bindings</bindings-directory>
+        <journal-directory>./target/artemis/journal</journal-directory>
+        <large-messages-directory>./target/artemis/large-messages</large-messages-directory>
+
+        <connectors>
+            <connector name="activemq">tcp://localhost:61616</connector>
+        </connectors>
+        <acceptors>
+            <acceptor name="activemq">tcp://localhost:61616</acceptor>
+        </acceptors>
+
+        <max-disk-usage>-1</max-disk-usage>
+        <security-enabled>false</security-enabled>
+
+        <addresses>
+            <address name="test-jms">
+                <anycast>
+                    <queue name="test-jms"/>
+                </anycast>
+            </address>
+        </addresses>
+    </core>
+</configuration>

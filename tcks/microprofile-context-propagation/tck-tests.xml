@@ -1,0 +1,29 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="MP-CP TCK" verbose="0" configfailurepolicy="continue">
+
+    <test name="MP-CP TCK">
+        <classes>
+            <!-- 
+                If I use packages to scan for classes, they run in parallel which our arquillian integration
+                does not support so I end up with NPEs in MPConfigTest in our arquillian integration.
+                The only alternative is to list them all just to be able to exclude two methods.
+             -->
+            <class name="org.eclipse.microprofile.context.tck.cdi.BasicCDITest"/>
+            <class name="org.eclipse.microprofile.context.tck.cdi.CDIContextTest"/>
+            <class name="org.eclipse.microprofile.context.tck.cdi.JTACDITest"/>
+            <class name="org.eclipse.microprofile.context.tck.ContextManagerTest"/>
+            <class name="org.eclipse.microprofile.context.tck.ManagedExecutorTest"/>
+            <class name="org.eclipse.microprofile.context.tck.MPConfigTest"/>
+            <class name="org.eclipse.microprofile.context.tck.TckTest"/>
+            <class name="org.eclipse.microprofile.context.tck.ThreadContextTest">
+                <methods>
+                    <exclude name="withContextCaptureDependentCompletableFuturesRunWithContext"/>
+                    <exclude name="withContextCaptureDependentCompletionStagesRunWithContext"/>
+                </methods>
+            </class>
+
+        </classes>
+
+    </test>
+
+</suite>

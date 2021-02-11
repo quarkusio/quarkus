@@ -1,0 +1,10 @@
+{#switch it.kind}
+  {#case METHOD}
+  <span title="{it.name.name}">{it.name.localName}</span>.{it.methodName}()
+  {#case FIELD}
+  <span title="{it.name.name}">{it.name.localName}</span>.{it.methodName}
+  {#case CLASS}
+  <span class="badge badge-secondary">Class</span>
+  {#else}
+  <span class="badge badge-secondary">Synthetic</span>
+{/switch}

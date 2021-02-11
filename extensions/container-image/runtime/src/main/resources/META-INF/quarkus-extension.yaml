@@ -1,0 +1,10 @@
+---
+name: "Container Image"
+metadata:
+  keywords:
+    - "container"
+    - "image"
+  categories:
+    - "cloud"
+  status: "preview"
+  unlisted: true

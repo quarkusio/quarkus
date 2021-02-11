@@ -1,0 +1,33 @@
+# Create the CI Sanity Check entry even when we only have ignored files
+name: Quarkus CI Sanity Check
+
+on:
+  push:
+    paths:
+      - '.gitignore'
+      - '.dockerignore'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.yml'
+      - '.github/*.java'
+  pull_request:
+    paths:
+      - '.gitignore'
+      - '.dockerignore'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.yml'
+      - '.github/*.java'
+
+jobs:
+  ci-sanity-check:
+    name: "CI Sanity Check"
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
+    steps:
+      - name: Build
+        run: sleep 1

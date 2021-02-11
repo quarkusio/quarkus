@@ -12,10 +12,6 @@
     <name>Quarkus - Integration Tests - Apache Tika</name>
     <description>Apache Tika integration tests module</description>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -12,7 +12,6 @@
     <name>Quarkus - Integration Tests - REST client</name>
 
     <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
         <self-signed.trust-store>${project.basedir}/self-signed</self-signed.trust-store>
         <self-signed.trust-store-password>changeit</self-signed.trust-store-password>
         <wrong-host.trust-store>${project.basedir}/wrong-host</wrong-host.trust-store>

@@ -12,14 +12,6 @@
     <artifactId>quarkus-integration-test-hibernate-orm-panache</artifactId>
     <name>Quarkus - Integration Tests - Hibernate ORM with Panache</name>
 
-    <!--
-        This is enabled in the Quarkus Maven archetype but not on the integration tests.
-        PanacheQuery.project(Class) needs it.
-    -->
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

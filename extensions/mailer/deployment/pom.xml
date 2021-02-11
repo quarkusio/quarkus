@@ -45,7 +45,6 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <parameters>true</parameters>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>io.quarkus</groupId>

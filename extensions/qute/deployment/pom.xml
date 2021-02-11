@@ -12,10 +12,6 @@
     <artifactId>quarkus-qute-deployment</artifactId>
     <name>Quarkus - Qute - Deployment</name>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

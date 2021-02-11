@@ -12,10 +12,6 @@
     <artifactId>quarkus-integration-test-smallrye-metrics</artifactId>
     <name>Quarkus - Integration Tests - SmallRye Metrics</name>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

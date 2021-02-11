@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Artemis - Core</name>
     <description>The Apache ActiveMQ Artemis Core integration tests module</description>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <!-- JAX-RS -->
         <dependency>

@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Reactive Messaging - Kafka</name>
     <description>The Kafka Reactive Messaging integration tests module</description>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

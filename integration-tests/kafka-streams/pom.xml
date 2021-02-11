@@ -13,10 +13,6 @@
     <name>Quarkus - Integration Tests - Kafka Streams</name>
     <description>The Kafka Streams integration tests module</description>
 
-    <properties>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

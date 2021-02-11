@@ -32,6 +32,7 @@ But first, read this page (including the small print at the end).
   + [Test Coverage](#test-coverage)
 * [Extensions](#extensions)
   + [Descriptions](#descriptions)
+  + [Update dependencies to extensions](#update-dependencies-to-extensions)
 * [The small print](#the-small-print)
 * [Frequently Asked Questions](#frequently-asked-questions)
 
@@ -363,6 +364,14 @@ Bad examples and the corresponding good example:
 - "Extension for building container images with Docker" (use "Build container images with Docker")
 - "PostgreSQL database connector" (use "Connect to the PostgreSQL database via JDBC")
 - "Asynchronous messaging for Reactive Streams" (use "Produce and consume messages and implement event driven and data streaming applications")
+
+### Update dependencies to extensions
+
+When adding a new extension you should run `update-extension-dependencies.sh` so that special modules like `devtools/bom-descriptor-json`
+that are consuming this extension are built *after* the respective extension. Simply add to your commit the files that were changed by the script.
+
+When removing an extension make sure to also remove all dependencies to it from all `pom.xml`.
+It's easy to miss this as long as the extension artifact is still present in your local Maven repository.
 
 ## The small print
 

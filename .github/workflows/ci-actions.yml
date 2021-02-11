@@ -91,10 +91,19 @@ jobs:
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
-          mvn -e -B -DskipTests -DskipITs -Dno-format -Dtcks --settings .github/mvn-settings.xml clean install
+          mvn -T1C -e -B -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks --settings .github/mvn-settings.xml clean install
+      - name: Verify extension dependencies
+        shell: bash
+        run: |
+          ./update-extension-dependencies.sh
+          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
+          then
+            echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated! Run ./update-extension-dependencies.sh and add the modified pom.xml files to your commit.' 1>&2
+            exit 1
+          fi
       - name: Tar Maven Repo
         shell: bash
-        run: tar -czf maven-repo.tgz -C ~ .m2/repository
+        run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
         uses: actions/upload-artifact@v1
         with:

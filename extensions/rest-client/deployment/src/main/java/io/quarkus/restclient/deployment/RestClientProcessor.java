@@ -134,6 +134,12 @@ class RestClientProcessor {
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, true, "io.smallrye.opentracing.SmallRyeRestClientListener"));
+        } else if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            resource.produce(new NativeImageResourceBuildItem(
+                    "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, true,
+                            "io.quarkus.opentelemetry.tracing.client.QuarkusRestClientListener"));
         }
     }
 

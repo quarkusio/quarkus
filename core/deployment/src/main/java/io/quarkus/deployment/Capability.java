@@ -58,6 +58,7 @@ public enum Capability {
     HIBERNATE_ENVERS,
     HIBERNATE_REACTIVE,
     HIBERNATE_VALIDATOR,
+    OPENTELEMETRY_TRACER,
     /**
      * Presence of an io.opentracing tracer (for example, Jaeger).
      */

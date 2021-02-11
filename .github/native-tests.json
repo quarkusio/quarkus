@@ -110,7 +110,7 @@
         {
             "category": "Misc4",
             "timeout": 65,
-            "test-modules": "smallrye-config smallrye-graphql picocli-native gradle micrometer-mp-metrics micrometer-prometheus smallrye-metrics logging-json jaxp"
+            "test-modules": "smallrye-config smallrye-graphql picocli-native gradle micrometer-mp-metrics micrometer-prometheus smallrye-metrics logging-json jaxp opentelemetry"
         },
         {
             "category": "Spring",

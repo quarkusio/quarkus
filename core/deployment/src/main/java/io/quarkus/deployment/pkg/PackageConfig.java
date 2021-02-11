@@ -31,15 +31,6 @@ public class PackageConfig {
     public String type;
 
     /**
-     * If the java runner should be packed as an uberjar
-     *
-     * This is deprecated, you should use quarkus.package.type=uber-jar instead
-     */
-    @Deprecated
-    @ConfigItem(defaultValue = "false")
-    public boolean uberJar;
-
-    /**
      * Manifest configuration of the runner jar.
      */
     @ConfigItem

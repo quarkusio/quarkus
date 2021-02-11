@@ -48,7 +48,7 @@ public class CustomManifestSectionsUberJarTest {
                 Assertions.assertEquals("Test Value 1", testAttributes.getValue(testKey1),
                         "Custom Manifest Entry for Test-Key-1 value is not correct");
                 Assertions.assertTrue(testAttributes.containsKey(new Attributes.Name("Test-Key-2")),
-                        "Custom Manifest Emntry for Test-Key-2 is missing");
+                        "Custom Manifest Entry for Test-Key-2 is missing");
             }
         }
     }

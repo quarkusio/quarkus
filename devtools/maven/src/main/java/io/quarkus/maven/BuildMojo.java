@@ -32,7 +32,6 @@ import io.quarkus.bootstrap.util.IoUtils;
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class BuildMojo extends QuarkusBootstrapMojo {
 
-    public static final String QUARKUS_PACKAGE_UBER_JAR = "quarkus.package.uber-jar";
     private static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
     private static final String NATIVE_PROFILE_NAME = "native";
     private static final String NATIVE_PACKAGE_TYPE = "native";

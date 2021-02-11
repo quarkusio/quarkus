@@ -32,8 +32,6 @@ public class QuarkusBuild extends QuarkusTask {
 
     private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
 
-    private boolean uberJar;
-
     private List<String> ignoredEntries = new ArrayList<>();
 
     public QuarkusBuild() {
@@ -47,21 +45,6 @@ public class QuarkusBuild extends QuarkusTask {
             System.setProperty(expandConfigurationKey(nativeArg.getKey()), nativeArg.getValue().toString());
         }
         return this;
-    }
-
-    @Input
-    public boolean isUberJar() {
-        return uberJar;
-    }
-
-    /**
-     * @param uberJar Set to true if the build task should build an uberjar
-     * @deprecated use {@code quarkus.package.type} instead
-     */
-    @Option(description = "Set to true if the build task should build an uberjar", option = "uber-jar")
-    @Deprecated
-    public void setUberJar(boolean uberJar) {
-        this.uberJar = uberJar;
     }
 
     @Optional
@@ -135,13 +118,6 @@ public class QuarkusBuild extends QuarkusTask {
             String joinedEntries = String.join(",", ignoredEntries);
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
         }
-        boolean clear = false;
-        if (isUberJar() && System.getProperty("quarkus.package.uber-jar") == null) {
-            getLogger().lifecycle(
-                    "The uberJar option is deprecated, and will be removed in a future version. To build an uber-jar set the config property quarkus.package.type=uber-jar. For more info see https://quarkus.io/guides/gradle-tooling#building-uber-jars");
-            System.setProperty("quarkus.package.uber-jar", "true");
-            clear = true;
-        }
         try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setAppModelResolver(modelResolver)
@@ -164,10 +140,6 @@ public class QuarkusBuild extends QuarkusTask {
 
         } catch (BootstrapException e) {
             throw new GradleException("Failed to build a runnable JAR", e);
-        } finally {
-            if (clear) {
-                System.clearProperty("quarkus.package.uber-jar");
-            }
         }
     }
 

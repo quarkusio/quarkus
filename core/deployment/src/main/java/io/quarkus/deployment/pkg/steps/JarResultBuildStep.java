@@ -181,19 +181,13 @@ public class JarResultBuildStep {
         if (appCDS.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
         }
-        if (!(packageConfig.type.equalsIgnoreCase(PackageConfig.JAR) ||
-                packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))
-                && packageConfig.uberJar) {
-            throw new RuntimeException(
-                    "Cannot set quarkus.package.uber-jar=true and quarkus.package.type, if you want an uber-jar set quarkus.package.type=uber-jar.");
-        }
 
         if (!uberJarRequired.isEmpty() && !legacyJarRequired.isEmpty()) {
             throw new RuntimeException(
                     "Extensions with conflicting package types. One extension requires uber-jar another requires legacy format");
         }
 
-        if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty() || packageConfig.uberJar
+        if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
                 || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, closeablesBuildItem,

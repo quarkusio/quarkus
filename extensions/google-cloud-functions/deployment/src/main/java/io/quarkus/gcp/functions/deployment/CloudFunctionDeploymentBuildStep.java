@@ -30,7 +30,7 @@ public class CloudFunctionDeploymentBuildStep {
             throws BuildException, IOException {
         if (!jar.isUberJar()) {
             throw new BuildException("Google Cloud Function deployment need to use a uberjar, " +
-                    "please set 'quarkus.package.uber-jar=true' inside your application.properties",
+                    "please set 'quarkus.package.type=uber-jar' inside your application.properties",
                     Collections.EMPTY_LIST);
         }
 

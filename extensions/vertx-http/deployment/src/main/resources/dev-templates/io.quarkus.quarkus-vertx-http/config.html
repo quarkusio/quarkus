@@ -13,25 +13,29 @@ color: gray;
         <th scope="col">Value</th>
         <th scope="col">Update</th>
         <th scope="col">Default Value</th>
+        <th scope="col">Source</th>
         <th scope="col">Description</th>
     </tr>
     </thead>
     <tbody>
     {#for item in info:config}
-    <tr class="{item.appPropertiesValue ? 'table-info' : ''}">
+    <tr>
         <form method="post" enctype="application/x-www-form-urlencoded">
-            <input type="hidden" name="name" value="{item.propertyName}"/>
+            <input type="hidden" name="name" value="{item.configValue.name}"/>
             <td>
-                {item.propertyName}
+                {item.configValue.name}
             </td>
             <td>
-                <input type="text" name="value" value="{item.currentValue}"/>
+                <input type="text" name="value" value="{item.configValue.value}"/>
             </td>
             <td>
                 <input type="submit" value="Update" >
             </td>
             <td>
                 {item.defaultValue}
+            </td>
+            <td>
+                {item.configValue.configSourceName}
             </td>
             <td>
                 {item.description.fmtJavadoc}

@@ -244,7 +244,8 @@ public class ResteasyReactiveProcessor {
             ExceptionMappersBuildItem exceptionMappersBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
-            List<MethodScannerBuildItem> methodScanners) throws NoSuchMethodException {
+            List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig)
+            throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -475,7 +476,7 @@ public class ResteasyReactiveProcessor {
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                     beanContainerBuildItem.getValue());
 
-            String applicationPath = determineApplicationPath(index);
+            String applicationPath = determineApplicationPath(index, serverConfig.path);
             // spec allows the path contain encoded characters
             if ((applicationPath != null) && applicationPath.contains("%")) {
                 applicationPath = Encode.decodePath(applicationPath);
@@ -572,10 +573,10 @@ public class ResteasyReactiveProcessor {
         });
     }
 
-    private String determineApplicationPath(IndexView index) {
+    private String determineApplicationPath(IndexView index, String defaultPath) {
         Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyReactiveDotNames.APPLICATION_PATH);
         if (applicationPaths.isEmpty()) {
-            return null;
+            return defaultPath;
         }
         // currently we only examine the first class that is annotated with @ApplicationPath so best
         // fail if the user code has multiple such annotations instead of surprising the user

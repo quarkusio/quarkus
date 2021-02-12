@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import javax.ws.rs.RuntimeType;
@@ -73,7 +74,7 @@ public class JaxrsClientProcessor {
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            ResourceScanningResultBuildItem resourceScanningResultBuildItem,
+            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             ResteasyReactiveConfig config,
             RecorderContext recorderContext,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
@@ -85,12 +86,12 @@ public class JaxrsClientProcessor {
                 messageBodyWriterBuildItems, beanContainerBuildItem, applicationResultBuildItem, serialisers,
                 RuntimeType.CLIENT);
 
-        if (resourceScanningResultBuildItem == null
-                || resourceScanningResultBuildItem.getResult().getPathInterfaces().isEmpty()) {
+        if (!resourceScanningResultBuildItem.isPresent()
+                || resourceScanningResultBuildItem.get().getResult().getPathInterfaces().isEmpty()) {
             recorder.setupClientProxies(new HashMap<>());
             return;
         }
-        ResourceScanningResult result = resourceScanningResultBuildItem.getResult();
+        ResourceScanningResult result = resourceScanningResultBuildItem.get().getResult();
 
         AdditionalReaders additionalReaders = new AdditionalReaders();
         AdditionalWriters additionalWriters = new AdditionalWriters();

@@ -371,6 +371,7 @@ public class DevConsoleProcessor {
                 }).build());
 
         // {config:property('quarkus.lambda.handler')}
+        // Note that the output value is always string!
         builder.addNamespaceResolver(NamespaceResolver.builder("config").resolveAsync(ctx -> {
             List<Expression> params = ctx.getParams();
             if (params.size() != 1 || !ctx.getName().equals("property")) {

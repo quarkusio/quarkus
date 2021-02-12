@@ -9,15 +9,16 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.devmode.ArcEndpointRecorder;
+import io.quarkus.vertx.http.runtime.devmode.ArcDevRecorder;
 
-public class ArcEndpointProcessor {
+public class ArcDevProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void registerRoutes(ArcConfig arcConfig, ArcEndpointRecorder recorder,
+    void registerRoutes(ArcConfig arcConfig, ArcDevRecorder recorder,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
@@ -51,6 +52,22 @@ public class ArcEndpointProcessor {
         props.put("quarkus.arc.config-properties-default-naming-strategy",
                 "" + arcConfig.configPropertiesDefaultNamingStrategy.toString());
         return props;
+    }
+
+    // NOTE: we can't add this build step to the ArC extension as it would cause a cyclic dependency
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT, optional = true)
+    DevConsoleRouteBuildItem eventsEndpoint(ArcDevRecorder recorder) {
+        return new DevConsoleRouteBuildItem("io.quarkus", "quarkus-arc", "events", "POST",
+                recorder.events());
+    }
+
+    // NOTE: we can't add this build step to the ArC extension as it would cause a cyclic dependency
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT, optional = true)
+    DevConsoleRouteBuildItem invocationsEndpoint(ArcDevRecorder recorder) {
+        return new DevConsoleRouteBuildItem("io.quarkus", "quarkus-arc", "invocations", "POST",
+                recorder.invocations());
     }
 
 }

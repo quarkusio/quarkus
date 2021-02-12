@@ -103,6 +103,25 @@ public class Endpoint {
 
 See <<uri-parameters,URI parameters>> for more information about URI mapping.
 
+You can set the root path for all rest endpoints using the `@ApplicationPath` annotation, as shown below.
+
+[source,java]
+----
+package org.acme.rest;
+
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.core.Application;
+
+@ApplicationPath("/api")
+public static class MyApplication extends Application {
+
+}
+----
+
+This will cause all rest endpoints to be resolve relative to `/api`, so the endpoint above with `@Path("rest")` would
+be accessible at `/api/rest/. You can also set the `quarkus.rest.path` build time property to set the root path if you
+don't want to use an annotation.
+
 === Declaring endpoints: HTTP methods
 
 Each endpoint method must be annotated with one of the following annotations, which defines which HTTP

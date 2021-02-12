@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -12,12 +13,13 @@ import io.restassured.RestAssured;
  * Test various JPA operations running in Quarkus
  */
 @QuarkusTest
+@TestHTTPEndpoint(HibernateReactiveTestEndpoint.class)
 public class HibernateReactiveTest {
 
     @Test
     public void reactiveFind() {
         RestAssured.when()
-                .get("/tests/reactiveFind")
+                .get("/reactiveFind")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
     }
@@ -25,7 +27,7 @@ public class HibernateReactiveTest {
     @Test
     public void reactiveCowPersist() {
         RestAssured.when()
-                .get("/tests/reactiveCowPersist")
+                .get("/reactiveCowPersist")
                 .then()
                 .body(containsString("\"name\":\"Carolina\"}")); //Use containsString as we don't know the Id this object will have
     }
@@ -33,7 +35,7 @@ public class HibernateReactiveTest {
     @Test
     public void reactiveFindMutiny() {
         RestAssured.when()
-                .get("/tests/reactiveFindMutiny")
+                .get("/reactiveFindMutiny")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
     }
@@ -41,7 +43,7 @@ public class HibernateReactiveTest {
     @Test
     public void reactivePersist() {
         RestAssured.when()
-                .get("/tests/reactivePersist")
+                .get("/reactivePersist")
                 .then()
                 .body(is("Tulip"));
     }
@@ -49,7 +51,7 @@ public class HibernateReactiveTest {
     @Test
     public void reactiveRemoveTransientEntity() {
         RestAssured.when()
-                .get("/tests/reactiveRemoveTransientEntity")
+                .get("/reactiveRemoveTransientEntity")
                 .then()
                 .body(is("OK"));
     }
@@ -57,7 +59,7 @@ public class HibernateReactiveTest {
     @Test
     public void reactiveRemoveManagedEntity() {
         RestAssured.when()
-                .get("/tests/reactiveRemoveManagedEntity")
+                .get("/reactiveRemoveManagedEntity")
                 .then()
                 .body(is("OK"));
     }
@@ -65,7 +67,7 @@ public class HibernateReactiveTest {
     @Test
     public void reactiveUpdate() {
         RestAssured.when()
-                .get("/tests/reactiveUpdate")
+                .get("/reactiveUpdate")
                 .then()
                 .body(is("Tina"));
     }

@@ -254,6 +254,12 @@ public class NativeImageBuildStep {
             } else {
                 command.add("-H:-StackTrace");
             }
+
+            if (nativeConfig.enableDashboardDump) {
+                command.add("-H:DashboardDump=" + outputTargetBuildItem.getBaseName() + "_dashboard.dump");
+                command.add("-H:+DashboardAll");
+            }
+
             String executableName = outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix;
             command.add(executableName);
 

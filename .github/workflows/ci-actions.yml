@@ -95,7 +95,7 @@ jobs:
       - name: Verify extension dependencies
         shell: bash
         run: |
-          ./update-extension-dependencies.sh
+          ./update-extension-dependencies.sh -B --settings .github/mvn-settings.xml
           if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
           then
             echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated! Run ./update-extension-dependencies.sh and add the modified pom.xml files to your commit.' 1>&2

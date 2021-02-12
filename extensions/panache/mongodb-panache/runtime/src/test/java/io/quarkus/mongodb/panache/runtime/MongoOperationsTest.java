@@ -18,11 +18,13 @@ import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.mongodb.panache.PanacheUpdate;
 import io.quarkus.panache.common.Parameters;
 
 class MongoOperationsTest {
 
-    private final MongoOperations operations = new JavaMongoOperations();
+    private final MongoOperations<PanacheQuery<?>, PanacheUpdate> operations = new JavaMongoOperations();
 
     private static class DemoObj {
         public String field;

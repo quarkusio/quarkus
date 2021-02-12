@@ -1,12 +1,12 @@
 package io.quarkus.mongodb.panache.kotlin
 
 import io.quarkus.gizmo.Gizmo
-import io.quarkus.mongodb.panache.deployment.ByteCodeType
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoCompanionBase
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoEntityBase
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery
+import io.quarkus.panache.common.deployment.ByteCodeType
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.objectweb.asm.ClassReader

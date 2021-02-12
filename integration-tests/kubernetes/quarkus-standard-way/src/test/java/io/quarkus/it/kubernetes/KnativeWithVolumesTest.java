@@ -52,7 +52,7 @@ public class KnativeWithVolumesTest {
                             assertThat(revisionSpec.getVolumes()).haveAtLeastOne(new Condition<Volume>(
                                     v -> v.getName().equals("client-crts")
                                             && v.getSecret().getSecretName().equals("clientcerts"),
-                                    "Has secret volume named client-crts referencing secert clientcerts"));
+                                    "Has secret volume named client-crts referencing secret clientcerts"));
                             assertThat(revisionSpec.getVolumes()).haveAtLeastOne(new Condition<Volume>(
                                     v -> v.getName().equals("client-cfg") && v.getConfigMap().getName().equals("clientconfig"),
                                     "Has config-map named client-cfg referencing configmap clientconfig"));

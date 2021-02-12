@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.devmode;
 
+import static io.smallrye.config.Expressions.withoutExpansion;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,13 +38,15 @@ public class ConfigDescriptionsSupplier implements Supplier<List<ConfigDescripti
             }
         }
 
-        for (String propertyName : current.getPropertyNames()) {
-            if (properties.contains(propertyName)) {
-                continue;
-            }
+        withoutExpansion(() -> {
+            for (String propertyName : current.getPropertyNames()) {
+                if (properties.contains(propertyName)) {
+                    continue;
+                }
 
-            configDescriptions.add(new ConfigDescription(propertyName, null, null, current.getConfigValue(propertyName)));
-        }
+                configDescriptions.add(new ConfigDescription(propertyName, null, null, current.getConfigValue(propertyName)));
+            }
+        });
 
         Collections.sort(configDescriptions);
         return configDescriptions;

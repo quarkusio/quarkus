@@ -15,6 +15,11 @@ import io.quarkus.jackson.runtime.ObjectMapperProducer;
 public interface ObjectMapperCustomizer extends Comparable<ObjectMapperCustomizer> {
 
     int MINIMUM_PRIORITY = Integer.MIN_VALUE;
+    // we use this priority to give a chance to other customizers to override serializers / deserializers
+    // that might have been added by the modules that Quarkus registers automatically
+    // (Jackson will keep the last registered serializer / deserializer for a given type
+    // if multiple are registered)
+    int QUARKUS_CUSTOMIZER_PRIORITY = MINIMUM_PRIORITY + 100;
     int DEFAULT_PRIORITY = 0;
 
     void customize(ObjectMapper objectMapper);

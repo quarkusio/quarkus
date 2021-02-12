@@ -8,7 +8,7 @@ shopt -s failglob
 echo ''
 echo 'Building bom-descriptor-json...'
 echo ''
-mvn clean package -f devtools/bom-descriptor-json
+mvn -e clean package -f devtools/bom-descriptor-json -Denforcer.skip $*
 
 DEP_TEMPLATE='        <dependency>
             <groupId>io.quarkus</groupId>
@@ -28,7 +28,16 @@ echo ''
 echo 'Building dependencies list from bom-descriptor-json...'
 echo ''
 
+# get all "artifact-id" values from the generated json file
+# pipefail is switched off briefly so that a better error can be logged when nothing is found
+set +o pipefail
 ARTIFACT_IDS=`grep -Po '(?<="artifact-id": ")(?!quarkus-bom)[^"]+' devtools/bom-descriptor-json/target/*.json | sort`
+set -o pipefail
+if [ -z "${ARTIFACT_IDS}" ]
+then
+  echo -e '\033[0;31mError:\033[0m Could not find any artifact-ids. Please check the grep command. ' 1>&2
+  exit 1
+fi
 
 # to replace newlines with \n so that the final sed calls accept ${DEPS_*} as input
 SED_EXPR_NEWLINES=':a;N;$!ba;s/\n/\\\n/g'

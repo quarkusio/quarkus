@@ -62,7 +62,17 @@
    {#insert body/}
   </div>
 
-  {#include logmanager}{/include}
+    <div id="logstreamFooter" class="footer fixed-bottom">
+
+    <button id="logstreamViewLogButton" type="button" class="btn float-right" onclick="showLog();">
+        <i id="logstreamViewLogButtonIcon" class="fas fa-caret-up fa-lg" data-toggle='tooltip' data-placement='left' title='Show Log'></i>
+    </button>
+    <div id="logstreamManager">
+        {#include logmanagerNav}{/include}
+        {#include logmanagerLog}{/include}
+    </div>
+  </div>
+  {#include logmanagerModals}{/include}
 
   <script src="{frameworkRootPath}/dev/resources/js/jquery.min.js"></script>
   <script src="{frameworkRootPath}/dev/resources/js/bootstrap.bundle.min.js"></script>

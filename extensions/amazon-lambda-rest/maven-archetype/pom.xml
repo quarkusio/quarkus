@@ -3,14 +3,14 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-amazon-lambda-http-v1-parent</artifactId>
+        <artifactId>quarkus-amazon-lambda-rest-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-amazon-lambda-http-v1-archetype</artifactId>
-    <name>Quarkus - Amazon Lambda HTTP V1 - Archetype</name>
+    <artifactId>quarkus-amazon-lambda-rest-archetype</artifactId>
+    <name>Quarkus - Amazon Lambda AWS Gateway REST API - Archetype</name>
     <packaging>maven-archetype</packaging>
 
     <build>

@@ -132,10 +132,11 @@ public class ConfigPropertiesBuildStep {
         IndexView index = combinedIndex.getIndex();
         YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index, reflectiveClasses);
         ClassConfigPropertiesUtil classConfigPropertiesUtil = new ClassConfigPropertiesUtil(index,
-                yamlListObjectHandler, producerClassCreator, capabilities, reflectiveMethods, configProperties);
+                yamlListObjectHandler, producerClassCreator, capabilities, reflectiveClasses, reflectiveMethods,
+                configProperties);
         InterfaceConfigPropertiesUtil interfaceConfigPropertiesUtil = new InterfaceConfigPropertiesUtil(index,
                 yamlListObjectHandler, nonBeansClassOutput, producerClassCreator, capabilities, defaultConfigValues,
-                configProperties);
+                configProperties, reflectiveClasses);
         for (ConfigPropertiesMetadataBuildItem configPropertiesMetadata : configPropertiesMetadataList) {
             ClassInfo classInfo = configPropertiesMetadata.getClassInfo();
 

@@ -1,43 +1,23 @@
-package io.quarkus.smallrye.openapi.runtime;
+package io.quarkus.mutiny.reactive.operators.runtime;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 
-import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
+import org.eclipse.microprofile.reactive.streams.operators.core.ReactiveStreamsEngineResolver;
+import org.eclipse.microprofile.reactive.streams.operators.spi.ReactiveStreamsFactoryResolver;
 
-import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.vertx.core.Handler;
-import io.vertx.ext.web.RoutingContext;
 
 @Recorder
-public class OpenApiRecorder {
-
-    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
-        if (runtimeConfig.enable) {
-            return new OpenApiHandler();
-        } else {
-            return new OpenApiNotFoundHandler();
-        }
-    }
-
-    public void setupClDevMode(ShutdownContext shutdownContext) {
-        OpenApiConstants.classLoader = Thread.currentThread().getContextClassLoader();
-        shutdownContext.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                OpenApiConstants.classLoader = null;
-            }
-        });
-    }
+public class ReactiveStreamsOperatorsRecorder {
 
     /**
      * ClassLoader hack to work around reactive streams API issue
-     * see https://github.com/eclipse/microprofile-open-api/pull/470
-     * <p>
-     * This must be deleted when it is fixed upstream
+     * see https://github.com/eclipse/microprofile-reactive-streams-operators/pull/130
+     *
+     * This must be deleted when Reactive Streams Operators 1.1 is merged
      */
     public void classLoaderHack() {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -68,7 +48,8 @@ public class OpenApiRecorder {
                     return cl.getResourceAsStream(name);
                 }
             });
-            OASFactoryResolver.instance();
+            ReactiveStreamsFactoryResolver.instance();
+            ReactiveStreamsEngineResolver.instance();
         } finally {
             Thread.currentThread().setContextClassLoader(cl);
         }

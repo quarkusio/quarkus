@@ -9,10 +9,10 @@ import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContext;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.vertx.http.runtime.devmode.Json;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -22,12 +22,10 @@ public class LogStreamWebSocket implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger(LogStreamWebSocket.class.getName());
     private final HistoryHandler historyHandler = new HistoryHandler();
 
-    private final JsonObject initMessage = new JsonObject();
+    private final String initMessage;
 
     private final ExtHandler rootHandler;
     private final org.jboss.logmanager.Logger rootLogger;
-
-    private final LogController logController = new LogController();
 
     public LogStreamWebSocket() {
 
@@ -36,10 +34,7 @@ public class LogStreamWebSocket implements Handler<RoutingContext> {
         rootLogger = logContext.getLogger("");
         rootHandler = findCorrectHandler(rootLogger.getHandlers());
         addHandler(historyHandler);
-
-        initMessage.put(TYPE, INIT);
-        initMessage.put("loggers", logController.getLoggers());
-        initMessage.put("levels", logController.getLevels());
+        initMessage = createInitMessage();
     }
 
     @Override
@@ -122,7 +117,7 @@ public class LogStreamWebSocket implements Handler<RoutingContext> {
         if (p.length == 3) {
             String loggerName = p[1];
             String levelVal = p[2];
-            logController.updateLogLevel(loggerName, levelVal);
+            LogController.updateLogLevel(loggerName, levelVal);
         }
     }
 
@@ -171,6 +166,14 @@ public class LogStreamWebSocket implements Handler<RoutingContext> {
             }
         }
         return null;
+    }
+
+    private String createInitMessage() {
+        Json.JsonObjectBuilder initMessage = Json.object();
+        initMessage.put(TYPE, INIT);
+        initMessage.put("loggers", LogController.getLoggers());
+        initMessage.put("levels", LogController.getLevels());
+        return initMessage.build();
     }
 
     private static final String TYPE = "type";

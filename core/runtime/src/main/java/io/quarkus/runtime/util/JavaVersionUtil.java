@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 public class JavaVersionUtil {
 
-    private static final Pattern PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
+    private static final Pattern PATTERN = Pattern.compile("(?:1\\.)?(\\d+)");
 
     private static boolean IS_JAVA_11_OR_NEWER;
     private static boolean IS_JAVA_13_OR_NEWER;
@@ -16,7 +16,7 @@ public class JavaVersionUtil {
 
     // visible for testing
     static void performChecks() {
-        Matcher matcher = PATTERN.matcher(System.getProperty("java.version", ""));
+        Matcher matcher = PATTERN.matcher(System.getProperty("java.specification.version", ""));
         if (matcher.matches()) {
             int first = Integer.parseInt(matcher.group(1));
             IS_JAVA_11_OR_NEWER = (first >= 11);

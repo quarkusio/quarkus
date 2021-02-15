@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import javax.persistence.Id;
 
+import io.quarkus.panache.common.deployment.PanacheJpaEntityEnhancer;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -102,7 +103,8 @@ public final class PanacheHibernateResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
-        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers);
+        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers,
+                ReactiveJavaJpaTypeBundle.BUNDLE);
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase

@@ -36,6 +36,10 @@ class MockSupport {
         if (inst == null) {
             throw new IllegalStateException("No test in progress");
         }
+        if (!(instance.getClass().getSuperclass().isAssignableFrom(mock.getClass()))) {
+            throw new RuntimeException(mock
+                    + " is not assignable to type " + instance.getClass().getSuperclass());
+        }
         try {
             Method setMethod = instance.getClass().getDeclaredMethod("arc$setMock", Object.class);
             setMethod.invoke(instance, mock);

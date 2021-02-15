@@ -14,6 +14,10 @@ import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesTestServer;
 import io.quarkus.test.kubernetes.client.WithKubernetesTestServer;
 
+/*
+ * This class has no native-image test because it relies on setting config overrides that clash
+ * with native image build config.
+ */
 @TestProfile(KubernetesTestServerTest.MyProfile.class)
 @WithKubernetesTestServer(https = false, crud = true, port = 10001, setup = KubernetesTestServerTest.Setup.class)
 @QuarkusTest

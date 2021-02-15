@@ -138,6 +138,7 @@ public class OpenshiftProcessor {
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseJvmImage));
         Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(config.baseJvmImage);
+        boolean libRequired = !packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR);
 
         if (config.buildStrategy == BuildStrategy.BINARY) {
             // Jar directory priorities:
@@ -155,20 +156,25 @@ public class OpenshiftProcessor {
             // If the image is known, we can define env vars for classpath, jar, lib etc.
             baseImage.ifPresent(b -> {
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, null));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarLibEnvVar(),
-                        concatUnixPaths(jarDirectory, "lib"), null));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, null));
+                if (libRequired) {
+                    envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarLibEnvVar(),
+                            concatUnixPaths(jarDirectory, "lib"), null));
+                    envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, null));
+                }
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
                         String.join(" ", config.jvmArguments), null));
             });
             //In all other cases its the responsibility of the image to set those up correctly.
             if (!baseImage.isPresent()) {
                 List<String> args = new ArrayList<>();
-                args.addAll(Arrays.asList("-jar", pathToJar, "-cp", classpath));
+                args.addAll(Arrays.asList("-jar", pathToJar));
+                if (libRequired) {
+                    args.addAll(Arrays.asList("-cp", classpath));
+                    envProducer.produce(
+                            KubernetesEnvBuildItem.createSimpleVar("JAVA_LIB_DIR", concatUnixPaths(jarDirectory, "lib"), null));
+                }
                 args.addAll(config.jvmArguments);
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar("JAVA_APP_JAR", pathToJar, null));
-                envProducer.produce(
-                        KubernetesEnvBuildItem.createSimpleVar("JAVA_LIB_DIR", concatUnixPaths(jarDirectory, "lib"), null));
                 commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
             }
         }

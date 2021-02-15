@@ -42,6 +42,10 @@ public class NativeTestExtension
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
+    private static Class<?> currentJUnitTestClass;
+
+    private static boolean hasPerTestResources;
+
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
@@ -95,8 +99,11 @@ public class NativeTestExtension
             selectedProfile = annotation.value();
         }
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
-        if ((state == null && !failedBoot) || wrongProfile) {
-            if (wrongProfile) {
+        // we reload the test resources if we changed test class and if we had or will have per-test test resources
+        boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
+                && (hasPerTestResources || QuarkusTestExtension.hasPerTestResources(extensionContext));
+        if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
+            if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
                         state.close();
@@ -121,6 +128,7 @@ public class NativeTestExtension
     private ExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
             throws Throwable {
         quarkusTestProfile = profile;
+        currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
         try {
             Class<?> requiredTestClass = context.getRequiredTestClass();
@@ -160,6 +168,8 @@ public class NativeTestExtension
 
             testResourceManager = new TestResourceManager(requiredTestClass);
             testResourceManager.init();
+            hasPerTestResources = testResourceManager.hasPerTestResources();
+
             additional.putAll(testResourceManager.start());
 
             NativeImageLauncher launcher = new NativeImageLauncher(requiredTestClass);

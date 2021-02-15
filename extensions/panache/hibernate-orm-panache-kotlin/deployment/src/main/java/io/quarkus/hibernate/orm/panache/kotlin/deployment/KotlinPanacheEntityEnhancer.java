@@ -34,6 +34,7 @@ public class KotlinPanacheEntityEnhancer extends PanacheEntityEnhancer<Metamodel
                 BUNDLE.entityBase(), methodCustomizers);
     }
 
+    @Override
     public void collectFields(ClassInfo classInfo) {
         EntityModel<EntityField> entityModel = new EntityModel<>(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {

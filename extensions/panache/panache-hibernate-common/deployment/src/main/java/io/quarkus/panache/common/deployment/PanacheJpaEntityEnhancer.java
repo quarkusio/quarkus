@@ -31,6 +31,7 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInf
                 indexView.getClassByName(DotName.createSimple(className)), methodCustomizers, indexView, typeBundle);
     }
 
+    @Override
     public void collectFields(ClassInfo classInfo) {
         EntityModel<EntityField> entityModel = new EntityModel<>(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {

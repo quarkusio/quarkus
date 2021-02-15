@@ -33,6 +33,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.hibernate.validator.spi.AdditionalClassToBeValidatedBuildItem;
 
 public class ConfigPropertiesBuildStep {
 
@@ -110,6 +111,7 @@ public class ConfigPropertiesBuildStep {
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<AdditionalClassToBeValidatedBuildItem> interfaceImplToBeValidatedProducer,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
         if (configPropertiesMetadataList.isEmpty()) {
             return;
@@ -129,6 +131,7 @@ public class ConfigPropertiesBuildStep {
         producerClassCreator.addAnnotation(Singleton.class);
 
         Set<DotName> configClassesThatNeedValidation = new HashSet<>(configPropertiesMetadataList.size());
+        Set<DotName> configInterfacesThatNeedValidation = new HashSet<>(configPropertiesMetadataList.size());
         IndexView index = combinedIndex.getIndex();
         YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index, reflectiveClasses);
         ClassConfigPropertiesUtil classConfigPropertiesUtil = new ClassConfigPropertiesUtil(index,
@@ -137,6 +140,7 @@ public class ConfigPropertiesBuildStep {
         InterfaceConfigPropertiesUtil interfaceConfigPropertiesUtil = new InterfaceConfigPropertiesUtil(index,
                 yamlListObjectHandler, nonBeansClassOutput, producerClassCreator, capabilities, defaultConfigValues,
                 configProperties, reflectiveClasses);
+        Set<String> interfaceImplsToBeValidated = new HashSet<>();
         for (ConfigPropertiesMetadataBuildItem configPropertiesMetadata : configPropertiesMetadataList) {
             ClassInfo classInfo = configPropertiesMetadata.getClassInfo();
 
@@ -148,14 +152,19 @@ public class ConfigPropertiesBuildStep {
                  */
 
                 Map<DotName, GeneratedClass> interfaceToGeneratedClass = new HashMap<>();
-                interfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
+                String generatedClassName = interfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
                         classInfo, configPropertiesMetadata.getPrefix(),
                         configPropertiesMetadata.getNamingStrategy(),
                         interfaceToGeneratedClass);
                 for (Map.Entry<DotName, GeneratedClass> entry : interfaceToGeneratedClass.entrySet()) {
-                    interfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(entry.getKey(),
+                    boolean needsValidation = interfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(
+                            entry.getKey(),
                             configPropertiesMetadata.getPrefix(), configPropertiesMetadata.isNeedsQualifier(),
                             entry.getValue());
+                    if (needsValidation) {
+                        configInterfacesThatNeedValidation.add(classInfo.name());
+                        interfaceImplsToBeValidated.add(generatedClassName);
+                    }
                 }
             } else {
                 /*
@@ -174,9 +183,15 @@ public class ConfigPropertiesBuildStep {
 
         producerClassCreator.close();
 
-        if (!configClassesThatNeedValidation.isEmpty()) {
-            ClassConfigPropertiesUtil.generateStartupObserverThatInjectsConfigClass(beansClassOutput,
-                    configClassesThatNeedValidation);
+        if (!configClassesThatNeedValidation.isEmpty() || !configInterfacesThatNeedValidation.isEmpty()) {
+            ValidationUtil.generateStartupObserverThatInjectsConfigClass(beansClassOutput,
+                    configClassesThatNeedValidation, configInterfacesThatNeedValidation);
+        }
+        if (!interfaceImplsToBeValidated.isEmpty()) {
+            for (String impl : interfaceImplsToBeValidated) {
+                interfaceImplToBeValidatedProducer
+                        .produce(new AdditionalClassToBeValidatedBuildItem(DotName.createSimple(impl)));
+            }
         }
     }
 }

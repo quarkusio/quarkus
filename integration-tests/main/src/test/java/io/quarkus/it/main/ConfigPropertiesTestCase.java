@@ -14,7 +14,7 @@ public class ConfigPropertiesTestCase {
     public void testConfigPropertiesProperlyInjected() {
         RestAssured
                 .when().get("/configuration-properties")
-                .then().body(is("HelloONE!"));
+                .then().body(is("HelloONE!foo"));
     }
 
     @Test

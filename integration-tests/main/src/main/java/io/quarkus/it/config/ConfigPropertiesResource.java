@@ -27,7 +27,8 @@ public class ConfigPropertiesResource {
 
     @GET
     public String greet() {
-        return greetingConfiguration.message + greetingConfiguration.number + greetingConfiguration.suffix;
+        return greetingConfiguration.message + greetingConfiguration.number + greetingConfiguration.suffix
+                + greetingConfigurationI.name();
     }
 
     @GET
@@ -58,5 +59,8 @@ public class ConfigPropertiesResource {
         LocalDateTime dateTime();
 
         Optional<Instant> instant();
+
+        @Size(min = 2)
+        String name();
     }
 }

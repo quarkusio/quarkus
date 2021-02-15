@@ -4,6 +4,9 @@ import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.cr
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadOptionalValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.determineSingleGenericType;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.registerImplicitConverter;
+import static io.quarkus.arc.deployment.configproperties.ValidationUtil.VALIDATOR_CLASS;
+import static io.quarkus.arc.deployment.configproperties.ValidationUtil.createValidationCodePath;
+import static io.quarkus.arc.deployment.configproperties.ValidationUtil.needsValidation;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.annotation.Annotation;
@@ -42,6 +45,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -83,16 +87,26 @@ final class InterfaceConfigPropertiesUtil {
      *      return new SomeConfigQuarkusImpl(config)
      *  }
      * </pre>
+     *
+     * @return true if the configuration class needs validation
      */
-    void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, boolean needsQualifier,
+    boolean addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, boolean needsQualifier,
             GeneratedClass generatedClass) {
         String methodName = "produce" + interfaceName.withoutPackagePrefix();
         if (needsQualifier) {
             // we need to differentiate the different producers of the same class
             methodName = methodName + "WithPrefix" + HashUtil.sha1(prefix);
         }
+
+        boolean needsValidation = needsValidation();
+        String[] produceMethodParameterTypes = new String[needsValidation ? 2 : 1];
+        produceMethodParameterTypes[0] = Config.class.getName();
+        if (needsValidation) {
+            produceMethodParameterTypes[1] = VALIDATOR_CLASS;
+        }
+
         try (MethodCreator method = classCreator.getMethodCreator(methodName, interfaceName.toString(),
-                Config.class.getName())) {
+                produceMethodParameterTypes)) {
 
             method.addAnnotation(Produces.class);
             if (needsQualifier) {
@@ -104,16 +118,22 @@ final class InterfaceConfigPropertiesUtil {
             if (generatedClass.isUnremovable()) {
                 method.addAnnotation(Unremovable.class);
             }
-            method.returnValue(method.newInstance(MethodDescriptor.ofConstructor(generatedClass.getName(), Config.class),
-                    method.getMethodParam(0)));
+            ResultHandle instance = method.newInstance(MethodDescriptor.ofConstructor(generatedClass.getName(), Config.class),
+                    method.getMethodParam(0));
+            if (needsValidation) {
+                createValidationCodePath(method, instance);
+            }
+            method.returnValue(instance);
         }
+
+        return needsValidation;
     }
 
-    void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface,
+    String generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface,
             String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
-        generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface,
+        return generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface,
                 prefixStr, namingStrategy, interfaceToGeneratedClass);
     }
 
@@ -133,23 +153,20 @@ final class InterfaceConfigPropertiesUtil {
             interfaceToGeneratedClass.put(currentInterface.name(), new GeneratedClass(generatedClassName, true));
         }
 
-        try (ClassCreator interfaceImplClassCreator = ClassCreator.builder().classOutput(classOutput)
+        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
                 .interfaces(currentInterface.name().toString()).className(generatedClassName)
                 .build()) {
 
-            FieldDescriptor configField = interfaceImplClassCreator.getFieldCreator("config", Config.class)
-                    .setModifiers(Modifier.PRIVATE)
+            FieldDescriptor configField = classCreator.getFieldCreator("config", Config.class)
+                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL)
                     .getFieldDescriptor();
 
             // generate a constructor that takes MP Config as an argument
-            try (MethodCreator ctor = interfaceImplClassCreator.getMethodCreator("<init>", void.class, Config.class)) {
-                ctor.setModifiers(Modifier.PUBLIC);
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
-                ResultHandle self = ctor.getThis();
-                ResultHandle config = ctor.getMethodParam(0);
-                ctor.writeInstanceField(configField, self, config);
-                ctor.returnValue(null);
-            }
+            MethodCreator ctor = classCreator.getMethodCreator("<init>", void.class, Config.class);
+            ctor.setModifiers(Modifier.PUBLIC);
+            ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
+            ResultHandle self = ctor.getThis();
+            ctor.writeInstanceField(configField, self, ctor.getMethodParam(0));
 
             for (DotName ifaceDotName : allInterfaces) {
                 ClassInfo classInfo = index.getClassByName(ifaceDotName);
@@ -172,7 +189,7 @@ final class InterfaceConfigPropertiesUtil {
 
                     NameAndDefaultValue nameAndDefaultValue = determinePropertyNameAndDefaultValue(method, namingStrategy);
                     String fullConfigName = prefixStr + "." + nameAndDefaultValue.getName();
-                    try (MethodCreator methodCreator = interfaceImplClassCreator.getMethodCreator(method.name(),
+                    try (MethodCreator methodCreator = classCreator.getMethodCreator(method.name(),
                             method.returnType().name().toString())) {
 
                         if ((returnType.kind() == Type.Kind.CLASS)) {
@@ -201,9 +218,9 @@ final class InterfaceConfigPropertiesUtil {
                             }
                         }
 
-                        ResultHandle config = methodCreator.readInstanceField(configField, methodCreator.getThis());
                         String defaultValueStr = nameAndDefaultValue.getDefaultValue();
                         if (DotNames.OPTIONAL.equals(returnType.name())) {
+                            ResultHandle config = methodCreator.readInstanceField(configField, methodCreator.getThis());
                             if (defaultValueStr != null) {
                                 /*
                                  * it doesn't make to use @ConfigProperty(defaultValue="whatever") on a method that returns
@@ -247,6 +264,7 @@ final class InterfaceConfigPropertiesUtil {
                                                 readOptionalResponse.getValue()));
                             }
                         } else if (ConfigPropertiesUtil.isListOfObject(method.returnType())) {
+                            ResultHandle config = methodCreator.readInstanceField(configField, methodCreator.getThis());
                             if (!capabilities.isPresent(Capability.CONFIG_YAML)) {
                                 throw new DeploymentException(
                                         "Support for List of objects in classes annotated with '@ConfigProperties' is only possible via the 'quarkus-config-yaml' extension. Offending method is '"
@@ -267,12 +285,36 @@ final class InterfaceConfigPropertiesUtil {
                                 defaultConfigValues
                                         .produce(new RunTimeConfigurationDefaultBuildItem(fullConfigName, defaultValueStr));
                             }
+
+                            /*
+                             * The idea here is to create a backing field for each such method
+                             * This helps us add validation annotations
+                             */
+
                             // use config.getValue to obtain and return the result taking  converting it to collection if needed
                             registerImplicitConverter(returnType, reflectiveClasses);
                             ResultHandle value = createReadMandatoryValueAndConvertIfNeeded(
                                     fullConfigName, returnType,
-                                    method.declaringClass().name(), methodCreator, config);
-                            methodCreator.returnValue(value);
+                                    method.declaringClass().name(), ctor, ctor.readInstanceField(configField, ctor.getThis()));
+
+                            FieldCreator fieldCreator = classCreator
+                                    .getFieldCreator(nameAndDefaultValue.getName(), returnType.name().toString())
+                                    .setModifiers(Modifier.PUBLIC | Modifier.FINAL);
+
+                            // copy validation annotation to the field
+                            // TODO: check other annotations to see if they are annotated with @Constraint
+                            for (AnnotationInstance annotation : method.annotations()) {
+                                if (annotation.name().toString().startsWith(ValidationUtil.JAVAX_VALIDATION_PACKAGE)
+                                        || annotation.name().toString().startsWith(ValidationUtil.HV_PACKAGE)) {
+                                    fieldCreator.addAnnotation(annotation);
+                                }
+                            }
+                            FieldDescriptor fieldDescriptor = fieldCreator.getFieldDescriptor();
+
+                            ctor.writeInstanceField(fieldDescriptor, ctor.getThis(), value);
+                            methodCreator
+                                    .returnValue(methodCreator.readInstanceField(fieldDescriptor, methodCreator.getThis()));
+
                             if (defaultValueStr == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValueStr)) {
                                 configProperties
                                         .produce(new ConfigPropertyBuildItem(fullConfigName, returnType));
@@ -281,6 +323,9 @@ final class InterfaceConfigPropertiesUtil {
                     }
                 }
             }
+
+            ctor.returnValue(null);
+            ctor.close();
         }
 
         return generatedClassName;

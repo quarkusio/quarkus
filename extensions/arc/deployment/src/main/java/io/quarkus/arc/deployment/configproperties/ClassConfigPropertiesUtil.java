@@ -4,21 +4,16 @@ import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.cr
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadOptionalValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.determineSingleGenericType;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.registerImplicitConverter;
+import static io.quarkus.arc.deployment.configproperties.ValidationUtil.*;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -41,25 +36,17 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.util.HashUtil;
 
 final class ClassConfigPropertiesUtil {
 
     private static final Logger LOGGER = Logger.getLogger(ClassConfigPropertiesUtil.class);
-
-    private static final String VALIDATOR_CLASS = "javax.validation.Validator";
-    private static final String HIBERNATE_VALIDATOR_IMPL_CLASS = "org.hibernate.validator.HibernateValidator";
-    private static final String CONSTRAINT_VIOLATION_EXCEPTION_CLASS = "javax.validation.ConstraintViolationException";
 
     private final IndexView applicationIndex;
     private final YamlListObjectHandler yamlListObjectHandler;
@@ -83,67 +70,6 @@ final class ClassConfigPropertiesUtil {
         this.reflectiveClasses = reflectiveClasses;
         this.reflectiveMethods = reflectiveMethods;
         this.configProperties = configProperties;
-    }
-
-    /**
-     * Generates a class like the following:
-     *
-     * <pre>
-     * &#64;ApplicationScoped
-     * public class EnsureValidation {
-     *
-     *     &#64;Inject
-     *     MyConfig myConfig;
-     *
-     *     &#64;Inject
-     *     OtherProperties other;
-     *
-     *     public void onStartup(@Observes StartupEvent ev) {
-     *         myConfig.toString();
-     *         other.toString();
-     *     }
-     * }
-     * </pre>
-     *
-     * This class is useful in order to ensure that validation errors will prevent application startup
-     */
-    static void generateStartupObserverThatInjectsConfigClass(ClassOutput classOutput, Set<DotName> configClasses) {
-        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className(ConfigPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + ".ConfigPropertiesObserver")
-                .build()) {
-            classCreator.addAnnotation(Dependent.class);
-
-            Map<DotName, FieldDescriptor> configClassToFieldDescriptor = new HashMap<>(configClasses.size());
-
-            for (DotName configClass : configClasses) {
-                String configClassStr = configClass.toString();
-                FieldCreator fieldCreator = classCreator
-                        .getFieldCreator(
-                                configClass.isInner() ? configClass.local()
-                                        : configClass.withoutPackagePrefix() + "_" + HashUtil.sha1(configClassStr),
-                                configClassStr)
-                        .setModifiers(Modifier.PUBLIC); // done to prevent warning during the build
-                fieldCreator.addAnnotation(Inject.class);
-
-                configClassToFieldDescriptor.put(configClass, fieldCreator.getFieldDescriptor());
-            }
-
-            try (MethodCreator methodCreator = classCreator.getMethodCreator("onStartup", void.class, StartupEvent.class)) {
-                methodCreator.getParameterAnnotations(0).addAnnotation(Observes.class);
-                for (DotName configClass : configClasses) {
-                    /*
-                     * We call toString on the bean which ensure that bean is created thus ensuring
-                     * validation is actually performed
-                     */
-                    ResultHandle field = methodCreator.readInstanceField(configClassToFieldDescriptor.get(configClass),
-                            methodCreator.getThis());
-                    methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(configClass.toString(), "toString", String.class.getName()),
-                            field);
-                }
-                methodCreator.returnValue(null); // the method doesn't need to do anything
-            }
-        }
     }
 
     /**
@@ -208,30 +134,13 @@ final class ClassConfigPropertiesUtil {
                     failOnMismatchingMember, methodCreator);
 
             if (needsValidation) {
-                createValidationCodePath(methodCreator, configObject, prefixStr);
+                createValidationCodePath(methodCreator, configObject);
             } else {
                 methodCreator.returnValue(configObject);
             }
         }
 
         return needsValidation;
-    }
-
-    private static boolean needsValidation() {
-        /*
-         * Hibernate Validator has minimum overhead if the class is unconstrained,
-         * so we'll just pass all config classes to it if it's present
-         */
-        return isHibernateValidatorInClasspath();
-    }
-
-    private static boolean isHibernateValidatorInClasspath() {
-        try {
-            Class.forName(HIBERNATE_VALIDATOR_IMPL_CLASS, false, Thread.currentThread().getContextClassLoader());
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 
     private ResultHandle populateConfigObject(ClassLoader classLoader, ClassInfo configClassInfo, String prefixStr,
@@ -505,26 +414,4 @@ final class ClassConfigPropertiesUtil {
         return !Modifier.isFinal(field.flags()) && Modifier.isPublic(field.flags());
     }
 
-    /**
-     * Create code that uses the validator in order to validate the entire object
-     * If errors are found an IllegalArgumentException is thrown and the message
-     * is constructed by calling the previously generated VIOLATION_SET_TO_STRING_METHOD
-     */
-    private static void createValidationCodePath(MethodCreator bytecodeCreator, ResultHandle configObject,
-            String configPrefix) {
-        ResultHandle validationResult = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(VALIDATOR_CLASS, "validate", Set.class, Object.class, Class[].class),
-                bytecodeCreator.getMethodParam(1), configObject,
-                bytecodeCreator.newArray(Class.class, 0));
-        ResultHandle constraintSetIsEmpty = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Set.class, "isEmpty", boolean.class), validationResult);
-        BranchResult constraintSetIsEmptyBranch = bytecodeCreator.ifNonZero(constraintSetIsEmpty);
-        constraintSetIsEmptyBranch.trueBranch().returnValue(configObject);
-
-        BytecodeCreator constraintSetIsEmptyFalse = constraintSetIsEmptyBranch.falseBranch();
-
-        ResultHandle exception = constraintSetIsEmptyFalse.newInstance(
-                MethodDescriptor.ofConstructor(CONSTRAINT_VIOLATION_EXCEPTION_CLASS, Set.class.getName()), validationResult);
-        constraintSetIsEmptyFalse.throwException(exception);
-    }
 }

@@ -76,6 +76,7 @@ import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 import io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
+import io.quarkus.hibernate.validator.spi.AdditionalClassToBeValidatedBuildItem;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -191,6 +192,7 @@ class HibernateValidatorProcessor {
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             Capabilities capabilities,
             LocalesBuildTimeConfig localesBuildTimeConfig,
+            List<AdditionalClassToBeValidatedBuildItem> additionalClassesToBeValidated,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) throws Exception {
 
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_VALIDATOR));
@@ -232,6 +234,9 @@ class HibernateValidatorProcessor {
                 allConsideredAnnotations));
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
+        for (AdditionalClassToBeValidatedBuildItem additionalClassToBeValidated : additionalClassesToBeValidated) {
+            classNamesToBeValidated.add(additionalClassToBeValidated.getDotName());
+        }
         Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation = new HashMap<>();
         Set<String> detectedBuiltinConstraints = new HashSet<>();
 

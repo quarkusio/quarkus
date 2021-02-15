@@ -89,8 +89,8 @@
         },
         {
             "category": "HTTP",
-            "timeout": 65,
-            "test-modules": "elytron-resteasy resteasy-jackson resteasy-mutiny vertx vertx-http vertx-web vertx-graphql virtual-http rest-client"
+            "timeout": 70,
+            "test-modules": "elytron-resteasy resteasy-jackson resteasy-mutiny vertx vertx-http vertx-web vertx-web-jackson vertx-graphql virtual-http rest-client"
         },
         {
             "category": "Misc1",

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -26,7 +25,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
-import io.quarkus.scheduler.runtime.SchedulerContext;
+import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 
 /**
  * A simple processor that search for Spring Scheduled annotations in Beans and produce
@@ -166,9 +165,7 @@ public class SpringScheduledProcessor {
         long paramValue;
         if (paramValueString.startsWith("${")) {
             paramValueString = paramValueString.replace("${", "{").trim();
-            paramValueString = ConfigProviderResolver.instance().getConfig().getValue(
-                    SchedulerContext.getConfigProperty(paramValueString),
-                    String.class);
+            paramValueString = SchedulerUtils.lookUpPropertyValue(paramValueString);
         }
         try {
             paramValue = Long.valueOf(paramValueString);

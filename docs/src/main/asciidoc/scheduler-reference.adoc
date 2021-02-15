@@ -99,6 +99,15 @@ Sometimes a possibility to specify an explicit id may come in handy.
 void myMethod() { }
 ----
 
+If a value starts with `{` and ends with `}` then the scheduler attempts to find a corresponding config property and use the configured value instead.
+
+.Interval Config Property Example
+[source,java]
+----
+@Scheduled(identity = "{myMethod.identity.expr}")
+void myMethod() { }
+----
+
 === Delayed Execution
 
 `@Scheduled` provides two ways to delay the time a trigger should start firing at.

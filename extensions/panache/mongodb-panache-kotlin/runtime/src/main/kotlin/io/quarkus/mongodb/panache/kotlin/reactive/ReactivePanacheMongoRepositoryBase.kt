@@ -685,7 +685,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Update all entities of this type by the given update document, with optional indexed parameters.
      * The returned [ReactivePanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
-     * @param update the update document, if it didn't contain `$set` we add it.
+     * @param update the update document, if it didn't contain any update operator, we add `$set`.
      * It can also be expressed as a query string.
      * @param params optional sequence of indexed parameters
      * @return a new [ReactivePanacheUpdate] instance for the given update document
@@ -699,7 +699,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Update all entities of this type by the given update document, with named parameters.
      * The returned [ReactivePanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
-     * @param update the update document, if it didn't contain `$set` we add it.
+     * @param update the update document, if it didn't contain any update operator, we add `$set`.
      * It can also be expressed as a query string.
      * @param params [Map] of named parameters
      * @return a new [ReactivePanacheUpdate] instance for the given update document
@@ -713,7 +713,7 @@ interface ReactivePanacheMongoRepositoryBase<Entity: Any, Id: Any> {
      * Update all entities of this type by the given update document, with named parameters.
      * The returned [ReactivePanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
-     * @param update the update document, if it didn't contain `$set` we add it.
+     * @param update the update document, if it didn't contain any update operator, we add `$set`.
      * It can also be expressed as a query string.
      * @param params [Parameters] of named parameters
      * @return a new [ReactivePanacheUpdate] instance for the given update document

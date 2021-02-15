@@ -371,6 +371,15 @@ class MongoOperationsTest {
                 Parameters.with("field", "a value").map());
         assertEquals("{'$set':{'field': 'a value'}}", update);
 
+        // native update by index with $inc
+        update = operations.bindUpdate(DemoObj.class, "{'$inc':{'field': ?1}}", new Object[] { "a value" });
+        assertEquals("{'$inc':{'field': 'a value'}}", update);
+
+        // native update by name with $inc
+        update = operations.bindUpdate(Object.class, "{'$inc':{'field': :field}}",
+                Parameters.with("field", "a value").map());
+        assertEquals("{'$inc':{'field': 'a value'}}", update);
+
         // shortand update
         update = operations.bindUpdate(Object.class, "field", new Object[] { "a value" });
         assertEquals("{'$set':{'field':'a value'}}", update);

@@ -647,7 +647,8 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
      * Update all entities of this type using the given update document with optional indexed parameters.
      * The returned [PanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
-     * @param update the update document, if it didn't contain `$set` we add it. It can also be expressed as a query string.
+     * @param update the update document, if it didn't contain any update operator, we add `$set`.
+     * It can also be expressed as a query string.
      * @param params optional sequence of indexed parameters
      * @return a new [PanacheUpdate] instance for the given update document
      * @see [update]
@@ -659,7 +660,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
      * Update all entities of this type by the given update document with named parameters.
      * The returned [PanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
-     * @param update the update document, if it didn't contain `$set` we add it.
+     * @param update the update document, if it didn't contain any update operator, we add `$set`.
      * It can also be expressed as a query string.
      *
      * @param params map of named parameters
@@ -674,8 +675,8 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
      * Update all entities of this type by the given update document, with named parameters.
      * The returned [PanacheUpdate] object will allow to restrict on which document the update should be applied.
      *
-     * @param update the update document, if it didn't contain `$set` we add it. It can also be expressed as a query
-     * string.
+     * @param update the update document, if it didn't contain any update operator, we add `$set`.
+     * It can also be expressed as a query string.
      *
      * @param params [Parameters] of named parameters
      * @return a new [PanacheUpdate] instance for the given update document

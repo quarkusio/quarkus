@@ -883,7 +883,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * Update all entities of this type by the given update document, with optional indexed parameters.
      * The returned {@link PanacheUpdate} object will allow to restrict on which documents the update should be applied.
      *
-     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params optional sequence of indexed parameters
      * @return a new {@link PanacheUpdate} instance for the given update document
@@ -899,7 +899,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * Update all entities of this type by the given update document, with named parameters.
      * The returned {@link PanacheUpdate} object will allow to restrict on which documents the update should be applied.
      *
-     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params {@link Map} of named parameters
      * @return a new {@link PanacheUpdate} instance for the given update document
@@ -916,7 +916,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * Update all entities of this type by the given update document, with named parameters.
      * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
      *
-     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params {@link Parameters} of named parameters
      * @return a new {@link PanacheUpdate} instance for the given update document

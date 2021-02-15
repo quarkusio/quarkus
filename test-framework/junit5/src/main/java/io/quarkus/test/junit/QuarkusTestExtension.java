@@ -651,27 +651,6 @@ public class QuarkusTestExtension
         return selectedProfile;
     }
 
-    private boolean hasPerTestResources(ExtensionContext extensionContext) {
-        for (QuarkusTestResource testResource : extensionContext.getRequiredTestClass()
-                .getAnnotationsByType(QuarkusTestResource.class)) {
-            if (testResource.restrictToAnnotatedTest()) {
-                return true;
-            }
-        }
-        // scan for meta-annotations
-        for (Annotation annotation : extensionContext.getRequiredTestClass().getAnnotations()) {
-            // skip TestResource annotations
-            if (annotation.annotationType() != QuarkusTestResource.class) {
-                // look for a TestResource on the annotation itself
-                if (annotation.annotationType().getAnnotationsByType(QuarkusTestResource.class).length > 0) {
-                    // meta-annotations are per-test scoped for now
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private static ClassLoader setCCL(ClassLoader cl) {
         final Thread thread = Thread.currentThread();
         final ClassLoader original = thread.getContextClassLoader();
@@ -1204,5 +1183,33 @@ public class QuarkusTestExtension
             hangTaskKey.cancel(false);
             hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
         }
+    }
+
+    static boolean hasPerTestResources(ExtensionContext extensionContext) {
+        return hasPerTestResources(extensionContext.getRequiredTestClass());
+    }
+
+    public static boolean hasPerTestResources(Class<?> requiredTestClass) {
+        while (requiredTestClass != Object.class) {
+            for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
+                if (testResource.restrictToAnnotatedTest()) {
+                    return true;
+                }
+            }
+            // scan for meta-annotations
+            for (Annotation annotation : requiredTestClass.getAnnotations()) {
+                // skip TestResource annotations
+                if (annotation.annotationType() != QuarkusTestResource.class) {
+                    // look for a TestResource on the annotation itself
+                    if (annotation.annotationType().getAnnotationsByType(QuarkusTestResource.class).length > 0) {
+                        // meta-annotations are per-test scoped for now
+                        return true;
+                    }
+                }
+            }
+            // look up
+            requiredTestClass = requiredTestClass.getSuperclass();
+        }
+        return false;
     }
 }

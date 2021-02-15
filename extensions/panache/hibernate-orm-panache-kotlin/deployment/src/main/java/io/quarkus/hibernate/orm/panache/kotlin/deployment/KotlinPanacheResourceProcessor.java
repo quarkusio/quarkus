@@ -151,7 +151,7 @@ public final class KotlinPanacheResourceProcessor {
         for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
             String entityName = entry.getKey();
             List<String> selectedPersistenceUnits = new ArrayList<>(entry.getValue());
-            boolean isPanacheEntity = modelClasses.stream().anyMatch(name -> name.equals(entityName));
+            boolean isPanacheEntity = modelClasses.contains(entityName);
             if (selectedPersistenceUnits.size() > 1 && isPanacheEntity) {
                 throw new IllegalStateException(String.format(
                         "PanacheEntity '%s' cannot be defined for usage in several persistence units which is not supported. The following persistence units were found: %s.",

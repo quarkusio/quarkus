@@ -238,8 +238,7 @@ public final class PanacheHibernateResourceProcessor {
             for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
                 String entityName = entry.getKey();
                 Set<String> selectedPersistenceUnits = entry.getValue();
-                boolean isPanacheEntity = panacheEntityClasses.stream()
-                        .anyMatch(entity -> entity.equals(entityName));
+                boolean isPanacheEntity = panacheEntityClasses.contains(entityName);
 
                 if (!isPanacheEntity) {
                     continue;

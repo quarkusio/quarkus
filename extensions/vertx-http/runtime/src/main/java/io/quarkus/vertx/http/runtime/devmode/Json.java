@@ -178,6 +178,13 @@ public final class Json {
             return this;
         }
 
+        public JsonArrayBuilder addAll(List<JsonObjectBuilder> value) {
+            if (value != null && !value.isEmpty()) {
+                values.addAll(value);
+            }
+            return this;
+        }
+
         private void addInternal(Object value) {
             if (value != null) {
                 values.add(value);

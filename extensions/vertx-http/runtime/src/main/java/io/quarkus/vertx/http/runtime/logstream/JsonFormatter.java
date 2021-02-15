@@ -9,8 +9,7 @@ import java.util.List;
 import org.jboss.logmanager.ExtFormatter;
 import org.jboss.logmanager.ExtLogRecord;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import io.quarkus.vertx.http.runtime.devmode.Json;
 
 /**
  * Formatting log records into a json format
@@ -19,13 +18,14 @@ public class JsonFormatter extends ExtFormatter {
 
     @Override
     public String format(final ExtLogRecord logRecord) {
-        return toJsonObject(logRecord).toString();
+        return toJsonObject(logRecord).build();
     }
 
-    private JsonObject toJsonObject(ExtLogRecord logRecord) {
+    private Json.JsonObjectBuilder toJsonObject(ExtLogRecord logRecord) {
         String formattedMessage = formatMessage(logRecord);
 
-        JsonObject jsonObject = new JsonObject();
+        Json.JsonObjectBuilder jsonObject = Json.object();
+
         jsonObject.put(TYPE, LOG_LINE);
         if (logRecord.getLoggerName() != null) {
             jsonObject.put(LOGGER_NAME_SHORT, getShortFullClassName(logRecord.getLoggerName(), ""));
@@ -71,11 +71,11 @@ public class JsonFormatter extends ExtFormatter {
         return jsonObject;
     }
 
-    private JsonArray getStacktraces(Throwable t) {
+    private Json.JsonArrayBuilder getStacktraces(Throwable t) {
         List<String> traces = new LinkedList<>();
         addStacktrace(traces, t);
 
-        JsonArray jsonArray = new JsonArray();
+        Json.JsonArrayBuilder jsonArray = Json.array();
 
         traces.forEach((trace) -> {
             jsonArray.add(trace);

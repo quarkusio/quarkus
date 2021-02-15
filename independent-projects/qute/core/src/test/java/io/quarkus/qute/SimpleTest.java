@@ -221,9 +221,9 @@ public class SimpleTest {
 
     @Test
     public void testOrEmpty() {
-        Engine engine = Engine.builder().addDefaultSectionHelpers()
-                .addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.orEmpty())
-                .build();
-        assertEquals("STARTEND", engine.parse("START{#for pet in pets.orEmpty}...{/for}END").data("pets", null).render());
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("STARTEND::STARTJackEND",
+                engine.parse("START{#for pet in pets.orEmpty}...{/for}END::START{#for dog in dogs.orEmpty}{dog}{/for}END")
+                        .data("pets", null, "dogs", Collections.singleton("Jack")).render());
     }
 }

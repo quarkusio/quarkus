@@ -113,7 +113,7 @@ public class DeploymentInjectingDependencyVisitor {
         } catch (DeploymentInjectionException e) {
             throw e;
         } catch (Exception t) {
-            throw new DeploymentInjectionException("Failed to inject extension deplpyment dependencies", t);
+            throw new DeploymentInjectionException("Failed to inject extension deployment dependencies", t);
         } finally {
             collectExtensions = parentCollectsExtensions;
         }

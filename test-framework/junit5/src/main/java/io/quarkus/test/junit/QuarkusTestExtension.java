@@ -89,6 +89,7 @@ import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -130,6 +131,8 @@ public class QuarkusTestExtension
     private static List<Object> afterEachCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
+    private static boolean hasPerTestResources;
+    private static Class<?> currentJUnitTestClass;
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
     private static DeepClone deepClone;
@@ -188,6 +191,7 @@ public class QuarkusTestExtension
         hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
         quarkusTestProfile = profile;
+        currentJUnitTestClass = context.getRequiredTestClass();
         Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
@@ -315,6 +319,8 @@ public class QuarkusTestExtension
                             profileInstance != null && profileInstance.disableGlobalTestResources());
             testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
             testResourceManager.getClass().getMethod("start").invoke(testResourceManager);
+            hasPerTestResources = (boolean) testResourceManager.getClass().getMethod("hasPerTestResources")
+                    .invoke(testResourceManager);
 
             populateCallbacks(startupAction.getClassLoader());
 
@@ -610,8 +616,11 @@ public class QuarkusTestExtension
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
-        if ((state == null && !failedBoot) || wrongProfile) {
-            if (wrongProfile) {
+        // we reload the test resources if we changed test class and if we had or will have per-test test resources
+        boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
+                && (hasPerTestResources || hasPerTestResources(extensionContext));
+        if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
+            if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
                         state.close();
@@ -640,6 +649,27 @@ public class QuarkusTestExtension
             selectedProfile = annotation.value();
         }
         return selectedProfile;
+    }
+
+    private boolean hasPerTestResources(ExtensionContext extensionContext) {
+        for (QuarkusTestResource testResource : extensionContext.getRequiredTestClass()
+                .getAnnotationsByType(QuarkusTestResource.class)) {
+            if (testResource.restrictToAnnotatedTest()) {
+                return true;
+            }
+        }
+        // scan for meta-annotations
+        for (Annotation annotation : extensionContext.getRequiredTestClass().getAnnotations()) {
+            // skip TestResource annotations
+            if (annotation.annotationType() != QuarkusTestResource.class) {
+                // look for a TestResource on the annotation itself
+                if (annotation.annotationType().getAnnotationsByType(QuarkusTestResource.class).length > 0) {
+                    // meta-annotations are per-test scoped for now
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {

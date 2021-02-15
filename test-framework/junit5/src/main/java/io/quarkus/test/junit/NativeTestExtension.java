@@ -93,11 +93,7 @@ public class NativeTestExtension
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        TestProfile annotation = testClass.getAnnotation(TestProfile.class);
-        Class<? extends QuarkusTestProfile> selectedProfile = null;
-        if (annotation != null) {
-            selectedProfile = annotation.value();
-        }
+        Class<? extends QuarkusTestProfile> selectedProfile = findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
@@ -123,6 +119,17 @@ public class NativeTestExtension
             }
         }
         return state;
+    }
+
+    private Class<? extends QuarkusTestProfile> findProfile(Class<?> testClass) {
+        while (testClass != Object.class) {
+            TestProfile annotation = testClass.getAnnotation(TestProfile.class);
+            if (annotation != null) {
+                return annotation.value();
+            }
+            testClass = testClass.getSuperclass();
+        }
+        return null;
     }
 
     private ExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)

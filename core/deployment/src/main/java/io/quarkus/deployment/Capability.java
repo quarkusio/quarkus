@@ -68,6 +68,8 @@ public enum Capability {
     SMALLRYE_OPENAPI,
     OPENSHIFT_CLIENT;
 
+    VERTX_CORE;
+
     /**
      *
      * @return the name

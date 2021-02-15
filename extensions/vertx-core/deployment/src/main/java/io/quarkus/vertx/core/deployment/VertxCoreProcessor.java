@@ -12,10 +12,12 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -34,6 +36,11 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 class VertxCoreProcessor {
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capability.VERTX_CORE);
+    }
 
     @BuildStep
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {

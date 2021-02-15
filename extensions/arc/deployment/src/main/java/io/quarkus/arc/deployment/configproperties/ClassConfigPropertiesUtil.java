@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment.configproperties;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadOptionalValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.determineSingleGenericType;
+import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.registerImplicitConverter;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -63,18 +65,22 @@ final class ClassConfigPropertiesUtil {
     private final YamlListObjectHandler yamlListObjectHandler;
     private final ClassCreator producerClassCreator;
     private final Capabilities capabilities;
+    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
     private final BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods;
     private final BuildProducer<ConfigPropertyBuildItem> configProperties;
 
     ClassConfigPropertiesUtil(IndexView applicationIndex, YamlListObjectHandler yamlListObjectHandler,
             ClassCreator producerClassCreator,
-            Capabilities capabilities, BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            Capabilities capabilities,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
 
         this.applicationIndex = applicationIndex;
         this.yamlListObjectHandler = yamlListObjectHandler;
         this.producerClassCreator = producerClassCreator;
         this.capabilities = capabilities;
+        this.reflectiveClasses = reflectiveClasses;
         this.reflectiveMethods = reflectiveMethods;
         this.configProperties = configProperties;
     }
@@ -341,6 +347,7 @@ final class ClassConfigPropertiesUtil {
 
                         // config.getOptionalValue
                         if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                            registerImplicitConverter(genericType, reflectiveClasses);
                             ResultHandle setterValue = methodCreator.invokeInterfaceMethod(
                                     MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
                                             Class.class),
@@ -375,6 +382,7 @@ final class ClassConfigPropertiesUtil {
                                 getEffectiveConfigName(namingStrategy, field), fullConfigName);
                         createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
                     } else {
+                        registerImplicitConverter(fieldType, reflectiveClasses);
                         populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
                                 currentClassInHierarchy, field, useFieldAccess, fieldType, setter, mpConfig,
                                 fullConfigName);

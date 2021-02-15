@@ -208,7 +208,7 @@ The `security-jpa` extension is only initialized if there is a single entity ann
 
 <1> This annotation must be present on a single entity. It can be a regular Hibernate ORM entity or a Hibernate ORM with Panache entity as in this example.
 <2> This indicates the field used for the user name.
-<3> This indicates the field used for the password. This defaults to using bcrypt hashed passwords, but you can also configure it for clear text passwords.
+<3> This indicates the field used for the password. This defaults to using bcrypt hashed passwords, but you can also configure it for clear text passwords or custom passwords.
 <4> This indicates the comma-separated list of roles added to the target Principal representation attributes.
 <5> This method allows us to add users while hashing the password with the proper bcrypt hash.
 
@@ -378,6 +378,39 @@ too).
 
 NOTE: with MCF you don't need dedicated columns to store the hashing algorithm, the iterations count or the salt because
 they're all stored in the hashed value.
+
+You also have the possibility to store password using different hashing algorithm `@Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)`:
+
+[source,java]
+----
+@UserDefinition
+@Table(name = "test_user")
+@Entity
+public class CustomPasswordUserEntity {
+    @Id
+    @GeneratedValue
+    public Long id;
+
+    @Column(name = "username")
+    @Username
+    public String name;
+
+    @Column(name = "password")
+    @Password(value = PasswordType.CUSTOM, provider = CustomPasswordProvider.class)
+    public String pass;
+
+    @Roles
+    public String role;
+}
+
+public class CustomPasswordProvider implements PasswordProvider {
+    @Override
+    public Password getPassword(String pass) {
+        byte[] digest = DatatypeConverter.parseHexBinary(pass);
+        return SimpleDigestPassword.createRaw(SimpleDigestPassword.ALGORITHM_SIMPLE_DIGEST_SHA_256, digest);
+    }
+}
+----
 
 WARN: you can also store passwords in clear text with `@Password(PasswordType.CLEAR)` but we strongly recommend against
 it in production.

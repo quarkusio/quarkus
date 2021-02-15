@@ -22,4 +22,10 @@ public @interface Password {
      * Sets the password storage type. defaults to {@link PasswordType#MCF}.
      */
     PasswordType value() default PasswordType.MCF;
+
+    /**
+     * Sets a custom password provider when the type is {@link PasswordType#CUSTOM}
+     */
+    Class<? extends PasswordProvider> provider() default PasswordProvider.class;
+
 }

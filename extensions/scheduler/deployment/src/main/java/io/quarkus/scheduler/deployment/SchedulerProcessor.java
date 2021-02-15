@@ -71,6 +71,7 @@ import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
 import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
+import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 
 /**
  * @author Martin Kouba
@@ -306,7 +307,7 @@ public class SchedulerProcessor {
         AnnotationValue everyValue = schedule.value("every");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
-            if (SchedulerContext.isConfigValue(cron)) {
+            if (SchedulerUtils.isConfigValue(cron)) {
                 // Don't validate config property
                 return null;
             }
@@ -323,7 +324,7 @@ public class SchedulerProcessor {
         } else {
             if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                 String every = everyValue.asString().trim();
-                if (SchedulerContext.isConfigValue(every)) {
+                if (SchedulerUtils.isConfigValue(every)) {
                     return null;
                 }
                 if (Character.isDigit(every.charAt(0))) {
@@ -343,7 +344,7 @@ public class SchedulerProcessor {
         if (delay == null || delay.asLong() <= 0) {
             if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
                 String delayed = delayedValue.asString().trim();
-                if (SchedulerContext.isConfigValue(delayed)) {
+                if (SchedulerUtils.isConfigValue(delayed)) {
                     return null;
                 }
                 if (Character.isDigit(delayed.charAt(0))) {
@@ -365,7 +366,7 @@ public class SchedulerProcessor {
 
         AnnotationValue identityValue = schedule.value("identity");
         if (identityValue != null) {
-            String identity = identityValue.asString().trim();
+            String identity = SchedulerUtils.lookUpPropertyValue(identityValue.asString());
             AnnotationInstance previousInstanceWithSameIdentity = encounteredIdentities.get(identity);
             if (previousInstanceWithSameIdentity != null) {
                 String message = String.format("The identity: \"%s\" on: %s is not unique and it has already bean used by : %s",

@@ -55,7 +55,7 @@ cd security-ldap-quickstart
 ----
 
 This command generates a Maven project, importing the `elytron-security-ldap` extension
-which is a https://docs.wildfly.org/19/WildFly_Elytron_Security.html#ldap-security-realm[`wildfly-elytron-realm-ldap`] adapter for Quarkus applications.
+which is a `wildfly-elytron-realm-ldap` adapter for Quarkus applications.
 
 If you already have your Quarkus project configured, you can add the `elytron-security-ldap` extension
 to your project by running the following command in your project base directory:
@@ -170,6 +170,8 @@ quarkus.security.ldap.identity-mapping.attribute-mappings."0".to=groups
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0})
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=roles,ou=tool,o=YourCompany,c=DE
 ----
+
+`{0}` is substituted by the `uid`, whereas `{1}` will be substituted by the `dn` of the user entry.
 
 The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
 

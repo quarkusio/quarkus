@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -26,6 +27,7 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
+@Disabled("Vert.x 4 integration - https://github.com/quarkusio/quarkus/issues/15084")
 public class OidcClientTest {
 
     @Test

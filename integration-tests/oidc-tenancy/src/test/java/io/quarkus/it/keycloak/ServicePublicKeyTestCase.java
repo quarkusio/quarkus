@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.Instant;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -12,6 +13,7 @@ import io.restassured.response.Response;
 import io.smallrye.jwt.build.Jwt;
 
 @QuarkusTest
+@Disabled("Vert.x 4 Integration in progress - https://github.com/quarkusio/quarkus/issues/15084")
 public class ServicePublicKeyTestCase {
 
     @Test

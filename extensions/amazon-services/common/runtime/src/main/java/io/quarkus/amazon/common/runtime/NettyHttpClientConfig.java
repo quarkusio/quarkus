@@ -70,7 +70,7 @@ public class NettyHttpClientConfig {
      * <p>
      * Currently has no effect if `quarkus.<amazon-service>.async-client.use-idle-connection-reaper` is false.
      */
-    @ConfigItem(defaultValue = "60S")
+    @ConfigItem(defaultValue = "5S")
     public Duration connectionMaxIdleTime;
 
     /**

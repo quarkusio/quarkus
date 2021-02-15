@@ -119,13 +119,15 @@ public final class ValueResolvers {
         return new ValueResolver() {
 
             public boolean appliesTo(EvalContext context) {
-                return (context.getBase() == null || Results.Result.NOT_FOUND.equals(context.getBase()))
-                        && context.getName().equals("orEmpty");
+                return context.getParams().isEmpty() && context.getName().equals("orEmpty");
             }
 
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
-                return empty;
+                if (context.getBase() == null || Results.Result.NOT_FOUND.equals(context.getBase())) {
+                    return empty;
+                }
+                return CompletableFuture.completedFuture(context.getBase());
             }
         };
     }

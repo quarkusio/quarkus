@@ -52,12 +52,12 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
             JaxRsSecurityConfig config,
-            ResourceScanningResultBuildItem resteasyDeployment,
+            Optional<ResourceScanningResultBuildItem> resteasyDeployment,
             BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
-        if (config.denyJaxRs) {
+        if (config.denyJaxRs && resteasyDeployment.isPresent()) {
             final List<ClassInfo> classes = new ArrayList<>();
 
-            Set<DotName> resourceClasses = resteasyDeployment.getResult().getScannedResourcePaths().keySet();
+            Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
             for (DotName className : resourceClasses) {
                 ClassInfo classInfo = index.getIndex().getClassByName(className);
                 if (!SecurityTransformerUtils.hasSecurityAnnotation(classInfo)) {

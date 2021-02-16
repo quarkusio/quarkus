@@ -1,12 +1,12 @@
 package io.quarkus.arc.test.injection.erroneous;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.wildfly.common.Assert;
 
 public class CircularInjectionNotSupportedTest {
 
@@ -17,8 +17,7 @@ public class CircularInjectionNotSupportedTest {
     @Test
     public void testExceptionThrown() {
         Throwable error = container.getFailure();
-        Assertions.assertNotNull(error);
-        Assert.assertTrue(error instanceof IllegalStateException);
+        assertThat(error).isInstanceOf(IllegalStateException.class);
     }
 
     static abstract class AbstractServiceImpl {

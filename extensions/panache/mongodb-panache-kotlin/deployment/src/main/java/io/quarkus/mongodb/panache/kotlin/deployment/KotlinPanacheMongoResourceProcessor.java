@@ -19,6 +19,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.mongodb.panache.deployment.BasePanacheMongoResourceProcessor;
 import io.quarkus.mongodb.panache.deployment.PropertyMappingClassBuildStep;
+import io.quarkus.panache.common.deployment.PanacheCompanionEnhancer;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
@@ -115,7 +116,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            PanacheEntityEnhancer entityEnhancer, TypeBundle typeBundle) {
+            PanacheCompanionEnhancer companionEnhancer, TypeBundle typeBundle) {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
@@ -124,17 +125,15 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
             if (classInfo.name().equals(typeBundle.entityCompanion().dotName())) {
                 continue;
             }
-            if (modelClasses.add(classInfo.name().toString()))
-                entityEnhancer.collectFields(classInfo);
+            modelClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(typeBundle.entityCompanion().dotName())) {
-            if (modelClasses.add(classInfo.name().toString()))
-                entityEnhancer.collectFields(classInfo);
+            modelClasses.add(classInfo.name().toString());
         }
 
         // iterate over all the entity classes
         for (String modelClass : modelClasses) {
-            transformers.produce(new BytecodeTransformerBuildItem(modelClass, entityEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(modelClass, companionEnhancer));
 
             //register for reflection entity classes
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, modelClass));

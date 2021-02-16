@@ -49,7 +49,7 @@ public class ClassTransformingBuildStep {
 
     public static byte[] transform(String className, byte[] classData) {
         if (lastTransformers == null) {
-            return null;
+            return classData;
         }
 
         return lastTransformers.apply(className, classData);

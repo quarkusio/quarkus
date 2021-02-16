@@ -84,10 +84,33 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
+    void collectEntityClasses(CombinedIndexBuildItem index, BuildProducer<PanacheEntityClassBuildItem> entityClasses) {
+        // NOTE: we don't skip abstract/generic entities because they still need accessors
+        for (ClassInfo panacheEntityBaseSubclass : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
+            // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
+            if (!panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_ENTITY)) {
+                entityClasses.produce(new PanacheEntityClassBuildItem(panacheEntityBaseSubclass));
+            }
+        }
+    }
+
+    @BuildStep
+    PanacheEntityClassesBuildItem findEntityClasses(List<PanacheEntityClassBuildItem> entityClasses) {
+        if (!entityClasses.isEmpty()) {
+            Set<String> ret = new HashSet<>();
+            for (PanacheEntityClassBuildItem entityClass : entityClasses) {
+                ret.add(entityClass.get().name().toString());
+            }
+            return new PanacheEntityClassesBuildItem(ret);
+        }
+        return null;
+    }
+
+    @BuildStep
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
     void build(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
+            List<PanacheEntityClassBuildItem> entityClasses,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
@@ -112,30 +135,13 @@ public final class PanacheHibernateResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
-        Set<String> modelClasses = new HashSet<>();
         MetamodelInfo modelInfo = new MetamodelInfo();
-        // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        // of PanacheEntity if we ask for subtypes of PanacheEntityBase
-        // NOTE: we don't skip abstract/generic entities because they still need accessors
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
-            // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
-            if (classInfo.name().equals(DOTNAME_PANACHE_ENTITY))
-                continue;
-            if (modelClasses.add(classInfo.name().toString()))
-                modelInfo.addEntityModel(createEntityModel(classInfo));
-        }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY)) {
-            if (modelClasses.add(classInfo.name().toString()))
-                modelInfo.addEntityModel(createEntityModel(classInfo));
-        }
-
         PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers,
                 ReactiveJavaJpaTypeBundle.BUNDLE, modelInfo);
-        for (String entityClassName : modelClasses) {
+        for (PanacheEntityClassBuildItem entityClass : entityClasses) {
+            String entityClassName = entityClass.get().name().toString();
+            modelInfo.addEntityModel(createEntityModel(entityClass.get()));
             transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, modelEnhancer));
-        }
-        if (!modelClasses.isEmpty()) {
-            entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
         }
 
         replaceFieldAccesses(transformers, modelInfo);

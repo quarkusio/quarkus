@@ -141,10 +141,10 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
+    MetricsCapabilityBuildItem metricsCapabilityBuildItem(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         if (metrics.extensionsEnabled) {
-            return new MetricsCapabilityBuildItem(x -> MetricsFactory.MP_METRICS.equals(x),
-                    metrics.path);
+            return new MetricsCapabilityBuildItem(MetricsFactory.MP_METRICS::equals,
+                    nonApplicationRootPathBuildItem.adjustPath(metrics.path));
         }
         return null;
     }

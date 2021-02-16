@@ -42,7 +42,8 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
-import io.quarkus.panache.common.deployment.PanacheJpaEntityEnhancer;
+import io.quarkus.panache.common.deployment.PanacheJpaEntityAccessorsEnhancer;
+import io.quarkus.panache.common.deployment.PanacheJpaEntityOperationsEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 
@@ -95,18 +96,6 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
-    PanacheEntityClassesBuildItem findEntityClasses(List<PanacheEntityClassBuildItem> entityClasses) {
-        if (!entityClasses.isEmpty()) {
-            Set<String> ret = new HashSet<>();
-            for (PanacheEntityClassBuildItem entityClass : entityClasses) {
-                ret.add(entityClass.get().name().toString());
-            }
-            return new PanacheEntityClassesBuildItem(ret);
-        }
-        return null;
-    }
-
-    @BuildStep
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
     void build(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
@@ -135,20 +124,37 @@ public final class PanacheHibernateResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
+        PanacheJpaEntityOperationsEnhancer entityOperationsEnhancer = new PanacheJpaEntityOperationsEnhancer(index.getIndex(),
+                methodCustomizers,
+                ReactiveJavaJpaTypeBundle.BUNDLE);
+        for (PanacheEntityClassBuildItem entityClass : entityClasses) {
+            String entityClassName = entityClass.get().name().toString();
+            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityOperationsEnhancer));
+        }
+    }
+
+    @BuildStep
+    @Consume(HibernateEnhancersRegisteredBuildItem.class)
+    void replaceFieldAccesses(CombinedIndexBuildItem index,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<PanacheEntityClassesBuildItem> fieldAccessEnhancedEntityClasses,
+            List<PanacheEntityClassBuildItem> entityClasses) {
         MetamodelInfo modelInfo = new MetamodelInfo();
-        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers,
-                ReactiveJavaJpaTypeBundle.BUNDLE, modelInfo);
+
+        // Generate accessors for public fields in entities
+        PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
+                modelInfo);
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
             modelInfo.addEntityModel(createEntityModel(entityClass.get()));
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, modelEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityAccessorsEnhancer));
         }
 
-        replaceFieldAccesses(transformers, modelInfo);
-    }
-
-    private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
         if (modelInfo.hasEntities()) {
+            // Share with other extensions that we generated accessors for some classes
+            fieldAccessEnhancedEntityClasses.produce(new PanacheEntityClassesBuildItem(modelInfo.getEntityClassNames()));
+
+            // Replace field access in application code with calls to accessors
             Set<String> entityClassNamesInternal = new HashSet<>();
             for (String entityClassName : modelInfo.getEntityClassNames()) {
                 entityClassNamesInternal.add(entityClassName.replace(".", "/"));

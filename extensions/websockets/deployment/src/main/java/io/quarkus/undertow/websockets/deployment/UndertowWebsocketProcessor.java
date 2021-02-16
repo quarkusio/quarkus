@@ -22,6 +22,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -34,13 +35,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
 import io.quarkus.undertow.websockets.runtime.UndertowWebsocketRecorder;
-import io.undertow.websockets.jsr.DefaultContainerConfigurator;
-import io.undertow.websockets.jsr.JsrWebSocketFilter;
-import io.undertow.websockets.jsr.UndertowContainerProvider;
-import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.undertow.websockets.DefaultContainerConfigurator;
+import io.undertow.websockets.UndertowContainerProvider;
 
 public class UndertowWebsocketProcessor {
 
@@ -51,7 +51,7 @@ public class UndertowWebsocketProcessor {
 
     @BuildStep
     void holdConfig(BuildProducer<FeatureBuildItem> feature, HotReloadConfig hotReloadConfig) {
-        feature.produce(new FeatureBuildItem(Feature.UNDERTOW_WEBSOCKETS));
+        feature.produce(new FeatureBuildItem(Feature.WEBSOCKETS));
     }
 
     @BuildStep
@@ -89,11 +89,13 @@ public class UndertowWebsocketProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public FilterBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
             UndertowWebsocketRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflection,
+            EventLoopSupplierBuildItem eventLoopSupplierBuildItem,
             List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints,
+            BeanContainerBuildItem beanContainerBuildItem,
             WebsocketConfig websocketConfig) throws Exception {
 
         final Set<String> endpoints = new HashSet<>();
@@ -126,7 +128,6 @@ public class UndertowWebsocketProcessor {
         }
         reflection.produce(
                 new ReflectiveClassBuildItem(true, false, annotated.toArray(new String[annotated.size()])));
-        reflection.produce(new ReflectiveClassBuildItem(false, false, JsrWebSocketFilter.class.getName()));
 
         registerCodersForReflection(reflection, index.getAnnotations(SERVER_ENDPOINT));
         registerCodersForReflection(reflection, index.getAnnotations(CLIENT_ENDPOINT));
@@ -134,9 +135,11 @@ public class UndertowWebsocketProcessor {
         reflection.produce(
                 new ReflectiveClassBuildItem(true, true, ClientEndpointConfig.Configurator.class.getName()));
 
-        return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
-                recorder.createDeploymentInfo(annotated, endpoints, config, websocketConfig.maxFrameSize,
-                        websocketConfig.dispatchToWorker));
+        return new FilterBuildItem(
+                recorder.createHandler(beanContainerBuildItem.getValue(), eventLoopSupplierBuildItem.getMainSupplier(),
+                        recorder.createDeploymentInfo(annotated, endpoints, config, websocketConfig.maxFrameSize,
+                                websocketConfig.dispatchToWorker)),
+                100);
     }
 
     private void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,

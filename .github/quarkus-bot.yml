@@ -401,9 +401,9 @@ triage:
       directories:
         - extensions/undertow/
         - integration-tests/elytron-undertow/
-    - labels: [area/undertow-websockets]
+    - labels: [area/websockets]
       directories:
-        - extensions/undertow-websockets/
+        - extensions/websockets/
     - labels: [area/swagger-ui]
       title: swagger
       notify: [phillip-kruger]

@@ -225,14 +225,7 @@ This allows you to develop in the same environment you will actually run your ap
 
 WARNING: Do not use this in production. This should only be used in a development environment. You should not run production applications in dev mode.
 
-To do this you must have the `quarkus-undertow-websockets` extension installed:
-
-[source,bash]
-----
-./gradlew addExtension --extensions="undertow-websockets"
-----
-
-You must also have the following config properties set:
+You must have the following config properties set:
 
 - `quarkus.live-reload.password`
 - `quarkus.live-reload.url`

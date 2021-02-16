@@ -33,7 +33,7 @@
         <module>vertx-core</module>
         <module>vertx-http</module>
         <module>undertow</module>
-        <module>undertow-websockets</module>
+        <module>websockets</module>
         <module>webjars-locator</module>
         <module>resteasy-reactive</module>
 

@@ -960,7 +960,7 @@
             "description": "An imperative and reactive client for MongoDB"
         },
         {
-            "name": "Undertow WebSockets",
+            "name": "WebSockets",
             "short-name": "websockets",
             "guide": "https://quarkus.io/guides/websockets",
             "metadata": {
@@ -974,7 +974,7 @@
                 ]
             },
             "group-id": "io.quarkus",
-            "artifact-id": "quarkus-undertow-websockets",
+            "artifact-id": "quarkus-websockets",
             "version": "999-SNAPSHOT",
             "description": "WebSocket support"
         },

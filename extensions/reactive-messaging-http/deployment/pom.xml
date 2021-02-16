@@ -58,7 +58,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-websockets-deployment</artifactId>
+            <artifactId>quarkus-websockets-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

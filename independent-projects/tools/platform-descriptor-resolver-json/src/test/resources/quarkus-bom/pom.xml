@@ -351,7 +351,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-undertow-websockets</artifactId>
+                <artifactId>quarkus-websockets</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

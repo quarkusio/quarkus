@@ -37,6 +37,7 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer {
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
             if (Modifier.isPublic(fieldInfo.flags())
+                    && !Modifier.isStatic(fieldInfo.flags())
                     && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
                 entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
             }

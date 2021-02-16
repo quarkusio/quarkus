@@ -42,7 +42,9 @@ public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
         EntityModel entityModel = new EntityModel(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
-            if (Modifier.isPublic(fieldInfo.flags()) && !fieldInfo.hasAnnotation(BSON_IGNORE)) {
+            if (Modifier.isPublic(fieldInfo.flags())
+                    && !Modifier.isStatic(fieldInfo.flags())
+                    && !fieldInfo.hasAnnotation(BSON_IGNORE)) {
                 entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
             }
         }

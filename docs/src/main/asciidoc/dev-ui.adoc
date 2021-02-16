@@ -343,17 +343,3 @@ users:
 
 image::dev-ui-message.png[alt=Dev UI message]
 
-== Extensions supporting Dev UI
-
-The following Quarkus extensions currently support the Dev UI:
-
-- link:./cdi[quarkus-arc]
-- link:./cache[quarkus-cache]
-- link:./container-image[quarkus-container-image]
-- link:./deploying-to-openshift[quarkus-openshift]
-- link:./flyway[quarkus-flyway]
-- link:./liquibase[quarkus-liquibase]
-- link:./openapi-swaggerui[quarkus-smallrye-openapi]
-- link:./qute[quarkus-qute]
-- link:./resteasy-reactive[quarkus-resteasy-reactive]
-- link:./scheduler[quarkus-scheduler]

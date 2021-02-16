@@ -58,7 +58,7 @@ import io.quarkus.panache.common.deployment.TypeBundle;
  * kotlinc compiles default methods in to the implementing classes so we need to elide them first and then we can
  * generate new methods like we do elsewhere.
  */
-public class KotlinPanacheClassVisitor extends ClassVisitor {
+public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     public static final String NOT_NULL_DESCRIPTOR = "Lorg/jetbrains/annotations/NotNull;";
     public static final String NULLABLE_DESCRIPTOR = "Lorg/jetbrains/annotations/Nullable;";
     public static final ByteCodeType OBJECT = new ByteCodeType(Object.class);
@@ -76,7 +76,7 @@ public class KotlinPanacheClassVisitor extends ClassVisitor {
     protected TypeBundle typeBundle;
     private final List<Label> labels = new ArrayList<>();
 
-    public KotlinPanacheClassVisitor(ClassVisitor outputClassVisitor, ClassInfo classInfo,
+    public KotlinPanacheClassOperationGenerationVisitor(ClassVisitor outputClassVisitor, ClassInfo classInfo,
             IndexView indexView, TypeBundle typeBundle, ByteCodeType baseType,
             List<PanacheMethodCustomizer> methodCustomizers) {
         super(ASM_API_VERSION, outputClassVisitor);

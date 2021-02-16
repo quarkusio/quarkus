@@ -5,7 +5,7 @@ import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.TypeBundle;
-import io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassVisitor;
+import io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassOperationGenerationVisitor;
 
 public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
     private final TypeBundle typeBundle;
@@ -17,7 +17,7 @@ public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheRepositoryClassVisitor(className, outputClassVisitor, indexView, typeBundle);
+        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor, indexView, typeBundle);
     }
 
 }

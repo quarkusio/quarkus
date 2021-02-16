@@ -12,7 +12,8 @@ import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.panache.common.deployment.visitors.PanacheJpaEntityClassVisitor;
+import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassOperationGenerationVisitor;
+import io.quarkus.panache.common.deployment.visitors.PanacheJpaEntityClassAccessorGenerationVisitor;
 
 public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer {
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
@@ -27,8 +28,11 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheJpaEntityClassVisitor(outputClassVisitor, modelInfo,
-                indexView.getClassByName(DotName.createSimple(className)), methodCustomizers, indexView, typeBundle);
+        ClassInfo entityInfo = indexView.getClassByName(DotName.createSimple(className));
+        EntityModel entityModel = modelInfo.getEntityModel(className);
+        outputClassVisitor = new PanacheJpaEntityClassAccessorGenerationVisitor(outputClassVisitor, entityInfo, entityModel);
+        return new PanacheEntityClassOperationGenerationVisitor(outputClassVisitor, typeBundle,
+                entityInfo, methodCustomizers, indexView);
     }
 
     @Override

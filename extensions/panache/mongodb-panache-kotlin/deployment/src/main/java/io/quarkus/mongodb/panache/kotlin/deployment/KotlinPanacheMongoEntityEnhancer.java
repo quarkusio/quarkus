@@ -19,7 +19,7 @@ import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
-import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
+import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor;
 
 public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
     private final TypeBundle types;
@@ -33,7 +33,7 @@ public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new KotlinPanacheClassVisitor(outputClassVisitor,
+        return new KotlinPanacheClassOperationGenerationVisitor(outputClassVisitor,
                 indexView.getClassByName(DotName.createSimple(className)), indexView, types,
                 types.entityBase(), emptyList());
     }

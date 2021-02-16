@@ -106,6 +106,7 @@ public class QuarkusProdModeTest
 
     private Process process;
 
+    private Path builtResultArtifact;
     private ProdModeTestResults prodModeTestResults;
     private Optional<Field> prodModeTestResultsField = Optional.empty();
     private Path logfilePath;
@@ -114,7 +115,7 @@ public class QuarkusProdModeTest
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
     private boolean expectExit;
     private String startupConsoleOutput;
-    private int exitCode;
+    private Integer exitCode;
     private Consumer<Throwable> assertBuildException;
     private String[] commandLineParameters = new String[0];
 
@@ -259,9 +260,10 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * Returns the process exit code, this can only be used if {@link #expectExit} is true
+     * Returns the process exit code, this can only be used if {@link #expectExit} is true.
+     * Null if the app is running.
      */
-    public int getExitCode() {
+    public Integer getExitCode() {
         return exitCode;
     }
 
@@ -401,14 +403,10 @@ public class QuarkusProdModeTest
                 curatedApplication.close();
             }
 
-            Path builtResultArtifact = setupProdModeResults(testClass, buildDir, result);
+            builtResultArtifact = setupProdModeResults(testClass, buildDir, result);
 
             if (run) {
-                startBuiltResult(builtResultArtifact);
-                RestAssuredURLManager.setURL(false,
-                        runtimeProperties.get(QUARKUS_HTTP_PORT_PROPERTY) != null
-                                ? Integer.parseInt(runtimeProperties.get(QUARKUS_HTTP_PORT_PROPERTY))
-                                : DEFAULT_HTTP_PORT_INT);
+                start();
 
                 if (logfilePath != null) {
                     logfileField = Arrays.stream(testClass.getDeclaredFields()).filter(
@@ -465,8 +463,20 @@ public class QuarkusProdModeTest
         return builtResultArtifact;
     }
 
-    private void startBuiltResult(Path builtResultArtifact) throws IOException {
-        Path builtResultArtifactParentDir = builtResultArtifact.getParent();
+    /**
+     * Start the Quarkus application. If the application is already started, it raises an {@link IllegalStateException}
+     * exception.
+     *
+     * @throws RuntimeException when application errors at startup.
+     * @throws IllegalStateException if the application is already started.
+     */
+    public void start() {
+        if (process != null && process.isAlive()) {
+            throw new IllegalStateException("Quarkus application is already started. ");
+        }
+
+        exitCode = null;
+        Path builtResultArtifactParent = builtResultArtifact.getParent();
 
         if (runtimeProperties == null) {
             runtimeProperties = new HashMap<>();
@@ -476,7 +486,7 @@ public class QuarkusProdModeTest
         }
         runtimeProperties.putIfAbsent(QUARKUS_HTTP_PORT_PROPERTY, DEFAULT_HTTP_PORT);
         if (logFileName != null) {
-            logfilePath = builtResultArtifactParentDir.resolve(logFileName);
+            logfilePath = builtResultArtifactParent.resolve(logFileName);
             runtimeProperties.put("quarkus.log.file.path", logfilePath.toAbsolutePath().toString());
             runtimeProperties.put("quarkus.log.file.enable", "true");
         }
@@ -505,11 +515,46 @@ public class QuarkusProdModeTest
         }
 
         command.addAll(Arrays.asList(commandLineParameters));
-        process = new ProcessBuilder(command)
-                .redirectErrorStream(true)
-                .directory(builtResultArtifactParentDir.toFile())
-                .start();
-        ensureApplicationStartupOrFailure();
+
+        try {
+            process = new ProcessBuilder(command)
+                    .redirectErrorStream(true)
+                    .directory(builtResultArtifactParent.toFile())
+                    .start();
+            ensureApplicationStartupOrFailure();
+            setupRestAssured();
+        } catch (IOException ex) {
+            throw new RuntimeException("The produced jar could not be launched. ", ex);
+        }
+    }
+
+    /**
+     * Stop the Quarkus application.
+     */
+    public void stop() {
+        try {
+            if (process != null) {
+                process.destroy();
+                process.waitFor();
+                exitCode = process.exitValue();
+            }
+        } catch (InterruptedException ignored) {
+
+        }
+    }
+
+    private void setupRestAssured() {
+        Integer httpPort = Optional.ofNullable(runtimeProperties.get(QUARKUS_HTTP_PORT_PROPERTY))
+                .map(Integer::parseInt)
+                .orElse(DEFAULT_HTTP_PORT_INT);
+
+        // If http port is 0, then we need to set the port to null in order to use the `quarkus.https.test-port` property
+        // which is done in `RestAssuredURLManager.setURL`.
+        if (httpPort == 0) {
+            httpPort = null;
+        }
+
+        RestAssuredURLManager.setURL(false, httpPort);
     }
 
     private void ensureApplicationStartupOrFailure() throws IOException {
@@ -586,14 +631,7 @@ public class QuarkusProdModeTest
             RestAssuredURLManager.clearURL();
         }
 
-        try {
-            if (process != null) {
-                process.destroy();
-                process.waitFor();
-            }
-        } catch (InterruptedException ignored) {
-
-        }
+        stop();
 
         try {
             if (curatedApplication != null) {
@@ -611,6 +649,10 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeEach(ExtensionContext context) {
+        if (run && (process == null || !process.isAlive())) {
+            start();
+        }
+
         prodModeTestResultsField.ifPresent(f -> {
             try {
                 f.set(context.getRequiredTestInstance(), prodModeTestResults);

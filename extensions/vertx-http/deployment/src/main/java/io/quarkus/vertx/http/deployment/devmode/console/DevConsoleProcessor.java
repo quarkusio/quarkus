@@ -38,14 +38,18 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
@@ -71,6 +75,7 @@ import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -79,7 +84,8 @@ import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
-import io.quarkus.vertx.http.runtime.logstream.LogStreamWebSocket;
+import io.quarkus.vertx.http.runtime.logstream.HistoryHandler;
+import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -255,13 +261,26 @@ public class DevConsoleProcessor {
         }
     }
 
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    public HistoryHandlerBuildItem hander(BuildProducer<LogHandlerBuildItem> logHandlerBuildItemBuildProducer,
+            LogStreamRecorder recorder) {
+        RuntimeValue<Optional<HistoryHandler>> handler = recorder.handler();
+        logHandlerBuildItemBuildProducer.produce(new LogHandlerBuildItem((RuntimeValue) handler));
+        return new HistoryHandlerBuildItem(handler);
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(LoggingSetupBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
     public void setupActions(List<DevConsoleRouteBuildItem> routes,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             List<DevTemplatePathBuildItem> devTemplatePaths,
             Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
+            LogStreamRecorder recorder,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             HttpRootPathBuildItem httpRootPathBuildItem,
+            HistoryHandlerBuildItem historyHandlerBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         initializeVirtual();
 
@@ -270,7 +289,7 @@ public class DevConsoleProcessor {
         // Add the log stream
         routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
                 .route("/dev/logstream")
-                .handler(new LogStreamWebSocket())
+                .handler(recorder.websocketHandler(historyHandlerBuildItem.value))
                 .nonApplicationRoute(false)
                 .build());
 
@@ -522,6 +541,13 @@ public class DevConsoleProcessor {
             // No need to escape special characters
             return CompletableFuture.completedFuture(new RawString(val));
         }
+    }
 
+    public static final class HistoryHandlerBuildItem extends SimpleBuildItem {
+        final RuntimeValue<Optional<HistoryHandler>> value;
+
+        public HistoryHandlerBuildItem(RuntimeValue<Optional<HistoryHandler>> value) {
+            this.value = value;
+        }
     }
 }

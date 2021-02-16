@@ -178,7 +178,34 @@ Next navigate to _Java_ -> _Code Style_ -> _Organize Imports_. Click _Import_ an
 
 #### IDEA Setup
 
-Open the _Preferences_ window (or _Settings_ depending on your edition) , navigate to _Plugins_ and install the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the Marketplace.
+##### How to work
+
+Quarkus is a large project and IDEA will have a hard time compiling the whole of it.
+Before you start coding, make sure to build the project using Maven from the commandline
+with `./mvnw -Dquickly`.
+
+##### `OutOfMemoryError` while importing
+
+After creating an IDEA project, the first import will most likely fail with an `OutOfMemoryError`.
+
+To fix that, open the _Preferences_ window (or _Settings_ depending on your edition),
+then navigate to _Build, Execution, Deployment_ > _Build Tools_ > _Maven_ > _Importing_.
+In _VM options for importer_, raise the heap to at least 2 GB, e.g. `-Xmx2g -Xms2g`.
+
+##### `package sun.misc does not exist` while building
+
+You may get an error like this during the build:
+
+```
+Error:(46, 56) java: package sun.misc does not exist
+```
+
+To fix this go to _Settings_ > _Build, Execution, Deployment_ > _Compiler_ > _Java Compiler_
+and disable _Use '--release' option for cross compilation (java 9 and later)_.
+
+##### Formatting
+
+Open the _Preferences_ window (or _Settings_ depending on your edition), navigate to _Plugins_ and install the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the Marketplace.
 
 Restart your IDE, open the *Preferences* (or *Settings*) window again and navigate to _Other Settings_ -> _Eclipse Code Formatter_.
 

@@ -34,6 +34,17 @@
         <dependency>
             <groupId>org.hibernate.reactive</groupId>
             <artifactId>hibernate-reactive-core</artifactId>
+            <exclusions>
+                <!-- Make sure Quarkus can manage Mutiny via quarkus-mutiny -->
+                <exclusion>
+                    <groupId>io.smallrye.reactive</groupId>
+                    <artifactId>mutiny</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>

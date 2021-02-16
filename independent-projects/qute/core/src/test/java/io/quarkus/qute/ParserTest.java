@@ -11,8 +11,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -178,7 +180,7 @@ public class ParserTest {
                 "user.loggedIn");
         assertParams("this.get('name') is null", "this.get('name')", "is", "null");
         assertParserError("{#if 'foo is null}{/}",
-                "Parser error on line 1: unterminated string literal or composite parameter detected for [#if 'foo is null]",
+                "Parser error on line 1: unexpected non-text buffer at the end of the template - unterminated string literal: #if 'foo is null}{/}",
                 1);
         assertParserError("{#if (foo || bar}{/}",
                 "Parser error on line 1: unterminated string literal or composite parameter detected for [#if (foo || bar]", 1);
@@ -285,6 +287,22 @@ public class ParserTest {
         assertEquals("${foo}::true", template.data("bar", true).render());
     }
 
+    @Test
+    public void testStringLiteralWithTagEndDelimiter() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(ValueResolver.builder().applyToBaseClass(String.class)
+                .applyToName("lines").resolveSync(ctx -> ctx.getBase().toString().split("\\n")).build()).build();
+        Map<String, String> map = new HashMap<>();
+        map.put("path", "/foo/bar");
+        Template template = engine.parse("{#for line in map.get('{foo}').lines.orEmpty}{line}{/for}");
+        assertEquals("", template.data("map", map).render());
+        template = engine.parse("{#for line in map.get(foo).lines}{line}{/for}");
+        assertEquals("/foo/bar", template.data("map", map, "foo", "path").render());
+
+        assertParserError("{#if map.get(\"{foo})}Bye...{/if}",
+                "Parser error on line 1: unexpected non-text buffer at the end of the template - unterminated string literal: #if map.get(\"{foo})}Bye...{/if}",
+                1);
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {
@@ -293,8 +311,7 @@ public class ParserTest {
         } catch (TemplateException expected) {
             assertNotNull(expected.getOrigin());
             assertEquals(line, expected.getOrigin().getLine(), "Wrong line");
-            assertEquals(message,
-                    expected.getMessage());
+            assertEquals(message, expected.getMessage());
         }
     }
 

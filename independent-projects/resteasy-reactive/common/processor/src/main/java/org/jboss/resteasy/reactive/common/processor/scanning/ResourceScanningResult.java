@@ -5,10 +5,12 @@ import java.util.Map;
 import java.util.Set;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
 public final class ResourceScanningResult {
 
+    private final IndexView index;
     final Map<DotName, ClassInfo> scannedResources;
     final Map<DotName, String> scannedResourcePaths;
     final Map<DotName, ClassInfo> possibleSubResources;
@@ -18,10 +20,12 @@ public final class ResourceScanningResult {
     final Map<DotName, String> httpAnnotationToMethod;
     final List<MethodInfo> classLevelExceptionMappers;
 
-    public ResourceScanningResult(Map<DotName, ClassInfo> scannedResources, Map<DotName, String> scannedResourcePaths,
+    public ResourceScanningResult(IndexView index, Map<DotName, ClassInfo> scannedResources,
+            Map<DotName, String> scannedResourcePaths,
             Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
             Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
             Set<String> beanParams, Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers) {
+        this.index = index;
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;
         this.possibleSubResources = possibleSubResources;
@@ -30,6 +34,10 @@ public final class ResourceScanningResult {
         this.beanParams = beanParams;
         this.httpAnnotationToMethod = httpAnnotationToMethod;
         this.classLevelExceptionMappers = classLevelExceptionMappers;
+    }
+
+    public IndexView getIndex() {
+        return index;
     }
 
     public Map<DotName, ClassInfo> getScannedResources() {

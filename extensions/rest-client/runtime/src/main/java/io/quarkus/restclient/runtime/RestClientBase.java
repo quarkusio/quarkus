@@ -49,14 +49,14 @@ public class RestClientBase {
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
     private final String propertyPrefix;
-    private final Class<?> annotationProvider;
+    private final Class<?>[] annotationProviders;
 
     public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefix,
-            Class<?> annotationProvider) {
+            Class<?>[] annotationProviders) {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.propertyPrefix = propertyPrefix;
-        this.annotationProvider = annotationProvider;
+        this.annotationProviders = annotationProviders;
     }
 
     public Object create() {
@@ -202,8 +202,10 @@ public class RestClientBase {
         if (maybeProviders.isPresent()) {
             registerProviders(builder, maybeProviders.get());
         }
-        if (annotationProvider != null) {
-            builder.register(annotationProvider);
+        if (annotationProviders != null) {
+            for (Class<?> annotationProvider : annotationProviders) {
+                builder.register(annotationProvider);
+            }
         }
     }
 

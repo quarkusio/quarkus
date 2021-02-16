@@ -97,6 +97,7 @@ import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandl
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ServerVertxBufferMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -119,6 +120,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -221,6 +223,7 @@ public class ResteasyReactiveProcessor {
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder,
             RecorderContext recorderContext,
             ShutdownContextBuildItem shutdownContext,
@@ -241,7 +244,8 @@ public class ResteasyReactiveProcessor {
             ExceptionMappersBuildItem exceptionMappersBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
-            List<MethodScannerBuildItem> methodScanners) throws NoSuchMethodException {
+            List<MethodScannerBuildItem> methodScanners, ResteasyReactiveServerConfig serverConfig)
+            throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -305,6 +309,7 @@ public class ResteasyReactiveProcessor {
                     .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
                     .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
+                    .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
                     .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths)
                     .setConfig(new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
                             config.inputBufferSize.asLongValue(), config.singleDefaultProduces, config.defaultProduces))
@@ -471,7 +476,7 @@ public class ResteasyReactiveProcessor {
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                     beanContainerBuildItem.getValue());
 
-            String applicationPath = determineApplicationPath(index);
+            String applicationPath = determineApplicationPath(index, serverConfig.path);
             // spec allows the path contain encoded characters
             if ((applicationPath != null) && applicationPath.contains("%")) {
                 applicationPath = Encode.decodePath(applicationPath);
@@ -523,6 +528,17 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void applyRuntimeConfig(ResteasyReactiveRuntimeRecorder recorder,
+            Optional<ResteasyReactiveDeploymentBuildItem> deployment,
+            HttpConfiguration httpConfiguration) {
+        if (!deployment.isPresent()) {
+            return;
+        }
+        recorder.configure(deployment.get().getDeployment(), httpConfiguration);
+    }
+
+    @BuildStep
     public void securityExceptionMappers(BuildProducer<ExceptionMapperBuildItem> exceptionMapperBuildItemBuildProducer) {
         // built-ins
         exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
@@ -557,10 +573,10 @@ public class ResteasyReactiveProcessor {
         });
     }
 
-    private String determineApplicationPath(IndexView index) {
+    private String determineApplicationPath(IndexView index, String defaultPath) {
         Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyReactiveDotNames.APPLICATION_PATH);
         if (applicationPaths.isEmpty()) {
-            return null;
+            return defaultPath;
         }
         // currently we only examine the first class that is annotated with @ApplicationPath so best
         // fail if the user code has multiple such annotations instead of surprising the user

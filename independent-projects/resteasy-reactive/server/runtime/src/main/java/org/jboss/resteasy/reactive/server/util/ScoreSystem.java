@@ -136,5 +136,14 @@ public class ScoreSystem {
             overallScore = (int) Math.floor(((float) overallScore / (float) overallTotal) * 100f);
             latestScores = new EndpointScores(overallScore, endpoints);
         }
+
+        @Override
+        public void visitStart() {
+            //clear the endpoints
+            endpoints.clear();
+            //reset overallScore and overallTotal
+            overallScore = 0;
+            overallTotal = 0;
+        }
     };
 }

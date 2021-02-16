@@ -93,6 +93,10 @@ public class OidcCommonUtils {
                 : 0;
     }
 
+    public static long getConnectionDelayInMillis(OidcCommonConfig oidcConfig) {
+        return getConnectionDelay(oidcConfig) * 1000;
+    }
+
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
         // Proxy is enabled if (at least) "host" is configured.
         if (!proxyConfig.host.isPresent()) {

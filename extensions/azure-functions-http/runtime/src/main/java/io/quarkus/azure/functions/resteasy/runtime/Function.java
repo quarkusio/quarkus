@@ -14,7 +14,10 @@ public class Function extends BaseFunction {
     public HttpResponseMessage run(
             @HttpTrigger(name = "req") HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) {
-        if (!started) {
+        if (!started && !bootstrapError) {
+            initQuarkus();
+        }
+        if (bootstrapError) {
             HttpResponseMessage.Builder responseBuilder = request
                     .createResponseBuilder(HttpStatus.valueOf(500)).body(
                             deploymentStatus.getBytes(StandardCharsets.UTF_8));

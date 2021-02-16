@@ -20,6 +20,7 @@ import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -38,6 +39,7 @@ public class Deployment {
     private final RequestContextFactory requestContextFactory;
     private final List<ServerRestHandler> preMatchHandlers;
     private final List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
+    private final List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers;
 
     public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
@@ -46,7 +48,8 @@ public class Deployment {
             ConfigurationImpl configuration, Supplier<Application> applicationSupplier,
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
             List<ServerRestHandler> preMatchHandlers,
-            List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers) {
+            List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
+            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -60,6 +63,7 @@ public class Deployment {
         this.requestContextFactory = requestContextFactory;
         this.preMatchHandlers = preMatchHandlers;
         this.classMappers = classMappers;
+        this.runtimeConfigurableServerRestHandlers = runtimeConfigurableServerRestHandlers;
     }
 
     public Supplier<Application> getApplicationSupplier() {
@@ -157,5 +161,9 @@ public class Deployment {
 
     public RequestContextFactory getRequestContextFactory() {
         return requestContextFactory;
+    }
+
+    public List<RuntimeConfigurableServerRestHandler> getRuntimeConfigurableServerRestHandlers() {
+        return runtimeConfigurableServerRestHandlers;
     }
 }

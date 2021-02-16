@@ -7,19 +7,26 @@ import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import io.quarkus.security.Authenticated;
-
 @Path("/frontend")
-@Authenticated
 public class FrontendResource {
     @Inject
     @RestClient
-    ProtectedResourceService protectedResourceService;
+    TokenPropagationService tokenPropagationService;
+
+    @Inject
+    @RestClient
+    ServiceAccountService serviceAccountService;
 
     @GET
-    @Path("user")
+    @Path("token-propagation")
     @RolesAllowed("user")
-    public String userName() {
-        return protectedResourceService.getUserName();
+    public String userNameTokenPropagation() {
+        return tokenPropagationService.getUserName();
+    }
+
+    @GET
+    @Path("service-account")
+    public String userNameServiceAccount() {
+        return serviceAccountService.getUserName();
     }
 }

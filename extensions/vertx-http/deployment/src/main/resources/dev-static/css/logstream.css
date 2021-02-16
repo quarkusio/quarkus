@@ -56,6 +56,10 @@
     top: 0px;
 }
 
+#logstreamManagerNavAppInfo, #logstreamManagerNavBrand {
+    display: none;
+}
+
 #logstreamViewLogButton, #logstreamHideLogButton {
     color: #9a9da0;
     font-size:0.73em;

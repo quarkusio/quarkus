@@ -263,7 +263,7 @@ public class ConfigBuildStep {
         return builder.append(".").append(name).toString();
     }
 
-    private boolean isHandledByProducers(Type type) {
+    public static boolean isHandledByProducers(Type type) {
         if (type.kind() == Kind.ARRAY) {
             return false;
         }

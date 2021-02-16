@@ -13,11 +13,19 @@ import io.restassured.RestAssured;
 public class OidcTokenPropagationTest {
 
     @Test
-    public void testGetUserNameOidcClient() {
+    public void testGetUserNameWithTokenPropagation() {
         RestAssured.given().auth().oauth2(KeycloakRealmResourceManager.getAccessToken("alice"))
-                .when().get("/frontend/user")
+                .when().get("/frontend/token-propagation")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));
+    }
+
+    @Test
+    public void testGetUserNameFromServiceAccount() {
+        RestAssured.when().get("/frontend/service-account")
+                .then()
+                .statusCode(200)
+                .body(equalTo("bob"));
     }
 }

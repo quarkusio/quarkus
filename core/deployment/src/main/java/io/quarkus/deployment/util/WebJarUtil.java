@@ -451,7 +451,7 @@ public class WebJarUtil {
         }
     }
 
-    private static Path createResourcesDirectory(AppArtifact userApplication, AppArtifact resourcesArtifact) {
+    public static Path createResourcesDirectory(AppArtifact userApplication, AppArtifact resourcesArtifact) {
         try {
             Path path = Paths.get(TMP_DIR, "quarkus", userApplication.getGroupId(), userApplication.getArtifactId(),
                     resourcesArtifact.getGroupId(), resourcesArtifact.getArtifactId(), resourcesArtifact.getVersion());

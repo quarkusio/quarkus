@@ -40,7 +40,8 @@ public class UploadsDirectoryTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Routes.class)
                     .addAsResource(new StringAsset(
-                            "quarkus.http.body.uploads-directory = " + UPLOADS_DIR + "\n"),
+                            "quarkus.http.body.uploads-directory = " + UPLOADS_DIR
+                                    + "\nquarkus.http.body.delete-uploaded-files-on-end=false\n"),
                             "application.properties"));
 
     @Test

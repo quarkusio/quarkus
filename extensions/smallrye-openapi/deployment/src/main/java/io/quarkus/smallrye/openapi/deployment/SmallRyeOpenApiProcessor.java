@@ -313,16 +313,18 @@ public class SmallRyeOpenApiProcessor {
             annotationModel = new OpenAPIImpl();
         }
         OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel, openAPIBuildItems);
-        boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
+
         for (Format format : Format.values()) {
             String name = OpenApiConstants.BASE_NAME + format;
             byte[] schemaDocument = OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8);
             resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name, schemaDocument));
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
+        }
 
-            if (shouldStore) {
-                storeGeneratedSchema(openApiConfig, out, schemaDocument, format);
-            }
+        // Store the document if needed
+        boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
+        if (shouldStore) {
+            storeDocument(out, openApiConfig, staticModel, annotationModel, openAPIBuildItems);
         }
     }
 
@@ -492,6 +494,36 @@ public class SmallRyeOpenApiProcessor {
 
     private OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
+        OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
+        document.initialize();
+        return document;
+    }
+
+    private void storeDocument(OutputTargetBuildItem out,
+            SmallRyeOpenApiConfig smallRyeOpenApiConfig,
+            OpenAPI staticModel,
+            OpenAPI annotationModel,
+            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) throws IOException {
+
+        Config config = ConfigProvider.getConfig();
+        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
+
+        OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
+
+        document.filter(filter(openApiConfig)); // This usually happens at runtime, so when storing we want to filter here too.
+        document.initialize();
+
+        for (Format format : Format.values()) {
+            String name = OpenApiConstants.BASE_NAME + format;
+            byte[] schemaDocument = OpenApiSerializer.serialize(document.get(), format).getBytes(StandardCharsets.UTF_8);
+            storeGeneratedSchema(smallRyeOpenApiConfig, out, schemaDocument, format);
+        }
+
+    }
+
+    private OpenApiDocument prepareOpenApiDocument(OpenAPI staticModel,
+            OpenAPI annotationModel,
+            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
@@ -508,7 +540,6 @@ public class SmallRyeOpenApiProcessor {
             OASFilter otherExtensionFilter = openAPIBuildItem.getOASFilter();
             document.filter(otherExtensionFilter);
         }
-        document.initialize();
         return document;
     }
 
@@ -517,5 +548,10 @@ public class SmallRyeOpenApiProcessor {
         document.reset();
         document.config(openApiConfig);
         return document;
+    }
+
+    private OASFilter filter(OpenApiConfig openApiConfig) {
+        return OpenApiProcessor.getFilter(openApiConfig,
+                Thread.currentThread().getContextClassLoader());
     }
 }

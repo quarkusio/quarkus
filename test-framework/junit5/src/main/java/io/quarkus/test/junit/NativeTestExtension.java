@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,7 +174,8 @@ public class NativeTestExtension
                 }
             }
 
-            testResourceManager = new TestResourceManager(requiredTestClass);
+            testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
+                    Collections.emptyList(), profileInstance != null ? profileInstance.disableGlobalTestResources() : false);
             testResourceManager.init();
             hasPerTestResources = testResourceManager.hasPerTestResources();
 

@@ -313,8 +313,9 @@ public class QuarkusTestExtension
 
             //must be done after the TCCL has been set
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
-                    .getConstructor(Class.class, List.class, boolean.class)
+                    .getConstructor(Class.class, Class.class, List.class, boolean.class)
                     .newInstance(requiredTestClass,
+                            profile != null ? profile : null,
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources());
             testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
@@ -1192,7 +1193,7 @@ public class QuarkusTestExtension
     public static boolean hasPerTestResources(Class<?> requiredTestClass) {
         while (requiredTestClass != Object.class) {
             for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
-                if (testResource.restrictToAnnotatedTest()) {
+                if (testResource.restrictToAnnotatedClass()) {
                     return true;
                 }
             }

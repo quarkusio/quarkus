@@ -10,6 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -33,10 +34,12 @@ public class HttpRemoteDevClient implements RemoteDevClient {
 
     private final String url;
     private final String password;
+    private final long reconnectTimeoutMillis;
 
-    public HttpRemoteDevClient(String url, String password) {
+    public HttpRemoteDevClient(String url, String password, Duration reconnectTimeout) {
         this.url = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
         this.password = password;
+        this.reconnectTimeoutMillis = reconnectTimeout.toMillis();
     }
 
     @Override
@@ -246,9 +249,9 @@ public class HttpRemoteDevClient implements RemoteDevClient {
         private String waitForRestart(RemoteDevState initialState,
                 Function<Set<String>, Map<String, byte[]>> initialConnectFunction) {
 
-            long timeout = System.currentTimeMillis() + 30000;
+            long timeout = System.currentTimeMillis() + reconnectTimeoutMillis;
             try {
-                Thread.sleep(1000);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
 
             }

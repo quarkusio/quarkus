@@ -1,5 +1,6 @@
 package io.quarkus.runtime;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,4 +29,10 @@ public class LiveReloadConfig {
      */
     @ConfigItem
     public Optional<String> url;
+
+    /**
+     * The amount of time to wait for a remote dev connect or reconnect
+     */
+    @ConfigItem(defaultValue = "30s")
+    public Duration connectTimeout;
 }

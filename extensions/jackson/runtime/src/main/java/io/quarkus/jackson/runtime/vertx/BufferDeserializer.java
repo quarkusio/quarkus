@@ -10,7 +10,7 @@
  */
 package io.quarkus.jackson.runtime.vertx;
 
-import static io.vertx.core.json.impl.JsonUtil.BASE64_DECODER;
+import static io.quarkus.jackson.runtime.vertx.JsonUtil.BASE64_DECODER;
 
 import java.io.IOException;
 import java.time.Instant;

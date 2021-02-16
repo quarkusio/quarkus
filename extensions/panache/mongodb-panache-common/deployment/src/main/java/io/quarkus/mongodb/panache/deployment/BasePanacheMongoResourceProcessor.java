@@ -1,7 +1,7 @@
 package io.quarkus.mongodb.panache.deployment;
 
 import static io.quarkus.deployment.util.JandexUtil.resolveTypeParameters;
-import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.META_INF_PANACHE_ARCHIVE_MARKER;
+import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
 import static org.jboss.jandex.DotName.createSimple;
 
 import java.util.Collection;

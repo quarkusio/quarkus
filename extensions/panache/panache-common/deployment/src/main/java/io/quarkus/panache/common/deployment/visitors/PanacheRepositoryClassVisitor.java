@@ -29,7 +29,7 @@ import org.objectweb.asm.Type;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.panache.common.deployment.ByteCodeType;
-import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
+import io.quarkus.panache.common.deployment.PanacheConstants;
 import io.quarkus.panache.common.deployment.TypeBundle;
 
 public class PanacheRepositoryClassVisitor extends ClassVisitor {
@@ -123,7 +123,7 @@ public class PanacheRepositoryClassVisitor extends ClassVisitor {
             // Do not generate a method that already exists
             String descriptor = getDescriptor(method, type -> typeArguments.getOrDefault(type, OBJECT).descriptor());
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
-                AnnotationInstance bridge = method.annotation(PanacheEntityEnhancer.DOTNAME_GENERATE_BRIDGE);
+                AnnotationInstance bridge = method.annotation(PanacheConstants.DOTNAME_GENERATE_BRIDGE);
                 if (bridge != null) {
                     generateModelBridge(method);
                     if (needsJvmBridge(method)) {

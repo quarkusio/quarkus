@@ -1,9 +1,11 @@
 package io.quarkus.panache.common.deployment.visitors;
 
 import static io.quarkus.deployment.util.AsmUtil.getDescriptor;
-import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.JSON_IGNORE_DOT_NAME;
-import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.JSON_PROPERTY_DOT_NAME;
-import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.JSON_PROPERTY_SIGNATURE;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JAXB_ANNOTATION_PREFIX;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JAXB_TRANSIENT_SIGNATURE;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_IGNORE_DOT_NAME;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_DOT_NAME;
+import static io.quarkus.panache.common.deployment.PanacheConstants.JSON_PROPERTY_SIGNATURE;
 import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor.OBJECT;
 import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor.recursivelyFindEntityTypeArguments;
 import static io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassVisitor.CLASS;
@@ -41,7 +43,7 @@ import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
-import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
+import io.quarkus.panache.common.deployment.PanacheConstants;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerVisitor;
 import io.quarkus.panache.common.deployment.PanacheMovingAnnotationVisitor;
@@ -118,7 +120,7 @@ public abstract class PanacheEntityClassVisitor extends ClassVisitor {
         return new FieldVisitor(Gizmo.ASM_API_VERSION, superVisitor) {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                if (!descriptor.startsWith(PanacheEntityEnhancer.JAXB_ANNOTATION_PREFIX)) {
+                if (!descriptor.startsWith(JAXB_ANNOTATION_PREFIX)) {
                     return super.visitAnnotation(descriptor, visible);
                 } else {
                     // Save off JAX-B annotations on the field so they can be applied to the generated getter later
@@ -135,7 +137,7 @@ public abstract class PanacheEntityClassVisitor extends ClassVisitor {
                 // JSONB will already use the getter so we're good
                 // Note: we don't need to check if we already have @XmlTransient in the descriptors because if we did, we moved it to the getter
                 // so we can't have any duplicate
-                super.visitAnnotation(PanacheEntityEnhancer.JAXB_TRANSIENT_SIGNATURE, true);
+                super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);
                 super.visitEnd();
             }
         };
@@ -170,7 +172,7 @@ public abstract class PanacheEntityClassVisitor extends ClassVisitor {
             // Do not generate a method that already exists
             String descriptor = AsmUtil.getDescriptor(method, name -> null);
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
-                AnnotationInstance bridge = method.annotation(PanacheEntityEnhancer.DOTNAME_GENERATE_BRIDGE);
+                AnnotationInstance bridge = method.annotation(PanacheConstants.DOTNAME_GENERATE_BRIDGE);
                 if (bridge != null) {
                     generateMethod(method, bridge.value("targetReturnTypeErased"));
                 }

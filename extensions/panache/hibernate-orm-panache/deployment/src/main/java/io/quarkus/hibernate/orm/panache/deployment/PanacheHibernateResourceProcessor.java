@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
-import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.META_INF_PANACHE_ARCHIVE_MARKER;
+import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
 
 import java.util.Collections;
 import java.util.HashMap;

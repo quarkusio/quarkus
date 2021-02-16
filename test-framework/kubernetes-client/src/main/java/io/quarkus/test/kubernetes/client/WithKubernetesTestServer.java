@@ -13,7 +13,7 @@ import io.quarkus.test.common.QuarkusTestResource;
  * Use on your test resource to get a mock {@link KubernetesServer} spawn up, and injectable with {@link KubernetesTestServer}.
  * This annotation is only active when used on a test class, and only for this test class.
  */
-@QuarkusTestResource(value = KubernetesServerTestResource.class, restrictToAnnotatedTest = true)
+@QuarkusTestResource(value = KubernetesServerTestResource.class, restrictToAnnotatedClass = true)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface WithKubernetesTestServer {

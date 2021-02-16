@@ -19,7 +19,7 @@ import io.restassured.RestAssured;
  * KubernetesClientTest.TestResource contains the entire process of setting up the Mock Kubernetes API Server
  * It has to live there otherwise the Kubernetes client in native mode won't be able to locate the mock API Server
  */
-@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedTest = true)
+@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedClass = true)
 @QuarkusTest
 public class KubernetesClientTest {
 

@@ -31,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>mutiny-context-propagation</artifactId>
+            <artifactId>mutiny-smallrye-context-propagation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

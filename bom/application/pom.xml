@@ -135,8 +135,8 @@
         <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.1.Final</jboss-logging.version>
-        <mutiny.version>0.13.0</mutiny.version>
-        <mutiny-vertx.version>1.4.0</mutiny-vertx.version>
+        <mutiny.version>0.14.0</mutiny.version>
+        <mutiny-vertx.version>1.5.0</mutiny-vertx.version>
         <kafka2.version>2.5.0</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -2554,7 +2554,7 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-context-propagation</artifactId>
+                <artifactId>mutiny-smallrye-context-propagation</artifactId>
                 <version>${mutiny.version}</version>
             </dependency>
             <dependency>

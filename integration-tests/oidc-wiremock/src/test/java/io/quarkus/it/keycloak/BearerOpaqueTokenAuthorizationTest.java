@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.equalTo;
 import java.util.Arrays;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -16,6 +17,7 @@ import io.restassured.RestAssured;
  */
 @QuarkusTest
 @QuarkusTestResource(KeycloakTestResource.class)
+@Disabled
 public class BearerOpaqueTokenAuthorizationTest {
 
     @Test

@@ -1,9 +1,11 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +20,6 @@ import javax.ws.rs.sse.SseEventSource;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -53,7 +54,7 @@ public class SseTestCase {
         try (SseEventSource eventSource = SseEventSource.target(target).reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS)
                 .build()) {
             CompletableFuture<List<String>> res = new CompletableFuture<>();
-            List<String> collect = new ArrayList<>();
+            List<String> collect = Collections.synchronizedList(new ArrayList<>());
             eventSource.register(new Consumer<InboundSseEvent>() {
                 @Override
                 public void accept(InboundSseEvent inboundSseEvent) {
@@ -68,17 +69,17 @@ public class SseTestCase {
                 res.complete(collect);
             });
             eventSource.open();
-            Assertions.assertEquals(Arrays.asList("hello", "stef"), res.get(5, TimeUnit.SECONDS));
+            assertThat(res.get(5, TimeUnit.SECONDS)).containsExactly("hello", "stef");
         }
     }
 
     @Test
-    public void testMultiFromSse() throws Exception {
+    public void testMultiFromSse() {
         testMulti("sse");
     }
 
     @Test
-    public void testMultiFromMulti() throws Exception {
+    public void testMultiFromMulti() {
         testMulti("sse/multi");
     }
 
@@ -86,21 +87,19 @@ public class SseTestCase {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<String> multi = target.request().rx(MultiInvoker.class).get(String.class);
-        List<String> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(30));
-        Assertions.assertEquals(2, list.size());
-        Assertions.assertEquals("hello", list.get(0));
-        Assertions.assertEquals("stef", list.get(1));
+        List<String> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));
+        assertThat(list).containsExactly("hello", "stef");
     }
 
     @Test
-    public void testJsonMultiFromSse() throws Exception {
+    public void testJsonMultiFromSse() {
         testJsonMulti("sse/json");
         testJsonMulti("sse/json2");
         testJsonMulti("sse/blocking/json");
     }
 
     @Test
-    public void testJsonMultiFromMulti() throws Exception {
+    public void testJsonMultiFromMulti() {
         testJsonMulti("sse/json/multi");
     }
 
@@ -108,9 +107,7 @@ public class SseTestCase {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
-        List<Message> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(30));
-        Assertions.assertEquals(2, list.size());
-        Assertions.assertEquals("hello", list.get(0).name);
-        Assertions.assertEquals("stef", list.get(1).name);
+        List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));
+        assertThat(list).extracting("name").containsExactly("hello", "stef");
     }
 }

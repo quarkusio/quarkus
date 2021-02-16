@@ -19,9 +19,13 @@ public interface RuntimeResourceVisitor {
     public default void visitEnd() {
     }
 
+    public default void visitStart() {
+    }
+
     public static void visitRuntimeResources(
             List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
             RuntimeResourceVisitor visitor) {
+        visitor.visitStart();
         for (RequestMapper.RequestPath<RestInitialHandler.InitialMatch> classMapper : classMappers) {
             String template = classMapper.template.template;
             RestInitialHandler.InitialMatch initialMatch = classMapper.value;

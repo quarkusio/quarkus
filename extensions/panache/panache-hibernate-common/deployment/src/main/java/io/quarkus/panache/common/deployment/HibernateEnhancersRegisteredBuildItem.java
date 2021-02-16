@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.deployment;
+package io.quarkus.panache.common.deployment;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 

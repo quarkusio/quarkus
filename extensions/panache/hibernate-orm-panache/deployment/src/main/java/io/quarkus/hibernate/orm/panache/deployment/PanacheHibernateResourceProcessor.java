@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.panache.deployment;
 
 import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
 
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,17 +15,13 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -35,26 +30,18 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
-import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.runtime.PanacheHibernateOrmRecorder;
-import io.quarkus.panache.common.deployment.EntityField;
-import io.quarkus.panache.common.deployment.EntityModel;
-import io.quarkus.panache.common.deployment.MetamodelInfo;
-import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
-import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
-import io.quarkus.panache.common.deployment.PanacheJpaEntityAccessorsEnhancer;
+import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.PanacheJpaEntityOperationsEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
@@ -70,8 +57,6 @@ public final class PanacheHibernateResourceProcessor {
     private static final DotName DOTNAME_ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
-
-    private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -160,84 +145,6 @@ public final class PanacheHibernateResourceProcessor {
         panacheEntities.addAll(modelClasses);
 
         recordPanacheEntityPersistenceUnits(recorder, jpaModelPersistenceUnitMapping, panacheEntities);
-    }
-
-    @BuildStep
-    PanacheEntityClassesBuildItem findEntityClasses() {
-        return null;
-    }
-
-    @BuildStep
-    @Consume(HibernateEnhancersRegisteredBuildItem.class)
-    void replaceFieldAccesses(CombinedIndexBuildItem index,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<PanacheEntityClassesBuildItem> fieldAccessEnhancedEntityClasses,
-            List<PanacheEntityClassBuildItem> entityClasses) {
-        MetamodelInfo modelInfo = new MetamodelInfo();
-
-        // Generate accessors for public fields in entities
-        PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
-                modelInfo);
-        for (PanacheEntityClassBuildItem entityClass : entityClasses) {
-            String entityClassName = entityClass.get().name().toString();
-            modelInfo.addEntityModel(createEntityModel(entityClass.get()));
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityAccessorsEnhancer));
-        }
-
-        if (modelInfo.hasEntities()) {
-            // Share with other extensions that we generated accessors for some classes
-            fieldAccessEnhancedEntityClasses.produce(new PanacheEntityClassesBuildItem(modelInfo.getEntityClassNames()));
-
-            // Replace field access in application code with calls to accessors
-            Set<String> entityClassNamesInternal = new HashSet<>();
-            for (String entityClassName : modelInfo.getEntityClassNames()) {
-                entityClassNamesInternal.add(entityClassName.replace(".", "/"));
-            }
-
-            PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-            QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
-            Set<String> produced = new HashSet<>();
-            //we always transform the root archive, even though it should be run with the annotation
-            //processor on the CP it might not be if the user is using jpa-modelgen
-            //this won't cover every situation, but we have documented this, and as the fields are now
-            //made private the error should be very obvious
-            //we only do this for hibernate, as it is more common to have an additional annotation processor
-            for (ClassInfo i : applicationArchivesBuildItem.getRootArchive().getIndex().getKnownClasses()) {
-                String cn = i.name().toString();
-                produced.add(cn);
-                transformers.produce(
-                        new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
-            }
-
-            for (ClassPathElement i : archives) {
-                for (String res : i.getProvidedResources()) {
-                    if (res.endsWith(".class")) {
-                        String cn = res.replace("/", ".").substring(0, res.length() - 6);
-                        if (produced.contains(cn)) {
-                            continue;
-                        }
-                        produced.add(cn);
-                        transformers.produce(
-                                new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
-                    }
-                }
-            }
-        }
-    }
-
-    private EntityModel createEntityModel(ClassInfo classInfo) {
-        EntityModel entityModel = new EntityModel(classInfo);
-        for (FieldInfo fieldInfo : classInfo.fields()) {
-            String name = fieldInfo.name();
-            if (Modifier.isPublic(fieldInfo.flags())
-                    && !Modifier.isStatic(fieldInfo.flags())
-                    && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
-                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
-            }
-        }
-        return entityModel;
     }
 
     @BuildStep

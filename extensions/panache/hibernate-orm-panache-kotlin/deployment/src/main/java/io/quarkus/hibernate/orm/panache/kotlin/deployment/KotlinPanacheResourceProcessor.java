@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -55,7 +54,6 @@ public final class KotlinPanacheResourceProcessor {
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
     private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     private static final Set<DotName> UNREMOVABLE_BEANS = singleton(createSimple(EntityManager.class.getName()));
-    static final DotName TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
@@ -135,7 +133,6 @@ public final class KotlinPanacheResourceProcessor {
             }
             String name = classInfo.name().toString();
             if (modelClasses.add(name)) {
-                entityEnhancer.collectFields(classInfo);
                 transformers.produce(new BytecodeTransformerBuildItem(name, entityEnhancer));
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, name));
             }

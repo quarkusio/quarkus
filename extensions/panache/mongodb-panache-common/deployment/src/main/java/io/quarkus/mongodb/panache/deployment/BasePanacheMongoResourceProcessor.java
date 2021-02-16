@@ -4,6 +4,7 @@ import static io.quarkus.deployment.util.JandexUtil.resolveTypeParameters;
 import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
 import static org.jboss.jandex.DotName.createSimple;
 
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
@@ -51,6 +53,8 @@ import io.quarkus.mongodb.panache.PanacheMongoRecorder;
 import io.quarkus.mongodb.panache.ProjectionFor;
 import io.quarkus.mongodb.panache.jackson.ObjectIdDeserializer;
 import io.quarkus.mongodb.panache.jackson.ObjectIdSerializer;
+import io.quarkus.panache.common.deployment.EntityField;
+import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
@@ -78,8 +82,11 @@ public abstract class BasePanacheMongoResourceProcessor {
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
+        MetamodelInfo modelInfo = new MetamodelInfo();
         processTypes(index, transformers, reflectiveClass, propertyMappingClass, getImperativeTypeBundle(),
-                createRepositoryEnhancer(index, methodCustomizers), createEntityEnhancer(index, methodCustomizers));
+                createRepositoryEnhancer(index, methodCustomizers),
+                createEntityEnhancer(index, methodCustomizers, modelInfo),
+                modelInfo);
     }
 
     @BuildStep
@@ -91,9 +98,11 @@ public abstract class BasePanacheMongoResourceProcessor {
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
+        MetamodelInfo modelInfo = new MetamodelInfo();
         processTypes(index, transformers, reflectiveClass, propertyMappingClass, getReactiveTypeBundle(),
                 createReactiveRepositoryEnhancer(index, methodCustomizers),
-                createReactiveEntityEnhancer(index, methodCustomizers));
+                createReactiveEntityEnhancer(index, methodCustomizers, modelInfo),
+                modelInfo);
     }
 
     @BuildStep
@@ -140,10 +149,10 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     protected abstract PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
-            List<PanacheMethodCustomizer> methodCustomizers);
+            List<PanacheMethodCustomizer> methodCustomizers, MetamodelInfo modelInfo);
 
     protected abstract PanacheEntityEnhancer createReactiveEntityEnhancer(CombinedIndexBuildItem index,
-            List<PanacheMethodCustomizer> methodCustomizers);
+            List<PanacheMethodCustomizer> methodCustomizers, MetamodelInfo modelInfo);
 
     protected abstract PanacheRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers);
@@ -242,7 +251,8 @@ public abstract class BasePanacheMongoResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            PanacheEntityEnhancer entityEnhancer, TypeBundle typeBundle) {
+            PanacheEntityEnhancer entityEnhancer, TypeBundle typeBundle,
+            MetamodelInfo modelInfo) {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
@@ -252,11 +262,11 @@ public abstract class BasePanacheMongoResourceProcessor {
                 continue;
             }
             if (modelClasses.add(classInfo.name().toString()))
-                entityEnhancer.collectFields(classInfo);
+                modelInfo.addEntityModel(createEntityModel(classInfo));
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(typeBundle.entity().dotName())) {
             if (modelClasses.add(classInfo.name().toString()))
-                entityEnhancer.collectFields(classInfo);
+                modelInfo.addEntityModel(createEntityModel(classInfo));
         }
 
         // iterate over all the entity classes
@@ -270,7 +280,7 @@ public abstract class BasePanacheMongoResourceProcessor {
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));
         }
 
-        replaceFieldAccesses(transformers, entityEnhancer.getModelInfo());
+        replaceFieldAccesses(transformers, modelInfo);
     }
 
     private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
@@ -298,6 +308,19 @@ public abstract class BasePanacheMongoResourceProcessor {
                 }
             }
         }
+    }
+
+    private EntityModel createEntityModel(ClassInfo classInfo) {
+        EntityModel entityModel = new EntityModel(classInfo);
+        for (FieldInfo fieldInfo : classInfo.fields()) {
+            String name = fieldInfo.name();
+            if (Modifier.isPublic(fieldInfo.flags())
+                    && !Modifier.isStatic(fieldInfo.flags())
+                    && !fieldInfo.hasAnnotation(BSON_IGNORE)) {
+                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
+            }
+        }
+        return entityModel;
     }
 
     protected void processRepositories(CombinedIndexBuildItem index,
@@ -344,12 +367,11 @@ public abstract class BasePanacheMongoResourceProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
             TypeBundle typeBundle, PanacheRepositoryEnhancer repositoryEnhancer,
-            PanacheEntityEnhancer entityEnhancer) {
-
+            PanacheEntityEnhancer entityEnhancer, MetamodelInfo modelInfo) {
         processRepositories(index, transformers, reflectiveClass, propertyMappingClass,
                 repositoryEnhancer, typeBundle);
         processEntities(index, transformers, reflectiveClass, propertyMappingClass,
-                entityEnhancer, typeBundle);
+                entityEnhancer, typeBundle, modelInfo);
     }
 
     @BuildStep

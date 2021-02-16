@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -7,11 +8,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.persistence.Id;
+import javax.persistence.Transient;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -27,12 +30,15 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
+import io.quarkus.panache.common.deployment.EntityField;
+import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
@@ -51,6 +57,8 @@ public final class PanacheHibernateResourceProcessor {
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
     protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
+
+    private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -104,9 +112,8 @@ public final class PanacheHibernateResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
-        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers,
-                ReactiveJavaJpaTypeBundle.BUNDLE);
         Set<String> modelClasses = new HashSet<>();
+        MetamodelInfo modelInfo = new MetamodelInfo();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase
         // NOTE: we don't skip abstract/generic entities because they still need accessors
@@ -115,13 +122,15 @@ public final class PanacheHibernateResourceProcessor {
             if (classInfo.name().equals(DOTNAME_PANACHE_ENTITY))
                 continue;
             if (modelClasses.add(classInfo.name().toString()))
-                modelEnhancer.collectFields(classInfo);
+                modelInfo.addEntityModel(createEntityModel(classInfo));
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY)) {
             if (modelClasses.add(classInfo.name().toString()))
-                modelEnhancer.collectFields(classInfo);
+                modelInfo.addEntityModel(createEntityModel(classInfo));
         }
 
+        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers,
+                ReactiveJavaJpaTypeBundle.BUNDLE, modelInfo);
         for (String entityClassName : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, modelEnhancer));
         }
@@ -129,7 +138,7 @@ public final class PanacheHibernateResourceProcessor {
             entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
         }
 
-        replaceFieldAccesses(transformers, modelEnhancer.getModelInfo());
+        replaceFieldAccesses(transformers, modelInfo);
     }
 
     private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
@@ -152,6 +161,19 @@ public final class PanacheHibernateResourceProcessor {
                 }
             }
         }
+    }
+
+    private EntityModel createEntityModel(ClassInfo classInfo) {
+        EntityModel entityModel = new EntityModel(classInfo);
+        for (FieldInfo fieldInfo : classInfo.fields()) {
+            String name = fieldInfo.name();
+            if (Modifier.isPublic(fieldInfo.flags())
+                    && !Modifier.isStatic(fieldInfo.flags())
+                    && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
+                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
+            }
+        }
+        return entityModel;
     }
 
     @BuildStep

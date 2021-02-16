@@ -19,6 +19,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.mongodb.panache.deployment.BasePanacheMongoResourceProcessor;
 import io.quarkus.mongodb.panache.deployment.PropertyMappingClassBuildStep;
+import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheCompanionEnhancer;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
@@ -80,7 +81,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
 
     @Override
     public PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
-            List<PanacheMethodCustomizer> methodCustomizers) {
+            List<PanacheMethodCustomizer> methodCustomizers, MetamodelInfo modelInfo) {
         return new KotlinPanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers, getImperativeTypeBundle());
     }
 
@@ -96,7 +97,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
 
     @Override
     public PanacheEntityEnhancer createReactiveEntityEnhancer(CombinedIndexBuildItem index,
-            List<PanacheMethodCustomizer> methodCustomizers) {
+            List<PanacheMethodCustomizer> methodCustomizers, MetamodelInfo modelInfo) {
         return new KotlinPanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers, getImperativeTypeBundle());
     }
 

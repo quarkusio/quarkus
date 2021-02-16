@@ -59,7 +59,7 @@
  
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>mutiny-context-propagation</artifactId>
+            <artifactId>mutiny-smallrye-context-propagation</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

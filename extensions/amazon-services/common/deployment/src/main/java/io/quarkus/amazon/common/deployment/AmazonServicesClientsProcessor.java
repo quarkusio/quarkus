@@ -29,10 +29,6 @@ public class AmazonServicesClientsProcessor {
     public static final String AWS_SDK_APPLICATION_ARCHIVE_MARKERS = "software/amazon/awssdk";
     public static final String AWS_SDK_XRAY_ARCHIVE_MARKER = "com/amazonaws/xray";
 
-    private static final String APACHE_HTTP_SERVICE = "software.amazon.awssdk.http.apache.ApacheSdkHttpService";
-    private static final String NETTY_HTTP_SERVICE = "software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService";
-    private static final String URL_HTTP_SERVICE = "software.amazon.awssdk.http.urlconnection.UrlConnectionSdkHttpService";
-
     private static final DotName EXECUTION_INTERCEPTOR_NAME = DotName.createSimple(ExecutionInterceptor.class.getName());
 
     @BuildStep
@@ -98,9 +94,9 @@ public class AmazonServicesClientsProcessor {
         // Register what's needed depending on the clients in the classpath and the configuration.
         // We use the configuration to guide us but if we don't have any clients configured,
         // we still register what's needed depending on what is in the classpath.
-        boolean isSyncApacheInClasspath = isInClasspath(APACHE_HTTP_SERVICE);
-        boolean isSyncUrlConnectionInClasspath = isInClasspath(URL_HTTP_SERVICE);
-        boolean isAsyncInClasspath = isInClasspath(NETTY_HTTP_SERVICE);
+        boolean isSyncApacheInClasspath = isInClasspath(AmazonHttpClients.APACHE_HTTP_SERVICE);
+        boolean isSyncUrlConnectionInClasspath = isInClasspath(AmazonHttpClients.URL_CONNECTION_HTTP_SERVICE);
+        boolean isAsyncInClasspath = isInClasspath(AmazonHttpClients.NETTY_HTTP_SERVICE);
 
         // Check that the clients required by the configuration are available
         if (syncTransportNeeded) {
@@ -140,17 +136,18 @@ public class AmazonServicesClientsProcessor {
                         "software.amazon.awssdk.http.apache.internal.conn.Wrapped"));
 
         serviceProvider.produce(
-                new ServiceProviderBuildItem(SdkHttpService.class.getName(), APACHE_HTTP_SERVICE));
+                new ServiceProviderBuildItem(SdkHttpService.class.getName(), AmazonHttpClients.APACHE_HTTP_SERVICE));
     }
 
     private static void registerSyncUrlConnectionClient(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        serviceProvider.produce(new ServiceProviderBuildItem(SdkHttpService.class.getName(), URL_HTTP_SERVICE));
+        serviceProvider.produce(
+                new ServiceProviderBuildItem(SdkHttpService.class.getName(), AmazonHttpClients.URL_CONNECTION_HTTP_SERVICE));
     }
 
     private static void registerAsyncNettyClient(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         serviceProvider.produce(
                 new ServiceProviderBuildItem(SdkAsyncHttpService.class.getName(),
-                        NETTY_HTTP_SERVICE));
+                        AmazonHttpClients.NETTY_HTTP_SERVICE));
     }
 
     private static boolean isInClasspath(String className) {

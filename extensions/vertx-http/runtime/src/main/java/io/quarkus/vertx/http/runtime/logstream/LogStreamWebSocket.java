@@ -20,20 +20,19 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class LogStreamWebSocket implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger(LogStreamWebSocket.class.getName());
-    private final HistoryHandler historyHandler = new HistoryHandler();
+    private final HistoryHandler historyHandler;
 
     private final String initMessage;
 
     private final ExtHandler rootHandler;
     private final org.jboss.logmanager.Logger rootLogger;
 
-    public LogStreamWebSocket() {
-
+    public LogStreamWebSocket(HistoryHandler historyHandler) {
+        this.historyHandler = historyHandler;
         // Add history handler
         final LogContext logContext = LogContext.getLogContext();
         rootLogger = logContext.getLogger("");
         rootHandler = findCorrectHandler(rootLogger.getHandlers());
-        addHandler(historyHandler);
         initMessage = createInitMessage();
     }
 

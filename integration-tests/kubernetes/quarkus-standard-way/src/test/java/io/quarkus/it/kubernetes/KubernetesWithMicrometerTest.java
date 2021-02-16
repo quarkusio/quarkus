@@ -24,7 +24,7 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithMetricsCustomPrefixTest {
+public class KubernetesWithMicrometerTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -33,10 +33,9 @@ public class KubernetesWithMetricsCustomPrefixTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics-custom-prefix.properties")
             .setForcedDependencies(
                     Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion())));
+                            new AppArtifact("io.quarkus", "quarkus-micrometer-registry-prometheus", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -47,7 +46,7 @@ public class KubernetesWithMetricsCustomPrefixTest {
     @Test
     public void assertApplicationRuns() {
         assertThat(logfile).isRegularFile().hasFileName("k8s.log");
-        TestUtil.assertLogFileContents(logfile, "kubernetes", "metrics");
+        TestUtil.assertLogFileContents(logfile, "kubernetes", "micrometer");
 
         given()
                 .when().get("/greeting")
@@ -72,11 +71,9 @@ public class KubernetesWithMetricsCustomPrefixTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getMetadata()).satisfies(meta -> {
-                        // Annotations will have a different default prefix,
-                        // and the scrape annotation was specifically configured
-                        assertThat(meta.getAnnotations()).contains(entry("example.io/should_be_scraped", "true"),
-                                entry("example.io/path", "/q/met"), entry("example.io/port", "9090"),
-                                entry("example.io/scheme", "http"));
+                        assertThat(meta.getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
+                                entry("prometheus.io/path", "/q/metrics"), entry("prometheus.io/port", "8080"),
+                                entry("prometheus.io/scheme", "http"));
                     });
                 });
             });

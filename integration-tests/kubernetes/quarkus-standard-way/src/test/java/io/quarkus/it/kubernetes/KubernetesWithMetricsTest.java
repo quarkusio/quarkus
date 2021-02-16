@@ -73,7 +73,7 @@ public class KubernetesWithMetricsTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getMetadata()).satisfies(meta -> {
                         assertThat(meta.getAnnotations()).contains(entry("prometheus.io/scrape", "true"),
-                                entry("prometheus.io/path", "/met"), entry("prometheus.io/port", "9090"),
+                                entry("prometheus.io/path", "/q/metrics"), entry("prometheus.io/port", "9090"),
                                 entry("prometheus.io/scheme", "http"));
                     });
                 });

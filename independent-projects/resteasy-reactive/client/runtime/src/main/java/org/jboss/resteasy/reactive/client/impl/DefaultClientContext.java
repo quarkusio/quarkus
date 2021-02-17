@@ -26,7 +26,7 @@ public class DefaultClientContext implements ClientContext {
     public DefaultClientContext() {
         serialisers = new ClientSerialisers();
         serialisers.registerBuiltins(RuntimeType.CLIENT);
-        clientProxies = new ClientProxies(Collections.emptyMap());
+        clientProxies = new ClientProxies(Collections.emptyMap(), Collections.emptyMap());
         genericTypeMapping = new GenericTypeMapping();
     }
 

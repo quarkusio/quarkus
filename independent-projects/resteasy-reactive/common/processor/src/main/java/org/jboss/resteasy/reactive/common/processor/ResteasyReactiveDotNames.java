@@ -38,6 +38,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -147,6 +148,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName APPLICATION_SCOPED = DotName.createSimple(ApplicationScoped.class.getName());
     public static final DotName SINGLETON = DotName.createSimple(Singleton.class.getName());
     public static final DotName REQUEST_SCOPED = DotName.createSimple(RequestScoped.class.getName());
+    public static final DotName WEB_APPLICATION_EXCEPTION = DotName.createSimple(WebApplicationException.class.getName());
 
     public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());
 

@@ -38,6 +38,10 @@ public class ResteasyReactiveServletProcessor {
             BuildProducer<FilterBuildItem> filter,
             BuildProducer<ServletBuildItem> servlet) throws Exception {
 
+        if (deploymentBuildItem == null) {
+            return;
+        }
+
         String path = deploymentBuildItem.getApplicationPath();
 
         //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path

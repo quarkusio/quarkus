@@ -213,7 +213,7 @@ public class ArcProcessor {
                 } else {
                     if (!beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
                         // Add special stereotype is added so that @Dependent is automatically used even if no scope is declared
-                        // Otherwise the bean class would be ingnored during bean discovery
+                        // Otherwise the bean class would be ignored during bean discovery
                         transformationContext.transform().add(ADDITIONAL_BEAN).done();
                     }
                 }

@@ -23,6 +23,7 @@
         <module>microprofile-metrics</module>
         <module>microprofile-reactive-messaging</module>
         <module>microprofile-rest-client</module>
+        <module>microprofile-rest-client-reactive</module>
         <module>microprofile-openapi</module>
         <module>microprofile-opentracing</module>
     </modules>

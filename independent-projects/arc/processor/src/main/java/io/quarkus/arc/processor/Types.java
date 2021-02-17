@@ -40,7 +40,7 @@ import org.jboss.logging.Logger;
  *
  * @author Martin Kouba
  */
-final class Types {
+public final class Types {
 
     static final Logger LOGGER = Logger.getLogger(Types.class);
 
@@ -99,15 +99,7 @@ final class Types {
             // E.g. List<String> -> new ParameterizedTypeImpl(List.class, String.class)
             ParameterizedType parameterizedType = type.asParameterizedType();
 
-            List<Type> arguments = parameterizedType.arguments();
-            ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
-            for (int i = 0; i < arguments.size(); i++) {
-                creator.writeArrayValue(typeArgsHandle, i, getTypeHandle(creator, arguments.get(i), tccl));
-            }
-            return creator.newInstance(
-                    MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
-                            java.lang.reflect.Type[].class),
-                    doLoadClass(creator, parameterizedType.name().toString(), tccl), typeArgsHandle);
+            return getParameterizedType(creator, tccl, parameterizedType);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             Type componentType = type.asArrayType().component();
@@ -154,6 +146,19 @@ final class Types {
         } else {
             throw new IllegalArgumentException("Unsupported bean type: " + type.kind() + ", " + type);
         }
+    }
+
+    public static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
+            ParameterizedType parameterizedType) {
+        List<Type> arguments = parameterizedType.arguments();
+        ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
+        for (int i = 0; i < arguments.size(); i++) {
+            creator.writeArrayValue(typeArgsHandle, i, getTypeHandle(creator, arguments.get(i), tccl));
+        }
+        return creator.newInstance(
+                MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
+                        java.lang.reflect.Type[].class),
+                doLoadClass(creator, parameterizedType.name().toString(), tccl), typeArgsHandle);
     }
 
     private static ResultHandle doLoadClass(BytecodeCreator creator, String className, ResultHandle tccl) {

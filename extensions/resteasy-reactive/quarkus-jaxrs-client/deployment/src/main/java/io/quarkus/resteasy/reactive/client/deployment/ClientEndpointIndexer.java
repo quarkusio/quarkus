@@ -12,11 +12,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.core.MediaType;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
+import org.jboss.resteasy.reactive.common.model.MaybeRestClientInterface;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
@@ -31,35 +35,46 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObject
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStructureHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueHandler;
 
+import io.quarkus.resteasy.reactive.client.deployment.beanparam.BeanParamParser;
+import io.quarkus.resteasy.reactive.client.deployment.beanparam.ClientBeanParamInfo;
+import io.quarkus.resteasy.reactive.client.deployment.beanparam.Item;
+
 public class ClientEndpointIndexer
         extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam, ResourceMethod> {
-    ClientEndpointIndexer(Builder builder) {
+
+    private final String[] defaultProduces;
+    private final String[] defaultProducesNegotiated;
+
+    ClientEndpointIndexer(Builder builder, String defaultProduces) {
         super(builder);
+        this.defaultProduces = new String[] { defaultProduces };
+        this.defaultProducesNegotiated = new String[] { defaultProduces, MediaType.WILDCARD };
     }
 
-    public RestClientInterface createClientProxy(ClassInfo classInfo,
+    public MaybeRestClientInterface createClientProxy(ClassInfo classInfo,
             String path) {
         try {
             RestClientInterface clazz = new RestClientInterface();
             clazz.setClassName(classInfo.name().toString());
             if (path != null) {
-                if (path.endsWith("/")) {
-                    path = path.substring(0, path.length() - 1);
-                }
                 if (!path.startsWith("/")) {
                     path = "/" + path;
+                }
+                if (path.endsWith("/")) {
+                    path = path.substring(0, path.length() - 1);
                 }
                 clazz.setPath(path);
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
                     clazz.getPathParameters());
             clazz.getMethods().addAll(methods);
-            return clazz;
+            return MaybeRestClientInterface.success(clazz);
         } catch (Exception e) {
             //kinda bogus, but we just ignore failed interfaces for now
             //they can have methods that are not valid until they are actually extended by a concrete type
-            log.debug("Ignoring interface for creating client proxy" + classInfo.name(), e);
-            return null;
+
+            log.warn("Ignoring interface for creating client proxy" + classInfo.name(), e);
+            return MaybeRestClientInterface.failure(e.getMessage());
         }
     }
 
@@ -69,12 +84,21 @@ public class ClientEndpointIndexer
     }
 
     @Override
-    protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
-            ClassInfo actualEndpointInfo,
-            Map<String, String> existingConverters,
-            AdditionalReaders additionalReaders,
-            Map<String, InjectableBean> injectableBeans,
-            boolean hasRuntimeConverters) {
+    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i) {
+        ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
+        methodParameters[i] = parseClientBeanParam(beanParamClassInfo, index);
+
+        return false;
+    }
+
+    private MethodParameter parseClientBeanParam(ClassInfo beanParamClassInfo, IndexView index) {
+        List<Item> items = BeanParamParser.parse(beanParamClassInfo, index);
+        return new ClientBeanParamInfo(items, beanParamClassInfo.name().toString());
+    }
+
+    protected InjectableBean scanInjectableBean(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+            Map<String, String> existingConverters, AdditionalReaders additionalReaders,
+            Map<String, InjectableBean> injectableBeans, boolean hasRuntimeConverters) {
         throw new RuntimeException("Injectable beans not supported in client");
     }
 
@@ -84,6 +108,15 @@ public class ClientEndpointIndexer
         return new MethodParameter(name,
                 elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, index), signature, type, single,
                 defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded);
+    }
+
+    @Override
+    protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
+        if (config.isSingleDefaultProduces()) {
+            return defaultProduces;
+        } else {
+            return defaultProducesNegotiated;
+        }
     }
 
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
@@ -119,9 +152,16 @@ public class ClientEndpointIndexer
     }
 
     public static final class Builder extends EndpointIndexer.Builder<ClientEndpointIndexer, Builder, ResourceMethod> {
+        private String defaultProduces = MediaType.TEXT_PLAIN;
+
+        public Builder setDefaultProduces(String defaultProduces) {
+            this.defaultProduces = defaultProduces;
+            return this;
+        }
+
         @Override
         public ClientEndpointIndexer build() {
-            return new ClientEndpointIndexer(this);
+            return new ClientEndpointIndexer(this, defaultProduces);
         }
     }
 }

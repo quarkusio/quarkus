@@ -76,13 +76,13 @@ public class ContainerConfig implements EnvVarHolder {
      * The liveness probe.
      */
     @ConfigItem
-    Optional<ProbeConfig> livenessProbe;
+    ProbeConfig livenessProbe;
 
     /**
      * The readiness probe.
      */
     @ConfigItem
-    Optional<ProbeConfig> readinessProbe;
+    ProbeConfig readinessProbe;
 
     /**
      * Volume mounts.

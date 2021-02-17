@@ -1,7 +1,5 @@
 plugins {
     id 'java'
-    id 'io.quarkus'
-    id "org.kordamp.gradle.jandex" version '0.6.0'
 }
 
 repositories {

@@ -36,27 +36,13 @@ public final class PanacheHibernateCommonResourceProcessor {
     // needed for InterceptedStaticMethodsTransformersRegisteredBuildItem
     // needed for HibernateEnhancersRegisteredBuildItem
     @BuildStep
-    PanacheEntityClassesBuildItem findEntityClasses(
-            HibernateModelClassCandidatesForFieldAccessBuildItem candidatesForFieldAccess) {
-        Set<String> candidates = candidatesForFieldAccess.getAllModelClassNames();
-        if (!candidates.isEmpty()) {
-            return new PanacheEntityClassesBuildItem(candidates);
-        }
-        return null;
-    }
-
-    @BuildStep
-    @Consume(HibernateEnhancersRegisteredBuildItem.class)
-    void replaceFieldAccesses(CombinedIndexBuildItem index,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<BytecodeTransformerBuildItem> transformers,
-            HibernateModelClassCandidatesForFieldAccessBuildItem candidatesForFieldAccess) {
+    void findEntityClasses(CombinedIndexBuildItem index,
+            HibernateModelClassCandidatesForFieldAccessBuildItem candidatesForFieldAccess,
+            BuildProducer<HibernateMetamodelForFieldAccessBuildItem> modelInfoBuildItem,
+            BuildProducer<PanacheEntityClassesBuildItem> fieldAccessEnhancedEntityClasses) {
         MetamodelInfo modelInfo = new MetamodelInfo();
 
-        // Generate accessors for public fields in entities, mapped superclasses, embeddables.
         // Technically we wouldn't need to process embeddables, but we don't have an easy way to exclude them.
-        PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
-                modelInfo);
         for (String entityClassName : candidatesForFieldAccess.getAllModelClassNames()) {
             ClassInfo entityClass = index.getIndex().getClassByName(DotName.createSimple(entityClassName));
             if (entityClass == null) {
@@ -71,13 +57,43 @@ public final class PanacheHibernateCommonResourceProcessor {
                 continue;
             }
             modelInfo.addEntityModel(createEntityModel(entityClass));
+        }
+
+        // Share the metamodel for use in replaceFieldAccesses
+        modelInfoBuildItem.produce(new HibernateMetamodelForFieldAccessBuildItem(modelInfo));
+
+        Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
+        if (entitiesWithPublicFields.isEmpty()) {
+            // There are no public fields to be accessed in the first place.
+            return;
+        }
+
+        // Share with other extensions that we will generate accessors for some classes
+        fieldAccessEnhancedEntityClasses
+                .produce(new PanacheEntityClassesBuildItem(entitiesWithPublicFields));
+    }
+
+    @BuildStep
+    @Consume(HibernateEnhancersRegisteredBuildItem.class)
+    void replaceFieldAccesses(CombinedIndexBuildItem index,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            HibernateMetamodelForFieldAccessBuildItem modelInfoBuildItem,
+            BuildProducer<BytecodeTransformerBuildItem> transformers) {
+        MetamodelInfo modelInfo = modelInfoBuildItem.getMetamodelInfo();
+        Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
+
+        // Generate accessors for public fields in entities, mapped superclasses
+        // (and embeddables, see where we build modelInfo above).
+        PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
+                modelInfo);
+        for (String entityClassName : entitiesWithPublicFields) {
             transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityAccessorsEnhancer));
         }
 
         // Replace field access in application code with calls to accessors
-        if (modelInfo.hasEntities()) {
+        if (!entitiesWithPublicFields.isEmpty()) {
             Set<String> entityClassNamesInternal = new HashSet<>();
-            for (String entityClassName : modelInfo.getEntityClassNames()) {
+            for (String entityClassName : entitiesWithPublicFields) {
                 entityClassNamesInternal.add(entityClassName.replace(".", "/"));
             }
 

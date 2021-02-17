@@ -284,9 +284,10 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
-        if (modelInfo.hasEntities()) {
+        Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
+        if (!entitiesWithPublicFields.isEmpty()) {
             Set<String> entityClassNamesInternal = new HashSet<>();
-            for (String entityClassName : modelInfo.getEntityClassNames()) {
+            for (String entityClassName : entitiesWithPublicFields) {
                 entityClassNamesInternal.add(entityClassName.replace(".", "/"));
             }
 

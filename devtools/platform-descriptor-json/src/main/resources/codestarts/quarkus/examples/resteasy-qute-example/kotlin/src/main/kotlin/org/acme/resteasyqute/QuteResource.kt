@@ -1,4 +1,4 @@
-package org.acme.qute
+package org.acme.resteasyqute
 
 import io.quarkus.qute.Template
 import io.quarkus.qute.TemplateExtension

@@ -1,4 +1,4 @@
-package org.acme.qute;
+package org.acme.resteasyqute;
 
 public class Quark {
     public enum Flavor { DOWN, UP, STRANGE, CHARM, BOTTOM, TOP }

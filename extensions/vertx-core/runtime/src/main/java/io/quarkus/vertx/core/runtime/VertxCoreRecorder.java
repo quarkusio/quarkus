@@ -8,6 +8,8 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,8 +26,10 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.FastThreadLocal;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -293,6 +297,28 @@ public class VertxCoreRecorder {
                 throw new IllegalStateException("Exception when closing Vert.x instance", e);
             }
             vertx = null;
+
+            try {
+                // we need to get rid of all Netty fields that use Exceptions to control the flow
+                // because these fields can leak the QCL due to the backtrace field of Throwable
+
+                Field modifiersField = Field.class.getDeclaredField("modifiers");
+                modifiersField.setAccessible(true);
+
+                Field cancellationCauseHolderField = DefaultPromise.class.getDeclaredField("CANCELLATION_CAUSE_HOLDER");
+                cancellationCauseHolderField.setAccessible(true);
+                Field terminationFutureField = GlobalEventExecutor.class.getDeclaredField("terminationFuture");
+                terminationFutureField.setAccessible(true);
+
+                modifiersField.setInt(cancellationCauseHolderField,
+                        cancellationCauseHolderField.getModifiers() & ~Modifier.FINAL);
+                modifiersField.setInt(terminationFutureField,
+                        terminationFutureField.getModifiers() & ~Modifier.FINAL);
+                cancellationCauseHolderField.set(null, null);
+                terminationFutureField.set(GlobalEventExecutor.INSTANCE, null);
+            } catch (NoSuchFieldException | IllegalAccessException ignored) {
+
+            }
         }
     }
 

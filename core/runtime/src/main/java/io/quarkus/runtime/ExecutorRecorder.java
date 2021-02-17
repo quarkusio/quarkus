@@ -1,5 +1,7 @@
 package io.quarkus.runtime;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +35,7 @@ public class ExecutorRecorder {
     static volatile CleanableExecutor devModeExecutor;
 
     private static volatile Executor current;
+    private static volatile JBossThreadFactory threadFactory;
 
     public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode) {
@@ -84,6 +87,27 @@ public class ExecutorRecorder {
             @Override
             public void run() {
                 executor.shutdown();
+                try {
+                    //we need to get rid of AccessControlContext from the Executor and the Factory
+
+                    Field modifiersField = Field.class.getDeclaredField("modifiers");
+                    modifiersField.setAccessible(true);
+
+                    Field executorAccField = EnhancedQueueExecutor.class.getDeclaredField("acc");
+                    executorAccField.setAccessible(true);
+                    Field factoryAccField = JBossThreadFactory.class.getDeclaredField("creatingContext");
+                    factoryAccField.setAccessible(true);
+
+                    modifiersField.setInt(executorAccField, executorAccField.getModifiers() & ~Modifier.FINAL);
+                    modifiersField.setInt(factoryAccField, factoryAccField.getModifiers() & ~Modifier.FINAL);
+                    executorAccField.set(executor, null);
+                    factoryAccField.set(threadFactory, null);
+                } catch (NoSuchFieldException | IllegalAccessException ignored) {
+
+                }
+                current = null;
+                threadFactory = null;
+
                 final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout;
                 final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval;
                 long remaining = shutdownTimeout.toNanos();
@@ -155,7 +179,7 @@ public class ExecutorRecorder {
     }
 
     private static EnhancedQueueExecutor createExecutor(ThreadPoolConfig threadPoolConfig) {
-        final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
+        threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
                 "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
         final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
                 .setRegisterMBean(false)

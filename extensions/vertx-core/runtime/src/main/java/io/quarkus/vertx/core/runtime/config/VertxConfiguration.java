@@ -18,8 +18,11 @@ public class VertxConfiguration {
 
     /**
      * Enables or disabled the Vert.x classpath resource resolver.
+     *
+     * This is set to false because it spawns a thread which then holds on to the QCL
+     * and leads to leaks in tests
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem(defaultValue = "false")
     public boolean classpathResolving;
 
     /**

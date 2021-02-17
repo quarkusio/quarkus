@@ -69,6 +69,14 @@ public interface QuarkusTestProfile {
         return Collections.emptySet();
     }
 
+    /**
+     * If this method returns true then all {@code StartupEvent} and {@code ShutdownEvent} observers declared on application
+     * beans should be disabled.
+     */
+    default boolean disableApplicationLifecycleObservers() {
+        return false;
+    }
+
     final class TestResourceEntry {
         private final Class<? extends QuarkusTestResourceLifecycleManager> clazz;
         private final Map<String, String> args;

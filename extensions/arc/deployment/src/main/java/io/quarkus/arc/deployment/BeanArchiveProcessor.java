@@ -20,7 +20,6 @@ import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.runtime.LifecycleEventRunner;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -52,8 +51,6 @@ public class BeanArchiveProcessor {
         for (AdditionalBeanBuildItem i : additionalBeans) {
             additionalBeanClasses.addAll(i.getBeanClasses());
         }
-        // NOTE: the types added directly must always declare a scope annotation otherwise they will be ignored during bean discovery
-        additionalBeanClasses.add(LifecycleEventRunner.class.getName());
 
         // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();

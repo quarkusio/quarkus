@@ -177,6 +177,12 @@ public class ArcConfig {
     @ConfigItem
     public ArcDevModeConfig devMode;
 
+    /**
+     * Test mode configuration.
+     */
+    @ConfigItem
+    public ArcTestConfig test;
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

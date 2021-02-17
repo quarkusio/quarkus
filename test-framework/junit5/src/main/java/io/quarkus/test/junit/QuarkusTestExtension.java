@@ -237,6 +237,9 @@ public class QuarkusTestExtension
                             })
                             .map(Class::getName).collect(Collectors.joining(",")));
                 }
+                if (profileInstance.disableApplicationLifecycleObservers()) {
+                    additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
+                }
                 if (profileInstance.getConfigProfile() != null) {
                     System.setProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP, profileInstance.getConfigProfile());
                 }

@@ -139,7 +139,7 @@ public class VanillaKubernetesProcessor {
         // Probe port handling
         Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)
                 .findFirst().orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyHttpGetActionPortDecorator(port)));
+        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
         return result;
     }

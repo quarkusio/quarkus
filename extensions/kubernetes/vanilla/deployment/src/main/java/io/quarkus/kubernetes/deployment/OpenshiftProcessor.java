@@ -189,7 +189,7 @@ public class OpenshiftProcessor {
         // Probe port handling
         Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)
                 .findFirst().orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(port)));
+        result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
         // Hanlde non-s2i
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)

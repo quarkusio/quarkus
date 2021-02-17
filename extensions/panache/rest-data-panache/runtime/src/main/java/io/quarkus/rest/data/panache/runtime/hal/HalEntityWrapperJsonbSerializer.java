@@ -37,7 +37,7 @@ public class HalEntityWrapperJsonbSerializer implements JsonbSerializer<HalEntit
 
             for (PropertyModel property : classModel.getSortedProperties()) {
                 if (property.isReadable()) {
-                    context.serialize(property.getWriteName(), property.getValue(entity), generator);
+                    writeValue(property.getWriteName(), property.getValue(entity), generator, context);
                 }
             }
 
@@ -45,6 +45,14 @@ public class HalEntityWrapperJsonbSerializer implements JsonbSerializer<HalEntit
             generator.writeEnd();
         } finally {
             marshaller.removeProcessedObject(entity);
+        }
+    }
+
+    private void writeValue(String name, Object value, JsonGenerator generator, SerializationContext context) {
+        if (value == null) {
+            generator.writeNull(name);
+        } else {
+            context.serialize(name, value, generator);
         }
     }
 

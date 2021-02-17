@@ -822,6 +822,8 @@ SmallRye Config provides:
 
 * Additional Config Sources
 * Additional Converters
+* Indexed Properties
+* Parent Profile
 * Interceptors for configuration value resolution
 * Relocate Configuration Properties
 * Fallback Configuration Properties

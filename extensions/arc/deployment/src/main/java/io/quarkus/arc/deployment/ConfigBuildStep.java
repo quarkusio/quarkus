@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,8 @@ public class ConfigBuildStep {
     private static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
+
+    private static final DotName CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
 
     @BuildStep
     AdditionalBeanBuildItem bean() {
@@ -206,6 +209,7 @@ public class ConfigBuildStep {
             String prefix = Optional.ofNullable(instance.value("prefix")).map(AnnotationValue::asString).orElse("");
 
             List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(type);
+            List<ClassInfo> mappingsInfo = new ArrayList<>();
             configMappingsMetadata.forEach(mappingMetadata -> {
                 generatedClasses.produce(
                         new GeneratedClassBuildItem(true, mappingMetadata.getClassName(), mappingMetadata.getClassBytes()));
@@ -213,7 +217,26 @@ public class ConfigBuildStep {
                         .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods(true).build());
                 reflectiveClasses
                         .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true).build());
+
+                ClassInfo mappingInfo = combinedIndex.getIndex()
+                        .getClassByName(DotName.createSimple(mappingMetadata.getInterfaceType().getName()));
+                if (mappingInfo != null) {
+                    mappingsInfo.add(mappingInfo);
+                }
             });
+
+            // Search and register possible classes for implicit Converter methods
+            for (ClassInfo classInfo : mappingsInfo) {
+                for (MethodInfo method : classInfo.methods()) {
+                    if (!isHandledByProducers(method.returnType()) &&
+                            mappingsInfo.stream()
+                                    .map(ClassInfo::name)
+                                    .noneMatch(name -> name.equals(method.returnType().name()))) {
+                        reflectiveClasses
+                                .produce(new ReflectiveClassBuildItem(true, false, method.returnType().name().toString()));
+                    }
+                }
+            }
 
             configMappings.produce(new ConfigMappingBuildItem(type, prefix));
 
@@ -284,7 +307,8 @@ public class ConfigBuildStep {
                 DotNames.DOUBLE.equals(type.name()) ||
                 DotNames.SHORT.equals(type.name()) ||
                 DotNames.BYTE.equals(type.name()) ||
-                DotNames.CHARACTER.equals(type.name());
+                DotNames.CHARACTER.equals(type.name()) ||
+                CONFIG_VALUE_NAME.equals(type.name());
     }
 
 }

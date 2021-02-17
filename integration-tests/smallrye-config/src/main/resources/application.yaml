@@ -1,0 +1,27 @@
+server:
+  host: localhost
+  port: 8080
+  timeout: 60s
+  io-threads: 200
+
+  form:
+    login-page: login.html
+    error-page: error.html
+    landing-page: index.html
+
+  ssl:
+    port: 8443
+    certificate: certificate
+
+  cors:
+    origins:
+      - host: some-server
+        port: 9000
+      - host: another-server
+        port: 8000
+    methods:
+      - GET
+      - POST
+
+  log:
+    period: P1D

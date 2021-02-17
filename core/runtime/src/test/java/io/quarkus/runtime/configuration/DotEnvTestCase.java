@@ -2,7 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -61,7 +61,8 @@ public class DotEnvTestCase {
                 }
             }
         }
-        builder.withSources(new ConfigUtils.DotEnvConfigSource(dotEnv));
+        builder.withSources(
+                new ConfigUtils.BuildTimeDotEnvConfigSourceProvider(dotEnv.toUri().toString()).getConfigSources(classLoader));
         final SmallRyeConfig config = builder.build();
         Files.delete(dotEnv);
         cpr.registerConfig(config, classLoader);
@@ -83,7 +84,7 @@ public class DotEnvTestCase {
                 singletonMap("FOO_BAR", "foo.bar"),
                 singletonMap("foo.baz", "nothing")));
         assertEquals("foo.bar", config.getValue("foo.bar", String.class));
-        assertFalse(config.getOptionalValue("foo.baz", String.class).isPresent());
+        assertTrue(config.getOptionalValue("foo.baz", String.class).isPresent());
     }
 
 }

@@ -46,7 +46,7 @@ public final class ConfigDiagnostic {
 
     public static void unknown(String name) {
         log.warnf(
-                "Unrecognized configuration key \"%s\" was provided; it will be ignored; verify that the dependency extension for this configuration is set or you did not make a typo",
+                "Unrecognized configuration key \"%s\" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo",
                 name);
     }
 

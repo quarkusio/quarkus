@@ -3866,6 +3866,26 @@
                 <artifactId>wildfly-elytron-credential</artifactId>
                 <version>${wildfly-elytron.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-sasl-gs2</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-asn1</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-sasl-gssapi</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-security-manager-action</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.ow2.asm</groupId>

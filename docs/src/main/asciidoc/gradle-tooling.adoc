@@ -243,6 +243,10 @@ Start Quarkus in dev mode on the remote host. Now you need to connect your local
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
 app.
 
+All the config options are shown below:
+
+include::{generated-dir}/config/quarkus-live-reload-live-reload-config[opts=optional, leveloffset=+1]
+
 == Debugging
 
 In development mode, Quarkus starts by default with debug mode enabled, listening to port `5005` without suspending the JVM.

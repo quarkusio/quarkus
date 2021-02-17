@@ -14,7 +14,15 @@ public class CustomFiltersResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("req")
     public String filters(@Context HttpHeaders headers) {
-        return headers.getHeaderString("custom-header");
+        return headers.getHeaderString("custom-header") + "-" + headers.getHeaderString("heavy");
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("metal")
+    @Metal
+    public String metal(@Context HttpHeaders headers) {
+        return headers.getHeaderString("custom-header") + "-" + headers.getHeaderString("heavy");
     }
 
 }

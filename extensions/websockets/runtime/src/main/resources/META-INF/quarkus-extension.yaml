@@ -12,3 +12,4 @@ metadata:
   categories:
   - "web"
   status: "stable"
+  codestart: "undertow-websockets"

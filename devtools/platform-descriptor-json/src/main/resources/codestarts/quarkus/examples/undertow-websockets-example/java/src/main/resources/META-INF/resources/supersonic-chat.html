@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quarkus Supersonic Chat!</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly-additions.min.css">
+
+    <style>
+        #chat {
+          resize: none;
+          overflow: hidden;
+          min-height: 300px;
+          max-height: 300px;
+      }
+    </style>
+</head>
+
+<body>
+        <nav class="navbar navbar-default navbar-pf" role="navigation">
+                <div class="navbar-header">                  
+                  <a class="navbar-brand" href="/">
+                   <p><strong>>> Quarkus Supersonic Chat!</strong></p>
+                  </a>
+                </div>
+        </nav>
+    <div class="container">
+      <br/>
+      <div class="row">
+          <input id="name" class="col-md-4" type="text" placeholder="your name">
+          <button id="connect" class="col-md-1 btn btn-primary" type="button">connect</button>
+          <br/>
+          <br/>
+      </div>
+      <div class="row">
+          <textarea class="col-md-8" id="chat">
+            </textarea>
+      </div>
+      <div class="row">
+          <input class="col-md-6" id="msg" type="text" placeholder="enter your message">
+          <button class="col-md-1 btn btn-primary" id="send" type="button" disabled>send</button>
+      </div>
+      
+      </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/js/patternfly.min.js"></script>
+
+    <script type="text/javascript">
+      var connected = false;
+      var socket;
+
+      $( document ).ready(function() {
+          $("#connect").click(connect);
+          $("#send").click(sendMessage);
+
+          $("#name").keypress(function(event){
+              if(event.keyCode == 13 || event.which == 13) {
+                  connect();
+              }
+          });
+
+          $("#msg").keypress(function(event) {
+              if(event.keyCode == 13 || event.which == 13) {
+                  sendMessage();
+              }
+          });
+
+        $("#chat").change(function() {
+            scrollToBottom();
+          });
+
+          $("#name").focus();
+      });
+
+      var connect = function() {
+          if (! connected) {
+              var name = $("#name").val();
+              console.log("Val: " + name);
+              socket = new WebSocket("ws://" + location.host + "/chat/" + name);
+              socket.onopen = function() {
+                  connected = true;
+                  console.log("Connected to the web socket");
+                  $("#send").attr("disabled", false);
+                  $("#connect").attr("disabled", true);
+                  $("#name").attr("disabled", true);
+                  $("#msg").focus();
+              };
+              socket.onmessage =function(m) {
+                  console.log("Got message: " + m.data);
+                  $("#chat").append(m.data + "\n");
+                  scrollToBottom();
+              };
+          }
+      };
+
+      var sendMessage = function() {
+          if (connected) {
+              var value = $("#msg").val();
+              console.log("Sending " + value);
+              socket.send(value);
+              $("#msg").val("");
+          }
+      };
+
+      var scrollToBottom = function () {
+        $('#chat').scrollTop($('#chat')[0].scrollHeight);
+      };
+
+    </script>
+</body>
+
+</html>

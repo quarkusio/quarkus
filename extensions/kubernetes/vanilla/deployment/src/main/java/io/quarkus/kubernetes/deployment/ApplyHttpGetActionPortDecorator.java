@@ -14,7 +14,11 @@ public class ApplyHttpGetActionPortDecorator extends ApplicationContainerDecorat
     private final Integer port;
 
     public ApplyHttpGetActionPortDecorator(Integer port) {
-        super(ANY, ANY); //We need to apply this to all deployments and all containers.
+        this(ANY, ANY, port);
+    }
+
+    public ApplyHttpGetActionPortDecorator(String deployment, String container, Integer port) {
+        super(deployment, container);
         this.port = port;
     }
 

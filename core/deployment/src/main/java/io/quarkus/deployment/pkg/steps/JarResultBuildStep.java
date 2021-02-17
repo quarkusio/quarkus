@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -135,6 +136,7 @@ public class JarResultBuildStep {
     public static final String DEPLOYMENT_LIB = "deployment";
     public static final String APPMODEL_DAT = "appmodel.dat";
     public static final String QUARKUS_RUN_JAR = "quarkus-run.jar";
+    public static final String QUARKUS_APP_DEPS = "quarkus-app-dependencies.txt";
     public static final String BOOT_LIB = "boot";
     public static final String LIB = "lib";
     public static final String MAIN = "main";
@@ -639,6 +641,16 @@ public class JarResultBuildStep {
                 try (OutputStream out = Files.newOutputStream(buildSystemProps)) {
                     outputTargetBuildItem.getBuildSystemProperties().store(out, "The original build properties");
                 }
+            }
+
+            if (packageConfig.includeDependencyList) {
+                Path deplist = buildDir.resolve(QUARKUS_APP_DEPS);
+                List<String> lines = new ArrayList<>();
+                for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
+                    lines.add(i.getArtifact().toString());
+                }
+                lines.sort(Comparator.naturalOrder());
+                Files.write(deplist, lines);
             }
         } else {
             //if it is a rebuild we might have classes

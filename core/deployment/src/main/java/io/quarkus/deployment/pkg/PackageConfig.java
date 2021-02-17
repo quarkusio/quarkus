@@ -106,6 +106,15 @@ public class PackageConfig {
     @ConfigItem
     public Optional<String> userProvidersDirectory;
 
+    /**
+     * This option only applies when using fast-jar or mutable-jar. If this option is true
+     * then a list of all the coordinates of the artifacts that made up this image will be included
+     * in the quarkus-app directory. This list can be used by vulnerability scanners to determine
+     * if your application has any vulnerable dependencies.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean includeDependencyList;
+
     public boolean isAnyJarType() {
         return (type.equalsIgnoreCase(PackageConfig.JAR) ||
                 type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||

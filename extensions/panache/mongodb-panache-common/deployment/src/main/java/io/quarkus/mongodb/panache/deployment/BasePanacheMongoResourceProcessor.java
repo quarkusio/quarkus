@@ -285,27 +285,30 @@ public abstract class BasePanacheMongoResourceProcessor {
 
     private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
         Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
-        if (!entitiesWithPublicFields.isEmpty()) {
-            Set<String> entityClassNamesInternal = new HashSet<>();
-            for (String entityClassName : entitiesWithPublicFields) {
-                entityClassNamesInternal.add(entityClassName.replace(".", "/"));
-            }
+        if (entitiesWithPublicFields.isEmpty()) {
+            // There are no public fields to be accessed in the first place.
+            return;
+        }
 
-            PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-            QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            Set<String> produced = new HashSet<>();
+        Set<String> entityClassNamesInternal = new HashSet<>();
+        for (String entityClassName : entitiesWithPublicFields) {
+            entityClassNamesInternal.add(entityClassName.replace(".", "/"));
+        }
 
-            for (ClassPathElement i : tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER)) {
-                for (String res : i.getProvidedResources()) {
-                    if (res.endsWith(".class")) {
-                        String cn = res.replace("/", ".").substring(0, res.length() - 6);
-                        if (produced.contains(cn)) {
-                            continue;
-                        }
-                        produced.add(cn);
-                        transformers.produce(
-                                new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
+        PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
+        QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+        Set<String> produced = new HashSet<>();
+
+        for (ClassPathElement i : tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER)) {
+            for (String res : i.getProvidedResources()) {
+                if (res.endsWith(".class")) {
+                    String cn = res.replace("/", ".").substring(0, res.length() - 6);
+                    if (produced.contains(cn)) {
+                        continue;
                     }
+                    produced.add(cn);
+                    transformers.produce(
+                            new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
                 }
             }
         }

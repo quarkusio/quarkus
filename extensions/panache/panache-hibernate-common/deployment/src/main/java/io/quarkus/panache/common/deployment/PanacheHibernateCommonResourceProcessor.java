@@ -81,6 +81,10 @@ public final class PanacheHibernateCommonResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers) {
         MetamodelInfo modelInfo = modelInfoBuildItem.getMetamodelInfo();
         Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
+        if (entitiesWithPublicFields.isEmpty()) {
+            // There are no public fields to be accessed in the first place.
+            return;
+        }
 
         // Generate accessors for public fields in entities, mapped superclasses
         // (and embeddables, see where we build modelInfo above).
@@ -91,39 +95,37 @@ public final class PanacheHibernateCommonResourceProcessor {
         }
 
         // Replace field access in application code with calls to accessors
-        if (!entitiesWithPublicFields.isEmpty()) {
-            Set<String> entityClassNamesInternal = new HashSet<>();
-            for (String entityClassName : entitiesWithPublicFields) {
-                entityClassNamesInternal.add(entityClassName.replace(".", "/"));
-            }
+        Set<String> entityClassNamesInternal = new HashSet<>();
+        for (String entityClassName : entitiesWithPublicFields) {
+            entityClassNamesInternal.add(entityClassName.replace(".", "/"));
+        }
 
-            PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-            QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
-            Set<String> produced = new HashSet<>();
-            //we always transform the root archive, even though it should be run with the annotation
-            //processor on the CP it might not be if the user is using jpa-modelgen
-            //this won't cover every situation, but we have documented this, and as the fields are now
-            //made private the error should be very obvious
-            //we only do this for hibernate, as it is more common to have an additional annotation processor
-            for (ClassInfo i : applicationArchivesBuildItem.getRootArchive().getIndex().getKnownClasses()) {
-                String cn = i.name().toString();
-                produced.add(cn);
-                transformers.produce(
-                        new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
-            }
+        PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
+        QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+        List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
+        Set<String> produced = new HashSet<>();
+        //we always transform the root archive, even though it should be run with the annotation
+        //processor on the CP it might not be if the user is using jpa-modelgen
+        //this won't cover every situation, but we have documented this, and as the fields are now
+        //made private the error should be very obvious
+        //we only do this for hibernate, as it is more common to have an additional annotation processor
+        for (ClassInfo i : applicationArchivesBuildItem.getRootArchive().getIndex().getKnownClasses()) {
+            String cn = i.name().toString();
+            produced.add(cn);
+            transformers.produce(
+                    new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
+        }
 
-            for (ClassPathElement i : archives) {
-                for (String res : i.getProvidedResources()) {
-                    if (res.endsWith(".class")) {
-                        String cn = res.replace("/", ".").substring(0, res.length() - 6);
-                        if (produced.contains(cn)) {
-                            continue;
-                        }
-                        produced.add(cn);
-                        transformers.produce(
-                                new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
+        for (ClassPathElement i : archives) {
+            for (String res : i.getProvidedResources()) {
+                if (res.endsWith(".class")) {
+                    String cn = res.replace("/", ".").substring(0, res.length() - 6);
+                    if (produced.contains(cn)) {
+                        continue;
                     }
+                    produced.add(cn);
+                    transformers.produce(
+                            new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
                 }
             }
         }

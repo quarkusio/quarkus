@@ -387,7 +387,7 @@ As usual, the application can be packaged using `./mvnw clean package` and execu
 
 == Kotlin and Jackson
 
-If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or the `quarkus-resteasy-extension`) have been added to project,
+If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or the `quarkus-resteasy-jackson` extension) have been added to the project,
 then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see link:rest-json#jackson[this] guide for more details).
 
 == Kotlin coroutines and Mutiny

@@ -28,6 +28,7 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
@@ -111,12 +112,12 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    @Consume(HibernateEnhancersRegisteredBuildItem.class)
     void build(
             PanacheHibernateOrmRecorder recorder,
             CombinedIndexBuildItem index,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            HibernateEnhancersRegisteredBuildItem hibernateMarker,
             List<PanacheEntityClassBuildItem> entityClasses,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {

@@ -31,9 +31,9 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -59,12 +59,11 @@ public final class KotlinPanacheResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    @Consume(HibernateEnhancersRegisteredBuildItem.class)
     void build(PanacheKotlinHibernateOrmRecorder recorder,
             CombinedIndexBuildItem index,
-            ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            HibernateEnhancersRegisteredBuildItem hibernateMarker,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping) {
 

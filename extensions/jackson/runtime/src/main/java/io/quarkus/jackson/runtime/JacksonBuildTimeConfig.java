@@ -13,4 +13,10 @@ public class JacksonBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean failOnUnknownProperties;
+
+    /**
+     * If enabled, Jackson will serialize dates as numeric value(s).
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean writeDatesAsTimestamps;
 }

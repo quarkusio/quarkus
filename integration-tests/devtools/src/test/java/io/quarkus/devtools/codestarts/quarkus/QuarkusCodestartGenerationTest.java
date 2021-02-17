@@ -3,7 +3,6 @@ package io.quarkus.devtools.codestarts.quarkus;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.*;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
-import static io.quarkus.platform.tools.ToolsUtils.readQuarkusProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
@@ -11,7 +10,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -22,9 +20,6 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.platform.tools.ToolsUtils;
 
 class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
 
@@ -35,36 +30,30 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         SnapshotTesting.deleteTestDirectory(testDirPath.toFile());
     }
 
-    private Map<String, Object> getTestInputData() {
-        return getTestInputData(null);
+    private Map<String, Object> getGenerationTestInputData() {
+        return getGenerationTestInputData(null);
     }
 
-    private Map<String, Object> getTestInputData(final Map<String, Object> override) {
-        return QuarkusCodestartGenerationTest.getTestInputData(getPlatformDescriptor(), override);
-    }
-
-    static Map<String, Object> getTestInputData(final QuarkusPlatformDescriptor descriptor,
-            final Map<String, Object> override) {
+    private static Map<String, Object> getGenerationTestInputData(final Map<String, Object> override) {
         final HashMap<String, Object> data = new HashMap<>();
-        final Properties quarkusProp = readQuarkusProperties(descriptor);
         data.put(PROJECT_GROUP_ID.key(), "org.test");
         data.put(PROJECT_ARTIFACT_ID.key(), "test-codestart");
         data.put(PROJECT_VERSION.key(), "1.0.0-codestart");
-        data.put(BOM_GROUP_ID.key(), descriptor.getBomGroupId());
-        data.put(BOM_ARTIFACT_ID.key(), descriptor.getBomArtifactId());
-        data.put(BOM_VERSION.key(), descriptor.getBomVersion());
-        data.put(QUARKUS_VERSION.key(), descriptor.getQuarkusVersion());
-        data.put(QUARKUS_MAVEN_PLUGIN_GROUP_ID.key(), ToolsUtils.getMavenPluginGroupId(quarkusProp));
-        data.put(QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID.key(), ToolsUtils.getMavenPluginArtifactId(quarkusProp));
-        data.put(QUARKUS_MAVEN_PLUGIN_VERSION.key(), ToolsUtils.getMavenPluginVersion(quarkusProp));
-        data.put(QUARKUS_GRADLE_PLUGIN_ID.key(), ToolsUtils.getMavenPluginGroupId(quarkusProp));
-        data.put(QUARKUS_GRADLE_PLUGIN_VERSION.key(), ToolsUtils.getGradlePluginVersion(quarkusProp));
+        data.put(BOM_GROUP_ID.key(), "io.quarkus");
+        data.put(BOM_ARTIFACT_ID.key(), "quarkus-bom");
+        data.put(BOM_VERSION.key(), "999-SNAPSHOT");
+        data.put(QUARKUS_VERSION.key(), "999-SNAPSHOT");
+        data.put(QUARKUS_MAVEN_PLUGIN_GROUP_ID.key(), "io.quarkus");
+        data.put(QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID.key(), "quarkus-maven-plugin");
+        data.put(QUARKUS_MAVEN_PLUGIN_VERSION.key(), "999-SNAPSHOT");
+        data.put(QUARKUS_GRADLE_PLUGIN_ID.key(), "io.quarkus");
+        data.put(QUARKUS_GRADLE_PLUGIN_VERSION.key(), "999-SNAPSHOT");
         data.put(JAVA_VERSION.key(), "11");
-        data.put(KOTLIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_KOTLIN_VERSION));
-        data.put(SCALA_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_VERSION));
-        data.put(SCALA_MAVEN_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_PLUGIN_VERSION));
-        data.put(MAVEN_COMPILER_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_COMPILER_PLUGIN_VERSION));
-        data.put(MAVEN_SUREFIRE_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION));
+        data.put(KOTLIN_VERSION.key(), "1.4.28");
+        data.put(SCALA_VERSION.key(), "2.12.8");
+        data.put(SCALA_MAVEN_PLUGIN_VERSION.key(), "4.1.1");
+        data.put(MAVEN_COMPILER_PLUGIN_VERSION.key(), "3.8.1");
+        data.put(MAVEN_SUREFIRE_PLUGIN_VERSION.key(), "3.0.0-M5");
         if (override != null)
             data.putAll(override);
         return data;
@@ -76,7 +65,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .noExamples()
                 .noDockerfiles()
                 .noBuildToolWrapper()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
@@ -97,7 +86,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     void generateCommandMode(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addCodestart("commandmode")
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
 
         final Path projectDir = testDirPath.resolve("commandmode");
@@ -115,7 +104,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     void generateCommandModeCustom(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addCodestart("commandmode")
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .putData(PROJECT_PACKAGE_NAME.key(), "com.test.andy")
                 .putData(COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME.key(), "AndyCommando")
                 .build();
@@ -133,7 +122,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     @Test
     void generateRESTEasyJavaCustom(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .putData(PROJECT_PACKAGE_NAME.key(), "com.andy")
                 .putData(RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME.key(), "BonjourResource")
@@ -155,7 +144,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     @Test
     void generateRESTEasySpringWeb(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-spring-web"))
                 .build();
@@ -188,7 +177,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     @Test
     void generateMavenWithCustomDep(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactCoords.fromString("commons-io:commons-io:2.5"))
 
@@ -212,7 +201,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     @Test
     void generateRESTEasyKotlinCustom(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .putData(PROJECT_PACKAGE_NAME.key(), "com.andy")
@@ -245,7 +234,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     @Test
     void generateRESTEasyScalaCustom(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .putData(PROJECT_PACKAGE_NAME.key(), "com.andy")
@@ -278,7 +267,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     @Test
     void generateMavenDefaultJava(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-default-java");
         getCatalog().createProject(input).generate(projectDir);
@@ -297,7 +286,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     void generateMavenResteasyJava(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-resteasy-java");
         getCatalog().createProject(input).generate(projectDir);
@@ -316,7 +305,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     void generateMavenPicocliJava(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-picocli"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-picocli-java");
         getCatalog().createProject(input).generate(projectDir);
@@ -337,7 +326,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-picocli"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-picocli-kotlin");
         getCatalog().createProject(input).generate(projectDir);
@@ -357,7 +346,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     void generateMavenConfigYamlJava(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-yaml-java");
         getCatalog().createProject(input).generate(projectDir);
@@ -375,7 +364,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-resteasy-kotlin");
         getCatalog().createProject(input).generate(projectDir);
@@ -395,7 +384,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-resteasy-scala");
         getCatalog().createProject(input).generate(projectDir);
@@ -416,7 +405,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .buildTool(BuildTool.GRADLE)
                 .addCodestart("gradle")
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("gradle-resteasy-java");
         getCatalog().createProject(input).generate(projectDir);
@@ -438,7 +427,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .addCodestart("gradle")
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("gradle-resteasy-kotlin");
         getCatalog().createProject(input).generate(projectDir);
@@ -459,7 +448,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .buildTool(BuildTool.GRADLE)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("gradle-resteasy-scala");
         getCatalog().createProject(input).generate(projectDir);
@@ -479,7 +468,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-java");
         getCatalog().createProject(input).generate(projectDir);
@@ -498,7 +487,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-kotlin");
         getCatalog().createProject(input).generate(projectDir);
@@ -517,7 +506,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-scala");
         getCatalog().createProject(input).generate(projectDir);
@@ -535,7 +524,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-qute"))
                 .addCodestart("qute")
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-qute");
         getCatalog().createProject(input).generate(projectDir);
@@ -554,7 +543,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addCodestart("qute").addCodestart("resteasy").addCodestart("funqy-http")
                 .putData(PROJECT_PACKAGE_NAME.key(), "my.custom.app")
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("custom-package");
         getCatalog().createProject(input).generate(projectDir);
@@ -584,7 +573,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     public void generateGradleWrapperGithubAction(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .addCodestarts(Collections.singletonList("github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-github");
@@ -601,7 +590,7 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
                 .noBuildToolWrapper()
-                .addData(getTestInputData())
+                .addData(getGenerationTestInputData())
                 .addCodestarts(Collections.singletonList("github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-nowrapper-github");

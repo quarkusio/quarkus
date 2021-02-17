@@ -19,6 +19,7 @@ public class QuarkusGradleModelFactory {
                 .forProjectDirectory(projectDir)
                 .connect()) {
             connection.newBuild().forTasks(tasks).addJvmArguments(jvmArgs).run();
+
             return connection.action(new QuarkusModelBuildAction(mode)).run();
         }
     }
@@ -28,7 +29,9 @@ public class QuarkusGradleModelFactory {
                 .forProjectDirectory(projectDir)
                 .connect()) {
             final ModelBuilder<QuarkusModel> modelBuilder = connection.model(QuarkusModel.class);
-            modelBuilder.forTasks(tasks);
+            if (tasks.length != 0) {
+                modelBuilder.forTasks(tasks);
+            }
             return modelBuilder.get();
         }
     }

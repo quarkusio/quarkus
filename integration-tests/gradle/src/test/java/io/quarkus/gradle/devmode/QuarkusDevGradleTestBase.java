@@ -28,7 +28,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     private static final String PLUGIN_UNDER_TEST_METADATA_PROPERTIES = "plugin-under-test-metadata.properties";
 
     private Future<?> quarkusDev;
-    private File projectDir;
+    protected File projectDir;
 
     @Test
     public void main() throws Exception {

@@ -1205,6 +1205,8 @@ It may declare any of the following return types:
 
 |===
 
+NOTE: You can restrict the Resource methods for which a filter runs, by using link:{jaxrsapi}/javax/ws/rs/NameBinding.html[`@NameBinding`] meta-annotations.
+
 === Readers and Writers: mapping entities and HTTP bodies
 
 [[readers-writers]]

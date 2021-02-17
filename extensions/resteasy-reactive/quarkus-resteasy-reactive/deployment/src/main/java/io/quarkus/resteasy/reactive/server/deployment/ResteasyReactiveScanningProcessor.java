@@ -285,6 +285,26 @@ public class ResteasyReactiveScanningProcessor {
             if (preMatchingValue != null) {
                 builder.setPreMatching(preMatchingValue.asBoolean());
             }
+
+            List<AnnotationInstance> annotations = methodInfo.annotations();
+            Set<String> nameBindingNames = new HashSet<>();
+            for (AnnotationInstance annotation : annotations) {
+                if (SERVER_REQUEST_FILTER.equals(annotation.name())) {
+                    continue;
+                }
+                DotName annotationDotName = annotation.name();
+                ClassInfo annotationClassInfo = index.getClassByName(annotationDotName);
+                if (annotationClassInfo == null) {
+                    continue;
+                }
+                if ((annotationClassInfo.classAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
+                    nameBindingNames.add(annotationDotName.toString());
+                }
+            }
+            if (!nameBindingNames.isEmpty()) {
+                builder.setNameBindingNames(nameBindingNames);
+            }
+
             additionalContainerRequestFilters.produce(builder.build());
         }
         for (AnnotationInstance instance : index

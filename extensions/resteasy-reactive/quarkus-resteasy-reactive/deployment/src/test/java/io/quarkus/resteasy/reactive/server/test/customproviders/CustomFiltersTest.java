@@ -24,15 +24,20 @@ public class CustomFiltersTest {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(CustomContainerRequestFilter.class, CustomFiltersResource.class,
-                                    CustomContainerResponseFilter.class, AssertContainerFilter.class, SomeBean.class);
+                                    CustomContainerResponseFilter.class, AssertContainerFilter.class, SomeBean.class,
+                                    Metal.class, MetalFilter.class);
                 }
             });
 
     @Test
     public void testFilters() {
         Headers headers = RestAssured.given().header("some-input", "bar").get("/custom/req")
-                .then().statusCode(200).body(Matchers.containsString("/custom/req-bar")).extract().headers();
+                .then().statusCode(200).body(Matchers.containsString("/custom/req-bar-null")).extract().headers();
         assertThat(headers.getValues("java-method")).containsOnly("filters");
         Assertions.assertEquals(3, AssertContainerFilter.COUNT.get());
+
+        headers = RestAssured.given().header("some-input", "bar").get("/custom/metal")
+                .then().statusCode(200).body(Matchers.containsString("/custom/metal-bar-metal")).extract().headers();
+        assertThat(headers.getValues("java-method")).containsOnly("metal");
     }
 }

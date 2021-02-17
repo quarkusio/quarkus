@@ -129,7 +129,7 @@
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.19.0</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>12.0.0.Final</infinispan.version>
+        <infinispan.version>12.0.1.Final</infinispan.version>
         <infinispan.protostream.version>4.4.0.Alpha4</infinispan.protostream.version>
         <caffeine.version>2.9.0</caffeine.version>
         <netty.version>4.1.49.Final</netty.version>
@@ -3864,6 +3864,26 @@
             <dependency>
                 <groupId>org.wildfly.security</groupId>
                 <artifactId>wildfly-elytron-credential</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-sasl-gs2</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-asn1</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-sasl-gssapi</artifactId>
+                <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron-security-manager-action</artifactId>
                 <version>${wildfly-elytron.version}</version>
             </dependency>
 

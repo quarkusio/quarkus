@@ -11,9 +11,6 @@ include::./attributes.adoc[]
 :sectnums:
 :sectnumlevels: 4
 :toc:
-:extension-status: experimental
-
-include::./status-include.adoc[]
 
 Qute is a templating engine designed specifically to meet the Quarkus needs.
 The usage of reflection is minimized to reduce the size of native images.

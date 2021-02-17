@@ -57,6 +57,7 @@ import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 public class MicrometerProcessor {
     private static final DotName METER_REGISTRY = DotName.createSimple(MeterRegistry.class.getName());
@@ -118,9 +119,10 @@ public class MicrometerProcessor {
     }
 
     @BuildStep(onlyIf = { MicrometerEnabled.class, PrometheusRegistryProcessor.PrometheusEnabled.class })
-    MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem() {
+    MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
-                mConfig.export.prometheus.path);
+                nonApplicationRootPathBuildItem.adjustPath(mConfig.export.prometheus.path));
     }
 
     @BuildStep(onlyIf = MicrometerEnabled.class)

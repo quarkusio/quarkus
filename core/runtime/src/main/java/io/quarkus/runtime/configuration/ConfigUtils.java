@@ -1,12 +1,12 @@
 package io.quarkus.runtime.configuration;
 
+import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 import java.io.IOException;
 import static io.smallrye.config.AbstractLocationConfigSourceFactory.SMALLRYE_LOCATIONS;
 import static io.smallrye.config.DotEnvConfigSourceProvider.dotEnvSources;
 import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE;
 import static io.smallrye.config.ProfileConfigSourceInterceptor.SMALLRYE_PROFILE_PARENT;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
-import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 import static io.smallrye.config.SmallRyeConfigBuilder.WEB_INF_MICROPROFILE_CONFIG_PROPERTIES;
 
 import java.net.URL;

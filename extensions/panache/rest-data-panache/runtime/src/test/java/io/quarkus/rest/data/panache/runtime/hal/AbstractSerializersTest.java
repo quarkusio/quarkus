@@ -24,6 +24,14 @@ abstract class AbstractSerializersTest {
     }
 
     @Test
+    void shouldSerializeOneBookWithNullName() {
+        Book book = new Book(1, null);
+        JsonReader jsonReader = Json.createReader(new StringReader(toJson(new HalEntityWrapper(book))));
+
+        assertBook(book, jsonReader.readObject());
+    }
+
+    @Test
     void shouldSerializeCollectionOfBooks() {
         Book book = new Book(1, "Black Swan");
         HalCollectionWrapper wrapper = new HalCollectionWrapper(Collections.singleton(book), Book.class, "books");
@@ -39,7 +47,11 @@ abstract class AbstractSerializersTest {
 
     private void assertBook(Book book, JsonObject bookJson) {
         assertThat(bookJson.getInt("id")).isEqualTo(book.id);
-        assertThat(bookJson.getString("book-name")).isEqualTo(book.getName());
+        if (bookJson.isNull("book-name")) {
+            assertThat(book.getName()).isNull();
+        } else {
+            assertThat(bookJson.getString("book-name")).isEqualTo(book.getName());
+        }
         assertThat(bookJson.containsKey("ignored")).isFalse();
 
         JsonObject bookLinksJson = bookJson.getJsonObject("_links");

@@ -17,6 +17,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.vertx.core.Handler;
@@ -25,7 +26,7 @@ import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
 
 class VertxGraphqlProcessor {
-    private static Pattern TRAILING_SLASH_SUFFIX_REGEX = Pattern.compile("/+$");
+    private static final Pattern TRAILING_SLASH_SUFFIX_REGEX = Pattern.compile("/+$");
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -48,9 +49,8 @@ class VertxGraphqlProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
             BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
-            LaunchModeBuildItem launchMode,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BuildProducer<RouteBuildItem> routes) {
+            LaunchModeBuildItem launchMode, NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<RouteBuildItem> routes, BuildProducer<RequireBodyHandlerBuildItem> body) {
 
         boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
         if (!includeVertxGraphqlUi) {
@@ -78,6 +78,9 @@ class VertxGraphqlProcessor {
                         .handler(handler)
                         .requiresLegacyRedirect()
                         .build());
+        // Body handler required in Vert.x 4, to avoid DDOS attack.
+        body.produce(new RequireBodyHandlerBuildItem());
+
         nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
     }
 }

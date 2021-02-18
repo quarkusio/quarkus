@@ -30,6 +30,8 @@ public class ValidationSuccessTest {
                             // Built-in value resolvers
                             + "{movie.name ?: 'Mono'} "
                             + "{movie.alwaysTrue ? 'Mono' : 'Stereo'} "
+                            + "{movie.alwaysFalsePrimitive ? 'Mono' : 'Stereo'} "
+                            + "{movie.alwaysFalsePrimitive.negate} "
                             + "{movie.mainCharacters.size} "
                             // Name and number of params ok and param type ignored
                             + "{movie.findService('foo')} "
@@ -53,7 +55,7 @@ public class ValidationSuccessTest {
     @Test
     public void testResult() {
         // Validation succeeded! Yay!
-        assertEquals("Jason Jason Mono 1 10 11 ok 43 3 ohn bar",
+        assertEquals("Jason Jason Mono Stereo true 1 10 11 ok 43 3 ohn bar",
                 movie.data("movie", new Movie("John"), "name", "Vasik", "surname", "Hu", "age", 10l, "map",
                         Collections.singletonMap("foo", "bar")).render());
     }

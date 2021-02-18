@@ -5,7 +5,9 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +21,7 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -80,6 +83,7 @@ import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
+import io.quarkus.deployment.util.FileUtil;
 
 /**
  * This build step builds both the thin jars and uber jars.
@@ -481,6 +485,26 @@ public class JarResultBuildStep {
         }
         Map<AppArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
 
+        Path fernflowerJar = null;
+        Path decompiledOutputDir = null;
+        boolean wasDecompiledSuccessfully = true;
+        if (packageConfig.fernflower.enabled) {
+            Path jarDirectory = Paths.get(packageConfig.fernflower.jarDirectory);
+            if (!Files.exists(jarDirectory)) {
+                Files.createDirectory(jarDirectory);
+            }
+            fernflowerJar = jarDirectory.resolve(String.format("fernflower-%s.jar", packageConfig.fernflower.hash));
+            if (!Files.exists(fernflowerJar)) {
+                boolean downloadComplete = downloadFernflowerJar(packageConfig, fernflowerJar);
+                if (!downloadComplete) {
+                    fernflowerJar = null; // will ensure that no decompilation takes place
+                }
+            }
+            decompiledOutputDir = buildDir.getParent().resolve("decompiled");
+            FileUtil.deleteDirectory(decompiledOutputDir);
+            Files.createDirectory(decompiledOutputDir);
+        }
+
         List<Path> jars = new ArrayList<>();
         List<Path> bootJars = new ArrayList<>();
         //we process in order of priority
@@ -499,6 +523,9 @@ public class JarResultBuildStep {
                         Files.write(target, transformed.getData());
                     }
                 }
+            }
+            if (fernflowerJar != null) {
+                wasDecompiledSuccessfully &= decompile(fernflowerJar, decompiledOutputDir, transformedZip);
             }
         }
         //now generated classes and resources
@@ -522,6 +549,14 @@ public class JarResultBuildStep {
                 Files.write(target, i.getClassData());
             }
         }
+        if (fernflowerJar != null) {
+            wasDecompiledSuccessfully &= decompile(fernflowerJar, decompiledOutputDir, generatedZip);
+        }
+
+        if (wasDecompiledSuccessfully && (decompiledOutputDir != null)) {
+            log.info("The decompiled output can be found at: " + decompiledOutputDir.toAbsolutePath().toString());
+        }
+
         //now the application classes
         Path runnerJar = appDir
                 .resolve(outputTargetBuildItem.getBaseName() + ".jar");
@@ -665,6 +700,58 @@ public class JarResultBuildStep {
             });
         }
         return new JarBuildItem(initJar, null, libDir, packageConfig.type, null);
+    }
+
+    private boolean downloadFernflowerJar(PackageConfig packageConfig, Path fernflowerJar) {
+        String downloadURL = String.format("https://jitpack.io/com/github/fesh0r/fernflower/%s/fernflower-%s.jar",
+                packageConfig.fernflower.hash, packageConfig.fernflower.hash);
+        try (BufferedInputStream in = new BufferedInputStream(new URL(downloadURL).openStream());
+                FileOutputStream fileOutputStream = new FileOutputStream(fernflowerJar.toFile())) {
+            byte[] dataBuffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
+            }
+            return true;
+        } catch (IOException e) {
+            log.error("Unable to download Fernflower from " + downloadURL, e);
+            return false;
+        }
+    }
+
+    private boolean decompile(Path fernflowerJar, Path decompiledOutputDir, Path jarToDecompile) {
+        int exitCode;
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    Arrays.asList("java", "-jar", fernflowerJar.toAbsolutePath().toString(),
+                            jarToDecompile.toAbsolutePath().toString(), decompiledOutputDir.toAbsolutePath().toString()));
+            if (log.isDebugEnabled()) {
+                processBuilder.inheritIO();
+            } else {
+                processBuilder.redirectError(NULL_FILE);
+                processBuilder.redirectOutput(NULL_FILE);
+            }
+            exitCode = processBuilder.start().waitFor();
+        } catch (Exception e) {
+            log.error("Failed to launch Fernflower decompiler.", e);
+            return false;
+        }
+
+        if (exitCode != 0) {
+            log.errorf("Fernflower decompiler exited with error code: %d.", exitCode);
+            return false;
+        }
+
+        String jarFileName = jarToDecompile.getFileName().toString();
+        Path decompiledJar = decompiledOutputDir.resolve(jarFileName);
+        try {
+            ZipUtils.unzip(decompiledJar, decompiledOutputDir.resolve(jarFileName.replace(".jar", "")));
+            Files.deleteIfExists(decompiledJar);
+        } catch (IOException ignored) {
+            // it doesn't really matter if we can't unzip the jar as we do it merely for user convenience
+        }
+
+        return true;
     }
 
     private void copyDependency(CurateOutcomeBuildItem curateOutcomeBuildItem, Map<AppArtifactKey, List<Path>> runtimeArtifacts,
@@ -1226,4 +1313,9 @@ public class JarResultBuildStep {
             return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
         }
     }
+
+    // copied from Java 9
+    // TODO remove when we move to Java 11
+
+    private static final File NULL_FILE = new File(SystemUtils.IS_OS_WINDOWS ? "NUL" : "/dev/null");
 }

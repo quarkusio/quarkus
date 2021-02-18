@@ -43,6 +43,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
@@ -55,8 +56,6 @@ import org.jboss.jandex.Type.Kind;
 public class ExtensionMethodGenerator {
 
     public static final DotName TEMPLATE_EXTENSION = DotName.createSimple(TemplateExtension.class.getName());
-    static final DotName STRING = DotName.createSimple(String.class.getName());
-
     public static final String SUFFIX = "_Extension" + ValueResolverGenerator.SUFFIX;
     public static final String NAMESPACE_SUFFIX = "_Namespace" + SUFFIX;
 
@@ -132,7 +131,7 @@ public class ExtensionMethodGenerator {
 
         if (matchRegex != null || matchName.equals(TemplateExtension.ANY)) {
             // The second parameter must be a string
-            if (parameters.size() < 2 || !parameters.get(1).name().equals(STRING)) {
+            if (parameters.size() < 2 || !parameters.get(1).name().equals(io.quarkus.qute.generator.DotNames.STRING)) {
                 throw new TemplateException(
                         "A template extension method matching multiple names or a regular expression must declare at least two parameters and the second parameter must be string: "
                                 + method);
@@ -352,7 +351,8 @@ public class ExtensionMethodGenerator {
 
         // Test base object class
         ResultHandle baseClass = appliesTo.invokeVirtualMethod(Descriptors.GET_CLASS, base);
-        ResultHandle testClass = appliesTo.loadClass(parameters.get(0).name().toString());
+        // Perform autoboxing for primitives
+        ResultHandle testClass = appliesTo.loadClass(box(parameters.get(0)).name().toString());
         ResultHandle baseClassTest = appliesTo.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass,
                 baseClass);
         BytecodeCreator baseNotAssignable = appliesTo.ifTrue(baseClassTest).falseBranch();
@@ -630,6 +630,36 @@ public class ExtensionMethodGenerator {
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    static Type box(Type type) {
+        if (type.kind() == Kind.PRIMITIVE) {
+            return box(type.asPrimitiveType().primitive());
+        }
+        return type;
+    }
+
+    static Type box(Primitive primitive) {
+        switch (primitive) {
+            case BOOLEAN:
+                return Type.create(DotNames.BOOLEAN, Kind.CLASS);
+            case DOUBLE:
+                return Type.create(DotNames.DOUBLE, Kind.CLASS);
+            case FLOAT:
+                return Type.create(DotNames.FLOAT, Kind.CLASS);
+            case LONG:
+                return Type.create(DotNames.LONG, Kind.CLASS);
+            case INT:
+                return Type.create(DotNames.INTEGER, Kind.CLASS);
+            case BYTE:
+                return Type.create(DotNames.BYTE, Kind.CLASS);
+            case CHAR:
+                return Type.create(DotNames.CHARACTER, Kind.CLASS);
+            case SHORT:
+                return Type.create(DotNames.SHORT, Kind.CLASS);
+            default:
+                throw new IllegalArgumentException("Unsupported primitive: " + primitive);
         }
     }
 

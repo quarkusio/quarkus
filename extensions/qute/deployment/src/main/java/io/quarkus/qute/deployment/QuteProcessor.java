@@ -642,26 +642,28 @@ public class QuteProcessor {
                             }
                         }
                     }
-                    if (member == null) {
-                        // Then try to find an etension method
-                        member = findTemplateExtensionMethod(info, match.type(), templateExtensionMethods, expression,
-                                index,
-                                templateIdToPathFun, results);
-                    }
-                    if (member == null) {
-                        // Test whether the validation should be skipped
-                        TypeCheck check = new TypeCheck(
-                                info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
-                                match.clazz(),
-                                info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
-                        if (isExcluded(check, excludes)) {
-                            LOGGER.debugf(
-                                    "Expression part [%s] excluded from validation of [%s] against type [%s]",
-                                    info.value,
-                                    expression.toOriginalString(), match.type());
-                            match.clearValues();
-                            break;
-                        }
+                }
+
+                if (member == null) {
+                    // Then try to find an etension method
+                    member = findTemplateExtensionMethod(info, match.type(), templateExtensionMethods, expression,
+                            index,
+                            templateIdToPathFun, results);
+                }
+
+                if (member == null) {
+                    // Test whether the validation should be skipped
+                    TypeCheck check = new TypeCheck(
+                            info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
+                            match.clazz(),
+                            info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
+                    if (isExcluded(check, excludes)) {
+                        LOGGER.debugf(
+                                "Expression part [%s] excluded from validation of [%s] against type [%s]",
+                                info.value,
+                                expression.toOriginalString(), match.type());
+                        match.clearValues();
+                        break;
                     }
                 }
 

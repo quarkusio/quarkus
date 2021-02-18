@@ -1,5 +1,5 @@
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-bom:999-SNAPSHOT@pom
+//DEPS io.quarkus:quarkus-bom:999-MOCK@pom
 //DEPS io.quarkus:quarkus-resteasy
 
 //JAVAC_OPTIONS -parameters

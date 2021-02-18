@@ -31,7 +31,7 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
         final QuarkusJBangCodestartProjectInput input = QuarkusJBangCodestartProjectInput.builder()
                 .putData(QUARKUS_BOM_GROUP_ID, "io.quarkus")
                 .putData(QUARKUS_BOM_ARTIFACT_ID, "quarkus-bom")
-                .putData(QUARKUS_BOM_VERSION, "999-SNAPSHOT")
+                .putData(QUARKUS_BOM_VERSION, "999-MOCK")
                 .build();
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
@@ -45,7 +45,7 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
                 .addCodestart("jbang-picocli-code")
                 .putData(QUARKUS_BOM_GROUP_ID, "io.quarkus")
                 .putData(QUARKUS_BOM_ARTIFACT_ID, "quarkus-bom")
-                .putData(QUARKUS_BOM_VERSION, "999-SNAPSHOT")
+                .putData(QUARKUS_BOM_VERSION, "999-MOCK")
                 .build();
         final Path projectDir = testDirPath.resolve("picocli");
         getCatalog().createProject(input).generate(projectDir);

@@ -70,14 +70,14 @@ public class DevConsole implements Handler<RoutingContext> {
     }
 
     @Override
-    public void handle(RoutingContext event) {
-        String path = event.normalisedPath().substring(event.mountPoint().length());
+    public void handle(RoutingContext ctx) {
+        String path = ctx.normalisedPath().substring(ctx.mountPoint().length());
         if (path.isEmpty() || path.equals("/")) {
-            sendMainPage(event);
+            sendMainPage(ctx);
         } else {
             int nsIndex = path.indexOf("/");
             if (nsIndex == -1) {
-                event.response().setStatusCode(404).end();
+                ctx.response().setStatusCode(404).end();
                 return;
             }
             String namespace = path.substring(0, nsIndex);
@@ -85,11 +85,14 @@ public class DevConsole implements Handler<RoutingContext> {
             Template devTemplate = engine.getTemplate(path);
             if (devTemplate != null) {
                 String extName = getExtensionName(namespace);
-                event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
-                renderTemplate(event,
-                        devTemplate.data("currentExtensionName", extName).data("flash", FlashScopeUtil.getFlash(event)));
+                ctx.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+                TemplateInstance devTemplateInstance = devTemplate
+                        .data("currentExtensionName", extName)
+                        .data("flash", FlashScopeUtil.getFlash(ctx))
+                        .data("currentRequest", ctx.request());
+                renderTemplate(ctx, devTemplateInstance);
             } else {
-                event.next();
+                ctx.next();
             }
         }
     }

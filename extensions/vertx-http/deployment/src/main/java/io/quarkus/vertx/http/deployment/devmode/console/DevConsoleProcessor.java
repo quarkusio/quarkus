@@ -355,6 +355,7 @@ public class DevConsoleProcessor {
 
         builder.addValueResolver(new ReflectionValueResolver())
                 .addValueResolver(new JsonObjectValueResolver())
+                .addValueResolver(new MultiMapValueResolver())
                 .addValueResolver(ValueResolvers.rawResolver())
                 .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
                     String ext = DevConsole.currentExtension.get();

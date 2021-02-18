@@ -7,6 +7,9 @@ h5{
  margin-bottom: 20px;
  padding: 10px;
 }
+.static{
+ margin-top: 5px;
+}
 {/style}
 {#body}
  <h5>REST Resources</h5>
@@ -29,10 +32,20 @@ h5{
  {/if}
  {/for}
  <h5>Static Resources</h5>
- {#for staticResources in info:staticResourcesInfo}
+ {#for resource in info:staticResourceInfo.resourceMap.get("/").children}
  <div class="row">
   <div class="col">
-   <a href="{staticResources}">{staticResources}</a>
+   {#if resource.isFolder}
+   <i class="far fa-folder-open" style="margin-right:5px; margin-top:5px"></i>
+   <a class="static" href="view?path=/{resource.lastName}">
+    {resource.lastName}
+   </a>
+   {#else}
+   <i class="fas fa-file-alt" style="margin-right:5px; margin-top:5px"></i>
+   <a class="static" href="/{resource.lastName}">
+    {resource.lastName}
+   </a>
+   {/if}
   </div>
  </div>
  {/for}

@@ -64,10 +64,6 @@ public class ValueResolverGenerator {
     public static final DotName TEMPLATE_DATA = DotName.createSimple(TemplateData.class.getName());
     public static final DotName TEMPLATE_DATA_CONTAINER = DotName.createSimple(TemplateData.Container.class.getName());
 
-    private static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
-    private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
-    private static final DotName BOOLEAN = DotName.createSimple(Boolean.class.getName());
-
     public static final String SUFFIX = "_ValueResolver";
     public static final String NESTED_SEPARATOR = "$_";
 
@@ -115,7 +111,7 @@ public class ValueResolverGenerator {
         Map<DotName, Set<DotName>> superToSub = new HashMap<>();
         for (Entry<DotName, ClassInfo> entry : nameToClass.entrySet()) {
             DotName superName = entry.getValue().superName();
-            if (superName != null && !OBJECT.equals(superName)) {
+            if (superName != null && !DotNames.OBJECT.equals(superName)) {
                 superToSub.computeIfAbsent(superName, name -> new HashSet<>()).add(entry.getKey());
             }
         }
@@ -135,7 +131,7 @@ public class ValueResolverGenerator {
                     generate(entry.getKey(), priority);
                     // Queue a class removal
                     DotName superName = entry.getValue().superName();
-                    if (superName != null && !OBJECT.equals(superName)) {
+                    if (superName != null && !DotNames.OBJECT.equals(superName)) {
                         superToSubRemovals.computeIfAbsent(superName, name -> new HashSet<>()).add(entry.getKey());
                     }
                     // Remove the processed binding
@@ -229,7 +225,7 @@ public class ValueResolverGenerator {
                 .collect(Collectors.toList());
         if (!ignoreSuperclasses) {
             DotName superName = clazz.superName();
-            while (superName != null && !superName.equals(OBJECT)) {
+            while (superName != null && !superName.equals(DotNames.OBJECT)) {
                 ClassInfo superClass = index.getClassByName(superName);
                 if (superClass != null) {
                     methods.addAll(
@@ -250,7 +246,7 @@ public class ValueResolverGenerator {
                 if ((field.type().kind() == org.jboss.jandex.Type.Kind.PRIMITIVE
                         && field.type().asPrimitiveType().equals(PrimitiveType.BOOLEAN))
                         || (field.type().kind() == org.jboss.jandex.Type.Kind.CLASS
-                                && field.type().name().equals(BOOLEAN))) {
+                                && field.type().name().equals(DotNames.BOOLEAN))) {
                     getterName = IS_PREFIX + capitalize(field.name());
                 } else {
                     getterName = GET_PREFIX + capitalize(field.name());
@@ -837,7 +833,7 @@ public class ValueResolverGenerator {
             return true;
         }
         if (returnType == null
-                || (returnType.name().equals(PrimitiveType.BOOLEAN.name()) || returnType.name().equals(BOOLEAN))) {
+                || (returnType.name().equals(PrimitiveType.BOOLEAN.name()) || returnType.name().equals(DotNames.BOOLEAN))) {
             return name.startsWith(IS_PREFIX) || name.startsWith(HAS_PREFIX);
         }
         return false;
@@ -939,7 +935,7 @@ public class ValueResolverGenerator {
 
     public static boolean hasCompletionStageInTypeClosure(ClassInfo classInfo,
             IndexView index) {
-        return hasClassInTypeClosure(classInfo, COMPLETION_STAGE, index);
+        return hasClassInTypeClosure(classInfo, DotNames.COMPLETION_STAGE, index);
     }
 
     public static boolean hasClassInTypeClosure(ClassInfo classInfo, DotName className,

@@ -5,7 +5,7 @@ output-strategy:
   "pom.xml": smart-pom-merge
   "runtime/pom.xml": smart-pom-merge
   "deployment/pom.xml": smart-pom-merge
-  "integration-test/pom.xml": smart-pom-merge
+  "integration-tests/pom.xml": smart-pom-merge
   "README.md": replace
   "readme.md": forbidden
   "README.adoc": forbidden

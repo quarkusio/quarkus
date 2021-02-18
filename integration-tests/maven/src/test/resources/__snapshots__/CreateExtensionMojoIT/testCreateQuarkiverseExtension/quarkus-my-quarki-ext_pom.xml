@@ -40,6 +40,11 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <version>${quarkus.version}</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${compiler-plugin.version}</version>
         </plugin>
@@ -56,7 +61,7 @@
         </property>
       </activation>
       <modules>
-        <module>integration-test</module>
+        <module>integration-tests</module>
       </modules>
     </profile>
   </profiles>

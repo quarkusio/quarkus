@@ -160,8 +160,8 @@ public class CreateExtension {
         return this;
     }
 
-    public CreateExtension withoutIntegrationTest(boolean withoutIntegrationTest) {
-        this.builder.withoutIntegrationTest(withoutIntegrationTest);
+    public CreateExtension withoutIntegrationTests(boolean withoutIntegrationTest) {
+        this.builder.withoutIntegrationTests(withoutIntegrationTest);
         return this;
     }
 

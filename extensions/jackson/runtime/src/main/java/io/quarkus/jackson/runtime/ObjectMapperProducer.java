@@ -11,6 +11,7 @@ import javax.inject.Singleton;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.jackson.ObjectMapperCustomizer;
@@ -27,6 +28,10 @@ public class ObjectMapperProducer {
         if (!jacksonConfigSupport.isFailOnUnknownProperties()) {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        }
+        if (!jacksonConfigSupport.isWriteDatesAsTimestamps()) {
+            // this feature is enabled by default, so we disable it
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         }
         List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
         for (ObjectMapperCustomizer customizer : sortedCustomizers) {

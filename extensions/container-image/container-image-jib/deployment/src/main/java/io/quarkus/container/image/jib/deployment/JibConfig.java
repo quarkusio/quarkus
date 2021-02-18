@@ -3,6 +3,7 @@ package io.quarkus.container.image.jib.deployment;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -122,4 +123,20 @@ public class JibConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean alwaysCacheBaseImage;
+
+    /**
+     * List of target platforms. Each platform is defined using the pattern: \<os\>|\<arch\>[/variant]|\<os\>/\<arch\>[/variant]
+     * ex: linux/amd64,linux/arm64/v8. If not specified, OS default is linux and architecture default is amd64
+     * 
+     * If more than one platform is configured, it is important to note that the base image has to be a Docker manifest or an
+     * OCI image index containing a version of each chosen platform
+     * 
+     * It doesn't work with native images, as cross-compilation is not supported
+     * 
+     * Target Platform is a incubating feature of Jib. See <a href=
+     * "https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#how-do-i-specify-a-platform-in-the-manifest-list-or-oci-index-of-a-base-image">Jib
+     * FAQ</a> for more information
+     */
+    @ConfigItem
+    public Optional<Set<String>> platforms;
 }

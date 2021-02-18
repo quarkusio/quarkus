@@ -774,6 +774,23 @@ Update the `oauth.client.id`, `oauth.client.secret` and `oauth.token.endpoint.ur
 
 OAuth authentication works for both JVM and native modes.
 
+== Using Snappy
+
+On _outgoing_ channels, you can enable Snappy compression by setting the `compression.type` attribute to `snappy`:
+
+[source, properties]
+----
+mp.messaging.outgoing.fruit-out.compression.type=snappy
+----
+
+In JVM mode, it will work out of the box.
+However, to compile your application to a native executable, you need to:
+
+1. Uses GraalVM 21.+
+2. Add `quarkus.kafka.snappy.enabled=true` to your `application.properties`
+
+In native mode, Snappy is disabled by default as the use of Snappy requires embedding a native library and unpacking it when the application starts.
+
 == Configuration
 
 More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/2.8/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].

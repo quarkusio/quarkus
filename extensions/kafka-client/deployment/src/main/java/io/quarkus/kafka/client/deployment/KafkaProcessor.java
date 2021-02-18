@@ -53,12 +53,17 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
@@ -68,7 +73,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class KafkaProcessor {
 
-    static final Class[] BUILT_INS = {
+    static final Class<?>[] BUILT_INS = {
             //serializers
             ShortSerializer.class,
             DoubleSerializer.class,
@@ -109,9 +114,12 @@ public class KafkaProcessor {
     }
 
     @BuildStep
-    public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public void build(
+            KafkaBuildTimeConfig config,
+            CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
-            Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> beans) {
+            Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> beans,
+            BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
         final Set<DotName> toRegister = new HashSet<>();
 
         collectImplementors(toRegister, indexBuildItem, Serializer.class);
@@ -134,13 +142,15 @@ public class KafkaProcessor {
             collectSubclasses(toRegister, indexBuildItem, i);
         }
         if (capabilities.isPresent(Capability.JSONB)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JsonbSerializer.class, JsonbDeserializer.class));
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(false, false, JsonbSerializer.class, JsonbDeserializer.class));
             collectSubclasses(toRegister, indexBuildItem, JsonbSerializer.class);
             collectSubclasses(toRegister, indexBuildItem, JsonbDeserializer.class);
         }
         if (capabilities.isPresent(Capability.JACKSON)) {
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(false, false, ObjectMapperSerializer.class, ObjectMapperDeserializer.class));
+                    new ReflectiveClassBuildItem(false, false, ObjectMapperSerializer.class,
+                            ObjectMapperDeserializer.class));
             collectSubclasses(toRegister, indexBuildItem, ObjectMapperSerializer.class);
             collectSubclasses(toRegister, indexBuildItem, ObjectMapperDeserializer.class);
 
@@ -162,6 +172,88 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.nio.DirectByteBuffer"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "sun.misc.Cleaner"));
 
+        handleAvro(reflectiveClass, proxies);
+        handleOpenTracing(reflectiveClass, capabilities);
+        handleStrimziOAuth(reflectiveClass);
+        if (config.snappyEnabled) {
+            handleSnappy(reflectiveClass, nativeLibs, nativeConfig);
+        }
+
+    }
+
+    private void handleSnappy(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
+                "org.xerial.snappy.SnappyInputStream",
+                "org.xerial.snappy.SnappyOutputStream"));
+
+        String root = "org/xerial/snappy/native/";
+        // add linux64 native lib when targeting containers
+        if (nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild) {
+            String dir = "Linux/x86_64";
+            String snappyNativeLibraryName = "libsnappyjava.so";
+            String path = root + dir + "/" + snappyNativeLibraryName;
+            nativeLibs.produce(new NativeImageResourceBuildItem(path));
+        } else { // otherwise the native lib of the platform this build runs on
+            String dir = getOs() + "/" + getArch();
+            String snappyNativeLibraryName = System.mapLibraryName("snappyjava");
+            if (snappyNativeLibraryName.toLowerCase().endsWith(".dylib")) {
+                snappyNativeLibraryName = snappyNativeLibraryName.replace(".dylib", ".jnilib");
+            }
+            String path = root + dir + "/" + snappyNativeLibraryName;
+            nativeLibs.produce(new NativeImageResourceBuildItem(path));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void loadSnappyIfEnabled(KafkaRecorder recorder, KafkaBuildTimeConfig config) {
+        if (config.snappyEnabled) {
+            recorder.loadSnappy();
+        }
+    }
+
+    private void handleOpenTracing(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Capabilities capabilities) {
+        //opentracing contrib kafka interceptors: https://github.com/opentracing-contrib/java-kafka-client
+        if (capabilities.isPresent(Capability.OPENTRACING)) {
+            try {
+                Class.forName("io.opentracing.contrib.kafka.TracingProducerInterceptor", false,
+                        Thread.currentThread().getContextClassLoader());
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
+                        "io.opentracing.contrib.kafka.TracingProducerInterceptor",
+                        "io.opentracing.contrib.kafka.TracingConsumerInterceptor"));
+            } catch (ClassNotFoundException e) {
+                //ignore, opentracing contrib kafka is not in the classpath
+            }
+        }
+    }
+
+    private void handleStrimziOAuth(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        try {
+            Class.forName("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler", false,
+                    Thread.currentThread().getContextClassLoader());
+
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
+                    "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"));
+
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
+                    "org.keycloak.jose.jws.JWSHeader",
+                    "org.keycloak.representations.AccessToken",
+                    "org.keycloak.representations.AccessToken$Access",
+                    "org.keycloak.representations.AccessTokenResponse",
+                    "org.keycloak.representations.IDToken",
+                    "org.keycloak.representations.JsonWebToken",
+                    "org.keycloak.jose.jwk.JSONWebKeySet",
+                    "org.keycloak.jose.jwk.JWK",
+                    "org.keycloak.json.StringOrArrayDeserializer",
+                    "org.keycloak.json.StringListMapDeserializer"));
+        } catch (ClassNotFoundException e) {
+            //ignore, Strimzi OAuth Client is not on the classpath
+        }
+    }
+
+    private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxies) {
         // Avro - for both Confluent and Apicurio
         try {
             Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer", false,
@@ -227,42 +319,6 @@ public class KafkaProcessor {
         } catch (ClassNotFoundException e) {
             //ignore, Apicurio Avro is not in the classpath
         }
-
-        //opentracing contrib kafka interceptors: https://github.com/opentracing-contrib/java-kafka-client
-        if (capabilities.isPresent(Capability.OPENTRACING)) {
-            try {
-                Class.forName("io.opentracing.contrib.kafka.TracingProducerInterceptor", false,
-                        Thread.currentThread().getContextClassLoader());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
-                        "io.opentracing.contrib.kafka.TracingProducerInterceptor",
-                        "io.opentracing.contrib.kafka.TracingConsumerInterceptor"));
-            } catch (ClassNotFoundException e) {
-                //ignore, opentracing contrib kafka is not in the classpath
-            }
-        }
-
-        try {
-            Class.forName("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler", false,
-                    Thread.currentThread().getContextClassLoader());
-
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
-                    "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"));
-
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
-                    "org.keycloak.jose.jws.JWSHeader",
-                    "org.keycloak.representations.AccessToken",
-                    "org.keycloak.representations.AccessToken$Access",
-                    "org.keycloak.representations.AccessTokenResponse",
-                    "org.keycloak.representations.IDToken",
-                    "org.keycloak.representations.JsonWebToken",
-                    "org.keycloak.jose.jwk.JSONWebKeySet",
-                    "org.keycloak.jose.jwk.JWK",
-                    "org.keycloak.json.StringOrArrayDeserializer",
-                    "org.keycloak.json.StringListMapDeserializer"));
-        } catch (ClassNotFoundException e) {
-            //ignore, Strimzi OAuth Client is not on the classpath
-        }
-
     }
 
     @BuildStep
@@ -277,7 +333,8 @@ public class KafkaProcessor {
     public void withSasl(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, AbstractLogin.DefaultLoginCallbackHandler.class));
+        reflectiveClass
+                .produce(new ReflectiveClassBuildItem(false, false, AbstractLogin.DefaultLoginCallbackHandler.class));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, SaslClientCallbackHandler.class));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, DefaultLogin.class));
 
@@ -320,5 +377,24 @@ public class KafkaProcessor {
                 "com.fasterxml.jackson.databind.ObjectMapper",
                 "io.quarkus.jsonb.JsonbProducer",
                 "javax.json.bind.Jsonb");
+    }
+
+    public static String getArch() {
+        String osArch = System.getProperty("os.arch");
+        return osArch.replaceAll("\\W", "");
+    }
+
+    static String getOs() {
+        String osName = System.getProperty("os.name");
+
+        if (osName.contains("Windows")) {
+            return "Windows";
+        } else if (osName.contains("Mac")) {
+            return "Mac";
+        } else if (osName.contains("Linux")) {
+            return "Linux";
+        } else {
+            return osName.replaceAll("\\W", "");
+        }
     }
 }

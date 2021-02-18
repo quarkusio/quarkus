@@ -20,14 +20,7 @@ public class TestHTTPResourceManager {
     public static String getUri() {
         try {
             Config config = ConfigProvider.getConfig();
-            String value = config.getValue("test.url", String.class);
-            if (value.equals(TestHTTPConfigSourceProvider.TEST_URL_VALUE)) {
-                //massive hack for dev mode tests, dev mode has not started yet
-                //so we don't have any way to load this correctly from config
-                return "http://" + config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost") + ":"
-                        + config.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
-            }
-            return value;
+            return config.getValue("test.url", String.class);
         } catch (IllegalStateException e) {
             //massive hack for dev mode tests, dev mode has not started yet
             //so we don't have any way to load this correctly from config

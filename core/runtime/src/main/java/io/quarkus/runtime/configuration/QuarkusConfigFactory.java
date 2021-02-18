@@ -28,8 +28,11 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
             //the HTTP port or logging info
             return configProviderResolver.getBuilder().forClassLoader(classLoader)
                     .addDefaultSources()
+                    .addDefaultInterceptors()
                     .addDiscoveredSources()
                     .addDiscoveredConverters()
+                    .addDiscoveredInterceptors()
+                    .withProfile(ProfileManager.getActiveProfile())
                     .build();
         }
         return config;

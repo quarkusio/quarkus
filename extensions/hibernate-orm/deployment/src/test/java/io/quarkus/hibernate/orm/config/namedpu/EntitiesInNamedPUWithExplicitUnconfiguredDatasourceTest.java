@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm;
+package io.quarkus.hibernate.orm.config.namedpu;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EntitiesWithoutDataSourceTest {
+public class EntitiesInNamedPUWithExplicitUnconfiguredDatasourceTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -19,17 +19,19 @@ public class EntitiesWithoutDataSourceTest {
                 assertThat(t)
                         .isInstanceOf(ConfigurationException.class)
                         .hasMessageContainingAll(
-                                "Model classes are defined for the default persistence unit, but no default datasource was found",
-                                "The default EntityManagerFactory will not be created.",
-                                "To solve this, configure the default datasource.",
+                                "The datasource 'ds-1' is not configured but the persistence unit 'pu-1' uses it.",
+                                "To solve this, configure datasource 'ds-1'.",
                                 "Refer to https://quarkus.io/guides/datasource for guidance.");
             })
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(MyEntity.class));
+                    .addPackage(MyEntity.class.getPackage().getName())
+                    .addAsResource("application-named-pu-explicit-unconfigured-datasource.properties",
+                            "application.properties"));
 
     @Test
     public void testInvalidConfiguration() {
         // deployment exception should happen first
         Assertions.fail();
     }
+
 }

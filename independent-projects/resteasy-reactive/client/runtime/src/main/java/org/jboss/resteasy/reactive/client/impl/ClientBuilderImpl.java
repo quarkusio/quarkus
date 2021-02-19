@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import io.vertx.core.http.HttpClientOptions;
 import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -22,6 +23,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private KeyStore keyStore;
     private char[] keystorePassword;
     private HostnameVerifier hostnameVerifier;
+    private HttpClientOptions httpClientOptions = new HttpClientOptions();
     private static final ClientContextResolver CLIENT_CONTEXT_RESOLVER = ClientContextResolver.getInstance();
 
     @Override
@@ -74,9 +76,14 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder httpClientOptions(HttpClientOptions httpClientOptions) {
+        this.httpClientOptions = httpClientOptions;
+        return this;
+    }
+
     @Override
     public Client build() {
-        return new ClientImpl(configuration,
+        return new ClientImpl(httpClientOptions, configuration,
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()), hostnameVerifier,
                 sslContext);
 

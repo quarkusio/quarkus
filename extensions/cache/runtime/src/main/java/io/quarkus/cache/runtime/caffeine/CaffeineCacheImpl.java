@@ -71,19 +71,15 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        // We need to defer the CompletionStage eager computation.
-        return Uni.createFrom().deferred(new Supplier<Uni<? extends V>>() {
-            @Override
-            public Uni<? extends V> get() {
-                CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader);
-                return Uni.createFrom().completionStage(caffeineValue).map(new Function<Object, V>() {
-                    @Override
-                    public V apply(Object cacheValue) {
-                        return cast(cacheValue);
-                    }
+        return Uni.createFrom().completionStage(
+                /*
+                 * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation will be
+                 * delayed until subscription time. In other words, the cache value computation is done lazily.
+                 */
+                () -> {
+                    CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader);
+                    return cast(caffeineValue);
                 });
-            }
-        });
     }
 
     /**

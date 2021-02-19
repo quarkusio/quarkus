@@ -47,7 +47,6 @@ import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
 import io.quarkus.bootstrap.resolver.model.ArtifactCoords;
 import io.quarkus.bootstrap.resolver.model.Dependency;
 import io.quarkus.bootstrap.resolver.model.ModelParameter;
@@ -67,6 +66,9 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 
 public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<ModelParameter> {
+
+    private static final String MAIN_RESOURCES_OUTPUT = "build/resources/main";
+    private static final String CLASSES_OUTPUT = "build/classes";
 
     private static Configuration classpathConfig(Project project, LaunchMode mode) {
         if (LaunchMode.TEST.equals(mode)) {
@@ -339,7 +341,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                     a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
                 IncludedBuild includedBuild = includedBuild(project, a.getName());
                 if (includedBuild != null) {
-                    addSubstitutedProject(dep, includedBuild.getProjectDir(), mode);
+                    addSubstitutedProject(dep, includedBuild.getProjectDir());
                 } else {
                     Project projectDep = project.getRootProject()
                             .findProject(((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
@@ -413,13 +415,25 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         }
     }
 
-    private void addSubstitutedProject(final DependencyImpl dep, File projectFile, LaunchMode mode) {
-        final QuarkusModel quarkusModel = QuarkusGradleModelFactory.create(projectFile, mode.name());
-        final io.quarkus.bootstrap.resolver.model.SourceSet moduleOutput = quarkusModel.getWorkspace().getMainModule()
-                .getSourceSet();
-        dep.addPath(moduleOutput.getResourceDirectory());
-        for (File sourceDirectory : moduleOutput.getSourceDirectories()) {
-            dep.addPath(sourceDirectory);
+    private void addSubstitutedProject(final DependencyImpl dep, File projectFile) {
+        File mainResourceDirectory = new File(projectFile, MAIN_RESOURCES_OUTPUT);
+        if (mainResourceDirectory.exists()) {
+            dep.addPath(mainResourceDirectory);
+        }
+        File classesOutput = new File(projectFile, CLASSES_OUTPUT);
+        File[] languageDirectories = classesOutput.listFiles();
+        if (languageDirectories == null) {
+            throw new GradleException(
+                    "The project does not contain a class output directory. " + classesOutput.getPath() + " must exist.");
+        }
+        for (File languageDirectory : languageDirectories) {
+            if (languageDirectory.isDirectory()) {
+                for (File sourceSet : languageDirectory.listFiles()) {
+                    if (sourceSet.isDirectory() && sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
+                        dep.addPath(sourceSet);
+                    }
+                }
+            }
         }
     }
 

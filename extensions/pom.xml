@@ -152,9 +152,10 @@
         <!-- Integrations -->
         <module>amazon-lambda</module>
         <module>amazon-lambda-xray</module>
+        <!-- AWS API Gateway HTTP API -->
         <module>amazon-lambda-http</module>
-        <!-- amazon-lambda-http-v1 is deprecated -->
-        <module>amazon-lambda-http-v1</module>
+        <!-- AWS API Gateway REST API -->
+        <module>amazon-lambda-rest</module>
         <module>amazon-services</module>
         <module>amazon-alexa</module>
         <module>azure-functions-http</module>

@@ -11,9 +11,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-amazon-lambda-http-v1-parent</artifactId>
-    <name>Quarkus - Amazon Lambda HTTP V1</name>
-    <!-- Deprecated support for API Gateway 1.0 message format and configuration -->
+    <artifactId>quarkus-amazon-lambda-rest-parent</artifactId>
+    <name>Quarkus - Amazon Lambda AWS Gateway REST API</name>
     <packaging>pom</packaging>
 
     <modules>

@@ -6,13 +6,13 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-amazon-lambda-http-v1-parent</artifactId>
+        <artifactId>quarkus-amazon-lambda-rest-parent</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-amazon-lambda-http-v1-deployment</artifactId>
-    <name>Quarkus - Amazon Lambda HTTP V1 - Deployment</name>
+    <artifactId>quarkus-amazon-lambda-rest-deployment</artifactId>
+    <name>Quarkus - Amazon Lambda AWS Gateway REST API - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-amazon-lambda-http-v1</artifactId>
+            <artifactId>quarkus-amazon-lambda-rest</artifactId>
         </dependency>
     </dependencies>
     <build>

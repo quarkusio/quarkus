@@ -1703,12 +1703,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-lambda-http-v1</artifactId>
+                <artifactId>quarkus-amazon-lambda-rest</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-lambda-http-v1-deployment</artifactId>
+                <artifactId>quarkus-amazon-lambda-rest-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

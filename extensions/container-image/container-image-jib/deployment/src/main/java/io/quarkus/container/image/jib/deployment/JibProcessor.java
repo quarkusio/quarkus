@@ -133,6 +133,7 @@ public class JibProcessor {
                     "Package type '" + packageType + "' is not supported by the container-image-jib extension");
         }
         setUser(jibConfig, jibContainerBuilder);
+        setPlatforms(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
@@ -164,6 +165,7 @@ public class JibProcessor {
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
                 nativeImage, containerImageLabels);
         setUser(jibConfig, jibContainerBuilder);
+        setPlatforms(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
@@ -399,6 +401,7 @@ public class JibProcessor {
             for (int port : jibConfig.ports) {
                 jibContainerBuilder.addExposedPort(Port.tcp(port));
             }
+
             return jibContainerBuilder;
 
         } catch (IOException e) {
@@ -427,6 +430,10 @@ public class JibProcessor {
 
     private void setUser(JibConfig jibConfig, JibContainerBuilder jibContainerBuilder) {
         jibConfig.user.ifPresent(jibContainerBuilder::setUser);
+    }
+
+    private void setPlatforms(JibConfig jibConfig, JibContainerBuilder jibContainerBuilder) {
+        jibConfig.platforms.map(PlatformHelper::parse).ifPresent(jibContainerBuilder::setPlatforms);
     }
 
     private JibContainerBuilder createContainerBuilderFromLegacyJar(JibConfig jibConfig,

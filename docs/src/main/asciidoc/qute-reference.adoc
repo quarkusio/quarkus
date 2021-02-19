@@ -1702,7 +1702,7 @@ public class MyBean {
 <1> You can set a `Locale` instance or a locale tag string (IETF).
 
 
-NOTE: When using <<quarkus-resteasy-qute,resteasy_integration>> the `locale` attribute is derived from the the `Accept-Language` header if not set by a user.
+NOTE: When using <<resteasy_integration,quarkus-resteasy-qute>> the `locale` attribute is derived from the the `Accept-Language` header if not set by a user.
 
 The `@Localized` qualifier can be used to inject a localized message bundle interface.
 

@@ -20,9 +20,9 @@ public class PrometheusConfigGroup implements MicrometerConfig.CapabilityEnabled
 
     /**
      * The path for the prometheus metrics endpoint (produces text/plain).
-     * The default value is {@code /metrics}.
+     * The default value is {@code metrics}.
      */
-    @ConfigItem(defaultValue = "/metrics")
+    @ConfigItem(defaultValue = "metrics")
     public String path;
 
     @Override

@@ -76,10 +76,8 @@ import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
@@ -185,15 +183,12 @@ public class DevConsoleProcessor {
     }
 
     protected static void newRouter(Engine engine,
-            HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
-        // "" or "/myroot"
-        String httpRootPath = httpRootPathBuildItem.adjustPath("/");
-        httpRootPath = httpRootPath.substring(0, httpRootPath.lastIndexOf("/"));
-        // "" or "/myroot" or "/q" or "/myroot/q"
-        String frameworkRootPath = httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath("/"));
-        frameworkRootPath = frameworkRootPath.substring(0, frameworkRootPath.lastIndexOf("/"));
+        // "/" or "/myroot/"
+        String httpRootPath = nonApplicationRootPathBuildItem.getNormalizedHttpRootPath();
+        // "/" or "/myroot/" or "/q/" or "/myroot/q/"
+        String frameworkRootPath = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
 
         Handler<RoutingContext> errorHandler = new Handler<RoutingContext>() {
             @Override
@@ -211,15 +206,12 @@ public class DevConsoleProcessor {
                 .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route(httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath("/dev/*")))
-                .subRouter(router);
+        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev/*")).subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public ServiceStartBuildItem buildTimeTemplates(List<DevConsoleTemplateInfoBuildItem> items,
-            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        collectTemplates(devTemplatePaths);
         Map<String, Map<String, Object>> results = new HashMap<>();
         for (DevConsoleTemplateInfoBuildItem i : items) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
@@ -276,31 +268,30 @@ public class DevConsoleProcessor {
     public void setupActions(List<DevConsoleRouteBuildItem> routes,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             List<DevTemplatePathBuildItem> devTemplatePaths,
-            Optional<DevTemplateVariantsBuildItem> devTemplateVariants,
             LogStreamRecorder recorder,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            HttpRootPathBuildItem httpRootPathBuildItem,
             HistoryHandlerBuildItem historyHandlerBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         initializeVirtual();
 
-        newRouter(buildEngine(devTemplatePaths), httpRootPathBuildItem, nonApplicationRootPathBuildItem);
+        newRouter(buildEngine(devTemplatePaths), nonApplicationRootPathBuildItem);
 
         // Add the log stream
-        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
-                .route("/dev/logstream")
+        routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route("dev/logstream")
                 .handler(recorder.websocketHandler(historyHandlerBuildItem.value))
-                .nonApplicationRoute(false)
                 .build());
 
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
-                routeBuildItemBuildProducer.produce(new RouteBuildItem(
-                        new RuntimeDevConsoleRoute(groupAndArtifact.getKey(), groupAndArtifact.getValue(), i.getPath(),
-                                i.getMethod()),
-                        i.getHandler()));
+                routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                        .routeFunction(
+                                "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
+                                new RuntimeDevConsoleRoute(i.getMethod()))
+                        .handler(i.getHandler())
+                        .build());
             } else {
                 router.route(HttpMethod.valueOf(i.getMethod()),
                         "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath())
@@ -310,40 +301,32 @@ public class DevConsoleProcessor {
 
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         //must be last so the above routes have precedence
-        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
-                .route("/dev/*")
+        routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route("dev/*")
                 .handler(new DevConsoleFilter())
-                .nonApplicationRoute(false)
                 .build());
-        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
-                .route("/dev")
+        routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route("dev")
+                .displayOnNotFoundPage("Dev UI")
                 .handler(new RedirectHandler())
-                .nonApplicationRoute(false)
                 .build());
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    public void setupActions(BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
-                nonApplicationRootPathBuildItem.adjustPath("/dev/"), "Dev UI"));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void deployStaticResources(DevConsoleRecorder recorder, CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdownContext,
-            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer) throws IOException {
+            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) throws IOException {
         AppArtifact devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
                 "quarkus-vertx-http-deployment");
 
         Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode,
                 devConsoleResourcesArtifact, STATIC_RESOURCES_PATH);
 
-        routeBuildItemBuildProducer.produce(new RouteBuildItem.Builder()
-                .route("/dev/resources/*")
+        routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route("dev/resources/*")
                 .handler(recorder.devConsoleHandler(devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
-                .nonApplicationRoute(false)
                 .build());
     }
 
@@ -456,7 +439,8 @@ public class DevConsoleProcessor {
         });
     }
 
-    private void collectTemplates(BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
+    @BuildStep
+    void collectTemplates(BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
         try {
             ClassLoader classLoader = DevConsoleProcessor.class.getClassLoader();
             Enumeration<URL> devTemplateURLs = classLoader.getResources("/dev-templates");

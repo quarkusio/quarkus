@@ -62,7 +62,7 @@ public class ResteasyReactiveDevModeProcessor {
             ExceptionMapperRecorder recorder, HttpRootPathBuildItem httpRoot) {
         List<AdditionalRouteDescription> endpoints = displayableEndpoints
                 .stream()
-                .map(v -> new AdditionalRouteDescription(v.getEndpoint(), v.getDescription()))
+                .map(v -> new AdditionalRouteDescription(v.getEndpoint(httpRoot), v.getDescription()))
                 .sorted()
                 .collect(Collectors.toList());
 

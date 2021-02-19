@@ -93,9 +93,9 @@ public class SwaggerUiProcessor {
                         "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
             }
 
-            String openApiPath = httpRootPathBuildItem.adjustPath(nonApplicationRootPathBuildItem.adjustPath(openapi.path));
+            String openApiPath = httpRootPathBuildItem.resolvePath(nonApplicationRootPathBuildItem.resolvePath(openapi.path));
             String swaggerUiPath = httpRootPathBuildItem
-                    .adjustPath(nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path));
+                    .resolvePath(nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path));
 
             AppArtifact artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, SWAGGER_UI_WEBJAR_GROUP_ID,
                     SWAGGER_UI_WEBJAR_ARTIFACT_ID);
@@ -108,8 +108,6 @@ public class SwaggerUiProcessor {
                         generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig));
 
                 swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(tempPath.toAbsolutePath().toString(), swaggerUiPath));
-                displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
-                        nonApplicationRootPathBuildItem.adjustPath(swaggerUiConfig.path + "/"), "Open API UI"));
 
                 // Handle live reload of branding files
                 if (liveReloadBuildItem.isLiveReload() && !liveReloadBuildItem.getChangedResources().isEmpty()) {
@@ -144,6 +142,7 @@ public class SwaggerUiProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void registerSwaggerUiHandler(SwaggerUiRecorder recorder,
             BuildProducer<RouteBuildItem> routes,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SwaggerUiBuildItem finalDestinationBuildItem,
             SwaggerUiRuntimeConfig runtimeConfig,
             LaunchModeBuildItem launchMode,
@@ -154,18 +153,17 @@ public class SwaggerUiProcessor {
                     finalDestinationBuildItem.getSwaggerUiPath(),
                     runtimeConfig);
 
-            routes.produce(
-                    new RouteBuildItem.Builder()
-                            .route(swaggerUiConfig.path)
-                            .handler(handler)
-                            .nonApplicationRoute()
-                            .build());
-            routes.produce(
-                    new RouteBuildItem.Builder()
-                            .route(swaggerUiConfig.path + "/*")
-                            .handler(handler)
-                            .nonApplicationRoute()
-                            .build());
+            routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .route(swaggerUiConfig.path)
+                    .displayOnNotFoundPage("Open API UI")
+                    .handler(handler)
+                    .requiresLegacyRedirect()
+                    .build());
+            routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .route(swaggerUiConfig.path + "/*")
+                    .handler(handler)
+                    .requiresLegacyRedirect()
+                    .build());
         }
     }
 

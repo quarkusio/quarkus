@@ -209,7 +209,7 @@ rsync to sync to the remote application.
 
 All the config options are shown below:
 
-include::{generated-dir}/config/quarkus-live-reload-live-reload-config[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-live-reload-live-reload-config.adoc[opts=optional, leveloffset=+1]
 
 NOTE: It is recommended you use SSL when using remote dev mode, however even if you are using an unencrypted connection
 your password is never sent directly over the wire. For the initial connection request the password is hashed with the

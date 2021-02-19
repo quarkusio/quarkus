@@ -164,14 +164,15 @@ public class ResteasyCommonProcessor {
             contributedProviders.add(contributedProviderBuildItem.getName());
         }
 
+        Set<String> annotatedProviders = new HashSet<>();
         for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PROVIDER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
-                contributedProviders.add(i.target().asClass().name().toString());
+                annotatedProviders.add(i.target().asClass().name().toString());
             }
             checkProperConfigAccessInProvider(i);
             checkProperConstructorInProvider(i);
         }
-
+        contributedProviders.addAll(annotatedProviders);
         Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                 "META-INF/services/" + Providers.class.getName()));
         // this one is added manually in RESTEasy's ResteasyDeploymentImpl
@@ -238,7 +239,8 @@ public class ResteasyCommonProcessor {
                     "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
         }
 
-        return new JaxrsProvidersToRegisterBuildItem(providersToRegister, contributedProviders, useBuiltinProviders);
+        return new JaxrsProvidersToRegisterBuildItem(
+                providersToRegister, contributedProviders, annotatedProviders, useBuiltinProviders);
     }
 
     private String mutinySupportNeeded(CombinedIndexBuildItem indexBuildItem) {

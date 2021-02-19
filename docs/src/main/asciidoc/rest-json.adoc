@@ -588,6 +588,12 @@ If multiple JAX-RS `Application` classes are defined, the build will fail with t
 
 If multiple JAX-RS applications are defined, the property `quarkus.resteasy.ignoreApplicationClasses=true` can be used to ignore all explicit `Application` classes. This makes all resource-classes available via the application-path as defined by `quarkus.resteasy.path` (default: `/`).
 
+=== Support limitations of JAX-RS application
+
+The RESTEasy extension doesn't support the method `getProperties()` of the class `javax.ws.rs.core.Application`. Moreover, it only relies on the methods `getClasses()` and `getSingletons()` to filter out the annotated resource, provider and feature classes.
+It doesn't filter out the built-in resource, provider and feature classes and also the resource, provider and feature classes registered by the other extensions.
+Finally the objects returned by the method `getSingletons()` are ignored, only the classes are took into account to filter out the resource, provider and feature classes, in other words the method `getSingletons()` is actually managed the same way as `getClasses()`.
+
 === Lifecycle of Resources
 
 In Quarkus all JAX-RS resources are treated as CDI beans.

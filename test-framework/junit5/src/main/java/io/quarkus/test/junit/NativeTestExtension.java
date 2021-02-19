@@ -3,6 +3,7 @@ package io.quarkus.test.junit;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,10 @@ public class NativeTestExtension
 
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
+
+    private static Class<?> currentJUnitTestClass;
+
+    private static boolean hasPerTestResources;
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
@@ -89,14 +94,13 @@ public class NativeTestExtension
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        TestProfile annotation = testClass.getAnnotation(TestProfile.class);
-        Class<? extends QuarkusTestProfile> selectedProfile = null;
-        if (annotation != null) {
-            selectedProfile = annotation.value();
-        }
+        Class<? extends QuarkusTestProfile> selectedProfile = findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
-        if ((state == null && !failedBoot) || wrongProfile) {
-            if (wrongProfile) {
+        // we reload the test resources if we changed test class and if we had or will have per-test test resources
+        boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
+                && (hasPerTestResources || QuarkusTestExtension.hasPerTestResources(extensionContext));
+        if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
+            if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
                         state.close();
@@ -118,9 +122,21 @@ public class NativeTestExtension
         return state;
     }
 
+    private Class<? extends QuarkusTestProfile> findProfile(Class<?> testClass) {
+        while (testClass != Object.class) {
+            TestProfile annotation = testClass.getAnnotation(TestProfile.class);
+            if (annotation != null) {
+                return annotation.value();
+            }
+            testClass = testClass.getSuperclass();
+        }
+        return null;
+    }
+
     private ExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
             throws Throwable {
         quarkusTestProfile = profile;
+        currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
         try {
             Class<?> requiredTestClass = context.getRequiredTestClass();
@@ -158,8 +174,11 @@ public class NativeTestExtension
                 }
             }
 
-            testResourceManager = new TestResourceManager(requiredTestClass);
+            testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
+                    Collections.emptyList(), profileInstance != null ? profileInstance.disableGlobalTestResources() : false);
             testResourceManager.init();
+            hasPerTestResources = testResourceManager.hasPerTestResources();
+
             additional.putAll(testResourceManager.start());
 
             NativeImageLauncher launcher = new NativeImageLauncher(requiredTestClass);

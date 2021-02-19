@@ -52,7 +52,8 @@ public class Pods {
         final Pod pod = pods.get(0);
         final String podName = pod.getMetadata().getName();
         // would normally do some kind of meaningful update here
-        Pod updatedPod = new PodBuilder().withNewMetadata().withName(podName).withNewResourceVersion("12345").endMetadata()
+        Pod updatedPod = new PodBuilder().withNewMetadata().withName(podName).withNewResourceVersion("12345")
+                .addToLabels("key1", "value1").endMetadata()
                 .build();
 
         updatedPod = kubernetesClient.pods().withName(podName).createOrReplace(updatedPod);

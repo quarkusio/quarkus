@@ -85,6 +85,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.gizmo.WhileLoop;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -419,9 +420,11 @@ class VertxWebProcessor {
             List<NotFoundPageDisplayableEndpointBuildItem> additionalEndpoints) {
         if (capabilities.isMissing(Capability.RESTEASY)) {
             // Register a special error handler if JAX-RS not available
-            recorder.registerNotFoundHandler(router.getRouter(), httpRoot.getRootPath(),
+            recorder.registerNotFoundHandler(router.getHttpRouter(), httpRoot.getRootPath(),
                     descriptions.stream().map(RouteDescriptionBuildItem::getDescription).collect(Collectors.toList()),
-                    additionalEndpoints.stream().map(NotFoundPageDisplayableEndpointBuildItem::getEndpoint)
+                    additionalEndpoints.stream()
+                            .map(s -> s.isAbsolutePath() ? s.getEndpoint()
+                                    : TemplateHtmlBuilder.adjustRoot(httpRoot.getRootPath(), s.getEndpoint()))
                             .collect(Collectors.toList()));
         }
     }

@@ -15,6 +15,7 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
 import io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProvider;
 import io.quarkus.micrometer.runtime.export.PrometheusRecorder;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 
 /**
@@ -53,24 +54,25 @@ public class PrometheusRegistryProcessor {
     @Record(value = ExecutionTime.STATIC_INIT)
     void createPrometheusRoute(BuildProducer<RouteBuildItem> routes,
             MicrometerConfig mConfig,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             PrometheusRecorder recorder) {
 
         PrometheusConfigGroup pConfig = mConfig.export.prometheus;
         log.debug("PROMETHEUS CONFIG: " + pConfig);
 
         // Exact match for resources matched to the root path
-        routes.produce(new RouteBuildItem.Builder()
-                .routeFunction(recorder.route(pConfig.path))
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .routeFunction(pConfig.path, recorder.route())
                 .handler(recorder.getHandler())
-                .nonApplicationRoute()
+                .requiresLegacyRedirect()
+                .displayOnNotFoundPage("Metrics", pConfig.path)
                 .build());
 
         // Match paths that begin with the deployment path
-        String matchPath = pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*");
-        routes.produce(new RouteBuildItem.Builder()
-                .routeFunction(recorder.route(matchPath))
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.route())
                 .handler(recorder.getHandler())
-                .nonApplicationRoute()
+                .requiresLegacyRedirect()
                 .build());
     }
 }

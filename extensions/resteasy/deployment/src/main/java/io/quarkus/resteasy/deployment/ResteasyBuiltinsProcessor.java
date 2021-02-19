@@ -112,7 +112,7 @@ public class ResteasyBuiltinsProcessor {
         List<AdditionalRouteDescription> endpoints = displayableEndpoints
                 .stream()
                 .map(displayableAdditionalBuildItem -> new AdditionalRouteDescription(
-                        displayableAdditionalBuildItem.getEndpoint(), displayableAdditionalBuildItem.getDescription()))
+                        displayableAdditionalBuildItem.getEndpoint(httpRoot), displayableAdditionalBuildItem.getDescription()))
                 .sorted()
                 .collect(Collectors.toList());
 

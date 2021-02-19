@@ -10,7 +10,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class OpenApiPathWithSegmentsTestCase {
-    private static final String OPEN_API_PATH = "/path/with/segments";
+    private static final String OPEN_API_PATH = "path/with/segments";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -22,16 +22,16 @@ public class OpenApiPathWithSegmentsTestCase {
     @Test
     public void testOpenApiPathAccessResource() {
         RestAssured.given().header("Accept", "application/yaml")
-                .when().get("/q" + OPEN_API_PATH)
+                .when().get("/q/" + OPEN_API_PATH)
                 .then().header("Content-Type", "application/yaml;charset=UTF-8");
         RestAssured.given().queryParam("format", "YAML")
-                .when().get("/q" + OPEN_API_PATH)
+                .when().get("/q/" + OPEN_API_PATH)
                 .then().header("Content-Type", "application/yaml;charset=UTF-8");
         RestAssured.given().header("Accept", "application/json")
-                .when().get("/q" + OPEN_API_PATH)
+                .when().get("/q/" + OPEN_API_PATH)
                 .then().header("Content-Type", "application/json;charset=UTF-8");
         RestAssured.given().queryParam("format", "JSON")
-                .when().get("/q" + OPEN_API_PATH)
+                .when().get("/q/" + OPEN_API_PATH)
                 .then().header("Content-Type", "application/json;charset=UTF-8");
     }
 }

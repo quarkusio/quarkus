@@ -25,7 +25,7 @@ import org.junit.jupiter.api.TestInfo;
  * The snapshots can easily be updated when necessary and reviewed to confirm they are consistent with the changes.
  * <br />
  * <br />
- * Snapshots are automatically generated on first run or can be manually updated using <code>-Dsnap</code> or
+ * The snapshots will be created/updated using <code>-Dsnap</code> or
  * <code>-Dupdate-snapshots</code>
  * <br />
  * Snapshots are created in {@link #SNAPSHOTS_DIR}
@@ -42,7 +42,7 @@ public class SnapshotTesting {
      * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
      * <br />
      * <br />
-     * The snapshot is automatically generated on first run or can be manually updated using <code>-Dsnap</code> or
+     * The snapshot will be created/updated using <code>-Dsnap</code> or
      * <code>-Dupdate-snapshots</code>
      * <br />
      * <br />
@@ -68,7 +68,7 @@ public class SnapshotTesting {
     public static AbstractPathAssert<?> assertThatMatchSnapshot(TestInfo testInfo, Path parentDir, String fileRelativePath)
             throws Throwable {
         final String snapshotDirName = getSnapshotDirName(testInfo);
-        final String normalizedFileName = snapshotDirName + "/" + fileRelativePath.replace("/", "_");
+        final String normalizedFileName = snapshotDirName + "/" + normalizePathAsName(fileRelativePath);
         return assertThatMatchSnapshot(parentDir.resolve(fileRelativePath), normalizedFileName);
     }
 
@@ -78,7 +78,7 @@ public class SnapshotTesting {
      * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
      * <br />
      * <br />
-     * The snapshot is automatically generated on first run or can be manually updated using <code>-Dsnap</code> or
+     * The snapshot will be created/updated using <code>-Dsnap</code> or
      * <code>-Dupdate-snapshots</code>
      * <br />
      * <br />
@@ -96,23 +96,23 @@ public class SnapshotTesting {
 
         final boolean updateSnapshot = shouldUpdateSnapshot(snapshotIdentifier);
 
-        if (updateSnapshot && Files.isRegularFile(snapshotFile)) {
-            deleteExistingSnapshots(snapshotIdentifier, snapshotFile);
-        }
-
-        if (!Files.isRegularFile(snapshotFile) || updateSnapshot) {
+        if (updateSnapshot) {
+            if (Files.isRegularFile(snapshotFile)) {
+                deleteExistingSnapshots(snapshotIdentifier, snapshotFile);
+            }
             FileUtils.copyFile(fileToCheck.toFile(), snapshotFile.toFile());
         }
 
-        final String snapshotNotFoundDescription = "corresponding snapshot not found for " + snapshotIdentifier;
+        final String snapshotNotFoundDescription = "corresponding snapshot not found for " + snapshotIdentifier
+                + " (Use -Dsnap to create it automatically)";
         if (isUTF8File(fileToCheck)) {
             final String description = "check snapshot for: " + snapshotIdentifier;
-            assertThat(snapshotFile).as(snapshotNotFoundDescription).exists();
+            assertThat(snapshotFile).as(snapshotNotFoundDescription).isRegularFile();
             assertThat(fileToCheck).as(description).exists().usingCharset(StandardCharsets.UTF_8)
                     .hasContent(getContent(snapshotFile));
         } else {
             final String description = "check binary snapshot for: " + snapshotIdentifier;
-            assertThat(snapshotFile).as(snapshotNotFoundDescription).exists();
+            assertThat(snapshotFile).as(snapshotNotFoundDescription).isRegularFile();
             assertThat(fileToCheck).as(description).hasBinaryContent(getBinaryContent(snapshotFile));
         }
         return assertThat(fileToCheck);
@@ -124,7 +124,7 @@ public class SnapshotTesting {
      * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
      * <br />
      * <br />
-     * The snapshot is automatically generated on first run or can be manually updated using <code>-Dsnap</code> or
+     * The snapshot will be created/updated using <code>-Dsnap</code> or
      * <code>-Dupdate-snapshots</code>
      *
      * @param testInfo the {@link TestInfo} from the {@Link Test} parameter (used to get the current test class & method to
@@ -151,16 +151,17 @@ public class SnapshotTesting {
 
         final boolean updateSnapshot = shouldUpdateSnapshot(snapshotName);
 
-        if (updateSnapshot && Files.isRegularFile(snapshotFile)) {
-            deleteExistingSnapshots(snapshotName, snapshotFile);
-        }
-
-        if (!Files.isRegularFile(snapshotFile) || updateSnapshot) {
+        if (updateSnapshot) {
+            if (Files.isRegularFile(snapshotFile)) {
+                deleteExistingSnapshots(snapshotName, snapshotFile);
+            }
             Files.createDirectories(snapshotFile.getParent());
             Files.write(snapshotFile, String.join("\n", tree).getBytes(StandardCharsets.UTF_8));
         }
 
-        assertThat(snapshotFile).isRegularFile();
+        assertThat(snapshotFile)
+                .as("corresponding snapshot not found for " + snapshotName + " (Use -Dsnap to create it automatically)")
+                .isRegularFile();
 
         final List<String> content = Arrays.stream(getContent(snapshotFile).split("\\v"))
                 .filter(s -> !s.isEmpty())
@@ -206,6 +207,14 @@ public class SnapshotTesting {
         return (p) -> assertThat(getContent(p)).matches(regex);
     }
 
+    public static String getSnapshotDirName(TestInfo testInfo) {
+        return testInfo.getTestClass().get().getSimpleName() + "/" + testInfo.getTestMethod().get().getName();
+    }
+
+    public static String normalizePathAsName(String fileRelativePath) {
+        return fileRelativePath.replace("/", "_");
+    }
+
     private static boolean shouldUpdateSnapshot(String identifier) {
         return getUpdateSnapshotsProp().filter(u -> u.isEmpty() || "true".equalsIgnoreCase(u) || u.contains(identifier))
                 .isPresent();
@@ -225,10 +234,6 @@ public class SnapshotTesting {
     private static void deleteExistingSnapshots(String name, Path snapshots) {
         System.out.println("\n>>>>>> DELETING EXISTING TEST SNAPSHOTS FOR:\n>>>>>> " + name + "\n");
         FileUtils.deleteQuietly(snapshots.toFile());
-    }
-
-    private static String getSnapshotDirName(TestInfo testInfo) {
-        return testInfo.getTestClass().get().getSimpleName() + "/" + testInfo.getTestMethod().get().getName();
     }
 
     static Optional<String> getUpdateSnapshotsProp() {

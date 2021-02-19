@@ -26,7 +26,7 @@ public final class VertxGraphqlConfig {
          * <p>
          * The value `/` is not allowed as it blocks the application from serving anything else.
          */
-        @ConfigItem(defaultValue = "/graphql-ui")
+        @ConfigItem(defaultValue = "graphql-ui")
         String path;
     }
 }

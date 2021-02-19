@@ -24,16 +24,16 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithMetricsCustomPrefixTest {
+public class KubernetesWithMetricsCustomRelativeTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("health")
+            .setApplicationName("metrics")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics-custom-prefix.properties")
+            .withConfigurationResource("kubernetes-with-metrics-custom-relative.properties")
             .setForcedDependencies(
                     Collections.singletonList(
                             new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion())));
@@ -66,7 +66,7 @@ public class KubernetesWithMetricsCustomPrefixTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("health");
+                assertThat(m.getName()).isEqualTo("metrics");
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {

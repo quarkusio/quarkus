@@ -31,29 +31,41 @@ public class HttpBuildTimeConfig {
     public boolean virtual;
 
     /**
-     * The HTTP root path for non application endpoints. Various endpoints such as metrics, health,
-     * and open api are deployed under this path.
-     * Setting the value to "/" disables the separate non application root,
-     * resulting in all non application endpoints being served from "/" along with the application.
+     * A common root path for non-application endpoints. Various extension-provided endpoints such as metrics, health,
+     * and openapi are deployed under this path by default.
+     *
+     * * Relative path (Default, `q`) ->
+     * Non-application endpoints will be served from
+     * `${quarkus.http.root-path}/${quarkus.http.non-application-root-path}`.
+     * * Absolute path (`/q`) ->
+     * Non-application endpoints will be served from the specified path.
+     * * `${quarkus.http.root-path}` -> Setting this path to the same value as HTTP root path disables
+     * this root path. All extension-provided endpoints will be served from `${quarkus.http.root-path}`.
+     * 
+     * @asciidoclet
      */
-    @ConfigItem(defaultValue = "/q")
+    @ConfigItem(defaultValue = "q")
     public String nonApplicationRootPath;
 
     /**
-     * Whether to redirect non application endpoints from previous location off the root to the
-     * new non application root path.
-     * Enabled by default.
+     * Provide redirect endpoints for extension-provided endpoints existing prior to Quarkus 1.11.
+     * This will trigger HTTP 301 Redirects for the following:
+     *
+     * * `/graphql-ui`
+     * * `/health`
+     * * `/health-ui`
+     * * `/metrics`
+     * * `/openapi`
+     * * `/swagger-ui`
+     *
+     * Default is `true` for Quarkus 1.11.x to facilitate transition to name-spaced URIs using
+     * `${quarkus.http.non-application-root-path}`.
+     *
+     * Quarkus 1.13 will change the default to `false`,
+     * and the config item will be removed in Quarkus 2.0.
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = "true")
     public boolean redirectToNonApplicationRootPath;
-
-    public String adjustPath(String path) {
-        if (!path.startsWith("/")) {
-            throw new IllegalArgumentException("Path must start with /");
-        }
-        if (rootPath.equals("/")) {
-            return path;
-        }
-        return rootPath + path;
-    }
 }

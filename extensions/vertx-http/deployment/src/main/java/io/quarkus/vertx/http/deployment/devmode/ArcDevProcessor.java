@@ -22,19 +22,26 @@ public class ArcDevProcessor {
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
-        String basePath = nonApplicationRootPathBuildItem.adjustPath("/arc");
+        String basePath = "arc";
         String beansPath = basePath + "/beans";
         String removedBeansPath = basePath + "/removed-beans";
         String observersPath = basePath + "/observers";
-        routes.produce(RouteBuildItem.builder().route(basePath)
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(basePath)
+                .displayOnNotFoundPage("CDI Overview")
                 .handler(recorder.createSummaryHandler(getConfigProperties(arcConfig))).build());
-        routes.produce(RouteBuildItem.builder().route(beansPath).handler(recorder.createBeansHandler()).build());
-        routes.produce(RouteBuildItem.builder().route(removedBeansPath).handler(recorder.createRemovedBeansHandler()).build());
-        routes.produce(RouteBuildItem.builder().route(observersPath).handler(recorder.createObserversHandler()).build());
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(basePath));
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(beansPath));
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(removedBeansPath));
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(observersPath));
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(beansPath)
+                .displayOnNotFoundPage("Active CDI Beans")
+                .handler(recorder.createBeansHandler()).build());
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(removedBeansPath)
+                .displayOnNotFoundPage("Removed CDI Beans")
+                .handler(recorder.createRemovedBeansHandler()).build());
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(observersPath)
+                .displayOnNotFoundPage("Active CDI Observers")
+                .handler(recorder.createObserversHandler()).build());
     }
 
     // Note that we can't turn ArcConfig into BUILD_AND_RUN_TIME_FIXED because it's referencing IndexDependencyConfig

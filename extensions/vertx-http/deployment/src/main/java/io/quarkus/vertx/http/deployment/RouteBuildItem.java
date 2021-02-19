@@ -1,8 +1,10 @@
 package io.quarkus.vertx.http.deployment;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
@@ -19,8 +21,9 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final Function<Router, Route> routeFunction;
     private final Handler<RoutingContext> handler;
     private final HandlerType type;
-    private final boolean frameworkRoute;
+    private final RouteType routeType;
     private final boolean requiresLegacyRedirect;
+    private final NotFoundPageDisplayableEndpointBuildItem notFoundPageDisplayableEndpoint;
 
     /**
      * @deprecated Use the Builder instead.
@@ -30,8 +33,9 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.routeFunction = routeFunction;
         this.handler = handler;
         this.type = type;
-        this.frameworkRoute = false;
+        this.routeType = RouteType.APPLICATION_ROUTE;
         this.requiresLegacyRedirect = false;
+        this.notFoundPageDisplayableEndpoint = null;
     }
 
     /**
@@ -74,12 +78,13 @@ public final class RouteBuildItem extends MultiBuildItem {
         this(new BasicRoute(route), handler);
     }
 
-    private RouteBuildItem(Builder builder) {
+    RouteBuildItem(Builder builder, RouteType routeType, boolean requiresLegacyRedirect) {
         this.routeFunction = builder.routeFunction;
         this.handler = builder.handler;
         this.type = builder.type;
-        this.frameworkRoute = builder.frameworkRoute;
-        this.requiresLegacyRedirect = builder.requiresLegacyRedirect;
+        this.routeType = routeType;
+        this.requiresLegacyRedirect = requiresLegacyRedirect;
+        this.notFoundPageDisplayableEndpoint = builder.getNotFoundEndpoint();
     }
 
     public Handler<RoutingContext> getHandler() {
@@ -95,27 +100,64 @@ public final class RouteBuildItem extends MultiBuildItem {
     }
 
     public boolean isFrameworkRoute() {
-        return frameworkRoute;
+        return routeType.equals(RouteType.FRAMEWORK_ROUTE);
+    }
+
+    public boolean isApplicationRoute() {
+        return routeType.equals(RouteType.APPLICATION_ROUTE);
+    }
+
+    public boolean isAbsoluteRoute() {
+        return routeType.equals(RouteType.ABSOLUTE_ROUTE);
     }
 
     public boolean isRequiresLegacyRedirect() {
         return requiresLegacyRedirect;
     }
 
-    public static class Builder {
-        private Function<Router, Route> routeFunction;
-        private Handler<RoutingContext> handler;
-        private HandlerType type = HandlerType.NORMAL;
-        private boolean frameworkRoute = false;
-        private boolean requiresLegacyRedirect = false;
+    public NotFoundPageDisplayableEndpointBuildItem getNotFoundPageDisplayableEndpoint() {
+        return notFoundPageDisplayableEndpoint;
+    }
 
+    public enum RouteType {
+        FRAMEWORK_ROUTE,
+        APPLICATION_ROUTE,
+        ABSOLUTE_ROUTE
+    }
+
+    /**
+     * NonApplicationRootPathBuildItem.Builder extends this.
+     * Please verify the extended builders behavior when changing this one.
+     */
+    public static class Builder {
+        protected Function<Router, Route> routeFunction;
+        protected Handler<RoutingContext> handler;
+        protected HandlerType type = HandlerType.NORMAL;
+        protected boolean displayOnNotFoundPage;
+        protected String notFoundPageTitle;
+        protected String notFoundPagePath;
+
+        /**
+         * {@link #routeFunction(String, Consumer)} should be used instead
+         *
+         * @param routeFunction
+         * @return
+         */
+        @Deprecated
         public Builder routeFunction(Function<Router, Route> routeFunction) {
             this.routeFunction = routeFunction;
             return this;
         }
 
+        public Builder routeFunction(String path, Consumer<Route> routeFunction) {
+            this.routeFunction = new BasicRoute(path, null, routeFunction);
+            this.notFoundPagePath = path;
+            return this;
+        }
+
         public Builder route(String route) {
             this.routeFunction = new BasicRoute(route);
+            this.notFoundPagePath = route;
             return this;
         }
 
@@ -139,20 +181,37 @@ public final class RouteBuildItem extends MultiBuildItem {
             return this;
         }
 
-        public Builder nonApplicationRoute() {
-            this.frameworkRoute = true;
-            this.requiresLegacyRedirect = true;
+        public Builder displayOnNotFoundPage() {
+            this.displayOnNotFoundPage = true;
             return this;
         }
 
-        public Builder nonApplicationRoute(boolean requiresLegacyRedirect) {
-            this.frameworkRoute = true;
-            this.requiresLegacyRedirect = requiresLegacyRedirect;
+        public Builder displayOnNotFoundPage(String notFoundPageTitle) {
+            this.displayOnNotFoundPage = true;
+            this.notFoundPageTitle = notFoundPageTitle;
+            return this;
+        }
+
+        public Builder displayOnNotFoundPage(String notFoundPageTitle, String notFoundPagePath) {
+            this.displayOnNotFoundPage = true;
+            this.notFoundPageTitle = notFoundPageTitle;
+            this.notFoundPagePath = notFoundPagePath;
             return this;
         }
 
         public RouteBuildItem build() {
-            return new RouteBuildItem(this);
+            return new RouteBuildItem(this, RouteType.APPLICATION_ROUTE, false);
+        }
+
+        protected NotFoundPageDisplayableEndpointBuildItem getNotFoundEndpoint() {
+            if (!displayOnNotFoundPage) {
+                return null;
+            }
+            if (notFoundPagePath == null) {
+                throw new RuntimeException("Cannot display " + routeFunction
+                        + " on not found page as no explicit path was specified and a route function is in use");
+            }
+            return new NotFoundPageDisplayableEndpointBuildItem(notFoundPagePath, notFoundPageTitle);
         }
     }
 }

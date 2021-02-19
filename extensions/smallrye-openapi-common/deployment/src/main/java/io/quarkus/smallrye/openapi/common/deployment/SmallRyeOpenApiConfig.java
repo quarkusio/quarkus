@@ -11,7 +11,7 @@ public final class SmallRyeOpenApiConfig {
     /**
      * The path at which to register the OpenAPI Servlet.
      */
-    @ConfigItem(defaultValue = "/openapi")
+    @ConfigItem(defaultValue = "openapi")
     public String path;
 
     /**

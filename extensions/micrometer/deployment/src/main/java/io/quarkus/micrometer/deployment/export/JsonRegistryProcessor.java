@@ -14,6 +14,7 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.export.JsonMeterRegistryProvider;
 import io.quarkus.micrometer.runtime.export.JsonRecorder;
 import io.quarkus.micrometer.runtime.registry.json.JsonMeterRegistry;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 
 public class JsonRegistryProcessor {
@@ -34,17 +35,21 @@ public class JsonRegistryProcessor {
             BuildProducer<MicrometerRegistryProviderBuildItem> registryProviders,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             JsonRecorder recorder) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(JsonMeterRegistryProvider.class)
                 .setUnremovable().build());
         registryProviders.produce(new MicrometerRegistryProviderBuildItem(JsonMeterRegistry.class));
-        routes.produce(new RouteBuildItem.Builder()
-                .routeFunction(recorder.route(config.export.json.path))
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .routeFunction(config.export.json.path, recorder.route())
                 .handler(recorder.getHandler())
-                .nonApplicationRoute(true)
+                .requiresLegacyRedirect()
                 .build());
-        log.debug("Initialized a JSON meter registry on path=" + config.export.json.path);
+
+        log.debug("Initialized a JSON meter registry on path="
+                + nonApplicationRootPathBuildItem.resolvePath(config.export.json.path));
     }
 
 }

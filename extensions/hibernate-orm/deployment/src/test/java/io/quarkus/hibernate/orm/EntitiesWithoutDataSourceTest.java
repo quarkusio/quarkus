@@ -16,9 +16,13 @@ public class EntitiesWithoutDataSourceTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .assertException(t -> {
-                assertThat(t).isInstanceOf(ConfigurationException.class);
-                assertThat(t).hasMessageStartingWith(
-                        "Model classes are defined for the default persistence unit but no default datasource found");
+                assertThat(t)
+                        .isInstanceOf(ConfigurationException.class)
+                        .hasMessageContainingAll(
+                                "Model classes are defined for the default persistence unit, but no default datasource was found",
+                                "The default EntityManagerFactory will not be created.",
+                                "To solve this, configure the default datasource.",
+                                "Refer to https://quarkus.io/guides/datasource for guidance.");
             })
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(MyEntity.class));

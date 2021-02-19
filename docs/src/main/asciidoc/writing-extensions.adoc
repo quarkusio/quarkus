@@ -2034,6 +2034,13 @@ The only particular aspect of writing Quarkus extensions in Eclipse is that APT 
 
 === Troubleshooting / Debugging Tips
 
+==== Automatically decompile Quarkus bytecode
+
+As has been mentioned many times in this document, Quarkus always generates a host of classes as part of the build and in many cases also transforms existing classes.
+When writing extensions it is often extremely useful to see a decompiled version (i.e. Java source code) of those classes, which is why Quarkus provides the `quarkus.package.fernflower.enabled` property (which is disabled by default).
+When the flag is enabled, Quarkus will download and invoke the https://github.com/JetBrains/intellij-community/tree/master/plugins/java-decompiler/engine[Fernflower decompiler] and dump the result in the `decompiled` directory
+of the build tool output (`target/decompiled` for Maven for example).
+
 ==== Dump the Generated Classes to the File System
 
 During the augmentation phase Quarkus extensions generate new and modify existing classes for various purposes. 

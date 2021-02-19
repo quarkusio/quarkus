@@ -13,7 +13,7 @@
                 </property>
             </activation>
             <modules>
-                <module>integration-test</module>
+                <module>integration-tests</module>
             </modules>
         </profile>
     </profiles>

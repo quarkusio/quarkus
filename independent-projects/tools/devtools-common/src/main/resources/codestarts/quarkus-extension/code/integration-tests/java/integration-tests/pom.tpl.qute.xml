@@ -13,9 +13,9 @@
         {/if}
     </parent>
 {/if}
-    <artifactId>{namespace.id}{extension.id}-integration-test</artifactId>
+    <artifactId>{namespace.id}{extension.id}-integration-tests</artifactId>
 {#if extension.name}
-<name>{namespace.name}{extension.name} - Integration Test</name>
+<name>{namespace.name}{extension.name} - Integration Tests</name>
 {/if}
 
     <dependencies>
@@ -70,8 +70,6 @@
             </activation>
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
-                <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
-                <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
             </properties>
             <build>
                 <plugins>

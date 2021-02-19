@@ -3,13 +3,13 @@ package io.quarkus.devtools.codestarts.extension;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
 
 public final class QuarkusExtensionCodestartProjectInput extends CodestartProjectInput {
-    private final boolean withoutIntegrationTest;
+    private final boolean withoutIntegrationTests;
     private final boolean withoutUnitTest;
     private final boolean withoutDevModeTest;
 
     public QuarkusExtensionCodestartProjectInput(QuarkusExtensionCodestartProjectInputBuilder builder) {
         super(builder);
-        this.withoutIntegrationTest = builder.withoutIntegrationTest;
+        this.withoutIntegrationTests = builder.withoutIntegrationTests;
         this.withoutUnitTest = builder.withoutUnitTest;
         this.withoutDevModeTest = builder.withoutDevModeTest;
     }
@@ -18,8 +18,8 @@ public final class QuarkusExtensionCodestartProjectInput extends CodestartProjec
         return new QuarkusExtensionCodestartProjectInputBuilder();
     }
 
-    public boolean withoutIntegrationTest() {
-        return withoutIntegrationTest;
+    public boolean withoutIntegrationTests() {
+        return withoutIntegrationTests;
     }
 
     public boolean withoutUnitTest() {

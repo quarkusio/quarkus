@@ -169,10 +169,10 @@ public class CreateExtensionMojo extends AbstractMojo {
     boolean withoutUnitTest;
 
     /**
-     * Indicates whether to generate an integration test for the extension
+     * Indicates whether to generate an integration tests for the extension
      */
-    @Parameter(property = "withoutIntegrationTest")
-    boolean withoutIntegrationTest;
+    @Parameter(property = "withoutIntegrationTests")
+    boolean withoutIntegrationTests;
 
     /**
      * Indicates whether to generate a devmode test for the extension
@@ -237,7 +237,7 @@ public class CreateExtensionMojo extends AbstractMojo {
                 .quarkusBomGroupId(quarkusBomVersion)
                 .withoutUnitTest(withoutTests || withoutUnitTest)
                 .withoutDevModeTest(withoutTests || withoutDevModeTest)
-                .withoutIntegrationTest(withoutTests || withoutIntegrationTest);
+                .withoutIntegrationTests(withoutTests || withoutIntegrationTests);
 
         boolean success;
 

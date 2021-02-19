@@ -62,11 +62,18 @@
         </dependencies>
     </dependencyManagement>
 {/if}
-{#if maven.compiler-plugin-version or maven.surefire-plugin.version}
+{#if quarkus.version or maven.compiler-plugin-version or maven.surefire-plugin.version}
 
     <build>
         <pluginManagement>
             <plugins>
+                {#if quarkus.version}
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>$\{quarkus.version}</version>
+                </plugin>
+                {/if}
                 {#if maven.surefire-plugin.version}
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

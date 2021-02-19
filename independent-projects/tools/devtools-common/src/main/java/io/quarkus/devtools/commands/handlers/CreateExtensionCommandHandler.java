@@ -92,7 +92,7 @@ public class CreateExtensionCommandHandler {
         final Path itTestPom = checkPomExists(itTestDir);
         new PomTransformer(itTestPom, StandardCharsets.UTF_8)
                 .transform(PomTransformer.Transformation.addModule(extensionDirName));
-        FileUtils.moveDirectory(newExtensionDir.resolve("integration-test").toFile(),
+        FileUtils.moveDirectory(newExtensionDir.resolve("integration-tests").toFile(),
                 itTestDir.resolve(extensionDirName).toFile());
     }
 

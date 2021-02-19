@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Qute Templating Engine
-:extension-status: experimental
 
 include::./attributes.adoc[]
 
@@ -14,8 +13,6 @@ The API combines both the imperative and the non-blocking reactive style of codi
 In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
 Furthermore, we try to detect most of the template problems at build time.
 In this guide, you will learn how to easily render templates in your application.
-
-include::./status-include.adoc[]
 
 == Hello World with JAX-RS
 

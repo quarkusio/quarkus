@@ -245,7 +245,7 @@ app.
 
 All the config options are shown below:
 
-include::{generated-dir}/config/quarkus-live-reload-live-reload-config[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-live-reload-live-reload-config.adoc[opts=optional, leveloffset=+1]
 
 == Debugging
 

@@ -1003,22 +1003,22 @@ Moreover, all templates located in the `src/main/resources/templates` directory 
 ----
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.ResourcePath;
+import io.quarkus.qute.Location;
 
 class MyBean {
 
     @Inject 
     Template items; <1>
 
-    @ResourcePath("detail/items2_v1.html") <2>
+    @Location("detail/items2_v1.html") <2>
     Template items2;
 
     @Inject
     Engine engine; <3>
 }
 ----
-<1> If there is no `ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, the container will attempt to locate a template with path `src/main/resources/templates/items.html`.
-<2> The `ResourcePath` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`. 
+<1> If there is no `Location` qualifier provided, the field name is used to locate the template. In this particular case, the container will attempt to locate a template with path `src/main/resources/templates/items.html`.
+<2> The `Location` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`. 
 <3> Inject the configured `Engine` instance.
 
 It's also possible to contribute to the engine configuration via a CDI observer method.
@@ -1162,7 +1162,7 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @Path("item")
 public class ItemResource {
@@ -1193,7 +1193,7 @@ package org.acme.quarkus.sample;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
-import io.quarkus.qute.api.CheckedTemplate;
+import io.quarkus.qute.CheckedTemplate;
 
 @CheckedTemplate
 public class Templates {
@@ -1527,7 +1527,7 @@ public class HelloResource {
     }
 }
 ----
-<1> If there is no `@ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
+<1> If there is no `@Location` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
 <2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 

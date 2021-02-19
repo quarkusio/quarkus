@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.api.CheckedTemplate;
@@ -33,10 +34,12 @@ final class Names {
     static final DotName MAP = DotName.createSimple(Map.class.getName());
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
-    static final DotName CHECKED_TEMPLATE = DotName.createSimple(CheckedTemplate.class.getName());
+    static final DotName CHECKED_TEMPLATE_OLD = DotName.createSimple(CheckedTemplate.class.getName());
     static final DotName TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     static final DotName UNI = DotName.createSimple(Uni.class.getName());
+    static final DotName LOCATION = DotName.createSimple(Location.class.getName());
+    static final DotName CHECKED_TEMPLATE = DotName.createSimple(io.quarkus.qute.CheckedTemplate.class.getName());
 
     private Names() {
     }

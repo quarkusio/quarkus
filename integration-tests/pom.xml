@@ -38,6 +38,7 @@
         <module>gradle</module>
         <module>main</module>
         <module>kafka</module>
+        <module>kafka-snappy</module>
         <module>kafka-avro</module>
         <module>kafka-streams</module>
         <module>jpa</module>

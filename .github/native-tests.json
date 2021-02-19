@@ -64,8 +64,8 @@
         },
         {
             "category": "Messaging",
-            "timeout": 85,
-            "test-modules": "artemis-core artemis-jms kafka kafka-streams reactive-messaging-amqp reactive-messaging-kafka reactive-messaging-http"
+            "timeout": 120,
+            "test-modules": "artemis-core artemis-jms kafka kafka-avro kafka-snappy kafka-streams reactive-messaging-amqp reactive-messaging-kafka reactive-messaging-http"
         },
         {
             "category": "Security1",

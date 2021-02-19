@@ -76,7 +76,7 @@ public class ClientImpl implements Client {
     final ClientRestHandler[] abortHandlerChain;
     final Vertx vertx;
 
-    public ClientImpl(ConfigurationImpl configuration, ClientContext clientContext,
+    public ClientImpl(HttpClientOptions httpClientOptions, ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext) {
         this.configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
@@ -96,7 +96,7 @@ public class ClientImpl implements Client {
             });
             closeVertx = true;
         }
-        this.httpClient = this.vertx.createHttpClient();
+        this.httpClient = this.vertx.createHttpClient(httpClientOptions);
         abortHandlerChain = new ClientRestHandler[] { new ClientErrorHandler() };
         handlerChain = new ClientRestHandler[] { new ClientRequestFiltersRestHandler(), new ClientSendRequestHandler(),
                 new ClientResponseRestHandler() };

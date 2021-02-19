@@ -60,6 +60,9 @@ public class KubernetesWithNewStyleEnvTest {
                             assertThat(container.getEnv())
                                     .filteredOn(env -> "QUARKUS_KUBERNETES_CONFIG_ENABLED".equals(env.getName()))
                                     .singleElement().satisfies(env -> assertThat(env.getValue()).isEqualTo("true"));
+                            assertThat(container.getEnv())
+                                    .filteredOn(env -> "FOO_MP_REST_URL".equals(env.getName()))
+                                    .singleElement().satisfies(env -> assertThat(env.getValue()).isEqualTo("foo.url"));
                             final List<EnvFromSource> envFrom = container.getEnvFrom();
                             assertThat(envFrom).hasSize(2);
                             assertThat(envFrom)

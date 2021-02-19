@@ -520,13 +520,12 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void generateQute(TestInfo testInfo) throws Throwable {
+    void generateRESTEasyQute(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-qute"))
-                .addCodestart("qute")
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy-qute"))
                 .addData(getGenerationTestInputData())
                 .build();
-        final Path projectDir = testDirPath.resolve("maven-qute");
+        final Path projectDir = testDirPath.resolve("maven-resteasy-qute");
         getCatalog().createProject(input).generate(projectDir);
 
         checkMaven(projectDir);
@@ -534,14 +533,14 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
         checkDockerfiles(projectDir, BuildTool.MAVEN);
         checkConfigProperties(projectDir);
 
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/qute/Quark.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/qute/QuteResource.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/resteasyqute/Quark.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/resteasyqute/QuteResource.java");
     }
 
     @Test
     void generateWithCustomPackage(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addCodestart("qute").addCodestart("resteasy").addCodestart("funqy-http")
+                .addCodestart("resteasy-qute").addCodestart("resteasy").addCodestart("funqy-http")
                 .putData(PROJECT_PACKAGE_NAME.key(), "my.custom.app")
                 .addData(getGenerationTestInputData())
                 .build();
@@ -559,10 +558,10 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("package my.custom.app;"));
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/my/custom/app/NativeGreetingResourceIT.java")
                 .satisfies(checkContains("package my.custom.app;"));
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/my/custom/app/qute/Quark.java")
-                .satisfies(checkContains("package my.custom.app.qute;"));
-        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/my/custom/app/qute/QuteResource.java")
-                .satisfies(checkContains("package my.custom.app.qute;"));
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/my/custom/app/resteasyqute/Quark.java")
+                .satisfies(checkContains("package my.custom.app.resteasyqute;"));
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/my/custom/app/resteasyqute/QuteResource.java")
+                .satisfies(checkContains("package my.custom.app.resteasyqute;"));
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/my/custom/app/funqy/Funqy.java")
                 .satisfies(checkContains("package my.custom.app.funqy;"));
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/my/custom/app/funqy/FunqyTest.java")

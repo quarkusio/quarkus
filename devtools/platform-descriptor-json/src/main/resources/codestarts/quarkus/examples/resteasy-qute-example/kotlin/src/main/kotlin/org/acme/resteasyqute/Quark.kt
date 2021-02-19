@@ -1,4 +1,4 @@
-package org.acme.qute
+package org.acme.resteasyqute
 
 class Quark(val flavor: Flavor, val color: Color) {
     enum class Flavor {

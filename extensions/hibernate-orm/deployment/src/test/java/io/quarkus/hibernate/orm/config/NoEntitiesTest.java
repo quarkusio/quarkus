@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm;
+package io.quarkus.hibernate.orm.config;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

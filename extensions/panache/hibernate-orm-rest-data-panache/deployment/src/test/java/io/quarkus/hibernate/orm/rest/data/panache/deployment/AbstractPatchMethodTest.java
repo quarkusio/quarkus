@@ -12,14 +12,14 @@ import org.junit.jupiter.api.Test;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 
-public abstract class AbstractPutMethodTest {
+public abstract class AbstractPatchMethodTest {
 
     @Test
     void shouldUpdateSimpleObject() {
         given().accept("application/json")
                 .and().contentType("application/json")
                 .and().body("{\"id\": \"1\", \"name\": \"first-test\", \"collection\": {\"id\": \"full\"}}")
-                .when().put("/items/1")
+                .when().patch("/items/1")
                 .then().statusCode(204);
         given().accept("application/json")
                 .when().get("/items/1")
@@ -32,15 +32,15 @@ public abstract class AbstractPutMethodTest {
     void shouldUpdateComplexObject() {
         given().accept("application/json")
                 .and().contentType("application/json")
-                .and().body("{\"id\": \"empty\", \"name\": \"updated collection\"}")
-                .when().put("/collections/empty")
+                .and().body("{\"name\": \"updated collection\"}")
+                .when().patch("/collections/empty")
                 .then().statusCode(204);
         given().accept("application/json")
                 .when().get("/collections/empty")
                 .then().statusCode(200)
                 .and().body("id", is(equalTo("empty")))
                 .and().body("name", is(equalTo("updated collection")))
-                .and().body("age", is(equalTo(null)));
+                .and().body("age", is(equalTo(13)));
     }
 
     @Test
@@ -48,7 +48,7 @@ public abstract class AbstractPutMethodTest {
         given().accept("application/json")
                 .and().contentType("application/json")
                 .and().body("{\"id\": \"100\", \"name\": \"second\", \"collection\": {\"id\": \"full\"}}")
-                .when().put("/items/2")
+                .when().patch("/items/2")
                 .then().statusCode(204);
         given().accept("application/json")
                 .when().get("/items/2")
@@ -65,7 +65,7 @@ public abstract class AbstractPutMethodTest {
         given().accept("application/json")
                 .and().contentType("application/json")
                 .and().body("{\"id\": \"updated-empty\", \"name\": \"empty collection\"}")
-                .when().put("/collections/empty")
+                .when().patch("/collections/empty")
                 .then().statusCode(204);
         given().accept("application/json")
                 .when().get("/collections/empty")
@@ -78,24 +78,11 @@ public abstract class AbstractPutMethodTest {
     }
 
     @Test
-    void shouldCreateObjectWithRequiredId() {
-        given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"test-collection\", \"name\": \"test collection\"}")
-                .when().post("/collections")
-                .then().statusCode(201)
-                .and().header("Location", endsWith("/collections/test-collection"))
-                .and().body("id", is(equalTo("test-collection")))
-                .and().body("name", is(equalTo("test collection")))
-                .and().body("items", is(empty()));
-    }
-
-    @Test
     void shouldCreateHalObjectWithRequiredId() {
         given().accept("application/hal+json")
                 .and().contentType("application/json")
                 .and().body("{\"id\": \"test-collection-hal\", \"name\": \"test collection\"}")
-                .when().post("/collections")
+                .when().patch("/collections/test-collection-hal")
                 .then().statusCode(201)
                 .and().header("Location", endsWith("/collections/test-collection-hal"))
                 .and().body("id", is(equalTo("test-collection-hal")))
@@ -109,26 +96,11 @@ public abstract class AbstractPutMethodTest {
     }
 
     @Test
-    void shouldCreateObjectWithGeneratedId() {
-        Response response = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-item\", \"collection\": {\"id\": \"full\"}}")
-                .when().post("/items")
-                .thenReturn();
-        assertThat(response.statusCode()).isEqualTo(201);
-        assertThat(response.header("Location")).isNotBlank();
-        String id = response.header("Location").substring(response.header("Location").lastIndexOf("/") + 1);
-        JsonPath body = response.body().jsonPath();
-        assertThat(body.getString("id")).isEqualTo(id);
-        assertThat(body.getString("name")).isEqualTo("test-item");
-    }
-
-    @Test
     void shouldCreateHalObjectWithGeneratedId() {
         Response response = given().accept("application/hal+json")
                 .and().contentType("application/json")
                 .and().body("{\"name\": \"test-item-hal\", \"collection\": {\"id\": \"full\"}}")
-                .when().post("/items")
+                .when().patch("/items/12")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isNotBlank();
@@ -142,4 +114,5 @@ public abstract class AbstractPutMethodTest {
         assertThat(body.getString("_links.update.href")).endsWith("/items/" + id);
         assertThat(body.getString("_links.remove.href")).endsWith("/items/" + id);
     }
+
 }

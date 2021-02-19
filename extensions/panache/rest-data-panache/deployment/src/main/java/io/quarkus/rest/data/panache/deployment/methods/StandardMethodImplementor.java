@@ -5,6 +5,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -64,6 +65,10 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected void addPutAnnotation(AnnotatedElement element) {
         element.addAnnotation(PUT.class);
+    }
+
+    protected void addPatchAnnotation(AnnotatedElement element) {
+        element.addAnnotation(PATCH.class);
     }
 
     protected void addDeleteAnnotation(AnnotatedElement element) {

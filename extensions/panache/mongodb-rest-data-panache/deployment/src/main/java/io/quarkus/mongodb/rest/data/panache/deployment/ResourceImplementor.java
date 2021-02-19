@@ -49,6 +49,7 @@ class ResourceImplementor {
         implementGet(classCreator, dataAccessImplementor);
         implementAdd(classCreator, dataAccessImplementor);
         implementUpdate(classCreator, dataAccessImplementor, entityType);
+        implementUpdatePatch(classCreator, dataAccessImplementor, entityType);
         implementDelete(classCreator, dataAccessImplementor);
 
         classCreator.close();
@@ -93,6 +94,18 @@ class ResourceImplementor {
         ResultHandle entity = methodCreator.getMethodParam(1);
         setId(methodCreator, entityType, entity, id);
         methodCreator.returnValue(dataAccessImplementor.persistOrUpdate(methodCreator, entity));
+        methodCreator.close();
+    }
+
+    private void implementUpdatePatch(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
+            String entityType) {
+        MethodCreator methodCreator = classCreator.getMethodCreator("updatePatch", Object.class, Object.class, Object.class);
+        methodCreator.addException(NoSuchFieldException.class);
+        methodCreator.addException(IllegalAccessException.class);
+        ResultHandle id = methodCreator.getMethodParam(0);
+        ResultHandle entity = methodCreator.getMethodParam(1);
+        setId(methodCreator, entityType, entity, id);
+        methodCreator.returnValue(dataAccessImplementor.updatePatch(methodCreator, entity, id));
         methodCreator.close();
     }
 

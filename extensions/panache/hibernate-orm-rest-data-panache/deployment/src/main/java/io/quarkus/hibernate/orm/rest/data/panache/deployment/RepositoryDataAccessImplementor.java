@@ -21,7 +21,7 @@ import io.quarkus.panache.common.Sort;
 /**
  * Implement data access using repository.
  */
-final class RepositoryDataAccessImplementor implements DataAccessImplementor {
+final class RepositoryDataAccessImplementor extends AbstractDataAccessImplementor implements DataAccessImplementor {
 
     private final String repositoryClassName;
 
@@ -71,6 +71,18 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
                 creator.invokeVirtualMethod(ofMethod(Object.class, "getClass", Class.class), entity));
         return creator.invokeInterfaceMethod(
                 ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);
+    }
+
+    @Override
+    public ResultHandle updatePatch(BytecodeCreator creator, ResultHandle entity, ResultHandle id) {
+        MethodDescriptor getEntityManager = ofMethod(PanacheRepositoryBase.class, "getEntityManager",
+                EntityManager.class, Class.class);
+        ResultHandle getOriginalEntity = findById(creator, id);
+        ResultHandle entityManager = creator.invokeInterfaceMethod(getEntityManager, getRepositoryInstance(creator),
+                creator.invokeVirtualMethod(ofMethod(Object.class, "getClass", Class.class), getOriginalEntity));
+        specificFieldUpdate(creator, getOriginalEntity, entity);
+        return creator.invokeInterfaceMethod(
+                ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, getOriginalEntity);
     }
 
     /**

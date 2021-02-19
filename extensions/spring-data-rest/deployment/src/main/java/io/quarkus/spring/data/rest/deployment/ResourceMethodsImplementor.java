@@ -14,5 +14,7 @@ public interface ResourceMethodsImplementor {
 
     void implementUpdate(ClassCreator classCreator, String repositoryInterface, String entityType);
 
+    void implementUpdatePatch(ClassCreator classCreator, String repositoryInterface, String entityType);
+
     void implementDelete(ClassCreator classCreator, String repositoryInterface);
 }

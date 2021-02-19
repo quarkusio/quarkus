@@ -25,7 +25,7 @@ import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.deployment.Constants;
 import io.quarkus.spring.data.rest.deployment.ResourceMethodsImplementor;
 
-public class CrudMethodsImplementor implements ResourceMethodsImplementor {
+public class CrudMethodsImplementor extends AbstractDataAccessImplementor implements ResourceMethodsImplementor {
 
     public static final MethodDescriptor LIST = ofMethod(CrudRepository.class, "findAll", Iterable.class);
 
@@ -91,6 +91,24 @@ public class CrudMethodsImplementor implements ResourceMethodsImplementor {
         setId(methodCreator, entityType, entity, id);
         ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterface);
         ResultHandle result = methodCreator.invokeInterfaceMethod(UPDATE, repository, entity);
+
+        methodCreator.returnValue(result);
+        methodCreator.close();
+    }
+
+    public void implementUpdatePatch(ClassCreator classCreator, String repositoryInterface, String entityType) {
+        MethodCreator methodCreator = classCreator.getMethodCreator("updatePatch", Object.class, Object.class, Object.class);
+        methodCreator.addException(NoSuchFieldException.class);
+        methodCreator.addException(IllegalAccessException.class);
+
+        ResultHandle id = methodCreator.getMethodParam(0);
+        ResultHandle entity = methodCreator.getMethodParam(1);
+        // Set entity ID before executing an update to make sure that a requested object ID matches a given entity ID.
+        setId(methodCreator, entityType, entity, id);
+        ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterface);
+        ResultHandle foundEntity = findById(methodCreator, id, repository);
+        specificFieldUpdate(methodCreator, foundEntity, entity);
+        ResultHandle result = methodCreator.invokeInterfaceMethod(UPDATE, repository, foundEntity);
 
         methodCreator.returnValue(result);
         methodCreator.close();

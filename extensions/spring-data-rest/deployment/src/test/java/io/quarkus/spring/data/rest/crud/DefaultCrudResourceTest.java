@@ -175,6 +175,35 @@ class DefaultCrudResourceTest {
     }
 
     @Test
+    void shouldCreateAndUpdatePatch() {
+        Response createResponse = given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body("{\"id\": \"101\", \"name\": \"test-update-create\", \"age\": 60}")
+                .when().put("/default-records/101")
+                .thenReturn();
+        assertThat(createResponse.statusCode()).isEqualTo(201);
+
+        String location = createResponse.header("Location");
+        int id = Integer.parseInt(location.substring(createResponse.header("Location").lastIndexOf("/") + 1));
+        JsonPath body = createResponse.body().jsonPath();
+        assertThat(body.getInt("id")).isEqualTo(id);
+        assertThat(body.getString("name")).isEqualTo("test-update-create");
+
+        given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body("{\"id\": \"" + id + "\", \"name\": \"test-update\"}")
+                .when().patch(location)
+                .then()
+                .statusCode(204);
+        given().accept("application/json")
+                .when().get(location)
+                .then().statusCode(200)
+                .and().body("id", is(equalTo(id)))
+                .and().body("name", is(equalTo("test-update")))
+                .and().body("age", is(equalTo(60)));
+    }
+
+    @Test
     void shouldCreateAndUpdateHal() {
         Response createResponse = given().accept("application/hal+json")
                 .and().contentType("application/json")

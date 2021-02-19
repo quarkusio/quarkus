@@ -45,6 +45,8 @@ public interface DataAccessImplementor {
      */
     ResultHandle persistOrUpdate(BytecodeCreator creator, ResultHandle entity);
 
+    ResultHandle updatePatch(BytecodeCreator creator, ResultHandle entity, ResultHandle id);
+
     /**
      * Delete entity by ID.
      *

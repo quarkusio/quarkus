@@ -223,6 +223,43 @@ class MongoDbRestDataPanacheTest {
                 .then().statusCode(204);
     }
 
+    @Test
+    void shouldCreatePatchAndDeleteBook() {
+        JsonObject dostoevskyJson = Json.createObjectBuilder()
+                .add("id", dostoevsky.id.toString())
+                .add("name", dostoevsky.name)
+                .add("dob", dostoevsky.dob.toString())
+                .build();
+        JsonObject book = Json.createObjectBuilder()
+                .add("title", "The Brothers Karamazov")
+                .add("author", dostoevskyJson)
+                .build();
+        Response response = given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body(book.toString())
+                .when().put("/books/" + new ObjectId())
+                .thenReturn();
+        assertThat(response.statusCode()).isEqualTo(201);
+        assertThat(response.header("Location")).isNotEmpty();
+        assertThat(response.body().jsonPath().getString("title")).isEqualTo("The Brothers Karamazov");
+
+        String location = response.header("Location");
+        JsonObject updateBook = Json.createObjectBuilder()
+                .add("title", "Notes from Underground")
+                .build();
+        given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body(updateBook.toString())
+                .when().patch(location)
+                .then().statusCode(204);
+        given().accept("application/json")
+                .when().get(location)
+                .then().body("title", is(equalTo("Notes from Underground")))
+                .and().body("author.name", is(equalTo(dostoevsky.name)));
+        when().delete(location)
+                .then().statusCode(204);
+    }
+
     private Author createTestAuthor(String name, String dob) {
         return given().contentType(MediaType.APPLICATION_JSON)
                 .and().accept(MediaType.APPLICATION_JSON)

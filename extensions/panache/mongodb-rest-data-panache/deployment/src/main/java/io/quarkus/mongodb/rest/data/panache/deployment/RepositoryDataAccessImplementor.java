@@ -15,7 +15,7 @@ import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 
-final class RepositoryDataAccessImplementor implements DataAccessImplementor {
+final class RepositoryDataAccessImplementor extends AbstractDataAccessImplementor implements DataAccessImplementor {
 
     private final String repositoryClassName;
 
@@ -53,6 +53,16 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
                 ofMethod(PanacheMongoRepositoryBase.class, "persistOrUpdate", void.class, Object.class),
                 getRepositoryInstance(creator), entity);
         return entity;
+    }
+
+    @Override
+    public ResultHandle updatePatch(BytecodeCreator creator, ResultHandle entity, ResultHandle id) {
+        ResultHandle foundEntity = findById(creator, id);
+        specificFieldUpdate(creator, foundEntity, entity);
+        creator.invokeInterfaceMethod(
+                ofMethod(PanacheMongoRepositoryBase.class, "update", void.class, Object.class),
+                getRepositoryInstance(creator), foundEntity);
+        return foundEntity;
     }
 
     @Override

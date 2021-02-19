@@ -16,6 +16,8 @@ public class Collection {
 
     private String name;
 
+    private Long age;
+
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "collection")
     private List<Item> items = new LinkedList<>();
 
@@ -41,5 +43,13 @@ public class Collection {
 
     public void setItems(List<Item> items) {
         this.items = items;
+    }
+
+    public Long getAge() {
+        return age;
+    }
+
+    public void setAge(Long age) {
+        this.age = age;
     }
 }

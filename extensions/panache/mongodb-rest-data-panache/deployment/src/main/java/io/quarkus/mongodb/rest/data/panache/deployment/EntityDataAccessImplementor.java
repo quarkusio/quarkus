@@ -11,7 +11,7 @@ import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 
-final class EntityDataAccessImplementor implements DataAccessImplementor {
+final class EntityDataAccessImplementor extends AbstractDataAccessImplementor implements DataAccessImplementor {
 
     private final String entityClassName;
 
@@ -44,6 +44,14 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     public ResultHandle persistOrUpdate(BytecodeCreator creator, ResultHandle entity) {
         creator.invokeVirtualMethod(ofMethod(entityClassName, "persistOrUpdate", void.class), entity);
         return entity;
+    }
+
+    @Override
+    public ResultHandle updatePatch(BytecodeCreator creator, ResultHandle entity, ResultHandle id) {
+        ResultHandle foundEntity = findById(creator, id);
+        specificFieldUpdate(creator, foundEntity, entity);
+        creator.invokeVirtualMethod(ofMethod(entityClassName, "update", void.class), foundEntity);
+        return foundEntity;
     }
 
     @Override

@@ -18,6 +18,8 @@ public class Collection extends PanacheEntityBase {
 
     public String name;
 
+    public Long age;
+
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "collection")
     public List<Item> items = new LinkedList<>();
 }

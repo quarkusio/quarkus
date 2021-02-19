@@ -46,6 +46,15 @@ public interface DataAccessImplementor {
     ResultHandle update(BytecodeCreator creator, ResultHandle entity);
 
     /**
+     * Update only given columns of an existing entity or create a new one.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @param entity Entity that should be updated or created.
+     * @return A persisted entity.
+     */
+    ResultHandle updatePatch(BytecodeCreator creator, ResultHandle entity, ResultHandle id);
+
+    /**
      * Delete entity by ID.
      *
      * @param creator Bytecode creator that should be used for implementation.

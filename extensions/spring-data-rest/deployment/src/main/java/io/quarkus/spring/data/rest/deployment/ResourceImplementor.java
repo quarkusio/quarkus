@@ -38,6 +38,7 @@ public class ResourceImplementor {
         methodsImplementor.implementGet(classCreator, resourceType);
         methodsImplementor.implementAdd(classCreator, resourceType);
         methodsImplementor.implementUpdate(classCreator, resourceType, entityType);
+        methodsImplementor.implementUpdatePatch(classCreator, resourceType, entityType);
         methodsImplementor.implementDelete(classCreator, resourceType);
 
         classCreator.close();

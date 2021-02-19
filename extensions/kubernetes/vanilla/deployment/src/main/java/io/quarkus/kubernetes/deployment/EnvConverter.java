@@ -41,6 +41,6 @@ public class EnvConverter {
     }
 
     public static String convertName(String name) {
-        return name != null ? name.toUpperCase().replace('-', '_').replace('.', '_') : null;
+        return name != null ? name.toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_') : null;
     }
 }

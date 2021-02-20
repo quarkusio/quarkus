@@ -35,7 +35,8 @@ public class ConfigDefaultValuesTest {
         assertNotNull(defaultValues);
         assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
 
-        ConfigSource applicationProperties = getConfigSourceByName("PropertiesConfigSource[source=application.properties]");
+        // Should be the first
+        ConfigSource applicationProperties = config.getConfigSources().iterator().next();
         assertNotNull(applicationProperties);
         assertEquals(1000, applicationProperties.getOrdinal());
 

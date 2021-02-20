@@ -1,6 +1,6 @@
 package io.quarkus.config.yaml.deployment;
 
-import io.quarkus.config.yaml.runtime.ApplicationYamlProvider;
+import io.quarkus.config.yaml.runtime.ApplicationYamlConfigSourceLoader;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -23,13 +23,17 @@ public final class ConfigYamlProcessor {
     }
 
     @BuildStep
-    public AdditionalBootstrapConfigSourceProviderBuildItem bootstrap() {
-        return new AdditionalBootstrapConfigSourceProviderBuildItem(ApplicationYamlProvider.class.getName());
+    public void bootstrap(
+            BuildProducer<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProvider) {
+        additionalBootstrapConfigSourceProvider.produce(new AdditionalBootstrapConfigSourceProviderBuildItem(
+                ApplicationYamlConfigSourceLoader.InFileSystem.class.getName()));
+        additionalBootstrapConfigSourceProvider.produce(new AdditionalBootstrapConfigSourceProviderBuildItem(
+                ApplicationYamlConfigSourceLoader.InClassPath.class.getName()));
     }
 
     @BuildStep
     void watchYamlConfig(BuildProducer<HotDeploymentWatchedFileBuildItem> items) {
-        items.produce(new HotDeploymentWatchedFileBuildItem(ApplicationYamlProvider.APPLICATION_YAML));
-        items.produce(new HotDeploymentWatchedFileBuildItem(ApplicationYamlProvider.APPLICATION_YML));
+        items.produce(new HotDeploymentWatchedFileBuildItem("application.yaml"));
+        items.produce(new HotDeploymentWatchedFileBuildItem("application.yml"));
     }
 }

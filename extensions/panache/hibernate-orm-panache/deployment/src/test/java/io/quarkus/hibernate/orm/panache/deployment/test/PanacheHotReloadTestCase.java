@@ -17,7 +17,7 @@ public class PanacheHotReloadTestCase {
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyEntity.class, MyTestResource.class)
-                    .addAsResource("application.properties")
+                    .addAsResource("application-test.properties", "application.properties")
                     .addAsResource("import.sql"));
 
     @Test

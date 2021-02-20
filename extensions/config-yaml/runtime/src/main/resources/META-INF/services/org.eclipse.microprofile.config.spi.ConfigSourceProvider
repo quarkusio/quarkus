@@ -1,1 +1,2 @@
-io.quarkus.config.yaml.runtime.ApplicationYamlProvider
+io.quarkus.config.yaml.runtime.ApplicationYamlConfigSourceLoader$InFileSystem
+io.quarkus.config.yaml.runtime.ApplicationYamlConfigSourceLoader$InClassPath

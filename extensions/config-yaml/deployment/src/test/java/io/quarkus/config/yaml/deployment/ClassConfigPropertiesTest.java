@@ -1,6 +1,5 @@
 package io.quarkus.config.yaml.deployment;
 
-import static io.quarkus.config.yaml.runtime.ApplicationYamlProvider.APPLICATION_YAML;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
@@ -23,7 +22,7 @@ public class ClassConfigPropertiesTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, SqlConfiguration.class, Nested.class)
-                    .addAsResource("configprops.yaml", APPLICATION_YAML));
+                    .addAsResource("configprops.yaml", "application.yaml"));
 
     @Inject
     DummyBean dummyBean;

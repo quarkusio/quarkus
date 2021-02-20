@@ -25,3 +25,7 @@ server:
 
   log:
     period: P1D
+
+profile:
+  main:
+    yaml: main

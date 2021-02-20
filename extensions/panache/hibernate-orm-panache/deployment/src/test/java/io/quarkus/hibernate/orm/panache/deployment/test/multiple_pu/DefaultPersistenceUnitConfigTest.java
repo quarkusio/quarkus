@@ -19,7 +19,7 @@ public class DefaultPersistenceUnitConfigTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(FirstEntity.class, SecondEntity.class, PanacheTestResource.class)
-                    .addAsResource("application.properties"));
+                    .addAsResource("application-test.properties", "application.properties"));
 
     @Test
     public void panacheOperations() {

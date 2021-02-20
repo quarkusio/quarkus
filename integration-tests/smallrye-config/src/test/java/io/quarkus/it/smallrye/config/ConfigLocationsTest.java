@@ -24,4 +24,34 @@ public class ConfigLocationsTest {
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("1234"));
     }
+
+    @Test
+    void applicationPropertiesProfile() {
+        given()
+                .get("/config/{name}", "profile.main.properties")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("main"));
+
+        given()
+                .get("/config/{name}", "profile.common.properties")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("common"));
+    }
+
+    @Test
+    void applicationYamlProfile() {
+        given()
+                .get("/config/{name}", "profile.main.yaml")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("main"));
+
+        given()
+                .get("/config/{name}", "profile.common.yaml")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("common"));
+    }
 }

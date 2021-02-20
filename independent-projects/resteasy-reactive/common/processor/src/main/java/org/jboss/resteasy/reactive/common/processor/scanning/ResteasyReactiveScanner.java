@@ -45,13 +45,13 @@ public class ResteasyReactiveScanner {
         BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
     }
 
-    public static ApplicationScanningResult scanForApplicationClass(IndexView index) {
+    public static ApplicationScanningResult scanForApplicationClass(IndexView index, Set<String> excludedClasses) {
         Collection<ClassInfo> applications = index
                 .getAllKnownSubclasses(ResteasyReactiveDotNames.APPLICATION);
         Set<String> allowedClasses = new HashSet<>();
         Set<String> singletonClasses = new HashSet<>();
         Set<String> globalNameBindings = new HashSet<>();
-        boolean filterClasses = false;
+        boolean filterClasses = !excludedClasses.isEmpty();
         Application application = null;
         ClassInfo selectedAppClass = null;
         boolean blocking = false;
@@ -93,7 +93,8 @@ public class ResteasyReactiveScanner {
         if (selectedAppClass != null) {
             globalNameBindings = NameBindingUtil.nameBindingNames(index, selectedAppClass);
         }
-        return new ApplicationScanningResult(allowedClasses, singletonClasses, globalNameBindings, filterClasses, application,
+        return new ApplicationScanningResult(allowedClasses, singletonClasses, excludedClasses, globalNameBindings,
+                filterClasses, application,
                 selectedAppClass, blocking);
     }
 

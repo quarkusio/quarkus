@@ -48,6 +48,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
@@ -155,11 +156,18 @@ public class ResteasyServerCommonProcessor {
         public boolean metricsEnabled;
 
         /**
-         * Ignore all explict JAX-RS {@link Application} classes.
+         * Ignore all explicit JAX-RS {@link Application} classes.
          * As multiple JAX-RS applications are not supported, this can be used to effectively merge all JAX-RS applications.
          */
         @ConfigItem(defaultValue = "false")
         boolean ignoreApplicationClasses;
+
+        /**
+         * Whether or not annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
+         * into account when used on JAX-RS classes.
+         */
+        @ConfigItem(defaultValue = "true")
+        boolean buildTimeConditionAware;
     }
 
     @BuildStep
@@ -179,6 +187,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
             List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
@@ -194,15 +203,22 @@ public class ResteasyServerCommonProcessor {
 
         Collection<AnnotationInstance> applicationPaths = Collections.emptySet();
         final Set<String> allowedClasses;
+        final Set<String> excludedClasses;
+        if (resteasyConfig.buildTimeConditionAware) {
+            excludedClasses = getExcludedClasses(buildTimeConditions);
+        } else {
+            excludedClasses = Collections.emptySet();
+        }
         if (resteasyConfig.ignoreApplicationClasses) {
             allowedClasses = Collections.emptySet();
         } else {
             applicationPaths = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
             allowedClasses = getAllowedClasses(index);
             jaxrsProvidersToRegisterBuildItem = getFilteredJaxrsProvidersToRegisterBuildItem(
-                    jaxrsProvidersToRegisterBuildItem, allowedClasses);
+                    jaxrsProvidersToRegisterBuildItem, allowedClasses, excludedClasses);
         }
-        boolean filterClasses = !allowedClasses.isEmpty();
+
+        boolean filterClasses = !allowedClasses.isEmpty() || !excludedClasses.isEmpty();
 
         // currently we only examine the first class that is annotated with @ApplicationPath so best
         // fail if the user code has multiple such annotations instead of surprising the user
@@ -220,8 +236,7 @@ public class ResteasyServerCommonProcessor {
         final Collection<AnnotationInstance> allPaths;
         if (filterClasses) {
             allPaths = paths.stream().filter(
-                    annotationInstance -> allowedClasses
-                            .contains(JandexUtil.getEnclosingClass(annotationInstance).name().toString()))
+                    annotationInstance -> keepEnclosingClass(allowedClasses, excludedClasses, annotationInstance))
                     .collect(Collectors.toList());
         } else {
             allPaths = new ArrayList<>(paths);
@@ -860,8 +875,43 @@ public class ResteasyServerCommonProcessor {
     }
 
     /**
+     * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
+     * @return the set of classes that have been annotated with unsuccessful build time conditions.
+     */
+    private static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
+        return buildTimeConditions.stream()
+                .filter(item -> !item.isEnabled())
+                .map(BuildTimeConditionBuildItem::getTarget)
+                .filter(target -> target.kind() == Kind.CLASS)
+                .map(target -> target.asClass().toString())
+                .collect(Collectors.toSet());
+    }
+
+    /**
      * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
      *        {@link Application#getSingletons()} to keep.
+     * @param excludedClasses the classes that have been annotated wih unsuccessful build time conditions and that
+     *        need to be excluded from the list of paths.
+     * @param annotationInstance the annotation instance from which the enclosing class will be extracted.
+     * @return {@code true} if the enclosing class of the annotation is part of the allowed classes if not empty
+     *         or if is not part of the excluded classes, {@code false} otherwise.
+     */
+    private static boolean keepEnclosingClass(Set<String> allowedClasses, Set<String> excludedClasses,
+            AnnotationInstance annotationInstance) {
+        final String className = JandexUtil.getEnclosingClass(annotationInstance).toString();
+        if (allowedClasses.isEmpty()) {
+            // No allowed classes have been set, meaning that only excluded classes have been provided.
+            // Keep the enclosing class only if not excluded
+            return !excludedClasses.contains(className);
+        }
+        return allowedClasses.contains(className);
+    }
+
+    /**
+     * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
+     *        {@link Application#getSingletons()} to keep.
+     * @param excludedClasses the classes that have been annotated wih unsuccessful build time conditions and that
+     *        need to be excluded from the list of providers.
      * @param jaxrsProvidersToRegisterBuildItem the initial {@code jaxrsProvidersToRegisterBuildItem} before being
      *        filtered
      * @return an instance of {@link JaxrsProvidersToRegisterBuildItem} that has been filtered to take into account
@@ -870,9 +920,10 @@ public class ResteasyServerCommonProcessor {
      *         {@link JaxrsProvidersToRegisterBuildItem} otherwise.
      */
     private static JaxrsProvidersToRegisterBuildItem getFilteredJaxrsProvidersToRegisterBuildItem(
-            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, Set<String> allowedClasses) {
+            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, Set<String> allowedClasses,
+            Set<String> excludedClasses) {
 
-        if (allowedClasses.isEmpty()) {
+        if (allowedClasses.isEmpty() && excludedClasses.isEmpty()) {
             return jaxrsProvidersToRegisterBuildItem;
         }
         Set<String> providers = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getProviders());
@@ -880,7 +931,11 @@ public class ResteasyServerCommonProcessor {
         Set<String> annotatedProviders = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getAnnotatedProviders());
         providers.removeAll(annotatedProviders);
         contributedProviders.removeAll(annotatedProviders);
-        annotatedProviders.retainAll(allowedClasses);
+        if (allowedClasses.isEmpty()) {
+            annotatedProviders.removeAll(excludedClasses);
+        } else {
+            annotatedProviders.retainAll(allowedClasses);
+        }
         providers.addAll(annotatedProviders);
         contributedProviders.addAll(annotatedProviders);
         return new JaxrsProvidersToRegisterBuildItem(

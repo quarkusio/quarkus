@@ -605,6 +605,28 @@ If set to `true` (default) then a *single instance* of a resource class is creat
 If set to `false` then a *new instance* of the resource class is created per each request.
 An explicit CDI scope annotation (`@RequestScoped`, `@ApplicationScoped`, etc.) always overrides the default behavior and specifies the lifecycle of resource instances.
 
+== Include/Exclude JAX-RS classes with build time conditions
+
+Quarkus enables the inclusion or exclusion of JAX-RS Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
+Thus, the various JAX-RS classes can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions these JAX-RS classes should be included.
+
+In the following example, Quarkus includes the endpoint `sayHello` if and only if the build profile `app1` has been enabled.
+
+[source,java]
+----
+@IfBuildProfile("app1")
+public class ResourceForApp1Only {
+
+    @GET
+    @Path("sayHello")
+    public String sayHello() {
+        return "hello";
+     }
+}
+----
+
+Please note that if a JAX-RS Application has been detected and the method `getClasses()` and/or `getSingletons()` has/have been overridden, Quarkus will ignore the build time conditions and consider only what has been defined in the JAX-RS Application.
+
 == Conclusion
 
 Creating JSON REST services with Quarkus is easy as it relies on proven and well known technologies.

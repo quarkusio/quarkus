@@ -34,4 +34,11 @@ public class ResteasyReactiveConfig {
     @ConfigItem(defaultValue = "true")
     @Experimental("This flag has a high probability of going away in the future")
     public boolean defaultProduces;
+
+    /**
+     * Whether or not annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
+     * into account when used on JAX-RS classes.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean buildTimeConditionAware;
 }

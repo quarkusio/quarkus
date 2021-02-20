@@ -192,6 +192,13 @@ In Quarkus, the default Jackson `ObjectMapper` obtained via CDI (and consumed by
 You can restore the default behavior of Jackson by setting `quarkus.jackson.fail-on-unknown-properties=true` in your `application.properties`
 or on a per class basis via `@JsonIgnoreProperties(ignoreUnknown = false)`.
 
+Furthermore, the `ObjectMapper` is configured to format dates and time in ISO-8601
+(by disabling the `SerializationFeature.WRITE_DATES_AS_TIMESTAMPS` feature).
+
+The default behaviour of Jackson can be restored by setting `quarkus.jackson.write-dates-as-timestamps=true`
+in your `application.properties`. If you want to change the format for a single field, you can use the
+`@JsonFormat` annotation.
+
 Also, Quarkus makes it very easy to configure various Jackson settings via CDI beans.
 The simplest (and suggested) approach is to define a CDI bean of type `io.quarkus.jackson.ObjectMapperCustomizer`
 inside of which any Jackson configuration can be applied.

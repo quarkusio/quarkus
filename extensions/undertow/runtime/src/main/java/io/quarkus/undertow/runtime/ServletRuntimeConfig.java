@@ -26,4 +26,11 @@ public class ServletRuntimeConfig {
     @ConfigItem
     Optional<Boolean> directBuffers;
 
+    /**
+     * The maximum number of HTTP request parameters permitted for Servlet requests.
+     *
+     * If a client sends more than this number of parameters in a request, the connection is closed.
+     */
+    @ConfigItem(defaultValue = "1000")
+    Optional<Integer> maxParameters;
 }

@@ -29,8 +29,10 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.core.instrument.binder.system.UptimeMetrics;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.JVMInfoBinder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
@@ -83,7 +85,25 @@ public class MicrometerRecorder {
 
         // Find and configure MeterRegistry beans (includes runtime config)
         Set<Bean<?>> beans = new HashSet<>(beanManager.getBeans(MeterRegistry.class, Any.Literal.INSTANCE));
-        beans.removeIf(bean -> bean.getBeanClass().equals(CompositeRegistryCreator.class));
+        List<Bean<?>> defaultBeans = new ArrayList<>();
+        // Separate the "default bean" implementations from the collection.
+        beans.removeIf(bean -> {
+            if (bean.getBeanClass().equals(CompositeMeterRegistry.class)) {
+                return true;
+            }
+            if (bean instanceof InjectableBean) {
+                InjectableBean<?> qBean = (InjectableBean<?>) bean;
+                if (qBean.isDefaultBean()) {
+                    defaultBeans.add(qBean);
+                    return true;
+                }
+            }
+            return false;
+        });
+        // Check if we the application has provided any concrete implementation for the default beans
+        defaultBeans.removeIf(defBean -> beans.stream().anyMatch(b -> b.getTypes().containsAll(defBean.getTypes())));
+        // Merge the default beans that have not been overridden.
+        beans.addAll(defaultBeans);
 
         for (Bean<?> i : beans) {
             MeterRegistry registry = (MeterRegistry) beanManager

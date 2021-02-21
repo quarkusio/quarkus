@@ -29,11 +29,12 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 
 @QuarkusMain    // <.>
 public class HelloWorldMain implements QuarkusApplication {
-  @Override
-  public int run(String... args) throws Exception {   // <.>
-    System.out.println("Hello World");
-    return 10;
- }
+
+    @Override
+    public int run(String... args) throws Exception {   // <.>
+        System.out.println("Hello World");
+        return 0;
+    }
 }
 ----
 <.> The `@QuarkusMain` annotation tells Quarkus that this is the main entry point.
@@ -55,22 +56,28 @@ import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.annotations.QuarkusMain;
 
 @QuarkusMain
-public class JavaMain {
+public class HelloWorldMain implements QuarkusApplication {
 
     public static void main(String... args) {
         Quarkus.run(HelloWorldMain.class, args);
     }
+
+    @Override
+    public int run(String... args) {
+        System.out.println("Hello World");
+        return 0;
+    }
 }
 ----
 
-This is effectively the same as running the `HelloWorldMain` application main directly, but has the advantage it can
-be run from the IDE.
+This is effectively the same as running the first `HelloWorldMain` application,
+but has the advantage it can be run from the IDE.
 
-NOTE: If a class that implements `QuarkusApplication` and has a Java main then the Java main will be run.
+NOTE: If a class implements `QuarkusApplication` and has a Java main then the Java main will be run.
 
-WARNING: It is recommended that a Java main perform very little logic, and just
+WARNING: It is recommended that a Java main performs very little logic, and just
 launch the application main. In development mode the Java main will run in a
-different ClassLoader to the main application, so may not behave as you would
+different ClassLoader than the main application, so it may not behave as you would
 expect.
 
 ==== Multiple Main Methods

@@ -47,7 +47,7 @@ class QuarkusExtensionCodestartGenerationTest {
     void generateProjectWithoutTests(TestInfo testInfo) throws Throwable {
         final QuarkusExtensionCodestartProjectInput input = prepareInput()
                 .withoutDevModeTest(true)
-                .withoutIntegrationTest(true)
+                .withoutIntegrationTests(true)
                 .withoutUnitTest(true)
                 .build();
         final Path projectDir = testDirPath.resolve("without-tests");

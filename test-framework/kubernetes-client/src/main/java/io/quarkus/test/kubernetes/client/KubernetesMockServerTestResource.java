@@ -1,81 +1,66 @@
 package io.quarkus.test.kubernetes.client;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.annotation.Annotation;
 
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
+import io.fabric8.kubernetes.client.GenericKubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-public class KubernetesMockServerTestResource implements QuarkusTestResourceLifecycleManager {
-
-    private KubernetesMockServer mockServer;
+/**
+ * @deprecated use {@link KubernetesServerTestResource}
+ */
+@Deprecated
+public class KubernetesMockServerTestResource extends AbstractKubernetesTestResource<KubernetesMockServer> {
 
     @Override
-    public Map<String, String> start() {
-        final Map<String, String> systemProps = new HashMap<>();
-        systemProps.put(Config.KUBERNETES_TRUST_CERT_SYSTEM_PROPERTY, "true");
-        systemProps.put(Config.KUBERNETES_AUTH_TRYKUBECONFIG_SYSTEM_PROPERTY, "false");
-        systemProps.put(Config.KUBERNETES_AUTH_TRYSERVICEACCOUNT_SYSTEM_PROPERTY, "false");
-        systemProps.put(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY, "test");
-        systemProps.put(Config.KUBERNETES_HTTP2_DISABLE, "true");
-
-        mockServer = createMockServer();
-        mockServer.init();
-        try (NamespacedKubernetesClient client = mockServer.createClient()) {
-            systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, client.getConfiguration().getMasterUrl());
-        }
-
-        configureMockServer(mockServer);
-
-        return systemProps;
+    protected GenericKubernetesClient<?> getClient() {
+        return server.createClient();
     }
 
+    @Override
+    protected void initServer() {
+        server.init();
+    }
+
+    @Override
+    protected KubernetesMockServer createServer() {
+        return createMockServer();
+    }
+
+    /**
+     * @deprecated use {@link #createServer()}
+     */
+    @Deprecated
     protected KubernetesMockServer createMockServer() {
         return new KubernetesMockServer(useHttps());
     }
 
-    /**
-     * Can be used by subclasses of {@code KubernetesMockServerTestResource} in order to
-     * setup the mock server before the Quarkus application starts
-     */
-    public void configureMockServer(KubernetesMockServer mockServer) {
+    @Override
+    protected void configureServer() {
+        configureMockServer(server);
+    }
 
+    /**
+     * @deprecated use {@link #configureServer()}
+     */
+    @Deprecated
+    public void configureMockServer(KubernetesMockServer mockServer) {
     }
 
     @Override
     public void stop() {
-        if (mockServer != null) {
-            mockServer.destroy();
+        if (server != null) {
+            server.destroy();
+            server = null;
         }
     }
 
     @Override
-    public void inject(Object testInstance) {
-        Class<?> c = testInstance.getClass();
-        while (c != Object.class) {
-            for (Field f : c.getDeclaredFields()) {
-                if (f.getAnnotation(MockServer.class) != null) {
-                    if (!KubernetesMockServer.class.isAssignableFrom(f.getType())) {
-                        throw new RuntimeException("@MockServer can only be used on fields of type KubernetesMockServer");
-                    }
-
-                    f.setAccessible(true);
-                    try {
-                        f.set(testInstance, mockServer);
-                        return;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-            c = c.getSuperclass();
-        }
+    protected Class<?> getInjectedClass() {
+        return KubernetesMockServer.class;
     }
 
-    protected boolean useHttps() {
-        return Boolean.getBoolean("quarkus.kubernetes-client.test.https");
+    @Override
+    protected Class<? extends Annotation> getInjectionAnnotation() {
+        return MockServer.class;
     }
 }

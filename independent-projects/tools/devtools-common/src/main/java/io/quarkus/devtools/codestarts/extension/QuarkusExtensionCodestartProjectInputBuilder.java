@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.Map;
 
 public class QuarkusExtensionCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
-    boolean withoutIntegrationTest;
+    boolean withoutIntegrationTests;
     boolean withoutUnitTest;
     boolean withoutDevModeTest;
 
@@ -15,8 +15,8 @@ public class QuarkusExtensionCodestartProjectInputBuilder extends CodestartProje
         super();
     }
 
-    public QuarkusExtensionCodestartProjectInputBuilder withoutIntegrationTest(boolean withoutIntegrationTest) {
-        this.withoutIntegrationTest = withoutIntegrationTest;
+    public QuarkusExtensionCodestartProjectInputBuilder withoutIntegrationTests(boolean withoutIntegrationTest) {
+        this.withoutIntegrationTests = withoutIntegrationTest;
         return this;
     }
 

@@ -7,6 +7,8 @@ public class Movie {
 
     public final Boolean alwaysTrue;
 
+    public final boolean alwaysFalsePrimitive = false;
+
     public final List<String> mainCharacters;
 
     public Movie(String... mainCharacters) {

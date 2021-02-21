@@ -61,7 +61,7 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         EXTENSION_BASE,
         QUARKIVERSE,
         DEVMODE_TEST,
-        INTEGRATION_TEST,
+        INTEGRATION_TESTS,
         UNIT_TEST
     }
 
@@ -88,8 +88,8 @@ public final class QuarkusExtensionCodestartCatalog extends GenericCodestartCata
         if (!projectInput.withoutDevModeTest()) {
             codestarts.add(Code.DEVMODE_TEST.key());
         }
-        if (!projectInput.withoutIntegrationTest()) {
-            codestarts.add(Code.INTEGRATION_TEST.key());
+        if (!projectInput.withoutIntegrationTests()) {
+            codestarts.add(Code.INTEGRATION_TESTS.key());
         }
         if (!projectInput.withoutUnitTest()) {
             codestarts.add(Code.UNIT_TEST.key());

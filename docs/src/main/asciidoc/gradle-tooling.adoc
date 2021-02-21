@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 
 CAUTION: Quarkus Gradle support is considered preview.
 You can use Gradle to create Quarkus projects as outlined in our guides. If you go beyond there will be cases where
-the Gradle tasks https://github.com/quarkusio/quarkus/issues/5101[does not behave as expected].
+the Gradle tasks https://github.com/quarkusio/quarkus/issues/10189[does not behave as expected].
 This is just a caution, and we recommend if you like Gradle you try it out and give us feedback.
 
 [[project-creation]]

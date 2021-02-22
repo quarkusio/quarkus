@@ -1,0 +1,12 @@
+name: cxf-example
+ref: cxf
+type: code
+tags: example
+metadata:
+  title: CXF example
+  description: This example demonstrate CXF client and server.
+  related-guide-section: https://github.com/quarkiverse/quarkus-cxf
+language:
+  base:
+    dependencies:
+      - io.quarkiverse.cxf:quarkus-cxf

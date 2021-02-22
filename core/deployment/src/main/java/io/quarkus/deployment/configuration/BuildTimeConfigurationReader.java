@@ -24,6 +24,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 import org.wildfly.common.Assert;
@@ -296,6 +297,10 @@ public final class BuildTimeConfigurationReader {
             }
             // sweep-up
             for (String propertyName : config.getPropertyNames()) {
+                if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
+                    continue;
+                }
+
                 NameIterator ni = new NameIterator(propertyName);
                 if (ni.hasNext() && ni.nextSegmentEquals("quarkus")) {
                     ni.next();

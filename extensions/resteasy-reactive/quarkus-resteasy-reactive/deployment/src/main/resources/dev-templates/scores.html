@@ -1,5 +1,10 @@
 {#include main}
 {#title}Quarkus REST Score Console{/title}
+{#style}
+collapse-list{
+  cursor: pointer;
+}
+{/style}
 {#body}
   {#for endpoint in info:endpointScores.endpoints}
     <div class="row">
@@ -51,6 +56,34 @@
        </div>
       </div>
      {/for}
+    {/for}
+    <div class="row">
+     <div class="col-1"></div>
+      <div class="col-1">
+        Filters
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-1"></div>
+      <div class="col-1"></div>
+      <div class="col">
+        <span class="badge badge-light" id="collapse-list" data-toggle="collapse" data-target="#filter">
+          <i class="fas fa-greater-than"></i>
+        </span>
+      </div>
+    </div>
+    {#for requestFilters in endpoint.requestFilterEntries}
+     <div class="row">
+     <div class="col-1"></div>
+     <div class="col-1"></div>
+     <div class="col">
+       <div id="filter" class="collapse">
+         <ul>
+           <li>{requestFilters.name}</li>
+         </ul>
+       </div>
+     </div>
+     </div>
     {/for}
   {/for}
 {/body}

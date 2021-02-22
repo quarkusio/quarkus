@@ -81,13 +81,20 @@ public class ExtensionMethodGenerator {
 
     public static void validate(MethodInfo method, List<Type> parameters, String namespace) {
         if (!Modifier.isStatic(method.flags())) {
-            throw new IllegalStateException("Template extension method must be static: " + method);
+            throw new IllegalStateException(
+                    "Template extension method declared on " + method.declaringClass().name() + "  must be static: " + method);
         }
         if (method.returnType().kind() == Kind.VOID) {
-            throw new IllegalStateException("Template extension method must not return void: " + method);
+            throw new IllegalStateException("Template extension method declared on " + method.declaringClass().name()
+                    + " must not return void: " + method);
+        }
+        if (Modifier.isPrivate(method.flags())) {
+            throw new IllegalStateException("Template extension method declared on " + method.declaringClass().name()
+                    + " must not be private: " + method);
         }
         if ((namespace == null || namespace.isEmpty()) && parameters.isEmpty()) {
-            throw new IllegalStateException("Template extension method must declare at least one parameter: " + method);
+            throw new IllegalStateException("Template extension method declared on " + method.declaringClass().name()
+                    + " must declare at least one parameter: " + method);
         }
     }
 
@@ -97,6 +104,7 @@ public class ExtensionMethodGenerator {
         List<Type> parameters = method.parameters();
 
         // Validate the method first
+        // NOTE: this method is never used for namespace extension methods
         validate(method, parameters, null);
         ClassInfo declaringClass = method.declaringClass();
 
@@ -130,8 +138,8 @@ public class ExtensionMethodGenerator {
         }
 
         if (matchRegex != null || matchName.equals(TemplateExtension.ANY)) {
-            // The second parameter must be a string
-            if (parameters.size() < 2 || !parameters.get(1).name().equals(io.quarkus.qute.generator.DotNames.STRING)) {
+            // A string parameter is needed to match the name
+            if (parameters.size() < 2 || !parameters.get(1).name().equals(DotNames.STRING)) {
                 throw new TemplateException(
                         "A template extension method matching multiple names or a regular expression must declare at least two parameters and the second parameter must be string: "
                                 + method);
@@ -461,6 +469,11 @@ public class ExtensionMethodGenerator {
                 }
 
                 boolean matchAnyOrRegex = patternField != null || matchName.equals(TemplateExtension.ANY);
+
+                if (matchAnyOrRegex && paramSize == 0) {
+                    throw new IllegalStateException("Template extension method must declare at least one parameter: " + method);
+                }
+
                 // The real number of evaluated params, i.e. skip the name if matchAny==true
                 int realParamSize = paramSize - (matchAnyOrRegex ? 1 : 0);
 

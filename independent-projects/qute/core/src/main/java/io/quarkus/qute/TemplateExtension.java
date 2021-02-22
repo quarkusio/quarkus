@@ -83,8 +83,7 @@ public @interface TemplateExtension {
      * <p>
      * Template extension methods that share the same namespace and are declared on the same class are grouped in one resolver
      * and ordered by {@link #priority()}. The first matching extension method is used to resolve an expression. Template
-     * extension
-     * methods declared on different classes cannot share the same namespace.
+     * extension methods declared on different classes cannot share the same namespace.
      * 
      * @return the namespace
      */

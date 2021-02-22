@@ -749,7 +749,7 @@ public class QuteProcessor {
                     continue;
                 }
                 if ((namespace == null || namespace.isEmpty()) && method.parameters().isEmpty()) {
-                    // Filter methods with no params for non-namespace extensions
+                    // Filter out methods with no params for non-namespace extensions
                     continue;
                 }
                 if (methods.containsKey(method)) {
@@ -790,7 +790,7 @@ public class QuteProcessor {
             matchRegex = matchRegexValue.asString();
         }
         extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchRegex,
-                method.parameters().get(0), priority, namespace));
+                namespace.isEmpty() ? method.parameters().get(0) : null, priority, namespace));
     }
 
     private void validateInjectExpression(TemplateAnalysis templateAnalysis, Expression expression, IndexView index,

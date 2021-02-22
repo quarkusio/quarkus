@@ -190,17 +190,18 @@ public class AppConfiguration {
     }
 }
 ----
-<<<<<<< HEAD
 As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs link:cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
-=======
-+
-As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs https://quarkus.io/guides/cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
->>>>>>> f8979760ea (QUARKUS-184: add information introduced in Aurea's PR)
 In the same vein, Quarkus does not support the Spring `@Import` annotation.
+=======
+As a Spring developer, you might be tempted to add the `@ComponentScan` annotation to define specific packages to scan for additional beans.
+Note that adding `@ComponentScan` is unnecessary, because {ProductName} performs https://quarkus.io/guides/cdi-reference#bean_discovery[bean discovery] only when in `annotated` mode with no visibility boundaries.
+Moreover, note that the bean discovery in {ProductName} happens at build time.
+In a similar way, {ProductName} does not support the `@Import` annotation form Spring.
+>>>>>>> 64cc7da2dd (QUARKUS-184: resolve merge conflicts resulting from attribute name change)
 
 . Create a `NoOpSingleStringFunction` bean inside the the `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file.
 The `NoOpSingleStringFunction` implements the `StringFunction` interface using the `@Component` stereotype annotation provided by Spring.
-This bean returns the string without processing it:
+This bean returns the input string as is:
 +
 .src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java
 [source,java,options="nowrap",subs="+quotes,attributes+"]
@@ -332,8 +333,8 @@ public class GreeterResource {
 }
 ----
 
-[id='updating-the-integration-test-of-your-application_{context}']
-== Updating the integration test of your application
+[id='updating-the-unit-test_{context}']
+== Updating the units test
 
 [role="_abstract"]
 You must update the class file that contains the integration test for your application to reflect the changes that you made to the `/greeting` endpoint.

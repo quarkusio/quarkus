@@ -9,3 +9,4 @@
 :BrandName: Quarkus
 :BrandLongName: {BrandName}
 :maven-version: 3.6.3
+:JDKVersion: 8

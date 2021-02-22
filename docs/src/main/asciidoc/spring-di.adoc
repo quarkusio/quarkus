@@ -27,12 +27,12 @@ ifdef::downstream[]
 endif::[]
 
 [role="_abstract"]
-The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection that you can use as an alternative to MicroProfile CDI annotations in your {ProjectName} application.
-This guide explains how your {ProjectName} application can leverage Dependency Injection annotations provided by the Spring Framework.
+The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection that you can use as an alternative to MicroProfile CDI annotations in your {BrandName} application.
+This guide explains how your {BrandName} application can leverage Dependency Injection annotations provided by the Spring Framework.
 
 ifndef::downstream[]
 
-This guide is maintained in the main {ProjectName} repository and pull requests should be submitted there:
+This guide is maintained in the main {BrandName} repository and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 == Solution
@@ -60,16 +60,16 @@ endif::[]
 //ifdef::downstream[]
 [IMPORTANT]
 ====
-The Spring compatibility layer that {ProjectName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor`) when you start your application.
-{ProjectName} can only read metadata from Spring classes and annotations and parse user code method return types and parameter types that are specific to Spring.
-However, when you add arbitrary libraries that are part of Spring Framework to your {ProjectName} application, such libraries will not function properly, because {ProjectName} is not able to use them.
+The Spring compatibility layer that {BrandName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor`) when you start your application.
+{BrandName} can only read metadata from Spring classes and annotations and parse user code method return types and parameter types that are specific to Spring.
+However, when you add arbitrary libraries that are part of Spring Framework to your {BrandName} application, such libraries will not function properly, because {BrandName} is not able to use them.
 ====
 //endif::[]
 
 .Prerequisites
 
 // comment out the following prerequisite in the alternative 1 layout of the document.
-* Have a {ProjectName} Maven project.
+* Have a {BrandName} Maven project.
 * Have OpenJDK 8 installed.
 * Have Maven {maven-version} installed.
 
@@ -108,11 +108,11 @@ cd spring-di-quickstart
 == Setting up your Spring DI example Maven project
 
 [role="_abstract"]
-Add the required {ProjectName} extension as a dependency of your Maven project.
+Add the required {BrandName} extension as a dependency of your Maven project.
 
 .Procedure
 
-. Navigate to the the top-level directory of your {ProjectName} Maven project:
+. Navigate to the the top-level directory of your {BrandName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -143,10 +143,10 @@ endif::[]
 == Adding beans to your application using Spring annotations
 
 [role="_abstract"]
-You can add the required beans to your {ProjectName} application using annotations provided by Spring.
+You can add the required beans to your {BrandName} application using annotations provided by Spring.
 
 .Procedure
-. Navigate to the the top-level directory of your {ProjectName} Maven project:
+. Navigate to the the top-level directory of your {BrandName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -193,15 +193,14 @@ public class AppConfiguration {
 As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs link:cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
 In the same vein, Quarkus does not support the Spring `@Import` annotation.
 =======
-As a Spring developer, you might be tempted to add the `@ComponentScan` annotation to define specific packages to scan for additional beans.
-Note that adding `@ComponentScan` is unnecessary, because {ProductName} performs https://quarkus.io/guides/cdi-reference#bean_discovery[bean discovery] only when in `annotated` mode with no visibility boundaries.
-Moreover, note that the bean discovery in {ProductName} happens at build time.
-In a similar way, {ProductName} does not support the `@Import` annotation form Spring.
->>>>>>> 64cc7da2dd (QUARKUS-184: resolve merge conflicts resulting from attribute name change)
++
+As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs https://quarkus.io/guides/cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
+In the same vein, Quarkus does not support the Spring `@Import` annotation.
+>>>>>>> 3f6ff02c85 (QUARKUS-184: change product name to brand name in remaining instances after rebase)
 
 . Create a `NoOpSingleStringFunction` bean inside the the `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file.
 The `NoOpSingleStringFunction` implements the `StringFunction` interface using the `@Component` stereotype annotation provided by Spring.
-This bean returns the input string as is:
+This bean returns the string without processing it:
 +
 .src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java
 [source,java,options="nowrap",subs="+quotes,attributes+"]
@@ -221,7 +220,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 ----
 +
 //. Quarkus also provides support for injecting configuration values using Spring's `@Value` annotation.
-. In {ProjectName} applications, you can also use the `@Value` annotations to inject values of configuration properties into beans:
+. In {BrandName} applications, you can also use the `@Value` annotations to inject values of configuration properties into beans:
 .. Set the value of the `greeting.message` property to `hello` in the `src/main/resources/application.properties` file:
 +
 [source,properties,options="nowrap",subs="+quotes,attributes+"]
@@ -333,8 +332,8 @@ public class GreeterResource {
 }
 ----
 
-[id='updating-the-unit-test_{context}']
-== Updating the units test
+[id='updating-the-integration-test-of-your-application_{context}']
+== Updating the integration test of your application
 
 [role="_abstract"]
 You must update the class file that contains the integration test for your application to reflect the changes that you made to the `/greeting` endpoint.
@@ -375,7 +374,7 @@ Package and start your Spring DI example application using Maven.
 
 .Procedure
 
-. Navigate to the the top-level directory of your {ProjectName} Maven project:
+. Navigate to the the top-level directory of your {BrandName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -409,7 +408,7 @@ ifndef::downstream[]
 
 == Important technical note
 
-Spring support in {ProjectName} does not start a Spring Application Context nor are any Spring infrastructure classes run.
+Spring support in {BrandName} does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.
@@ -479,23 +478,23 @@ The following table lists Spring DI annotations and their equivalent CDI annotat
 ifdef::downstream[]
 [role="_additional-resources"]
 .Additional resources
-* link:building-native-image[Compiling and starting your {ProjectName} application as a native executable.]
+* link:building-native-image[Compiling and starting your {BrandName} application as a native executable.]
 endif::[]
 
 ifndef::downstream[]
 == More Spring guides
 
-{ProjectName} provides more Spring compatibility features.
+{BrandName} provides more Spring compatibility features.
 See the following guides for details:
 
-* link:spring-web[{ProjectName} - Extension for Spring Web]
-* link:spring-data-jpa[{ProjectName} - Extension for Spring Data JPA]
-* link:spring-data-rest[{ProjectName} - Extension for Spring Data REST]
-* link:spring-security[{ProjectName} - Extension for Spring Security]
-* link:spring-cloud-config-client[{ProjectName} - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[{ProjectName} - Extension for Spring Boot properties]
-* link:spring-cache[{ProjectName} - Extension for Spring Cache]
-* link:spring-scheduled[{ProjectName} - Extension for Spring Scheduled]
+* link:spring-web[{BrandName} - Extension for Spring Web]
+* link:spring-data-jpa[{BrandName} - Extension for Spring Data JPA]
+* link:spring-data-rest[{BrandName} - Extension for Spring Data REST]
+* link:spring-security[{BrandName} - Extension for Spring Security]
+* link:spring-cloud-config-client[{BrandName} - Reading properties from Spring Cloud Config Server]
+* link:spring-boot-properties[{BrandName} - Extension for Spring Boot properties]
+* link:spring-cache[{BrandName} - Extension for Spring Cache]
+* link:spring-scheduled[{BrandName} - Extension for Spring Scheduled]
 endif::[]
 
 ifdef::parent-context[:context: {parent-context}]

@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 //TODO: need to use product attributes, but also keep compatibility with community ones
 
 // comment out to show community version
-:product-docs:
+:downstream:
 // TODO: consider moving this to the attributes file
 :doctype: book
 
@@ -21,18 +21,18 @@ ifdef::context[:parent-context: {context}]
 
 include::./attributes.adoc[]
 
-ifdef::product-docs[]
+ifdef::downstream[]
 //file not present in upstream repo, commented out to allow build to pass
 //include::common/making-open-source-more-inclusive.adoc[]
 endif::[]
 
 [role="_abstract"]
-The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection that you can use as an alternative to MicroProfile CDI annotations in your {ProductName} application.
-This guide explains how your {ProductName} application can leverage Dependency Injection annotations provided by the Spring Framework.
+The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection that you can use as an alternative to MicroProfile CDI annotations in your {ProjectName} application.
+This guide explains how your {ProjectName} application can leverage Dependency Injection annotations provided by the Spring Framework.
 
-ifndef::product-docs[]
+ifndef::downstream[]
 
-This guide is maintained in the main {ProductName} repository and pull requests should be submitted there:
+This guide is maintained in the main {ProjectName} repository and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 == Solution
@@ -46,30 +46,30 @@ The solution is located in the `spring-di-quickstart` {quickstarts-tree-url}/spr
 endif::[]
 
 // Tech preview info for community purposes, different from product
-ifndef::product-docs[]
+ifndef::downstream[]
 include::./status-include.adoc[]
 :extension-status: preview
 endif::[]
 
 //tech preview info for product docs
-ifdef::product-docs[]
+ifdef::downstream[]
 NOTE: The `quarkus-spring-di` extension is available as link:https://access.redhat.com/support/offerings/techpreview[Technology Preview] with {ProductLongName}.
 endif::[]
 
 
-//ifdef::product-docs[]
+//ifdef::downstream[]
 [IMPORTANT]
 ====
-The Spring compatibility layer that {ProductName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor`) when you start your application.
-{ProductName} can only read metadata from Spring classes and annotations and parse user code method return types and parameter types that are specific to Spring.
-However, when you add arbitrary libraries that are part of Spring Framework to your {ProductName} application, such libraries will not function properly, because {ProductName} is not able to use them.
+The Spring compatibility layer that {ProjectName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor`) when you start your application.
+{ProjectName} can only read metadata from Spring classes and annotations and parse user code method return types and parameter types that are specific to Spring.
+However, when you add arbitrary libraries that are part of Spring Framework to your {ProjectName} application, such libraries will not function properly, because {ProjectName} is not able to use them.
 ====
 //endif::[]
 
 .Prerequisites
 
 // comment out the following prerequisite in the alternative 1 layout of the document.
-* Have a {ProductName} Maven project.
+* Have a {ProjectName} Maven project.
 * Have OpenJDK 8 installed.
 * Have Maven {maven-version} installed.
 
@@ -108,11 +108,11 @@ cd spring-di-quickstart
 == Setting up your Spring DI example Maven project
 
 [role="_abstract"]
-Add the required {ProductName} extension as a dependency of your Maven project.
+Add the required {ProjectName} extension as a dependency of your Maven project.
 
 .Procedure
 
-. Navigate to the the top-level directory of your {ProductName} Maven project:
+. Navigate to the the top-level directory of your {ProjectName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -125,7 +125,7 @@ cd <name-of-your-project-directory>
 ----
 ./mvnw quarkus:add-extension -Dextensions="spring-di"
 ----
-ifndef::product-docs[]
+ifndef::downstream[]
 +
 This adds the following entry to your `pom.xml` file:
 
@@ -143,10 +143,10 @@ endif::[]
 == Adding beans to your application using Spring annotations
 
 [role="_abstract"]
-You can add the required beans to your {ProductName} application using annotations provided by Spring.
+You can add the required beans to your {ProjectName} application using annotations provided by Spring.
 
 .Procedure
-. Navigate to the the top-level directory of your {ProductName} Maven project:
+. Navigate to the the top-level directory of your {ProjectName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -220,7 +220,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 ----
 +
 //. Quarkus also provides support for injecting configuration values using Spring's `@Value` annotation.
-. In {ProductName} applications, you can also use the `@Value` annotations to inject values of configuration properties into beans:
+. In {ProjectName} applications, you can also use the `@Value` annotations to inject values of configuration properties into beans:
 .. Set the value of the `greeting.message` property to `hello` in the `src/main/resources/application.properties` file:
 +
 [source,properties,options="nowrap",subs="+quotes,attributes+"]
@@ -374,7 +374,7 @@ Package and start your Spring DI example application using Maven.
 
 .Procedure
 
-. Navigate to the the top-level directory of your {ProductName} Maven project:
+. Navigate to the the top-level directory of your {ProjectName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -394,21 +394,21 @@ You receive `HELLO WORLD!` as the response.
 . Press _CTRL + C_ to stop the application.
 
 
-ifndef::product-docs[]
+ifndef::downstream[]
 == Compile and start the application as a native executable
 
 You can create a native image by following the guide about link:building-native-image[Building a Native Executable].
 endif::[]
 
 ////
-//ifndef::product-docs[]
+ifndef::downstream[]
 //TODO: This note is replaced by a rewritten version that is based on style mandated by the IBM style guide.
 //Only the -product-appropriate wording of the note should be used in both the community and product versions of this document.
 //I am retaining the original wording for purposes of verification and factual corrections.
 
 == Important technical note
 
-Spring support in {ProductName} does not start a Spring Application Context nor are any Spring infrastructure classes run.
+Spring support in {ProjectName} does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.
@@ -475,26 +475,26 @@ The following table lists Spring DI annotations and their equivalent CDI annotat
 |===
 //END: REFERENCE module
 
-ifdef::product-docs[]
+ifdef::downstream[]
 [role="_additional-resources"]
 .Additional resources
-* link:building-native-image[Compiling and starting your {ProductName} application as a native executable.]
+* link:building-native-image[Compiling and starting your {ProjectName} application as a native executable.]
 endif::[]
 
-ifndef::product-docs[]
+ifndef::downstream[]
 == More Spring guides
 
-{ProductName} provides more Spring compatibility features.
+{ProjectName} provides more Spring compatibility features.
 See the following guides for details:
 
-* link:spring-web[{ProductName} - Extension for Spring Web]
-* link:spring-data-jpa[{ProductName} - Extension for Spring Data JPA]
-* link:spring-data-rest[{ProductName} - Extension for Spring Data REST]
-* link:spring-security[{ProductName} - Extension for Spring Security]
-* link:spring-cloud-config-client[{ProductName} - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[{ProductName} - Extension for Spring Boot properties]
-* link:spring-cache[{ProductName} - Extension for Spring Cache]
-* link:spring-scheduled[{ProductName} - Extension for Spring Scheduled]
+* link:spring-web[{ProjectName} - Extension for Spring Web]
+* link:spring-data-jpa[{ProjectName} - Extension for Spring Data JPA]
+* link:spring-data-rest[{ProjectName} - Extension for Spring Data REST]
+* link:spring-security[{ProjectName} - Extension for Spring Security]
+* link:spring-cloud-config-client[{ProjectName} - Reading properties from Spring Cloud Config Server]
+* link:spring-boot-properties[{ProjectName} - Extension for Spring Boot properties]
+* link:spring-cache[{ProjectName} - Extension for Spring Cache]
+* link:spring-scheduled[{ProjectName} - Extension for Spring Scheduled]
 endif::[]
 
 ifdef::parent-context[:context: {parent-context}]

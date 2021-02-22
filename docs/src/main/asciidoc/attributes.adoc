@@ -6,7 +6,6 @@
 :icons: font
 :imagesdir: ./images
 
-// Product-related attributes
-:ProductName: Quarkus
-:ProductLongName: {ProductName}
+:BrandName: Quarkus
+:BrandLongName: {BrandName}
 :maven-version: 3.6.3

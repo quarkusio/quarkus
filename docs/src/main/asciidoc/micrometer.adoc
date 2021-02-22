@@ -374,7 +374,8 @@ MeterRegistry, as discussed in the next section.
 
 == Creating a customized MeterRegistry
 
-Use a custom `@Produces` method to create and configure a customized `MeterRegistry` if you need to.
+Use a custom `@Produces` method to create and configure a customized `MeterRegistry` if you need to. Use the
+`@AlternatePriority` annotation to disable the registry provided by the extension.
 
 The following example customizes the line format used for StatsD:
 
@@ -382,6 +383,7 @@ The following example customizes the line format used for StatsD:
 ----
 @Produces
 @Singleton
+@AlternativePriority(Interceptor.Priority.APPLICATION + 1)
 public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, Clock clock) {
     // define what to do with lines
     Consumer<String> lineLogger = line -> logger.info(line);

@@ -65,7 +65,7 @@ public class MicrometerRecorder {
         List<MeterRegistry> allRegistries = new ArrayList<>();
         Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(registryClasses.size());
 
-        // Find global/common registry configuration
+        // Find global/common MeterFilters that will apply to all MeterRegistries
         Instance<MeterFilter> globalFilters = beanManager.createInstance()
                 .select(MeterFilter.class, Default.Literal.INSTANCE);
 
@@ -84,6 +84,7 @@ public class MicrometerRecorder {
         // Find and configure MeterRegistry beans (includes runtime config)
         Set<Bean<?>> beans = new HashSet<>(beanManager.getBeans(MeterRegistry.class, Any.Literal.INSTANCE));
         beans.removeIf(bean -> bean.getBeanClass().equals(CompositeRegistryCreator.class));
+
 
         for (Bean<?> i : beans) {
             MeterRegistry registry = (MeterRegistry) beanManager

@@ -58,7 +58,7 @@ public class PrometheusMeterRegistryProvider {
 
     @Produces
     @Singleton
-    @AlternativePriority(Interceptor.Priority.APPLICATION + 100)
+    @AlternativePriority(Interceptor.Priority.APPLICATION)
     public PrometheusMeterRegistry registry(PrometheusConfig config, CollectorRegistry collectorRegistry, Clock clock) {
         return new PrometheusMeterRegistry(config, collectorRegistry, clock);
     }

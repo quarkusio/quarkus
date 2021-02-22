@@ -10,14 +10,14 @@ public class SetSectionTest {
     public void testSet() {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("NOT_FOUND - true:mix",
-                engine.parse("{foo} - {#set foo=true bar='mix'}{foo}:{bar}{/}").instance().render());
+                engine.parse("{foo} - {#set foo=true bar='mix'}{foo}:{bar}{/}").render());
     }
 
     @Test
     public void testLet() {
         Engine engine = Engine.builder().addDefaults().build();
-        assertEquals("NOT_FOUND - true:mix:what?!",
-                engine.parse("{foo} - {#let foo=true bar='mix'}{foo}:{bar}:{baz}{/}").data("baz", "what?!").render());
+        assertEquals("NOT_FOUND:what?! - true:mix:what?!",
+                engine.parse("{foo}:{baz} - {#let foo=true bar='mix'}{foo}:{bar}:{baz}{/}").data("baz", "what?!").render());
     }
 
 }

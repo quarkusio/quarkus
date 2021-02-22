@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -17,6 +18,35 @@ public interface Mapper {
 
     default CompletionStage<Object> getAsync(String key) {
         return CompletableFuture.completedFuture(get(key));
+    }
+
+    /**
+     * 
+     * @param key
+     * @return {@code true} if the mapper should be applied to the specified key
+     */
+    default boolean appliesTo(String key) {
+        return true;
+    }
+
+    /**
+     * 
+     * @param map
+     * @return a mapper that wraps the given map
+     */
+    static Mapper wrap(Map<String, ?> map) {
+        return new Mapper() {
+
+            @Override
+            public boolean appliesTo(String key) {
+                return map.containsKey(key);
+            }
+
+            @Override
+            public Object get(String key) {
+                return map.get(key);
+            }
+        };
     }
 
 }

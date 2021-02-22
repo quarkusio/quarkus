@@ -11,6 +11,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -301,6 +302,65 @@ public class ParserTest {
         assertParserError("{#if map.get(\"{foo})}Bye...{/if}",
                 "Parser error on line 1: unexpected non-text buffer at the end of the template - unterminated string literal: #if map.get(\"{foo})}Bye...{/if}",
                 1);
+    }
+
+    @Test
+    public void testNestedHintValidation() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        Template loopLetLet = engine.parse("{@org.acme.Foo foo}"
+                + "{#for item in foo.items}"
+                + "{#let names=item.names}"
+                + "{#let size=names.size}"
+                + "{size}"
+                + "{/let}"
+                + "{/let}"
+                + "{/for}");
+        List<Expression> expressions = loopLetLet.getExpressions();
+        assertExpr(expressions, "foo.items", 2, "|org.acme.Foo|.items<loop-element>");
+        Expression itemNames = find(expressions, "item.names");
+        assertExpr(expressions, "names.size", 2, "names<set#" + itemNames.getGeneratedId() + ">.size");
+        Expression namesSize = find(expressions, "names.size");
+        assertExpr(expressions, "size", 1, "size<set#" + namesSize.getGeneratedId() + ">");
+        assertEquals("2", loopLetLet.data("foo", new Foo()).render());
+
+        Template loopLetLoopLet = engine.parse("{@org.acme.Foo foo}"
+                + "{#for item in foo.items}"
+                + "{#let names=item.names}"
+                + "{#for name in names}"
+                + "{#let upperCase=name.toUpperCase}"
+                + ":{upperCase.length}"
+                + "{/let}"
+                + "{/for}"
+                + "{/let}"
+                + "{/for}");
+        expressions = loopLetLoopLet.getExpressions();
+        assertExpr(expressions, "foo.items", 2, "|org.acme.Foo|.items<loop-element>");
+        Expression fooItems = find(expressions, "foo.items");
+        assertExpr(expressions, "item.names", 2, "item<loop#" + fooItems.getGeneratedId() + ">.names");
+        itemNames = find(expressions, "item.names");
+        // Note the 2 hints...
+        assertExpr(expressions, "names", 1, "names<set#" + itemNames.getGeneratedId() + "><loop-element>");
+        Expression names = find(expressions, "names");
+        assertExpr(expressions, "name.toUpperCase", 2, "name<loop#" + names.getGeneratedId() + ">.toUpperCase");
+        Expression nameToUpperCase = find(expressions, "name.toUpperCase");
+        assertExpr(expressions, "upperCase.length", 2, "upperCase<set#" + nameToUpperCase.getGeneratedId() + ">.length");
+        assertEquals(":3:5", loopLetLoopLet.data("foo", new Foo()).render());
+    }
+
+    public static class Foo {
+
+        public List<Item> getItems() {
+            return Collections.singletonList(new Item());
+        }
+
+    }
+
+    public static class Item {
+
+        public List<String> getNames() {
+            return Arrays.asList("foo", "bzink");
+        }
+
     }
 
     private void assertParserError(String template, String message, int line) {

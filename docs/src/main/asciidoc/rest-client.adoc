@@ -128,7 +128,7 @@ public interface CountriesService {
 
     @GET
     @Path("/name/{name}")
-    Set<Country> getByName(@PathParam String name);
+    Set<Country> getByName(@PathParam("name") String name);
 }
 ----
 

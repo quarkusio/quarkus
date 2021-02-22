@@ -2,8 +2,8 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Parameter.EMPTY;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +81,13 @@ public class LoopSectionHelper implements SectionHelper {
         } else if (it instanceof Integer) {
             return IntStream.rangeClosed(1, (Integer) it).iterator();
         } else if (it.getClass().isArray()) {
-            return Arrays.stream((Object[]) it).iterator();
+            int length = Array.getLength(it);
+            List<Object> elements = new ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                // The val is automatically wrapped for primitive types
+                elements.add(Array.get(it, i));
+            }
+            return elements.iterator();
         } else {
             throw new TemplateException(String.format(
                     "Loop section error in template %s on line %s: [%s] resolved to [%s] which is not iterable",
@@ -130,8 +136,7 @@ public class LoopSectionHelper implements SectionHelper {
                 if (iterable == null) {
                     iterable = ValueResolvers.THIS;
                 }
-                // foo.items
-                // > |org.acme.Foo|.items<loop-element>
+                // foo.items becomes |org.acme.Foo|.items<loop-element>
                 previousScope.setLastPartHint(HINT_ELEMENT);
                 Expression iterableExpr = block.addExpression(ITERABLE, iterable);
                 previousScope.setLastPartHint(null);
@@ -139,8 +144,7 @@ public class LoopSectionHelper implements SectionHelper {
                 String alias = block.getParameters().get(ALIAS);
 
                 if (iterableExpr.hasTypeInfo()) {
-                    // it.name
-                    // > it<loop#123>.name
+                    // it.name becomes it<loop#123>.name
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
                     Scope newScope = new Scope(previousScope);
                     newScope.putBinding(alias, alias + HINT_PREFIX + iterableExpr.getGeneratedId() + ">");

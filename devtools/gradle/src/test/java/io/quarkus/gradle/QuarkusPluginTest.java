@@ -14,6 +14,8 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.gradle.extension.QuarkusPluginExtension;
+
 public class QuarkusPluginTest {
 
     @Test

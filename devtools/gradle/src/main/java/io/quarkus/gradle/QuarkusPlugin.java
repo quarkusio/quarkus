@@ -31,6 +31,8 @@ import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.gradle.builder.QuarkusModelBuilder;
+import io.quarkus.gradle.extension.QuarkusPluginExtension;
+import io.quarkus.gradle.extension.SourceSetExtension;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
@@ -244,13 +246,37 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     private void afterEvaluate(Project project) {
         final HashSet<String> visited = new HashSet<>();
-        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+        ConfigurationContainer configurations = project.getConfigurations();
+        configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
                 .getIncoming().getDependencies()
                 .forEach(d -> {
                     if (d instanceof ProjectDependency) {
                         visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);
                     }
                 });
+
+        SourceSetExtension sourceSetExtension = project.getExtensions().getByType(QuarkusPluginExtension.class)
+                .sourceSetExtension();
+
+        if (sourceSetExtension.extraNativeTest() != null) {
+
+            SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)
+                    .getSourceSets();
+            SourceSet nativeTestSourceSets = sourceSets.getByName(NATIVE_TEST_SOURCE_SET_NAME);
+            nativeTestSourceSets.setCompileClasspath(
+                    nativeTestSourceSets.getCompileClasspath().plus(sourceSetExtension.extraNativeTest().getOutput()));
+            nativeTestSourceSets.setRuntimeClasspath(
+                    nativeTestSourceSets.getRuntimeClasspath().plus(sourceSetExtension.extraNativeTest().getOutput()));
+
+            configurations.findByName(NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME).extendsFrom(
+                    configurations.findByName(sourceSetExtension.extraNativeTest().getImplementationConfigurationName()));
+            configurations.findByName(NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME).extendsFrom(
+                    configurations.findByName(sourceSetExtension.extraNativeTest().getRuntimeOnlyConfigurationName()));
+
+            QuarkusTestNative nativeTest = (QuarkusTestNative) project.getTasks().getByName(TEST_NATIVE_TASK_NAME);
+            nativeTest.setTestClassesDirs(nativeTestSourceSets.getOutput().getClassesDirs());
+            nativeTest.setClasspath(nativeTestSourceSets.getRuntimeClasspath());
+        }
     }
 
     private void visitProjectDep(Project project, Project dep, Set<String> visited) {

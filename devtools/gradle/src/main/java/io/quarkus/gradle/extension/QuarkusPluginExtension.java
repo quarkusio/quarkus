@@ -1,4 +1,4 @@
-package io.quarkus.gradle;
+package io.quarkus.gradle.extension;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
@@ -28,6 +29,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.model.ModelParameter;
 import io.quarkus.bootstrap.resolver.model.QuarkusModel;
 import io.quarkus.bootstrap.resolver.model.impl.ModelParameterImpl;
+import io.quarkus.gradle.AppModelGradleResolver;
 import io.quarkus.gradle.builder.QuarkusModelBuilder;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
@@ -46,11 +48,14 @@ public class QuarkusPluginExtension {
 
     private File outputConfigDirectory;
 
+    private final SourceSetExtension sourceSetExtension;
+
     public QuarkusPluginExtension(Project project) {
         this.project = project;
+        this.sourceSetExtension = new SourceSetExtension();
     }
 
-    void beforeTest(Test task) {
+    public void beforeTest(Test task) {
         try {
             final Map<String, Object> props = task.getSystemProperties();
 
@@ -174,6 +179,14 @@ public class QuarkusPluginExtension {
 
     public void setFinalName(String finalName) {
         this.finalName = finalName;
+    }
+
+    public void sourceSets(Action<? super SourceSetExtension> action) {
+        action.execute(this.sourceSetExtension);
+    }
+
+    public SourceSetExtension sourceSetExtension() {
+        return sourceSetExtension;
     }
 
     public Set<File> resourcesDir() {

@@ -8,18 +8,17 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 // comment out to show community version
 :downstream:
-// TODO: consider moving this to the attributes file
+//:upstream:
 :doctype: book
 
-//Top-Level Assembly
-[id="using-the-quarkus-extension-for-spring-di-api_{context}"]
+[id="proc-using-the-quarkus-extension-for-spring-di-api_{context}"]
 = Using the Quarkus Extension for Spring DI API
 
 ifdef::context[:parent-context: {context}]
 
 :context: using-the-quarkus-extension-for-spring-di
 
-include::./attributes.adoc[]
+include::attributes.adoc[]
 
 ifdef::downstream[]
 //file not present in upstream repo, commented out to allow build to pass
@@ -27,11 +26,9 @@ ifdef::downstream[]
 endif::[]
 
 [role="_abstract"]
-The `quarkus-spring-di` extension provides a compatibility layer for Spring Dependency Injection that you can use as an alternative to MicroProfile CDI annotations in your {BrandName} application.
-This guide explains how your {BrandName} application can leverage Dependency Injection annotations provided by the Spring Framework.
+As a developer, you can add the `quarkus-spring-di` extension to your project and inject dependencies in your {BrandName} application using Dependency Injection annotations provided by the Spring Framework as an alternative to using MicroProfile CDI annotations.
 
-ifndef::downstream[]
-
+ifdef::upstream[]
 This guide is maintained in the main {BrandName} repository and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
@@ -45,32 +42,29 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 The solution is located in the `spring-di-quickstart` {quickstarts-tree-url}/spring-di-quickstart[directory].
 endif::[]
 
-// Tech preview info for community purposes, different from product
+// upstream tech preview status and notes
 ifndef::downstream[]
 include::./status-include.adoc[]
 :extension-status: preview
 endif::[]
 
-//tech preview info for product docs
+//tech preview info for downstream docs
 ifdef::downstream[]
 NOTE: The `quarkus-spring-di` extension is available as link:https://access.redhat.com/support/offerings/techpreview[Technology Preview] with {ProductLongName}.
 endif::[]
 
-
-//ifdef::downstream[]
 [IMPORTANT]
 ====
 The Spring compatibility layer that {BrandName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor`) when you start your application.
 {BrandName} can only read metadata from Spring classes and annotations and parse user code method return types and parameter types that are specific to Spring.
 However, when you add arbitrary libraries that are part of Spring Framework to your {BrandName} application, such libraries will not function properly, because {BrandName} is not able to use them.
 ====
-//endif::[]
 
 .Prerequisites
 
 // comment out the following prerequisite in the alternative 1 layout of the document.
 * Have a {BrandName} Maven project.
-* Have OpenJDK 8 installed.
+* Have OpenJDK {JDKVersion} installed.
 * Have Maven {maven-version} installed.
 
 // Alternative 1: generate project form scratch

@@ -15,8 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
-import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -41,24 +40,19 @@ public class SynthProxiableBeanWithoutNoArgConstructorTest {
 
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
-                            @Override
-                            public void register(RegistrationContext context) {
-                                context.configure(SynthBean.class)
-                                        .scope(ApplicationScoped.class)
-                                        .types(SynthBean.class)
-                                        .unremovable()
-                                        .creator(mc -> {
-                                            ResultHandle ret = mc.newInstance(
-                                                    MethodDescriptor.ofConstructor(SynthBean.class, String.class),
-                                                    mc.load("foo"));
-                                            mc.returnValue(ret);
-                                        })
-                                        .done();
-                            }
-                        }));
+                        context.produce(SyntheticBeanBuildItem.configure(SynthBean.class)
+                                .scope(ApplicationScoped.class)
+                                .types(SynthBean.class)
+                                .unremovable()
+                                .creator(mc -> {
+                                    ResultHandle ret = mc.newInstance(
+                                            MethodDescriptor.ofConstructor(SynthBean.class, String.class),
+                                            mc.load("foo"));
+                                    mc.returnValue(ret);
+                                })
+                                .done());
                     }
-                }).produces(BeanRegistrarBuildItem.class).build();
+                }).produces(SyntheticBeanBuildItem.class).build();
             }
         };
     }

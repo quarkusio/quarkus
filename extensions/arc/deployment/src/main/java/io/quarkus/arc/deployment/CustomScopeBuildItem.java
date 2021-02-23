@@ -1,5 +1,7 @@
 package io.quarkus.arc.deployment;
 
+import java.lang.annotation.Annotation;
+
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -14,6 +16,10 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class CustomScopeBuildItem extends MultiBuildItem {
 
     private final DotName annotationName;
+
+    public CustomScopeBuildItem(Class<? extends Annotation> scope) {
+        this(DotName.createSimple(scope.getName()));
+    }
 
     public CustomScopeBuildItem(DotName annotationName) {
         this.annotationName = annotationName;

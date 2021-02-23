@@ -341,10 +341,13 @@ IMPORTANT: A build step that consumes the `ObserverRegistrationPhaseBuildItem` s
 void syntheticObserver(ObserverRegistrationPhaseBuildItem observerRegistrationPhase,
             BuildProducer<MyBuildItem> myBuildItem, 
             BuildProducer<ObserverConfiguratorBuildItem> observerConfigurators) {
-   observerConfigurators.produce(new ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext().configure().observedType(String.class)
-                             .notify(mc -> {
-                               // do some gizmo bytecode generation...
-                             }).done();
+   observerConfigurators.produce(new ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext()
+       .configure()
+       .beanClass(DotName.createSimple(MyBuildStep.class.getName()))
+       .observedType(String.class)
+       .notify(mc -> {
+           // do some gizmo bytecode generation...
+       })));
    myBuildItem.produce(new MyBuildItem());
 }
 ----

@@ -30,7 +30,6 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
-import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigBeanCreator;
@@ -165,29 +164,24 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    BeanRegistrarBuildItem registerConfigRootsAsBeans(ConfigurationBuildItem configItem) {
-        return new BeanRegistrarBuildItem(new BeanRegistrar() {
-            @Override
-            public void register(RegistrationContext context) {
-                for (RootDefinition rootDefinition : configItem.getReadResult().getAllRoots()) {
-                    if (rootDefinition.getConfigPhase() == ConfigPhase.BUILD_AND_RUN_TIME_FIXED
-                            || rootDefinition.getConfigPhase() == ConfigPhase.RUN_TIME) {
-                        Class<?> configRootClass = rootDefinition.getConfigurationClass();
-                        context.configure(configRootClass).types(configRootClass)
-                                .scope(Dependent.class).creator(mc -> {
-                                    // e.g. return Config.ApplicationConfig
-                                    ResultHandle configRoot = mc.readStaticField(rootDefinition.getDescriptor());
-                                    // BUILD_AND_RUN_TIME_FIXED roots are always set before the container is started (in the static initializer of the generated Config class)
-                                    // However, RUN_TIME roots may be not be set when the bean instance is created 
-                                    mc.ifNull(configRoot).trueBranch().throwException(CreationException.class,
-                                            String.format("Config root [%s] with config phase [%s] not initialized yet.",
-                                                    configRootClass.getName(), rootDefinition.getConfigPhase().name()));
-                                    mc.returnValue(configRoot);
-                                }).done();
-                    }
-                }
+    void registerConfigRootsAsBeans(ConfigurationBuildItem configItem, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+        for (RootDefinition rootDefinition : configItem.getReadResult().getAllRoots()) {
+            if (rootDefinition.getConfigPhase() == ConfigPhase.BUILD_AND_RUN_TIME_FIXED
+                    || rootDefinition.getConfigPhase() == ConfigPhase.RUN_TIME) {
+                Class<?> configRootClass = rootDefinition.getConfigurationClass();
+                syntheticBeans.produce(SyntheticBeanBuildItem.configure(configRootClass).types(configRootClass)
+                        .scope(Dependent.class).creator(mc -> {
+                            // e.g. return Config.ApplicationConfig
+                            ResultHandle configRoot = mc.readStaticField(rootDefinition.getDescriptor());
+                            // BUILD_AND_RUN_TIME_FIXED roots are always set before the container is started (in the static initializer of the generated Config class)
+                            // However, RUN_TIME roots may be not be set when the bean instance is created 
+                            mc.ifNull(configRoot).trueBranch().throwException(CreationException.class,
+                                    String.format("Config root [%s] with config phase [%s] not initialized yet.",
+                                            configRootClass.getName(), rootDefinition.getConfigPhase().name()));
+                            mc.returnValue(configRoot);
+                        }).done());
             }
-        });
+        }
     }
 
     @BuildStep

@@ -15,6 +15,11 @@ td {
     color: #3366ac !important;
     cursor: pointer;
 }
+
+#filterInputGroup {
+    padding-bottom: 10px;
+}
+
 {/style}
 
 {#script}
@@ -81,7 +86,7 @@ function changeBackgroundColor(color, element){
 {#body}
 
 <!-- Filter input -->
-<div class="input-group">
+<div id="filterInputGroup" class="input-group">
   <div class="input-group-prepend">
     <span class="input-group-text" id="filterInputPrepend"><i class="fas fa-filter"></i></span>
   </div>

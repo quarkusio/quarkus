@@ -141,12 +141,14 @@ public class Fruit {
 
 Add the following properties to `application.properties` to configure access to a local PostgreSQL instance.
 
+Considering port 5432 could be already taken on your dev host, a setup based on port 5433 is provided.
+
 [source,properties]
 ----
 quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
-quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus_test
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5433/quarkus_test
 quarkus.datasource.jdbc.max-size=8
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
@@ -157,7 +159,14 @@ A very easy way to accomplish that is by using the following Docker command:
 
 [source,bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:11.5
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5433:5432 postgres:11.5
+----
+
+Connect to the db shell:
+
+[source,bash]
+----
+PGPASSWORD=quarkus_test psql -h localhost -p 5433 -U quarkus_test
 ----
 
 If you plan on using a different setup, please change your `application.properties` accordingly.

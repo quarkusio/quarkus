@@ -21,12 +21,14 @@ public class PackageConfig {
     public static final String LEGACY = "legacy";
     public static final String LEGACY_JAR = "legacy-jar";
     public static final String NATIVE = "native";
+    // does everything 'native' but stops short of actually executing the 'native-image' command
+    public static final String NATIVE_SOURCES = "native-sources";
 
     /**
      * The requested output type.
      * <p>
      * The default built in types are 'jar' (which will use 'fast-jar'), 'legacy-jar' for the pre-1.12 default jar
-     * packaging, 'uber-jar' and 'native'.
+     * packaging, 'uber-jar', 'native' and 'native-sources'.
      */
     @ConfigItem(defaultValue = JAR)
     public String type;

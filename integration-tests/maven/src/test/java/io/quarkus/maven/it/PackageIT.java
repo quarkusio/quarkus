@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -252,6 +253,26 @@ public class PackageIT extends MojoTestBase {
         final Path runnerJar = targetDir.toPath().resolve("quarkus-app").resolve("quarkus-run.jar");
         Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
+    }
+
+    @Test
+    public void testNativeSourcesPackage() throws Exception {
+        testDir = initProject("projects/uberjar-check", "projects/project-native-sources");
+
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(
+                Arrays.asList("package", "-Dquarkus.package.type=native-sources"),
+                Collections.emptyMap());
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final File targetDir = getTargetDir();
+
+        final Path nativeSourcesDir = targetDir.toPath().resolve("native-sources");
+        assertThat(nativeSourcesDir).exists()
+                .isDirectoryContaining(p -> "native-image.args".equals(p.getFileName().toString()))
+                .isDirectoryContaining(p -> "acme-1.0-SNAPSHOT-runner.jar".equals(p.getFileName().toString()));
+
     }
 
     private int getNumberOfFilesEndingWith(File dir, String suffix) {

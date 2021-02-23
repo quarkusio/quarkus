@@ -9,6 +9,8 @@ import java.util.Map;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+
 abstract class AbstractKubernetesConfigSourceUtil {
 
     private static final Logger log = Logger.getLogger(AbstractKubernetesConfigSourceUtil.class);
@@ -36,8 +38,14 @@ abstract class AbstractKubernetesConfigSourceUtil {
      * All the {@code ConfigSource} objects use the same ordinal which is higher than the ordinal
      * of normal configuration files, but lower than that of environment variables
      */
-    List<ConfigSource> toConfigSources(String kubernetesConfigSourceName, Map<String, String> kubernetesConfigSourceDataMap,
+    List<ConfigSource> toConfigSources(ObjectMeta metadata, Map<String, String> kubernetesConfigSourceDataMap,
             int ordinalOffset) {
+        /*
+         * use a name that uniquely identifies the secret/configmap - which can be used an application
+         * to fully report its startup state or even respond to secret/configmap changes
+         */
+        String kubernetesConfigSourceName = metadata.getNamespace() + "/" + metadata.getName() + "/" + metadata.getUid() + "/"
+                + metadata.getResourceVersion();
         if (log.isDebugEnabled()) {
             log.debug("Attempting to convert data in " + getType() + " '" + kubernetesConfigSourceName
                     + "' to a list of ConfigSource objects");

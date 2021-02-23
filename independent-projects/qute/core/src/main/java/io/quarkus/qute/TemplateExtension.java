@@ -28,15 +28,10 @@ import java.lang.annotation.Target;
  * <p>
  * By default, the method name is used to match the property name. However, it is possible to specify the matching name with
  * {@link #matchName()}. A special constant - {@link #ANY} - may be used to specify that the extension method matches any name.
- * It is also possible to match the name against a regular expression specified in {@link #matchRegex()}. In both cases, a
- * string method parameter is used to pass the property name.
- * 
+ * It is also possible to match the name against a regular expression specified in {@link #matchRegex()}. In both cases, an
+ * additional string method parameter must be used to pass the property name.
  * <p>
  * If both {@link #matchName()} and {@link #matchRegex()} are set the regular expression is used for matching.
- * 
- * <p>
- * If a namespace is specified the method must declare at least one parameter and the first parameter must be a string. If no
- * namespace is specified the method must declare at least two parameters and the second parameter must be a string.
  * 
  * <pre>
  * {@literal @}TemplateExtension
@@ -88,8 +83,7 @@ public @interface TemplateExtension {
      * <p>
      * Template extension methods that share the same namespace and are declared on the same class are grouped in one resolver
      * and ordered by {@link #priority()}. The first matching extension method is used to resolve an expression. Template
-     * extension
-     * methods declared on different classes cannot share the same namespace.
+     * extension methods declared on different classes cannot share the same namespace.
      * 
      * @return the namespace
      */

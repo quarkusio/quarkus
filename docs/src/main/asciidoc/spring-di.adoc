@@ -28,7 +28,8 @@ endif::[]
 include::attributes.adoc[]
 
 ifdef::downstream[]
-//file not present in upstream repo, commented out to allow build to pass
+//file not present in upstream repo, but required for downstream content
+//commented out to allow build to pass
 //include::common/making-open-source-more-inclusive.adoc[]
 endif::[]
 
@@ -438,8 +439,6 @@ ifndef::downstream[]
 //Only the -product-appropriate wording of the note should be used in both the community and product versions of this document.
 //I am retaining the original wording for purposes of verification and factual corrections.
 
-=======
-
 ifdef::upstream[]
 >>>>>>> 8e06509e82 (QUARKUS-184: Replace Quarkus with attribute except in section titles, conditionalize downstream-only markup features)
 == Important technical note
@@ -448,17 +447,10 @@ Spring support in {BrandName} does not start a Spring Application Context nor ar
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.
-<<<<<<< HEAD
-
-Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the link:cdi[Quarkus introduction to CDI] and the link:cdi-reference#arc-configuration-reference[CDI reference guide]
-The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the link:getting-started-testing[Quarkus testing guide].
-//endif::[]
-////
-=======
-Regarding the dependency injection in particular, {BrandName} uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the https://quarkus.io/guides/cdi[{BrandName} introduction to CDI] and the https://quarkus.io/guides/cdi-reference#arc-configuration-reference[CDI reference guide]
+Regarding the dependency injection in particular, {BrandName} uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the link:cdi[Quarkus introduction to CDI] and the link:cdi-reference#arc-configuration-reference[CDI reference guide].
 The various Spring Boot test features are not supported by {BrandName}. For testing purposes, please, check the https://quarkus.io/guides/getting-started-testing[{BrandName} testing guide].
 endif::[]
->>>>>>> 8e06509e82 (QUARKUS-184: Replace Quarkus with attribute except in section titles, conditionalize downstream-only markup features)
+////
 
 ifdef::downstream[]
 [id="overview-of-annotation-equivalents-in-spring-di-and-cdi"]

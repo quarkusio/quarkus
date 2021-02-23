@@ -2,11 +2,14 @@ package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import javax.ws.rs.core.Response;
+
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
@@ -26,16 +29,22 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      *
      * <pre>
      * {@code
-     *     &#64;Transactional
      *     &#64;DELETE
      *     &#64;Path("{id}")
      *     &#64;LinkResource(
      *         rel = "remove",
      *         entityClassName = "com.example.Entity"
      *     )
-     *     public void delete(@PathParam("id") ID id) {
-     *         if (!restDataResource.delete(id)) {
-     *             throw new WebApplicationException(404);
+     *     public Response delete(@PathParam("id") ID id) {
+     *         try {
+     *             boolean deleted = restDataResource.delete(id);
+     *             if (deleted) {
+     *                 return Response.noContent().build();
+     *             } else {
+     *                 return Response.status(404).build();
+     *             }
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
      *         }
      *     }
      * }
@@ -44,28 +53,30 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, void.class.getName(),
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class,
                 resourceMetadata.getIdType());
 
         // Add method annotations
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
-        addTransactionalAnnotation(methodCreator);
         addDeleteAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
 
-        // Invoke resource methods
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle id = methodCreator.getMethodParam(0);
-        ResultHandle result = methodCreator.invokeVirtualMethod(
+
+        // Invoke resource methods
+        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to delete an entity");
+        ResultHandle deleted = tryBlock.invokeVirtualMethod(
                 ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, boolean.class, Object.class),
                 resource, id);
-        BranchResult entityWasDeleted = methodCreator.ifNonZero(result);
 
         // Return response
-        entityWasDeleted.trueBranch().returnValue(null);
-        entityWasDeleted.falseBranch()
-                .throwException(ResponseImplementor.notFoundException(entityWasDeleted.falseBranch()));
+        BranchResult entityWasDeleted = tryBlock.ifNonZero(deleted);
+        entityWasDeleted.trueBranch().returnValue(ResponseImplementor.noContent(entityWasDeleted.trueBranch()));
+        entityWasDeleted.falseBranch().returnValue(ResponseImplementor.notFound(entityWasDeleted.falseBranch()));
+
+        tryBlock.close();
         methodCreator.close();
     }
 

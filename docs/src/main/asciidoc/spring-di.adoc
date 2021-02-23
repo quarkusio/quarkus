@@ -11,12 +11,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 //:upstream:
 :doctype: book
 
+:doctype: book
+
 ifdef::downstream[]
 ifndef::context[]
 [id="proc-using-the-quarkus-extension-for-spring-di-api"]
 endif::[]
 ifdef::context[]
 [id="proc-using-the-quarkus-extension-for-spring-di-api_{context}"]
+endif::[]
 endif::[]
 = Using the Quarkus Extension for Spring DI API
 
@@ -36,7 +39,8 @@ endif::[]
 ifdef::downstream[]
 [role="_abstract"]
 endif::[]
-As a developer, you can add the `quarkus-spring-di` extension to your project and inject dependencies in your {BrandName} application using Dependency Injection annotations provided by the Spring Framework as an alternative to using MicroProfile CDI annotations.
+As a developer, you can add the `quarkus-spring-di` extension to your project and inject dependencies in your {BrandName} application using Dependency Injection annotations provided by the Spring Framework.
+You can use Spring DI annotations as an alternative to MicroProfile CDI annotations.
 
 ifdef::upstream[]
 This guide is maintained in the main {BrandName} repository and pull requests should be submitted there:
@@ -61,7 +65,7 @@ You can follow this guide and create the example that uses the {PRODUCTNAME} ext
 To view the completed {ProductName} Spring Web example, download it as an link:{URL_GITHUB_QUICKSTARTS_REPO_ARCHIVE}[archive] or clone the {PRODUCTNAME} examples Git link:{URL_GITHUB_QUICKSTARTS_REPO_BASE}.git[repository].
 You can find the Spring Web example in the link:{URL_GITHUB_QUICKSTARTS_DIRECTORY_BASE}spring-di-quickstart[`spring-di-quickstart` directory].
 ====
-ifdef::[]
+endif::[]
 
 // upstream tech preview status and notes
 ifdef::upstream[]

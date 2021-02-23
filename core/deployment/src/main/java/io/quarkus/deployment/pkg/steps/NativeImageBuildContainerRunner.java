@@ -23,7 +23,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     private static final Logger log = Logger.getLogger(NativeImageBuildContainerRunner.class);
 
-    private final NativeConfig nativeConfig;
+    final NativeConfig nativeConfig;
     protected final NativeConfig.ContainerRuntime containerRuntime;
     private final String[] baseContainerRuntimeArgs;
     protected final String outputPath;

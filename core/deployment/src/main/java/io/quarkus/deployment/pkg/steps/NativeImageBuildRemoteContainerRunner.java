@@ -41,13 +41,20 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
 
     @Override
     protected void postBuild() throws InterruptedException, IOException {
-        String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp",
-                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + nativeImageName, outputPath };
-        Process copyProcess = new ProcessBuilder(copyCommand).start();
-        copyProcess.waitFor();
+        copy(nativeImageName);
+        if (nativeConfig.debug.enabled) {
+            copy("sources");
+        }
         String[] removeCommand = new String[] { containerRuntime.getExecutableName(), "container", "rm", "--volumes",
                 containerId };
         Process removeProcess = new ProcessBuilder(removeCommand).start();
         removeProcess.waitFor();
+    }
+
+    private void copy(String path) throws IOException, InterruptedException {
+        String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp",
+                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + path, outputPath };
+        Process copyProcess = new ProcessBuilder(copyCommand).start();
+        copyProcess.waitFor();
     }
 }

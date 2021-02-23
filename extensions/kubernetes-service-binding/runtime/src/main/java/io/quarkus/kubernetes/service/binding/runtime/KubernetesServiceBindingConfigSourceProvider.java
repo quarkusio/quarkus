@@ -84,7 +84,8 @@ public class KubernetesServiceBindingConfigSourceProvider implements ConfigSourc
             Map<String, String> serviceBindingProperties = serviceBinding.getProperties();
             Map<String, String> rawConfigSourceProperties = new HashMap<>();
             for (Map.Entry<String, String> entry : serviceBindingProperties.entrySet()) {
-                rawConfigSourceProperties.put("quarkus." + serviceBinding.getName() + "." + entry.getKey(), entry.getValue());
+                rawConfigSourceProperties.put("quarkus.service-binding." + serviceBinding.getName() + "." + entry.getKey(),
+                        entry.getValue());
             }
             result.add(new ServiceBindingConfigSource("service-binding-" + serviceBinding.getName() + "-raw",
                     rawConfigSourceProperties));

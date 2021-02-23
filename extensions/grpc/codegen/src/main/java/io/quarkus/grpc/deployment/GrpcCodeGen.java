@@ -8,6 +8,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +47,10 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final Logger log = Logger.getLogger(GrpcCodeGen.class);
 
     private static final String quarkusProtocPluginMain = "io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator";
+    private static final String EXE = "exe";
     private static final String PROTO = ".proto";
+    private static final String PROTOC = "protoc";
+    private static final String PROTOC_GROUPID = "com.google.protobuf";
 
     private Executables executables;
 
@@ -80,8 +84,8 @@ public class GrpcCodeGen implements CodeGenProvider {
                 try (Stream<Path> protoFilesPaths = Files.walk(protoDir)) {
                     List<String> protoFiles = protoFilesPaths
                             .filter(Files::isRegularFile)
-                            .filter(path -> path.toString().endsWith(PROTO))
                             .map(Path::toString)
+                            .filter(s -> s.endsWith(PROTO))
                             .map(this::escapeWhitespace)
                             .collect(Collectors.toList());
                     if (!protoFiles.isEmpty()) {
@@ -193,10 +197,18 @@ public class GrpcCodeGen implements CodeGenProvider {
 
     private void initExecutables(Path workDir, AppModel model) throws CodeGenException {
         if (executables == null) {
-            Path protocExe = prepareExecutable(workDir, model,
-                    "com.google.protobuf", "protoc", osClassifier(), "exe");
+            Path protocPath;
+            String protocPathProperty = System.getProperty("quarkus.grpc.protoc-path");
+            String classifier = osClassifier();
+            if (protocPathProperty == null) {
+                protocPath = findArtifactPath(model, PROTOC_GROUPID, PROTOC, classifier, EXE);
+            } else {
+                protocPath = Paths.get(protocPathProperty);
+            }
+            Path protocExe = makeExecutableFromPath(workDir, PROTOC_GROUPID, PROTOC, classifier, "exe", protocPath);
+
             Path protocGrpcPluginExe = prepareExecutable(workDir, model,
-                    "io.grpc", "protoc-gen-grpc-java", osClassifier(), "exe");
+                    "io.grpc", "protoc-gen-grpc-java", classifier, "exe");
 
             Path quarkusGrpcPluginExe = prepareQuarkusGrpcExecutable(model, workDir);
 
@@ -208,6 +220,11 @@ public class GrpcCodeGen implements CodeGenProvider {
             String groupId, String artifactId, String classifier, String packaging) throws CodeGenException {
         Path artifactPath = findArtifactPath(model, groupId, artifactId, classifier, packaging);
 
+        return makeExecutableFromPath(buildDir, groupId, artifactId, classifier, packaging, artifactPath);
+    }
+
+    private Path makeExecutableFromPath(Path buildDir, String groupId, String artifactId, String classifier, String packaging,
+            Path artifactPath) throws CodeGenException {
         Path exe = buildDir.resolve(String.format("%s-%s-%s-%s", groupId, artifactId, classifier, packaging));
 
         if (Files.exists(exe)) {

@@ -330,7 +330,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
@@ -339,8 +339,7 @@ public class GreetingResourceTest {
 
     @Test
     public void testHelloEndpoint() {
-        given()
-          .when().get()    //<2>
+        when().get()    //<2>
           .then()
              .statusCode(200)
              .body(is("hello"));

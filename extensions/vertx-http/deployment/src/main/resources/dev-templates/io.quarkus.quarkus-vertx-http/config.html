@@ -1,48 +1,134 @@
 {#include main fluid=true}
+
 {#style}
-.annotation {
-color: gray;
+table {
+    table-layout:fixed;
+    width:100%;
+}
+
+td {
+  word-wrap:break-word;
+  word-break:break-all;
+}
+
+.formInputButton:hover {
+    color: #3366ac !important;
+    cursor: pointer;
 }
 {/style}
+
+{#script}
+$(document).ready(function(){
+  $("#filterInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#configTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+  
+  $(".configInput").on("keyup", function(event) {
+    event.preventDefault();
+    if (event.keyCode === 13) {
+        event.preventDefault();
+        changeInputValue(event.target.id);
+    }
+  });
+  
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  });
+  
+});
+
+function clearFilterInput(){
+    $("#filterInput").val("");
+    $("#configTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf("") > -1)
+    });
+}
+
+function changeInputValue(name){
+    var $el = $("input[id='" + name + "']");
+    var value = $el.val();
+    $.post("",
+        {
+          name: name,
+          value: value
+        },
+        function(data, status){
+            if(status === "success"){
+                changeBackgroundColor("#76be6b", $el);
+            }else{
+                changeBackgroundColor("#ff6366", $el);
+            }
+        });
+    
+}
+
+function changeBackgroundColor(color, element){
+    var x = 3000;
+    var originalColor = element.css("background");
+
+    element.css("background", color);
+        setTimeout(function(){
+        element.css("background", originalColor);
+    }, x);
+}
+
+{/script}
+
 {#title}Config Editor{/title}
 {#body}
-<table class="table table-striped">
-    <thead class="thead-dark">
-    <tr>
-        <th scope="col">Property</th>
-        <th scope="col">Value</th>
-        <th scope="col">Update</th>
-        <th scope="col">Default Value</th>
-        <th scope="col">Source</th>
-        <th scope="col">Description</th>
-    </tr>
-    </thead>
-    <tbody>
-    {#for item in info:config}
-    <tr>
-        <form method="post" enctype="application/x-www-form-urlencoded">
-            <input type="hidden" name="name" value="{item.configValue.name}"/>
+
+<!-- Filter input -->
+<div class="input-group">
+  <div class="input-group-prepend">
+    <span class="input-group-text" id="filterInputPrepend"><i class="fas fa-filter"></i></span>
+  </div>
+  <input id="filterInput" type="text" class="form-control" aria-describedby="filterInputPrepend" placeholder="Search...">
+  <div class="input-group-append">
+    <span class="input-group-text formInputButton" onclick="clearFilterInput();"><i class="fas fa-times"></i></span>
+  </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="thead-dark">
+        <tr>
+            <th scope="col">Property</th>
+            <th scope="col">Value</th>
+            <th scope="col">Description</th>
+        </tr>
+        </thead>
+        <tbody id="configTable">
+        {#for item in info:config}
+        <tr>
             <td>
                 {item.configValue.name}
+                
+                {#if item.configValue.configSourceName && item.configValue.configSourceName != ''}
+                    <i class="fas fa-info-circle formInputButton" data-toggle="tooltip" data-placement="right" title="From: {item.configValue.configSourceName}"></i>
+                {/if} 
             </td>
             <td>
-                <input type="text" name="value" value="{item.configValue.value}"/>
+                <div class="input-group" {#if item.defaultValue}data-toggle="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                    <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
+                    <div class="input-group-append">
+                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                    </div>
+                </div>
             </td>
+            
             <td>
-                <input type="submit" value="Update" >
+                {#if item.description.fmtJavadoc && item.description.fmtJavadoc != 'NOT_FOUND'}
+                    {item.description.fmtJavadoc}
+                {/if}    
             </td>
-            <td>
-                {item.defaultValue}
-            </td>
-            <td>
-                {item.configValue.configSourceName}
-            </td>
-            <td>
-                {item.description.fmtJavadoc}
-            </td>
-        </form>
-        {/for}
-    </tbody>
-</table>
+            
+            {/for}
+        </tbody>
+    </table>
+    
+</div>
 {/body}
 {/include}

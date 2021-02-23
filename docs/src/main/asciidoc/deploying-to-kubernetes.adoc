@@ -461,7 +461,7 @@ To simplify things, quarkus provides single step alternative:
 
 [source,properties]
 ----
-quarkus.kubernetes.app-secert=<name of the secret containing the configuration>
+quarkus.kubernetes.app-secret=<name of the secret containing the configuration>
 ----
 
 or

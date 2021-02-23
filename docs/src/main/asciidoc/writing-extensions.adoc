@@ -1441,7 +1441,7 @@ convenience to avoid the need to explicitly load classes in the recorders.
 ==== Printing step execution time
 
 At times, it can be useful to know how the exact time each startup task (which is the result of each bytecode recording) takes when the application is run.
-The simplest way to determine this information is to set the `quarkus.debug.print-startup-times` property to `true` when running the application.
+The simplest way to determine this information is to launch the Quarkus application with the `-Dquarkus.debug.print-startup-times=true` system property.
 The output will look something like:
 
 [source%nowrap]

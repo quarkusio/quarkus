@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.metrics.ConcurrentGauge;
 import org.eclipse.microprofile.metrics.Counter;
@@ -43,6 +44,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.metrics.ExtendedMetadata;
 import io.smallrye.metrics.ExtendedMetadataBuilder;
 import io.smallrye.metrics.MetricRegistries;
+import io.smallrye.metrics.MetricsRequestHandler;
 import io.smallrye.metrics.TagsUtils;
 import io.smallrye.metrics.elementdesc.BeanInfo;
 import io.smallrye.metrics.elementdesc.MemberInfo;
@@ -100,6 +102,9 @@ public class SmallRyeMetricsRecorder {
     public SmallRyeMetricsHandler handler(String metricsPath) {
         SmallRyeMetricsHandler handler = new SmallRyeMetricsHandler();
         handler.setMetricsPath(metricsPath);
+        // tell the metrics internal handler to not append CORS headers
+        // these will be handled by the Quarkus CORS filter, if enabled
+        CDI.current().select(MetricsRequestHandler.class).get().appendCorsHeaders(false);
         return handler;
     }
 

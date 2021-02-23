@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment.configproperties;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadOptionalValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.determineSingleGenericType;
+import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.registerImplicitConverter;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.annotation.Annotation;
@@ -38,6 +39,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -55,11 +57,13 @@ final class InterfaceConfigPropertiesUtil {
     private final Capabilities capabilities;
     private final BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues;
     private final BuildProducer<ConfigPropertyBuildItem> configProperties;
+    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
 
     InterfaceConfigPropertiesUtil(IndexView index, YamlListObjectHandler yamlListObjectHandler, ClassOutput classOutput,
             ClassCreator classCreator,
             Capabilities capabilities, BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
-            BuildProducer<ConfigPropertyBuildItem> configProperties) {
+            BuildProducer<ConfigPropertyBuildItem> configProperties,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         this.index = index;
         this.yamlListObjectHandler = yamlListObjectHandler;
         this.classOutput = classOutput;
@@ -67,6 +71,7 @@ final class InterfaceConfigPropertiesUtil {
         this.capabilities = capabilities;
         this.defaultConfigValues = defaultConfigValues;
         this.configProperties = configProperties;
+        this.reflectiveClasses = reflectiveClasses;
     }
 
     /**
@@ -216,6 +221,7 @@ final class InterfaceConfigPropertiesUtil {
                                     method.declaringClass().name());
 
                             if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                                registerImplicitConverter(genericType, reflectiveClasses);
                                 ResultHandle result = methodCreator.invokeInterfaceMethod(
                                         MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class,
                                                 String.class,
@@ -262,6 +268,7 @@ final class InterfaceConfigPropertiesUtil {
                                         .produce(new RunTimeConfigurationDefaultBuildItem(fullConfigName, defaultValueStr));
                             }
                             // use config.getValue to obtain and return the result taking  converting it to collection if needed
+                            registerImplicitConverter(returnType, reflectiveClasses);
                             ResultHandle value = createReadMandatoryValueAndConvertIfNeeded(
                                     fullConfigName, returnType,
                                     method.declaringClass().name(), methodCreator, config);

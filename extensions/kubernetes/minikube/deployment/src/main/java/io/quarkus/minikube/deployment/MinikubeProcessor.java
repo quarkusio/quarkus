@@ -143,7 +143,7 @@ public class MinikubeProcessor {
         //Probe port handling
         Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)
                 .findFirst().orElse(DEFAULT_HTTP_PORT);
-        result.add(new DecoratorBuildItem(MINIKUBE, new ApplyHttpGetActionPortDecorator(port)));
+        result.add(new DecoratorBuildItem(MINIKUBE, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
         return result;
     }

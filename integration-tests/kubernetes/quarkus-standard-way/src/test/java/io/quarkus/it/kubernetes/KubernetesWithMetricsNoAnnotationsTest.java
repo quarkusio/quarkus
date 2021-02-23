@@ -74,7 +74,7 @@ public class KubernetesWithMetricsNoAnnotationsTest {
                     assertThat(t.getMetadata()).satisfies(meta -> {
                         // Annotations should not have been created in this configuration.
                         assertThat(meta.getAnnotations()).doesNotContain(entry("prometheus.io/scrape", "true"),
-                                entry("prometheus.io/path", "/met"), entry("prometheus.io/port", "9090"),
+                                entry("prometheus.io/path", "/q/met"), entry("prometheus.io/port", "9090"),
                                 entry("prometheus.io/scheme", "http"));
                     });
                 });

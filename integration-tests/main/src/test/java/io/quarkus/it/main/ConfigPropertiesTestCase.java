@@ -16,4 +16,11 @@ public class ConfigPropertiesTestCase {
                 .when().get("/configuration-properties")
                 .then().body(is("HelloONE!"));
     }
+
+    @Test
+    public void testImplicitConverters() {
+        RestAssured
+                .when().get("/configuration-properties/period")
+                .then().body(is("P1D"));
+    }
 }

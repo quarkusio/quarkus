@@ -18,7 +18,7 @@
         <bouncycastle.fips.version>1.0.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.11</bouncycastle.tls.fips.version>
         <jandex.version>2.2.2.Final</jandex.version>
-        <resteasy.version>4.5.8.SP1</resteasy.version>
+        <resteasy.version>4.5.9.Final</resteasy.version>
         <opentracing.version>0.31.0</opentracing.version>
         <opentracing-jaxrs.version>0.4.1</opentracing-jaxrs.version>
         <opentracing-web-servlet-filter.version>0.2.3</opentracing-web-servlet-filter.version>
@@ -41,10 +41,10 @@
         <smallrye-common.version>1.5.0</smallrye-common.version>
         <smallrye-config.version>1.10.2</smallrye-config.version>
         <smallrye-health.version>2.2.5</smallrye-health.version>
-        <smallrye-metrics.version>2.4.4</smallrye-metrics.version>
-        <smallrye-open-api.version>2.0.19</smallrye-open-api.version>
+        <smallrye-metrics.version>2.4.6</smallrye-metrics.version>
+        <smallrye-open-api.version>2.0.22</smallrye-open-api.version>
         <smallrye-graphql.version>1.0.21</smallrye-graphql.version>
-        <smallrye-opentracing.version>1.3.4</smallrye-opentracing.version>
+        <smallrye-opentracing.version>1.3.5</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>4.3.2</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>2.4.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.0.19</smallrye-context-propagation.version>
@@ -174,7 +174,7 @@
         <sentry.version>3.2.0</sentry.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.0.2</kubernetes-client.version>
+        <kubernetes-client.version>5.1.0</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>

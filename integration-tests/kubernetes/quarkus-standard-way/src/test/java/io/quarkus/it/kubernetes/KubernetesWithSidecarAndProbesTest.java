@@ -1,9 +1,9 @@
+
 package io.quarkus.it.kubernetes;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -16,45 +16,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
-import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithMetricsCustomPrefixTest {
+public class KubernetesWithSidecarAndProbesTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("health")
+            .setApplicationName("kubernetes-with-sidecar-and-probes")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .setRun(true)
+            .withConfigurationResource("kubernetes-with-sidecar-and-probes.properties")
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics-custom-prefix.properties")
             .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion())));
+                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
-
-    @LogFile
-    private Path logfile;
-
-    @Test
-    public void assertApplicationRuns() {
-        assertThat(logfile).isRegularFile().hasFileName("k8s.log");
-        TestUtil.assertLogFileContents(logfile, "kubernetes", "metrics");
-
-        given()
-                .when().get("/greeting")
-                .then()
-                .statusCode(200)
-                .body(is("hello"));
-    }
 
     @Test
     public void assertGeneratedResources() throws IOException {
@@ -66,21 +49,30 @@ public class KubernetesWithMetricsCustomPrefixTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("health");
+                assertThat(m.getName()).isEqualTo("kubernetes-with-sidecar-and-probes");
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
-                    assertThat(t.getMetadata()).satisfies(meta -> {
-                        // Annotations will have a different default prefix,
-                        // and the scrape annotation was specifically configured
-                        assertThat(meta.getAnnotations()).contains(entry("example.io/should_be_scraped", "true"),
-                                entry("example.io/path", "/q/met"), entry("example.io/port", "9090"),
-                                entry("example.io/scheme", "http"));
+                    assertThat(t.getSpec()).satisfies(podSpec -> {
+                        assertThat(podSpec.getContainers()).filteredOn(c -> "x".equals(c.getName())).singleElement()
+                                .satisfies(container -> {
+                                    assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
+                                        assertProbePath(p, "/q/health/live");
+                                        assertNotNull(p.getHttpGet());
+                                        assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);
+                                    });
+                                });
                     });
                 });
             });
+
         });
     }
 
+    private void assertProbePath(Probe p, String expectedPath) {
+        assertThat(p.getHttpGet()).satisfies(h -> {
+            assertThat(h.getPath()).isEqualTo(expectedPath);
+        });
+    }
 }

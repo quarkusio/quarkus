@@ -141,10 +141,10 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
+    MetricsCapabilityBuildItem metricsCapabilityBuildItem(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         if (metrics.extensionsEnabled) {
-            return new MetricsCapabilityBuildItem(x -> MetricsFactory.MP_METRICS.equals(x),
-                    metrics.path);
+            return new MetricsCapabilityBuildItem(MetricsFactory.MP_METRICS::equals,
+                    nonApplicationRootPathBuildItem.adjustPath(metrics.path));
         }
         return null;
     }
@@ -155,7 +155,8 @@ public class SmallRyeMetricsProcessor {
             SmallRyeMetricsRecorder recorder,
             NonApplicationRootPathBuildItem frameworkRoot,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            LaunchModeBuildItem launchModeBuildItem) {
+            LaunchModeBuildItem launchModeBuildItem,
+            BeanContainerBuildItem beanContainer) {
         Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
         Function<Router, Route> slash = recorder.route(metrics.path);
 

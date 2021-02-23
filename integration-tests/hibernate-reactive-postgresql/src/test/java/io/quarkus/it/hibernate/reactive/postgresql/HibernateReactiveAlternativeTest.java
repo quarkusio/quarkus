@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -11,12 +12,13 @@ import io.restassured.RestAssured;
  * Test various JPA operations running in Quarkus when the session is injected without Uni or CompletionStage.
  */
 @QuarkusTest
+@TestHTTPEndpoint(HibernateReactiveTestEndpointAlternative.class)
 public class HibernateReactiveAlternativeTest {
 
     @Test
     public void reactiveFind() {
         RestAssured.when()
-                .get("/alternative-tests/reactiveFind")
+                .get("/reactiveFind")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
     }
@@ -24,7 +26,7 @@ public class HibernateReactiveAlternativeTest {
     @Test
     public void reactiveFindMutiny() {
         RestAssured.when()
-                .get("/alternative-tests/reactiveFindMutiny")
+                .get("/reactiveFindMutiny")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
     }
@@ -32,7 +34,7 @@ public class HibernateReactiveAlternativeTest {
     @Test
     public void reactivePersist() {
         RestAssured.when()
-                .get("/alternative-tests/reactivePersist")
+                .get("/reactivePersist")
                 .then()
                 .body(is("Tulip"));
     }
@@ -40,7 +42,7 @@ public class HibernateReactiveAlternativeTest {
     @Test
     public void reactiveRemoveTransientEntity() {
         RestAssured.when()
-                .get("/alternative-tests/reactiveRemoveTransientEntity")
+                .get("/reactiveRemoveTransientEntity")
                 .then()
                 .body(is("OK"));
     }
@@ -48,7 +50,7 @@ public class HibernateReactiveAlternativeTest {
     @Test
     public void reactiveRemoveManagedEntity() {
         RestAssured.when()
-                .get("/alternative-tests/reactiveRemoveManagedEntity")
+                .get("/reactiveRemoveManagedEntity")
                 .then()
                 .body(is("OK"));
     }
@@ -56,7 +58,7 @@ public class HibernateReactiveAlternativeTest {
     @Test
     public void reactiveUpdate() {
         RestAssured.when()
-                .get("/alternative-tests/reactiveUpdate")
+                .get("/reactiveUpdate")
                 .then()
                 .body(is("Tina"));
     }

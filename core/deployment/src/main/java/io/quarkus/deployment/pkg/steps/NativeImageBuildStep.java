@@ -175,7 +175,6 @@ public class NativeImageBuildStep {
 
             List<String> nativeImageArgs = commandAndExecutable.args;
 
-            log.info(String.join(" ", nativeImageArgs).replace("$", "\\$"));
             int exitCode = buildRunner.build(nativeImageArgs, outputDir, processInheritIODisabled.isPresent());
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, nativeImageArgs);

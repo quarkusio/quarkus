@@ -233,7 +233,7 @@ Again, make sure to replace `yourAccountName` with your docker or quay account n
 
 == Deploy to Kubernetes/OpenShift
 
-The first step is to setup the broker in our namespace.
+The first step is to set up the broker in our namespace.
 Following is an example command from the the Knative cli.
 
 [source, yaml]
@@ -242,11 +242,11 @@ kn broker create default \
   --namespace knativetutorial
 ----
 
-The broker we have created is called default, this broker will receive the cloud events.
-The broker is also referenced in the function yaml files.
+The broker we have created is called `default`, this broker will receive the cloud events.
+The broker is also referenced in the function YAML files.
 
-The second step is to define a Kubernetes/OpenShift service to points to your the docker image you created and pushed
-during build.  Take a look at {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
+The second step is to define a Kubernetes/OpenShift service to point to the Docker image you created and pushed
+during build. Take a look at {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
 
 [source, yaml]
 ----
@@ -265,22 +265,22 @@ spec:
         - image: docker.io/yourAccountName/funqy-knative-events-quickstart
 ----
 
-This is a standard Kubernetes service definition yaml file.
+This is a standard Kubernetes service definition YAML file.
 
-NOTE: Make sure you change the image url to point to the image you built and pushed earlier!
+NOTE: Make sure you change the image URL to point to the image you built and pushed earlier!
 
-For our quickstart, one Kubernetes service will contain all functions.  There's no reason you couldn't break up this
+For our quickstart, one Kubernetes service will contain all functions. There's no reason you couldn't break up this
 quickstart into multiple different projects and deploy a service for each function.  For simplicity, and to show that you
 don't have to have a deployment per function, the quickstart combines everything into one project, image, and service.
 
-Deploy the service yaml.
+Deploy the service:
 
 [source,bash]
 ----
 kubectl apply -n knativetutorial -f src/main/k8s/funqy-service.yaml
 ----
 
-The next step is to deploy Knative Event triggers for each of the event types.  As noted in the code section, each
+The next step is to deploy Knative Event triggers for each of the event types. As noted in the code section, each
 Funqy function is mapped to a specific Cloud Event type.  You must create Knative Event triggers that map a Cloud Event
 and route it to a specific Kubernetes service.  We have 4 different triggers.
 
@@ -307,7 +307,7 @@ spec:
 The `spec:filter:attributes:type` maps a Cloud Event type to the Kubernetes service defined in `spec:subscriber:ref`.
 When a Cloud Event is pushed to the Broker, it will trigger the spin up of the service mapped to that event.
 
-There's a trigger yaml file for each of our 4 Funqy functions.  Deploy them all:
+There's a trigger YAML file for each of our 4 Funqy functions.  Deploy them all:
 
 [source,bash]
 ----
@@ -347,7 +347,7 @@ Following command will create a simple OS pod so we can curl into our functions.
 kubectl -n knativetutorial apply -f src/main/k8s/curler.yaml
 ----
 
-You might need to wait a couple of seconds till the curler pod comes up. Run the following to get bash access to the curler pod.
+You might need to wait a couple of seconds until the curler pod comes up. Run the following to get bash access to the curler pod:
 
 [source,bash]
 ----

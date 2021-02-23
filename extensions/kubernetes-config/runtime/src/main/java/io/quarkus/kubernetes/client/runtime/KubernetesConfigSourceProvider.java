@@ -72,7 +72,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                     logMissingOrFail(configMapName, namespace, "ConfigMap", config.failOnMissingConfig);
                 } else {
                     result.addAll(
-                            configMapConfigSourceUtil.toConfigSources(configMap.getMetadata().getName(), configMap.getData(),
+                            configMapConfigSourceUtil.toConfigSources(configMap.getMetadata(), configMap.getData(),
                                     i));
                     if (log.isDebugEnabled()) {
                         log.debug("Done reading ConfigMap " + configMap.getMetadata().getName());
@@ -107,7 +107,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                 if (secret == null) {
                     logMissingOrFail(secretName, namespace, "Secret", config.failOnMissingConfig);
                 } else {
-                    result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata().getName(), secret.getData(), i));
+                    result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata(), secret.getData(), i));
                     if (log.isDebugEnabled()) {
                         log.debug("Done reading Secret " + secret.getMetadata().getName());
                     }

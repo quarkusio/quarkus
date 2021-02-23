@@ -11,12 +11,19 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 //:upstream:
 :doctype: book
 
+ifdef::downstream[]
+ifndef::context[]
+[id="proc-using-the-quarkus-extension-for-spring-di-api"]
+endif::[]
+ifdef::context[]
 [id="proc-using-the-quarkus-extension-for-spring-di-api_{context}"]
+endif::[]
 = Using the Quarkus Extension for Spring DI API
 
+ifdef::downstream[]
 ifdef::context[:parent-context: {context}]
-
 :context: using-the-quarkus-extension-for-spring-di
+endif::[]
 
 include::attributes.adoc[]
 
@@ -25,13 +32,16 @@ ifdef::downstream[]
 //include::common/making-open-source-more-inclusive.adoc[]
 endif::[]
 
+ifdef::downstream[]
 [role="_abstract"]
+endif::[]
 As a developer, you can add the `quarkus-spring-di` extension to your project and inject dependencies in your {BrandName} application using Dependency Injection annotations provided by the Spring Framework as an alternative to using MicroProfile CDI annotations.
 
 ifdef::upstream[]
 This guide is maintained in the main {BrandName} repository and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
+//upstream version of notes about GitHub links
 == Solution
 
 Follow the instructions in the next sections and create the application step by step.
@@ -42,8 +52,18 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 The solution is located in the `spring-di-quickstart` {quickstarts-tree-url}/spring-di-quickstart[directory].
 endif::[]
 
+//downstream version of notes about GitHub links with downstream-only attributes
+ifdef::downstream[]
+[NOTE]
+====
+You can follow this guide and create the example that uses the {PRODUCTNAME} extension for the Spring Web API, or you can download and view the completed example.
+To view the completed {ProductName} Spring Web example, download it as an link:{URL_GITHUB_QUICKSTARTS_REPO_ARCHIVE}[archive] or clone the {PRODUCTNAME} examples Git link:{URL_GITHUB_QUICKSTARTS_REPO_BASE}.git[repository].
+You can find the Spring Web example in the link:{URL_GITHUB_QUICKSTARTS_DIRECTORY_BASE}spring-di-quickstart[`spring-di-quickstart` directory].
+====
+ifdef::[]
+
 // upstream tech preview status and notes
-ifndef::downstream[]
+ifdef::upstream[]
 include::./status-include.adoc[]
 :extension-status: preview
 endif::[]
@@ -53,37 +73,45 @@ ifdef::downstream[]
 NOTE: The `quarkus-spring-di` extension is available as link:https://access.redhat.com/support/offerings/techpreview[Technology Preview] with {ProductLongName}.
 endif::[]
 
+ifdef::downstream[]
 [IMPORTANT]
 ====
-The Spring compatibility layer that {BrandName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor`) when you start your application.
+The Spring compatibility layer that {BrandName} provides does not start a Spring Application Context or execute any infrastructure classes that are provided by Spring (for example, `org.springframework.beans.factory.config.BeanPostProcessor` or `org.springframework.context.ApplicationContext`) when you start your application.
 {BrandName} can only read metadata from Spring classes and annotations and parse user code method return types and parameter types that are specific to Spring.
 However, when you add arbitrary libraries that are part of Spring Framework to your {BrandName} application, such libraries will not function properly, because {BrandName} is not able to use them.
+
+{BrandName} uses a Dependency Injection mechanism called ArC that is based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for the Java 2.0 specification]. If you want to learn more about it we recommend you to read the https://quarkus.io/guides/cdi[{BrandName} introduction to CDI] and the https://quarkus.io/guides/cdi-reference#arc-configuration-reference[CDI reference guide].
+{BrandName} does not support test features provided by Spring Boot.
+To learn more about testing your {BrandName} code, see the https://quarkus.io/guides/getting-started-testing[{BrandName} testing guide].
 ====
+endif::[]
 
 .Prerequisites
 
-// comment out the following prerequisite in the alternative 1 layout of the document.
 * Have a {BrandName} Maven project.
 * Have OpenJDK {JDKVersion} installed.
 * Have Maven {maven-version} installed.
 
-// Alternative 1: generate project form scratch
-////
-[id="creating-the-spring-di-example-maven-project_{context}"]
+ifdef::downstream[]
+[id="proc-creating-the-spring-di-example-maven-project_{context}"]
+endif::[]
 == Creating the Spring DI example Maven project
 
+ifdef::downstream[]
 [role="_abstract"]
-You can create new a new Maven project for the Spring DI example application on the command line.
+endif::[]
+You can create a new Maven project for the Spring Dependency Injection example application on the command line.
+You can also add the `quarkus-spring-di` to an existing project using the {BrandName} Maven plugin
 
 .Procedure
 
-. Execute the following commands to:
+* Enter the following commands to:
 
-* generate the directory structure of the project.
-* create the main class file of the example application.
-* create the endpoint that exposes the service that your application provides.
-* add the `quarkus-spring-di` extension to the `pom.xml` file of your project.
-* navigate to the top-level directory of your project .
+** generate the directory structure of the project.
+** create the main class file of the example application.
+** create the endpoint that exposes the service that your application provides.
+** add the `quarkus-spring-di` extension to the `pom.xml` file of your project.
+** navigate to the top-level directory of your project .
 +
 [source,bash,subs=attributes+]
 ----
@@ -95,34 +123,25 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy,spring-di"
 cd spring-di-quickstart
 ----
-////
 
-//Alternative 2: you have a project and need to add the required extension.
-[id="setting-up-your-spring-di-maven-project_{context}"]
-== Setting up your Spring DI example Maven project
-
-[role="_abstract"]
-Add the required {BrandName} extension as a dependency of your Maven project.
-
-.Procedure
-
+* If you already have a {BrandName} project you can add the `quarkus-spring-di` extension to it using the command line:
+--
 . Navigate to the the top-level directory of your {BrandName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
-cd <name-of-your-project-directory>
+cd <project_directory>
 ----
 
-. Execute the following command to add the `quarkus-spring-di` extension to the `pom.xml` file of your project:
+. Enter the following command to add the `quarkus-spring-di` extension to the `pom.xml` file of your project:
 +
 [source,bash]
 ----
 ./mvnw quarkus:add-extension -Dextensions="spring-di"
 ----
-ifndef::downstream[]
 +
-This adds the following entry to your `pom.xml` file:
-
+This adds the following dependency to your `pom.xml` file:
++
 [source,xml,options="nowrap",subs="+quotes,attributes+"s]
 ----
 <dependency>
@@ -130,21 +149,24 @@ This adds the following entry to your `pom.xml` file:
     <artifactId>quarkus-spring-di</artifactId>
 </dependency>
 ----
+--
+
+ifdef::downstream[]
+[id="proc-adding-beans-to-your-project-using-spring-annotations"]
 endif::[]
+== Adding beans to your project using Spring annotations
 
-
-[id="additng-beans-to-your-applications-using-spring-annotations"]
-== Adding beans to your application using Spring annotations
-
+ifdef::downstream[]
 [role="_abstract"]
-You can add the required beans to your {BrandName} application using annotations provided by Spring.
+endif::[]
+You can add the required beans to your {BrandName} application using Spring annotations.
 
 .Procedure
 . Navigate to the the top-level directory of your {BrandName} Maven project:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
-cd <name-of-your-project-directory>
+cd <project_directory>
 ----
 
 . Create the `src/main/java/org/acme/spring/di/StringFunction.java` file that contains a `StringFunction` interface.
@@ -162,12 +184,13 @@ public interface StringFunction extends Function<String, String> {
 ----
 +
 The `GreeterBean` and `NoOpSingleStringFunction` beans that are part of the Spring DI example application also implement the `StringFunction` interface.
-//Other beans in this example implement this interface, and the interface is injected into another bean later on.
+Other beans in this example implement this interface, and the interface is injected into another bean later on.
 
 . Create the `src/main/java/org/acme/spring/di/AppConfiguration.java` file.
-Inside the file that you created, create an `AppConfiguration` class and annotate it with the `@Configuration` annotation provided by Spring Java Config.
+Inside the file, create an `AppConfiguration` class and annotate it with the `@Configuration` annotation provided by Spring Java Config.
 Inside the `AppConfiguration` class, create a `StringFunction` bean that changes a string that you pass to it to uppercase:
 +
+.src/main/java/org/acme/spring/di/AppConfiguration.java
 [source,java,options="nowrap",subs="+quotes,attributes+"]
 ----
 package org.acme.spring.di;
@@ -188,13 +211,14 @@ As a Spring developer, you might be tempted to add the `@ComponentScan` annotati
 In the same vein, Quarkus does not support the Spring `@Import` annotation.
 =======
 +
-As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs https://quarkus.io/guides/cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
-In the same vein, Quarkus does not support the Spring `@Import` annotation.
->>>>>>> 3f6ff02c85 (QUARKUS-184: change product name to brand name in remaining instances after rebase)
+As a Spring developer, you might be tempted to add the `@ComponentScan` annotation to define specific packages to scan for additional beans.
+Note, that `@ComponentScan` is unnecessary because {BrandName} performs link:cdi#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries.
+Moreover, note, that the bean discovery in {BrandName} happens at build time.
+Similarly, {BrandName} does not support the Spring `@Import` annotation.
 
 . Create a `NoOpSingleStringFunction` bean inside the the `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file.
 The `NoOpSingleStringFunction` implements the `StringFunction` interface using the `@Component` stereotype annotation provided by Spring.
-This bean returns the string without processing it:
+This bean returns the string as is:
 +
 .src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java
 [source,java,options="nowrap",subs="+quotes,attributes+"]
@@ -212,9 +236,9 @@ public class NoOpSingleStringFunction implements StringFunction {
     }
 }
 ----
-+
-//. Quarkus also provides support for injecting configuration values using Spring's `@Value` annotation.
-. In {BrandName} applications, you can also use the `@Value` annotations to inject values of configuration properties into beans:
+
+
+. {BrandName} also supports injecting configuration values using the `@Value` annotation from Spring:
 .. Set the value of the `greeting.message` property to `hello` in the `src/main/resources/application.properties` file:
 +
 [source,properties,options="nowrap",subs="+quotes,attributes+"]
@@ -222,11 +246,12 @@ public class NoOpSingleStringFunction implements StringFunction {
 # Your configuration properties
 greeting.message = hello
 ----
-+
+
 .. Create the `src/main/java/org/acme/spring/di/MessageProducer.java` file.
-Inside the file crate a `MessageProducer` bean.
+Inside the file, crate a `MessageProducer` bean.
 Use the `@Value` annotation to set the value of the `greeting.message` property as the message String inside the `MessageProducer` bean:
 +
+.src/main/java/org/acme/spring/di/MessageProducer.java
 [source,java]
 ----
 package org.acme.spring.di;
@@ -246,8 +271,11 @@ public class MessageProducer {
 }
 ----
 +
-//The final bean we will create ties together all the previous beans.
-. Create the `src/main/java/org/acme/spring/di/GreeterBean.java` file that contains the code shown in the example below.
+ifdef::upstream[]
+The final bean we will create ties together all the previous beans.
+endif::[]
+
+. Create the `src/main/java/org/acme/spring/di/GreeterBean.java` file that contains the code in the following example.
 The `GreeterBean` bean relies on both constructor-based and field-based injection.
 You do not need to use the `@Autowired` annotation on the field-based constructor, because the bean only contains a single field-based constructor.
 The `@Value` annotation on the `suffix` String contains a default value, which is used when you do not set a value for the `greeting.suffix` property in the `application.properties` file.
@@ -289,12 +317,14 @@ public class GreeterBean {
 }
 ----
 
+ifdef::downstream[]
 [id="updating-the-jax-rs-resource_{context}"]
+endif::[]
 == Updating the JAX-RS resource
 // Updating GreeterResource.java
 
 [role="_abstract"]
-When you create the class files of your example applications, you must update the `GreeterResource.java` file to reflect the changes that you made to the `/greeting` endpoint.
+When you create the class files of your example applications, you must update the `GreeterResource` class file to reflect the changes that you made to the `/greeting` endpoint.
 
 .Procedure
 
@@ -326,11 +356,15 @@ public class GreeterResource {
 }
 ----
 
-[id='updating-the-integration-test-of-your-application_{context}']
-== Updating the integration test of your application
+ifdef::downstream[]
+[id='updating-the-unit-test-of-your-application_{context}']
+endif::[]
+== Updating the unit test of your application
 
+ifdef::downstream[]
 [role="_abstract"]
-You must update the class file that contains the integration test for your application to reflect the changes that you made to the `/greeting` endpoint.
+endif::[]
+You must update the class file that contains the unit test for your application to reflect the changes that you made to the `/greeting` endpoint.
 
 .Procedure
 
@@ -360,11 +394,15 @@ public class GreetingResourceTest {
 }
 ----
 
-[id="packaging-and-starting-your-spring-di-example-application_{context}"]
-== Packaging and starting your Spring DI example application
+ifdef::downstream[]
+[id="Compiling-and-starting-your-spring-di-example-application_{context}"]
+endif::[]
+== Compiling and starting your Spring DI example
 
+ifdef::downstream[]
 [role="_abstract"]
-Package and start your Spring DI example application using Maven.
+endif::[]
+You can compile and start your Spring DI example project using the {BrandName} Maven plugin in development mode.
 
 .Procedure
 
@@ -372,10 +410,10 @@ Package and start your Spring DI example application using Maven.
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
-cd <name-of-your-project-directory>
+cd <project_directory>
 ----
 
-. Execute the following command to compile and start your application in development mode:
+. Enter the following command to compile and start your application in development mode:
 +
 [source,bash,options="nowrap",subs="+quotes,attributes+"]
 ----
@@ -387,34 +425,45 @@ You receive `HELLO WORLD!` as the response.
 
 . Press _CTRL + C_ to stop the application.
 
-
-ifndef::downstream[]
+ifdef::upstream[]
 == Compile and start the application as a native executable
 
 You can create a native image by following the guide about link:building-native-image[Building a Native Executable].
 endif::[]
 
+<<<<<<< HEAD
 ////
 ifndef::downstream[]
 //TODO: This note is replaced by a rewritten version that is based on style mandated by the IBM style guide.
 //Only the -product-appropriate wording of the note should be used in both the community and product versions of this document.
 //I am retaining the original wording for purposes of verification and factual corrections.
 
+=======
+
+ifdef::upstream[]
+>>>>>>> 8e06509e82 (QUARKUS-184: Replace Quarkus with attribute except in section titles, conditionalize downstream-only markup features)
 == Important technical note
 
 Spring support in {BrandName} does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.
+<<<<<<< HEAD
 
 Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the link:cdi[Quarkus introduction to CDI] and the link:cdi-reference#arc-configuration-reference[CDI reference guide]
 The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the link:getting-started-testing[Quarkus testing guide].
 //endif::[]
 ////
+=======
+Regarding the dependency injection in particular, {BrandName} uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the https://quarkus.io/guides/cdi[{BrandName} introduction to CDI] and the https://quarkus.io/guides/cdi-reference#arc-configuration-reference[CDI reference guide]
+The various Spring Boot test features are not supported by {BrandName}. For testing purposes, please, check the https://quarkus.io/guides/getting-started-testing[{BrandName} testing guide].
+endif::[]
+>>>>>>> 8e06509e82 (QUARKUS-184: Replace Quarkus with attribute except in section titles, conditionalize downstream-only markup features)
 
-//BEGIN: REFERENCE module
+ifdef::downstream[]
 [id="overview-of-annotation-equivalents-in-spring-di-and-cdi"]
-== Overview of annotation equivalents in Spring DI and CDI
+endif::[]
+== Overview of annotation equivalents in Spring DI and MicroProfile CDI
 
 [role="_abstract"]
 The following table lists Spring DI annotations and their equivalent CDI annotations or MicroProfile annotations, respectively.
@@ -461,21 +510,14 @@ The following table lists Spring DI annotations and their equivalent CDI annotat
 
 |`@ComponentScan`
 |
-|Does not have a one-to-one mapping to a CDI annotation. It is not used in Quarkus because Quarkus does all classpath scanning at build time.
+|Does not have a one-to-one mapping to a CDI annotation. It is not used in {BrandName} because {BrandName} does all classpath scanning at build time.
 
 |`@Import`
 |
 |Does not have a one-to-one mapping to a CDI annotation.
 |===
-//END: REFERENCE module
 
-ifdef::downstream[]
-[role="_additional-resources"]
-.Additional resources
-* link:building-native-image[Compiling and starting your {BrandName} application as a native executable.]
-endif::[]
-
-ifndef::downstream[]
+ifdef::upstream[]
 == More Spring guides
 
 {BrandName} provides more Spring compatibility features.
@@ -489,6 +531,12 @@ See the following guides for details:
 * link:spring-boot-properties[{BrandName} - Extension for Spring Boot properties]
 * link:spring-cache[{BrandName} - Extension for Spring Cache]
 * link:spring-scheduled[{BrandName} - Extension for Spring Scheduled]
+endif::[]
+
+ifdef::downstream[]
+[role="_additional-resources"]
+.Additional resources
+* link:{NATIVE_EXECUTABLE_QUARKUS}[Compiling and starting your {BrandName} application as a native executable.]
 endif::[]
 
 ifdef::parent-context[:context: {parent-context}]

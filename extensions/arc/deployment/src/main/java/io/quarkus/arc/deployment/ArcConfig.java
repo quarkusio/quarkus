@@ -171,6 +171,12 @@ public class ArcConfig {
     @ConfigItem(defaultValue = "true")
     public boolean detectWrongAnnotations;
 
+    /**
+     * Dev mode configuration.
+     */
+    @ConfigItem
+    public ArcDevModeConfig devMode;
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

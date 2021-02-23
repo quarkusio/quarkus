@@ -1249,11 +1249,8 @@ The method name is used to match the property name by default.
 However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
 A special constant - `TemplateExtension#ANY` - may be used to specify that the extension method matches any name.
 It is also possible to match the name against a regular expression specified in `TemplateExtension#matchRegex()`.
-In both cases, a string method parameter is used to pass the property name.
+In both cases, an additional string method parameter must be used to pass the property name.
 If both `matchName()` and `matchRegex()` are set the regular expression is used for matching.
-
-If a namespace is specified the method must declare at least one parameter and the first parameter must be a string. 
-If no namespace is specified the method must declare at least two parameters and the second parameter must be a string. 
 
 .Extension Method Example
 [source,java]

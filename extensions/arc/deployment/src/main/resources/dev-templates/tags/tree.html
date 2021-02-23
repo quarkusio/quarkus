@@ -1,0 +1,15 @@
+<li>
+{#if !root}
+{#if next}├─{#else}└─{/if}
+{/if}
+{#if it.children}
+<span class="caret" title="{it.method}"><code>{it.methodInfo}</code></span> {#duration it /}{#kind it /}{#if it.message != null} <span class="badge badge-danger" title="Exception message: {it.message}">Error</span>{/if}
+<ul class="nested">
+{#each it.children}
+{#tree it root=false next=hasNext /}
+{/each}
+</ul>
+{#else}
+<span title="{it.method}"><code>{it.methodInfo}</code></span> {#duration it /}{#kind it /}{#if it.message != null} <span class="badge badge-danger" title="Exception message: {it.message}">Error</span>{/if}
+{/if}
+</li>

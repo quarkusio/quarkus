@@ -1,6 +1,5 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
-import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -17,8 +16,12 @@ import org.jboss.resteasy.links.LinkResource;
 
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.AnnotationCreator;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.TryBlock;
+import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamValidator;
@@ -50,8 +53,12 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
      */
     protected abstract String getResourceMethodName();
 
-    protected void addTransactionalAnnotation(AnnotatedElement element) {
-        element.addAnnotation(Transactional.class);
+    protected TryBlock implementTryBlock(BytecodeCreator bytecodeCreator, String message) {
+        TryBlock tryBlock = bytecodeCreator.tryBlock();
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+        catchBlock.throwException(RestDataPanacheException.class, message, catchBlock.getCaughtException());
+        catchBlock.close();
+        return tryBlock;
     }
 
     protected void addGetAnnotation(AnnotatedElement element) {

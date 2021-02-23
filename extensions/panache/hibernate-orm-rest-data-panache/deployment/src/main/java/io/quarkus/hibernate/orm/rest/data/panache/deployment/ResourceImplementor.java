@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;
@@ -89,6 +90,7 @@ class ResourceImplementor {
 
     private void implementAdd(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("add", Object.class, Object.class);
+        methodCreator.addAnnotation(Transactional.class);
         ResultHandle entity = methodCreator.getMethodParam(0);
         methodCreator.returnValue(dataAccessImplementor.persist(methodCreator, entity));
         methodCreator.close();
@@ -97,6 +99,7 @@ class ResourceImplementor {
     private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
             String entityType) {
         MethodCreator methodCreator = classCreator.getMethodCreator("update", Object.class, Object.class, Object.class);
+        methodCreator.addAnnotation(Transactional.class);
         ResultHandle id = methodCreator.getMethodParam(0);
         ResultHandle entity = methodCreator.getMethodParam(1);
         // Set entity ID before executing an update to make sure that a requested object ID matches a given entity ID.
@@ -107,6 +110,7 @@ class ResourceImplementor {
 
     private void implementDelete(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("delete", boolean.class, Object.class);
+        methodCreator.addAnnotation(Transactional.class);
         ResultHandle id = methodCreator.getMethodParam(0);
         methodCreator.returnValue(dataAccessImplementor.deleteById(methodCreator, id));
         methodCreator.close();

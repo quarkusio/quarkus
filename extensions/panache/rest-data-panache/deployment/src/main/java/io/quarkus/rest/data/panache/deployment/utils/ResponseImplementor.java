@@ -55,6 +55,10 @@ public final class ResponseImplementor {
         return status(creator, Response.Status.NO_CONTENT.getStatusCode());
     }
 
+    public static ResultHandle notFound(BytecodeCreator creator) {
+        return status(creator, Response.Status.NOT_FOUND.getStatusCode());
+    }
+
     public static ResultHandle notFoundException(BytecodeCreator creator) {
         return creator.newInstance(MethodDescriptor.ofConstructor(WebApplicationException.class, int.class),
                 creator.load(Response.Status.NOT_FOUND.getStatusCode()));

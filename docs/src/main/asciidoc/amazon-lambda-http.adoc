@@ -222,6 +222,55 @@ HTTP response messages and the `sam.yaml` file must configure the API Gateway to
         - "*/*"
 ----
 
+== Injectable AWS Context Variables
+
+If you are using Resteasy and JAX-RS, you can inject various AWS Context variables into your JAX-RS resource classes
+using the JAX-RS `@Context` annotation.
+
+For the AWS HTTP API you can inject the AWS variables `com.amazonaws.services.lambda.runtime.Context` and
+`com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent`.  Here is an example:
+
+[source, java]
+----
+import javax.ws.rs.core.Context;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+
+
+@Path("/myresource")
+public class MyResource {
+    @GET
+    public String ctx(@Context com.amazonaws.services.lambda.runtime.Context ctx) { }
+
+    @GET
+    public String event(@Context APIGatewayV2HTTPEvent event) { }
+
+    @GET
+    public String requestContext(@Context APIGatewayV2HTTPEvent.RequestContext req) { }
+
+
+}
+----
+
+For the AWS REST API you can inject the AWS variables `com.amazonaws.services.lambda.runtime.Context` and
+`io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext`.  Here is an example:
+
+[source, java]
+----
+import javax.ws.rs.core.Context;
+import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
+
+
+@Path("/myresource")
+public class MyResource {
+    @GET
+    public String ctx(@Context com.amazonaws.services.lambda.runtime.Context ctx) { }
+
+    @GET
+    public String req(@Context AwsProxyRequestContext req) { }
+
+}
+----
+
 == Tracing with AWS XRay and GraalVM
 
 If you are building native images, and want to use https://aws.amazon.com/xray[AWS X-Ray Tracing] with your lambda

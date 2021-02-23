@@ -64,8 +64,8 @@ class KubernetesServiceBindingConfigSourceProviderTest {
         assertThat(configSources).filteredOn(c -> c.getName().equals("service-binding-test-name-raw")).singleElement()
                 .satisfies(c -> {
                     assertThat(c.getProperties()).containsOnly(
-                            entry("quarkus.test-name.test-secret-key", "test-secret-value-2"),
-                            entry("quarkus.test-name.test-other-secret-key", "test-other-secret-value-2"));
+                            entry("quarkus.service-binding.test-name.test-secret-key", "test-secret-value-2"),
+                            entry("quarkus.service-binding.test-name.test-other-secret-key", "test-other-secret-value-2"));
                 });
     }
 }

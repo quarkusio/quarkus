@@ -163,7 +163,7 @@
 
         <!-- gRPC tests -->
         <module>grpc-tls</module>
-        <module>grpc-plain-text</module>
+        <module>grpc-plain-text-gzip</module>
         <module>grpc-plain-text-mutiny</module>
         <module>grpc-mutual-auth</module>
         <module>grpc-streaming</module>

@@ -85,4 +85,10 @@ public class GrpcServerConfiguration {
      */
     @ConfigItem
     public GrpcServerNettyConfig netty;
+
+    /**
+     * gRPC compression, e.g. "gzip"
+     */
+    @ConfigItem
+    public Optional<String> compression;
 }

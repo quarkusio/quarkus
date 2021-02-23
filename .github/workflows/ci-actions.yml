@@ -547,6 +547,11 @@ jobs:
           java-version: 11
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
+      # We do this so we can get better analytics for the downloaded version of the build images
+      - name: Update Docker Client User Agent
+        shell: bash
+        run: |
+          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:

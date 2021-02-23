@@ -1,15 +1,25 @@
 <a href="{urlbase}/beans" class="badge badge-light">
   <i class="fa fa-egg fa-fw"></i>
-  Beans <span class="badge badge-light">{info:devBeanInfos.beans.size()}</span></a>
+  Beans <span class="badge badge-light">{info:devBeanInfos.beans.size}</span></a>
 <br>
 <a href="{urlbase}/observers" class="badge badge-light">
   <i class="fa fa-eye fa-fw"></i>
-  Observers <span class="badge badge-light">{info:arcContainer.observers.size()}</span></a>
+  Observers <span class="badge badge-light">{info:arcContainer.observers.size}</span></a>
 <br>
+{#if config:property('quarkus.arc.dev-mode.monitoring-enabled') is "true"}
+<a href="{urlbase}/events" class="badge badge-light">
+  <i class="far fa-eye"></i>
+  Fired Events</a>
+<br>
+<a href="{urlbase}/invocations" class="badge badge-light">
+  <i class="fas fa-project-diagram"></i>
+  Invocation Trees</a>
+<br>
+{/if}
 <a href="{urlbase}/removed-beans" class="badge badge-light">
   <i class="fa fa-trash-alt fa-fw"></i>
-  Removed Beans <span class="badge badge-light">{info:arcContainer.removedBeans.size()}</span></a>
+  Removed Beans <span class="badge badge-light">{info:arcContainer.removedBeans.size}</span></a>
 <br>
 <span class="badge badge-light">
   <i class="fa fa-traffic-light fa-fw"></i>
-  Interceptors <span class="badge badge-light">{info:arcContainer.interceptors.size()}</span></span>
+  Interceptors <span class="badge badge-light">{info:arcContainer.interceptors.size}</span></span>

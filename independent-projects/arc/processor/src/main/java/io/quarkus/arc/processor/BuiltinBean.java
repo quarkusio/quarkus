@@ -95,7 +95,7 @@ enum BuiltinBean {
                 ctx.constructor.getThis(),
                 beanProviderSupplier);
     }, ip -> {
-        return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && ip.hasDefaultedQualifier();
+        return isCdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && ip.hasDefaultedQualifier();
     }, DotNames.BEAN),
     INTERCEPTED_BEAN(ctx -> {
         if (!(ctx.targetInfo instanceof InterceptorInfo)) {
@@ -112,7 +112,7 @@ enum BuiltinBean {
                 ctx.constructor.getThis(),
                 interceptedBeanMetadataProviderSupplier);
     }, ip -> {
-        return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && !ip.hasDefaultedQualifier()
+        return isCdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && !ip.hasDefaultedQualifier()
                 && ip.getRequiredQualifiers().size() == 1
                 && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED);
     }, DotNames.BEAN),

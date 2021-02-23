@@ -60,6 +60,11 @@ public abstract class AbstractPostMethodTest {
                 .and().body("id", is(equalTo("test-complex")))
                 .and().body("name", is(equalTo("test collection")))
                 .and().body("items", is(empty()));
+        given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body("{\"id\": \"test-complex\", \"name\": \"test collection\"}")
+                .when().post("/collections")
+                .then().statusCode(409);
     }
 
     @Test
@@ -78,5 +83,10 @@ public abstract class AbstractPostMethodTest {
                 .and().body("_links.self.href", endsWith("/collections/test-complex-hal"))
                 .and().body("_links.update.href", endsWith("/collections/test-complex-hal"))
                 .and().body("_links.remove.href", endsWith("/collections/test-complex-hal"));
+        given().accept("application/hal+json")
+                .and().contentType("application/json")
+                .and().body("{\"id\": \"test-complex-hal\", \"name\": \"test collection\"}")
+                .when().post("/collections")
+                .then().statusCode(409);
     }
 }

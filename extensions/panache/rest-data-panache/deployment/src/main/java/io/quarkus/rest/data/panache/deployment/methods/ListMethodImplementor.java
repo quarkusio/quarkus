@@ -13,6 +13,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.RestDataResource;
@@ -54,12 +55,16 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
      *             &#64;QueryParam("sort") String sortQuery) {
      *         Page page = Page.of(pageIndex, pageSize);
      *         Sort sort = ...; // Build a sort instance by parsing a query param
-     *         List<Entity> entities = resource.getAll(page, sort);
-     *         // Get the page count, and build first, last, next, previous page instances
-     *         Response.ResponseBuilder responseBuilder = Response.status(200);
-     *         responseBuilder.entity(entities);
-     *         // Add headers with first, last, next and previous page URIs if they exist
-     *         return responseBuilder.build();
+     *         try {
+     *             List<Entity> entities = resource.getAll(page, sort);
+     *             // Get the page count, and build first, last, next, previous page instances
+     *             Response.ResponseBuilder responseBuilder = Response.status(200);
+     *             responseBuilder.entity(entities);
+     *             // Add headers with first, last, next and previous page URIs if they exist
+     *             return responseBuilder.build();
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
+     *         }
      *     }
      * }
      * </pre>
@@ -99,25 +104,28 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addContextAnnotation(methodCreator.getParameterAnnotations(3));
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
-
-        // Invoke resource methods
         ResultHandle sortQuery = methodCreator.getMethodParam(0);
         ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
         ResultHandle pageIndex = methodCreator.getMethodParam(1);
         ResultHandle pageSize = methodCreator.getMethodParam(2);
         ResultHandle page = paginationImplementor.getPage(methodCreator, pageIndex, pageSize);
-        ResultHandle pageCount = methodCreator.invokeVirtualMethod(
+        ResultHandle uriInfo = methodCreator.getMethodParam(3);
+
+        // Invoke resource methods
+        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to list the entities");
+        ResultHandle pageCount = tryBlock.invokeVirtualMethod(
                 ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
                         int.class, Page.class),
                 resource, page);
-        ResultHandle uriInfo = methodCreator.getMethodParam(3);
-        ResultHandle links = paginationImplementor.getLinks(methodCreator, uriInfo, page, pageCount);
-        ResultHandle entities = methodCreator.invokeVirtualMethod(
+        ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount);
+        ResultHandle entities = tryBlock.invokeVirtualMethod(
                 ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
                 resource, page, sort);
 
         // Return response
-        methodCreator.returnValue(ResponseImplementor.ok(methodCreator, entities, links));
+        tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities, links));
+
+        tryBlock.close();
         methodCreator.close();
     }
 
@@ -132,16 +140,20 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
 
-        // Invoke resource methods
         ResultHandle sortQuery = methodCreator.getMethodParam(0);
         ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
         ResultHandle resource = methodCreator.readInstanceField(resourceFieldDescriptor, methodCreator.getThis());
-        ResultHandle entities = methodCreator.invokeVirtualMethod(
+
+        // Invoke resource methods
+        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to list the entities");
+        ResultHandle entities = tryBlock.invokeVirtualMethod(
                 ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
-                resource, methodCreator.loadNull(), sort);
+                resource, tryBlock.loadNull(), sort);
 
         // Return response
-        methodCreator.returnValue(ResponseImplementor.ok(methodCreator, entities));
+        tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities));
+
+        tryBlock.close();
         methodCreator.close();
     }
 }

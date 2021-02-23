@@ -2,11 +2,14 @@ package io.quarkus.rest.data.panache.deployment.methods.hal;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import javax.ws.rs.core.Response;
+
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
@@ -28,12 +31,16 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
      *     &#64;GET
      *     &#64;Produces({"application/hal+json"})
      *     &#64;Path("{id}")
-     *     public HalEntityWrapper getHal(@PathParam("id") ID id) {
-     *         Entity entity = resource.get(id);
-     *         if (entity != null) {
-     *             return new HalEntityWrapper(entity);
-     *         } else {
-     *             throw new WebApplicationException(404);
+     *     public Response getHal(@PathParam("id") ID id) {
+     *         try {
+     *             Entity entity = resource.get(id);
+     *             if (entity != null) {
+     *                 return Response.ok(new HalEntityWrapper(entity)).build();
+     *             } else {
+     *                 return Response.status(404).build();
+     *             }
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
      *         }
      *     }
      * }
@@ -42,7 +49,7 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, HalEntityWrapper.class,
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class,
                 resourceMetadata.getIdType());
 
         // Add method annotations
@@ -51,17 +58,22 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
 
-        // Invoke resource methods
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle id = methodCreator.getMethodParam(0);
-        ResultHandle entity = methodCreator.invokeVirtualMethod(
+
+        // Invoke resource methods
+        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to get an entity");
+        ResultHandle entity = tryBlock.invokeVirtualMethod(
                 ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
                 resource, id);
-        BranchResult entityNotFound = methodCreator.ifNull(entity);
 
         // Wrap and return response
-        entityNotFound.trueBranch().throwException(ResponseImplementor.notFoundException(entityNotFound.trueBranch()));
-        entityNotFound.falseBranch().returnValue(wrapHalEntity(entityNotFound.falseBranch(), entity));
+        BranchResult wasNotFound = tryBlock.ifNull(entity);
+        wasNotFound.trueBranch().returnValue(ResponseImplementor.notFound(wasNotFound.trueBranch()));
+        wasNotFound.falseBranch().returnValue(
+                ResponseImplementor.ok(wasNotFound.falseBranch(), wrapHalEntity(wasNotFound.falseBranch(), entity)));
+
+        tryBlock.close();
         methodCreator.close();
     }
 

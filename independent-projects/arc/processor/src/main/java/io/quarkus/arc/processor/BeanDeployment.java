@@ -389,6 +389,10 @@ public class BeanDeployment {
         return Collections.unmodifiableList(interceptors);
     }
 
+    public Collection<StereotypeInfo> getStereotypes() {
+        return Collections.unmodifiableCollection(stereotypes.values());
+    }
+
     /**
      * This index was used to discover components (beans, interceptors, qualifiers, etc.) and during type-safe resolution.
      * 
@@ -709,11 +713,10 @@ public class BeanDeployment {
         Map<MethodInfo, Set<ClassInfo>> syncObserverMethods = new HashMap<>();
         Map<MethodInfo, Set<ClassInfo>> asyncObserverMethods = new HashMap<>();
         // Stereotypes excluding additional BeanDefiningAnnotations
-        List<DotName> realStereotypes = this.stereotypes.entrySet().stream()
-                .filter(e -> !e.getValue().isAdditionalBeanDefiningAnnotation()
-                        && !e.getValue().isAdditionalStereotypeBuildItem())
-                .map(Entry::getKey)
-                .collect(Collectors.toList());
+        Set<DotName> realStereotypes = this.stereotypes.values().stream()
+                .filter(StereotypeInfo::isGenuine)
+                .map(StereotypeInfo::getName)
+                .collect(Collectors.toSet());
 
         for (ClassInfo beanClass : beanArchiveIndex.getKnownClasses()) {
 

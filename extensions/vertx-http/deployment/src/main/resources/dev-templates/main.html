@@ -32,25 +32,24 @@
       <img src="{frameworkRootPath}/dev/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
       <span id="navbar_title" class="align-middle">Dev UI</span>
     </a>
+    {#if currentExtensionName}
+    <span id="navbar_subtitle" class="navbar-nav">
+      <span class="navbar-item">
+      {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
+        <i class="fas fa-chevron-right fa-sm"></i> {#insert title/}
+      {#else}
+        <i class="fas fa-chevron-right fa-sm"></i> {currentExtensionName} <i class="fas fa-chevron-right"></i> {#insert title/}
+      {/if}
+      </span>
+    </span>   
+    {/}  
     <span class="navbar-text">
       {#if applicationName and applicationVersion}{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion}){/if}
     </span>
   </nav>
 
   <div class="container{#if fluid}-fluid{/if} main-container">
-    {#if currentExtensionName}
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
-        <li class="breadcrumb-item" aria-current="page">{#insert title/}</li>
-        {#else}
-        <li class="breadcrumb-item">{currentExtensionName}</li>
-        <li class="breadcrumb-item" aria-current="page">{#insert title/}</li>
-        {/if}
-      </ol>
-    </nav>
-    {/}
-
+    
    {#if flash['message']}
      <div class="alert alert-{flash['message']['class']} show fade" role="alert" data-timer="{flash['displayTime']}">
       {flash['message']['text']}

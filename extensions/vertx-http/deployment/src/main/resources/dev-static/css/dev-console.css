@@ -18,6 +18,22 @@
 
 .navbar-text {
     font-size: 0.9em;
+    position: absolute;
+    right: 5px;
+    bottom: 9px;
+}
+
+.navbar {
+    justify-content: unset;
+}
+
+#navbar_title:hover {
+    color: #4695eb !important;
+}
+
+#navbar_subtitle {
+    padding-top: 3px;
+    color: #4695eb;
 }
 
 .breadcrumb {

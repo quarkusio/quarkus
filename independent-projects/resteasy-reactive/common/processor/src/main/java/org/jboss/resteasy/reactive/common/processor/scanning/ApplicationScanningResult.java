@@ -9,16 +9,19 @@ public final class ApplicationScanningResult {
 
     final Set<String> allowedClasses;
     final Set<String> singletonClasses;
+    final Set<String> excludedClasses;
     final Set<String> globalNameBindings;
     final boolean filterClasses;
     final Application application;
     final ClassInfo selectedAppClass;
     final boolean blocking;
 
-    public ApplicationScanningResult(Set<String> allowedClasses, Set<String> singletonClasses, Set<String> globalNameBindings,
-            boolean filterClasses, Application application, ClassInfo selectedAppClass, boolean blocking) {
+    public ApplicationScanningResult(Set<String> allowedClasses, Set<String> singletonClasses, Set<String> excludedClasses,
+            Set<String> globalNameBindings, boolean filterClasses, Application application,
+            ClassInfo selectedAppClass, boolean blocking) {
         this.allowedClasses = allowedClasses;
         this.singletonClasses = singletonClasses;
+        this.excludedClasses = excludedClasses;
         this.globalNameBindings = globalNameBindings;
         this.filterClasses = filterClasses;
         this.application = application;
@@ -29,6 +32,11 @@ public final class ApplicationScanningResult {
     public KeepProviderResult keepProvider(ClassInfo providerClass) {
         if (filterClasses) {
             // we don't care about provider annotations, they're manually registered (but for the server only)
+            if (allowedClasses.isEmpty()) {
+                // we only have only classes to exclude
+                return excludedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.DISCARD
+                        : KeepProviderResult.SERVER_ONLY;
+            }
             return allowedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.SERVER_ONLY
                     : KeepProviderResult.DISCARD;
         }
@@ -36,8 +44,23 @@ public final class ApplicationScanningResult {
                 : KeepProviderResult.DISCARD;
     }
 
+    public boolean keepClass(String className) {
+        if (filterClasses) {
+            if (allowedClasses.isEmpty()) {
+                // we only have only classes to exclude
+                return !excludedClasses.contains(className);
+            }
+            return allowedClasses.contains(className);
+        }
+        return true;
+    }
+
     public Set<String> getAllowedClasses() {
         return allowedClasses;
+    }
+
+    public Set<String> getExcludedClasses() {
+        return excludedClasses;
     }
 
     public Set<String> getSingletonClasses() {

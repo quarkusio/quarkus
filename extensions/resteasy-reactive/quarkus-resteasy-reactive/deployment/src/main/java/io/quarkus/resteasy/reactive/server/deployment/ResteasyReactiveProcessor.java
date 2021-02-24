@@ -271,9 +271,7 @@ public class ResteasyReactiveProcessor {
         Map<DotName, String> pathInterfaces = result.getPathInterfaces();
 
         ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
-        Set<String> allowedClasses = appResult.getAllowedClasses();
         Set<String> singletonClasses = appResult.getSingletonClasses();
-        boolean filterClasses = appResult.isFilterClasses();
         Application application = appResult.getApplication();
 
         Map<String, String> existingConverters = new HashMap<>();
@@ -382,7 +380,7 @@ public class ResteasyReactiveProcessor {
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
             for (ClassInfo i : scannedResources.values()) {
-                if (filterClasses && !allowedClasses.contains(i.name().toString())) {
+                if (!appResult.keepClass(i.name().toString())) {
                     continue;
                 }
                 ResourceClass endpoints = serverEndpointIndexer.createEndpoints(i);

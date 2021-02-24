@@ -10,6 +10,10 @@
     padding-top: 1em;
 }
 
+.navbar-brand {
+    margin-right: 0.9rem;
+}
+
 .navbar-brand img {
     border-right: 1px solid darkgrey;
     padding-right: 10px;
@@ -27,13 +31,18 @@
     justify-content: unset;
 }
 
-#navbar_title:hover {
+#navbar-title:hover {
     color: #4695eb !important;
 }
 
-#navbar_subtitle {
-    padding-top: 3px;
+#navbar-subtitle {
+    padding-top: 6px;
     color: #4695eb;
+}
+
+.breadcrumb-separator {
+    margin-right: 2px;
+    margin-left: 4px;
 }
 
 .breadcrumb {

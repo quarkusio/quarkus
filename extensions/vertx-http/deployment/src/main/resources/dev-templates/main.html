@@ -19,7 +19,7 @@
   
   <title>
     {#if currentExtensionName && currentExtensionName != 'Eclipse Vert.x - HTTP'}
-      {currentExtensionName} /
+      {currentExtensionName} ›
     {/if}
     {#insert title/}
     {#if applicationName and applicationVersion} | {applicationName} {applicationVersion}{/if}
@@ -30,15 +30,15 @@
   <nav class="navbar sticky-top navbar-dark bg-dark">
     <a class="navbar-brand" href="{frameworkRootPath}/dev/">
       <img src="{frameworkRootPath}/dev/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
-      <span id="navbar_title" class="align-middle">Dev UI</span>
+      <span id="navbar-title" class="align-middle">Dev UI</span>
     </a>
     {#if currentExtensionName}
-    <span id="navbar_subtitle" class="navbar-nav">
+    <span id="navbar-subtitle" class="navbar-nav">
       <span class="navbar-item">
       {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
-        <i class="fas fa-chevron-right fa-sm"></i> {#insert title/}
+        <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
       {#else}
-        <i class="fas fa-chevron-right fa-sm"></i> {currentExtensionName} <i class="fas fa-chevron-right"></i> {#insert title/}
+        <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName} <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
       {/if}
       </span>
     </span>   

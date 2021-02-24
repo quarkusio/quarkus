@@ -106,11 +106,13 @@ ifdef::downstream[]
 [role="_abstract"]
 endif::[]
 You can create a new Maven project for the Spring Dependency Injection example application on the command line.
-You can also add the `quarkus-spring-di` to an existing project using the {BrandName} Maven plugin
+If you already have a {BrandName} Maven project, you add the `quarkus-spring-di` extension to it using the {BrandName} Maven plugin.
+This section describes steps for both alternatives.
 
 .Procedure
 
-* Enter the following commands to:
+* To create a new Maven project for your Spring DI example, you can use the {BrandName} Maven Plugin.
+Enter the following commands to:
 
 ** generate the directory structure of the project.
 ** create the main class file of the example application.
@@ -129,7 +131,8 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd spring-di-quickstart
 ----
 
-* If you already have a {BrandName} project you can add the `quarkus-spring-di` extension to it using the command line:
+* To add the `quarkus-spring-di` extension to an existing {BrandName} Maven Project:
+// Open block markup required for downstream doc build. Do not remove.
 --
 . Navigate to the the top-level directory of your {BrandName} Maven project:
 +
@@ -154,6 +157,7 @@ This adds the following dependency to your `pom.xml` file:
     <artifactId>quarkus-spring-di</artifactId>
 </dependency>
 ----
+// Open block markup required for downstream doc build. Do not remove.
 --
 
 ifdef::downstream[]

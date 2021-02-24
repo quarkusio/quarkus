@@ -25,7 +25,7 @@
         <opentracing-tracerresolver.version>0.1.8</opentracing-tracerresolver.version>
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
-        <opentracing-kafka.version>0.1.13</opentracing-kafka.version>
+        <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <jaeger.version>0.34.3</jaeger.version>
         <quarkus-http.version>3.1.0.Beta2</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>

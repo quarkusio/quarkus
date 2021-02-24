@@ -233,7 +233,6 @@ The https://github.com/opentracing-contrib/java-kafka-client[Kafka instrumentati
 <dependency>
     <groupId>io.opentracing.contrib</groupId>
     <artifactId>opentracing-kafka-client</artifactId>
-    <version>${opentracing-kafka.version}</version>
 </dependency>
 ----
 

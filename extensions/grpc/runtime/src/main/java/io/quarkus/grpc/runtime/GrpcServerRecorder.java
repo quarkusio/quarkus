@@ -41,6 +41,7 @@ import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.reflection.ReflectionService;
 import io.quarkus.grpc.runtime.supports.BlockingServerInterceptor;
+import io.quarkus.grpc.runtime.supports.CompressionInterceptor;
 import io.quarkus.grpc.runtime.supports.RequestScopeHandlerInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -318,25 +319,26 @@ public class GrpcServerRecorder {
         List<GrpcServiceDefinition> toBeRegistered = collectServiceDefinitions(grpcContainer.getServices());
         List<ServerServiceDefinition> definitions = new ArrayList<>();
 
-        RequestScopeHandlerInterceptor requestScopeHandlerInterceptor = new RequestScopeHandlerInterceptor();
+        CompressionInterceptor compressionInterceptor = null;
+        if (configuration.compression.isPresent()) {
+            compressionInterceptor = new CompressionInterceptor(configuration.compression.get());
+        }
 
         for (GrpcServiceDefinition service : toBeRegistered) {
+            List<ServerInterceptor> interceptors = new ArrayList<>();
+            if (compressionInterceptor != null) {
+                interceptors.add(compressionInterceptor);
+            }
             // We only register the blocking interceptor if needed by at least one method of the service.
-            if (blockingMethodsPerService.isEmpty()) {
-                // Fast track - no usage of @Blocking
-                builder.addService(ServerInterceptors.intercept(service.definition, requestScopeHandlerInterceptor));
-            } else {
+            if (!blockingMethodsPerService.isEmpty()) {
                 List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
-                if (list == null) {
-                    // The service does not contain any methods annotated with @Blocking - no need for the itcp
-                    builder.addService(ServerInterceptors.intercept(service.definition, requestScopeHandlerInterceptor));
-                } else {
-                    // Order matter! Request scope must be called first (on the event loop) and so should be last in the list...
-                    builder.addService(
-                            ServerInterceptors.intercept(service.definition, new BlockingServerInterceptor(vertx, list),
-                                    requestScopeHandlerInterceptor));
+                if (list != null) {
+                    interceptors.add(new BlockingServerInterceptor(vertx, list));
                 }
             }
+            // Order matters! Request scope must be called first (on the event loop) and so should be last in the list...
+            interceptors.add(new RequestScopeHandlerInterceptor());
+            builder.addService(ServerInterceptors.intercept(service.definition, interceptors));
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
             definitions.add(service.definition);
         }

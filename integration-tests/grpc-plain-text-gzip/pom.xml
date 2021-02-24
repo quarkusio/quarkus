@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-integration-test-grpc-plain-text</artifactId>
-    <name>Quarkus - Integration Tests - gRPC - Plain Text</name>
+    <artifactId>quarkus-integration-test-grpc-plain-text-gzip</artifactId>
+    <name>Quarkus - Integration Tests - gRPC - Plain Text with gzip compression</name>
 
     <dependencies>
         <dependency>

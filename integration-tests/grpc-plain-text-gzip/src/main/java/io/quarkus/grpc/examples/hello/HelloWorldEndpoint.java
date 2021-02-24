@@ -1,6 +1,7 @@
 package io.quarkus.grpc.examples.hello;
 
 import javax.inject.Inject;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -22,6 +23,9 @@ public class HelloWorldEndpoint {
     @GrpcService("hello")
     MutinyGreeterGrpc.MutinyGreeterStub mutinyHelloService;
 
+    @Inject
+    HeaderCollectingInterceptor headerCollectingInterceptor;
+
     @GET
     @Path("/blocking/{name}")
     public String helloBlocking(@PathParam("name") String name) {
@@ -35,6 +39,18 @@ public class HelloWorldEndpoint {
     public Uni<String> helloMutiny(@PathParam("name") String name) {
         return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
                 .onItem().transform((reply) -> generateResponse(reply));
+    }
+
+    @Path("/encoding")
+    @GET
+    public String encodingUsedByGrpc() {
+        return headerCollectingInterceptor.getEncoding();
+    }
+
+    @Path("/encoding")
+    @DELETE
+    public void deleteEncodingData() {
+        headerCollectingInterceptor.clear();
     }
 
     public String generateResponse(HelloReply reply) {

@@ -120,7 +120,7 @@
         {
             "category": "gRPC",
             "timeout": 65,
-            "test-modules": "grpc-health grpc-interceptors grpc-mutual-auth grpc-plain-text grpc-plain-text-mutiny grpc-proto-v2 grpc-streaming grpc-tls"
+            "test-modules": "grpc-health grpc-interceptors grpc-mutual-auth grpc-plain-text-gzip grpc-plain-text-mutiny grpc-proto-v2 grpc-streaming grpc-tls"
         }
     ]
 }

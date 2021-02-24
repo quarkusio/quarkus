@@ -13,4 +13,9 @@ public class RemoteDevMojo extends DevMojo {
     protected void modifyDevModeContext(MavenDevModeLauncher.Builder builder) {
         builder.remoteDev(true);
     }
+
+    @Override
+    protected boolean enableInstrumentation() {
+        return false;
+    }
 }

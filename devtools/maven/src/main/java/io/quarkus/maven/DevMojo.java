@@ -823,12 +823,18 @@ public class DevMojo extends AbstractMojo {
                     && appDep.getArtifact().getArtifactId().equals("quarkus-ide-launcher"))) {
                 if (appDep.getArtifact().getGroupId().equals("io.quarkus")
                         && appDep.getArtifact().getArtifactId().equals("quarkus-class-change-agent")) {
-                    builder.jvmArgs("-javaagent:" + appDep.getArtifact().getFile().getAbsolutePath());
+                    if (enableInstrumentation()) {
+                        builder.jvmArgs("-javaagent:" + appDep.getArtifact().getFile().getAbsolutePath());
+                    }
                 } else {
                     builder.classpathEntry(appDep.getArtifact().getFile());
                 }
             }
         }
+    }
+
+    protected boolean enableInstrumentation() {
+        return true;
     }
 
     private void setKotlinSpecificFlags(MavenDevModeLauncher.Builder builder) {

@@ -33,6 +33,6 @@ public class LiquibaseExtensionConfigEmptyTest {
     @Test
     @DisplayName("Injecting (default) liquibase should fail if there is no datasource configured")
     public void testLiquibaseNotAvailableWithoutDataSource() {
-        assertThrows(UnsatisfiedResolutionException.class, liquibase::get);
+        assertThrows(UnsatisfiedResolutionException.class, () -> liquibase.get().getConfiguration());
     }
 }

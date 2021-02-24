@@ -111,6 +111,7 @@
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>avro</module>
+        <module>devservices</module>
 
         <!-- Spring -->
         <module>spring-di</module>

@@ -178,7 +178,65 @@ public class LoggingSetupRecorder {
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
 
-    private Level getLogLevel(String categoryName, CategoryConfig categoryConfig, Map<String, CategoryConfig> categories,
+    public static void initializeBuildTimeLogging(LogConfig config, LogBuildTimeConfig buildConfig) {
+
+        final Map<String, CategoryConfig> categories = config.categories;
+        final LogContext logContext = LogContext.getLogContext();
+        final Logger rootLogger = logContext.getLogger("");
+
+        rootLogger.setLevel(config.level);
+
+        ErrorManager errorManager = new OnlyOnceErrorManager();
+        final Map<String, CleanupFilterConfig> filters = config.filters;
+        List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size());
+        for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
+            filterElements.add(
+                    new LogCleanupFilterElement(entry.getKey(), entry.getValue().targetLevel, entry.getValue().ifStartsWith));
+        }
+
+        final ArrayList<Handler> handlers = new ArrayList<>(3);
+
+        if (config.console.enable) {
+            final Handler consoleHandler = configureConsoleHandler(config.console, errorManager, filterElements,
+                    Collections.emptyList(), new RuntimeValue<>(Optional.empty()));
+            errorManager = consoleHandler.getErrorManager();
+            handlers.add(consoleHandler);
+        }
+
+        Map<String, Handler> namedHandlers = createNamedHandlers(config, Collections.emptyList(), errorManager, filterElements);
+
+        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
+            final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
+            final Level logLevel = getLogLevel(entry.getKey(), entry.getValue(), categories, buildConfig.minLevel);
+            final Level minLogLevel = buildCategory == null
+                    ? buildConfig.minLevel
+                    : buildCategory.minLevel.getLevel();
+
+            if (logLevel.intValue() < minLogLevel.intValue()) {
+                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
+                        entry.getKey(), minLogLevel, minLogLevel);
+
+                entry.getValue().level = InheritableLevel.of(minLogLevel.toString());
+            }
+        }
+
+        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
+            final String name = entry.getKey();
+            final Logger categoryLogger = logContext.getLogger(name);
+            final CategoryConfig categoryConfig = entry.getValue();
+            if (!categoryConfig.level.isInherited()) {
+                categoryLogger.setLevel(categoryConfig.level.getLevel());
+            }
+            categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers);
+            if (categoryConfig.handlers.isPresent()) {
+                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
+            }
+        }
+        InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
+        InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private static Level getLogLevel(String categoryName, CategoryConfig categoryConfig, Map<String, CategoryConfig> categories,
             Level rootMinLevel) {
         if (Objects.isNull(categoryConfig))
             return rootMinLevel;
@@ -195,7 +253,7 @@ public class LoggingSetupRecorder {
         return getLogLevel(parent, categories.get(parent), categories, rootMinLevel);
     }
 
-    private CategoryBuildTimeConfig isSubsetOf(String categoryName, Map<String, CategoryBuildTimeConfig> categories) {
+    private static CategoryBuildTimeConfig isSubsetOf(String categoryName, Map<String, CategoryBuildTimeConfig> categories) {
         return categories.entrySet().stream()
                 .filter(buildCategoryEntry -> categoryName.startsWith(buildCategoryEntry.getKey()))
                 .map(Entry::getValue)
@@ -233,7 +291,7 @@ public class LoggingSetupRecorder {
         namedHandlers.put(handlerName, handler);
     }
 
-    private void addNamedHandlersToCategory(CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
+    private static void addNamedHandlersToCategory(CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
             Logger categoryLogger,
             ErrorManager errorManager) {
         for (String categoryNamedHandler : categoryConfig.handlers.get()) {

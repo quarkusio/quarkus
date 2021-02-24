@@ -25,9 +25,9 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.jboss.logmanager.handlers.DelayedHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -288,13 +288,14 @@ public class MainClassBuildStep {
 
         // an exception was thrown before logging was actually setup, we simply dump everything to the console
         ResultHandle delayedHandler = cb
-                .readStaticField(FieldDescriptor.of(InitialConfigurator.class, "DELAYED_HANDLER", DelayedHandler.class));
-        ResultHandle isActivated = cb.invokeVirtualMethod(ofMethod(DelayedHandler.class, "isActivated", boolean.class),
+                .readStaticField(FieldDescriptor.of(InitialConfigurator.class, "DELAYED_HANDLER", QuarkusDelayedHandler.class));
+        ResultHandle isActivated = cb.invokeVirtualMethod(ofMethod(QuarkusDelayedHandler.class, "isActivated", boolean.class),
                 delayedHandler);
         BytecodeCreator isActivatedFalse = cb.ifNonZero(isActivated).falseBranch();
         ResultHandle handlersArray = isActivatedFalse.newArray(Handler.class, 1);
         isActivatedFalse.writeArrayValue(handlersArray, 0, isActivatedFalse.newInstance(ofConstructor(ConsoleHandler.class)));
-        isActivatedFalse.invokeVirtualMethod(ofMethod(DelayedHandler.class, "setHandlers", Handler[].class, Handler[].class),
+        isActivatedFalse.invokeVirtualMethod(
+                ofMethod(QuarkusDelayedHandler.class, "setHandlers", Handler[].class, Handler[].class),
                 delayedHandler, handlersArray);
         isActivatedFalse.breakScope();
 

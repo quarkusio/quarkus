@@ -4,6 +4,8 @@ import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -29,6 +31,11 @@ public class JDBCDerbyProcessor {
     }
 
     @BuildStep
+    DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.DERBY);
+    }
+
+    @BuildStep
     void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
@@ -47,4 +54,8 @@ public class JDBCDerbyProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, org.apache.derby.jdbc.ClientDriver.class.getName()));
     }
 
+    @BuildStep
+    void registerDefaultDbType(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DERBY));
+    }
 }

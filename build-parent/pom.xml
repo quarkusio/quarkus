@@ -485,14 +485,12 @@
                                             <exclude>io.rest-assured:*</exclude>
                                             <exclude>org.assertj:*</exclude>
                                             <exclude>org.junit.jupiter:*</exclude>
-                                            <exclude>org.testcontainers:*</exclude>
                                         </excludes>
                                         <includes>
                                             <include>io.quarkus:quarkus-test-*:*:*:test</include>
                                             <include>io.rest-assured:*:*:*:test</include>
                                             <include>org.assertj:*:*:*:test</include>
                                             <include>org.junit.jupiter:*:*:*:test</include>
-                                            <include>org.testcontainers:*:*:*:test</include>
                                         </includes>
                                         <message>Found test dependencies with wrong scope:</message>
                                     </bannedDependencies>

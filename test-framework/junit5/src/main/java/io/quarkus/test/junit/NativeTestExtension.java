@@ -1,20 +1,29 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
+import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 
+import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -23,11 +32,20 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.platform.commons.JUnitException;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.bootstrap.resolver.model.QuarkusModel;
+import io.quarkus.bootstrap.utils.BuildToolHelper;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -87,7 +105,8 @@ public class NativeTestExtension
 
     }
 
-    private ExtensionState ensureStarted(ExtensionContext extensionContext) {
+    private ExtensionState ensureStarted(ExtensionContext extensionContext) throws Exception {
+
         Class<?> testClass = extensionContext.getRequiredTestClass();
         ensureNoInjectAnnotationIsUsed(testClass);
 
@@ -133,8 +152,92 @@ public class NativeTestExtension
         return null;
     }
 
+    private Map<String, String> handleDevDb(ExtensionContext context) throws Exception {
+        Class<?> requiredTestClass = context.getRequiredTestClass();
+        Path testClassLocation = getTestClassesLocation(requiredTestClass);
+        final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
+
+        PathsCollection.Builder rootBuilder = PathsCollection.builder();
+
+        if (!appClassLocation.equals(testClassLocation)) {
+            rootBuilder.add(testClassLocation);
+            // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
+            // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
+            final Path testResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(testClassLocation, "test");
+            if (testResourcesLocation != null) {
+                rootBuilder.add(testResourcesLocation);
+            }
+        }
+        final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
+                .setIsolateDeployment(true)
+                .setMode(QuarkusBootstrap.Mode.TEST);
+        QuarkusTestProfile profileInstance = null;
+
+        final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
+        runnerBuilder.setProjectRoot(projectRoot);
+        Path outputDir;
+        try {
+            // this should work for both maven and gradle
+            outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
+        } catch (Exception e) {
+            // this shouldn't happen since testClassLocation is usually found under the project dir
+            outputDir = projectRoot;
+        }
+        runnerBuilder.setTargetDirectory(outputDir);
+
+        rootBuilder.add(appClassLocation);
+        final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
+        if (appResourcesLocation != null) {
+            rootBuilder.add(appResourcesLocation);
+        }
+
+        // If gradle project running directly with IDE
+        if (System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL) == null) {
+            QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
+            if (model != null) {
+                final Set<File> classDirectories = model.getWorkspace().getMainModule().getSourceSet()
+                        .getSourceDirectories();
+                for (File classes : classDirectories) {
+                    if (classes.exists() && !rootBuilder.contains(classes.toPath())) {
+                        rootBuilder.add(classes.toPath());
+                    }
+                }
+            }
+        } else if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
+            final String[] sourceDirectories = System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR).split(",");
+            for (String sourceDirectory : sourceDirectories) {
+                final Path directory = Paths.get(sourceDirectory);
+                if (Files.exists(directory) && !rootBuilder.contains(directory)) {
+                    rootBuilder.add(directory);
+                }
+            }
+        }
+        runnerBuilder.setApplicationRoot(rootBuilder.build());
+
+        CuratedApplication curatedApplication = runnerBuilder
+                .setTest(true)
+                .build()
+                .bootstrap();
+
+        Index testClassesIndex = TestClassIndexer.indexTestClasses(requiredTestClass);
+        // we need to write the Index to make it reusable from other parts of the testing infrastructure that run in different ClassLoaders
+        TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
+
+        Map<String, String> propertyMap = new HashMap<>();
+        curatedApplication
+                .createAugmentor()
+                .performCustomBuild(NativeDevServicesDatasourceHandler.class.getName(), new BiConsumer<String, String>() {
+                    @Override
+                    public void accept(String s, String s2) {
+                        propertyMap.put(s, s2);
+                    }
+                }, DevServicesDatasourceResultBuildItem.class.getName());
+        return propertyMap;
+    }
+
     private ExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
             throws Throwable {
+        Map<String, String> devDbProps = handleDevDb(context);
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -146,7 +249,7 @@ public class NativeTestExtension
                     System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
 
             QuarkusTestProfile profileInstance = null;
-            final Map<String, String> additional = new HashMap<>();
+            final Map<String, String> additional = new HashMap<>(devDbProps);
             if (profile != null) {
                 profileInstance = profile.newInstance();
                 additional.putAll(profileInstance.getConfigOverrides());

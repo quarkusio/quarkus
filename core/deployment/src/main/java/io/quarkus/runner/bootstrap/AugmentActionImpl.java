@@ -1,9 +1,11 @@
 package io.quarkus.runner.bootstrap;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -130,6 +133,55 @@ public class AugmentActionImpl implements AugmentAction {
         }
         this.launchMode = launchMode;
         this.devModeType = devModeType;
+    }
+
+    @Override
+    public void performCustomBuild(String resultHandler, Object context, String... finalOutputs) {
+        ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
+        Class<? extends BuildItem>[] targets = Arrays.stream(finalOutputs)
+                .map(new Function<String, Class<? extends BuildItem>>() {
+                    @Override
+                    public Class<? extends BuildItem> apply(String s) {
+                        try {
+                            return (Class<? extends BuildItem>) Class.forName(s, false, classLoader);
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }).toArray(Class[]::new);
+        BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, targets);
+
+        String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
+        if (debugSourcesDir != null) {
+            for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
+                try {
+                    if (i.getSource() != null) {
+                        File debugPath = new File(debugSourcesDir);
+                        if (!debugPath.exists()) {
+                            debugPath.mkdir();
+                        }
+                        File sourceFile = new File(debugPath, i.getName() + ".zig");
+                        sourceFile.getParentFile().mkdirs();
+                        Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
+                                StandardOpenOption.CREATE);
+                        log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
+                    } else {
+                        log.infof("Source not available: %s", i.getName());
+                    }
+                } catch (Exception t) {
+                    log.errorf(t, "Failed to write debug source file: %s", i.getName());
+                }
+            }
+        }
+        try {
+            BiConsumer<Object, BuildResult> consumer = (BiConsumer<Object, BuildResult>) Class
+                    .forName(resultHandler, false, classLoader)
+                    .getConstructor().newInstance();
+            consumer.accept(context, result);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException
+                | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

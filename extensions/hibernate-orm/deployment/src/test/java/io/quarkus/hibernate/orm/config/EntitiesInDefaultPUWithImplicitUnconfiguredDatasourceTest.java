@@ -19,13 +19,11 @@ public class EntitiesInDefaultPUWithImplicitUnconfiguredDatasourceTest {
                 assertThat(t)
                         .isInstanceOf(ConfigurationException.class)
                         .hasMessageContainingAll(
-                                "Model classes are defined for the default persistence unit, but no default datasource was found",
-                                "The default EntityManagerFactory will not be created.",
-                                "To solve this, configure the default datasource.",
-                                "Refer to https://quarkus.io/guides/datasource for guidance.");
+                                "Model classes are defined for the default persistence unit <default> but configured datasource <default> not found: the default EntityManagerFactory will not be created. To solve this, configure the default datasource. Refer to https://quarkus.io/guides/datasource for guidance.");
             })
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(MyEntity.class));
+                    .addClass(MyEntity.class))
+            .overrideConfigKey("quarkus.datasource.devservices", "false");
 
     @Test
     public void testInvalidConfiguration() {

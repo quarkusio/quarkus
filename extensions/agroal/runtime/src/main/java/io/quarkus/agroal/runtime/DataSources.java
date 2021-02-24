@@ -47,7 +47,6 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
@@ -133,7 +132,9 @@ public class DataSources {
             } else {
                 errorMessage = "quarkus.datasource." + dataSourceName + ".jdbc.url has not been defined";
             }
-            throw new ConfigurationException(errorMessage);
+            //this is not an error situation, because we want to allow the situation where a JDBC extension
+            //is installed but has not been configured
+            return new UnconfiguredDataSource(errorMessage);
         }
 
         // we first make sure that all available JDBC drivers are loaded in the current TCCL

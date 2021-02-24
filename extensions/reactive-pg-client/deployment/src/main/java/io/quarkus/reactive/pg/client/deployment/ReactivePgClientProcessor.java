@@ -1,5 +1,8 @@
 package io.quarkus.reactive.pg.client.deployment;
 
+import java.util.List;
+import java.util.Optional;
+
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -7,6 +10,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -20,6 +25,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
@@ -42,6 +48,11 @@ class ReactivePgClientProcessor {
     }
 
     @BuildStep
+    DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
+        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.POSTGRESQL);
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<PgPoolBuildItem> pgPool,
@@ -54,19 +65,22 @@ class ReactivePgClientProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig) {
+            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_PG_CLIENT));
 
         createPoolIfDefined(recorder, vertx, shutdown, pgPool, vertxPool, syntheticBeans,
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactivePostgreSQLConfig);
+                dataSourcesReactivePostgreSQLConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
             createPoolIfDefined(recorder, vertx, shutdown, pgPool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourcesReactiveRuntimeConfig, dataSourcesReactivePostgreSQLConfig);
+                    dataSourcesReactiveRuntimeConfig, dataSourcesReactivePostgreSQLConfig, defaultDataSourceDbKindBuildItems,
+                    curateOutcomeBuildItem);
         }
 
         // Enable SSL support by default
@@ -83,14 +97,22 @@ class ReactivePgClientProcessor {
     void addHealthCheck(
             BuildProducer<HealthBuildItem> healthChecks,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig) {
-        if (!hasPools(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig)) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        if (!hasPools(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, defaultDataSourceDbKindBuildItems,
+                curateOutcomeBuildItem)) {
             return;
         }
 
         healthChecks
                 .produce(new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourcesHealthCheck",
                         dataSourcesBuildTimeConfig.healthEnabled));
+    }
+
+    @BuildStep
+    void registerServiceBinding(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+        dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.POSTGRESQL));
     }
 
     private void createPoolIfDefined(PgPoolRecorder recorder,
@@ -104,9 +126,12 @@ class ReactivePgClientProcessor {
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig) {
+            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
-        if (!isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName)) {
+        if (!isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
+                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
             return;
         }
 
@@ -145,17 +170,22 @@ class ReactivePgClientProcessor {
     }
 
     private static boolean isReactivePostgreSQLPoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
                 .getDataSourceRuntimeConfig(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
-        if (!dataSourceBuildTimeConfig.dbKind.isPresent()) {
+        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind,
+                defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
+
+        if (!dbKind.isPresent()) {
             return false;
         }
 
-        if (!DatabaseKind.isPostgreSQL(dataSourceBuildTimeConfig.dbKind.get())
+        if (!DatabaseKind.isPostgreSQL(dbKind.get())
                 || !dataSourceReactiveBuildTimeConfig.enabled) {
             return false;
         }
@@ -164,15 +194,17 @@ class ReactivePgClientProcessor {
     }
 
     private boolean hasPools(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig) {
+            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
+            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
-                DataSourceUtil.DEFAULT_DATASOURCE_NAME)) {
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
             return true;
         }
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
             if (isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
-                    dataSourceName)) {
+                    dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 return true;
             }
         }

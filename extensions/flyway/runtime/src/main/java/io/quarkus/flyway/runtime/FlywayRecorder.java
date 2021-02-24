@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
@@ -14,6 +15,7 @@ import org.flywaydb.core.api.migration.JavaMigration;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -45,6 +47,14 @@ public class FlywayRecorder {
 
     public Supplier<Flyway> flywaySupplier(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
+        if (dataSource instanceof UnconfiguredDataSource) {
+            return new Supplier<Flyway>() {
+                @Override
+                public Flyway get() {
+                    throw new UnsatisfiedResolutionException("No datasource present");
+                }
+            };
+        }
         FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
         FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName);
         FLYWAY_CONTAINERS.add(flywayContainer);

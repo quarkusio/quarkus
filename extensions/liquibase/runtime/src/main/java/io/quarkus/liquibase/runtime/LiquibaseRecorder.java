@@ -3,9 +3,11 @@ package io.quarkus.liquibase.runtime;
 import java.util.function.Supplier;
 
 import javax.enterprise.inject.Any;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.sql.DataSource;
 
 import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
@@ -18,6 +20,14 @@ public class LiquibaseRecorder {
 
     public Supplier<LiquibaseFactory> liquibaseSupplier(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
+        if (dataSource instanceof UnconfiguredDataSource) {
+            return new Supplier<LiquibaseFactory>() {
+                @Override
+                public LiquibaseFactory get() {
+                    throw new UnsatisfiedResolutionException("No datasource has been configured");
+                }
+            };
+        }
         LiquibaseFactoryProducer liquibaseProducer = Arc.container().instance(LiquibaseFactoryProducer.class).get();
         LiquibaseFactory liquibaseFactory = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
         return new Supplier<LiquibaseFactory>() {
@@ -37,21 +47,25 @@ public class LiquibaseRecorder {
             }
 
             for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
-                LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
-                if (liquibaseFactory.getConfiguration().cleanAtStart) {
-                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                        liquibase.dropAll();
-                    }
-                }
-                if (liquibaseFactory.getConfiguration().migrateAtStart) {
-                    if (liquibaseFactory.getConfiguration().validateOnMigrate) {
+                try {
+                    LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
+                    if (liquibaseFactory.getConfiguration().cleanAtStart) {
                         try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                            liquibase.validate();
+                            liquibase.dropAll();
                         }
                     }
-                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                        liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                    if (liquibaseFactory.getConfiguration().migrateAtStart) {
+                        if (liquibaseFactory.getConfiguration().validateOnMigrate) {
+                            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                                liquibase.validate();
+                            }
+                        }
+                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                            liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                        }
                     }
+                } catch (UnsatisfiedResolutionException e) {
+                    //ignore, the DS is not configured
                 }
             }
         } catch (Exception e) {

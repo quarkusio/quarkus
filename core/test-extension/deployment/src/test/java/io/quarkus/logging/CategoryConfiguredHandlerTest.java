@@ -7,7 +7,6 @@ import java.util.logging.*;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
-import org.jboss.logmanager.handlers.DelayedHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class CategoryConfiguredHandlerTest {
@@ -30,7 +30,7 @@ public class CategoryConfiguredHandlerTest {
         LogManager logManager = LogManager.getLogManager();
         assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
 
-        DelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
+        QuarkusDelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
 
         Handler handler = Arrays.stream(delayedHandler.getHandlers()).filter(h -> (h instanceof ConsoleHandler))

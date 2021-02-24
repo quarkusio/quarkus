@@ -203,7 +203,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         boolean configFileRestartNeeded = filesChanged.stream().map(watchedFilePaths::get).anyMatch(Boolean.TRUE::equals);
 
         boolean instrumentationChange = false;
-        if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !configFileRestartNeeded) {
+        if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !configFileRestartNeeded
+                && devModeType != DevModeType.REMOTE_LOCAL_SIDE) {
             //attempt to do an instrumentation based reload
             //if only code has changed and not the class structure, then we can do a reload
             //using the JDK instrumentation API (assuming we were started with the javaagent)

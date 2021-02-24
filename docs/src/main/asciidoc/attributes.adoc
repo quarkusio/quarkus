@@ -6,10 +6,10 @@
 :icons: font
 :imagesdir: ./images
 
-//moved doctype to attributes.adoc to automatically enable it for all books when attribute file is included 
+//moved doctype to attributes.adoc to automatically enable it for all books when attribute file is included
 :doctype: book
 
-:BrandName: Quarkus
-:BrandLongName: {BrandName}
+:brand-name: Quarkus
+:brand-name-long: {BrandName}
 :maven-version: 3.6.3
-:JDKVersion: 8
+:jdk-version: 8

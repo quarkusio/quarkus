@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-import io.quarkus.deployment.util.ProcessUtil;
-
 public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
 
     private final String nativeImageExecutable;
@@ -16,11 +14,9 @@ public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
     }
 
     @Override
-    public void cleanupServer(File outputDir, boolean processInheritIODisabled) throws InterruptedException, IOException {
-        final ProcessBuilder pb = new ProcessBuilder(nativeImageExecutable, "--server-shutdown");
-        pb.directory(outputDir);
-        final Process process = ProcessUtil.launchProcess(pb, processInheritIODisabled);
-        process.waitFor();
+    public void cleanupServer(File outputDir) throws InterruptedException, IOException {
+        final String[] cleanupCommand = { nativeImageExecutable, "--server-shutdown" };
+        runCommand(cleanupCommand, null, outputDir);
     }
 
     @Override

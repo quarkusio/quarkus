@@ -158,7 +158,7 @@ public class NativeImageBuildStep {
 
         try {
             if (nativeConfig.cleanupServer && !graalVMVersion.isMandrel()) {
-                buildRunner.cleanupServer(outputDir.toFile(), processInheritIODisabled.isPresent());
+                buildRunner.cleanupServer(outputDir.toFile());
             }
 
             NativeImageInvokerInfo commandAndExecutable = new NativeImageInvokerInfo.Builder()

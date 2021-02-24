@@ -28,15 +28,15 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
         String[] createContainerCommand = buildCommand("create", containerRuntimeArgs, buildArgs);
         log.info(String.join(" ", createContainerCommand).replace("$", "\\$"));
         Process createContainerProcess = new ProcessBuilder(createContainerCommand).start();
-        createContainerProcess.waitFor();
+        if (createContainerProcess.waitFor() != 0) {
+            throw new RuntimeException("Failed to create builder container.");
+        }
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(createContainerProcess.getInputStream()))) {
             containerId = reader.readLine();
         }
         String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp", outputPath + "/.",
                 containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH };
-        log.info(String.join(" ", copyCommand).replace("$", "\\$"));
-        Process copyProcess = new ProcessBuilder(copyCommand).start();
-        copyProcess.waitFor();
+        runCommand(copyCommand, "Failed to copy source-jar and libs from host to builder container", null);
         super.preBuild(buildArgs);
     }
 
@@ -47,22 +47,18 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
 
     @Override
     protected void postBuild() throws InterruptedException, IOException {
-        copy(nativeImageName);
+        copyFromBuilder(nativeImageName, "Failed to copy native image from container back to the host.");
         if (nativeConfig.debug.enabled) {
-            copy("sources");
+            copyFromBuilder("sources", "Failed to copy sources from container back to the host.");
         }
         String[] removeCommand = new String[] { containerRuntime.getExecutableName(), "container", "rm", "--volumes",
                 containerId };
-        log.info(String.join(" ", removeCommand).replace("$", "\\$"));
-        Process removeProcess = new ProcessBuilder(removeCommand).start();
-        removeProcess.waitFor();
+        runCommand(removeCommand, "Failed to remove container: " + containerId, null);
     }
 
-    private void copy(String path) throws IOException, InterruptedException {
+    private void copyFromBuilder(String path, String errorMsg) throws IOException, InterruptedException {
         String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp",
                 containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + path, outputPath };
-        log.info(String.join(" ", copyCommand).replace("$", "\\$"));
-        Process copyProcess = new ProcessBuilder(copyCommand).start();
-        copyProcess.waitFor();
+        runCommand(copyCommand, errorMsg, null);
     }
 }

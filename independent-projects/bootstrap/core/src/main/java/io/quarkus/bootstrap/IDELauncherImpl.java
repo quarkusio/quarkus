@@ -25,17 +25,20 @@ import java.util.Map;
  */
 public class IDELauncherImpl implements Closeable {
 
-    public static Closeable launch(Path projectRoot, Map<String, Object> context) {
+    public static Closeable launch(Path classesDir, Map<String, Object> context) {
+        final Path projectDir = BuildToolHelper.getProjectDir(classesDir);
+        if (projectDir == null) {
+            throw new IllegalStateException("Failed to locate project dir for " + classesDir);
+        }
         try {
             //todo : proper support for everything
             final QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setBaseClassLoader(IDELauncherImpl.class.getClassLoader())
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.DEV)
-                    .setTargetDirectory(projectRoot.getParent());
-
-            if (BuildToolHelper.isGradleProject(projectRoot)) {
-                final QuarkusModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(projectRoot);
+                    .setTargetDirectory(classesDir.getParent());
+            if (BuildToolHelper.isGradleProject(classesDir)) {
+                final QuarkusModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(classesDir);
                 context.put(QuarkusModelHelper.SERIALIZED_QUARKUS_MODEL,
                         QuarkusModelHelper.serializeQuarkusModel(quarkusModel));
 
@@ -56,14 +59,15 @@ public class IDELauncherImpl implements Closeable {
                     }
                 }
             } else {
-                builder.setApplicationRoot(projectRoot)
-                        .setProjectRoot(projectRoot);
-
-                final LocalProject currentProject = LocalProject.loadWorkspace(projectRoot);
-                context.put("app-project", currentProject);
+                builder.setApplicationRoot(classesDir)
+                        .setProjectRoot(projectDir);
 
                 final BootstrapMavenContext mvnCtx = new BootstrapMavenContext(
-                        BootstrapMavenContext.config().setCurrentProject(currentProject));
+                        BootstrapMavenContext.config().setCurrentProject(projectDir.toString()));
+
+                final LocalProject currentProject = mvnCtx.getCurrentProject();
+                context.put("app-project", currentProject);
+
                 final MavenArtifactResolver mvnResolver = new MavenArtifactResolver(mvnCtx);
                 builder.setMavenArtifactResolver(mvnResolver);
 

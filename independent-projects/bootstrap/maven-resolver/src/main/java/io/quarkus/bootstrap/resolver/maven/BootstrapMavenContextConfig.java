@@ -28,6 +28,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected BootstrapMavenOptions cliOptions;
     protected Path rootProjectDir;
     protected boolean preferPomsFromWorkspace;
+    protected Boolean effectiveModelBuilder;
 
     /**
      * Local repository location
@@ -211,6 +212,23 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setPreferPomsFromWorkspace(boolean preferPomsFromWorkspace) {
         this.preferPomsFromWorkspace = preferPomsFromWorkspace;
+        return (T) this;
+    }
+
+    /**
+     * When workspace is loaded, the current implementation reads the POM files of every project found and
+     * initializes the workspace model based on the raw POMs. This approach has its limitations, e.g.
+     * it doesn't properly support interpolation of POMs, including properties and profiles. But it is
+     * relatively fast compared to the resolving the effective POMs.
+     * <p>
+     * This option enables workspace initialization based on effective POMs of every found project.
+     *
+     * @param effectiveModelBuilder whether to enable effective model builder for workspace discovery
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setEffectiveModelBuilder(boolean effectiveModelBuilder) {
+        this.effectiveModelBuilder = effectiveModelBuilder;
         return (T) this;
     }
 

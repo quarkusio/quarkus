@@ -49,6 +49,18 @@ public class BuildToolHelper {
 
     }
 
+    public static Path getProjectDir(Path p) {
+        Path currentPath = p;
+        while (currentPath != null) {
+            if (BuildTool.MAVEN.exists(currentPath) || BuildTool.GRADLE.exists(currentPath)) {
+                return currentPath;
+            }
+            currentPath = currentPath.getParent();
+        }
+        log.warnv("Unable to find a project directory for {0}.", p.toString());
+        return null;
+    }
+
     public static BuildTool findBuildTool(Path project) {
         Path currentPath = project;
         while (currentPath != null) {

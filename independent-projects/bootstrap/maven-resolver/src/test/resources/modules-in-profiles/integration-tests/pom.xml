@@ -4,14 +4,14 @@
 
     <parent>
         <groupId>org.acme</groupId>
-        <artifactId>root</artifactId>
-        <version>1.0</version>
+        <artifactId>quarkus-quickstart-multimodule-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>root-module1</artifactId>
+    <artifactId>acme-integration-tests</artifactId>
     <packaging>pom</packaging>
 
     <modules>
-      <module>submodule</module>
+        <module>rest-tests</module>
     </modules>
 </project>

@@ -121,7 +121,7 @@ public class DevReactiveMessagingInfos {
         public DevChannelInfo(String name, Component publisher, List<Component> consumers) {
             this.name = name;
             this.publisher = publisher;
-            this.consumers = consumers;
+            this.consumers = consumers != null ? consumers : Collections.emptyList();
         }
 
         public String getName() {
@@ -138,9 +138,17 @@ public class DevReactiveMessagingInfos {
 
         @Override
         public int compareTo(DevChannelInfo other) {
-            // publisher connectors first
-            if (publisher.type != other.publisher.type) {
-                return publisher.type == ComponentType.CONNECTOR ? -1 : 1;
+            if (publisher != other.publisher) {
+                if (other.publisher == null) {
+                    return -1;
+                }
+                if (publisher == null) {
+                    return 1;
+                }
+                // publisher connectors first
+                if (publisher.type != other.publisher.type) {
+                    return publisher.type == ComponentType.CONNECTOR ? -1 : 1;
+                }
             }
             // consumer connectors last
             long consumerConnetors = consumers.stream().filter(Component::isConnector).count();
@@ -148,8 +156,8 @@ public class DevReactiveMessagingInfos {
             if (consumerConnetors != otherConsumersConnectors) {
                 return Long.compare(otherConsumersConnectors, consumerConnetors);
             }
-
-            if (publisher.type == ComponentType.CONNECTOR && other.publisher.type != ComponentType.CONNECTOR) {
+            if (publisher != other.publisher && publisher.type == ComponentType.CONNECTOR
+                    && other.publisher.type != ComponentType.CONNECTOR) {
                 return 1;
             }
             // alphabetically

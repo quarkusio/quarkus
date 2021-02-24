@@ -367,6 +367,8 @@ then change into the `coverage-report` directory and run `mvn package`. The code
 This currently does not work on Windows as it uses a shell script to copy all the classes and files into the code coverage
 module.
 
+If you just need a report for a single module, run `mvn install jacoco:report -Ptest-coverage` in that module (or with `-f ...`).
+
 ## Extensions
 
 ### Descriptions

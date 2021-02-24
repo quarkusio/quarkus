@@ -179,6 +179,19 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     /**
+     * Meant to be used when a error occurred early in processing chain
+     */
+    @Override
+    public void abortWith(Response response) {
+        setResult(response);
+        restart(getAbortHandlerChain());
+        // this is a valid action after suspend, in which case we must resume
+        if (isSuspended()) {
+            resume();
+        }
+    }
+
+    /**
      * Resets the build time serialization assumptions. Called if a filter
      * modifies the response
      */

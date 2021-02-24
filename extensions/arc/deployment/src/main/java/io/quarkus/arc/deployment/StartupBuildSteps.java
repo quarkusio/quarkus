@@ -7,7 +7,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
-import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -44,8 +43,6 @@ public class StartupBuildSteps {
             "create", Object.class, CreationalContext.class);
     static final MethodDescriptor CONTEXTUAL_DESTROY = MethodDescriptor.ofMethod(Contextual.class,
             "destroy", void.class, Object.class, CreationalContext.class);
-
-    private static final Logger LOGGER = Logger.getLogger(StartupBuildSteps.class);
 
     @BuildStep
     AutoAddScopeBuildItem addScope(CustomScopeAnnotationsBuildItem customScopes) {

@@ -50,9 +50,8 @@ import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
-import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
@@ -174,7 +173,7 @@ class RestClientProcessor {
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<RestClientBuildItem> restClient) {
 
@@ -223,51 +222,46 @@ class RestClientProcessor {
                             .build());
         }
 
-        beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
+        final Config config = ConfigProvider.getConfig();
 
-            @Override
-            public void register(RegistrationContext registrationContext) {
-                final Config config = ConfigProvider.getConfig();
-
-                for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
-                    DotName restClientName = entry.getKey();
-                    BeanConfigurator<Object> configurator = registrationContext.configure(restClientName);
-                    // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
-                    configurator.addType(restClientName);
-                    configurator.addQualifier(REST_CLIENT);
-                    final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
-                    final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
-                    final List<Class<?>> annotationProviders = checkAnnotationProviders(entry.getValue(),
-                            restClientAnnotationProviders);
-                    configurator.scope(scope);
-                    configurator.creator(m -> {
-                        // return new RestClientBase(proxyType, baseUri).create();
-                        ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
-                        ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
-                        ResultHandle configPrefixHandle = m.load(configPrefix);
-                        ResultHandle annotationProvidersHandle = null;
-                        if (!annotationProviders.isEmpty()) {
-                            annotationProvidersHandle = m.newArray(Class.class, annotationProviders.size());
-                            for (int i = 0; i < annotationProviders.size(); i++) {
-                                m.writeArrayValue(annotationProvidersHandle, i, m.loadClass(annotationProviders.get(i)));
-                            }
-                        } else {
-                            annotationProvidersHandle = m.loadNull();
-                        }
-                        ResultHandle baseHandle = m.newInstance(
-                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
-                                        String.class,
-                                        Class[].class),
-                                interfaceHandle, baseUriHandle, configPrefixHandle, annotationProvidersHandle);
-                        ResultHandle ret = m.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
-                        m.returnValue(ret);
-                    });
-                    configurator.destroyer(BeanDestroyer.CloseableDestroyer.class);
-                    configurator.done();
+        for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
+            DotName restClientName = entry.getKey();
+            ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(restClientName);
+            // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
+            configurator.addType(restClientName);
+            configurator.addQualifier(REST_CLIENT);
+            final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
+            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
+            final List<Class<?>> annotationProviders = checkAnnotationProviders(entry.getValue(),
+                    restClientAnnotationProviders);
+            configurator.scope(scope);
+            configurator.creator(m -> {
+                // return new RestClientBase(proxyType, baseUri).create();
+                ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
+                ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
+                ResultHandle configPrefixHandle = m.load(configPrefix);
+                ResultHandle annotationProvidersHandle = null;
+                if (!annotationProviders.isEmpty()) {
+                    annotationProvidersHandle = m.newArray(Class.class, annotationProviders.size());
+                    for (int i = 0; i < annotationProviders.size(); i++) {
+                        m.writeArrayValue(annotationProvidersHandle, i, m.loadClass(annotationProviders.get(i)));
+                    }
+                } else {
+                    annotationProvidersHandle = m.loadNull();
                 }
-            }
-        }));
+                ResultHandle baseHandle = m.newInstance(
+                        MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
+                                String.class,
+                                Class[].class),
+                        interfaceHandle, baseUriHandle, configPrefixHandle, annotationProvidersHandle);
+                ResultHandle ret = m.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
+                m.returnValue(ret);
+            });
+            configurator.destroyer(BeanDestroyer.CloseableDestroyer.class);
+
+            syntheticBeans.produce(configurator.done());
+        }
     }
 
     private static List<Class<?>> checkAnnotationProviders(ClassInfo classInfo,

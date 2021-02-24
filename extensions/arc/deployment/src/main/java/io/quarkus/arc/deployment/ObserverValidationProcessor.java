@@ -1,14 +1,13 @@
 package io.quarkus.arc.deployment;
 
-import java.util.Collection;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.Annotations;
-import io.quarkus.arc.processor.BeanDeploymentValidator;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.ObserverInfo;
@@ -26,38 +25,30 @@ public class ObserverValidationProcessor {
 
     @BuildStep
     public void validateApplicationObserver(ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildProducer<BeanDeploymentValidatorBuildItem> validators) {
+            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> errors) {
         // an index of all root archive classes (usually src/main/classes)
         IndexView applicationClassesIndex = applicationArchivesBuildItem.getRootArchive().getIndex();
-
-        validators.produce(new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
-
-            @Override
-            public void validate(ValidationContext context) {
-                Collection<ObserverInfo> allObservers = context.get(Key.OBSERVERS);
-                // do the validation for each observer that can be found within application classes
-                for (ObserverInfo observer : allObservers) {
-                    if (observer.isSynthetic()) {
-                        // Skip synthetic observers
-                        continue;
-                    }
-                    DotName declaringBeanDotName = observer.getDeclaringBean().getBeanClass();
-                    AnnotationInstance instance = Annotations.getParameterAnnotation(observer.getObserverMethod(),
-                            DotNames.INITIALIZED);
-                    if (applicationClassesIndex.getClassByName(declaringBeanDotName) != null && instance != null &&
-                            instance.value().asClass().name().equals(BuiltinScope.APPLICATION.getName())) {
-                        // found an observer for @Initialized(ApplicationScoped.class)
-                        // log a warning and recommend to use StartupEvent instead
-                        final String observerWarning = "The method %s#%s is an observer for " +
-                                "@Initialized(ApplicationScoped.class). Observer notification for this event may " +
-                                "vary between JVM and native modes! We strongly recommend to observe StartupEvent " +
-                                "instead as that one is consistently delivered in both modes once the container is " +
-                                "running.";
-                        LOGGER.warnf(observerWarning, observer.getDeclaringBean().getImplClazz(),
-                                observer.getObserverMethod().name());
-                    }
-                }
+        // do the validation for each observer that can be found within application classes
+        for (ObserverInfo observer : validationPhase.getContext().get(BuildExtension.Key.OBSERVERS)) {
+            if (observer.isSynthetic()) {
+                // Skip synthetic observers
+                continue;
             }
-        }));
+            DotName declaringBeanDotName = observer.getDeclaringBean().getBeanClass();
+            AnnotationInstance instance = Annotations.getParameterAnnotation(observer.getObserverMethod(),
+                    DotNames.INITIALIZED);
+            if (applicationClassesIndex.getClassByName(declaringBeanDotName) != null && instance != null &&
+                    instance.value().asClass().name().equals(BuiltinScope.APPLICATION.getName())) {
+                // found an observer for @Initialized(ApplicationScoped.class)
+                // log a warning and recommend to use StartupEvent instead
+                final String observerWarning = "The method %s#%s is an observer for " +
+                        "@Initialized(ApplicationScoped.class). Observer notification for this event may " +
+                        "vary between JVM and native modes! We strongly recommend to observe StartupEvent " +
+                        "instead as that one is consistently delivered in both modes once the container is " +
+                        "running.";
+                LOGGER.warnf(observerWarning, observer.getDeclaringBean().getImplClazz(),
+                        observer.getObserverMethod().name());
+            }
+        }
     }
 }

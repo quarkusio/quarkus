@@ -18,6 +18,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -29,11 +31,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
-import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.BeanRegistrar;
-import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -228,7 +227,7 @@ public class SecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void gatherSecurityChecks(BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
+    void gatherSecurityChecks(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
             List<AdditionalSecuredClassesBuildIem> additionalSecuredClasses,
@@ -266,25 +265,14 @@ public class SecurityProcessor {
         }
         recorder.create(builder);
 
-        beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
-
-            @Override
-            public void register(RegistrationContext registrationContext) {
-
-                DotName name = DotName.createSimple(SecurityCheckStorage.class.getName());
-
-                BeanConfigurator<Object> configurator = registrationContext.configure(name);
-                configurator.addType(name);
-                configurator.scope(BuiltinScope.APPLICATION.getInfo());
-                configurator.creator(creator -> {
-                    ResultHandle ret = creator.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(SecurityCheckRecorder.class, "getStorage",
-                                    SecurityCheckStorage.class));
-                    creator.returnValue(ret);
-                });
-                configurator.done();
-            }
-        }));
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(SecurityCheckStorage.class)
+                        .scope(ApplicationScoped.class)
+                        .creator(creator -> {
+                            ResultHandle ret = creator.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityCheckRecorder.class,
+                                    "getStorage", SecurityCheckStorage.class));
+                            creator.returnValue(ret);
+                        }).done());
     }
 
     private Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(

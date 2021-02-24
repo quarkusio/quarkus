@@ -142,10 +142,6 @@ public class ArcProcessor {
             List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
             List<AdditionalBeanBuildItem> additionalBeans,
-            List<BeanRegistrarBuildItem> beanRegistrars,
-            List<ObserverRegistrarBuildItem> observerRegistrars,
-            List<ContextRegistrarBuildItem> contextRegistrars,
-            List<BeanDeploymentValidatorBuildItem> beanDeploymentValidators,
             List<ResourceAnnotationBuildItem> resourceAnnotations,
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
             Optional<TestClassPredicateBuildItem> testClassPredicate,
@@ -250,18 +246,6 @@ public class ArcProcessor {
         // register additional qualifiers
         for (QualifierRegistrarBuildItem registrar : qualifierRegistrars) {
             builder.addQualifierRegistrar(registrar.getQualifierRegistrar());
-        }
-        for (BeanRegistrarBuildItem item : beanRegistrars) {
-            builder.addBeanRegistrar(item.getBeanRegistrar());
-        }
-        for (ObserverRegistrarBuildItem item : observerRegistrars) {
-            builder.addObserverRegistrar(item.getObserverRegistrar());
-        }
-        for (ContextRegistrarBuildItem item : contextRegistrars) {
-            builder.addContextRegistrar(item.getContextRegistrar());
-        }
-        for (BeanDeploymentValidatorBuildItem item : beanDeploymentValidators) {
-            builder.addBeanDeploymentValidator(item.getBeanDeploymentValidator());
         }
         builder.setRemoveUnusedBeans(arcConfig.shouldEnableBeanRemoval());
         if (arcConfig.shouldOnlyKeepAppBeans()) {
@@ -533,12 +517,8 @@ public class ArcProcessor {
     }
 
     @BuildStep
-    CustomScopeAnnotationsBuildItem exposeCustomScopeNames(List<ContextRegistrarBuildItem> contextBuildItems,
-            List<CustomScopeBuildItem> customScopes) {
+    CustomScopeAnnotationsBuildItem exposeCustomScopeNames(List<CustomScopeBuildItem> customScopes) {
         Set<DotName> names = new HashSet<>();
-        for (ContextRegistrarBuildItem item : contextBuildItems) {
-            names.addAll(item.getAnnotationNames());
-        }
         for (CustomScopeBuildItem customScope : customScopes) {
             names.add(customScope.getAnnotationName());
         }

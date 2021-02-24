@@ -10,14 +10,15 @@ import java.util.function.Consumer;
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
 
+import org.jboss.jandex.DotName;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.deployment.ObserverRegistrarBuildItem;
-import io.quarkus.arc.processor.ObserverRegistrar;
+import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -43,21 +44,22 @@ public class SyntheticObserverTest {
 
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(new ObserverRegistrarBuildItem(new ObserverRegistrar() {
-                            @Override
-                            public void register(RegistrationContext context) {
-                                context.configure().observedType(String.class).notify(mc -> {
-                                    ResultHandle events = mc
-                                            .readStaticField(FieldDescriptor.of(MyObserver.class, "EVENTS", List.class));
-                                    mc.invokeInterfaceMethod(
-                                            MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
-                                            events, mc.load("synthetic"));
-                                    mc.returnValue(null);
-                                }).done();
-                            }
-                        }));
+                        ObserverRegistrationPhaseBuildItem observerRegistrationPhase = context
+                                .consume(ObserverRegistrationPhaseBuildItem.class);
+                        context.produce(new ObserverConfiguratorBuildItem(
+                                observerRegistrationPhase.getContext().configure()
+                                        .beanClass(DotName.createSimple(SyntheticObserverTest.class.getName()))
+                                        .observedType(String.class).notify(mc -> {
+                                            ResultHandle events = mc
+                                                    .readStaticField(
+                                                            FieldDescriptor.of(MyObserver.class, "EVENTS", List.class));
+                                            mc.invokeInterfaceMethod(
+                                                    MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
+                                                    events, mc.load("synthetic"));
+                                            mc.returnValue(null);
+                                        })));
                     }
-                }).produces(ObserverRegistrarBuildItem.class).build();
+                }).consumes(ObserverRegistrationPhaseBuildItem.class).produces(ObserverConfiguratorBuildItem.class).build();
             }
         };
     }

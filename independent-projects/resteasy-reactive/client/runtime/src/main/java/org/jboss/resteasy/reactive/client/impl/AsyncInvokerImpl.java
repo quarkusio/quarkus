@@ -213,8 +213,10 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
 
     @Override
     public <T> CompletableFuture<T> method(String name, Entity<?> entity, GenericType<T> responseType) {
-        CompletableFuture<Response> response = performRequestInternal(name, entity, responseType);
-        return mapResponse(response, responseType.getRawType());
+        //we default to String if no return type specified
+        CompletableFuture<Response> response = performRequestInternal(name, entity,
+                responseType == null ? new GenericType<>(String.class) : responseType);
+        return mapResponse(response, responseType == null ? String.class : responseType.getRawType());
     }
 
     @SuppressWarnings("unchecked")

@@ -25,7 +25,7 @@ import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
-public abstract class ResponseBuilderImpl extends Response.ResponseBuilder {
+public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
 
     private static final Map<Integer, String> defaultReasonPhrases = new HashMap<>();
     static {
@@ -177,11 +177,11 @@ public abstract class ResponseBuilderImpl extends Response.ResponseBuilder {
         }
     }
 
-    protected abstract ResponseBuilderImpl doClone();
+    protected abstract AbstractResponseBuilder doClone();
 
     @Override
-    public ResponseBuilderImpl clone() {
-        ResponseBuilderImpl responseBuilder = doClone();
+    public AbstractResponseBuilder clone() {
+        AbstractResponseBuilder responseBuilder = doClone();
         responseBuilder.status = status;
         responseBuilder.reasonPhrase = reasonPhrase;
         responseBuilder.entity = entity;
@@ -258,7 +258,7 @@ public abstract class ResponseBuilderImpl extends Response.ResponseBuilder {
             metadata.remove(HttpHeaders.VARY);
             return this;
         }
-        String vary = ResponseBuilderImpl.createVaryHeader(variants);
+        String vary = AbstractResponseBuilder.createVaryHeader(variants);
         metadata.putSingle(HttpHeaders.VARY, vary);
 
         return this;
@@ -349,7 +349,7 @@ public abstract class ResponseBuilderImpl extends Response.ResponseBuilder {
             metadata.remove(HttpHeaders.EXPIRES);
             return this;
         }
-        metadata.putSingle(HttpHeaders.EXPIRES, ResponseBuilderImpl.getDateFormatRFC822().format(expires));
+        metadata.putSingle(HttpHeaders.EXPIRES, AbstractResponseBuilder.getDateFormatRFC822().format(expires));
         return this;
     }
 

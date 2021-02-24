@@ -21,6 +21,16 @@ class GreetingResourceTest {
     }
 
     @Test
+    void testConfig() {
+        // test that configuration can be obtained from application.properties
+        given()
+                .when().get("/greeting/config")
+                .then()
+                .statusCode(200)
+                .body(containsString("5000"));
+    }
+
+    @Test
     public void testAbstract() {
         given()
                 .when().get("/abstract/inherited")

@@ -3,6 +3,7 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
+import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
 import io.netty.buffer.ByteBuf;
@@ -32,6 +33,7 @@ public class ResteasyStandaloneRecorder {
     public void staticInit(ResteasyDeployment dep, String path) {
         if (dep != null) {
             deployment = dep;
+            deployment.getDefaultContextObjects().put(ResteasyConfiguration.class, new ResteasyConfigurationMPConfig());
             deployment.start();
         }
         contextPath = path;

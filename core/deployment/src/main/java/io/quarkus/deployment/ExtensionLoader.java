@@ -167,6 +167,8 @@ public final class ExtensionLoader {
         if (configCustomizer != null) {
             configCustomizer.accept(builder);
         }
+
+        builder.withSecretKeys(reader.discoverSecretKeys());
         final SmallRyeConfig src = builder.build();
 
         // install globally

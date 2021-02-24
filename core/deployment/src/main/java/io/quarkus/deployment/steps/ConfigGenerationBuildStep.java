@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -94,7 +95,9 @@ public class ConfigGenerationBuildStep {
                     root.getConfigPhase() == ConfigPhase.BUILD_TIME) {
 
                 Iterable<ClassDefinition.ClassMember> members = root.getMembers();
-                handleMembers(config, values, members, "quarkus." + root.getRootName() + ".");
+                handleMembers(config, values, members, "quarkus." + root.getRootName() + ".",
+                        // TODO - Check which type to use List or Array
+                        Stream.of(readResult.getSecretKeys()).collect(Collectors.toList()));
             }
         }
         values.remove("quarkus.profile");
@@ -102,20 +105,22 @@ public class ConfigGenerationBuildStep {
     }
 
     private void handleMembers(Config config, Map<String, String> values, Iterable<ClassDefinition.ClassMember> members,
-            String prefix) {
+            String prefix, List<String> secretKeys) {
         for (ClassDefinition.ClassMember member : members) {
             if (member instanceof ClassDefinition.ItemMember) {
                 ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
                 String propertyName = prefix + member.getPropertyName();
-                Optional<String> val = config.getOptionalValue(propertyName, String.class);
-                if (val.isPresent()) {
-                    values.put(propertyName, val.get());
-                } else {
-                    values.put(propertyName, itemMember.getDefaultValue());
+                if (!secretKeys.contains(propertyName)) {
+                    Optional<String> val = config.getOptionalValue(propertyName, String.class);
+                    if (val.isPresent()) {
+                        values.put(propertyName, val.get());
+                    } else {
+                        values.put(propertyName, itemMember.getDefaultValue());
+                    }
                 }
             } else if (member instanceof ClassDefinition.GroupMember) {
                 handleMembers(config, values, ((ClassDefinition.GroupMember) member).getGroupDefinition().getMembers(),
-                        prefix + member.getDescriptor().getName() + ".");
+                        prefix + member.getDescriptor().getName() + ".", secretKeys);
             }
         }
     }

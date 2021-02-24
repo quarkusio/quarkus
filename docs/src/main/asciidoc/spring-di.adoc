@@ -8,11 +8,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 // comment out to show community version
 :downstream:
-//:upstream:
-:doctype: book
 
 :doctype: book
 
+
+//TODO: Insert context using a script instead of conditionalizing
 ifdef::downstream[]
 ifndef::context[]
 [id="proc-using-the-quarkus-extension-for-spring-di-api"]
@@ -42,7 +42,7 @@ endif::[]
 As a developer, you can add the `quarkus-spring-di` extension to your project and inject dependencies in your {BrandName} application using Dependency Injection annotations provided by the Spring Framework.
 You can use Spring DI annotations as an alternative to MicroProfile CDI annotations.
 
-ifdef::upstream[]
+ifndef::downstream[]
 This guide is maintained in the main {BrandName} repository and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
@@ -68,7 +68,7 @@ You can find the Spring Web example in the link:{URL_GITHUB_QUICKSTARTS_DIRECTOR
 endif::[]
 
 // upstream tech preview status and notes
-ifdef::upstream[]
+ifndef::downstream[]
 include::./status-include.adoc[]
 :extension-status: preview
 endif::[]
@@ -276,7 +276,7 @@ public class MessageProducer {
 }
 ----
 +
-ifdef::upstream[]
+ifndef::downstream[]
 The final bean we will create ties together all the previous beans.
 endif::[]
 
@@ -430,21 +430,14 @@ You receive `HELLO WORLD!` as the response.
 
 . Press _CTRL + C_ to stop the application.
 
-ifdef::upstream[]
+ifndef::downstream[]
 == Compile and start the application as a native executable
 
 You can create a native image by following the guide about link:building-native-image[Building a Native Executable].
 endif::[]
 
-<<<<<<< HEAD
-////
-ifndef::downstream[]
-//TODO: This note is replaced by a rewritten version that is based on style mandated by the IBM style guide.
-//Only the -product-appropriate wording of the note should be used in both the community and product versions of this document.
-//I am retaining the original wording for purposes of verification and factual corrections.
 
-ifdef::upstream[]
->>>>>>> 8e06509e82 (QUARKUS-184: Replace Quarkus with attribute except in section titles, conditionalize downstream-only markup features)
+ifndef::downstream[]
 == Important technical note
 
 Spring support in {BrandName} does not start a Spring Application Context nor are any Spring infrastructure classes run.
@@ -454,7 +447,6 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `or
 Regarding the dependency injection in particular, {BrandName} uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the link:cdi[Quarkus introduction to CDI] and the link:cdi-reference#arc-configuration-reference[CDI reference guide].
 The various Spring Boot test features are not supported by {BrandName}. For testing purposes, please, check the https://quarkus.io/guides/getting-started-testing[{BrandName} testing guide].
 endif::[]
-////
 
 ifdef::downstream[]
 [id="overview-of-annotation-equivalents-in-spring-di-and-cdi"]
@@ -513,7 +505,7 @@ The following table lists Spring DI annotations and their equivalent CDI annotat
 |Does not have a one-to-one mapping to a CDI annotation.
 |===
 
-ifdef::upstream[]
+ifndef::downstream[]
 == More Spring guides
 
 {BrandName} provides more Spring compatibility features.

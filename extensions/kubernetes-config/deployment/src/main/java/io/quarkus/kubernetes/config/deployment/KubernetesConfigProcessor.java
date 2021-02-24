@@ -43,7 +43,7 @@ public class KubernetesConfigProcessor {
                     new KubernetesRoleBuildItem.PolicyRule(
                             Collections.singletonList(""),
                             Collections.singletonList("secrets"),
-                            Arrays.asList("get", "list", "watch")))));
+                            Arrays.asList("get")))));
             roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view-secrets", false));
         }
 

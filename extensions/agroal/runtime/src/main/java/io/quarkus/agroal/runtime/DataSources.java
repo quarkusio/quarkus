@@ -165,6 +165,10 @@ public class DataSources {
         AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration = poolConfiguration
                 .connectionFactoryConfiguration();
 
+        if (agroalConnectionConfigurerHandle.isAvailable()) {
+            agroalConnectionConfigurerHandle.get().contributeJdbcProperties(connectionFactoryConfiguration);
+        }
+
         boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
         applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
                 dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);

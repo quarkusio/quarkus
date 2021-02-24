@@ -26,7 +26,8 @@ Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under
 ----
 
 Make sure you have `generate-code` goal of `quarkus-maven-plugin` enabled in your `pom.xml`.
-If you wish to generate code from different `proto` files for tests, also add the `generate-code-tests` goal:
+If you wish to generate code from different `proto` files for tests, also add the `generate-code-tests` goal.
+Please note that no additional task/goal is required for the Gradle plugin.
 
 [source,xml]
 ----
@@ -53,6 +54,10 @@ If you wish to generate code from different `proto` files for tests, also add th
 
 With this configuration, you can put your service and message definitions in the `src/main/proto` directory.
 `quarkus-maven-plugin` will generate Java files from your `proto` files.
+
+`quarkus-maven-plugin` retrieves a version of `protoc` (the protobuf compiler) from Maven repositories. The retrieved version matches your operating system and CPU architecture.```
+If this retrieved version does not work in your context, you can download the suitable binary and specify the location via
+`-Dquarkus.grpc.protoc-path=/path/to/protoc`.
 
 Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
 
@@ -115,7 +120,6 @@ target/generated-sources/grpc
 
 These are the classes we are going to use.
 
-IMPORTANT: Every time you update the `proto` files, you need to re-generate the classes (using `mvn compile`).
 
 === `proto` files with imports
 
@@ -364,3 +368,5 @@ Then, add to the `build` section the `os-maven-plugin` extension and the `protob
 That's why we use the `os-maven-plugin` to target the executable compatible with the operating system.
 
 NOTE: This configuration instructs the `protobuf-maven-plugin` to generate the default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.
+
+IMPORTANT: When using `protobuf-maven-plugin`, instead of the `quarkus-maven-plugin`, every time you update the `proto` files, you need to re-generate the classes (using `mvn compile`).

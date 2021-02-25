@@ -55,3 +55,7 @@
 h1 {
     margin-bottom: 0.75em;
 }
+
+.package-name {
+    color: dimgray;
+}

@@ -1,16 +1,28 @@
 package io.quarkus.arc.runtime;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableBean.Kind;
+import io.quarkus.arc.impl.ArcContainerImpl;
+import io.quarkus.arc.runtime.test.PreloadedTestApplicationClassPredicate;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.test.TestApplicationClassPredicate;
 
 @Recorder
 public class ArcRecorder {
@@ -55,13 +67,32 @@ public class ArcRecorder {
         return beanContainer;
     }
 
-    public void handleLifecycleEvents(ShutdownContext context, BeanContainer beanContainer) {
-        LifecycleEventRunner instance = beanContainer.instance(LifecycleEventRunner.class);
-        instance.fireStartupEvent();
+    public void handleLifecycleEvents(ShutdownContext context, LaunchMode launchMode,
+            boolean disableApplicationLifecycleObservers) {
+        ArcContainerImpl container = ArcContainerImpl.instance();
+        List<Class<?>> mockBeanClasses;
+
+        // If needed then mock all app observers in the test mode
+        if (launchMode == LaunchMode.TEST && disableApplicationLifecycleObservers) {
+            Predicate<String> predicate = container
+                    .select(TestApplicationClassPredicate.class).get();
+            mockBeanClasses = new ArrayList<>();
+            for (InjectableBean<?> bean : container.getBeans()) {
+                // Mock observers for all application class beans
+                if (bean.getKind() == Kind.CLASS && predicate.test(bean.getBeanClass().getName())) {
+                    mockBeanClasses.add(bean.getBeanClass());
+                }
+            }
+        } else {
+            mockBeanClasses = Collections.emptyList();
+        }
+
+        fireLifecycleEvent(container, new StartupEvent(), mockBeanClasses);
+
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
-                instance.fireShutdownEvent();
+                fireLifecycleEvent(container, new ShutdownEvent(), mockBeanClasses);
             }
         });
     }
@@ -73,6 +104,26 @@ public class ArcRecorder {
                 return value.getValue();
             }
         };
+    }
+
+    public void initTestApplicationClassPredicate(Set<String> applicationBeanClasses) {
+        PreloadedTestApplicationClassPredicate predicate = Arc.container()
+                .instance(PreloadedTestApplicationClassPredicate.class).get();
+        predicate.setApplicationBeanClasses(applicationBeanClasses);
+    }
+
+    private void fireLifecycleEvent(ArcContainerImpl container, Object event, List<Class<?>> mockBeanClasses) {
+        if (!mockBeanClasses.isEmpty()) {
+            for (Class<?> beanClass : mockBeanClasses) {
+                container.mockObserversFor(beanClass, true);
+            }
+        }
+        container.beanManager().getEvent().fire(event);
+        if (!mockBeanClasses.isEmpty()) {
+            for (Class<?> beanClass : mockBeanClasses) {
+                container.mockObserversFor(beanClass, false);
+            }
+        }
     }
 
 }

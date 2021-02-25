@@ -9,6 +9,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -21,8 +22,9 @@ public class LifecycleEventsBuildStep {
     ApplicationStartBuildItem startupEvent(ArcRecorder recorder,
             List<ServiceStartBuildItem> startList,
             BeanContainerBuildItem beanContainer,
-            ShutdownContextBuildItem shutdown) {
-        recorder.handleLifecycleEvents(shutdown, beanContainer.getValue());
+            ShutdownContextBuildItem shutdown,
+            LaunchModeBuildItem launchMode, ArcConfig config) {
+        recorder.handleLifecycleEvents(shutdown, launchMode.getLaunchMode(), config.test.disableApplicationLifecycleObservers);
         return new ApplicationStartBuildItem();
     }
 

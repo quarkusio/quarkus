@@ -775,6 +775,19 @@ public class ArcContainerImpl implements ArcContainer {
         }
     }
 
+    public void mockObserversFor(Class<?> beanClass, boolean mock) {
+        for (InjectableObserverMethod<?> observer : observers) {
+            if (observer instanceof Mockable && beanClass.equals(observer.getBeanClass())) {
+                Mockable mockable = (Mockable) observer;
+                if (mock) {
+                    mockable.arc$setMock(null);
+                } else {
+                    mockable.arc$clearMock();
+                }
+            }
+        }
+    }
+
     public static ArcContainerImpl instance() {
         return unwrap(Arc.container());
     }

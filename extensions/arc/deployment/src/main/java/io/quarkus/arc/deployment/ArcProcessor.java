@@ -33,6 +33,7 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfig
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AlternativePriorities;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -56,14 +57,16 @@ import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.LaunchModeProducer;
-import io.quarkus.arc.runtime.LifecycleEventRunner;
 import io.quarkus.arc.runtime.LoggerProducer;
+import io.quarkus.arc.runtime.test.PreloadedTestApplicationClassPredicate;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
@@ -85,6 +88,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
+import io.quarkus.runtime.test.TestApplicationClassPredicate;
 
 /**
  * This class contains build steps that trigger various phases of the bean processing.
@@ -147,7 +151,8 @@ public class ArcProcessor {
             Optional<TestClassPredicateBuildItem> testClassPredicate,
             Capabilities capabilities,
             CustomScopeAnnotationsBuildItem customScopes,
-            LaunchModeBuildItem launchModeBuildItem) {
+            LaunchModeBuildItem launchModeBuildItem,
+            BuildProducer<CompletedApplicationClassPredicateBuildItem> applicationClassPredicateProducer) {
 
         if (!arcConfig.isRemoveUnusedBeansFieldValid()) {
             throw new IllegalArgumentException("Invalid configuration value set for 'quarkus.arc.remove-unused-beans'." +
@@ -173,13 +178,15 @@ public class ArcProcessor {
         IndexView index = beanArchiveIndex.getIndex();
         BeanProcessor.Builder builder = BeanProcessor.builder();
         IndexView applicationClassesIndex = applicationIndex.getIndex();
-        builder.setApplicationClassPredicate(new AbstractCompositeApplicationClassesPredicate<DotName>(
+        Predicate<DotName> applicationClassPredicate = new AbstractCompositeApplicationClassesPredicate<DotName>(
                 applicationClassesIndex, generatedClassNames, applicationClassPredicates, testClassPredicate) {
             @Override
             protected DotName getDotName(DotName dotName) {
                 return dotName;
             }
-        });
+        };
+        applicationClassPredicateProducer.produce(new CompletedApplicationClassPredicateBuildItem(applicationClassPredicate));
+        builder.setApplicationClassPredicate(applicationClassPredicate);
 
         builder.addAnnotationTransformer(new AnnotationsTransformer() {
 
@@ -257,7 +264,7 @@ public class ArcProcessor {
                 }
             });
         }
-        builder.addRemovalExclusion(new BeanClassNameExclusion(LifecycleEventRunner.class.getName()));
+        builder.addRemovalExclusion(new BeanTypeExclusion(DotName.createSimple(TestApplicationClassPredicate.class.getName())));
         for (AdditionalBeanBuildItem additionalBean : additionalBeans) {
             if (!additionalBean.isRemovable()) {
                 for (String beanClass : additionalBean.getBeanClasses()) {
@@ -492,6 +499,27 @@ public class ArcProcessor {
                         .collect(Collectors.toList()));
 
         return new BeanContainerBuildItem(beanContainer);
+    }
+
+    @BuildStep(onlyIf = IsTest.class)
+    public AdditionalBeanBuildItem testApplicationClassPredicateBean() {
+        // We need to register the bean implementation for TestApplicationClassPredicate
+        // TestApplicationClassPredicate is used programatically in the ArC recorder when StartupEvent is fired  
+        return AdditionalBeanBuildItem.unremovableOf(PreloadedTestApplicationClassPredicate.class);
+    }
+
+    @BuildStep(onlyIf = IsTest.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    void initTestApplicationClassPredicateBean(ArcRecorder recorder, BeanContainerBuildItem beanContainer,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
+            CompletedApplicationClassPredicateBuildItem predicate) {
+        Set<String> applicationBeanClasses = new HashSet<>();
+        for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
+            if (predicate.test(bean.getBeanClass())) {
+                applicationBeanClasses.add(bean.getBeanClass().toString());
+            }
+        }
+        recorder.initTestApplicationClassPredicate(applicationBeanClasses);
     }
 
     @BuildStep

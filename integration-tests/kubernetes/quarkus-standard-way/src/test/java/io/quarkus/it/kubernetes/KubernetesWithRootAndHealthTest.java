@@ -57,7 +57,7 @@ public class KubernetesWithRootAndHealthTest {
                                 assertProbePath(p, "/api/q/health/ready");
                             });
                             assertThat(container.getLivenessProbe()).satisfies(p -> {
-                                assertProbePath(p, "/api/q/health/liveness");
+                                assertProbePath(p, "/liveness");
                             });
                         });
                     });

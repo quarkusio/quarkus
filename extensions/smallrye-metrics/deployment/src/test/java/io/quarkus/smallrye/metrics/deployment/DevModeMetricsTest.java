@@ -96,6 +96,7 @@ public class DevModeMetricsTest {
 
         // jax-rs metrics are enabled
         when().get("/q/metrics").then()
+                .statusCode(200)
                 .body(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource"));
 
         // disable jax-rs metrics via quarkus.resteasy.metrics.enabled

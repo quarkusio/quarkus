@@ -9,7 +9,7 @@ public class SmallRyeHealthUIConfig {
      * The path where Health UI is available.
      * The value `/` is not allowed as it blocks the application from serving anything else.
      */
-    @ConfigItem(defaultValue = "/health-ui")
+    @ConfigItem(defaultValue = "health-ui")
     String rootPath;
 
     /**

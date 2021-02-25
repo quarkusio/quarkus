@@ -84,7 +84,7 @@ public class KubernetesWithHealthTest {
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
                                 assertThat(p.getInitialDelaySeconds()).isEqualTo(20);
-                                assertProbePath(p, "/q/health/live");
+                                assertProbePath(p, "/liveness");
 
                                 assertNotNull(p.getHttpGet());
                                 assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);

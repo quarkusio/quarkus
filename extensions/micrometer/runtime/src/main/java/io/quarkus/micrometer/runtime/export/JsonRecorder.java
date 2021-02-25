@@ -1,11 +1,10 @@
 package io.quarkus.micrometer.runtime.export;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import io.quarkus.micrometer.runtime.export.handlers.JsonHandler;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.ext.web.Route;
-import io.vertx.ext.web.Router;
 
 @Recorder
 public class JsonRecorder {
@@ -19,11 +18,11 @@ public class JsonRecorder {
         return handler;
     }
 
-    public Function<Router, Route> route(String path) {
-        return new Function<Router, Route>() {
+    public Consumer<Route> route() {
+        return new Consumer<Route>() {
             @Override
-            public Route apply(Router router) {
-                return router.route(path).order(2).produces("application/json");
+            public void accept(Route route) {
+                route.order(2).produces("application/json");
             }
         };
     }

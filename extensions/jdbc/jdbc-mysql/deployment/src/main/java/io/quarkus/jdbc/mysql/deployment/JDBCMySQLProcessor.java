@@ -39,7 +39,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.mysql.runtime.MySQLAgroalConnectionConfigurer;
 import io.quarkus.jdbc.mysql.runtime.MySQLServiceBindingConverter;
 
@@ -93,7 +93,7 @@ public class JDBCMySQLProcessor {
         return new NativeImageSystemPropertyBuildItem("com.mysql.cj.disableAbandonedConnectionCleanup", "true");
     }
 
-    @BuildStep(onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
     SystemPropertyBuildItem disableAbandonedConnectionCleanUpInJVMMode() {
         return new SystemPropertyBuildItem("com.mysql.cj.disableAbandonedConnectionCleanup", "true");
     }

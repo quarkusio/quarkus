@@ -14,12 +14,21 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings("unchecked")
 public final class AmazonLambdaCommonProcessor {
+
+    @BuildStep(onlyIf = NativeSourcesBuild.class)
+    void failForNativeSources(BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+        throw new IllegalArgumentException(
+                "The Amazon Lambda extensions are incompatible with the 'native-sources' package type.");
+    }
+
     /**
      * Lambda custom runtime does not like ipv6.
      */

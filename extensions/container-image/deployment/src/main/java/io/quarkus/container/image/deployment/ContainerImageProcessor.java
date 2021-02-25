@@ -11,11 +11,19 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
 
 public class ContainerImageProcessor {
 
     private static final String UNKNOWN_USER = "?";
     private static final Logger log = Logger.getLogger(ContainerImageProcessor.class);
+
+    @BuildStep(onlyIf = NativeSourcesBuild.class)
+    void failForNativeSources(BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+        throw new IllegalArgumentException(
+                "The Container Imagee extensions are incompatible with the 'native-sources' package type.");
+    }
 
     @BuildStep
     public void publishImageInfo(ApplicationInfoBuildItem app,

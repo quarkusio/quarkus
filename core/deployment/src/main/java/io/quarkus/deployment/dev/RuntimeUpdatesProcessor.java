@@ -118,7 +118,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     public Path getClassesDir() {
         //TODO: fix all these
         for (DevModeContext.ModuleInfo i : context.getAllModules()) {
-            return Paths.get(i.getResourcePath());
+            return Paths.get(i.getClassesPath());
         }
         return null;
     }

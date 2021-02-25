@@ -329,6 +329,12 @@ duration can be changed using the `quarkus.test.native-image-wait-time` system p
 to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.native-image-wait-time=300`.
 ====
 
+[WARNING]
+====
+In the future, `@NativeImageTest` will be deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
+capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
+====
+
 By default, native tests runs using the `prod` profile.
 This can be overridden using the `quarkus.test.native-image-profile` property.
 For example, in your `application.properties` file, add: `quarkus.test.native-image-profile=test`.

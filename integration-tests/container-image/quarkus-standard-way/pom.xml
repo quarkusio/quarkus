@@ -10,12 +10,12 @@
 
   <artifactId>quarkus-integration-test-container-image-standard</artifactId>
   <name>Quarkus - Integration Tests - Container Image - Standard</name>
-  <description>Container Image integration tests that use @QuarkusProdModeTest</description>
+  <description>Container Image integration tests that use '@QuarkusProdModeTest' and '@QuarkusIntegrationTests'</description>
 
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
+      <artifactId>quarkus-resteasy-reactive</artifactId>
     </dependency>
 
     <!-- made test scope only to force Maven to build these dependencies before running the tests-->
@@ -38,6 +38,16 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -70,7 +80,7 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-deployment</artifactId>
+      <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>test</scope>
@@ -82,5 +92,61 @@
       </exclusions>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>test-quarkus-integration-test</id>
+      <activation>
+        <property>
+          <name>test-containers</name>
+        </property>
+      </activation>
+      <properties>
+        <quarkus.container-image.build>true</quarkus.container-image.build>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-container-image-jib</artifactId>
+          <scope>compile</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skip>false</skip>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <systemPropertyVariables>
+                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                    <maven.home>${maven.home}</maven.home>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

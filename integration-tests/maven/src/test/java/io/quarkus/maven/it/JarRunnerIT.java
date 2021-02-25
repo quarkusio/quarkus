@@ -7,6 +7,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -21,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -212,8 +214,20 @@ public class JarRunnerIT extends MojoTestBase {
                 .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
         Assertions.assertTrue(Files.exists(jar));
 
+        Properties quarkusArtifactProperties = new Properties();
+        quarkusArtifactProperties
+                .load(new FileInputStream(testDir.toPath().resolve("target").resolve("quarkus-artifact.properties").toFile()));
+        Assertions.assertEquals("jar", quarkusArtifactProperties.get("type"));
+        Assertions.assertEquals("acme-1.0-SNAPSHOT-runner.jar", quarkusArtifactProperties.get("path"));
+
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
+
+        Properties properties = new Properties();
+        properties
+                .load(new FileInputStream(testDir.toPath().resolve("target").resolve("quarkus-artifact.properties").toFile()));
+        Assertions.assertEquals("jar", properties.get("type"));
+        Assertions.assertEquals("acme-1.0-SNAPSHOT-runner.jar", properties.get("path"));
 
         Process process = doLaunch(jar, output).start();
         try {
@@ -549,6 +563,13 @@ public class JarRunnerIT extends MojoTestBase {
         Assertions.assertTrue(Files.exists(jar));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
+
+        Properties properties = new Properties();
+        properties
+                .load(new FileInputStream(testDir.toPath().resolve("target").resolve("quarkus-artifact.properties").toFile()));
+        Assertions.assertEquals("jar", properties.get("type"));
+        Assertions.assertTrue(properties.get("path").toString().startsWith(outputDir == null ? "quarkus-app" : outputDir));
+        Assertions.assertTrue(properties.get("path").toString().endsWith("quarkus-run.jar"));
 
         Process process = doLaunch(jar, output).start();
         try {

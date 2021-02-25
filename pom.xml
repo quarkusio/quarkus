@@ -35,6 +35,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <gitflow-incremental-builder.version>3.12.2</gitflow-incremental-builder.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -227,6 +228,43 @@
             <modules>
                 <module>tcks</module>
             </modules>
+        </profile>
+        <profile>
+            <id>incremental</id>
+            <activation>
+                <property>
+                    <name>incremental</name>
+                </property>
+            </activation>
+            <properties>
+                <!-- the *local* master, not refs/remotes/... -->
+                <gib.referenceBranch>master</gib.referenceBranch>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.vackosar.gitflowincrementalbuilder</groupId>
+                        <artifactId>gitflow-incremental-builder</artifactId>
+                        <version>${gitflow-incremental-builder.version}</version>
+                        <extensions>true</extensions>
+                        <!-- https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
+                             General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
+                             See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
+                        <configuration>
+                            <!-- pointless to attempt incremental build if something like mvnw was changed
+                                 (and also potentially wrong, given that independent-projects might not be built) -->
+                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
+                            <!-- Note: *Upstream* is only relevant in case of:
+                                 -am or
+                                 -Dgib.buildUpstream=always|true or
+                                 -Dgib.buildAll=true or
+                                 -Dgib.forceBuildModules=... -->
+                            <skipTestsForUpstreamModules>true</skipTestsForUpstreamModules>
+                            <argsForUpstreamModules>skipITs invoker.skip no-format</argsForUpstreamModules>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

@@ -64,7 +64,7 @@ link:qute[the Qute template engine].
 This also means that you can link:qute-reference#user_tags[add custom Qute tags] in 
 `/dev-templates/tags` for your templates to use.
 
-The style system currently in use is https://getbootstrap.com/docs/4.0/getting-started/introduction/[Bootstrap V4 (4.5.3)]
+The style system currently in use is https://getbootstrap.com/docs/4.6/getting-started/introduction/[Bootstrap V4 (4.6.0)]
 but note that this might change in the future.
 
 The main template also includes https://jquery.com/[jQuery 3.5.1], but here again this might change.
@@ -94,8 +94,15 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`
             color: gray;
         }
     {/style}
-    {#title}Cache{/title}// <3>
-    {#body}// <4>
+    {#script} // <3>
+     $(document).ready(function(){
+        $(function () {
+          $('[data-toggle="tooltip"]').tooltip()
+        });
+    });
+    {/script}
+    {#title}Cache{/title}// <4>
+    {#body}// <5>
         <table class="table table-striped custom">
             <thead class="thead-dark">
                 <tr>
@@ -104,13 +111,13 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`
                 </tr>
             </thead>
             <tbody>
-                {#for cacheInfo in info:cacheInfos}// <5>
+                {#for cacheInfo in info:cacheInfos}// <6>
                     <tr>
                         <td>
                             {cacheInfo.name}
                         </td>
                         <td>
-                            <form method="post"// <6> 
+                            <form method="post"// <7> 
                                   enctype="application/x-www-form-urlencoded">
                                 <label class="form-check-label" for="clear">
                                     {cacheInfo.size}
@@ -129,11 +136,12 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`
 ----
 <1> In order to benefit from the same style as other Dev UI pages, extend the `main` template
 <2> You can pass extra CSS for your page in the `style` template parameter
-<3> Don't forget to set your page title in the `title` template parameter
-<4> The `body` template parameter will contain your content
-<5> In order for your template to read custom information from your Quarkus extension, you can use
+<3> You can pass extra JavaScript for your page in the `script` template parameter. This will be added inline after the JQuery script, so you can safely use JQuery in your script.
+<4> Don't forget to set your page title in the `title` template parameter
+<5> The `body` template parameter will contain your content
+<6> In order for your template to read custom information from your Quarkus extension, you can use
     the `info` link:qute-reference#namespace_extension_methods[namespace].
-<6> This shows an <<advanced-usage-adding-actions,interactive page>>
+<7> This shows an <<advanced-usage-adding-actions,interactive page>>
 
 == Linking to your full-page templates
 

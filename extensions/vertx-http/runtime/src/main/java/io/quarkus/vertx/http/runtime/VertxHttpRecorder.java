@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -129,7 +131,10 @@ public class VertxHttpRecorder {
     private static final Handler<HttpServerRequest> ACTUAL_ROOT = new Handler<HttpServerRequest>() {
         @Override
         public void handle(HttpServerRequest httpServerRequest) {
-            if (httpServerRequest.absoluteURI() == null) {
+            try {
+                // we simply need to know if the URI is valid
+                new URI(httpServerRequest.uri());
+            } catch (URISyntaxException e) {
                 httpServerRequest.response().setStatusCode(400).end();
                 return;
             }

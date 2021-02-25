@@ -25,6 +25,7 @@ import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -352,9 +353,16 @@ class SmallRyeHealthProcessor {
     @BuildStep
     AnnotationsTransformerBuildItem annotationTransformer(BeanArchiveIndexBuildItem beanArchiveIndex,
             CustomScopeAnnotationsBuildItem scopes) {
-        // Transform health checks that are not annotated with a scope or a stereotype
-        Set<DotName> stereotypes = beanArchiveIndex.getIndex().getAnnotations(DotNames.STEREOTYPE).stream()
-                .map(AnnotationInstance::name).collect(Collectors.toSet());
+
+        // Transform health checks that are not annotated with a scope or a stereotype with a default scope
+        Set<DotName> stereotypeAnnotations = new HashSet<>();
+        for (AnnotationInstance annotation : beanArchiveIndex.getIndex().getAnnotations(DotNames.STEREOTYPE)) {
+            ClassInfo annotationClass = beanArchiveIndex.getIndex().getClassByName(annotation.name());
+            if (annotationClass != null && scopes.isScopeIn(annotationClass.classAnnotations())) {
+                // Stereotype annotation with a default scope
+                stereotypeAnnotations.add(annotationClass.name());
+            }
+        }
         List<DotName> healthAnnotations = new ArrayList<>(5);
         healthAnnotations.add(HEALTH);
         healthAnnotations.add(LIVENESS);
@@ -378,7 +386,7 @@ class SmallRyeHealthProcessor {
                 Collection<AnnotationInstance> annotations;
                 if (ctx.isClass()) {
                     annotations = ctx.getAnnotations();
-                    if (containsAny(annotations, stereotypes)) {
+                    if (containsAny(annotations, stereotypeAnnotations)) {
                         return;
                     }
                 } else {

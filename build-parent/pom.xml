@@ -100,7 +100,8 @@
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
-        <jacoco.version>0.8.5</jacoco.version>
+        <!-- Note: this version is also set in quarkus-bom but BOMs don't contribute to pluginManagement or properties -->
+        <jacoco.version>0.8.6</jacoco.version>
 
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 

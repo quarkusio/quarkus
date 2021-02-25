@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.jaxrs;
+package org.jboss.resteasy.reactive.common.jaxrs;
 
 import java.util.ArrayList;
 import java.util.Arrays;

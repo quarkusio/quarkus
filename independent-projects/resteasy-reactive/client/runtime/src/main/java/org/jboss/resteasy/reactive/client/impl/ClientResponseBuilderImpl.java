@@ -4,10 +4,10 @@ import java.io.InputStream;
 import java.net.URI;
 import javax.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
-import org.jboss.resteasy.reactive.common.jaxrs.ResponseBuilderImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.AbstractResponseBuilder;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 
-public class ClientResponseBuilderImpl extends ResponseBuilderImpl { //TODO: should not extend the server version
+public class ClientResponseBuilderImpl extends AbstractResponseBuilder { //TODO: should not extend the server version
 
     InputStream entityStream;
     RestClientRequestContext restClientRequestContext;
@@ -23,7 +23,7 @@ public class ClientResponseBuilderImpl extends ResponseBuilderImpl { //TODO: sho
     }
 
     @Override
-    protected ResponseBuilderImpl doClone() {
+    protected AbstractResponseBuilder doClone() {
         return new ClientResponseBuilderImpl();
     }
 

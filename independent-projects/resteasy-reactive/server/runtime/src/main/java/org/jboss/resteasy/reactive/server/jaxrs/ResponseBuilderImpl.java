@@ -4,12 +4,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.common.jaxrs.AbstractResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
-public class ResponseBuilderImpl extends org.jboss.resteasy.reactive.common.jaxrs.ResponseBuilderImpl {
+public class ResponseBuilderImpl extends AbstractResponseBuilder {
 
     @Override
     public Response.ResponseBuilder location(URI location) {
@@ -82,7 +83,7 @@ public class ResponseBuilderImpl extends org.jboss.resteasy.reactive.common.jaxr
     }
 
     @Override
-    protected org.jboss.resteasy.reactive.common.jaxrs.ResponseBuilderImpl doClone() {
+    protected AbstractResponseBuilder doClone() {
         return new ResponseBuilderImpl();
     }
 

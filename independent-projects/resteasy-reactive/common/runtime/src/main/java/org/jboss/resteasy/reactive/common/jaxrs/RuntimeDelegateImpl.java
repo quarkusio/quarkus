@@ -1,7 +1,8 @@
-package org.jboss.resteasy.reactive.server.jaxrs;
+package org.jboss.resteasy.reactive.common.jaxrs;
 
 import java.util.Date;
 import java.util.Locale;
+import java.util.ServiceLoader;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Cookie;
@@ -13,6 +14,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.RuntimeDelegate;
+import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
 import org.jboss.resteasy.reactive.common.headers.CacheControlDelegate;
 import org.jboss.resteasy.reactive.common.headers.CookieHeaderDelegate;
 import org.jboss.resteasy.reactive.common.headers.DateDelegate;
@@ -22,10 +24,25 @@ import org.jboss.resteasy.reactive.common.headers.LocaleDelegate;
 import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
 import org.jboss.resteasy.reactive.common.headers.NewCookieHeaderDelegate;
 import org.jboss.resteasy.reactive.common.headers.ObjectToStringDelegate;
-import org.jboss.resteasy.reactive.common.jaxrs.LinkBuilderImpl;
-import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
 public class RuntimeDelegateImpl extends RuntimeDelegate {
+
+    static final ResponseBuilderFactory factory;
+
+    static {
+        ResponseBuilderFactory resp = new ResponseBuilderFactory() {
+            @Override
+            public Response.ResponseBuilder create() {
+                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+            }
+        };
+        ServiceLoader<ResponseBuilderFactory> sl = ServiceLoader.load(ResponseBuilderFactory.class,
+                RuntimeDelegateImpl.class.getClassLoader());
+        for (ResponseBuilderFactory i : sl) {
+            resp = i;
+        }
+        factory = resp;
+    }
 
     @Override
     public UriBuilder createUriBuilder() {
@@ -34,7 +51,7 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
 
     @Override
     public Response.ResponseBuilder createResponseBuilder() {
-        return new ResponseBuilderImpl();
+        return factory.create();
     }
 
     @Override

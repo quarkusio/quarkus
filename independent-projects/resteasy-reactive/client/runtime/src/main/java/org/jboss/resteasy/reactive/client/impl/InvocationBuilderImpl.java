@@ -162,6 +162,8 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     public <T extends RxInvoker> T rx(Class<T> clazz) {
         if (clazz == MultiInvoker.class) {
             return (T) new MultiInvoker(target);
+        } else if (clazz == UniInvoker.class) {
+            return (T) new UniInvoker(target);
         }
         RxInvokerProvider<?> invokerProvider = requestSpec.configuration.getRxInvokerProvider(clazz);
         if (invokerProvider != null) {

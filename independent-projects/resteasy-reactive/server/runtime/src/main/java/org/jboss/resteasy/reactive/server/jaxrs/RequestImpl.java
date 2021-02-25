@@ -9,7 +9,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
-import org.jboss.resteasy.reactive.common.jaxrs.ResponseBuilderImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.AbstractResponseBuilder;
 import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
@@ -45,7 +45,7 @@ public class RequestImpl implements Request {
         negotiation.setAcceptEncodingHeaders(requestHeaders.get(HttpHeaders.ACCEPT_ENCODING));
         negotiation.setAcceptLanguageHeaders(requestHeaders.get(HttpHeaders.ACCEPT_LANGUAGE));
 
-        varyHeader = ResponseBuilderImpl.createVaryHeader(variants);
+        varyHeader = AbstractResponseBuilder.createVaryHeader(variants);
         requestContext.serverResponse().setResponseHeader(HttpHeaders.VARY, varyHeader);
         //response.getOutputHeaders().add(VARY, varyHeader);
         return negotiation.getBestMatch(variants);

@@ -189,7 +189,10 @@ public final class ValueResolvers {
         return new ValueResolver() {
 
             public boolean appliesTo(EvalContext context) {
-                return context.getBase() instanceof Mapper;
+                if (context.getBase() instanceof Mapper && context.getParams().isEmpty()) {
+                    return ((Mapper) context.getBase()).appliesTo(context.getName());
+                }
+                return false;
             }
 
             @Override

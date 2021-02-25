@@ -39,6 +39,10 @@ public class NamespaceTemplateExtensionTest {
                 engine.parse("{MyEnum:ONE}={MyEnum:one}").render());
         assertEquals("IN_PROGRESS=0",
                 engine.parse("{txPhase:IN_PROGRESS}={txPhase:IN_PROGRESS.ordinal}").render());
+        assertEquals("Quark!",
+                engine.parse("{str:quark}").render());
+        assertEquals("QUARKUS!",
+                engine.parse("{str:quarkus}").render());
     }
 
     @TemplateExtension(namespace = "str")
@@ -52,9 +56,18 @@ public class NamespaceTemplateExtensionTest {
             return new StringBuilder(val).reverse().toString();
         }
 
-        @TemplateExtension(namespace = "str", matchRegex = "foo.*")
+        @TemplateExtension(namespace = "str", matchRegex = "foo.*", priority = 5)
         static String foo(String name, String val) {
             return name + ":" + new StringBuilder(val).reverse().toString();
+        }
+
+        static String quark() {
+            return "Quark!";
+        }
+
+        @TemplateExtension(namespace = "str", matchName = ANY, priority = 1)
+        static String quarkAny(String key) {
+            return key.toUpperCase() + "!";
         }
 
     }

@@ -31,7 +31,7 @@ public class SetSectionHelper implements SectionHelper {
                 result.completeExceptionally(t);
             } else {
                 // Execute the main block with the params as the current context object
-                context.execute(context.resolutionContext().createChild(r, null)).whenComplete((r2, t2) -> {
+                context.execute(context.resolutionContext().createChild(Mapper.wrap(r), null)).whenComplete((r2, t2) -> {
                     if (t2 != null) {
                         result.completeExceptionally(t2);
                     } else {
@@ -71,6 +71,7 @@ public class SetSectionHelper implements SectionHelper {
                 for (Entry<String, String> entry : block.getParameters().entrySet()) {
                     Expression expr = block.addExpression(entry.getKey(), entry.getValue());
                     if (expr.hasTypeInfo()) {
+                        // item.name becomes item<set#1>.name
                         newScope.putBinding(entry.getKey(), entry.getKey() + HINT_PREFIX + expr.getGeneratedId() + ">");
                     } else {
                         newScope.putBinding(entry.getKey(), null);

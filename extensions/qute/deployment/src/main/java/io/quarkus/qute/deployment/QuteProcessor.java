@@ -550,15 +550,15 @@ public class QuteProcessor {
             if (root.isTypeInfo()) {
                 // E.g. |org.acme.Item|
                 match.setValues(root.asTypeInfo().rawClass, root.asTypeInfo().resolvedType);
-                if (root.asTypeInfo().hint != null) {
-                    processHints(templateAnalysis, root.asTypeInfo().hint, match, index, expression, generatedIdsToMatches,
+                if (root.asTypeInfo().hasHints()) {
+                    processHints(templateAnalysis, root.asTypeInfo().hints, match, index, expression, generatedIdsToMatches,
                             incorrectExpressions);
                 }
             } else {
-                if (root.isProperty() && root.asProperty().hint != null) {
+                if (root.isProperty() && root.asProperty().hasHints()) {
                     // Root is not a type info but a property with hint
                     // E.g. 'it<loop#123>' and 'STATUS<when#123>'
-                    if (processHints(templateAnalysis, root.asProperty().hint, match, index, expression,
+                    if (processHints(templateAnalysis, root.asProperty().hints, match, index, expression,
                             generatedIdsToMatches, incorrectExpressions)) {
                         // In some cases it's necessary to reset the iterator
                         iterator = parts.iterator();
@@ -680,13 +680,10 @@ public class QuteProcessor {
                         clazz = index.getClassByName(type.name());
                     }
                     match.setValues(clazz, type);
-                    if (info.isProperty()) {
-                        String hint = info.asProperty().hint;
-                        if (hint != null) {
-                            // For example a loop section needs to validate the type of an element
-                            processHints(templateAnalysis, hint, match, index, expression, generatedIdsToMatches,
-                                    incorrectExpressions);
-                        }
+                    if (info.isProperty() && info.asProperty().hasHints()) {
+                        // For example a loop section needs to validate the type of an element
+                        processHints(templateAnalysis, info.asProperty().hints, match, index, expression, generatedIdsToMatches,
+                                incorrectExpressions);
                     }
                 }
             } else {
@@ -742,7 +739,7 @@ public class QuteProcessor {
                     continue;
                 }
                 if ((namespace == null || namespace.isEmpty()) && method.parameters().isEmpty()) {
-                    // Filter methods with no params for non-namespace extensions
+                    // Filter out methods with no params for non-namespace extensions
                     continue;
                 }
                 if (methods.containsKey(method)) {
@@ -783,7 +780,7 @@ public class QuteProcessor {
             matchRegex = matchRegexValue.asString();
         }
         extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchRegex,
-                method.parameters().get(0), priority, namespace));
+                namespace.isEmpty() ? method.parameters().get(0) : null, priority, namespace));
     }
 
     private void validateInjectExpression(TemplateAnalysis templateAnalysis, Expression expression, IndexView index,
@@ -1258,7 +1255,7 @@ public class QuteProcessor {
 
     /**
      * @param templateAnalysis
-     * @param helperHint
+     * @param helperHints
      * @param match
      * @param index
      * @param expression
@@ -1266,41 +1263,43 @@ public class QuteProcessor {
      * @param incorrectExpressions
      * @return {@code true} if it is necessary to reset the type info part iterator
      */
-    static boolean processHints(TemplateAnalysis templateAnalysis, String helperHint, Match match, IndexView index,
+    static boolean processHints(TemplateAnalysis templateAnalysis, List<String> helperHints, Match match, IndexView index,
             Expression expression, Map<Integer, Match> generatedIdsToMatches,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
-        if (helperHint == null || helperHint.isEmpty()) {
+        if (helperHints == null || helperHints.isEmpty()) {
             return false;
         }
-        if (helperHint.equals(LoopSectionHelper.Factory.HINT_ELEMENT)) {
-            // Iterable<Item>, Stream<Item> => Item
-            // Map<String,Long> => Entry<String,Long>
-            processLoopElementHint(match, index, expression, incorrectExpressions);
-        } else if (helperHint.startsWith(LoopSectionHelper.Factory.HINT_PREFIX)) {
-            Expression valueExpr = findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
-            if (valueExpr != null) {
-                Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
-                if (valueExprMatch != null) {
-                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+        for (String helperHint : helperHints) {
+            if (helperHint.equals(LoopSectionHelper.Factory.HINT_ELEMENT)) {
+                // Iterable<Item>, Stream<Item> => Item
+                // Map<String,Long> => Entry<String,Long>
+                processLoopElementHint(match, index, expression, incorrectExpressions);
+            } else if (helperHint.startsWith(LoopSectionHelper.Factory.HINT_PREFIX)) {
+                Expression valueExpr = findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
+                if (valueExpr != null) {
+                    Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
+                    if (valueExprMatch != null) {
+                        match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+                    }
                 }
-            }
-        } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
-            // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
-            // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
-            Expression valueExpr = findExpression(helperHint, WhenSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
-            if (valueExpr != null) {
-                Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
-                if (valueExprMatch != null && valueExprMatch.clazz.isEnum()) {
-                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
-                    return true;
+            } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
+                // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
+                // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
+                Expression valueExpr = findExpression(helperHint, WhenSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
+                if (valueExpr != null) {
+                    Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
+                    if (valueExprMatch != null && valueExprMatch.clazz.isEnum()) {
+                        match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+                        return true;
+                    }
                 }
-            }
-        } else if (helperHint.startsWith(SetSectionHelper.Factory.HINT_PREFIX)) {
-            Expression valueExpr = findExpression(helperHint, SetSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
-            if (valueExpr != null) {
-                Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
-                if (valueExprMatch != null) {
-                    match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+            } else if (helperHint.startsWith(SetSectionHelper.Factory.HINT_PREFIX)) {
+                Expression valueExpr = findExpression(helperHint, SetSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
+                if (valueExpr != null) {
+                    Match valueExprMatch = generatedIdsToMatches.get(valueExpr.getGeneratedId());
+                    if (valueExprMatch != null) {
+                        match.setValues(valueExprMatch.clazz, valueExprMatch.type);
+                    }
                 }
             }
         }

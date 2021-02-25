@@ -41,7 +41,7 @@ public class IncludeSectionHelper implements SectionHelper {
                         // Execute the template with the params as the root context object
                         TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
                         tagTemplate.root
-                                .resolve(context.resolutionContext().createChild(evaluatedParams, extendingBlocks))
+                                .resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), extendingBlocks))
                                 .whenComplete((resultNode, t2) -> {
                                     if (t2 != null) {
                                         result.completeExceptionally(t2);

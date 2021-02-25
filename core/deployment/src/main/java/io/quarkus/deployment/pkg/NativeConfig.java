@@ -158,6 +158,12 @@ public class NativeConfig {
     public boolean containerBuild;
 
     /**
+     * If this build is done using a remote docker daemon.
+     */
+    @ConfigItem
+    public boolean remoteContainerBuild;
+
+    /**
      * The docker image to use to do the image build
      */
     @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")

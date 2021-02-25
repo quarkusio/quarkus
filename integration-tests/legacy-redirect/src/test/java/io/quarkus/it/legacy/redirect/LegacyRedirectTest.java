@@ -65,7 +65,9 @@ class LegacyRedirectTest {
     @Test
     public void testOpenApiWithRedirect() {
         clientUtil.validate("/openapi", 301, "/q/openapi");
-        clientUtil.validate("/q/openapi", 200);
+        clientUtil.validate("/openapi?format=JSON", 301, "/q/openapi?format=JSON");
+        clientUtil.validateContentType("/q/openapi?format=JSON", 200, "application/json");
+        clientUtil.followForContentType("/openapi?format=JSON", 200, "application/json");
     }
 
     @Test

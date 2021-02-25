@@ -77,7 +77,9 @@ public class NonApplicationEscapeTest {
         public void handle(RoutingContext routingContext) {
             routingContext.response()
                     .setStatusCode(200)
-                    .end(routingContext.request().path());
+                    .end(routingContext.request().query() != null
+                            ? routingContext.request().path() + "?" + routingContext.request().query()
+                            : routingContext.request().path());
         }
     }
 
@@ -100,6 +102,27 @@ public class NonApplicationEscapeTest {
         Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> result.get() != null);
 
         Assertions.assertEquals("/non-app-absolute", result.get());
+    }
+
+    @Test
+    public void testNonApplicationEndpointWithQueryEscaped() {
+        AtomicReference<String> result = new AtomicReference<>();
+
+        WebClient.create(vertx)
+                .get(uri.getPort(), uri.getHost(), "/non-app-absolute?query=true")
+                .expect(ResponsePredicate.SC_OK)
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        HttpResponse<Buffer> response = ar.result();
+                        result.set(response.bodyAsString());
+                    } else {
+                        result.set(ar.cause().getMessage());
+                    }
+                });
+
+        Awaitility.await().atMost(Duration.ofMinutes(2)).until(() -> result.get() != null);
+
+        Assertions.assertEquals("/non-app-absolute?query=true", result.get());
     }
 
     @Singleton

@@ -26,10 +26,12 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.spring.data.rest.deployment.crud.CrudMethodsImplementor;
 import io.quarkus.spring.data.rest.deployment.crud.CrudPropertiesProvider;
 import io.quarkus.spring.data.rest.deployment.paging.PagingAndSortingMethodsImplementor;
 import io.quarkus.spring.data.rest.deployment.paging.PagingAndSortingPropertiesProvider;
+import io.quarkus.spring.data.rest.runtime.RestDataPanacheExceptionMapper;
 
 class SpringDataRestProcessor {
 
@@ -48,6 +50,11 @@ class SpringDataRestProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(SPRING_DATA_REST);
+    }
+
+    @BuildStep
+    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
+        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
     }
 
     @BuildStep

@@ -1,23 +1,24 @@
 package io.quarkus.it.mongodb.rest.data.panache;
 
-import org.bson.types.ObjectId;
+import org.bson.codecs.pojo.annotations.BsonId;
 
 import io.quarkus.mongodb.panache.MongoEntity;
 
 @MongoEntity
 public class Book {
 
-    private ObjectId id;
+    @BsonId
+    private String id;
 
     private String title;
 
     private Author author;
 
-    public ObjectId getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(ObjectId id) {
+    public void setId(String id) {
         this.id = id;
     }
 

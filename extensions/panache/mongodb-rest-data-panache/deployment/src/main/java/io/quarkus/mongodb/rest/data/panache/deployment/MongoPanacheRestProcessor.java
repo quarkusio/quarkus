@@ -24,8 +24,10 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.mongodb.rest.data.panache.PanacheMongoEntityResource;
 import io.quarkus.mongodb.rest.data.panache.PanacheMongoRepositoryResource;
+import io.quarkus.mongodb.rest.data.panache.runtime.RestDataPanacheExceptionMapper;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
 class MongoPanacheRestProcessor {
 
@@ -38,6 +40,11 @@ class MongoPanacheRestProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(MONGODB_REST_DATA_PANACHE);
+    }
+
+    @BuildStep
+    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
+        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
     }
 
     @BuildStep

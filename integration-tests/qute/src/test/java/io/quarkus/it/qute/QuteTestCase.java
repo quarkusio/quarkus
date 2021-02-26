@@ -14,7 +14,7 @@ import io.restassured.http.ContentType;
 public class QuteTestCase {
 
     @Test
-    public void testTemplate() throws InterruptedException {
+    public void testTemplates() throws InterruptedException {
         RestAssured.when().get("/hello?name=Ciri").then().body(containsString("Hello Ciri!"));
         RestAssured.when().get("/hello").then().body(containsString("Hello world!"));
         RestAssured.given().accept(ContentType.HTML).when().get("/hello-route")
@@ -24,6 +24,7 @@ public class QuteTestCase {
         RestAssured.given().accept(ContentType.HTML).when().get("/hello-route?name=Ciri").then()
                 .contentType(is(ContentType.HTML.toString()))
                 .body(containsString("Hello Ciri!"));
+        RestAssured.when().get("/beer").then().body(containsString("Beer Pilsner, completed: true, done: true"));
     }
 
     @Test

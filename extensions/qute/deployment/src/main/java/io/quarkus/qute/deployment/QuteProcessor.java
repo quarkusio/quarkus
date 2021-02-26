@@ -47,6 +47,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
@@ -137,6 +138,20 @@ public class QuteProcessor {
     public static final DotName RESOURCE_PATH = Names.RESOURCE_PATH;
 
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
+
+    private static final Function<FieldInfo, String> GETTER_FUN = new Function<FieldInfo, String>() {
+        @Override
+        public String apply(FieldInfo field) {
+            String prefix;
+            if (field.type().kind() == org.jboss.jandex.Type.Kind.PRIMITIVE
+                    && field.type().asPrimitiveType().primitive() == Primitive.BOOLEAN) {
+                prefix = ValueResolverGenerator.IS_PREFIX;
+            } else {
+                prefix = ValueResolverGenerator.GET_PREFIX;
+            }
+            return prefix + ValueResolverGenerator.capitalize(field.name());
+        }
+    };
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -880,10 +895,13 @@ public class QuteProcessor {
             for (PanacheEntityClassesBuildItem panaecheEntityClasses : panacheEntityClasses) {
                 entityClasses.addAll(panaecheEntityClasses.getEntityClasses());
             }
-            builder.setForceGettersPredicate(new Predicate<ClassInfo>() {
+            builder.setForceGettersFunction(new Function<ClassInfo, Function<FieldInfo, String>>() {
                 @Override
-                public boolean test(ClassInfo clazz) {
-                    return entityClasses.contains(clazz.name().toString());
+                public Function<FieldInfo, String> apply(ClassInfo clazz) {
+                    if (entityClasses.contains(clazz.name().toString())) {
+                        return GETTER_FUN;
+                    }
+                    return null;
                 }
             });
         }

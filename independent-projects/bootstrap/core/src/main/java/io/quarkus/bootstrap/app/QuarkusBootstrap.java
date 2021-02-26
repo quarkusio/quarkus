@@ -64,7 +64,6 @@ public class QuarkusBootstrap implements Serializable {
      */
     private final List<Path> excludeFromClassPath;
 
-    private final Properties buildSystemProperties;
     private final String baseName;
     private final Path targetDirectory;
 
@@ -95,7 +94,6 @@ public class QuarkusBootstrap implements Serializable {
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
         this.excludeFromClassPath = new ArrayList<>(builder.excludeFromClassPath);
         this.projectRoot = builder.projectRoot != null ? builder.projectRoot.normalize() : null;
-        this.buildSystemProperties = builder.buildSystemProperties;
         this.mode = builder.mode;
         this.offline = builder.offline;
         this.test = builder.test;
@@ -224,10 +222,6 @@ public class QuarkusBootstrap implements Serializable {
         return Collections.unmodifiableList(excludeFromClassPath);
     }
 
-    public Properties getBuildSystemProperties() {
-        return buildSystemProperties;
-    }
-
     public Path getProjectRoot() {
         return projectRoot;
     }
@@ -274,7 +268,6 @@ public class QuarkusBootstrap implements Serializable {
                 .setBaseName(baseName)
                 .setProjectRoot(projectRoot)
                 .setBaseClassLoader(baseClassLoader)
-                .setBuildSystemProperties(buildSystemProperties)
                 .setMode(mode)
                 .setTest(test)
                 .setLocalProjectDiscovery(localProjectDiscovery)

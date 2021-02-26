@@ -51,7 +51,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 .addFinal(ApplicationClassNameBuildItem.class)
                 .setTargetDir(quarkusBootstrap.getTargetDirectory())
                 .setDeploymentClassLoader(curatedApplication.createDeploymentClassLoader())
-                .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
+                .setBuildSystemProperties(curatedApplication.getAppModel().getBuildSystemProperties())
                 .setEffectiveModel(curatedApplication.getAppModel());
         if (quarkusBootstrap.getBaseName() != null) {
             builder.setBaseName(quarkusBootstrap.getBaseName());

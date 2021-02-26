@@ -3,6 +3,7 @@ package io.quarkus.gradle;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import org.gradle.api.Project;
@@ -115,6 +116,7 @@ public class AppModelGradleResolver implements AppModelResolver {
             }
         }
         appModel = QuarkusModelHelper.convert(model, appArtifact);
+        appModel.getBuildSystemProperties().putAll(buildSystemProperties(appArtifact));
         return appModel;
     }
 
@@ -128,6 +130,13 @@ public class AppModelGradleResolver implements AppModelResolver {
             Set<AppArtifactKey> localProjects)
             throws AppModelResolverException {
         return resolveModel(appArtifact);
+    }
+
+    private Properties buildSystemProperties(AppArtifact appArtifact) {
+        Properties buildSystemProperties = new Properties();
+        buildSystemProperties.put("quarkus.application.name", appArtifact.getArtifactId());
+        buildSystemProperties.put("quarkus.application.version", appArtifact.getVersion());
+        return buildSystemProperties;
     }
 
 }

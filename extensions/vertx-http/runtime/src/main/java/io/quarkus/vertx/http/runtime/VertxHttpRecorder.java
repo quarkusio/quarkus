@@ -782,6 +782,11 @@ public class VertxHttpRecorder {
                 String target = absoluteURI.substring(rootPath.length());
                 String redirectTo = nonApplicationPath + target;
 
+                String query = context.request().query();
+                if (query != null && !query.isEmpty()) {
+                    redirectTo += '?' + query;
+                }
+
                 context.response()
                         .setStatusCode(HttpResponseStatus.MOVED_PERMANENTLY.code())
                         .putHeader(HttpHeaderNames.LOCATION, redirectTo)

@@ -49,6 +49,7 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
 public interface VaultClient {
 
     String X_VAULT_TOKEN = "X-Vault-Token";
+    String X_VAULT_NAMESPACE = "X-Vault-Namespace";
     String API_VERSION = "v1";
 
     VaultUserPassAuth loginUserPass(String user, String password);

@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -55,6 +54,7 @@ import io.quarkus.vault.runtime.client.dto.sys.VaultPolicyBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
+import io.quarkus.vault.runtime.config.VaultEnterpriseConfig;
 import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.test.client.TestVaultClient;
@@ -67,7 +67,6 @@ public class VaultTestExtension {
     static final String DB_USERNAME = "postgres";
     public static final String DB_PASSWORD = "bar";
     public static final String SECRET_VALUE = "s\u20accr\u20act";
-    static final String DEFAULT_VAULT_VERSION = "1.6.0";
     static final int VAULT_PORT = 8200;
     static final int MAPPED_POSTGRESQL_PORT = 6543;
     public static final String VAULT_AUTH_USERPASS_USER = "bob";
@@ -112,7 +111,7 @@ public class VaultTestExtension {
     public String passwordKvv2WrappingToken = null;
     public String anotherPasswordKvv2WrappingToken = null;
 
-    private TestVaultClient vaultClient = createVaultClient();
+    private TestVaultClient vaultClient;
 
     private String db_default_ttl = "1m";
     private String db_max_ttl = "10m";
@@ -162,10 +161,12 @@ public class VaultTestExtension {
         return new TreeMap<>(secret).toString();
     }
 
-    private static TestVaultClient createVaultClient() {
+    private TestVaultClient createVaultClient() {
         VaultBootstrapConfig vaultBootstrapConfig = new VaultBootstrapConfig();
         vaultBootstrapConfig.tls = new VaultTlsConfig();
         vaultBootstrapConfig.url = getVaultUrl();
+        vaultBootstrapConfig.enterprise = new VaultEnterpriseConfig();
+        vaultBootstrapConfig.enterprise.namespace = Optional.empty();
         vaultBootstrapConfig.tls.skipVerify = Optional.of(true);
         vaultBootstrapConfig.tls.caCert = Optional.empty();
         vaultBootstrapConfig.connectTimeout = Duration.ofSeconds(5);
@@ -183,7 +184,7 @@ public class VaultTestExtension {
         }
     }
 
-    public void start() throws InterruptedException, IOException, URISyntaxException {
+    public void start() throws InterruptedException, IOException {
 
         log.info("start containers on " + System.getProperty("os.name"));
 
@@ -205,11 +206,12 @@ public class VaultTestExtension {
 
         String configFile = useTls() ? "vault-config-tls.json" : "vault-config.json";
 
-        log.info("starting vault with url=" + VAULT_URL + " and config file=" + configFile);
+        String vaultImage = getVaultImage();
+        log.info("starting " + vaultImage + " with url=" + VAULT_URL + " and config file=" + configFile);
 
         new File(HOST_VAULT_TMP_CMD).mkdirs();
 
-        vaultContainer = new GenericContainer<>("vault:" + getVaultVersion())
+        vaultContainer = new GenericContainer<>(vaultImage)
                 .withExposedPorts(VAULT_PORT)
                 .withEnv("SKIP_SETCAP", "true")
                 .withEnv("VAULT_SKIP_VERIFY", "true") // this is internal to the container
@@ -235,11 +237,13 @@ public class VaultTestExtension {
         log.info("vault has started with root token: " + rootToken);
     }
 
-    private String getVaultVersion() {
-        return System.getProperty("vault.version", DEFAULT_VAULT_VERSION);
+    private String getVaultImage() {
+        return "vault:1.6.0";
     }
 
-    private void initVault() throws InterruptedException, IOException, URISyntaxException {
+    private void initVault() throws InterruptedException, IOException {
+
+        vaultClient = createVaultClient();
 
         VaultInitResponse vaultInit = vaultClient.init(1, 1);
         String unsealKey = vaultInit.keys.get(0);
@@ -454,5 +458,4 @@ public class VaultTestExtension {
 
         // VaultManager.getInstance().reset();
     }
-
 }

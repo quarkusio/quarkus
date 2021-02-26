@@ -7,8 +7,11 @@ import static java.util.Collections.emptyMap;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Singleton;
@@ -87,6 +90,9 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class VertxVaultClient implements VaultClient {
 
     private static final Logger log = Logger.getLogger(VertxVaultClient.class);
+
+    private static final List<String> ROOT_NAMESPACE_API = Arrays.asList("sys/init", "sys/license", "sys/leader", "sys/health",
+            "sys/metrics", "sys/config/state", "sys/host-info", "sys/key-status", "sys/storage", "sys/storage/raft");
 
     private final Vertx vertx;
     private URL baseUrl;
@@ -508,7 +514,15 @@ public class VertxVaultClient implements VaultClient {
         if (token != null) {
             request.putHeader(X_VAULT_TOKEN, token);
         }
+        Optional<String> namespace = vaultConfigHolder.getVaultBootstrapConfig().enterprise.namespace;
+        if (namespace.isPresent() && !isRootNamespaceAPI(path)) {
+            request.putHeader(X_VAULT_NAMESPACE, namespace.get());
+        }
         return request;
+    }
+
+    private boolean isRootNamespaceAPI(String path) {
+        return ROOT_NAMESPACE_API.stream().anyMatch(path::startsWith);
     }
 
     private HttpRequest<Buffer> builder(String path) {

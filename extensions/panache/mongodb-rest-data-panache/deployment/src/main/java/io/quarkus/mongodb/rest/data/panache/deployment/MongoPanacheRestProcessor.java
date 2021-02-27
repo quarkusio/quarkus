@@ -43,8 +43,10 @@ class MongoPanacheRestProcessor {
     @BuildStep
     void findEntityResources(CombinedIndexBuildItem index,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
-            BuildProducer<RestDataResourceBuildItem> restDataResourceProducer) {
-        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getIndex()));
+            BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
+        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getIndex());
+        ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
         for (ClassInfo classInfo : index.getIndex()
@@ -62,6 +64,8 @@ class MongoPanacheRestProcessor {
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
                     new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+            bytecodeTransformersProducer.produce(
+                    getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
         }
     }
 

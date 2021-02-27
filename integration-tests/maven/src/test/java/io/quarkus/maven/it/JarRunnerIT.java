@@ -427,7 +427,7 @@ public class JarRunnerIT extends MojoTestBase {
         return doLaunch(null, jar, output, vmArgs);
     }
 
-    private ProcessBuilder doLaunch(final File workingDir, final Path jar, File output, Collection<String> vmArgs)
+    static ProcessBuilder doLaunch(final File workingDir, final Path jar, File output, Collection<String> vmArgs)
             throws IOException {
         List<String> commands = new ArrayList<>();
         commands.add(JavaBinFinder.findBin());

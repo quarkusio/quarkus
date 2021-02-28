@@ -138,7 +138,14 @@ public class QuarkusPlugin implements Plugin<Project> {
                 JavaPlugin.class,
                 javaPlugin -> {
                     project.afterEvaluate(this::afterEvaluate);
+                    ConfigurationContainer configurations = project.getConfigurations();
                     JavaCompile compileJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME);
+
+                    // By default, gradle looks for annotation processors in the annotationProcessor configuration.
+                    // This configure the compile task to look for annotation processors in the compileClasspath.
+                    compileJavaTask.getOptions().setAnnotationProcessorPath(
+                            configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+
                     compileJavaTask.dependsOn(quarkusGenerateCode);
                     quarkusGenerateCode.setSourceRegistrar(compileJavaTask::source);
 
@@ -170,8 +177,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                             nativeTestSourceSet.getRuntimeClasspath()
                                     .plus(mainSourceSet.getOutput())
                                     .plus(testSourceSet.getOutput()));
-
-                    ConfigurationContainer configurations = project.getConfigurations();
 
                     // create a custom configuration for devmode
                     configurations.create(DEV_MODE_CONFIGURATION_NAME).extendsFrom(

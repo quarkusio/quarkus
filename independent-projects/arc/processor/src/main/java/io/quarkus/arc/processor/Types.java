@@ -46,6 +46,19 @@ final class Types {
 
     private static final Type OBJECT_TYPE = Type.create(DotNames.OBJECT, Kind.CLASS);
 
+    private static final Set<String> PRIMITIVE_CLASS_NAMES = new HashSet<>();
+
+    static {
+        PRIMITIVE_CLASS_NAMES.add("byte");
+        PRIMITIVE_CLASS_NAMES.add("char");
+        PRIMITIVE_CLASS_NAMES.add("double");
+        PRIMITIVE_CLASS_NAMES.add("float");
+        PRIMITIVE_CLASS_NAMES.add("int");
+        PRIMITIVE_CLASS_NAMES.add("long");
+        PRIMITIVE_CLASS_NAMES.add("short");
+        PRIMITIVE_CLASS_NAMES.add("boolean");
+    }
+
     // we ban these interfaces because they are new to Java 12 and are used by java.lang.String which
     // means that they cannot be included in bytecode if we want to have application built with Java 12+ but targeting Java 8 - 11
     // actually run on those older versions
@@ -403,6 +416,10 @@ final class Types {
             default:
                 throw new IllegalArgumentException("Unsupported primitive: " + primitive);
         }
+    }
+
+    static boolean isPrimitiveClassName(String className) {
+        return PRIMITIVE_CLASS_NAMES.contains(className);
     }
 
 }

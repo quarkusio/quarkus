@@ -397,6 +397,21 @@ Run the native tests using:
 
 This task depends on `quarkusBuild`, so it will generate the native image before running the tests.
 
+[NOTE]
+====
+By default, the `native-test` source set is based on `main` and `test` source sets. It is possible to add an extra source set. For example, if your integration tests are located in an `integrationTest` source set, you can specify it as:
+
+[source,groovy]
+----
+quarkus {
+    sourceSets {
+        extraNativeTest = sourceSets.integrationTest
+    }
+}
+----
+
+====
+
 == Building Uber-Jars
 
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type` argument as follows:

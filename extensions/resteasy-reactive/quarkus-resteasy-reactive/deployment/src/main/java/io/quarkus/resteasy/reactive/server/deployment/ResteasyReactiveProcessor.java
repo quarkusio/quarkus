@@ -401,6 +401,15 @@ public class ResteasyReactiveProcessor {
                     toScan.add(classInfo);
                 }
             }
+            //sub resources can also have just a path annotation
+            //if they are 'intermediate' sub resources
+            for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
+                if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    MethodInfo method = instance.target().asMethod();
+                    ClassInfo classInfo = method.declaringClass();
+                    toScan.add(classInfo);
+                }
+            }
             while (!toScan.isEmpty()) {
                 ClassInfo classInfo = toScan.poll();
                 if (scannedResources.containsKey(classInfo.name()) ||

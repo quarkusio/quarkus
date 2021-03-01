@@ -11,18 +11,18 @@
                     <input type="checkbox" class="form-check-input" id="check-all">
                 </div>
             </th>
-            <th scope="col">Entity</th>
+            <th scope="col">Entity type</th>
         </tr>
         </thead>
         <tbody>
-        {#for entity in info:entities}
+        {#for entityType in info:entityTypes}
         <tr>
             <td>
                 <div class="custom-control">
-                    <input type="checkbox" class="form-check-input checkbox" name="{entity}" id="{entity}">
+                    <input type="checkbox" class="form-check-input checkbox" name="{entityType}" id="{entityType}">
                 </div>
             </td>
-            <td>{entity}</td>
+            <td>{entityType}</td>
         </tr>
         {/for}
         </tbody>

@@ -9,7 +9,9 @@ import java.util.Map.Entry;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
+import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 public class ScoreSystem {
 
@@ -33,17 +35,29 @@ public class ScoreSystem {
         public final List<MediaType> consumes;
         public final Map<Category, List<Diagnostic>> diagnostics;
         public final int score;
+        public final List<RequestFilterEntry> requestFilterEntries;
 
         public EndpointScore(String httpMethod, String fullPath, List<MediaType> produces, List<MediaType> consumes,
-                Map<Category, List<Diagnostic>> diagnostics, int score) {
+                Map<Category, List<Diagnostic>> diagnostics, int score, List<RequestFilterEntry> requestFilterEntries) {
             this.httpMethod = httpMethod;
             this.fullPath = fullPath;
             this.produces = produces;
             this.consumes = consumes;
             this.diagnostics = diagnostics;
             this.score = score;
+            this.requestFilterEntries = requestFilterEntries;
         }
 
+    }
+
+    public static class RequestFilterEntry {
+        public final String name;
+        public final boolean preMatch;
+
+        public RequestFilterEntry(String name, boolean preMatch) {
+            this.name = name;
+            this.preMatch = preMatch;
+        }
     }
 
     public static class Diagnostic {
@@ -107,6 +121,16 @@ public class ScoreSystem {
                     produces = Arrays.asList(serverMediaType.getSortedOriginalMediaTypes());
                 }
             }
+
+            ServerRestHandler[] handlerChain = runtimeResource.getHandlerChain();
+            List<RequestFilterEntry> requestFilters = new ArrayList<>();
+            for (ServerRestHandler serverRestHandler : handlerChain) {
+                if (serverRestHandler instanceof ResourceRequestFilterHandler) {
+                    ResourceRequestFilterHandler requestFilterHandler = (ResourceRequestFilterHandler) serverRestHandler;
+                    requestFilters.add(new RequestFilterEntry(requestFilterHandler.getFilter().getClass().getName(),
+                            requestFilterHandler.isPreMatch()));
+                }
+            }
             List<MediaType> consumes = runtimeResource.getConsumes();
             if (runtimeResource.getScore() == null) {
                 return;
@@ -123,7 +147,8 @@ public class ScoreSystem {
             score = (int) Math.floor(((float) score / (float) total) * 100f);
             overallScore += score;
             overallTotal += 100;
-            endpoints.add(new EndpointScore(httpMethod, fullPath, produces, consumes, runtimeResource.getScore(), score));
+            endpoints.add(new EndpointScore(httpMethod, fullPath, produces, consumes, runtimeResource.getScore(), score,
+                    requestFilters));
         }
 
         @Override

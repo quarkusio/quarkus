@@ -15,6 +15,14 @@ public class ResourceRequestFilterHandler implements ServerRestHandler {
         this.preMatch = preMatch;
     }
 
+    public ContainerRequestFilter getFilter() {
+        return filter;
+    }
+
+    public boolean isPreMatch() {
+        return preMatch;
+    }
+
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         ContainerRequestContextImpl filterContext = requestContext.getContainerRequestContext();

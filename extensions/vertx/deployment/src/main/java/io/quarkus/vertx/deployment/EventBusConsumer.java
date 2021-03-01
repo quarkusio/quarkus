@@ -109,6 +109,13 @@ class EventBusConsumer {
             isBlocking.returnValue(isBlocking.load(true));
         }
 
+        AnnotationValue orderedValue = consumeEvent.value("ordered");
+        boolean ordered = orderedValue != null && orderedValue.asBoolean();
+        if (ordered) {
+            MethodCreator isOrdered = invokerCreator.getMethodCreator("isOrdered", boolean.class);
+            isOrdered.returnValue(isOrdered.load(true));
+        }
+
         implementConstructor(bean, invokerCreator, beanField, containerField);
         implementInvoke(bean, method, invokerCreator, beanField.getFieldDescriptor(), containerField.getFieldDescriptor());
 

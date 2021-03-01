@@ -25,6 +25,9 @@ But first, read this page (including the small print at the end).
     - [Building all modules of an extension](#building-all-modules-of-an-extension)
     - [Building a single module of an extension](#building-a-single-module-of-an-extension)
     - [Running a single test](#running-a-single-test)
+    - [Automatic incremental build](#automatic-incremental-build)
+      * [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
+      * [Usage by CI](#usage-by-ci)
 * [Usage](#usage)
     - [With Maven](#with-maven)
     - [With Gradle](#with-gradle)
@@ -285,6 +288,43 @@ One way to accomplish this is by executing the following command:
 ```
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
+
+#### Automatic incremental build
+
+:information_source: This feature is currently in testing mode. You're invited to give it a go and please reach out via [Zulip](https://quarkusio.zulipchat.com/#narrow/stream/187038-dev) or GitHub in case something doesn't work as expected or you have ideas to improve things.
+
+Instead of _manually_ specifying the modules to build as in the previous examples, you can tell [gitflow-incremental-builder (GIB)](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder) to only build the modules that have been changed or depend on modules that have been changed (downstream).
+E.g.:
+```
+./mvnw install -Dincremental
+```
+This will build all modules (and their downstream modules) that have been changed compared to your _local_ `master`, including untracked and uncommitted changes.
+
+If you just want to build the changes since the last commit on the current branch, you can switch off the branch comparison via `-Dgib.disableBranchComparison` (or short: `-Dgib.dbc`).
+
+There are many more configuration options in GIB you can use to customize its behaviour: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
+
+Parallel builds (`-T...`) should work without problems but parallel test execution is not yet supported (in general, not a GIB limitation).
+
+##### Special case `bom-descriptor-json`
+
+Without going too much into details (`devtools/bom-descriptor-json/pom.xml` has more info), you should build this module _without_ `-Dincremental` _if you changed any extension "metadata"_:
+
+* Addition/renaming/removal of an extension
+* Any other changes to any `quarkus-extension.yaml`
+
+##### Usage by CI
+
+The GitHub Actions based Quarkus CI is using GIB to reduce the average build time of pull request builds and builds of branches in your fork.
+
+CI is using a slighty different GIB config than locally:
+
+* [Special handling of "Explicitly selected projects"](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#explicitly-selected-projects) is deactivated
+* Untracked/uncommitted changes are not considered
+* Branch comparison is more complex due to distributed GitHub forks
+* Certain "critical" branches like `master` are not built incrementally
+
+For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
 
 ## Usage
 

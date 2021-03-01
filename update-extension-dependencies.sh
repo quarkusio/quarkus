@@ -10,19 +10,20 @@ echo 'Building bom-descriptor-json...'
 echo ''
 mvn -e clean package -f devtools/bom-descriptor-json -Denforcer.skip $*
 
-DEP_TEMPLATE='        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>XXX</artifactId>
-            <version>\${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>'
+# note: OFFSET is replaced later on with an individual amount of spaces
+DEP_TEMPLATE='OFFSET<dependency>
+OFFSET    <groupId>io.quarkus</groupId>
+OFFSET    <artifactId>XXX</artifactId>
+OFFSET    <version>\${project.version}</version>
+OFFSET    <type>pom</type>
+OFFSET    <scope>test</scope>
+OFFSET    <exclusions>
+OFFSET        <exclusion>
+OFFSET            <groupId>*</groupId>
+OFFSET            <artifactId>*</artifactId>
+OFFSET        </exclusion>
+OFFSET    </exclusions>
+OFFSET</dependency>'
 
 echo ''
 echo 'Building dependencies list from bom-descriptor-json...'
@@ -52,15 +53,18 @@ DEPS_DEPLOYMENT=`echo "${ARTIFACT_IDS}" \
 
 MARK_START='<!-- START update-extension-dependencies.sh -->'
 MARK_END='<!-- END update-extension-dependencies.sh -->'
-SED_EXPR_DEPS_RUNTIME="/${MARK_START}/,/${MARK_END}/c\        ${MARK_START}\n${DEPS_RUNTIME}\n        ${MARK_END}"
-SED_EXPR_DEPS_DEPLOYMENT="/${MARK_START}/,/${MARK_END}/c\        ${MARK_START}\n${DEPS_DEPLOYMENT}\n        ${MARK_END}"
+SED_EXPR_DEPS_RUNTIME="/${MARK_START}/,/${MARK_END}/cOFFSET${MARK_START}\n${DEPS_RUNTIME}\nOFFSET${MARK_END}"
+SED_EXPR_DEPS_DEPLOYMENT="/${MARK_START}/,/${MARK_END}/cOFFSET${MARK_START}\n${DEPS_DEPLOYMENT}\nOFFSET${MARK_END}"
 
 echo ''
 echo 'Updating devtools/bom-descriptor-json/pom.xml...'
 echo ''
 sed -i "${SED_EXPR_DEPS_RUNTIME}" devtools/bom-descriptor-json/pom.xml
+# note: more indetation here since bom-descriptor-json has a profile for the deps
+sed -i 's/OFFSET/                /' devtools/bom-descriptor-json/pom.xml
 
 echo ''
 echo 'Updating docs/pom.xml...'
 echo ''
 sed -i "${SED_EXPR_DEPS_DEPLOYMENT}" docs/pom.xml
+sed -i 's/OFFSET/        /' docs/pom.xml

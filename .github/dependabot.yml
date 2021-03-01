@@ -23,6 +23,7 @@ updates:
       - dependency-name: org.eclipse:yasson
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
+      - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
       # Quarkus
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*

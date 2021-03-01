@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -12,7 +13,11 @@ import io.quarkus.arc.Arc;
 public class HibernateSearchSupplier implements Supplier<List<String>> {
     @Override
     public List<String> get() {
-        return searchMapping().allIndexedEntities().stream().map(SearchIndexedEntity::jpaName).sorted()
+        SearchMapping mapping = searchMapping();
+        if (mapping == null) {
+            return Collections.emptyList();
+        }
+        return mapping.allIndexedEntities().stream().map(SearchIndexedEntity::jpaName).sorted()
                 .collect(Collectors.toList());
 
     }

@@ -1,6 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
@@ -364,6 +365,18 @@ public class KubernetesCommonHelper {
                             now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")), new String[0]))));
         }
 
+        if (config.getExposition().isPresent() && config.getExposition().get().expose) {
+            Map<String, String> expostionAnnotations = config.getExposition().get().annotations;
+            String kind = "Ingress";
+            if (config.getTargetPlatformName().equals(OPENSHIFT)) {
+                kind = "Route";
+            }
+            for (Map.Entry<String, String> annotation : expostionAnnotations.entrySet()) {
+                result.add(new DecoratorBuildItem(target,
+                        new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), kind)));
+            }
+        }
+
         if (config.getPrometheusConfig().annotations) {
             // Add metrics annotations
             metricsConfiguration.ifPresent(m -> {
@@ -382,6 +395,7 @@ public class KubernetesCommonHelper {
             });
         }
 
+        //Add metrics annotations
         return result;
     }
 

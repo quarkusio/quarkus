@@ -642,7 +642,6 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.arguments                       | String[]                                  |             |
 | quarkus.kubernetes.replicas                        | int                                       |             | 1
 | quarkus.kubernetes.service-account                 | String                                    |             |
-| quarkus.kubernetes.host                            | String                                    |             |
 | quarkus.kubernetes.ports                           | Map<String, Port>                         |             |
 | quarkus.kubernetes.service-type                    | ServiceType                               |             | ClusterIP
 | quarkus.kubernetes.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
@@ -658,7 +657,9 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.kubernetes.readiness-probe                 | Probe                                     |             | ( see Probe )
 | quarkus.kubernetes.sidecars                        | Map<String, Container>                    |             |
-| quarkus.kubernetes.expose                          | boolean                                   |             | false
+| quarkus.kubernetes.ingress.expose                  | boolean                                   |             | false
+| quarkus.kubernetes.ingress.host                    | String                                    |             |
+| quarkus.kubernetes.ingress.annotations             | Map<String, String>                       |             |
 | quarkus.kubernetes.headless                        | boolean                                   |             | false
 | quarkus.kubernetes.hostaliases                     | Map<String, HostAlias>                    |             |
 | quarkus.kubernetes.resources.requests.cpu          | String                                    |             |
@@ -882,7 +883,6 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.arguments                       | String[]                                  |             |
 | quarkus.openshift.replicas                        | int                                       |             | 1
 | quarkus.openshift.service-account                 | String                                    |             |
-| quarkus.openshift.host                            | String                                    |             |
 | quarkus.openshift.ports                           | Map<String, Port>                         |             |
 | quarkus.openshift.service-type                    | ServiceType                               |             | ClusterIP
 | quarkus.openshift.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
@@ -898,7 +898,9 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.openshift.readiness-probe                 | Probe                                     |             | ( see Probe )
 | quarkus.openshift.sidecars                        | Map<String, Container>                    |             |
-| quarkus.openshift.expose                          | boolean                                   |             | false
+| quarkus.openshift.route.expose                    | boolean                                   |             | false
+| quarkus.openshift.route.host                      | String                                    |             |
+| quarkus.openshift.route.annotations               | Map<String, String>                       |             |
 | quarkus.openshift.headless                        | boolean                                   |             | false
 |====
 

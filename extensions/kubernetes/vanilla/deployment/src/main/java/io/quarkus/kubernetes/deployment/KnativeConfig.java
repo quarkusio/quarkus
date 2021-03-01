@@ -91,6 +91,7 @@ public class KnativeConfig implements PlatformConfiguration {
 
     /**
      * The host under which the application is going to be exposed
+     *
      */
     @ConfigItem
     Optional<String> host;

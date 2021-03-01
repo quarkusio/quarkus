@@ -25,6 +25,7 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.runtime.configuration.ProfileManager;
 
 /**
  * Builds the Quarkus application.
@@ -96,6 +97,14 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                 }
                 System.setProperty(PACKAGE_TYPE_PROP, packageType);
                 clearPackageTypeSysProp = true;
+            }
+            // Set the build profile based on the value of the project property ProfileManager.QUARKUS_PROFILE_PROP
+            // if and only if it has not already been set using the corresponding system property
+            // or environment variable.
+            final Object profile = mavenProject().getProperties().get(ProfileManager.QUARKUS_PROFILE_PROP);
+            if (profile != null && System.getProperty(ProfileManager.QUARKUS_PROFILE_PROP) == null
+                    && System.getenv(ProfileManager.QUARKUS_PROFILE_ENV) == null) {
+                System.setProperty(ProfileManager.QUARKUS_PROFILE_PROP, profile.toString());
             }
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
 

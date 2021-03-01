@@ -10,7 +10,7 @@ import io.quarkus.oidc.token.propagation.AccessToken;
 @RegisterRestClient
 @AccessToken
 @Path("/")
-public interface TokenPropagationService {
+public interface AccessTokenPropagationService {
 
     @GET
     String getUserName();

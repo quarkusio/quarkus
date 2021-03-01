@@ -6,6 +6,7 @@ import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OIDCException;
@@ -37,6 +38,7 @@ public class OidcTokenCredentialProducer {
 
     @Produces
     @RequestScoped
+    @AlternativePriority(1)
     AccessTokenCredential currentAccessToken() {
         AccessTokenCredential cred = identity.getCredential(AccessTokenCredential.class);
         if (cred == null || cred.getToken() == null) {

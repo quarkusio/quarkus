@@ -11,17 +11,28 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 public class FrontendResource {
     @Inject
     @RestClient
-    TokenPropagationService tokenPropagationService;
+    JwtTokenPropagationService jwtTokenPropagationService;
+
+    @Inject
+    @RestClient
+    AccessTokenPropagationService accessTokenPropagationService;
 
     @Inject
     @RestClient
     ServiceAccountService serviceAccountService;
 
     @GET
-    @Path("token-propagation")
+    @Path("jwt-token-propagation")
     @RolesAllowed("user")
-    public String userNameTokenPropagation() {
-        return tokenPropagationService.getUserName();
+    public String userNameJwtTokenPropagation() {
+        return jwtTokenPropagationService.getUserName();
+    }
+
+    @GET
+    @Path("access-token-propagation")
+    @RolesAllowed("user")
+    public String userNameAccessTokenPropagation() {
+        return accessTokenPropagationService.getUserName();
     }
 
     @GET

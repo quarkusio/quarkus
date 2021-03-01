@@ -467,12 +467,13 @@ You can update the `/swagger-ui` sub path by setting the `quarkus.swagger-ui.pat
 
 [source, properties]
 ----
-quarkus.swagger-ui.path=/my-custom-path
+quarkus.swagger-ui.path=my-custom-path
 ----
 
 [WARNING]
 ====
 The value `/` is not allowed as it blocks the application from serving anything else.
+A value prefixed with '/' makes it absolute and not relative.
 ====
 
 Now, we are ready to run our application:

@@ -9,7 +9,7 @@ import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 
 @Recorder
 public class VertxGraphqlRecorder {
-    public Handler<RoutingContext> handler(String path) {
+    public Handler<RoutingContext> handler() {
 
         GraphiQLHandlerOptions options = new GraphiQLHandlerOptions();
         options.setEnabled(true);
@@ -19,10 +19,11 @@ public class VertxGraphqlRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                if (event.normalisedPath().length() == path.length()) {
-
+                if (event.normalisedPath().length() == (event.currentRoute().getPath().length()
+                        + (event.mountPoint() == null ? 0 : event.mountPoint().length() - 1))) {
                     event.response().setStatusCode(302);
-                    event.response().headers().set(HttpHeaders.LOCATION, path + "/");
+                    event.response().headers().set(HttpHeaders.LOCATION, (event.mountPoint() == null ? "" : event.mountPoint())
+                            + event.currentRoute().getPath().substring(1) + "/");
                     event.response().end();
                     return;
                 }

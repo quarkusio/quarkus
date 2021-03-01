@@ -16,9 +16,9 @@ public class JsonConfigGroup implements MicrometerConfig.CapabilityEnabled {
 
     /**
      * The path for the JSON metrics endpoint.
-     * The default value is {@code /metrics}.
+     * The default value is {@code metrics}.
      */
-    @ConfigItem(defaultValue = "/metrics")
+    @ConfigItem(defaultValue = "metrics")
     public String path;
 
     /**

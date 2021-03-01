@@ -22,6 +22,7 @@ public class MetricsHandlerPathTest {
 
     @Test
     public void testMetricsEndpointAccessibility() {
+        RestAssured.basePath = "/";
         RestAssured.when()
                 // no need to prepend the /custom here because it will be reflected in RestAssured.basePath
                 .get("/framework/metrics")

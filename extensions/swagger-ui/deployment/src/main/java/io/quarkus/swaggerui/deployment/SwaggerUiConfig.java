@@ -19,7 +19,7 @@ public class SwaggerUiConfig {
      * <p>
      * The value `/` is not allowed as it blocks the application from serving anything else.
      */
-    @ConfigItem(defaultValue = "/swagger-ui")
+    @ConfigItem(defaultValue = "swagger-ui")
     String path;
 
     /**

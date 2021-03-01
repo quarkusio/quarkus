@@ -173,7 +173,7 @@ public class NotFoundExceptionMapper {
             if (!additionalEndpoints.isEmpty()) {
                 sb.resourcesStart("Additional endpoints");
                 for (AdditionalRouteDescription additionalEndpoint : additionalEndpoints) {
-                    sb.staticResourcePath(adjustRoot(httpRoot, additionalEndpoint.getUri()),
+                    sb.staticResourcePath(additionalEndpoint.getUri(),
                             additionalEndpoint.getDescription());
                 }
                 sb.resourcesEnd();

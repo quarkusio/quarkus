@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.json.Json;
@@ -137,6 +138,34 @@ public class OpenApiTestCase {
         Assertions.assertEquals(ctSchemaType,
                 mutliTypedObjectSchema,
                 "Normal and Mutiny Multi have same schema");
+
+        // Verify presence of Health API
+        JsonObject healthPath = paths.getJsonObject("/q/health");
+        Assertions.assertNotNull(healthPath);
+        Set<String> healthKeys = healthPath.keySet();
+        Iterator<String> healthKeysIterator = healthKeys.iterator();
+        Assertions.assertEquals(3, healthPath.size());
+        Assertions.assertEquals("summary", healthKeysIterator.next());
+        Assertions.assertEquals("description", healthKeysIterator.next());
+        Assertions.assertEquals("get", healthKeysIterator.next());
+
+        JsonObject livenessPath = paths.getJsonObject("/q/health/live");
+        Assertions.assertNotNull(livenessPath);
+        Set<String> livenessKeys = livenessPath.keySet();
+        Iterator<String> livenessKeysIterator = livenessKeys.iterator();
+        Assertions.assertEquals(3, livenessKeys.size());
+        Assertions.assertEquals("summary", livenessKeysIterator.next());
+        Assertions.assertEquals("description", livenessKeysIterator.next());
+        Assertions.assertEquals("get", livenessKeysIterator.next());
+
+        JsonObject readinessPath = paths.getJsonObject("/q/health/ready");
+        Assertions.assertNotNull(readinessPath);
+        Set<String> readinessKeys = readinessPath.keySet();
+        Iterator<String> readinessKeysIterator = readinessKeys.iterator();
+        Assertions.assertEquals(3, readinessKeys.size());
+        Assertions.assertEquals("summary", readinessKeysIterator.next());
+        Assertions.assertEquals("description", readinessKeysIterator.next());
+        Assertions.assertEquals("get", readinessKeysIterator.next());
     }
 
     protected static String schemaType(String responseCode, String mediaType, JsonObject responses, JsonObject schemas) {

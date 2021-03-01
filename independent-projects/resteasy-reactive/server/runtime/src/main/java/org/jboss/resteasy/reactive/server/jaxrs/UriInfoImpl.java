@@ -71,7 +71,7 @@ public class UriInfoImpl implements UriInfo {
             ServerHttpRequest request = currentRequest.serverRequest();
             try {
                 // TCK says normalized
-                requestUri = new URI(currentRequest.getAbsoluteURI() + (request.query() == null ? "" : "?" + request.query()))
+                requestUri = new URI(currentRequest.getAbsoluteURI())
                         .normalize();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);

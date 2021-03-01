@@ -96,7 +96,7 @@ updates:
       # AWS
       - dependency-name: software.amazon.awssdk:*
       - dependency-name: com.amazon.alexa:*
-      - dependency-name: com.amazonaws:aws-lambda-java-events
+      - dependency-name: com.amazonaws:*
       # Apache Commons
       - dependency-name: commons-io:commons-io
       - dependency-name: org.apache.commons:commons-lang3

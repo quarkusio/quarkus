@@ -14,12 +14,12 @@ public class DevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("entities", new HibernateSearchSupplier());
+        return new DevConsoleRuntimeTemplateInfoBuildItem("entityTypes", new HibernateSearchSupplier());
     }
 
     @BuildStep
     @Record(value = STATIC_INIT, optional = true)
     DevConsoleRouteBuildItem invokeEndpoint(HibernateSearchDevConsoleRecorder recorder) {
-        return new DevConsoleRouteBuildItem("entities", "POST", recorder.indexEntity());
+        return new DevConsoleRouteBuildItem("entity-types", "POST", recorder.indexEntity());
     }
 }

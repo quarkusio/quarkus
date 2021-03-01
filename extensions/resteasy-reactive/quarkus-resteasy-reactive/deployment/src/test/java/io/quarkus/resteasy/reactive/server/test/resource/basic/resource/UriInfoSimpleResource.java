@@ -38,6 +38,12 @@ public class UriInfoSimpleResource {
         return "CONTENT";
     }
 
+    @Path("/uri")
+    @GET
+    public String get(@Context UriInfo info) {
+        return info.getRequestUri().toASCIIString();
+    }
+
     @Path("/simple/fromField")
     @GET
     public String getField(@QueryParam("abs") String abs) {

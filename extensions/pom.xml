@@ -196,6 +196,9 @@
         <module>logging-sentry</module>
         <module>logging-gelf</module>
 
+        <!-- Search and Indexing -->
+        <module>lucene</module>
+
         <!-- Templating -->
         <module>qute</module>
 

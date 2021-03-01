@@ -1,0 +1,12 @@
+---
+name: "Lucene"
+metadata:
+  keywords:
+  - "search"
+  - "query"
+  - "index"
+  - "full-text"
+  guide: "https://quarkus.io/guides/lucene"
+  categories:
+  - "search"
+  status: "preview"

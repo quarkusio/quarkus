@@ -210,6 +210,7 @@
         <avro.version>1.10.0</avro.version>
         <jacoco.version>0.8.6</jacoco.version>
         <testcontainers.version>1.15.2</testcontainers.version>
+        <lucene.version>8.7.0</lucene.version>
     </properties>
 
     <dependencyManagement>
@@ -2392,6 +2393,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-webjars-locator-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-lucene</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -5012,6 +5018,23 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-builder</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- Lucene -->
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-core</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-analyzers-common</artifactId>
+                <version>${lucene.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.lucene</groupId>
+                <artifactId>lucene-queryparser</artifactId>
+                <version>${lucene.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

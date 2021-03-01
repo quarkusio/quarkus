@@ -160,6 +160,8 @@
         <module>native-config-profile</module>
         <module>logging-min-level-unset</module>
         <module>logging-min-level-set</module>
+        <module>lucene</module>
+
 
         <!-- gRPC tests -->
         <module>grpc-tls</module>

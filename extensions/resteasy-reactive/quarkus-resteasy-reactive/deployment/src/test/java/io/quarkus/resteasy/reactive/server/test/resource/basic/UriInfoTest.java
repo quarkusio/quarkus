@@ -8,6 +8,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
+import org.hamcrest.Matchers;
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -27,6 +28,7 @@ import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoS
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.UriInfoSimpleSingletonResource;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
+import io.restassured.RestAssured;
 
 /**
  * @tpSubChapter Resources
@@ -77,6 +79,9 @@ public class UriInfoTest {
     public void testUriInfo() throws Exception {
         basicTest("/simple", UriInfoSimpleResource.class.getSimpleName());
         basicTest("/simple/fromField", UriInfoSimpleResource.class.getSimpleName());
+
+        RestAssured.get("/" + UriInfoSimpleResource.class.getSimpleName() + "/uri?foo=bar").then()
+                .body(Matchers.endsWith("/uri?foo=bar"));
     }
 
     /**

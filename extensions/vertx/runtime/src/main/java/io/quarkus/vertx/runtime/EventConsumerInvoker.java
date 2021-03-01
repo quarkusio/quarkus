@@ -18,6 +18,10 @@ public abstract class EventConsumerInvoker {
         return false;
     }
 
+    public boolean isOrdered() {
+        return false;
+    }
+
     public void invoke(Message<Object> message) throws Exception {
         ManagedContext requestContext = Arc.container().requestContext();
         if (requestContext.isActive()) {

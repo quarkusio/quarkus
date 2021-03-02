@@ -7,6 +7,7 @@ import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
+import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -22,9 +23,13 @@ public class HibernateSearchDevConsoleRecorder {
                 if (form.isEmpty()) {
                     return;
                 }
-                SearchMapping searchMapping = HibernateSearchSupplier.searchMapping();
-                searchMapping.scope(Object.class,
-                        searchMapping.allIndexedEntities().stream()
+                SearchMapping mapping = HibernateSearchSupplier.searchMapping();
+                if (mapping == null) {
+                    flashMessage(event, "There aren't any indexed entity types!", FlashScopeUtil.FlashMessageStatus.ERROR);
+                    return;
+                }
+                mapping.scope(Object.class,
+                        mapping.allIndexedEntities().stream()
                                 .map(SearchIndexedEntity::jpaName)
                                 .filter(form::contains)
                                 .collect(Collectors.toList()))

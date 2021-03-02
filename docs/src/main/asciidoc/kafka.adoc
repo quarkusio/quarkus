@@ -384,14 +384,45 @@ The `io.smallrye.reactive.messaging.annotations.Emitter`, `io.smallrye.reactive.
 The new `Emitter.send` method returns a `CompletionStage` completed when the produced message is acknowledged.
 ====
 
-== Kafka Health Check
+== Kafka Health Checks
 
-If you are using the `quarkus-smallrye-health` extension, `quarkus-kafka` can add a readiness health check
-to validate the connection to the broker. This is disabled by default.
+Quarkus provides several health checks for Kafka.
+These checks are used in combination with the `quarkus-smallrye-health` extension.
 
-If enabled, when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
+When using the `quarkus-kafka` extension, you can enable _readiness_ health check by setting the `quarkus.kafka.health.enabled` property to `true` in your `application.properties`.
+This check reports the status of the interaction with a _default_ Kafka broker (configured using `kafka.bootstrap.servers`).
+That check requires an _admin connection_ with the Kafka broker.
+This check is disabled by default.
+If enabled, when you access the `/q/health/ready` endpoint of your application, you will have information about the connection validation status.
 
-This behavior can be enabled by setting the `quarkus.kafka.health.enabled` property to `true` in your `application.properties`.
+When using Reactive Messaging and the Kafka connector, each configured channel (incoming or outgoing) provides a _liveness_ and _readiness_ check.
+The _liveness_ check captures any unrecoverable failure happening during the communication with Kafka.
+The _readiness_ check verifies that communication with Kafka is established.
+For each channel, you can disable the checks using:
+
+[source, properties]
+----
+# Disable both liveness and readiness checks with `health-enabled=false`:
+
+# Incoming channel (receiving records form Kafka)
+mp.messaging.incoming.your-channel.health-enabled=false
+# Outgoing channel (writing records to Kafka)
+mp.messaging.outgoing.your-channel.health-enabled=false
+
+# Disable only the readiness check with `health-readiness-enabled=false`:
+
+mp.messaging.incoming.your-channel.health-readiness-enabled=false
+mp.messaging.outgoing.your-channel.health-readiness-enabled=false
+----
+
+NOTE: You can configure the `bootstrap.servers` for each channel. Defaults is `kafka.bootstrap.servers`.
+
+Reactive Messaging readiness check offers two strategies.
+The default strategy verifies that an active connection is established with the broker.
+This approach is not intrusive as it's based on built-in metrics.
+
+Using the `health-readiness-topic-verification=true` attribute, you can also check the topics used by the application exist in the broker.
+Note that, to achieve this, an _admin connection_ is required.
 
 == JSON serialization
 

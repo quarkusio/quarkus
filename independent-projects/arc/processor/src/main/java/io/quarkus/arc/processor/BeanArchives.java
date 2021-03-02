@@ -244,6 +244,9 @@ public final class BeanArchives {
 
     static boolean index(Indexer indexer, String className, ClassLoader classLoader) {
         boolean result = false;
+        if (Types.isPrimitiveClassName(className)) {
+            return false;
+        }
         try (InputStream stream = classLoader
                 .getResourceAsStream(className.replace('.', '/') + ".class")) {
             if (stream != null) {

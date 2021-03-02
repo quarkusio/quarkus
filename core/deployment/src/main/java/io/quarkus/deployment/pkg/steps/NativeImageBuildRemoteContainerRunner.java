@@ -57,6 +57,8 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
         copyFromContainerVolume(resultingExecutableName, "Failed to copy native image from container volume back to the host.");
         if (nativeConfig.debug.enabled) {
             copyFromContainerVolume("sources", "Failed to copy sources from container volume back to the host.");
+            String symbols = String.format("%s.debug", nativeImageName);
+            copyFromContainerVolume(symbols, "Failed to copy debug symbols from container volume back to the host.");
         }
         // docker container rm <containerID>
         final String[] rmTempContainerCommand = new String[] { containerRuntime.getExecutableName(), "container", "rm",

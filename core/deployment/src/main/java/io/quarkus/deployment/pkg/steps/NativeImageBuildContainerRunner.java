@@ -70,6 +70,17 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
         return buildCommand("run", getContainerRuntimeBuildArgs(), args);
     }
 
+    @Override
+    protected void objcopy(String... args) {
+        final List<String> containerRuntimeBuildArgs = getContainerRuntimeBuildArgs();
+        Collections.addAll(containerRuntimeBuildArgs, "--entrypoint", "/bin/bash");
+        final ArrayList<String> objcopyCommand = new ArrayList<>(2);
+        objcopyCommand.add("-c");
+        objcopyCommand.add("objcopy " + String.join(" ", args));
+        final String[] command = buildCommand("run", containerRuntimeBuildArgs, objcopyCommand);
+        runCommand(command, null, null);
+    }
+
     protected List<String> getContainerRuntimeBuildArgs() {
         List<String> containerRuntimeArgs = new ArrayList<>();
         nativeConfig.containerRuntimeOptions.ifPresent(containerRuntimeArgs::addAll);

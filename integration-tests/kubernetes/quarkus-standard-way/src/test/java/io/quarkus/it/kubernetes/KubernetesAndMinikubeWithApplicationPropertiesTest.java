@@ -78,7 +78,8 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
                     assertEquals("ClusterIP", spec.getType());
                     assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getNodePort()).isNull();
-                        assertThat(p.getPort()).isEqualTo(9090);
+                        assertThat(p.getPort()).isEqualTo(80);
+                        assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });
                 });
             });
@@ -114,7 +115,8 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
                     assertEquals("NodePort", spec.getType());
                     assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getNodePort()).isNotNull();
-                        assertThat(p.getPort()).isEqualTo(9090);
+                        assertThat(p.getPort()).isEqualTo(80);
+                        assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });
                 });
             });

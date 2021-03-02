@@ -23,9 +23,9 @@ import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.MountBuilder;
+import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.config.SecretVolumeBuilder;
-import io.dekorate.kubernetes.configurator.AddPort;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
@@ -58,11 +58,11 @@ import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
 import io.dekorate.project.ScmInfo;
 import io.dekorate.utils.Annotations;
+import io.dekorate.utils.Strings;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -102,23 +102,35 @@ public class KubernetesCommonHelper {
     }
 
     /**
-     * Creates the common configurator build items.
+     * Creates the configurator build items.
      */
-    public static List<ConfiguratorBuildItem> createGlobalConfigurators(List<KubernetesPortBuildItem> ports) {
-        List<ConfiguratorBuildItem> result = new ArrayList<>();
-        verifyPorts(ports).entrySet().stream()
+    public static Map<String, Port> combinePorts(List<KubernetesPortBuildItem> ports,
+            PlatformConfiguration config) {
+        Map<String, Port> allPorts = new HashMap<>();
+        allPorts.putAll(verifyPorts(ports).entrySet().stream()
                 .map(e -> new PortBuilder().withName(e.getKey()).withContainerPort(e.getValue()).build())
-                .forEach(p -> result.add(new ConfiguratorBuildItem(new AddPort(p))));
-        return result;
-    }
+                .collect(Collectors.toMap(Port::getName, p -> p)));
 
-    /**
-     * Creates the common configurator build items.
-     */
-    public static List<ConfiguratorBuildItem> createPlatformConfigurators(PlatformConfiguration config) {
-        List<ConfiguratorBuildItem> result = new ArrayList<>();
-        config.getPorts().entrySet().forEach(e -> result.add(new ConfiguratorBuildItem(new AddPort(PortConverter.convert(e)))));
-        return result;
+        config.getPorts().entrySet().forEach(e -> {
+            String name = e.getKey();
+            Port configuredPort = PortConverter.convert(e);
+            Port buildItemPort = allPorts.get(name);
+            Port combinedPort = buildItemPort == null ? configuredPort
+                    : new PortBuilder()
+                            .withName(name)
+                            .withHostPort(configuredPort.getHostPort() != null && configuredPort.getHostPort() != 0
+                                    ? configuredPort.getHostPort()
+                                    : buildItemPort.getHostPort())
+                            .withContainerPort(
+                                    configuredPort.getContainerPort() != null && configuredPort.getContainerPort() != 0
+                                            ? configuredPort.getContainerPort()
+                                            : buildItemPort.getContainerPort())
+                            .withPath(Strings.isNotNullOrEmpty(configuredPort.getPath()) ? configuredPort.getPath()
+                                    : buildItemPort.getPath())
+                            .build();
+            allPorts.put(name, combinedPort);
+        });
+        return allPorts;
     }
 
     /**
@@ -341,7 +353,7 @@ public class KubernetesCommonHelper {
 
         project.ifPresent(p -> {
             ScmInfo scm = p.getScmInfo();
-            String vcsUrl = scm != null ? scm.getUrl() : null;
+            String vcsUrl = scm != null ? scm.getRemote().get("origin") : null;
             String commitId = scm != null ? scm.getCommit() : null;
 
             //Dekorate uses its own annotations. Let's replace them with the quarkus ones.

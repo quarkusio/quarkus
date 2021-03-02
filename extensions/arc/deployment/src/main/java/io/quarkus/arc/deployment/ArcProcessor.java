@@ -360,12 +360,12 @@ public class ArcProcessor {
     // PHASE 2 - register all beans
     @BuildStep
     public BeanRegistrationPhaseBuildItem registerBeans(ContextRegistrationPhaseBuildItem contextRegistrationPhase,
-            List<ContextConfiguratorBuildItem> contextConfigurators,
+            List<ContextConfiguratorBuildItem> contextConfigurationRegistry,
             BuildProducer<InterceptorResolverBuildItem> interceptorResolver,
             BuildProducer<BeanDiscoveryFinishedBuildItem> beanDiscoveryFinished,
             BuildProducer<TransformedAnnotationsBuildItem> transformedAnnotations) {
 
-        for (ContextConfiguratorBuildItem contextConfigurator : contextConfigurators) {
+        for (ContextConfiguratorBuildItem contextConfigurator : contextConfigurationRegistry) {
             for (ContextConfigurator value : contextConfigurator.getValues()) {
                 // Just make sure the configurator is processed
                 value.done();
@@ -385,9 +385,9 @@ public class ArcProcessor {
     // PHASE 3 - register synthetic observers
     @BuildStep
     public ObserverRegistrationPhaseBuildItem registerSyntheticObservers(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            List<BeanConfiguratorBuildItem> beanConfigurators) {
+            List<BeanConfiguratorBuildItem> beanConfigurationRegistry) {
 
-        for (BeanConfiguratorBuildItem configurator : beanConfigurators) {
+        for (BeanConfiguratorBuildItem configurator : beanConfigurationRegistry) {
             // Just make sure the configurator is processed
             configurator.getValues().forEach(BeanConfigurator::done);
         }
@@ -401,12 +401,12 @@ public class ArcProcessor {
     // PHASE 4 - initialize and validate the bean deployment
     @BuildStep
     public ValidationPhaseBuildItem validate(ObserverRegistrationPhaseBuildItem observerRegistrationPhase,
-            List<ObserverConfiguratorBuildItem> observerConfigurators,
+            List<ObserverConfiguratorBuildItem> observerConfigurationRegistry,
             List<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
             BuildProducer<SynthesisFinishedBuildItem> synthesisFinished) {
 
-        for (ObserverConfiguratorBuildItem configurator : observerConfigurators) {
+        for (ObserverConfiguratorBuildItem configurator : observerConfigurationRegistry) {
             // Just make sure the configurator is processed
             configurator.getValues().forEach(ObserverConfigurator::done);
         }

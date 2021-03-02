@@ -6,9 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 
-import io.dekorate.deps.kubernetes.api.model.ObjectMeta;
-import io.dekorate.deps.openshift.api.model.BuildConfigSpecFluent;
 import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.openshift.api.model.BuildConfigSpecFluent;
 import io.quarkus.deployment.util.FileUtil;
 
 public class ApplyDockerfileToBuildConfigDecorator extends NamedResourceDecorator<BuildConfigSpecFluent<?>> {

@@ -78,7 +78,8 @@ public class MinikubeWithApplicationPropertiesTest {
                     assertEquals("NodePort", spec.getType());
                     assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getNodePort()).isEqualTo(31999);
-                        assertThat(p.getPort()).isEqualTo(9090);
+                        assertThat(p.getPort()).isEqualTo(80);
+                        assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });
                 });
             });

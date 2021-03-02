@@ -2,11 +2,11 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.stream.Collectors;
 
-import io.dekorate.deps.kubernetes.api.model.KubernetesListBuilder;
-import io.dekorate.deps.kubernetes.api.model.ObjectMeta;
-import io.dekorate.deps.kubernetes.api.model.rbac.PolicyRuleBuilder;
-import io.dekorate.deps.kubernetes.api.model.rbac.RoleBuilder;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
+import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class AddRoleResourceDecorator extends ResourceProvidingDecorator<KubernetesListBuilder> {

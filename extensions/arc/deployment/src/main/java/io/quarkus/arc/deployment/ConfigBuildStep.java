@@ -191,7 +191,7 @@ public class ConfigBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigMappingBuildItem> configMappings,
-            BuildProducer<BeanConfiguratorBuildItem> beanConfigurators) {
+            BuildProducer<BeanConfiguratorBuildItem> beanConfigurationRegistry) {
 
         for (AnnotationInstance instance : combinedIndex.getIndex().getAnnotations(CONFIG_MAPPING_NAME)) {
             AnnotationTarget target = instance.target();
@@ -234,7 +234,7 @@ public class ConfigBuildStep {
 
             configMappings.produce(new ConfigMappingBuildItem(type, prefix));
 
-            beanConfigurators.produce(new BeanConfiguratorBuildItem(
+            beanConfigurationRegistry.produce(new BeanConfiguratorBuildItem(
                     beanRegistrationPhase.getContext()
                             .configure(type)
                             .types(type)

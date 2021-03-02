@@ -1,10 +1,10 @@
 package io.quarkus.container.image.openshift.deployment;
 
-import io.dekorate.deps.kubernetes.api.model.ContainerFluent;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
+import io.fabric8.kubernetes.api.model.ContainerFluent;
 
 public class RemoveEnvVarDecorator extends ApplicationContainerDecorator<ContainerFluent<?>> {
 

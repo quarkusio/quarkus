@@ -91,7 +91,7 @@ class KubernetesProcessor {
             List<DecoratorBuildItem> decorators,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer) {
 
-        List<ConfiguratorBuildItem> allConfigurators = new ArrayList<>(configurators);
+        List<ConfiguratorBuildItem> allConfigurationRegistry = new ArrayList<>(configurators);
         List<DecoratorBuildItem> allDecorators = new ArrayList<>(decorators);
 
         if (kubernetesPorts.isEmpty()) {
@@ -137,13 +137,13 @@ class KubernetesProcessor {
                 session.setWriter(sessionWriter);
                 session.setReader(sessionReader);
 
-                session.feed(Maps.fromProperties(config));
+                session.addPropertyConfiguration(Maps.fromProperties(config));
 
                 //We need to verify to filter out anything that doesn't extend the Configurator class.
                 //The ConfiguratorBuildItem is a wrapper to Object.
-                allConfigurators.stream().filter(d -> d.matches(Configurator.class)).forEach(i -> {
+                allConfigurationRegistry.stream().filter(d -> d.matches(Configurator.class)).forEach(i -> {
                     Configurator configurator = (Configurator) i.getConfigurator();
-                    session.configurators().add(configurator);
+                    session.getConfigurationRegistry().add(configurator);
                 });
 
                 //We need to verify to filter out anything that doesn't extend the Decorator class.
@@ -152,9 +152,9 @@ class KubernetesProcessor {
                     String group = i.getGroup();
                     Decorator decorator = (Decorator) i.getDecorator();
                     if (Strings.isNullOrEmpty(group)) {
-                        session.resources().decorate(decorator);
+                        session.getResourceRegistry().decorate(decorator);
                     } else {
-                        session.resources().decorate(group, decorator);
+                        session.getResourceRegistry().decorate(group, decorator);
                     }
                 });
 

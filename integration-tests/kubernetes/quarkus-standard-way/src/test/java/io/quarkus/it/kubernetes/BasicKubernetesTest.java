@@ -80,6 +80,7 @@ public class BasicKubernetesTest {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getImagePullPolicy()).isEqualTo("Always"); // expect the default value
                             assertThat(container.getPorts()).singleElement().satisfies(p -> {
+
                                 assertThat(p.getContainerPort()).isEqualTo(8080);
                             });
                         });
@@ -97,7 +98,8 @@ public class BasicKubernetesTest {
                         entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
 
                 assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
-                    assertThat(p.getPort()).isEqualTo(8080);
+                    assertThat(p.getPort()).isEqualTo(80);
+                    assertThat(p.getTargetPort().getIntVal()).isEqualTo(8080);
                 });
             });
         });

@@ -35,6 +35,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.deployment.AddNodePortDecorator;
+import io.quarkus.kubernetes.deployment.AddPortToKubernetesConfig;
 import io.quarkus.kubernetes.deployment.ApplyContainerImageDecorator;
 import io.quarkus.kubernetes.deployment.ApplyHttpGetActionPortDecorator;
 import io.quarkus.kubernetes.deployment.ApplyServiceTypeDecorator;
@@ -82,12 +83,13 @@ public class MinikubeProcessor {
     }
 
     @BuildStep
-    public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config, List<KubernetesPortBuildItem> ports) {
+    public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config,
+            List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
-        result.addAll(KubernetesCommonHelper.createPlatformConfigurators(config));
-        result.addAll(KubernetesCommonHelper.createGlobalConfigurators(ports));
+        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(e.getValue())));
+        });
         return result;
-
     }
 
     @BuildStep

@@ -1,10 +1,10 @@
 package io.quarkus.kubernetes.deployment;
 
-import io.dekorate.deps.kubernetes.api.model.ObjectMeta;
-import io.dekorate.deps.openshift.api.model.SourceBuildStrategyFluent;
 import io.dekorate.kubernetes.decorator.*;
 import io.dekorate.s2i.decorator.AddBuildConfigResourceDecorator;
 import io.dekorate.utils.Images;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.openshift.api.model.SourceBuildStrategyFluent;
 
 public class ApplyBuilderImageDecorator extends NamedResourceDecorator<SourceBuildStrategyFluent<?>> {
 

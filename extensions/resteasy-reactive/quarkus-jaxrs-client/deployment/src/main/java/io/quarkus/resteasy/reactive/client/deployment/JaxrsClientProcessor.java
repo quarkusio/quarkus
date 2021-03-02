@@ -6,7 +6,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.Closeable;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,6 +39,7 @@ import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
+import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.model.MaybeRestClientInterface;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
@@ -69,6 +69,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -86,6 +87,7 @@ import io.quarkus.resteasy.reactive.client.deployment.beanparam.CookieParamItem;
 import io.quarkus.resteasy.reactive.client.deployment.beanparam.HeaderParamItem;
 import io.quarkus.resteasy.reactive.client.deployment.beanparam.Item;
 import io.quarkus.resteasy.reactive.client.deployment.beanparam.QueryParamItem;
+import io.quarkus.resteasy.reactive.client.runtime.ClientResponseBuilderFactory;
 import io.quarkus.resteasy.reactive.client.runtime.ResteasyReactiveClientRecorder;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
@@ -109,6 +111,12 @@ public class JaxrsClientProcessor {
     @BuildStep
     void addFeature(BuildProducer<FeatureBuildItem> features) {
         features.produce(new FeatureBuildItem(RESTEASY_REACTIVE_JAXRS_CLIENT));
+    }
+
+    @BuildStep
+    void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+        serviceProviders.produce(new ServiceProviderBuildItem(ResponseBuilderFactory.class.getName(),
+                ClientResponseBuilderFactory.class.getName()));
     }
 
     @BuildStep
@@ -255,9 +263,9 @@ public class JaxrsClientProcessor {
        Generates client stub, e.g. for the following interface:
        ```
        public interface BaseClient {
-          @GET
-          @Path("/base")
-          Response executeBaseGet();
+              @POST
+              @Path("/base")
+              Response executeBasePost();
        }
        ```
        Generates the following (with MicroProfile enricher):

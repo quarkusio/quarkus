@@ -19,30 +19,26 @@ import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 
 public class RestClientCDIDelegateBuilder {
 
-    public static final String MP_REST = "mp-rest";
-    public static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
-    public static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
-    public static final String REST_CONNECT_TIMEOUT_FORMAT = "%s/" + MP_REST + "/connectTimeout";
-    public static final String REST_READ_TIMEOUT_FORMAT = "%s/" + MP_REST + "/readTimeout";
+    private static final String MP_REST = "mp-rest";
+    private static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
+    private static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
+    private static final String REST_CONNECT_TIMEOUT_FORMAT = "%s/" + MP_REST + "/connectTimeout";
+    private static final String REST_READ_TIMEOUT_FORMAT = "%s/" + MP_REST + "/readTimeout";
     public static final String REST_SCOPE_FORMAT = "%s/" + MP_REST + "/scope";
-    public static final String REST_PROVIDERS = "%s/" + MP_REST + "/providers";
-    public static final String REST_TRUST_STORE = "%s/" + MP_REST + "/trustStore";
-    public static final String REST_TRUST_STORE_PASSWORD = "%s/" + MP_REST + "/trustStorePassword";
-    public static final String REST_TRUST_STORE_TYPE = "%s/" + MP_REST + "/trustStoreType";
-    public static final String REST_KEY_STORE = "%s/" + MP_REST + "/keyStore";
-    public static final String REST_KEY_STORE_PASSWORD = "%s/" + MP_REST + "/keyStorePassword";
-    public static final String REST_KEY_STORE_TYPE = "%s/" + MP_REST + "/keyStoreType";
-    public static final String REST_HOSTNAME_VERIFIER = "%s/" + MP_REST + "/hostnameVerifier";
-    public static final String REST_NOOP_HOSTNAME_VERIFIER = "io.quarkus.restclient.NoopHostnameVerifier";
-    public static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
+    private static final String REST_PROVIDERS = "%s/" + MP_REST + "/providers";
+    private static final String REST_TRUST_STORE = "%s/" + MP_REST + "/trustStore";
+    private static final String REST_TRUST_STORE_PASSWORD = "%s/" + MP_REST + "/trustStorePassword";
+    private static final String REST_TRUST_STORE_TYPE = "%s/" + MP_REST + "/trustStoreType";
+    private static final String REST_KEY_STORE = "%s/" + MP_REST + "/keyStore";
+    private static final String REST_KEY_STORE_PASSWORD = "%s/" + MP_REST + "/keyStorePassword";
+    private static final String REST_KEY_STORE_TYPE = "%s/" + MP_REST + "/keyStoreType";
+    private static final String REST_HOSTNAME_VERIFIER = "%s/" + MP_REST + "/hostnameVerifier";
+    private static final String REST_NOOP_HOSTNAME_VERIFIER = "io.quarkus.restclient.NoopHostnameVerifier";
+    private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
 
     private final Class<?> jaxrsInterface;
     private final String baseUriFromAnnotation;
@@ -66,12 +62,6 @@ public class RestClientCDIDelegateBuilder {
         configureTimeouts(builder);
         configureProviders(builder);
         configureSsl(builder);
-        // If we have context propagation, then propagate context to the async client threads
-        InstanceHandle<ManagedExecutor> managedExecutor = Arc.container().instance(ManagedExecutor.class);
-        if (managedExecutor.isAvailable()) {
-            builder.executorService(managedExecutor.get());
-        }
-
         Object result = builder.build(jaxrsInterface);
         return result;
     }

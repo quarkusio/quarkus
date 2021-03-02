@@ -4,7 +4,6 @@ import java.net.URI;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
-import javax.inject.Inject;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
@@ -12,16 +11,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
-import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 
 @ApplicationScoped
 public class ClientCallingResource {
     private static final ObjectMapper mapper = new JsonMapper();
-
-    @Inject
-    Vertx vertx;
 
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());

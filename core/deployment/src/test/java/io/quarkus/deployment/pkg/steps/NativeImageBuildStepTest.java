@@ -22,6 +22,12 @@ public class NativeImageBuildStepTest {
         assertVersion(20, 1, ORACLE, Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
         assertVersion(20, 1, MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
+        assertVersion(20, 1, MANDREL, Version
+                .of(Stream.of("GraalVM Version 20.1.0.1-Final 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
+        assertVersion(21, 0, MANDREL, Version
+                .of(Stream.of("GraalVM Version 21.0.0.0-0b3 (Mandrel Distribution) (Java Version 11.0.8)")));
+        assertVersion(20, 3, MANDREL, Version
+                .of(Stream.of("GraalVM Version 20.3.1.2-dev (Mandrel Distribution) (Java Version 11.0.8)")));
     }
 
     static void assertVersion(int major, int minor, Distribution distro, Version version) {

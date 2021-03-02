@@ -4,6 +4,9 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'
+      # TODO: revisit master and 1.** in case incremental becomes the default
+      - 'master'
+      - '1.**'
     # paths-ignore in ci-fork-mvn-cache.yml should match
     paths-ignore:
       - '.gitignore'
@@ -43,7 +46,8 @@ jobs:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     steps:
       - name: Build
         run: sleep 30
@@ -52,7 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     # Skip master in forks
     # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
-    if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')) && ( \
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "((github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')) && ( \
            github.event_name != 'pull_request' || ( \
              github.event.pull_request.draft == false && \
              github.event.pull_request.state != 'closed' && \
@@ -144,7 +149,8 @@ jobs:
     name: JVM Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 240
     env:
@@ -268,7 +274,8 @@ jobs:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -359,7 +366,8 @@ jobs:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -432,7 +440,8 @@ jobs:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -523,7 +532,8 @@ jobs:
     name: MicroProfile TCKs Tests
     needs: build-jdk11
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     runs-on: ubuntu-latest
     timeout-minutes: 150
 
@@ -579,7 +589,8 @@ jobs:
     name: Native Tests - Read JSON matrix
     runs-on: ubuntu-latest
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     outputs:
       matrix: ${{ steps.read.outputs.matrix }}
     steps:
@@ -595,7 +606,8 @@ jobs:
     needs: [build-jdk11, native-tests-read-json-matrix]
     runs-on: ubuntu-latest
     # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # TODO: revisit dependabot predicate in case incremental becomes the default
+    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:

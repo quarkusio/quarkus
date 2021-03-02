@@ -10,7 +10,8 @@ public class DevConfig {
     /**
      * Whether or not Quarkus should disable it's ability to not do a full restart
      * when changes to classes are compatible with JVM instrumentation.
-     * If this is set to true, Quarkus will always restart on changes and never perform class redefinition.
+     * 
+     * If this is set to false, Quarkus will always restart on changes and never perform class redefinition.
      */
     @ConfigItem(defaultValue = "true")
     boolean instrumentation;

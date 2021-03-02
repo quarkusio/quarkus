@@ -1,11 +1,13 @@
 package io.quarkus.qute.resteasy.deployment;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.wildfly.common.Assert;
 
+import io.quarkus.qute.TemplateException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MissingTemplateTest {
@@ -15,13 +17,10 @@ public class MissingTemplateTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(MissingTemplateResource.class)
                     .addAsResource("templates/MissingTemplateResource/hello.txt"))
-            .assertException(t -> {
-                t.printStackTrace();
-                Assert.assertTrue(t.getMessage().contains(
-                        "Declared template MissingTemplateResource/missingTemplate could not be found. Either add it or delete its declaration in io.quarkus.qute.resteasy.deployment.MissingTemplateResource$Templates.missingTemplate"));
-            });
+            .setExpectedException(TemplateException.class);
 
     @Test
     public void emptyTest() {
+        fail();
     }
 }

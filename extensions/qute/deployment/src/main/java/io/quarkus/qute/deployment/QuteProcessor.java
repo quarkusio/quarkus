@@ -84,6 +84,7 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
+import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.Expression;
@@ -104,7 +105,6 @@ import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.WhenSectionHelper;
-import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
@@ -212,10 +212,11 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    List<CheckedTemplateBuildItem> collectTemplateTypeInfo(BeanArchiveIndexBuildItem index,
+    List<CheckedTemplateBuildItem> collectCheckedTemplates(BeanArchiveIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<TemplatePathBuildItem> templatePaths,
-            List<CheckedTemplateAdapterBuildItem> templateAdaptorBuildItems) {
+            List<CheckedTemplateAdapterBuildItem> templateAdaptorBuildItems,
+            QuteConfig config) {
         List<CheckedTemplateBuildItem> ret = new ArrayList<>();
 
         Map<DotName, CheckedTemplateAdapter> adaptors = new HashMap<>();
@@ -245,6 +246,20 @@ public class QuteProcessor {
         Set<AnnotationInstance> checkedTemplateAnnotations = new HashSet<>();
         checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE_OLD));
         checkedTemplateAnnotations.addAll(index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE));
+
+        // Build a set of file paths for validation
+        Set<String> filePaths = new HashSet<String>();
+        for (TemplatePathBuildItem templatePath : templatePaths) {
+            String path = templatePath.getPath();
+            filePaths.add(path);
+            // Also add version without suffix from the path
+            // For example for "items.html" also add "items"
+            for (String suffix : config.suffixes) {
+                if (path.endsWith(suffix)) {
+                    filePaths.add(path.substring(0, path.length() - (suffix.length() + 1)));
+                }
+            }
+        }
 
         for (AnnotationInstance annotation : checkedTemplateAnnotations) {
             if (annotation.target().kind() != Kind.CLASS) {
@@ -293,7 +308,23 @@ public class QuteProcessor {
                                     templatePath, methodInfo.declaringClass().name(), methodInfo,
                                     checkedTemplateMethod.declaringClass().name(), checkedTemplateMethod));
                 }
-                checkTemplatePath(templatePath, templatePaths, classInfo, methodInfo);
+                if (!filePaths.contains(templatePath)) {
+                    List<String> startsWith = new ArrayList<>();
+                    for (String filePath : filePaths) {
+                        if (filePath.startsWith(templatePath)) {
+                            startsWith.add(filePath);
+                        }
+                    }
+                    if (startsWith.isEmpty()) {
+                        throw new TemplateException(
+                                "No template matching the path " + templatePath + " could be found for: "
+                                        + classInfo.name() + "." + methodInfo.name());
+                    } else {
+                        throw new TemplateException(
+                                startsWith + " match the path " + templatePath
+                                        + " but the file suffix is not configured via the quarkus.qute.suffixes property");
+                    }
+                }
 
                 Map<String, String> bindings = new HashMap<>();
                 List<Type> parameters = methodInfo.parameters();
@@ -316,26 +347,6 @@ public class QuteProcessor {
         }
 
         return ret;
-    }
-
-    private void checkTemplatePath(String templatePath, List<TemplatePathBuildItem> templatePaths, ClassInfo enclosingClass,
-            MethodInfo methodInfo) {
-        for (TemplatePathBuildItem templatePathBuildItem : templatePaths) {
-            // perfect match
-            if (templatePathBuildItem.getPath().equals(templatePath)) {
-                return;
-            }
-            // if our templatePath is "Foo/hello", make it match "Foo/hello.txt"
-            // if they're not equal and they start with our path, there must be something left after
-            if (templatePathBuildItem.getPath().startsWith(templatePath)
-                    // check that we have an extension, let variant matching work later
-                    && templatePathBuildItem.getPath().charAt(templatePath.length()) == '.') {
-                return;
-            }
-        }
-        throw new TemplateException(
-                "Declared template " + templatePath + " could not be found. Either add it or delete its declaration in "
-                        + enclosingClass.name().toString('.') + "." + methodInfo.name());
     }
 
     @BuildStep
@@ -1054,7 +1065,8 @@ public class QuteProcessor {
                 if (name != null) {
                     // For "@Inject Template items" we try to match "items"
                     // For "@Location("github/pulls") Template pulls" we try to match "github/pulls"
-                    if (filePaths.stream().noneMatch(path -> path.endsWith(name))) {
+                    // For "@Location("foo/bar/baz.txt") Template baz" we try to match "foo/bar/baz.txt"
+                    if (!filePaths.contains(name)) {
                         validationErrors.produce(new ValidationErrorBuildItem(
                                 new TemplateException("No template found for " + injectionPoint.getTargetInfo())));
                     }

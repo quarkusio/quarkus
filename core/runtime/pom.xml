@@ -161,6 +161,9 @@
                         <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
                         <!-- This is needed because it contains some jar handling classes -->
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
+                        <!-- RestAssured uses groovy, which seems to do some things with soft references that
+                        prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->
+                        <runnerParentFirstArtifact>org.codehaus.groovy:groovy</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

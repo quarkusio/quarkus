@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
-import static org.hamcrest.CoreMatchers.containsString;
-
 import java.util.function.Supplier;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -27,6 +25,6 @@ public class ExceptionInReaderTest {
     @Test
     public void test() {
         RestAssured.with().contentType("application/json").body("{\"name\": \"brie\"}").put("/fromage")
-                .then().statusCode(500).body(containsString("MismatchedInputException"));
+                .then().statusCode(400);
     }
 }

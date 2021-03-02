@@ -28,9 +28,8 @@ public class HttpRemoteDevClientProvider implements RemoteDevClientProvider {
             return Optional.empty();
         }
         if (!liveReloadConfig.password.isPresent()) {
-            log.warn(
+            throw new RuntimeException(
                     "Live reload URL set but no password, remote dev requires a password, set quarkus.live-reload.password on both server and client");
-            return Optional.empty();
         }
         return Optional.of(new HttpRemoteDevClient(liveReloadConfig.url.get(), liveReloadConfig.password.get()));
     }

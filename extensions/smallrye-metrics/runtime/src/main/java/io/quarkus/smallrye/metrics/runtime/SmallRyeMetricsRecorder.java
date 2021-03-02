@@ -14,7 +14,6 @@ import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
@@ -50,8 +49,6 @@ import io.smallrye.metrics.elementdesc.BeanInfo;
 import io.smallrye.metrics.elementdesc.MemberInfo;
 import io.smallrye.metrics.interceptors.MetricResolver;
 import io.smallrye.metrics.setup.MetricsMetadata;
-import io.vertx.ext.web.Route;
-import io.vertx.ext.web.Router;
 
 @Recorder
 public class SmallRyeMetricsRecorder {
@@ -89,15 +86,6 @@ public class SmallRyeMetricsRecorder {
     private static final String MEMORY_USED_NON_HEAP = "memory.usedNonHeap";
 
     private static final SmallRyeMetricsFactory factory = new SmallRyeMetricsFactory();
-
-    public Function<Router, Route> route(String name) {
-        return new Function<Router, Route>() {
-            @Override
-            public Route apply(Router router) {
-                return router.route(name);
-            }
-        };
-    }
 
     public SmallRyeMetricsHandler handler(String metricsPath) {
         SmallRyeMetricsHandler handler = new SmallRyeMetricsHandler();

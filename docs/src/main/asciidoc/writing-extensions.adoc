@@ -1453,9 +1453,57 @@ As a CDI based runtime, Quarkus extensions often make CDI beans available as par
 However, Quarkus DI solution does not support CDI Portable Extensions.
 Instead, Quarkus extensions can make use of various link:cdi-reference[Build Time Extension Points].
 
-=== Quarkus DEV Console
+=== Quarkus DEV UI
 
-You can make your extension support the link:dev-console[Quarkus DEV Console] for a greater developer experience.
+You can make your extension support the link:dev-ui[Quarkus DEV UI] for a greater developer experience.
+
+=== Extension-defined endpoints
+
+Your extension can add additional, non-application endpoints to be served alongside endpoints
+for Health, Metrics, OpenAPI, Swagger UI, etc. 
+
+Use a `NonApplicationRootPathBuildItem` to define an endpoint:
+
+[source%nowrap,java]
+----
+@BuildStep
+RouteBuildItem myExtensionRoute(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+    return nonApplicationRootPathBuildItem.routeBuilder()
+                .route("custom-endpoint")
+                .handler(new MyCustomHandler())
+                .displayOnNotFoundPage()
+                .build();
+}
+----
+
+Note that the path above does not start with a '/', indicating it is a relative path. The above
+endpoint will be served relative to the configured non-application endpoint root. The non-application
+endpoint root is `/q` by default, which means the resulting endpoint will be found at `/q/custom-endpoint`. 
+
+Absolute paths are handled differently. If the above called `route("/custom-endpoint")`, the resulting 
+endpoint will be found at `/custom-endpoint`.
+
+If an extension needs nested non-application endpoints:
+
+[source%nowrap,java]
+----
+@BuildStep
+RouteBuildItem myNestedExtensionRoute(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+    return nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute("custom-endpoint", "deep")
+                .handler(new MyCustomHandler())
+                .displayOnNotFoundPage()
+                .build();
+}
+----
+
+Given a default non-application endpoint root of `/q`, this will create an endpoint at `/q/custom-endpoint/deep`.
+
+Absolute paths also have an impact on nested endpoints. If the above called `nestedRoute("custom-endpoint", "/deep")`, 
+the resulting endpoint will be found at `/deep`.
+
+Refer to the link:all-config#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
+for details on how the non-application root path is configured.
 
 === Extension Health Check
 

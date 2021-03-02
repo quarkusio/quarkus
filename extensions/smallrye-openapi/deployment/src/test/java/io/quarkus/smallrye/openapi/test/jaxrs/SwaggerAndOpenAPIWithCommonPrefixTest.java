@@ -20,7 +20,7 @@ public class SwaggerAndOpenAPIWithCommonPrefixTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-openapi.path=/swagger"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.smallrye-openapi.path=swagger"), "application.properties"));
 
     @Test
     public void shouldWorkEvenWithCommonPrefix() {

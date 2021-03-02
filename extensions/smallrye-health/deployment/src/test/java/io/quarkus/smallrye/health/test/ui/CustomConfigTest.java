@@ -20,7 +20,7 @@ public class CustomConfigTest {
 
     @Test
     public void shouldUseCustomConfig() {
-        RestAssured.when().get("/q/custom").then().statusCode(200).body(containsString("SmallRye Health"));
-        RestAssured.when().get("/q/custom/index.html").then().statusCode(200).body(containsString("SmallRye Health"));
+        RestAssured.when().get("/custom").then().statusCode(200).body(containsString("SmallRye Health"));
+        RestAssured.when().get("/custom/index.html").then().statusCode(200).body(containsString("SmallRye Health"));
     }
 }

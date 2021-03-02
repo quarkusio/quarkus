@@ -122,7 +122,7 @@ public class MicrometerProcessor {
     MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
-                nonApplicationRootPathBuildItem.adjustPath(mConfig.export.prometheus.path));
+                nonApplicationRootPathBuildItem.resolvePath(mConfig.export.prometheus.path));
     }
 
     @BuildStep(onlyIf = MicrometerEnabled.class)

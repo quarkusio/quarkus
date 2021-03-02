@@ -167,16 +167,15 @@ public class SmallRyeOpenApiProcessor {
          */
         if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             recorder.setupClDevMode(shutdownContext);
-            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(
-                    nonApplicationRootPathBuildItem.adjustPath(openApiConfig.path), "Open API Schema document"));
         }
 
         Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
-        return new RouteBuildItem.Builder()
+        return nonApplicationRootPathBuildItem.routeBuilder()
                 .route(openApiConfig.path)
                 .handler(handler)
+                .displayOnNotFoundPage("Open API Schema document")
+                .requiresLegacyRedirect()
                 .blockingRoute()
-                .nonApplicationRoute()
                 .build();
     }
 

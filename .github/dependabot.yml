@@ -69,6 +69,7 @@ updates:
       - dependency-name: org.mockito:*
       - dependency-name: org.awaitility:awaitility
       - dependency-name: com.thoughtworks.xstream:xstream
+      - dependency-name: org.jacoco:*
       # Maven plugins
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin

@@ -110,7 +110,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             final CodestartProjectDefinition projectDefinition = catalog.createProject(input);
             projectDefinition.generate(invocation.getQuarkusProject().getProjectDirPath());
             invocation.log()
-                    .info("\n-----------\n" + MessageIcons.NOOP_ICON + " "
+                    .info("\n-----------\n" + MessageIcons.OK_ICON + " "
                             + projectDefinition.getRequiredCodestart(CodestartType.PROJECT).getName()
                             + " project has been successfully generated in:\n--> "
                             + invocation.getQuarkusProject().getProjectDirPath().toString() + "\n-----------");

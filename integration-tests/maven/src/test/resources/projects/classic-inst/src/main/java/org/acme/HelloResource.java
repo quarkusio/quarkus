@@ -47,12 +47,12 @@ public class HelloResource {
     @GET
     @Path("disable")
     public void disable() {
-        System.setProperty("quarkus.dev.instrumentation", "false");
+        System.setProperty("quarkus.live-reload.instrumentation", "false");
     }
 
     @GET
     @Path("enable")
     public void enable() {
-        System.setProperty("quarkus.dev.instrumentation","true");
+        System.setProperty("quarkus.live-reload.instrumentation","true");
     }
 }

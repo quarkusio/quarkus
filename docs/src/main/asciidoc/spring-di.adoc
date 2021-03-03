@@ -459,7 +459,7 @@ The various Spring Boot test features are not supported by {brand-name}. For tes
 endif::[]
 
 ifdef::downstream[]
-[id="overview-of-annotation-equivalents-in-spring-di-and-cdi"]
+[id="overview-of-annotation-equivalents-in-spring-di-and-cdi-{context}"]
 endif::[]
 == Overview of annotation equivalents in Spring DI and MicroProfile CDI
 

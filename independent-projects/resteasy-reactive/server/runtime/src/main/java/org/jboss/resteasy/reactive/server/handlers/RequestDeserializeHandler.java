@@ -69,7 +69,8 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                         } else {
                             result = new ReaderInterceptorContextImpl(requestContext,
                                     getAnnotations(requestContext),
-                                    type, type, effectiveRequestType, reader, requestContext.getInputStream(), interceptors,
+                                    type, genericType, effectiveRequestType, reader, requestContext.getInputStream(),
+                                    interceptors,
                                     serialisers)
                                             .proceed();
                         }

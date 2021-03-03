@@ -1,5 +1,6 @@
 package io.quarkus.jackson.runtime;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,10 +35,9 @@ public class ObjectMapperProducer {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         }
-        String timeZoneStr = jacksonConfigSupport.getTimeZone();
-        if (timeZoneStr != null) {
-            TimeZone timeZone = TimeZone.getTimeZone(timeZoneStr);
-            objectMapper.setTimeZone(timeZone);
+        ZoneId zoneId = jacksonConfigSupport.getTimeZone();
+        if ((zoneId != null) && !zoneId.getId().equals("UTC")) { // Jackson uses UTC as the default, so let's not reset it
+            objectMapper.setTimeZone(TimeZone.getTimeZone(zoneId));
         }
         List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
         for (ObjectMapperCustomizer customizer : sortedCustomizers) {

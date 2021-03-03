@@ -30,8 +30,9 @@ public final class ObjectSubstitutionBuildItem extends MultiBuildItem {
 
     public final Holder<?, ?> holder;
 
-    public <F, T> ObjectSubstitutionBuildItem(Class<F> from, Class<T> to, Class<ObjectSubstitution<F, T>> substitution) {
-        holder = new Holder<>(from, to, substitution);
+    public <F, T> ObjectSubstitutionBuildItem(Class<F> from, Class<T> to,
+            Class<? extends ObjectSubstitution<F, T>> substitution) {
+        holder = new Holder(from, to, substitution);
     }
 
     public ObjectSubstitutionBuildItem(Holder<?, ?> holder) {

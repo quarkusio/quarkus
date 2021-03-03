@@ -1,5 +1,6 @@
 package io.quarkus.jackson.runtime;
 
+import java.time.ZoneId;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -27,6 +28,6 @@ public class JacksonBuildTimeConfig {
      * Some examples values are "Asia/Jakarta" and "GMT+3".
      * If not set, Jackson will use its own default.
      */
-    @ConfigItem
-    public Optional<String> timezone;
+    @ConfigItem(defaultValue = "UTC")
+    public Optional<ZoneId> timezone;
 }

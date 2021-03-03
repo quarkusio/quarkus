@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -179,23 +178,6 @@ public class JacksonProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     SyntheticBeanBuildItem pushConfigurationBean(JacksonRecorder jacksonRecorder,
             JacksonBuildTimeConfig jacksonBuildTimeConfig) {
-
-        if (jacksonBuildTimeConfig.timezone.isPresent()) {
-            /*
-             * We need to make timezone a String instead of a java.util.TimeZone class
-             * because:
-             * 1) TimeZone cannot automatically be handled by the BytecodeRecorder
-             * 2) Handling it would require us to add non-JDK classes (i.e. sun.util.calendar.ZoneInfo) to bytecode recording
-             */
-            String timeZoneStr = jacksonBuildTimeConfig.timezone.get();
-            TimeZone timeZone = TimeZone.getTimeZone(timeZoneStr);
-            if ("GMT".equals(timeZone.getID()) && !timeZoneStr.startsWith("GMT")) {
-                // Parsing an illegal TZ string value results in falling back to GMT...
-                throw new IllegalArgumentException(
-                        "Value '" + timeZoneStr + "' is an invalid value for the 'quarkus.jackson.timezone' property");
-            }
-        }
-
         return SyntheticBeanBuildItem.configure(JacksonConfigSupport.class)
                 .scope(Singleton.class)
                 .supplier(jacksonRecorder.jacksonConfigSupport(jacksonBuildTimeConfig))

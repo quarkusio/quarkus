@@ -2,6 +2,7 @@ package io.quarkus.jackson.deployment;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.zone.ZoneRulesException;
 import java.util.Date;
 
 import javax.inject.Inject;
@@ -23,7 +24,7 @@ public class JacksonErroneousTimeZonePropertiesTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Pojo.class, SomeBean.class))
             .withConfigurationResource("application-erroneous-timezone-properties.properties")
-            .setExpectedException(IllegalArgumentException.class);
+            .setExpectedException(ZoneRulesException.class);
 
     @Test
     public void test() {

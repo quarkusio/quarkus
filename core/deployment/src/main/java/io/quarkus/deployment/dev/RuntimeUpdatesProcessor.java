@@ -278,7 +278,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         try {
             Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
             return ConfigProvider.getConfig()
-                    .getOptionalValue("quarkus.dev.instrumentation", boolean.class).orElse(true);
+                    .getOptionalValue("quarkus.live-reload.instrumentation", boolean.class).orElse(true);
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }

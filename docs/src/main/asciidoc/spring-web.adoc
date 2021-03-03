@@ -470,7 +470,7 @@ The following table shows how Spring Web annotations can be converted to JAX-RS 
 |===
 |Spring |JAX-RS |Comments
 
-|@RequestController
+|@RestController
 |
 |There is no equivalent in JAX-RS. Annotating a class with @Path suffices
 

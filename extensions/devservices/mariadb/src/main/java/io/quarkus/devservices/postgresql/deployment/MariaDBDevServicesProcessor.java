@@ -8,8 +8,8 @@ import java.util.Optional;
 import org.testcontainers.containers.MariaDBContainer;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.devservices.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 
 public class MariaDBDevServicesProcessor {

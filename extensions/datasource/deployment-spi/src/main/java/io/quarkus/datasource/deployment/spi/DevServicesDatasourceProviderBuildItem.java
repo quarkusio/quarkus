@@ -1,7 +1,6 @@
-package io.quarkus.datasource.deployment.devservices;
+package io.quarkus.datasource.deployment.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 
 /**
  * A provider that knows how to start a database of a specific type.

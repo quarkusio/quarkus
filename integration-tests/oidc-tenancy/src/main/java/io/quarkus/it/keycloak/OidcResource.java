@@ -41,7 +41,7 @@ public class OidcResource {
         final String baseUri = ui.getBaseUriBuilder().path("oidc").build().toString();
         return "{" +
                 "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
-                "   \"token_introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
+                "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
                 "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
                 "  }";
     }

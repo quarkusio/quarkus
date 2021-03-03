@@ -3,6 +3,14 @@ package io.quarkus.oidc;
 import io.vertx.core.json.JsonObject;
 
 public class OidcConfigurationMetadata {
+    private static final String ISSUER = "issuer";
+    private static final String TOKEN_ENDPOINT = "token_endpoint";
+    private static final String INTROSPECTION_ENDPOINT = "introspection_endpoint";
+    private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
+    private static final String JWKS_ENDPOINT = "jwks_uri";
+    private static final String USERINFO_ENDPOINT = "userinfo_endpoint";
+    private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
+
     private final String tokenUri;
     private final String introspectionUri;
     private final String authorizationUri;
@@ -28,13 +36,13 @@ public class OidcConfigurationMetadata {
     }
 
     public OidcConfigurationMetadata(JsonObject wellKnownConfig) {
-        this.tokenUri = wellKnownConfig.getString("token_endpoint");
-        this.introspectionUri = wellKnownConfig.getString("token_introspection_endpoint");
-        this.authorizationUri = wellKnownConfig.getString("authorization_endpoint");
-        this.jsonWebKeySetUri = wellKnownConfig.getString("jwks_uri");
-        this.userInfoUri = wellKnownConfig.getString("userinfo_endpoint");
-        this.endSessionUri = wellKnownConfig.getString("end_session_endpoint");
-        this.issuer = wellKnownConfig.getString("issuer");
+        this.tokenUri = wellKnownConfig.getString(TOKEN_ENDPOINT);
+        this.introspectionUri = wellKnownConfig.getString(INTROSPECTION_ENDPOINT);
+        this.authorizationUri = wellKnownConfig.getString(AUTHORIZATION_ENDPOINT);
+        this.jsonWebKeySetUri = wellKnownConfig.getString(JWKS_ENDPOINT);
+        this.userInfoUri = wellKnownConfig.getString(USERINFO_ENDPOINT);
+        this.endSessionUri = wellKnownConfig.getString(END_SESSION_ENDPOINT);
+        this.issuer = wellKnownConfig.getString(ISSUER);
     }
 
     public String getTokenUri() {

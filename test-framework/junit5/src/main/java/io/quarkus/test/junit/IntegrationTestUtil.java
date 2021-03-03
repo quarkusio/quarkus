@@ -129,7 +129,7 @@ final class IntegrationTestUtil {
             }
             throw e;
         }
-        if (launcher.isDefaultSsl()) {
+        if (launcher.listensOnSsl()) {
             if (sslSetter != null) {
                 sslSetter.run();
             }

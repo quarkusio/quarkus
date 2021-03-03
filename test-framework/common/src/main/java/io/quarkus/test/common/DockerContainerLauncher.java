@@ -1,10 +1,12 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.installAndGetSomeConfig;
+import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
+import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,10 +28,12 @@ public class DockerContainerLauncher implements ArtifactLauncher {
     private final String containerImage;
     private final String profile;
     private Process quarkusProcess;
-    private int port;
+    private final int httpPort;
     private final int httpsPort;
     private final long jarWaitTime;
     private final Map<String, String> systemProps = new HashMap<>();
+
+    private boolean isSsl;
 
     private DockerContainerLauncher(String containerImage, Config config) {
         this(containerImage,
@@ -44,9 +48,9 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         this(containerImage, installAndGetSomeConfig());
     }
 
-    public DockerContainerLauncher(String containerImage, int port, int httpsPort, long jarWaitTime, String profile) {
+    public DockerContainerLauncher(String containerImage, int httpPort, int httpsPort, long jarWaitTime, String profile) {
         this.containerImage = containerImage;
-        this.port = port;
+        this.httpPort = httpPort;
         this.httpsPort = httpsPort;
         this.jarWaitTime = jarWaitTime;
         this.profile = profile;
@@ -61,10 +65,10 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         args.add("run");
         args.add("--rm");
         args.add("-p");
-        args.add(port + ":" + port);
+        args.add(httpPort + ":" + httpPort);
         args.add("-p");
         args.add(httpsPort + ":" + httpsPort);
-        args.addAll(toEnvVar("quarkus.http.port", "" + port));
+        args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
         args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
         // this won't be correct when using the random port but it's really only used by us for the rest client tests
         // in the main module, since those tests hit the application itself
@@ -72,24 +76,29 @@ public class DockerContainerLauncher implements ArtifactLauncher {
         if (profile != null) {
             args.addAll(toEnvVar("quarkus.profile", profile));
         }
+
         for (Map.Entry<String, String> e : systemProps.entrySet()) {
             args.addAll(toEnvVar(e.getKey(), e.getValue()));
         }
         args.add(containerImage);
 
+        Path logFile = PropertyTestUtil.getLogFilePath();
+        Files.deleteIfExists(logFile);
+
         System.out.println("Executing " + args);
 
-        quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[0]));
-        port = LauncherUtil.doStart(quarkusProcess, port, httpsPort, jarWaitTime, null);
+        // the idea here is to obtain the logs of the application simply by redirecting all its output the a file
+        // this is done in contrast with the JarLauncher and NativeImageLauncher because in the case of the container
+        // the log itself is written inside the container
+        quarkusProcess = new ProcessBuilder(args).redirectError(logFile.toFile()).redirectOutput(logFile.toFile()).start();
+
+        ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, jarWaitTime);
+        updateConfigForPort(result.getPort());
+        isSsl = result.isSsl();
     }
 
-    public boolean isDefaultSsl() {
-        try (Socket s = new Socket()) {
-            s.connect(new InetSocketAddress("localhost", port));
-            return false;
-        } catch (IOException e) {
-            return true;
-        }
+    public boolean listensOnSsl() {
+        return isSsl;
     }
 
     public void addSystemProperties(Map<String, String> systemProps) {

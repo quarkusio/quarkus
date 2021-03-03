@@ -3,6 +3,7 @@ package io.quarkus.test.junit.mockito.internal;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +26,16 @@ final class MockitoMocksTracker {
 
     static void reset(Object testInstance) {
         Mockito.reset(getMocks(testInstance).stream().map(o -> o.mock).toArray());
+    }
+
+    static Optional<Object> currentMock(Object testInstance, Object beanInstance) {
+        Set<Mocked> mocks = getMocks(testInstance);
+        for (Mocked mocked : mocks) {
+            if (mocked.beanInstance == beanInstance) {
+                return Optional.of(mocked.mock);
+            }
+        }
+        return Optional.empty();
     }
 
     static class Mocked {

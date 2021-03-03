@@ -87,7 +87,7 @@
         <gizmo.version>1.0.6.Final</gizmo.version>
         <jackson.version>2.12.1</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <commons-lang3.version>3.11</commons-lang3.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.14</commons-codec.version>
         <classmate.version>1.3.4</classmate.version>
         <hibernate-orm.version>5.4.29.Final</hibernate-orm.version>

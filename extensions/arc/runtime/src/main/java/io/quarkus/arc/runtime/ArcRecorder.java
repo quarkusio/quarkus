@@ -10,6 +10,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
@@ -26,6 +28,8 @@ import io.quarkus.runtime.test.TestApplicationClassPredicate;
 
 @Recorder
 public class ArcRecorder {
+
+    private static final Logger LOG = Logger.getLogger(ArcRecorder.class);
 
     /**
      * Used to hold the Supplier instances used for synthetic bean declarations.
@@ -62,7 +66,10 @@ public class ArcRecorder {
         }
         BeanContainer beanContainer = new BeanContainerImpl(container);
         for (BeanContainerListener listener : listeners) {
+            long start = System.currentTimeMillis();
             listener.created(beanContainer);
+            LOG.debugf("Bean container listener %s finished in %s ms", listener.getClass().getName(),
+                    System.currentTimeMillis() - start);
         }
         return beanContainer;
     }

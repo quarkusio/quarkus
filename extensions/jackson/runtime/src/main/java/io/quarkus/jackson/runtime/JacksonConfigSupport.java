@@ -6,9 +6,12 @@ public class JacksonConfigSupport {
 
     private final boolean writeDatesAsTimestamps;
 
-    public JacksonConfigSupport(boolean failOnUnknownProperties, boolean writeDatesAsTimestamps) {
+    private final String timeZone;
+
+    public JacksonConfigSupport(boolean failOnUnknownProperties, boolean writeDatesAsTimestamps, String timeZone) {
         this.failOnUnknownProperties = failOnUnknownProperties;
         this.writeDatesAsTimestamps = writeDatesAsTimestamps;
+        this.timeZone = timeZone;
     }
 
     public boolean isFailOnUnknownProperties() {
@@ -17,5 +20,9 @@ public class JacksonConfigSupport {
 
     public boolean isWriteDatesAsTimestamps() {
         return writeDatesAsTimestamps;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
     }
 }

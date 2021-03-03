@@ -3,6 +3,7 @@ package io.quarkus.jackson.runtime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
@@ -32,6 +33,11 @@ public class ObjectMapperProducer {
         if (!jacksonConfigSupport.isWriteDatesAsTimestamps()) {
             // this feature is enabled by default, so we disable it
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        }
+        String timeZoneStr = jacksonConfigSupport.getTimeZone();
+        if (timeZoneStr != null) {
+            TimeZone timeZone = TimeZone.getTimeZone(timeZoneStr);
+            objectMapper.setTimeZone(timeZone);
         }
         List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
         for (ObjectMapperCustomizer customizer : sortedCustomizers) {

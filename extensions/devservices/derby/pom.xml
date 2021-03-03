@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-datasource-deployment</artifactId>
+            <artifactId>quarkus-datasource-deployment-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>

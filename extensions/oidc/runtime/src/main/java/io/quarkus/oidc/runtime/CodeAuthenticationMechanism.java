@@ -1,6 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import static io.quarkus.oidc.runtime.OidcIdentityProvider.CODE_FLOW_ACCESS_TOKEN;
 import static io.quarkus.oidc.runtime.OidcIdentityProvider.NEW_AUTHENTICATION;
 import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_RESPONSE;
 
@@ -19,6 +18,8 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
+import org.jose4j.jwt.consumer.ErrorCodes;
+import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
@@ -28,8 +29,6 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.SecurityEvent;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
-import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -123,7 +122,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         AuthorizationCodeTokens session = resolver.getTokenStateManager().getTokens(context, configContext.oidcConfig,
                 sessionCookie.getValue());
 
-        context.put(CODE_FLOW_ACCESS_TOKEN, session.getAccessToken());
+        context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
         return authenticate(identityProviderManager, new IdTokenCredential(session.getIdToken(), context))
                 .map(new Function<SecurityIdentity, SecurityIdentity>() {
                     @Override
@@ -137,21 +136,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     }
                 }).onFailure().recoverWithUni(new Function<Throwable, Uni<? extends SecurityIdentity>>() {
                     @Override
-                    public Uni<? extends SecurityIdentity> apply(Throwable throwable) {
-                        if (throwable instanceof AuthenticationRedirectException) {
-                            throw AuthenticationRedirectException.class.cast(throwable);
+                    public Uni<? extends SecurityIdentity> apply(Throwable t) {
+                        if (t instanceof AuthenticationRedirectException) {
+                            throw (AuthenticationRedirectException) t;
                         }
 
-                        if (!(throwable instanceof TokenAutoRefreshException)) {
-                            Throwable cause = throwable.getCause();
+                        if (!(t instanceof TokenAutoRefreshException)) {
+                            boolean expired = (t.getCause() instanceof InvalidJwtException)
+                                    && ((InvalidJwtException) t.getCause()).hasErrorCode(ErrorCodes.EXPIRED);
 
-                            if (cause != null && !"expired token".equalsIgnoreCase(cause.getMessage())) {
-                                LOG.debugf("Authentication failure: %s", cause);
-                                throw new AuthenticationCompletionException(cause);
+                            if (!expired) {
+                                LOG.debugf("Authentication failure: %s", t.getCause());
+                                throw new AuthenticationCompletionException(t.getCause());
                             }
                             if (!configContext.oidcConfig.token.refreshExpired) {
                                 LOG.debug("Token has expired, token refresh is not allowed");
-                                throw new AuthenticationCompletionException(cause);
+                                throw new AuthenticationCompletionException(t.getCause());
                             }
                             LOG.debug("Token has expired, trying to refresh it");
                             return refreshSecurityIdentity(configContext, session.getRefreshToken(), context,
@@ -159,7 +159,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         } else {
                             return refreshSecurityIdentity(configContext, session.getRefreshToken(), context,
                                     identityProviderManager, true,
-                                    ((TokenAutoRefreshException) throwable).getSecurityIdentity());
+                                    ((TokenAutoRefreshException) t).getSecurityIdentity());
                         }
                     }
                 });
@@ -232,7 +232,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
         }
 
-        String authorizationURL = configContext.client.authorizationURL() + "?" + codeFlowParams.toString();
+        String authorizationURL = configContext.provider.getMetadata().getAuthorizationUri() + "?" + codeFlowParams.toString();
 
         return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
                 authorizationURL));
@@ -301,7 +301,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
 
                         context.put(NEW_AUTHENTICATION, Boolean.TRUE);
-                        context.put(CODE_FLOW_ACCESS_TOKEN, tokens.getAccessToken());
+                        context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
 
                         return authenticate(identityProviderManager, new IdTokenCredential(tokens.getIdToken(), context))
                                 .map(new Function<SecurityIdentity, SecurityIdentity>() {
@@ -524,7 +524,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         emitter.fail(new AuthenticationFailedException(t));
                                     }
                                 } else {
-                                    context.put(CODE_FLOW_ACCESS_TOKEN, tokens.getAccessToken());
+                                    context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
                                     context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
 
                                     //TODO: Right now the new ID token is also verified twice - when it is decoded by Vert.x and later
@@ -562,67 +562,32 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private Uni<AuthorizationCodeTokens> refreshTokensUni(TenantConfigContext configContext, String refreshToken) {
 
-        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super AuthorizationCodeTokens>>() {
-            @Override
-            public void accept(UniEmitter<? super AuthorizationCodeTokens> emitter) {
-                if (BlockingOperationControl.isBlockingAllowed()) {
-                    configContext.client.refreshToken(emitter, refreshToken);
-                } else {
-                    resolver.getBlockingExecutor().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            configContext.client.refreshToken(emitter, refreshToken);
-                        }
-                    });
-                }
+        return configContext.provider.refreshTokens(refreshToken).plug(u -> {
+            if (!BlockingOperationControl.isBlockingAllowed()) {
+                return u.runSubscriptionOn(resolver.getBlockingExecutor());
             }
+            return u;
         });
     }
 
     private Uni<AuthorizationCodeTokens> getCodeFlowTokensUni(RoutingContext context, TenantConfigContext configContext,
             String code) {
 
-        // Code grant request
-        JsonObject params = new JsonObject();
-
-        // 'code': the code grant value returned from IDP
-        params.put("code", code);
-
         // 'redirect_uri': typically it must match the 'redirect_uri' query parameter which was used during the code request.
         String redirectPath = getRedirectPath(configContext, context);
         String redirectUriParam = buildUri(context, isForceHttps(configContext), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
-        params.put("redirect_uri", redirectUriParam);
 
-        // Client secret has to be posted as a form parameter if OIDC requires the client_secret_post authentication
-        Credentials creds = configContext.oidcConfig.getCredentials();
-        if (OidcCommonUtils.isClientSecretPostAuthRequired(creds)) {
-            params.put(OidcConstants.CLIENT_SECRET, creds.clientSecret.value.get());
-        } else if (creds.jwt.secret.isPresent()) {
-            params.put(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
-            params.put(OidcConstants.CLIENT_ASSERTION, OidcCommonUtils.signJwt(configContext.oidcConfig));
-        }
-
-        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super AuthorizationCodeTokens>>() {
-            @Override
-            public void accept(UniEmitter<? super AuthorizationCodeTokens> emitter) {
-                if (BlockingOperationControl.isBlockingAllowed()) {
-                    configContext.client.getCodeFlowTokens(emitter, params);
-                } else {
-                    resolver.getBlockingExecutor().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            configContext.client.getCodeFlowTokens(emitter, params);
-                        }
-                    });
-                }
+        return configContext.provider.getCodeFlowTokens(code, redirectUriParam).plug(u -> {
+            if (!BlockingOperationControl.isBlockingAllowed()) {
+                return u.runSubscriptionOn(resolver.getBlockingExecutor());
             }
+            return u;
         });
     }
 
     private String buildLogoutRedirectUri(TenantConfigContext configContext, String idToken, RoutingContext context) {
-        String logoutPath = configContext.oidcConfig.getEndSessionPath()
-                .orElse(configContext.client.getLogoutPath());
+        String logoutPath = configContext.provider.getMetadata().getEndSessionUri();
         StringBuilder logoutUri = new StringBuilder(logoutPath).append("?").append("id_token_hint=").append(idToken);
 
         if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {

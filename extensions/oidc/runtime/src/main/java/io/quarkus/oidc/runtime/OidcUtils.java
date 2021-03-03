@@ -63,28 +63,6 @@ public final class OidcUtils {
         }
     }
 
-    public static boolean validateClaims(OidcTenantConfig.Token tokenConfig, JsonObject json) {
-        if (tokenConfig.issuer.isPresent()) {
-            String issuer = json.getString(Claims.iss.name());
-            if (!tokenConfig.issuer.get().equals(issuer)) {
-                throw new OIDCException("Invalid issuer");
-            }
-        }
-        if (tokenConfig.audience.isPresent()) {
-            Object claimValue = json.getValue(Claims.aud.name());
-            List<String> audience = Collections.emptyList();
-            if (claimValue instanceof JsonArray) {
-                audience = convertJsonArrayToList((JsonArray) claimValue);
-            } else if (claimValue != null) {
-                audience = Arrays.asList((String) claimValue);
-            }
-            if (!audience.containsAll(tokenConfig.audience.get())) {
-                throw new OIDCException("Invalid audience");
-            }
-        }
-        return true;
-    }
-
     public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
         // If the user configured a specific path - check and enforce a claim at this path exists
         if (rolesConfig.getRoleClaimPath().isPresent()) {
@@ -156,11 +134,6 @@ public final class OidcUtils {
     static QuarkusSecurityIdentity validateAndCreateIdentity(
             RoutingContext vertxContext, TokenCredential credential,
             OidcTenantConfig config, JsonObject tokenJson, JsonObject rolesJson, JsonObject userInfo) {
-        try {
-            OidcUtils.validateClaims(config.getToken(), tokenJson);
-        } catch (OIDCException e) {
-            throw new AuthenticationFailedException(e);
-        }
 
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);

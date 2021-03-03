@@ -42,8 +42,9 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
                                         "    \"jwks_uri\": \"" + server.baseUrl()
                                         + "/auth/realms/quarkus/protocol/openid-connect/certs\",\n" +
                                         "    \"token_introspection_endpoint\": \"" + server.baseUrl()
-                                        + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\"\n" +
-                                        "}")));
+                                        + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\",\n"
+                                        + "\"issuer\" : \"https://server.example.com\""
+                                        + "}")));
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/certs"))

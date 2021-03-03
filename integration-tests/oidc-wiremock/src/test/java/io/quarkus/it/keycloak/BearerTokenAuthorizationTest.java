@@ -43,6 +43,15 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAccessAdminResourceAudienceArray() {
+        RestAssured.given().auth().oauth2(getAccessTokenAudienceArray("admin", new HashSet<>(Arrays.asList("admin"))))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
     public void testDeniedAccessAdminResource() {
         RestAssured.given().auth().oauth2(getAccessToken("alice", new HashSet<>(Arrays.asList("user"))))
                 .when().get("/api/admin")
@@ -67,9 +76,51 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(401);
     }
 
+    @Test
+    public void testBearerTokenWrongIssuer() {
+        String token = getAccessTokenWrongIssuer("alice", new HashSet<>(Arrays.asList("user")));
+
+        RestAssured.given().auth().oauth2(token).when()
+                .get("/api/users/me")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testBearerTokenWrongAudience() {
+        String token = getAccessTokenWrongAudience("alice", new HashSet<>(Arrays.asList("user")));
+
+        RestAssured.given().auth().oauth2(token).when()
+                .get("/api/users/me")
+                .then()
+                .statusCode(401);
+    }
+
     private String getAccessToken(String userName, Set<String> groups) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws()
+                .keyId("1")
+                .sign();
+    }
+
+    private String getAccessTokenWrongAudience(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://services.com")
+                .jws()
+                .keyId("1")
+                .sign();
+    }
+
+    private String getAccessTokenAudienceArray(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience(new HashSet<>(Arrays.asList("https://service.example.com", "https://frontendservice.example.com")))
                 .jws()
                 .keyId("1")
                 .sign();
@@ -78,7 +129,19 @@ public class BearerTokenAuthorizationTest {
     private String getExpiredAccessToken(String userName, Set<String> groups) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
                 .expiresAt(Instant.MIN)
+                .jws()
+                .keyId("1")
+                .sign();
+    }
+
+    private String getAccessTokenWrongIssuer(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://example.com")
+                .audience("https://service.example.com")
                 .jws()
                 .keyId("1")
                 .sign();

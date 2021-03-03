@@ -1,9 +1,11 @@
 package io.quarkus.oidc.common.runtime;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.util.Base64;
 import java.util.Optional;
 
 import javax.crypto.SecretKey;
@@ -79,12 +81,6 @@ public class OidcCommonUtils {
     public static long getConnectionRetryCount(OidcCommonConfig oidcConfig) {
         final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
         return connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
-    }
-
-    public static long getMaximumConnectionDelay(OidcCommonConfig oidcConfig) {
-        final long connectionDelayInSecs = getConnectionDelay(oidcConfig);
-        final long connectionRetryCountSecs = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
-        return connectionDelayInSecs + connectionRetryCountSecs * oidcConfig.getConnectionTimeout().getSeconds();
     }
 
     private static long getConnectionDelay(OidcCommonConfig oidcConfig) {
@@ -189,5 +185,23 @@ public class OidcCommonUtils {
                     + configKey + "' and '" + configId.get() + "'");
         }
 
+    }
+
+    public static String initClientSecretBasicAuth(OidcCommonConfig oidcConfig) {
+        if (OidcCommonUtils.isClientSecretBasicAuthRequired(oidcConfig.credentials)) {
+            return OidcConstants.BASIC_SCHEME + " "
+                    + Base64.getEncoder().encodeToString(
+                            (oidcConfig.getClientId().get() + ":"
+                                    + OidcCommonUtils.clientSecret(oidcConfig.credentials))
+                                            .getBytes(StandardCharsets.UTF_8));
+        }
+        return null;
+    }
+
+    public static Key initClientJwtKey(OidcCommonConfig oidcConfig) {
+        if (OidcCommonUtils.isClientJwtAuthRequired(oidcConfig.credentials)) {
+            return OidcCommonUtils.clientJwtKey(oidcConfig.credentials);
+        }
+        return null;
     }
 }

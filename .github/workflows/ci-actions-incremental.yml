@@ -1,12 +1,9 @@
-name: Quarkus CI incremental
+name: Quarkus CI
 
 on:
   push:
     branches-ignore:
       - 'dependabot/**'
-      # TODO: revisit master and 1.** in case incremental becomes the default
-      - 'master'
-      - '1.**'
     # paths-ignore in ci-fork-mvn-cache.yml should match
     paths-ignore:
       - '.gitignore'
@@ -46,8 +43,7 @@ jobs:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     steps:
       - name: Build
         run: sleep 30
@@ -56,8 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     # Skip master in forks
     # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "((github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')) && ( \
+    if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')) && ( \
            github.event_name != 'pull_request' || ( \
              github.event.pull_request.draft == false && \
              github.event.pull_request.state != 'closed' && \
@@ -149,8 +144,7 @@ jobs:
     name: JVM Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 240
     env:
@@ -158,21 +152,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java :
-          #- { name: "8",
-          #    java-version: 8,
-          #    maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
-          #}
+        java:
+          - {
+            name: "8",
+            java-version: 8,
+            maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
+          }
           - {
             name: "11",
             java-version: 11,
             maven_args: ""
           }
-          #- {
-          #  name: "15",
-          #  java-version: 15,
-          #  maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
-          #}
+          - {
+            name: "15",
+            java-version: 15,
+            maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
+          }
 
     steps:
       - name: Stop mysql
@@ -224,58 +219,57 @@ jobs:
           name: test-reports-linux-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
 
-#  windows-jdk11-jvm-tests:
-#    name: JVM Tests - JDK 11 Windows
-#    runs-on: windows-latest
-#    # Skip master in forks
-#    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
-#    needs: build-jdk11
-#    timeout-minutes: 180
-#    env:
-#      MAVEN_OPTS: -Xmx1408m  -XX:MaxMetaspaceSize=1000m
-#
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Add quarkusio remote
-#        shell: bash
-#        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-#      - name: Set up JDK 11
-#        # Uses sha for added security since tags can be updated
-#        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-#        with:
-#          java-version: 11
-#      - name: Download Maven Repo
-#        uses: actions/download-artifact@v1
-#        with:
-#          name: maven-repo
-#          path: .
-#      - name: Extract Maven Repo
-#        shell: bash
-#        run: tar -xzf maven-repo.tgz -C ~
-#      - name: Build with Maven
-#        shell: bash
-#        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install ${{ needs.build-jdk11.outputs.gib_args }}
-#      - name: Prepare failure archive (if maven failed)
-#        if: failure()
-#        shell: bash
-#        run: |
-#          # Disambiguate windows find from cygwin find
-#          /usr/bin/find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-#      - name: Upload failure Archive (if maven failed)
-#        uses: actions/upload-artifact@v1
-#        if: failure()
-#        with:
-#          name: test-reports-windows-jdk11-jvm
-#          path: 'test-reports.tgz'
+  windows-jdk11-jvm-tests:
+    name: JVM Tests - JDK 11 Windows
+    runs-on: windows-latest
+    # Skip master in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    needs: build-jdk11
+    timeout-minutes: 180
+    env:
+      MAVEN_OPTS: -Xmx1408m  -XX:MaxMetaspaceSize=1000m
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 11
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Build with Maven
+        shell: bash
+        run: mvn -B --settings .github/mvn-settings.xml -DskipDocs -Dformat.skip -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools install ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: |
+          # Disambiguate windows find from cygwin find
+          /usr/bin/find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-windows-jdk11-jvm
+          path: 'test-reports.tgz'
 
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -319,62 +313,61 @@ jobs:
           name: test-reports-linux-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
 
-#  windows-jdk11-jvm-maven-tests:
-#    name: Maven Tests - JDK 11 Windows
-#    runs-on: windows-latest
-#    # Skip master in forks
-#    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
-#    needs: build-jdk11
-#    timeout-minutes: 60
-#    strategy:
-#      fail-fast: false
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Add quarkusio remote
-#        shell: bash
-#        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-#      - name: Download Maven Repo
-#        uses: actions/download-artifact@v1
-#        with:
-#          name: maven-repo
-#          path: .
-#      - name: Extract Maven Repo
-#        shell: bash
-#        run: tar -xzf maven-repo.tgz -C ~
-#      - name: Set up JDK 11
-#        # Uses sha for added security since tags can be updated
-#        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-#        with:
-#          java-version: 11
-#      - name: Run Maven integration tests
-#        shell: bash
-#        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
-#      - name: Prepare failure archive (if maven failed)
-#        if: failure()
-#        shell: bash
-#        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-#      - name: Upload failure Archive (if maven failed)
-#        uses: actions/upload-artifact@v1
-#        if: failure()
-#        with:
-#          name: test-reports-windows-maven-java11
-#          path: 'test-reports.tgz'
+  windows-jdk11-jvm-maven-tests:
+    name: Maven Tests - JDK 11 Windows
+    runs-on: windows-latest
+    # Skip master in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    needs: build-jdk11
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 11
+      - name: Run Maven integration tests
+        shell: bash
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/maven' ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-windows-maven-java11
+          path: 'test-reports.tgz'
 
   linux-jvm-gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         java:
-         - {
+          - {
             name: "11",
             java-version: 11
           }
@@ -403,45 +396,44 @@ jobs:
           build-root-directory: integration-tests/gradle
           arguments: clean test -i -S --stacktrace --no-daemon
 
-#  windows-jdk11-jvm-gradle-tests:
-#    name: Gradle Tests - JDK 11 Windows
-#    needs: build-jdk11
-#    # Skip master in forks
-#    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
-#    runs-on: windows-latest
-#    timeout-minutes: 80
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Set up JDK 11
-#        # Uses sha for added security since tags can be updated
-#        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-#        with:
-#          java-version: 11
-#      - name: Download Maven Repo
-#        uses: actions/download-artifact@v1
-#        with:
-#          name: maven-repo
-#          path: .
-#      - name: Extract Maven Repo
-#        shell: bash
-#        run: tar -xzf maven-repo.tgz -C ~
-#      - name: Build with Gradle
-#        uses: eskatos/gradle-command-action@v1
-#        timeout-minutes: 60
-#        env:
-#          GRADLE_OPTS: -Xmx1408m
-#        with:
-#          gradle-version: wrapper
-#          wrapper-directory: integration-tests/gradle
-#          build-root-directory: integration-tests/gradle
-#          arguments: clean test -i -S --stacktrace --no-daemon
+  windows-jdk11-jvm-gradle-tests:
+    name: Gradle Tests - JDK 11 Windows
+    needs: build-jdk11
+    # Skip master in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    runs-on: windows-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 11
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Build with Gradle
+        uses: eskatos/gradle-command-action@v1
+        timeout-minutes: 60
+        env:
+          GRADLE_OPTS: -Xmx1408m
+        with:
+          gradle-version: wrapper
+          wrapper-directory: integration-tests/gradle
+          build-root-directory: integration-tests/gradle
+          arguments: clean test -i -S --stacktrace --no-daemon
 
   linux-jvm-devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -485,55 +477,54 @@ jobs:
           name: test-reports-linux-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
 
-#  windows-jdk11-jvm-devtools-tests:
-#    name: Devtools Tests - JDK 11 Windows
-#    runs-on: windows-latest
-#    # Skip master in forks
-#    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
-#    needs: build-jdk11
-#    timeout-minutes: 60
-#    strategy:
-#      fail-fast: false
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Add quarkusio remote
-#        shell: bash
-#        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-#      - name: Download Maven Repo
-#        uses: actions/download-artifact@v1
-#        with:
-#          name: maven-repo
-#          path: .
-#      - name: Extract Maven Repo
-#        shell: bash
-#        run: tar -xzf maven-repo.tgz -C ~
-#      - name: Set up JDK 11
-#        # Uses sha for added security since tags can be updated
-#        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-#        with:
-#          java-version: 11
-#      - name: Run Devtools integration tests
-#        shell: bash
-#        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
-#      - name: Prepare failure archive (if maven failed)
-#        if: failure()
-#        shell: bash
-#        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-#      - name: Upload failure Archive (if maven failed)
-#        uses: actions/upload-artifact@v1
-#        if: failure()
-#        with:
-#          name: test-reports-windows-devtools-java11
-#          path: 'test-reports.tgz'
+  windows-jdk11-jvm-devtools-tests:
+    name: Devtools Tests - JDK 11 Windows
+    runs-on: windows-latest
+    # Skip master in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    needs: build-jdk11
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 11
+      - name: Run Devtools integration tests
+        shell: bash
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl 'integration-tests/devtools' ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-windows-devtools-java11
+          path: 'test-reports.tgz'
 
   tcks-test:
     name: MicroProfile TCKs Tests
     needs: build-jdk11
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     runs-on: ubuntu-latest
     timeout-minutes: 150
 
@@ -589,8 +580,7 @@ jobs:
     name: Native Tests - Read JSON matrix
     runs-on: ubuntu-latest
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     outputs:
       matrix: ${{ steps.read.outputs.matrix }}
     steps:
@@ -606,8 +596,7 @@ jobs:
     needs: [build-jdk11, native-tests-read-json-matrix]
     runs-on: ubuntu-latest
     # Skip master in forks
-    # TODO: revisit dependabot predicate in case incremental becomes the default
-    if: "(github.repository == 'quarkusio/quarkus' && !contains(github.head_ref, 'dependabot/')) || !endsWith(github.ref, '/master')"
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
@@ -628,6 +617,11 @@ jobs:
           java-version: 11
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
+      # We do this so we can get better analytics for the downloaded version of the build images
+      - name: Update Docker Client User Agent
+        shell: bash
+        run: |
+          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:

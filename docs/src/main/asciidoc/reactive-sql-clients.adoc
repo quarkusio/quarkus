@@ -580,7 +580,7 @@ MySQLPool additional2Client;
 
 The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
 
-First make sure that https://quarkus.io/guides/vertx#native-transport[native transport support] is enabled.
+First make sure that link:vertx#native-transport[native transport support] is enabled.
 
 Then configure the database connection url.
 This step depends on the database type.

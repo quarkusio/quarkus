@@ -853,9 +853,9 @@ You have just developed a Quarkus application with https://www.optaplanner.org/[
 
 Now try adding database and UI integration:
 
-. Store `Timeslot`, `Room`, and `Lesson` in the database with https://quarkus.io/guides/hibernate-orm-panache[Hibernate and Panache].
+. Store `Timeslot`, `Room`, and `Lesson` in the database with link:hibernate-orm-panache[Hibernate and Panache].
 
-. https://quarkus.io/guides/rest-json[Expose them through REST].
+. link:rest-json[Expose them through REST].
 
 . Adjust the `TimeTableResource` to read and write a `TimeTable` in a single transaction
 and use those accordingly:

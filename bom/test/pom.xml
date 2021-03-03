@@ -16,7 +16,7 @@
     <description>Dependency management for integration tests. Importable by third party extension developers.</description>
 
     <properties>
-        <debezium.version>1.4.1.Final</debezium.version>
+        <debezium.version>1.4.2.Final</debezium.version>
         <testcontainers.version>1.15.2</testcontainers.version>
     </properties>
 

@@ -36,6 +36,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -68,14 +69,18 @@ import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.RawString;
 import io.quarkus.qute.ReflectionValueResolver;
+import io.quarkus.qute.ResultMapper;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateLocator;
+import io.quarkus.qute.TemplateNode.Origin;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
@@ -193,7 +198,11 @@ public class DevConsoleProcessor {
         Handler<RoutingContext> errorHandler = new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                log.error("Dev console request failed ", event.failure());
+                String message = "Dev console request failed";
+                log.error(message, event.failure());
+                event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
+                event.response().end(
+                        new TemplateHtmlBuilder("Internal Server Error", message, message).stack(event.failure()).toString());
             }
         };
         router = Router.router(devConsoleVertx);
@@ -380,6 +389,28 @@ public class DevConsoleProcessor {
             }
         }
         builder.addLocator(id -> locateTemplate(id, templates));
+
+        builder.addResultMapper(new ResultMapper() {
+            @Override
+            public int getPriority() {
+                // The priority must be higher than the one used for HtmlEscaper
+                return 10;
+            }
+
+            @Override
+            public boolean appliesTo(Origin origin, Object result) {
+                return result.equals(Result.NOT_FOUND);
+            }
+
+            @Override
+            public String map(Object result, Expression expression) {
+                Origin origin = expression.getOrigin();
+                throw new TemplateException(origin,
+                        String.format("Property not found in expression {%s} in template %s on line %s",
+                                expression.toOriginalString(),
+                                origin.getTemplateId(), origin.getLine()));
+            }
+        });
 
         Engine engine = builder.build();
 

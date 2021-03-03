@@ -1,7 +1,5 @@
-<span class="annotation" title="{it.scope.name}">@{it.scope.localName}</span><br/>
-{#for qual in it.qualifiers}
- {#if qual.name != 'javax.inject.Named' && qual.name != 'javax.enterprise.inject.Any' && qual.name != 'javax.enterprise.inject.Default'}
-   <span class="annotation" title="{qual.name}">@{qual.localName}</span><br/>
- {/if}
+<span class="annotation" title="Scope: {it.scope}">@{it.scope.simpleName}</span><br/>
+{#for q in it.nonDefaultQualifiers}
+<span class="annotation" title="Qualifier: {q}">{q.simpleName}</span><br/>
 {/for}
-<span title="{it.type.name}">{it.type.localName}</span>
+{it.providerType}

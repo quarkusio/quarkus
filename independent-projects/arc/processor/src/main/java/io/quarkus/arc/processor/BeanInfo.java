@@ -204,7 +204,7 @@ public class BeanInfo implements InjectionTargetInfo {
         return beanDeployment;
     }
 
-    Type getProviderType() {
+    public Type getProviderType() {
         return providerType;
     }
 

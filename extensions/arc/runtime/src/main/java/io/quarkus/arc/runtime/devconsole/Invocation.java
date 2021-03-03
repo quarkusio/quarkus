@@ -64,8 +64,8 @@ public class Invocation {
         return method;
     }
 
-    public String getMethodInfo() {
-        return method.getDeclaringClass().getSimpleName() + "." + method.getName() + "()";
+    public String getDeclaringClassName() {
+        return method.getDeclaringClass().getName();
     }
 
     public List<Invocation> getChildren() {
@@ -83,6 +83,14 @@ public class Invocation {
     @Override
     public String toString() {
         return kind + " invocation of " + method;
+    }
+
+    public String getPackageName(String name) {
+        int lastDot = name.lastIndexOf('.');
+        if (lastDot != -1) {
+            return name.substring(0, lastDot);
+        }
+        return "";
     }
 
     public enum Kind {

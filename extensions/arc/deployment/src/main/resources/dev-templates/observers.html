@@ -1,4 +1,13 @@
 {#include main fluid=true}
+   {#style}
+   .annotation {
+     color: gray;
+     font-style: italic;
+   }
+   span.larger-badge {
+     font-size: 0.9em;
+   }
+  {/style}
   {#title}Observers{/title}
   {#body}
   <table class="table table-striped">
@@ -18,14 +27,17 @@
     <tr>
       <td>{count}.</td>
       <td>
-       {#if observer.name != null}
-       <span title="{observer.name.name}">{observer.name.localName}</span>.{observer.methodName}()
+       {#if observer.declaringClass}
+       {observer.declaringClass}#{observer.methodName}()
        {#else}
-       <span class="badge badge-secondary">Synthetic</span>
+       <span class="badge badge-secondary larger-badge">Synthetic</span>
        {/if}
       </td>
       <td>
-       <code>{observer.observedType}</code>
+       {#each observer.qualifiers}
+        <span title="{it}" class="annotation"><i>{it.simpleName}</i> </span>
+       {/each}
+       {observer.observedType}
       </td>
       <td>
        {observer.priority}

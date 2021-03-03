@@ -155,6 +155,34 @@ If you don't rely on the JSON default, it is heavily recommended to annotate you
 It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
 ====
 
+=== Query Parameters
+
+If the GET request requires query parameters you can leverage the `@QueryParam("parameter-name")` annotation instead of (or in addition to) the `@PathParam`. Path and query parameters can be combined, as required, as illustrated in a mock example below.
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{region}")
+    Set<Country> getByRegion(@PathParam String region, @QueryParam("city") String city);
+}
+----
+
+
 == Create the configuration
 
 In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `application.properties`.

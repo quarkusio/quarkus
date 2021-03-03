@@ -7,9 +7,6 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-[[project-creation]]
-== IDE Overview
-
 The following IDEs have support for the community developed Quarkus Tools:
 
 * https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus[Quarkus Tools for Visual Studio Code]
@@ -21,7 +18,7 @@ In addition IntelliJ has additional support for Quarkus in their Ultimate non-op
 
 * https://www.jetbrains.com/help/idea/quarkus.html[IntelliJ Ultimate Edition built-in Quarkus support]
 
-The table below gives an overview of the current IDE's with links and a high-level overview of their features.
+The table below gives an overview of the current IDEs with links and a high-level overview of their features.
 
 :vscode-logo: https://simpleicons.org/icons/visualstudiocode.svg 
 :eclipse-logo: https://simpleicons.org/icons/eclipseide.svg
@@ -30,19 +27,19 @@ The table below gives an overview of the current IDE's with links and a high-lev
 [cols="6*^", header]
 |===
 | .
-| image:{vscode-logo}[200,200]
+| image:{vscode-logo}[VSCode,100,100]
 {empty} +
 VSCode Quarkus Tools
-| image:{eclipse-logo}[200,200]
+| image:{eclipse-logo}[Eclipse,100,100]
 {empty} +
 Eclipse Quarkus Tools
-| image:{intellij-logo}[100,100]
+| image:{intellij-logo}[IntelliJ,100,100]
 {empty} +
 IntelliJ Quarkus Tools
-| image:{intellij-logo}[100,100]
+| image:{intellij-logo}[IntelliJ,100,100]
 {empty} +
 IntelliJ Ultimate
-| image:{che-logo}[100,100]
+| image:{che-logo}[Eclipse Che,100,100]
 {empty} +
 Eclipse Che
 

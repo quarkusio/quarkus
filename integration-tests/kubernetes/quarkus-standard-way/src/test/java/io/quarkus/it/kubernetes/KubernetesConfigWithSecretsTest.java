@@ -56,7 +56,7 @@ public class KubernetesConfigWithSecretsTest {
                     assertThat(r).isInstanceOfSatisfying(PolicyRule.class, rule -> {
                         assertThat(rule.getApiGroups()).containsExactly("");
                         assertThat(rule.getResources()).containsExactly("secrets");
-                        assertThat(rule.getVerbs()).containsExactly("get", "list", "watch");
+                        assertThat(rule.getVerbs()).containsExactly("get");
                     });
                 });
             });

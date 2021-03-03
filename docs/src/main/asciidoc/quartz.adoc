@@ -145,7 +145,7 @@ public class TaskBean {
 1. Declare the bean in the _application_ scope
 2. Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds and set the unique identifier for this job.
 3. Create a new `Task` with the current start time.
-4. Persist the task in database using https://quarkus.io/guides/hibernate-orm-panache[Panache].
+4. Persist the task in database using link:hibernate-orm-panache[Panache].
 
 === Scheduling Jobs Programmatically
 

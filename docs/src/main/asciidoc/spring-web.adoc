@@ -267,7 +267,7 @@ components:
           type: string
 ----
 
-Also see link:https://quarkus.io/guides/openapi-swaggerui[the OpenAPI Guide]
+Also see link:openapi-swaggerui[the OpenAPI Guide]
 
 === Adding MicroProfile OpenAPI Annotations
 
@@ -369,7 +369,7 @@ components:
 === Using Swagger UI
 
 Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally added to `Prod` mode.
-See link:https://quarkus.io/guides/openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
+See link:openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
 
 Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
 

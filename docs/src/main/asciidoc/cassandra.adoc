@@ -406,7 +406,7 @@ When using `QuarkusCqlSession` you have access to reactive variant of methods th
 Quarkus and Mutiny.
 
 TIP:  If you're not familiar with Mutiny, read the
-link:https://quarkus.io/guides/getting-started-reactive[Getting Started with Reactive guide] first.
+link:getting-started-reactive[Getting Started with Reactive guide] first.
 
 Let's rewrite the previous example using reactive programming with Mutiny.
 

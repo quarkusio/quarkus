@@ -152,10 +152,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java :
-          - { name: "8",
-              java-version: 8,
-              maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
+        java:
+          - {
+            name: "8",
+            java-version: 8,
+            maven_args: "-pl !integration-tests/kubernetes/quarkus-standard-way"
           }
           - {
             name: "11",
@@ -366,7 +367,7 @@ jobs:
       fail-fast: false
       matrix:
         java:
-         - {
+          - {
             name: "11",
             java-version: 11
           }

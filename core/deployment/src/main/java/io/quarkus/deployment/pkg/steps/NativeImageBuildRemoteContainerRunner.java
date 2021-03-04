@@ -10,12 +10,12 @@ import io.quarkus.deployment.pkg.NativeConfig;
 
 public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildContainerRunner {
 
-    private final String nativeImageName;
+    private final String resultingExecutableName;
     private String containerId;
 
-    public NativeImageBuildRemoteContainerRunner(NativeConfig nativeConfig, Path outputDir, String nativeImageName) {
+    public NativeImageBuildRemoteContainerRunner(NativeConfig nativeConfig, Path outputDir, String resultingExecutableName) {
         super(nativeConfig, outputDir);
-        this.nativeImageName = nativeImageName;
+        this.resultingExecutableName = resultingExecutableName;
     }
 
     @Override
@@ -42,7 +42,8 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
     @Override
     protected void postBuild() throws InterruptedException, IOException {
         String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp",
-                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + nativeImageName, outputPath };
+                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + resultingExecutableName,
+                outputPath };
         Process copyProcess = new ProcessBuilder(copyCommand).start();
         copyProcess.waitFor();
         String[] removeCommand = new String[] { containerRuntime.getExecutableName(), "container", "rm", "--volumes",

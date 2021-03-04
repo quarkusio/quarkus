@@ -16,20 +16,18 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryB
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
-<<<<<<< HEAD
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-=======
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
->>>>>>> Migrate the vertx-graphql extension and its tests to Vert.x 4
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
+// import io.vertx.ext.web.handler.graphql.impl.GraphQLInputDeserializer;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
 
 class VertxGraphqlProcessor {
-    private static final Pattern TRAILING_SLASH_SUFFIX_REGEX = Pattern.compile("/+$");
+    private static Pattern TRAILING_SLASH_SUFFIX_REGEX = Pattern.compile("/+$");
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -44,6 +42,7 @@ class VertxGraphqlProcessor {
     @BuildStep
     List<ReflectiveClassBuildItem> registerForReflection() {
         return Arrays.asList(
+                //new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLBatch.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLQuery.class.getName()));
     }
@@ -52,8 +51,10 @@ class VertxGraphqlProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
             BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
-            LaunchModeBuildItem launchMode, BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            BuildProducer<RouteBuildItem> routes, BuildProducer<RequireBodyHandlerBuildItem> body) {
+            LaunchModeBuildItem launchMode,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<RouteBuildItem> routes,
+            BuildProducer<RequireBodyHandlerBuildItem> body) {
 
         boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
         if (!includeVertxGraphqlUi) {
@@ -71,13 +72,14 @@ class VertxGraphqlProcessor {
         // Body handler required in Vert.x 4, to avoid DDOS attack.
         body.produce(new RequireBodyHandlerBuildItem());
 
-        Handler<RoutingContext> handler = recorder.handler(path);
-        routes.produce(RouteBuildItem.builder().nonApplicationRoute(true)
-            .requiresLegacyRedirect().route(path).handler(handler).build());
-        routes.produce(RouteBuildItem.builder().nonApplicationRoute(true)
-            .requiresLegacyRedirect().route(path + "/*").handler(handler).build());
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(path + "/"));
-
+        Handler<RoutingContext> handler = recorder.handler();
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder().route(path).handler(handler)
+                .requiresLegacyRedirect()
+                .displayOnNotFoundPage("GraphQL UI", path + "/")
+                .build());
+        routes.produce(
+                nonApplicationRootPathBuildItem.routeBuilder().route(path + "/*").handler(handler).requiresLegacyRedirect()
+                        .build());
         nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
     }
 }

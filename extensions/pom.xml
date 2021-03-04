@@ -33,7 +33,9 @@
         <module>vertx-core</module>
         <module>vertx-http</module>
         <module>undertow</module>
+<!--
         <module>websockets</module>
+-->
         <module>webjars-locator</module>
         <module>resteasy-reactive</module>
 
@@ -71,7 +73,9 @@
         <module>vertx</module>
         <module>vertx-web</module>
         <module>netty</module>
+<!--
         <module>reactive-messaging-http</module>
+-->
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
         <module>smallrye-reactive-messaging-kafka</module>

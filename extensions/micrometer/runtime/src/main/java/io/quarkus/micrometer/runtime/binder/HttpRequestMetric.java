@@ -45,22 +45,6 @@ public class HttpRequestMetric {
     /** Response associated with the request (Vert.x 4.0) */
     HttpResponse response;
 
-    public Timer.Sample getSample() {
-        return sample;
-    }
-
-    public void setSample(Timer.Sample sample) {
-        this.sample = sample;
-    }
-
-    public Tags getTags() {
-        return tags;
-    }
-
-    public void setTags(Tags tags) {
-        this.tags = tags;
-    }
-
     /**
      * Extract the path out of the uri. Return null if the path should be
      * ignored.

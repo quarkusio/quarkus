@@ -153,16 +153,14 @@ public class SwaggerUiProcessor {
                     finalDestinationBuildItem.getSwaggerUiPath(),
                     runtimeConfig);
 
-            routes.produce(new RouteBuildItem.Builder()
-                    .nonApplicationRoute()
+            routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(swaggerUiConfig.path)
                     .displayOnNotFoundPage("Open API UI")
                     .handler(handler)
                     .requiresLegacyRedirect()
                     .build());
-            routes.produce(new RouteBuildItem.Builder()
-                    .nonApplicationRoute()
-                    .route(swaggerUiConfig.path + "*")
+            routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .route(swaggerUiConfig.path + "/*")
                     .handler(handler)
                     .requiresLegacyRedirect()
                     .build());

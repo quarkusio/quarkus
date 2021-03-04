@@ -57,6 +57,26 @@ public class VertxWithHttpEnabledTest {
             public String path() {
                 return null;
             }
+
+            @Override
+            public String hostName() {
+                return null;
+            }
+
+            @Override
+            public String hostAddress() {
+                return null;
+            }
+
+            @Override
+            public boolean isInetSocket() {
+                return false;
+            }
+
+            @Override
+            public boolean isDomainSocket() {
+                return false;
+            }
         });
 
         Assertions.assertNotNull(metrics);

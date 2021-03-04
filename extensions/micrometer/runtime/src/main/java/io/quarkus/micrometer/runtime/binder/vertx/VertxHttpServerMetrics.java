@@ -93,8 +93,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     @Override
     public HttpRequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
             HttpResponse response) {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
-        requestMetric.parseUriPath(matchPatterns, ignorePatterns, uri);
+        HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, ignorePatterns, uri);
         if (requestMetric.isMeasure()) {
             registry.counter(nameHttpServerPush, Tags.of(
                     HttpMetricsCommon.uri(requestMetric.getPath(), response.statusCode()),
@@ -118,11 +117,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      */
     @Override
     public HttpRequestMetric requestBegin(Map<String, Object> socketMetric, HttpRequest request) {
-        HttpRequestMetric requestMetric = new HttpRequestMetric();
+        HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, ignorePatterns, request.uri());
         setRequestMetric(Vertx.currentContext(), requestMetric);
 
-        // evaluate and remember the path to monitor for use later (maybe a 404 or redirect..)
-        requestMetric.parseUriPath(matchPatterns, ignorePatterns, request.uri());
         if (requestMetric.isMeasure()) {
             // If we're measuring this request, create/remember the sample
             requestMetric.setSample(Timer.start(registry));

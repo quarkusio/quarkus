@@ -444,7 +444,7 @@ But for development, these limitations are acceptable.
 
 The third approach is to use `quarkus.hibernate-orm.database.generation=none`.
 This approach is best when you are working on a copy of the production data but want to fully control the schema evolution.
-Or if you use a database schema migration tool like https://quarkus.io/guides/flyway[Flyway].
+Or if you use a database schema migration tool like link:flyway[Flyway].
 
 With this approach when making changes to an entity, make sure to adapt the database schema accordingly;
 you could also use `validate` to have Hibernate verify the schema matches its expectations.
@@ -453,7 +453,7 @@ WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create
 
 
 These approaches become really powerful when combined with Quarkus configuration profiles.
-You can define different https://quarkus.io/guides/config#configuration-profiles[configuration profiles]
+You can define different link:config#configuration-profiles[configuration profiles]
 to select different behaviors depending on your environment.
 This is great because you can define different combinations of Hibernate ORM properties matching the development style you currently need.
 
@@ -867,7 +867,7 @@ public class CustomTenantResolver implements TenantResolver {
 
 In general it is not possible to use the Hibernate ORM database generation feature in conjunction with a multitenancy setup.
 Therefore you have to disable it and you need to make sure that the tables are created per schema. 
-The following setup will use the link:https://quarkus.io/guides/flyway[Flyway] extension to achieve this goal.
+The following setup will use the link:flyway[Flyway] extension to achieve this goal.
 
 ==== SCHEMA approach
 

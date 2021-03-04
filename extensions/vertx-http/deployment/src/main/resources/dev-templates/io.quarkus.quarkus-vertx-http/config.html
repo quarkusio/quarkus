@@ -10,6 +10,10 @@ td {
   word-break:break-all;
 }
 
+#tables{
+    padding-bottom: 40px;
+}
+
 .formInputButton:hover {
     color: #3366ac !important;
     cursor: pointer;
@@ -21,10 +25,10 @@ td {
 {/style}
 
 {#script}
-$(document).ready(function(){
+$(document).ready(function(){    
   $("#filterInput").on("keyup", function() {
     var value = $(this).val().toLowerCase();
-    $("#configTable tr").filter(function() {
+    $(".configTable tr").filter(function() {
       $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
     });
   });
@@ -45,13 +49,15 @@ $(document).ready(function(){
 
 function clearFilterInput(){
     $("#filterInput").val("");
-    $("#configTable tr").filter(function() {
+    $(".configTable tr").filter(function() {
       $(this).toggle($(this).text().toLowerCase().indexOf("") > -1)
     });
 }
 
 function changeInputValue(name){
     var $el = $("input[id='" + name + "']");
+    var $tr = $("tr[id='tr-" + name + "']");
+    
     var value = $el.val();
     $.post("",
         {
@@ -61,6 +67,9 @@ function changeInputValue(name){
         function(data, status){
             if(status === "success"){
                 changeBackgroundColor("#76be6b", $el);
+                
+                $('#configTable1 tr:last').after($tr);
+                
             }else{
                 changeBackgroundColor("#ff6366", $el);
             }
@@ -94,42 +103,60 @@ function changeBackgroundColor(color, element){
     </div>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-striped">
+<div id="tables" class="table-responsive">
+    <table class="table">
         <thead class="thead-dark">
-        <tr>
-            <th scope="col">Property</th>
-            <th scope="col">Value</th>
-            <th scope="col">Description</th>
-        </tr>
+            <tr>
+                <th scope="col">Property</th>
+                <th scope="col">Value</th>
+                <th scope="col">Description</th>
+            </tr>
         </thead>
-        <tbody id="configTable">
-        {#for item in info:config}
-        <tr>
-            <td>
-                {item.configValue.name}
-                
-                {#if item.configValue.configSourceName && item.configValue.configSourceName != ''}
-                    <i class="fas fa-info-circle formInputButton" data-toggle="tooltip" data-placement="right" title="From: {item.configValue.configSourceName}"></i>
-                {/if}
-            </td>
-            <td>
-                <div class="input-group" {#if item.defaultValue}data-toggle="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
-                    <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
-                    <div class="input-group-append">
-                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
-                    </div>
-                </div>
-            </td>
-            <td>
-                {#if item.description.fmtJavadoc && item.description.fmtJavadoc != 'NOT_FOUND'}
-                    {item.description.fmtJavadoc}
-                {/if}    
-            </td>
-            
-            {/for}
-        </tbody>
     </table>
+    
+    {#for configsource in info:config}
+
+    <div class="card">
+        <div class="card-header bg-primary text-light">
+            <h5>
+                {configsource.key}
+            </h5>
+        </div>
+        
+        <table id="configTable{count}" class="table">
+
+            <tbody class="configTable">
+
+                {#for item in configsource.value}
+                <tr id="tr-{item.configValue.name}">
+
+                    <td>
+                        {item.configValue.name}
+                    </td>
+                    <td>
+                        {#if configsource.key.editable}
+                        <div class="input-group" {#if item.defaultValue}data-toggle="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                            <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
+                            <div class="input-group-append">
+                                <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
+                            </div>
+                        </div>
+                        {#else}
+                            {item.configValue.value}
+                        {/if}
+                    </td>
+                    <td>
+                        {#if item.description.fmtJavadoc && item.description.fmtJavadoc != 'NOT_FOUND'}
+                            {item.description.fmtJavadoc}
+                        {/if}    
+                    </td>
+                </tr>
+                {/for}
+            </tbody>
+        </table>
+    </div>
+    {/for}
 </div>
+
 {/body}
 {/include}

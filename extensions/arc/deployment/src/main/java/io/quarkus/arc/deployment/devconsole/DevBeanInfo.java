@@ -17,6 +17,64 @@ import io.quarkus.arc.processor.DotNames;
 
 public class DevBeanInfo implements Comparable<DevBeanInfo> {
 
+    public static DevBeanInfo from(BeanInfo bean, CompletedApplicationClassPredicateBuildItem predicate) {
+        Set<Name> qualifiers = new HashSet<>();
+        for (AnnotationInstance qualifier : bean.getQualifiers()) {
+            qualifiers.add(Name.from(qualifier));
+        }
+        Set<Name> types = new HashSet<>();
+        for (Type beanType : bean.getTypes()) {
+            types.add(Name.from(beanType));
+        }
+        Name scope = Name.from(bean.getScope().getDotName());
+        Name providerType = Name.from(bean.getProviderType());
+
+        if (bean.getTarget().isPresent()) {
+            AnnotationTarget target = bean.getTarget().get();
+            DevBeanKind kind;
+            String memberName;
+            boolean isApplicationBean;
+            Name declaringClass;
+            if (target.kind() == Kind.METHOD) {
+                MethodInfo method = target.asMethod();
+                memberName = method.name();
+                kind = DevBeanKind.METHOD;
+                isApplicationBean = predicate.test(bean.getDeclaringBean().getBeanClass());
+                declaringClass = Name.from(bean.getDeclaringBean().getBeanClass());
+            } else if (target.kind() == Kind.FIELD) {
+                FieldInfo field = target.asField();
+                memberName = field.name();
+                kind = DevBeanKind.FIELD;
+                isApplicationBean = predicate.test(bean.getDeclaringBean().getBeanClass());
+                declaringClass = Name.from(bean.getDeclaringBean().getBeanClass());
+            } else if (target.kind() == Kind.CLASS) {
+                ClassInfo clazz = target.asClass();
+                kind = DevBeanKind.CLASS;
+                memberName = null;
+                isApplicationBean = predicate.test(clazz.name());
+                declaringClass = null;
+            } else {
+                throw new IllegalArgumentException("Invalid annotation target: " + target);
+            }
+            return new DevBeanInfo(kind, isApplicationBean, providerType, memberName, types, qualifiers, scope, declaringClass);
+        } else {
+            // Synthetic bean
+            return new DevBeanInfo(DevBeanKind.SYNTHETIC, false, providerType, null, types, qualifiers, scope, null);
+        }
+    }
+
+    public DevBeanInfo(DevBeanKind kind, boolean isApplicationBean, Name providerType, String memberName, Set<Name> types,
+            Set<Name> qualifiers, Name scope, Name declaringClass) {
+        this.kind = kind;
+        this.isApplicationBean = isApplicationBean;
+        this.providerType = providerType;
+        this.memberName = memberName;
+        this.types = types;
+        this.qualifiers = qualifiers;
+        this.scope = scope;
+        this.declaringClass = declaringClass;
+    }
+
     private final DevBeanKind kind;
     private final boolean isApplicationBean;
     private final Name providerType;
@@ -25,51 +83,6 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
     private final Set<Name> qualifiers;
     private final Name scope;
     private final Name declaringClass;
-
-    public DevBeanInfo(BeanInfo bean, CompletedApplicationClassPredicateBuildItem predicate) {
-        qualifiers = new HashSet<>();
-        for (AnnotationInstance qualifier : bean.getQualifiers()) {
-            qualifiers.add(Name.from(qualifier));
-        }
-        scope = Name.from(bean.getScope().getDotName());
-        types = new HashSet<>();
-        for (Type beanType : bean.getTypes()) {
-            types.add(Name.from(beanType));
-        }
-
-        providerType = Name.from(bean.getProviderType());
-
-        if (bean.getTarget().isPresent()) {
-            AnnotationTarget target = bean.getTarget().get();
-            if (target.kind() == Kind.METHOD) {
-                MethodInfo method = target.asMethod();
-                memberName = method.name();
-                this.kind = DevBeanKind.METHOD;
-                this.isApplicationBean = predicate.test(bean.getDeclaringBean().getBeanClass());
-                this.declaringClass = Name.from(bean.getDeclaringBean().getBeanClass());
-            } else if (target.kind() == Kind.FIELD) {
-                FieldInfo field = target.asField();
-                this.memberName = field.name();
-                this.kind = DevBeanKind.FIELD;
-                this.isApplicationBean = predicate.test(bean.getDeclaringBean().getBeanClass());
-                this.declaringClass = Name.from(bean.getDeclaringBean().getBeanClass());
-            } else if (target.kind() == Kind.CLASS) {
-                ClassInfo clazz = target.asClass();
-                this.kind = DevBeanKind.CLASS;
-                this.memberName = null;
-                this.isApplicationBean = predicate.test(clazz.name());
-                this.declaringClass = null;
-            } else {
-                throw new IllegalArgumentException("Invalid annotation target: " + target);
-            }
-        } else {
-            // Synthetic bean
-            this.kind = DevBeanKind.SYNTHETIC;
-            this.isApplicationBean = false;
-            this.declaringClass = null;
-            this.memberName = null;
-        }
-    }
 
     public DevBeanKind getKind() {
         return kind;

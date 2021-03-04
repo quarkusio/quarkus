@@ -12,6 +12,24 @@ import io.quarkus.arc.processor.ObserverInfo;
 
 public class DevObserverInfo implements Comparable<DevObserverInfo> {
 
+    public static DevObserverInfo from(ObserverInfo observer, CompletedApplicationClassPredicateBuildItem predicate) {
+        List<Name> qualifiers;
+        if (observer.getQualifiers().isEmpty()) {
+            qualifiers = Collections.emptyList();
+        } else {
+            qualifiers = observer.getQualifiers().stream().map(Name::from).collect(Collectors.toList());
+        }
+        if (observer.getDeclaringBean() != null) {
+            return new DevObserverInfo(predicate.test(observer.getObserverMethod().declaringClass().name()),
+                    Name.from(observer.getObserverMethod().declaringClass().name()), observer.getObserverMethod().name(),
+                    Name.from(observer.getObservedType()), qualifiers, observer.getPriority(), observer.isAsync(),
+                    observer.getReception(), observer.getTransactionPhase());
+        } else {
+            return new DevObserverInfo(false, null, null, Name.from(observer.getObservedType()), qualifiers,
+                    observer.getPriority(), observer.isAsync(), observer.getReception(), observer.getTransactionPhase());
+        }
+    }
+
     private final boolean isApplicationObserver;
     private final Name declaringClass;
     private final String methodName;
@@ -22,27 +40,17 @@ public class DevObserverInfo implements Comparable<DevObserverInfo> {
     private final Reception reception;
     private final TransactionPhase transactionPhase;
 
-    public DevObserverInfo(ObserverInfo observer, CompletedApplicationClassPredicateBuildItem predicate) {
-        priority = observer.getPriority();
-        reception = observer.getReception();
-        transactionPhase = observer.getTransactionPhase();
-        isAsync = observer.isAsync();
-        observedType = Name.from(observer.getObservedType());
-
-        if (observer.getQualifiers().isEmpty()) {
-            qualifiers = Collections.emptyList();
-        } else {
-            qualifiers = observer.getQualifiers().stream().map(Name::from).collect(Collectors.toList());
-        }
-        if (observer.getDeclaringBean() != null) {
-            declaringClass = Name.from(observer.getObserverMethod().declaringClass().name());
-            methodName = observer.getObserverMethod().name();
-            isApplicationObserver = predicate.test(observer.getObserverMethod().declaringClass().name());
-        } else {
-            declaringClass = null;
-            methodName = null;
-            isApplicationObserver = false;
-        }
+    public DevObserverInfo(boolean isApplicationObserver, Name declaringClass, String methodName, Name observedType,
+            List<Name> qualifiers, int priority, boolean isAsync, Reception reception, TransactionPhase transactionPhase) {
+        this.isApplicationObserver = isApplicationObserver;
+        this.declaringClass = declaringClass;
+        this.methodName = methodName;
+        this.observedType = observedType;
+        this.qualifiers = qualifiers;
+        this.priority = priority;
+        this.isAsync = isAsync;
+        this.reception = reception;
+        this.transactionPhase = transactionPhase;
     }
 
     public Name getDeclaringClass() {
@@ -82,17 +90,31 @@ public class DevObserverInfo implements Comparable<DevObserverInfo> {
     }
 
     @Override
-    public int compareTo(DevObserverInfo o) {
-        // Application beans should go first
-        if (isApplicationObserver == o.isApplicationObserver) {
-            if (declaringClass == null && o.declaringClass != null) {
-                return -1;
-            } else if (declaringClass != null && o.declaringClass == null) {
-                return 1;
+    public int compareTo(DevObserverInfo other) {
+        // Application observers should go first
+        int ret = 0;
+        if (isApplicationObserver != other.isApplicationObserver) {
+            ret = isApplicationObserver ? -1 : 1;
+        } else {
+            // Note that declaringClass and methodName are null for synthetic observers
+            if (declaringClass == null && other.declaringClass == null) {
+                // Synthetic observers
+                ret = observedType.compareTo(other.observedType);
+            } else {
+                // At this point we can be sure that at least one of the observers is not synthetic
+                if (declaringClass == null && other.declaringClass != null) {
+                    ret = 1;
+                } else if (declaringClass != null && other.declaringClass == null) {
+                    ret = -1;
+                } else {
+                    ret = declaringClass.compareTo(other.declaringClass);
+                }
+                if (ret == 0) {
+                    // Observers are not synthetic - method name must be present 
+                    ret = methodName.compareTo(other.methodName);
+                }
             }
-            int ret = declaringClass.compareTo(o.declaringClass);
-            return ret == 0 ? methodName.compareTo(o.methodName) : ret;
         }
-        return isApplicationObserver ? -1 : 1;
+        return ret;
     }
 }

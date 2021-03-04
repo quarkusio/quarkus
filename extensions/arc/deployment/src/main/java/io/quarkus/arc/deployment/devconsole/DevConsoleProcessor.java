@@ -93,13 +93,13 @@ public class DevConsoleProcessor {
         BeanDeploymentValidator.ValidationContext validationContext = validationPhaseBuildItem.getContext();
         DevBeanInfos beanInfos = new DevBeanInfos();
         for (BeanInfo beanInfo : validationContext.beans()) {
-            beanInfos.addBean(new DevBeanInfo(beanInfo, predicate));
+            beanInfos.addBean(DevBeanInfo.from(beanInfo, predicate));
         }
         for (BeanInfo beanInfo : validationContext.removedBeans()) {
-            beanInfos.addRemovedBean(new DevBeanInfo(beanInfo, predicate));
+            beanInfos.addRemovedBean(DevBeanInfo.from(beanInfo, predicate));
         }
         for (ObserverInfo observerInfo : validationContext.get(BuildExtension.Key.OBSERVERS)) {
-            beanInfos.addObserver(new DevObserverInfo(observerInfo, predicate));
+            beanInfos.addObserver(DevObserverInfo.from(observerInfo, predicate));
         }
         beanInfos.sort();
         return new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos);

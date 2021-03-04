@@ -370,6 +370,18 @@ public class JibProcessor {
                 });
                 jibContainerBuilder.addFileEntriesLayer(bootLibsLayerBuilder.build());
 
+                Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.DEPLOYMENT_LIB);
+                if (Files.exists(deploymentPath)) { // this is the case of mutable-jar
+                    FileEntriesLayer.Builder deploymentLayerBuilder = FileEntriesLayer.builder();
+                    Files.list(deploymentPath).forEach(lib -> {
+                        AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
+                                .resolve(JarResultBuildStep.DEPLOYMENT_LIB)
+                                .resolve(lib.getFileName());
+                        deploymentLayerBuilder.addEntry(lib, libPathInContainer);
+                    });
+                    jibContainerBuilder.addFileEntriesLayer(deploymentLayerBuilder.build());
+                }
+
                 jibContainerBuilder.addLayer(nonFastChangingLibPaths,
                         workDirInContainer.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN));
                 jibContainerBuilder.addLayer(new ArrayList<>(fastChangingLibPaths),

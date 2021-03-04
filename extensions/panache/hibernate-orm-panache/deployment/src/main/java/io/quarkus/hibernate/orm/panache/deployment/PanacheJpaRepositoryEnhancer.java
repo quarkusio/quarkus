@@ -1,9 +1,11 @@
-package io.quarkus.panache.common.deployment;
+package io.quarkus.hibernate.orm.panache.deployment;
 
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
-import io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassVisitor;
+import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
+import io.quarkus.panache.common.deployment.TypeBundle;
+import io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassOperationGenerationVisitor;
 
 public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
@@ -16,7 +18,7 @@ public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheRepositoryClassVisitor(className, outputClassVisitor,
+        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor,
                 this.indexView, typeBundle);
     }
 }

@@ -2,8 +2,8 @@ package io.quarkus.panache.common.deployment.visitors;
 
 import static io.quarkus.deployment.util.AsmUtil.getDescriptor;
 import static io.quarkus.deployment.util.AsmUtil.unboxIfRequired;
-import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor.OBJECT;
-import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor.recursivelyFindEntityTypeArguments;
+import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor.OBJECT;
+import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor.recursivelyFindEntityTypeArguments;
 import static org.objectweb.asm.Opcodes.CHECKCAST;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
@@ -29,10 +29,10 @@ import org.objectweb.asm.Type;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.panache.common.deployment.ByteCodeType;
-import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
+import io.quarkus.panache.common.deployment.PanacheConstants;
 import io.quarkus.panache.common.deployment.TypeBundle;
 
-public class PanacheRepositoryClassVisitor extends ClassVisitor {
+public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisitor {
     public static final ByteCodeType CLASS = new ByteCodeType(Class.class);
 
     protected Type entityType;
@@ -49,7 +49,8 @@ public class PanacheRepositoryClassVisitor extends ClassVisitor {
     protected ByteCodeType entityUpperBound;
     private final Map<String, String> erasures = new HashMap<>();
 
-    public PanacheRepositoryClassVisitor(String className, ClassVisitor outputClassVisitor, IndexView indexView,
+    public PanacheRepositoryClassOperationGenerationVisitor(String className, ClassVisitor outputClassVisitor,
+            IndexView indexView,
             TypeBundle typeBundle) {
         super(Gizmo.ASM_API_VERSION, outputClassVisitor);
         this.typeBundle = typeBundle;
@@ -123,7 +124,7 @@ public class PanacheRepositoryClassVisitor extends ClassVisitor {
             // Do not generate a method that already exists
             String descriptor = getDescriptor(method, type -> typeArguments.getOrDefault(type, OBJECT).descriptor());
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
-                AnnotationInstance bridge = method.annotation(PanacheEntityEnhancer.DOTNAME_GENERATE_BRIDGE);
+                AnnotationInstance bridge = method.annotation(PanacheConstants.DOTNAME_GENERATE_BRIDGE);
                 if (bridge != null) {
                     generateModelBridge(method);
                     if (needsJvmBridge(method)) {

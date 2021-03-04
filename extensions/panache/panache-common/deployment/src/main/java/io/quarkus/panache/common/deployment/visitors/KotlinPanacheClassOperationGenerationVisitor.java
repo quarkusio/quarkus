@@ -5,7 +5,7 @@ import static io.quarkus.deployment.util.AsmUtil.getLoadOpcode;
 import static io.quarkus.deployment.util.AsmUtil.getSignature;
 import static io.quarkus.deployment.util.AsmUtil.unboxIfRequired;
 import static io.quarkus.gizmo.Gizmo.ASM_API_VERSION;
-import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.DOTNAME_GENERATE_BRIDGE;
+import static io.quarkus.panache.common.deployment.PanacheConstants.DOTNAME_GENERATE_BRIDGE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
@@ -58,7 +58,7 @@ import io.quarkus.panache.common.deployment.TypeBundle;
  * kotlinc compiles default methods in to the implementing classes so we need to elide them first and then we can
  * generate new methods like we do elsewhere.
  */
-public class KotlinPanacheClassVisitor extends ClassVisitor {
+public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     public static final String NOT_NULL_DESCRIPTOR = "Lorg/jetbrains/annotations/NotNull;";
     public static final String NULLABLE_DESCRIPTOR = "Lorg/jetbrains/annotations/Nullable;";
     public static final ByteCodeType OBJECT = new ByteCodeType(Object.class);
@@ -76,7 +76,7 @@ public class KotlinPanacheClassVisitor extends ClassVisitor {
     protected TypeBundle typeBundle;
     private final List<Label> labels = new ArrayList<>();
 
-    public KotlinPanacheClassVisitor(ClassVisitor outputClassVisitor, ClassInfo classInfo,
+    public KotlinPanacheClassOperationGenerationVisitor(ClassVisitor outputClassVisitor, ClassInfo classInfo,
             IndexView indexView, TypeBundle typeBundle, ByteCodeType baseType,
             List<PanacheMethodCustomizer> methodCustomizers) {
         super(ASM_API_VERSION, outputClassVisitor);

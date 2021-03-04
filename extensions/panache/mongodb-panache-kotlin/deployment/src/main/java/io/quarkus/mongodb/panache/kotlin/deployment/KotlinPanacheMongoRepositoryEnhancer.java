@@ -8,7 +8,7 @@ import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.TypeBundle;
-import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
+import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor;
 
 public class KotlinPanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
     private final TypeBundle types;
@@ -20,7 +20,7 @@ public class KotlinPanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhan
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new KotlinPanacheClassVisitor(outputClassVisitor,
+        return new KotlinPanacheClassOperationGenerationVisitor(outputClassVisitor,
                 indexView.getClassByName(DotName.createSimple(className)), indexView, types,
                 types.repositoryBase(), Collections.emptyList());
     }

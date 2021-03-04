@@ -1,10 +1,7 @@
 package io.quarkus.panache.common.deployment.visitors;
 
-import java.util.List;
-
 import org.hibernate.bytecode.enhance.spi.EnhancerConstants;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -12,16 +9,12 @@ import org.objectweb.asm.Type;
 
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
-import io.quarkus.panache.common.deployment.MetamodelInfo;
-import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
-import io.quarkus.panache.common.deployment.TypeBundle;
 
-public class PanacheJpaEntityClassVisitor extends PanacheEntityClassVisitor<EntityField> {
+public class PanacheJpaEntityClassAccessorGenerationVisitor extends PanacheEntityClassAccessorGenerationVisitor {
 
-    public PanacheJpaEntityClassVisitor(ClassVisitor outputClassVisitor,
-            MetamodelInfo<EntityModel<EntityField>> modelInfo, ClassInfo entityInfo,
-            List<PanacheMethodCustomizer> methodCustomizers, IndexView indexView, TypeBundle bundle) {
-        super(outputClassVisitor, modelInfo, bundle, entityInfo, methodCustomizers, indexView);
+    public PanacheJpaEntityClassAccessorGenerationVisitor(ClassVisitor outputClassVisitor,
+            ClassInfo entityInfo, EntityModel entityModel) {
+        super(outputClassVisitor, entityInfo, entityModel);
     }
 
     @Override

@@ -11,11 +11,11 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     private final String methodName;
     private String owner;
     private String methodDescriptor;
-    private MetamodelInfo<?> modelInfo;
+    private MetamodelInfo modelInfo;
 
     public PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String owner,
             String methodName, String methodDescriptor,
-            MetamodelInfo<?> modelInfo) {
+            MetamodelInfo modelInfo) {
         super(Gizmo.ASM_API_VERSION, methodVisitor);
         this.owner = owner;
         this.methodName = methodName;
@@ -62,7 +62,7 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     private boolean targetIsInHierarchy(String currentClass, String targetClass) {
         if (currentClass.equals(targetClass))
             return true;
-        EntityModel<?> entityModel = modelInfo.getEntityModel(currentClass);
+        EntityModel entityModel = modelInfo.getEntityModel(currentClass);
         if (entityModel == null)
             return false;
         if (entityModel.superClassName != null)
@@ -74,7 +74,7 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
      * Checks that the given field belongs to an entity (any entity)
      */
     boolean isEntityField(String className, String fieldName) {
-        EntityModel<?> entityModel = modelInfo.getEntityModel(className);
+        EntityModel entityModel = modelInfo.getEntityModel(className);
         if (entityModel == null)
             return false;
         EntityField field = entityModel.fields.get(fieldName);

@@ -10,7 +10,7 @@ import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
-import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
+import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor;
 
 public class KotlinPanacheRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
@@ -23,7 +23,7 @@ public class KotlinPanacheRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new KotlinPanacheClassVisitor(outputClassVisitor,
+        return new KotlinPanacheClassOperationGenerationVisitor(outputClassVisitor,
                 indexView.getClassByName(DotName.createSimple(className)), indexView, BUNDLE,
                 BUNDLE.repositoryBase(), methodCustomizers);
     }

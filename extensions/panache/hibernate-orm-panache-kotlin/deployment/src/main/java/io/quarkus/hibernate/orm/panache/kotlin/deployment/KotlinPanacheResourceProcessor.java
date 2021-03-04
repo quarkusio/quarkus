@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -31,20 +30,20 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
-import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.PanacheKotlinHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.ByteCodeType;
+import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
@@ -55,16 +54,14 @@ public final class KotlinPanacheResourceProcessor {
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
     private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     private static final Set<DotName> UNREMOVABLE_BEANS = singleton(createSimple(EntityManager.class.getName()));
-    static final DotName TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    @Consume(HibernateEnhancersRegisteredBuildItem.class)
     void build(PanacheKotlinHibernateOrmRecorder recorder,
             CombinedIndexBuildItem index,
-            ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            HibernateEnhancersRegisteredBuildItem hibernateMarker,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping) {
 
@@ -83,7 +80,7 @@ public final class KotlinPanacheResourceProcessor {
                 bundle.entityCompanionBase(), bundle.entityCompanion());
     }
 
-    public PanacheEntityEnhancer<?> createEntityEnhancer(CombinedIndexBuildItem index,
+    public PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
         return new KotlinPanacheEntityEnhancer(index.getIndex(), methodCustomizers);
     }
@@ -124,7 +121,7 @@ public final class KotlinPanacheResourceProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             PanacheKotlinHibernateOrmRecorder recorder,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            PanacheEntityEnhancer<?> entityEnhancer,
+            PanacheEntityEnhancer entityEnhancer,
             ByteCodeType baseType,
             ByteCodeType type) {
 
@@ -136,7 +133,6 @@ public final class KotlinPanacheResourceProcessor {
             }
             String name = classInfo.name().toString();
             if (modelClasses.add(name)) {
-                entityEnhancer.collectFields(classInfo);
                 transformers.produce(new BytecodeTransformerBuildItem(name, entityEnhancer));
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, name));
             }
@@ -151,7 +147,7 @@ public final class KotlinPanacheResourceProcessor {
         for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
             String entityName = entry.getKey();
             List<String> selectedPersistenceUnits = new ArrayList<>(entry.getValue());
-            boolean isPanacheEntity = modelClasses.stream().anyMatch(name -> name.equals(entityName));
+            boolean isPanacheEntity = modelClasses.contains(entityName);
             if (selectedPersistenceUnits.size() > 1 && isPanacheEntity) {
                 throw new IllegalStateException(String.format(
                         "PanacheEntity '%s' cannot be defined for usage in several persistence units which is not supported. The following persistence units were found: %s.",

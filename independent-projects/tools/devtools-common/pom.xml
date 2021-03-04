@@ -46,6 +46,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-platform-descriptor-api</artifactId>
         </dependency>
+        <!-- user prompt -->
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>

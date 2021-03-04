@@ -132,9 +132,9 @@ public class Create extends BaseSubCommand implements Callable<Integer> {
                 return CommandLine.ExitCode.SOFTWARE;
             }
         } catch (Exception e) {
+            err().println("Project creation failed, " + e.getMessage());
             if (parent.showErrors)
                 e.printStackTrace(err());
-            err().println("Project creation failed, " + e.getMessage());
             return CommandLine.ExitCode.SOFTWARE;
         }
 

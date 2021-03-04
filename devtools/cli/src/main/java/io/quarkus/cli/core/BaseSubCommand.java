@@ -6,7 +6,11 @@ import io.quarkus.cli.QuarkusCli;
 import picocli.CommandLine;
 
 public abstract class BaseSubCommand {
-    @CommandLine.Option(names = { "-h", "--help" }, order = 0, usageHelp = true, description = "display this help message")
+
+    @CommandLine.Option(names = { "-B", "--batch-mode" }, order = 100, description = "run command in batch mode")
+    protected boolean batchMode;
+
+    @CommandLine.Option(names = { "-h", "--help" }, order = 101, usageHelp = true, description = "display this help message")
     protected boolean help;
 
     @CommandLine.ParentCommand

@@ -253,7 +253,8 @@
                         <configuration>
                             <!-- pointless to attempt incremental build if something like mvnw was changed
                                  (and also potentially wrong, given that independent-projects might not be built) -->
-                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
+                            <!-- BOM part is a temporary workaround for: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/320 -->
+                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*|bom[/\\].*</skipIfPathMatches>
                             <!-- Note: *Upstream* is only relevant in case of:
                                  -am or
                                  -Dgib.buildUpstream=always|true or

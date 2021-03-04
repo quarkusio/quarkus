@@ -11,7 +11,6 @@ import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +23,6 @@ import io.restassured.RestAssured;
  */
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
-@Disabled("Vert.x 4 Integration in progress - https://github.com/quarkusio/quarkus/issues/15084")
 public class BearerTokenAuthorizationTest {
 
     @Test

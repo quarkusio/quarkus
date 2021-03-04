@@ -23,10 +23,11 @@ import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
+// import io.vertx.ext.web.handler.graphql.impl.GraphQLInputDeserializer;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
 
 class VertxGraphqlProcessor {
-    private static final Pattern TRAILING_SLASH_SUFFIX_REGEX = Pattern.compile("/+$");
+    private static Pattern TRAILING_SLASH_SUFFIX_REGEX = Pattern.compile("/+$");
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -41,6 +42,7 @@ class VertxGraphqlProcessor {
     @BuildStep
     List<ReflectiveClassBuildItem> registerForReflection() {
         return Arrays.asList(
+                //new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLBatch.class.getName()),
                 new ReflectiveClassBuildItem(true, true, GraphQLQuery.class.getName()));
     }
@@ -49,8 +51,10 @@ class VertxGraphqlProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
             BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
-            LaunchModeBuildItem launchMode, NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BuildProducer<RouteBuildItem> routes, BuildProducer<RequireBodyHandlerBuildItem> body) {
+            LaunchModeBuildItem launchMode,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<RouteBuildItem> routes,
+            BuildProducer<RequireBodyHandlerBuildItem> body) {
 
         boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
         if (!includeVertxGraphqlUi) {
@@ -70,7 +74,7 @@ class VertxGraphqlProcessor {
                 .route(path)
                 .handler(handler)
                 .requiresLegacyRedirect()
-                .displayOnNotFoundPage("GraphQL UI")
+                .displayOnNotFoundPage("GraphQL UI", path + "/")
                 .build());
         routes.produce(
                 nonApplicationRootPathBuildItem.routeBuilder()

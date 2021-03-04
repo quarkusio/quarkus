@@ -119,7 +119,6 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, ignorePatterns, request.uri());
         setRequestMetric(Vertx.currentContext(), requestMetric);
 
-        // evaluate and remember the path to monitor for use later (maybe a 404 or redirect..)
         if (requestMetric.isMeasure()) {
             // If we're measuring this request, create/remember the sample
             requestMetric.setSample(Timer.start(registry));

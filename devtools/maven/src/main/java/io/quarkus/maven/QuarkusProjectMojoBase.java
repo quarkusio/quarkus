@@ -147,32 +147,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                         return descriptorResolver.resolveFromJson(descrArtifactList.get(0).getFile().toPath());
                     }
 
-                    // Typically, quarkus-bom platform will appear first.
-                    // The descriptors that are generated today are not fragmented and include everything
-                    // a platform offers. Which means if the quarkus-bom platform appears first and its version
-                    // matches the Quarkus core version of the platform built on top of the quarkus-bom
-                    // (e.g. quarkus-universe-bom) the quarkus-bom platform can be skipped,
-                    // since it will already be included in the platform that's built on top of it
-                    int i = 0;
-                    Artifact platformArtifact = descrArtifactList.get(0);
-                    final String quarkusBomPlatformArtifactId = "quarkus-bom"
-                            + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX;
-                    Artifact quarkusBomPlatformArtifact = null;
-                    if (quarkusBomPlatformArtifactId.equals(platformArtifact.getArtifactId())) {
-                        quarkusBomPlatformArtifact = platformArtifact;
-                    }
                     final CombinedQuarkusPlatformDescriptor.Builder builder = CombinedQuarkusPlatformDescriptor.builder();
-                    while (++i < descrArtifactList.size()) {
-                        platformArtifact = descrArtifactList.get(i);
-                        final QuarkusPlatformDescriptor descriptor = descriptorResolver
-                                .resolveFromJson(platformArtifact.getFile().toPath());
-                        if (quarkusBomPlatformArtifact != null) {
-                            if (!quarkusBomPlatformArtifact.getVersion().equals(descriptor.getQuarkusVersion())) {
-                                builder.addPlatform(
-                                        descriptorResolver.resolveFromJson(quarkusBomPlatformArtifact.getFile().toPath()));
-                            }
-                            quarkusBomPlatformArtifact = null;
-                        }
+                    for (Artifact platformArtifact : descrArtifactList) {
                         builder.addPlatform(descriptorResolver.resolveFromJson(platformArtifact.getFile().toPath()));
                     }
                     return builder.build();
@@ -223,23 +199,59 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
 
     private List<Artifact> collectQuarkusPlatformDescriptors(MessageWriter log, MavenArtifactResolver mvn)
             throws MojoExecutionException {
-        final List<Artifact> descrArtifactList = new ArrayList<>(2);
         final List<Dependency> constraints = project.getDependencyManagement() == null ? Collections.emptyList()
                 : project.getDependencyManagement().getDependencies();
-        if (!constraints.isEmpty()) {
-            for (Dependency d : constraints) {
-                if (!("json".equals(d.getType())
-                        && d.getArtifactId().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX))) {
+        if (constraints.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Here we are about to collect platform descriptors found among the project's dependency constraints.
+        // Normally, it's a straightforward exercise, i.e. simply collect dependencies that match a pre-defined artifactId suffix.
+        // The ordering of the descriptors in our platform BOMs might not be consistent across different builds though.
+        // So this code is doing rough filtering to make sure the base platform (quarkus-bom) descriptor
+        // does not appear to be forcing its BOM over the other platforms found in the project.
+        // Luckily, though, this code is going to be replaced in the next version using the new extension catalog API.
+        final List<Dependency> descriptors = new ArrayList<>();
+        int quarkusBomIndex = -1;
+        int quarkusUniverseBomIndex = -1;
+        for (Dependency d : constraints) {
+            final String artifactId = d.getArtifactId();
+            if (!("json".equals(d.getType())
+                    && artifactId.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX))) {
+                continue;
+            }
+            if (artifactId.startsWith("quarkus-bom")) {
+                if (quarkusBomIndex < 0) {
+                    quarkusBomIndex = descriptors.size();
+                } else {
+                    // the first one wins
                     continue;
                 }
-                final Artifact a = new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(),
-                        d.getType(), d.getVersion());
-                try {
-                    log.debug("Found platform descriptor %s", a);
-                    descrArtifactList.add(mvn.resolve(a).getArtifact());
-                } catch (Exception e) {
-                    throw new MojoExecutionException("Failed to resolve the platform descriptor " + a, e);
+            } else if (artifactId.startsWith("quarkus-universe-bom")) {
+                if (quarkusUniverseBomIndex < 0) {
+                    quarkusUniverseBomIndex = descriptors.size();
+                } else {
+                    // the first one wins
+                    continue;
                 }
+            }
+            descriptors.add(d);
+        }
+
+        final List<Artifact> descrArtifactList = new ArrayList<>(descriptors.size());
+        for (int i = 0; i < descriptors.size(); ++i) {
+            if (quarkusBomIndex == i && quarkusUniverseBomIndex >= 0) {
+                log.debug("Filtered platform descriptor %s", descriptors.get(i));
+                continue;
+            }
+            final Dependency d = descriptors.get(i);
+            final Artifact a = new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(),
+                    d.getType(), d.getVersion());
+            try {
+                log.debug("Found platform descriptor %s", a);
+                descrArtifactList.add(mvn.resolve(a).getArtifact());
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to resolve the platform descriptor " + a, e);
             }
         }
         return descrArtifactList;

@@ -1,5 +1,8 @@
 package io.quarkus.jackson.runtime;
 
+import java.time.ZoneId;
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -19,4 +22,12 @@ public class JacksonBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean writeDatesAsTimestamps;
+
+    /**
+     * If set, Jackson will default to using the specified timezone when formatting dates.
+     * Some examples values are "Asia/Jakarta" and "GMT+3".
+     * If not set, Jackson will use its own default.
+     */
+    @ConfigItem(defaultValue = "UTC")
+    public Optional<ZoneId> timezone;
 }

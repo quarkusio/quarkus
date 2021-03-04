@@ -20,4 +20,15 @@ public class SetSectionTest {
                 engine.parse("{foo}:{baz} - {#let foo=true bar='mix'}{foo}:{bar}:{baz}{/}").data("baz", "what?!").render());
     }
 
+    @Test
+    public void testLiterals() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        assertEquals("1::4::Andy::false",
+                engine.parse(
+                        "{#let foo=1 bar='qute' baz=name.or('Andy') alpha=name.ifTruthy('true').or('false')}"
+                                + "{#for i in foo}{count}{/for}::{bar.length}::{baz}::{alpha}"
+                                + "{/let}")
+                        .render());
+    }
+
 }

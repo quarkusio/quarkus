@@ -79,7 +79,7 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns the default value if the base object is null or {@link Result#NOT_FOUND}.
+     * Returns the default value if the base object is null or {@link Result#NOT_FOUND} and the base object otherwise.
      * 
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
@@ -133,6 +133,8 @@ public final class ValueResolvers {
     }
 
     /**
+     * Returns {@link Result#NOT_FOUND} if the base object is falsy and the base object otherwise.
+     * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
      * 
      * {@code person.isElvis ? 'elvis' : notElvis}
@@ -141,8 +143,16 @@ public final class ValueResolvers {
         return new ValueResolver() {
 
             public boolean appliesTo(EvalContext context) {
-                return context.getParams().size() == 1
-                        && ("?".equals(context.getName()));
+                if (context.getParams().size() != 1) {
+                    return false;
+                }
+                switch (context.getName()) {
+                    case "?":
+                    case "ifTruthy":
+                        return true;
+                    default:
+                        return false;
+                }
             }
 
             @Override

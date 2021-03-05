@@ -384,4 +384,9 @@ class MongodbPanacheResourceTest {
     public void testMoreRepositoryFunctionalities() {
         get("/test/imperative/repository").then().statusCode(200);
     }
+
+    @Test
+    public void testBug13301() {
+        get("/bugs/13301").then().statusCode(200);
+    }
 }

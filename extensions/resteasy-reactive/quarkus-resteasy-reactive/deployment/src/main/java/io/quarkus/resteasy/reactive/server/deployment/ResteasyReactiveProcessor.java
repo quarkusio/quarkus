@@ -582,10 +582,10 @@ public class ResteasyReactiveProcessor {
         });
     }
 
-    private String determineApplicationPath(IndexView index, String defaultPath) {
+    private String determineApplicationPath(IndexView index, Optional<String> defaultPath) {
         Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyReactiveDotNames.APPLICATION_PATH);
         if (applicationPaths.isEmpty()) {
-            return defaultPath;
+            return defaultPath.orElse("/");
         }
         // currently we only examine the first class that is annotated with @ApplicationPath so best
         // fail if the user code has multiple such annotations instead of surprising the user

@@ -141,10 +141,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             tokenJson = OidcUtils.decodeJwtContent(tokenCred.getToken());
                         }
                         if (tokenJson != null) {
-                            OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig.token, tokenJson);
-                            JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
-                                    userInfo);
                             try {
+                                OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig.token, tokenJson);
+                                JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
+                                        userInfo);
                                 SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
                                         resolvedContext.oidcConfig,
                                         tokenJson, rolesJson, userInfo);
@@ -154,7 +154,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     return Uni.createFrom().item(securityIdentity);
                                 }
                             } catch (Throwable ex) {
-                                return Uni.createFrom().failure(ex);
+                                return Uni.createFrom().failure(new AuthenticationFailedException(ex));
                             }
                         } else if (tokenCred instanceof IdTokenCredential
                                 || tokenCred instanceof AccessTokenCredential

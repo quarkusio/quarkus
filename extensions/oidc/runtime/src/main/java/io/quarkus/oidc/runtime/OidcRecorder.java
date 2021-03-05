@@ -160,10 +160,6 @@ public class OidcRecorder {
             }
         }
 
-        final long connectionRetryCount = OidcCommonUtils.getConnectionRetryCount(oidcConfig);
-        if (connectionRetryCount > 1) {
-            LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
-        }
         return createOidcProvider(oidcConfig, tlsConfig, vertx)
                 .onItem().transform(p -> new TenantConfigContext(p, oidcConfig));
     }

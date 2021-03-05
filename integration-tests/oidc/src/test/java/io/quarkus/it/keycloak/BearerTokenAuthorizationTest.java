@@ -133,13 +133,21 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testDeniedNoBearerToken() {
+    public void testVerificationFailedNoBearerToken() {
         RestAssured.given()
                 .when().get("/api/users/me").then()
                 .statusCode(401);
     }
 
+    @Test
+    public void testVerificationFailedInvalidToken() {
+        RestAssured.given().auth().oauth2("123")
+                .when().get("/api/users/me").then()
+                .statusCode(401);
+    }
+
     //see https://github.com/quarkusio/quarkus/issues/5809
+    @Test
     @RepeatedTest(20)
     public void testOidcAndVertxHandler() {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))

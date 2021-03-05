@@ -1,5 +1,4 @@
----
-name: "Quarkus Extension for Spring Scheduled "
+name: "Quarkus Extension for Spring Scheduled"
 metadata:
   keywords:
   - "spring-scheduled"

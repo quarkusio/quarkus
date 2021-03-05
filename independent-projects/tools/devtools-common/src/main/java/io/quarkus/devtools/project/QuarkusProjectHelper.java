@@ -151,11 +151,11 @@ public class QuarkusProjectHelper {
         return toolsConfig == null ? toolsConfig = RegistriesConfigLocator.resolveConfig() : toolsConfig;
     }
 
-    private static MessageWriter messageWriter() {
+    public static MessageWriter messageWriter() {
         return log == null ? log = toolsConfig().isDebug() ? MessageWriter.debug() : MessageWriter.info() : log;
     }
 
-    private static MavenArtifactResolver artifactResolver() {
+    public static MavenArtifactResolver artifactResolver() {
         if (artifactResolver == null) {
             try {
                 artifactResolver = MavenArtifactResolver.builder()

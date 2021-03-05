@@ -13,11 +13,12 @@ import javax.ws.rs.ext.Provider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.objectweb.asm.util.TraceMethodVisitor;
+
+import io.quarkus.gizmo.Gizmo;
 
 @Provider
 public class IllegalClassExceptionMapper implements ExceptionMapper<IncompatibleClassChangeError> {
@@ -29,7 +30,7 @@ public class IllegalClassExceptionMapper implements ExceptionMapper<Incompatible
         private PrintWriter writer;
 
         public MethodFindingClassVisitor(String method, PrintWriter writer) {
-            super(Opcodes.ASM8);
+            super(Gizmo.ASM_API_VERSION);
             this.method = method;
             this.writer = writer;
             textifier = new Textifier();

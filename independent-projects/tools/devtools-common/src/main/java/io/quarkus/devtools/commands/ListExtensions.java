@@ -11,7 +11,6 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
-import io.quarkus.registry.ExtensionRegistry;
 import java.util.HashMap;
 
 /**
@@ -26,7 +25,6 @@ public class ListExtensions {
     public static final String FORMAT = ToolsUtils.dotJoin(PARAM_PREFIX, "format");
     public static final String SEARCH = ToolsUtils.dotJoin(PARAM_PREFIX, "search");
     public static final String EXTENSION_MANAGER = ToolsUtils.dotJoin(PARAM_PREFIX, "extension-manager");
-    public static final String EXTENSION_REGISTRY = ToolsUtils.dotJoin(PARAM_PREFIX, "extension-registry");
 
     private final QuarkusCommandInvocation invocation;
     private final ListExtensionsCommandHandler handler = new ListExtensionsCommandHandler();
@@ -61,11 +59,6 @@ public class ListExtensions {
 
     public ListExtensions extensionManager(ExtensionManager extensionManager) {
         invocation.setValue(EXTENSION_MANAGER, requireNonNull(extensionManager, "extensionManager is required"));
-        return this;
-    }
-
-    public ListExtensions extensionRegistry(ExtensionRegistry extensionRegistry) {
-        invocation.setValue(EXTENSION_REGISTRY, requireNonNull(extensionRegistry, "extensionRegistry is required"));
         return this;
     }
 

@@ -77,6 +77,7 @@ public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase
 
         params.setProperty("platformArtifactId", "quarkus-bom");
         params.setProperty("platformVersion", getQuarkusCoreVersion());
+        enableDevToolsTestConfig(params);
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);

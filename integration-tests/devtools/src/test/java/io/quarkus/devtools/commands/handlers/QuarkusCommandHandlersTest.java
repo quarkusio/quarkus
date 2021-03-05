@@ -3,28 +3,34 @@ package io.quarkus.devtools.commands.handlers;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.select;
 import static java.util.Arrays.asList;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.commands.data.SelectionResult;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.json.JsonExtension;
 
 class QuarkusCommandHandlersTest {
 
     @Test
     void testMultiMatchByLabels() {
-        Extension e1 = new Extension("org.acme", "e1", "1.0")
-                .setName("some extension 1")
-                .setKeywords(new String[] { "foo", "bar" });
-        Extension e2 = new Extension("org.acme", "e2", "1.0")
-                .setName("some extension 2")
-                .setKeywords(new String[] { "foo", "bar", "baz" });
-        Extension e3 = new Extension("org.acme", "e3", "1.0")
-                .setName("unrelated")
-                .setKeywords(new String[] { "bar" });
+        JsonExtension e1 = new JsonExtension();
+        e1.setArtifact(new ArtifactCoords("org.acme", "e1", "1.0"));
+        e1.setName("some extension 1");
+        e1.setKeywords(Arrays.asList("foo", "bar"));
+        JsonExtension e2 = new JsonExtension();
+        e2.setArtifact(new ArtifactCoords("org.acme", "e2", "1.0"));
+        e2.setName("some extension 2");
+        e2.setKeywords(Arrays.asList("foo", "bar", "baz"));
+        JsonExtension e3 = new JsonExtension();
+        e3.setArtifact(new ArtifactCoords("org.acme", "e3", "1.0"));
+        e3.setName("unrelated");
+        e3.setKeywords(Arrays.asList("bar"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -39,12 +45,14 @@ class QuarkusCommandHandlersTest {
 
     @Test
     void testThatSingleLabelMatchIsNotAMatch() {
-        Extension e1 = new Extension("org.acme", "e1", "1.0")
-                .setName("e1")
-                .setKeywords(new String[] { "foo", "bar" });
-        Extension e2 = new Extension("org.acme", "e2", "1.0")
-                .setName("e2")
-                .setKeywords(new String[] { "bar", "baz" });
+        JsonExtension e1 = new JsonExtension();
+        e1.setArtifact(new ArtifactCoords("org.acme", "e1", "1.0"));
+        e1.setName("e1");
+        e1.setKeywords(Arrays.asList("foo", "bar"));
+        JsonExtension e2 = new JsonExtension();
+        e2.setArtifact(new ArtifactCoords("org.acme", "e2", "1.0"));
+        e2.setName("e2");
+        e2.setKeywords(Arrays.asList("bar", "baz"));
 
         List<Extension> extensions = asList(e1, e2);
         Collections.shuffle(extensions);
@@ -55,20 +63,23 @@ class QuarkusCommandHandlersTest {
 
     @Test
     void testMultiMatchByArtifactIdsAndNames() {
-        Extension e1 = new Extension("org.acme", "e1", "1.0")
-                .setName("foo")
-                .setKeywords(new String[] { "foo", "bar" });
-        Extension e2 = new Extension("org.acme", "quarkus-foo", "1.0")
-                .setName("some foo bar")
-                .setKeywords(new String[] { "foo", "bar", "baz" });
-        Extension e3 = new Extension("org.acme", "e3", "1.0")
-                .setName("unrelated")
-                .setKeywords(new String[] { "foo" });
+        JsonExtension e1 = new JsonExtension();
+        e1.setArtifact(new ArtifactCoords("org.acme", "e1", "1.0"));
+        e1.setName("foo");
+        e1.setKeywords(asList("foo", "bar"));
+        JsonExtension e2 = new JsonExtension();
+        e2.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo", "1.0"));
+        e2.setName("some foo bar");
+        e2.setKeywords(asList("foo", "bar", "baz"));
+        JsonExtension e3 = new JsonExtension();
+        e3.setArtifact(new ArtifactCoords("org.acme", "e3", "1.0"));
+        e3.setName("unrelated");
+        e3.setKeywords(asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
         SelectionResult matches = select("foo", extensions, false);
-        Assertions.assertFalse(matches.matches());
+        Assertions.assertFalse(matches.matches(), " " + matches.getExtensions().size());
         Assertions.assertEquals(2, matches.getExtensions().size());
 
         matches = select("foo", extensions, true);
@@ -79,16 +90,19 @@ class QuarkusCommandHandlersTest {
 
     @Test
     void testShortNameSelection() {
-        Extension e1 = new Extension("org.acme", "some-complex-seo-unaware-artifactid", "1.0")
-                .setName("some complex seo unaware name")
-                .setShortName("foo")
-                .setKeywords(new String[] { "foo", "bar" });
-        Extension e2 = new Extension("org.acme", "some-foo-bar", "1.0")
-                .setName("some foo bar")
-                .setKeywords(new String[] { "foo", "bar", "baz" });
-        Extension e3 = new Extension("org.acme", "unrelated", "1.0")
-                .setName("unrelated")
-                .setKeywords(new String[] { "foo" });
+        JsonExtension e1 = new JsonExtension();
+        e1.setArtifact(new ArtifactCoords("org.acme", "some-complex-seo-unaware-artifactid", "1.0"));
+        e1.setName("some complex seo unaware name");
+        e1.setShortName("foo");
+        e1.setKeywords(asList("foo", "bar"));
+        JsonExtension e2 = new JsonExtension();
+        e2.setArtifact(new ArtifactCoords("org.acme", "some-foo-bar", "1.0"));
+        e2.setName("some foo bar");
+        e2.setKeywords(asList("foo", "bar", "baz"));
+        JsonExtension e3 = new JsonExtension();
+        e3.setArtifact(new ArtifactCoords("org.acme", "unrelated", "1.0"));
+        e3.setName("unrelated");
+        e3.setKeywords(asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -97,43 +111,52 @@ class QuarkusCommandHandlersTest {
         Assertions.assertEquals(1, matches.getExtensions().size());
         Assertions.assertTrue(matches.iterator().hasNext());
         Assertions
-                .assertTrue(matches.iterator().next().getArtifactId().equalsIgnoreCase("some-complex-seo-unaware-artifactid"));
+                .assertTrue(matches.iterator().next().getArtifact().getArtifactId()
+                        .equalsIgnoreCase("some-complex-seo-unaware-artifactid"));
     }
 
     @Test
     void testArtifactIdSelectionWithQuarkusPrefix() {
-        Extension e1 = new Extension("org.acme", "quarkus-foo", "1.0")
-                .setName("some complex seo unaware name")
-                .setShortName("foo")
-                .setKeywords(new String[] { "foo", "bar" });
-        Extension e2 = new Extension("org.acme", "quarkus-foo-bar", "1.0")
-                .setName("some foo bar")
-                .setKeywords(new String[] { "foo", "bar", "baz" });
-        Extension e3 = new Extension("org.acme", "quarkus-unrelated", "1.0")
-                .setName("unrelated")
-                .setKeywords(new String[] { "foo" });
+        JsonExtension e1 = new JsonExtension();
+        e1.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo", "1.0"));
+        e1.setName("some complex seo unaware name");
+        e1.setShortName("foo");
+        e1.setKeywords(asList("foo", "bar"));
+        JsonExtension e2 = new JsonExtension();
+        e2.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-bar", "1.0"));
+        e2.setName("some foo bar");
+        e2.setKeywords(asList("foo", "bar", "baz"));
+        JsonExtension e3 = new JsonExtension();
+        e3.setArtifact(new ArtifactCoords("org.acme", "quarkus-unrelated", "1.0"));
+        e3.setName("unrelated");
+        e3.setKeywords(asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
         SelectionResult matches = select("foo", extensions, false);
         Assertions.assertEquals(1, matches.getExtensions().size());
         Assertions.assertTrue(matches.iterator().hasNext());
-        Assertions.assertTrue(matches.iterator().next().getArtifactId().equalsIgnoreCase("quarkus-foo"));
+        Assertions.assertTrue(matches.iterator().next().getArtifact().getArtifactId().equalsIgnoreCase("quarkus-foo"));
     }
 
     @Test
     void testListedVsUnlisted() {
-        Extension e1 = new Extension("org.acme", "quarkus-foo-unlisted", "1.0")
-                .setName("some complex seo unaware name")
-                .setShortName("foo")
-                .setKeywords(new String[] { "foo", "bar" }).addMetadata("unlisted", "true");
+        JsonExtension e1 = new JsonExtension();
+        e1.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-unlisted", "1.0"));
+        e1.setName("some complex seo unaware name");
+        e1.setShortName("foo");
+        e1.setKeywords(asList("foo", "bar"));
+        e1.addMetadata("unlisted", "true");
 
-        Extension e2 = new Extension("org.acme", "quarkus-foo-bar", "1.0")
-                .setName("some foo bar")
-                .setKeywords(new String[] { "foo", "bar", "baz" }).addMetadata("unlisted", "false");
-        Extension e3 = new Extension("org.acme", "quarkus-foo-baz", "1.0")
-                .setName("unrelated")
-                .setKeywords(new String[] { "foo" });
+        JsonExtension e2 = new JsonExtension();
+        e2.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-bar", "1.0"));
+        e2.setName("some foo bar");
+        e2.setKeywords(asList("foo", "bar", "baz"));
+        e2.addMetadata("unlisted", "false");
+        JsonExtension e3 = new JsonExtension();
+        e3.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-baz", "1.0"));
+        e3.setName("unrelated");
+        e3.setKeywords(asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);

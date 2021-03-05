@@ -8,12 +8,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.core.ExecuteUtil;
+import io.quarkus.devtools.test.RegistryClientTestHelper;
 import picocli.CommandLine;
 
 public class CliTest {
@@ -24,6 +27,16 @@ public class CliTest {
     private String cwd;
     private Path workspace;
 
+    @BeforeAll
+    public static void globalSetup() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void globalReset() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
+
     @BeforeEach
     public void setupTestDirectories() throws Exception {
         cwd = System.getProperty("user.dir");
@@ -32,7 +45,6 @@ public class CliTest {
         Assertions.assertFalse(workspace.toFile().exists());
         Files.createDirectories(workspace);
         System.setProperty("user.dir", workspace.toFile().getAbsolutePath());
-
     }
 
     @AfterEach

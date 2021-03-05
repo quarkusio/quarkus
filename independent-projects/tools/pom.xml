@@ -57,16 +57,26 @@
         <smallrye-commons.version>1.5.0</smallrye-commons.version>
     </properties>
     <modules>
-        <module>platform-descriptor-api</module>
+        <module>artifact-api</module>
+        <module>registry-client</module>
         <module>message-writer</module>
         <module>devtools-testing</module>
         <module>codestarts</module>
         <module>devtools-common</module>
         <module>utilities</module>
-        <module>platform-descriptor-resolver-json</module>
     </modules>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-artifact-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-registry-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
@@ -105,16 +115,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-platform-descriptor-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

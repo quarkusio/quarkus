@@ -1,21 +1,21 @@
 package io.quarkus.devtools.commands.data;
 
-import io.quarkus.dependencies.Extension;
+import io.quarkus.registry.catalog.Extension;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
 
 public class SelectionResult implements Iterable<Extension> {
 
-    private final Set<Extension> extensions;
+    private final Collection<Extension> extensions;
     private final boolean matches;
 
-    public SelectionResult(Set<Extension> extensions, boolean matches) {
+    public SelectionResult(Collection<Extension> extensions, boolean matches) {
         this.extensions = extensions;
         this.matches = matches;
     }
 
-    public Set<Extension> getExtensions() {
+    public Collection<Extension> getExtensions() {
         return extensions;
     }
 

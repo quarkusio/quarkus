@@ -3,7 +3,6 @@ package io.quarkus.devtools.codestarts.quarkus;
 import static io.quarkus.devtools.codestarts.QuarkusPlatformCodestartResourceLoader.platformPathLoader;
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 
-import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
 import io.quarkus.devtools.codestarts.CodestartException;
@@ -11,9 +10,13 @@ import io.quarkus.devtools.codestarts.CodestartPathLoader;
 import io.quarkus.devtools.codestarts.CodestartStructureException;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.QuarkusPlatformCodestartResourceLoader;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -62,18 +65,11 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         this.extensionsMapping = extensionsMapping;
     }
 
-    public static QuarkusCodestartCatalog fromQuarkusPlatformDescriptor(QuarkusPlatformDescriptor platformDescriptor)
-            throws IOException {
-        final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
-        final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR);
-        final Map<String, Extension> extensionsMapping = buildExtensionsMapping(platformDescriptor.getExtensions());
-        return new QuarkusCodestartCatalog(codestarts, extensionsMapping);
-    }
-
     public static QuarkusCodestartCatalog fromQuarkusPlatformDescriptorAndDirectories(
-            QuarkusPlatformDescriptor platformDescriptor, Collection<Path> directories)
+            ExtensionCatalog catalog, Collection<Path> directories)
             throws IOException {
-        final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
+        final CodestartPathLoader pathLoader = QuarkusPlatformCodestartResourceLoader
+                .platformPathLoader(QuarkusProjectHelper.getResourceLoader(catalog));
         final Map<String, Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR)
                 .stream()
                 .collect(Collectors.toMap(Codestart::getName, Function.identity()));
@@ -83,8 +79,16 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             // On duplicates, directories override platform codestarts
             codestarts.putAll(dirCodestarts);
         }
-        final Map<String, Extension> extensionsMapping = buildExtensionsMapping(platformDescriptor.getExtensions());
+        final Map<String, Extension> extensionsMapping = buildExtensionsMapping(catalog.getExtensions());
         return new QuarkusCodestartCatalog(codestarts.values(), extensionsMapping);
+    }
+
+    public static QuarkusCodestartCatalog fromExtensionsCatalog(ExtensionCatalog catalog, ResourceLoader resourceLoader)
+            throws IOException {
+        final CodestartPathLoader pathLoader = platformPathLoader(resourceLoader);
+        final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR);
+        final Map<String, Extension> extensionCodestartMapping = buildExtensionsMapping(catalog.getExtensions());
+        return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
     }
 
     @Override
@@ -207,8 +211,15 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.key());
     };
 
-    private static Map<String, Extension> buildExtensionsMapping(Collection<Extension> extensions) {
-        return extensions.stream()
-                .collect(Collectors.toMap(Extensions::toGA, Function.identity()));
+    private static Map<String, Extension> buildExtensionsMapping(
+            Collection<Extension> extensions) {
+        final Map<String, Extension> map = new HashMap<>(extensions.size());
+        extensions.forEach(e -> {
+            if (e.getCodestart() != null) {
+                map.put(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId(), e);
+            }
+        });
+        return map;
     }
+
 }

@@ -24,19 +24,13 @@ import org.eclipse.aether.repository.RemoteRepository;
 public class MavenLocalRepositoryManager implements LocalRepositoryManager {
 
     private final LocalRepositoryManager delegate;
-    private final Path userLocalRepo;
-    private final Path appCreatorRepo;
-    private final boolean relinkResolvedArtifacts;
+    private final Path secondaryRepo;
+    private final Path originalRepo;
 
-    public MavenLocalRepositoryManager(LocalRepositoryManager delegate, Path userLocalRepo) {
-        this(delegate, userLocalRepo, false);
-    }
-
-    public MavenLocalRepositoryManager(LocalRepositoryManager delegate, Path userLocalRepo, boolean relinkResolvedArtifacts) {
+    public MavenLocalRepositoryManager(LocalRepositoryManager delegate, Path secondaryRepo) {
         this.delegate = delegate;
-        this.userLocalRepo = userLocalRepo;
-        this.appCreatorRepo = delegate.getRepository().getBasedir().toPath();
-        this.relinkResolvedArtifacts = relinkResolvedArtifacts;
+        this.secondaryRepo = secondaryRepo;
+        this.originalRepo = delegate.getRepository().getBasedir().toPath();
     }
 
     @Override
@@ -65,7 +59,7 @@ public class MavenLocalRepositoryManager implements LocalRepositoryManager {
     }
 
     public void relink(String groupId, String artifactId, String classifier, String type, String version, Path p) {
-        final Path creatorRepoPath = getLocalPath(appCreatorRepo, groupId, artifactId, classifier, type, version);
+        final Path creatorRepoPath = getLocalPath(originalRepo, groupId, artifactId, classifier, type, version);
         try {
             IoUtils.copy(p, creatorRepoPath);
         } catch (IOException e) {
@@ -80,23 +74,12 @@ public class MavenLocalRepositoryManager implements LocalRepositoryManager {
             return result;
         }
         final Artifact artifact = request.getArtifact();
-        final Path userRepoPath = getLocalPath(userLocalRepo, artifact.getGroupId(), artifact.getArtifactId(),
+        final Path secondaryLocation = getLocalPath(secondaryRepo, artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
-        if (!Files.exists(userRepoPath)) {
+        if (!Files.exists(secondaryLocation)) {
             return result;
         }
-        if (relinkResolvedArtifacts) {
-            final Path creatorRepoPath = getLocalPath(appCreatorRepo, artifact.getGroupId(), artifact.getArtifactId(),
-                    artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
-            try {
-                IoUtils.copy(userRepoPath, creatorRepoPath);
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to copy " + userRepoPath + " to a staging repo", e);
-            }
-            result.setFile(creatorRepoPath.toFile());
-        } else {
-            result.setFile(userRepoPath.toFile());
-        }
+        result.setFile(secondaryLocation.toFile());
         artifact.setFile(result.getFile());
         result.setAvailable(true);
         return result;
@@ -114,23 +97,12 @@ public class MavenLocalRepositoryManager implements LocalRepositoryManager {
             return result;
         }
         final Metadata metadata = request.getMetadata();
-        final Path userRepoPath = getMetadataPath(userLocalRepo, metadata.getGroupId(), metadata.getArtifactId(),
+        final Path userRepoPath = getMetadataPath(secondaryRepo, metadata.getGroupId(), metadata.getArtifactId(),
                 metadata.getType(), metadata.getVersion());
         if (!Files.exists(userRepoPath)) {
             return result;
         }
-        if (relinkResolvedArtifacts) {
-            final Path creatorRepoPath = getMetadataPath(appCreatorRepo, metadata.getGroupId(), metadata.getArtifactId(),
-                    metadata.getType(), metadata.getVersion());
-            try {
-                IoUtils.copy(userRepoPath, creatorRepoPath);
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to copy " + userRepoPath + " to a staging repo", e);
-            }
-            result.setFile(creatorRepoPath.toFile());
-        } else {
-            result.setFile(userRepoPath.toFile());
-        }
+        result.setFile(userRepoPath.toFile());
         metadata.setFile(result.getFile());
         return result;
     }

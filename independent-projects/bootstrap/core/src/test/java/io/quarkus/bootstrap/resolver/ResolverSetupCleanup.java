@@ -58,7 +58,7 @@ public class ResolverSetupCleanup {
 
     protected BootstrapAppModelResolver initResolver(LocalProject currentProject) throws Exception {
         return new BootstrapAppModelResolver(MavenArtifactResolver.builder()
-                .setRepoHome(repoHome)
+                .setLocalRepository(repoHome.toString())
                 .setOffline(true)
                 .setWorkspaceDiscovery(false)
                 .setCurrentProject(currentProject)

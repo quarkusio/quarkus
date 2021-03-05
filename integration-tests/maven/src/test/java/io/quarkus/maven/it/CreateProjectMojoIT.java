@@ -61,6 +61,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("projectVersion", "1.0.0-SNAPSHOT");
+
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -438,6 +439,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
         request.setShowErrors(true);
+        enableDevToolsTestConfig(params);
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
@@ -446,5 +448,4 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         invoker.setLogger(logger);
         return invoker.execute(request);
     }
-
 }

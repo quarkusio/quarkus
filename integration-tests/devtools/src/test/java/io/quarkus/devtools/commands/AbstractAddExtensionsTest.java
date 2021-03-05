@@ -14,10 +14,10 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.registry.catalog.Extension;
 
 abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
 
@@ -62,7 +62,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final T project = readProject();
 
         getExtensionsWithArtifactContaining("smallrye")
-                .forEach(e -> hasDependency(project, e.getArtifactId()));
+                .forEach(e -> hasDependency(project, e.getArtifact().getArtifactId()));
     }
 
     @Test
@@ -160,7 +160,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final T project = readProject();
         doesNotHaveDependency(project, "quarkus-agroal");
         getExtensionsWithArtifactContaining("jdbc")
-                .forEach(e -> doesNotHaveDependency(project, e.getArtifactId()));
+                .forEach(e -> doesNotHaveDependency(project, e.getArtifact().getArtifactId()));
     }
 
     @Test
@@ -172,7 +172,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final T project = readProject();
 
         getExtensionsWithArtifactContaining("jdbc")
-                .forEach(e -> doesNotHaveDependency(project, e.getArtifactId()));
+                .forEach(e -> doesNotHaveDependency(project, e.getArtifact().getArtifactId()));
     }
 
     @Test
@@ -206,12 +206,12 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
 
         final T project = readProject();
         getExtensionsWithArtifactContaining("vertx")
-                .forEach(e -> hasDependency(project, e.getArtifactId()));
+                .forEach(e -> hasDependency(project, e.getArtifact().getArtifactId()));
     }
 
     private Stream<Extension> getExtensionsWithArtifactContaining(String contains) {
-        return getPlatformDescriptor().getExtensions().stream()
-                .filter(e -> e.getArtifactId().contains(contains) && !e.isUnlisted());
+        return getExtensionsCatalog().getExtensions().stream()
+                .filter(e -> e.getArtifact().getArtifactId().contains(contains) && !e.isUnlisted());
     }
 
     private void hasDependency(T project, String artifactId) {

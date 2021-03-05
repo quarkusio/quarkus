@@ -18,11 +18,11 @@ import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
-public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
+public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     private File projectRoot;
 
@@ -164,12 +164,11 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     private void createProject(SourceType sourceType) throws Exception {
         Map<String, Object> context = new HashMap<>();
         context.put("path", "/greeting");
-        assertThat(new CreateProject(projectRoot.toPath(),
-                QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
+        assertThat(new CreateProject(QuarkusProjectHelper.getProject(projectRoot.toPath(),
+                BuildTool.GRADLE))
                         .groupId("com.acme.foo")
                         .artifactId("foo")
                         .version("1.0.0-SNAPSHOT")
-                        .buildTool(BuildTool.GRADLE)
                         .className("org.acme.foo.GreetingResource")
                         .sourceType(sourceType)
                         .doCreateProject(context))

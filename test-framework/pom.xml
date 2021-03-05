@@ -31,6 +31,7 @@
         <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>devmode-test-utils</module>
+        <module>devtools</module>
         <module>maven</module>
         <module>vault</module>
         <module>ldap</module>

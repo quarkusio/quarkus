@@ -38,8 +38,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-core</artifactId>
+            <artifactId>quarkus-devtools-registry-client</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

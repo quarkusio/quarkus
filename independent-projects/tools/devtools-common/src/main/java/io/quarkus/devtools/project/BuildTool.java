@@ -4,7 +4,7 @@ import io.quarkus.devtools.project.buildfile.GroovyGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.KotlinGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.nio.file.Path;
 
 /**
@@ -59,7 +59,7 @@ public enum BuildTool {
     }
 
     public ExtensionManager createExtensionManager(final Path projectDirPath,
-            final QuarkusPlatformDescriptor platformDescriptor) {
+            ExtensionCatalog catalog) {
         switch (this) {
             case GRADLE:
                 return new GroovyGradleBuildFile();
@@ -67,7 +67,7 @@ public enum BuildTool {
                 return new KotlinGradleBuildFile();
             case MAVEN:
             default:
-                return new MavenBuildFile(projectDirPath, platformDescriptor);
+                return new MavenBuildFile(projectDirPath, catalog);
         }
     }
 

@@ -10,7 +10,7 @@ import javax.inject.Inject;
 
 import io.quarkus.cli.core.BuildsystemCommand;
 import io.quarkus.cli.core.ExecuteUtil;
-import io.quarkus.cli.core.QuarkusVersion;
+import io.quarkus.cli.core.QuarkusCliVersion;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.runtime.QuarkusApplication;
@@ -19,9 +19,9 @@ import picocli.CommandLine;
 
 @QuarkusMain
 @CommandLine.Command(name = "quarkus", aliases = {
-        "qs" }, versionProvider = QuarkusVersion.class, usageHelpAutoWidth = true, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
+        "qs" }, versionProvider = QuarkusCliVersion.class, usageHelpAutoWidth = true, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
                 Build.class,
-                Clean.class, Create.class, CreateJBang.class, List.class, Add.class, Remove.class, Dev.class,
+                Clean.class, Create.class, CreateJBang.class, List.class, Platforms.class, Add.class, Remove.class, Dev.class,
                 CreateExtension.class })
 public class QuarkusCli implements QuarkusApplication {
 

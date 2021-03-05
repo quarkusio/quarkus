@@ -84,6 +84,7 @@ public class ScalaCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase 
         }
         params.setProperty("platformArtifactId", getBomArtifactId());
         params.setProperty("platformVersion", getQuarkusCoreVersion());
+        enableDevToolsTestConfig(params);
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);

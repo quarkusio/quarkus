@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.SnapshotTesting;
 
 public class CreateJBangProjectTest extends PlatformAwareTestBase {
@@ -71,13 +73,12 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
     }
 
     private CreateJBangProject newCreateJBangProject(Path dir) {
-        return new CreateJBangProject(dir, getPlatformDescriptor());
+        return new CreateJBangProject(QuarkusProjectHelper.getProject(dir, BuildTool.MAVEN));
     }
 
     private void assertCreateJBangProject(CreateJBangProject createJBangProjectProject)
             throws QuarkusCommandException {
-        final QuarkusCommandOutcome result = createJBangProjectProject
-                .execute();
+        final QuarkusCommandOutcome result = createJBangProjectProject.execute();
         assertTrue(result.isSuccess());
     }
 }

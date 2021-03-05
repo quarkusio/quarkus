@@ -12,19 +12,20 @@ import java.util.regex.Pattern;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.AbstractGroovyGradleBuildFile;
 import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
 
     @Override
     protected List<String> createProject() throws IOException, QuarkusCommandException {
         SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
-        new CreateProject(getProjectPath(), getPlatformDescriptor())
-                .buildTool(BuildTool.GRADLE)
+        final QuarkusProject project = getQuarkusProject();
+        new CreateProject(project)
                 .groupId("org.acme")
                 .artifactId("add-gradle-extension-test")
                 .version("0.0.1-SNAPSHOT")
@@ -57,16 +58,19 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
         return "    implementation '" + groupId + ":" + artifactId + versionPart + "'";
     }
 
-    private QuarkusProject getQuarkusProject() {
-        final Path projectPath = getProjectPath();
-        final QuarkusPlatformDescriptor platformDescriptor = getPlatformDescriptor();
-        return QuarkusProject.of(projectPath, platformDescriptor, new TestingGradleBuildFile(projectPath, platformDescriptor));
+    protected QuarkusProject getQuarkusProject() throws QuarkusCommandException {
+        try {
+            return QuarkusProjectHelper.getProject(getProjectPath(),
+                    new TestingGradleBuildFile(getProjectPath(), getExtensionsCatalog()));
+        } catch (RegistryResolutionException e) {
+            throw new QuarkusCommandException("Failed to initialize Quarkus project", e);
+        }
     }
 
     static class TestingGradleBuildFile extends AbstractGroovyGradleBuildFile {
 
-        public TestingGradleBuildFile(Path projectDirPath, QuarkusPlatformDescriptor platformDescriptor) {
-            super(projectDirPath, platformDescriptor);
+        public TestingGradleBuildFile(Path projectDirPath, ExtensionCatalog catalog) {
+            super(projectDirPath, catalog);
         }
 
         @Override

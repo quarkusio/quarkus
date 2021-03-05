@@ -2,9 +2,14 @@ package io.quarkus.devtools.project.buildfile;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
+import io.quarkus.maven.ArtifactCoords;
 import java.io.IOException;
 
 public class KotlinGradleBuildFilesCreator extends AbstractGradleBuildFilesCreator {
+
+    static final String BUILD_GRADLE_PATH = "build.gradle.kts";
+    static final String SETTINGS_GRADLE_PATH = "settings.gradle.kts";
 
     public KotlinGradleBuildFilesCreator(QuarkusProject quarkusProject) {
         super(quarkusProject);
@@ -12,12 +17,12 @@ public class KotlinGradleBuildFilesCreator extends AbstractGradleBuildFilesCreat
 
     @Override
     String getSettingsGradlePath() {
-        return AbstractKotlinGradleBuildFile.SETTINGS_GRADLE_PATH;
+        return SETTINGS_GRADLE_PATH;
     }
 
     @Override
     String getBuildGradlePath() {
-        return AbstractKotlinGradleBuildFile.BUILD_GRADLE_PATH;
+        return BUILD_GRADLE_PATH;
     }
 
     @Override
@@ -30,8 +35,8 @@ public class KotlinGradleBuildFilesCreator extends AbstractGradleBuildFilesCreat
             res.append(System.lineSeparator()).append("    id(\"io.quarkus\")").append(System.lineSeparator());
             res.append("}");
         }
-        if (!containsBOM(getQuarkusProject().getPlatformDescriptor().getBomGroupId(),
-                getQuarkusProject().getPlatformDescriptor().getBomArtifactId())) {
+        final ArtifactCoords bom = getQuarkusProject().getExtensionsCatalog().getBom();
+        if (!containsBOM(bom.getGroupId(), bom.getArtifactId())) {
             res.append(System.lineSeparator());
             res.append("dependencies {").append(System.lineSeparator());
             res.append(
@@ -91,6 +96,12 @@ public class KotlinGradleBuildFilesCreator extends AbstractGradleBuildFilesCreat
 
     @Override
     void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException {
-        AbstractKotlinGradleBuildFile.addDependencyInModel(getModel(), coords, false);
+        addDependencyInModel(getModel(), coords, false);
+    }
+
+    static boolean addDependencyInModel(Model model, AppArtifactCoords coords, boolean managed) {
+        return AbstractGradleBuildFile.addDependencyInModel(model,
+                String.format("    implementation(%s)%n",
+                        AbstractGradleBuildFile.createDependencyCoordinatesString(coords, managed, '"')));
     }
 }

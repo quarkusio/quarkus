@@ -5,6 +5,7 @@ import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapsho
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -710,8 +711,8 @@ class QuarkusCodestartGenerationTest extends PlatformAwareTestBase {
                 .satisfies(checkContains("rootProject.name=\"test-codestart\""));
     }
 
-    private QuarkusCodestartCatalog getCatalog() throws Throwable {
-        return QuarkusCodestartCatalog.fromQuarkusPlatformDescriptor(getPlatformDescriptor());
+    private QuarkusCodestartCatalog getCatalog() throws IOException {
+        return QuarkusCodestartCatalog.fromExtensionsCatalog(getExtensionsCatalog(), getCodestartsResourceLoader());
     }
 
 }

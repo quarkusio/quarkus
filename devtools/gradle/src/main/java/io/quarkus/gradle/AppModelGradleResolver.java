@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolveException;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
@@ -35,12 +36,23 @@ public class AppModelGradleResolver implements AppModelResolver {
     @Override
     public String getLatestVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive)
             throws AppModelResolverException {
-        throw new UnsupportedOperationException();
+        try {
+            return resolveArtifact(new AppArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                    appArtifact.getClassifier(), appArtifact.getType(),
+                    "[" + appArtifact.getVersion() + "," + upToVersion + (inclusive ? "]" : ")"))).getVersion();
+        } catch (AppModelResolverException e) {
+            return null;
+        }
     }
 
     @Override
     public String getLatestVersionFromRange(AppArtifact appArtifact, String range) throws AppModelResolverException {
-        throw new UnsupportedOperationException();
+        try {
+            return resolveArtifact(new AppArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                    appArtifact.getClassifier(), appArtifact.getType(), range)).getVersion();
+        } catch (AppModelResolverException e) {
+            return null;
+        }
     }
 
     @Override
@@ -63,40 +75,52 @@ public class AppModelGradleResolver implements AppModelResolver {
 
     @Override
     public Path resolve(AppArtifact appArtifact) throws AppModelResolverException {
-        if (!appArtifact.isResolved()) {
-            final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
-            dep.setExtension(appArtifact.getType());
-            dep.setType(appArtifact.getType());
-            dep.setName(appArtifact.getArtifactId());
-            if (appArtifact.getClassifier() != null) {
-                dep.setClassifier(appArtifact.getClassifier());
-            }
+        return resolveArtifact(appArtifact).getPaths().getSinglePath();
+    }
 
-            final DefaultExternalModuleDependency gradleDep = new DefaultExternalModuleDependency(appArtifact.getGroupId(),
-                    appArtifact.getArtifactId(), appArtifact.getVersion(), null);
-            gradleDep.addArtifact(dep);
-
-            final Configuration detachedConfig = project.getConfigurations().detachedConfiguration(gradleDep);
-
-            final ResolvedConfiguration rc = detachedConfig.getResolvedConfiguration();
-            Set<ResolvedArtifact> resolvedArtifacts = rc.getResolvedArtifacts();
-            for (ResolvedArtifact a : resolvedArtifacts) {
-                if (appArtifact.getArtifactId().equals(a.getName())
-                        && appArtifact.getType().equals(a.getType())
-                        && (a.getClassifier() == null ? appArtifact.getClassifier() == null
-                                : a.getClassifier().equals(appArtifact.getClassifier()))
-                        && appArtifact.getGroupId().equals(a.getModuleVersion().getId().getGroup())) {
-                    appArtifact.setPath(a.getFile().toPath());
-                    break;
-                }
-            }
-
-            if (!appArtifact.isResolved()) {
-                throw new AppModelResolverException("Failed to resolve " + appArtifact);
-            }
-
+    private AppArtifact resolveArtifact(AppArtifact appArtifact) throws AppModelResolverException {
+        if (appArtifact.isResolved()) {
+            return appArtifact;
         }
-        return appArtifact.getPaths().getSinglePath();
+        final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
+        dep.setExtension(appArtifact.getType());
+        dep.setType(appArtifact.getType());
+        dep.setName(appArtifact.getArtifactId());
+        if (appArtifact.getClassifier() != null) {
+            dep.setClassifier(appArtifact.getClassifier());
+        }
+
+        final DefaultExternalModuleDependency gradleDep = new DefaultExternalModuleDependency(appArtifact.getGroupId(),
+                appArtifact.getArtifactId(), appArtifact.getVersion(), null);
+        gradleDep.addArtifact(dep);
+
+        final Configuration detachedConfig = project.getConfigurations().detachedConfiguration(gradleDep);
+
+        final ResolvedConfiguration rc = detachedConfig.getResolvedConfiguration();
+        Set<ResolvedArtifact> resolvedArtifacts;
+        try {
+            resolvedArtifacts = rc.getResolvedArtifacts();
+        } catch (ResolveException e) {
+            throw new AppModelResolverException("Failed to resolve " + appArtifact, e);
+        }
+        for (ResolvedArtifact a : resolvedArtifacts) {
+            if (appArtifact.getArtifactId().equals(a.getName()) && appArtifact.getType().equals(a.getType())
+                    && (a.getClassifier() == null ? appArtifact.getClassifier() == null
+                            : a.getClassifier().equals(appArtifact.getClassifier()))
+                    && appArtifact.getGroupId().equals(a.getModuleVersion().getId().getGroup())) {
+                if (!appArtifact.getVersion().equals(a.getModuleVersion().getId().getVersion())) {
+                    appArtifact = new AppArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                            appArtifact.getClassifier(), appArtifact.getType(), a.getModuleVersion().getId().getVersion());
+                }
+                appArtifact.setPath(a.getFile().toPath());
+                break;
+            }
+        }
+
+        if (!appArtifact.isResolved()) {
+            throw new AppModelResolverException("Failed to resolve " + appArtifact);
+        }
+        return appArtifact;
     }
 
     @Override
@@ -129,5 +153,4 @@ public class AppModelGradleResolver implements AppModelResolver {
             throws AppModelResolverException {
         return resolveModel(appArtifact);
     }
-
 }

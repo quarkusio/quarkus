@@ -64,16 +64,22 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
-import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.tools.ToolsConstants;
 
 /**
  * This goal generates a list of extensions for a given BOM
  * and stores it in a JSON format file that is later used by the tools
  * as the catalog of available extensions.
+ * 
+ * @deprecated in favor of {@link GeneratePlatformDescriptorJsonMojo}
  */
+@Deprecated
 @Mojo(name = "generate-extensions-json")
 public class GenerateExtensionsJsonMojo extends AbstractMojo {
+
+    private static final String GROUP_ID = "group-id";
+    private static final String ARTIFACT_ID = "artifact-id";
+    private static final String VERSION = "version";
 
     @Parameter(property = "bomGroupId", defaultValue = "${project.groupId}")
     private String bomGroupId;
@@ -233,9 +239,9 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         final JsonObjectBuilder platformJson = Json.createObjectBuilder();
         // Add information about the BOM to it
         final JsonObjectBuilder bomJson = Json.createObjectBuilder();
-        bomJson.add(Extension.GROUP_ID, bomGroupId);
-        bomJson.add(Extension.ARTIFACT_ID, bomArtifactId);
-        bomJson.add(Extension.VERSION, bomVersion);
+        bomJson.add(GROUP_ID, bomGroupId);
+        bomJson.add(ARTIFACT_ID, bomArtifactId);
+        bomJson.add(VERSION, bomVersion);
         platformJson.add("bom", bomJson.build());
         // Add Quarkus version
         platformJson.add("quarkus-core-version", quarkusCoreVersion);
@@ -409,8 +415,8 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
                 final Path props = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
                 if (Files.exists(props)) {
                     return mapper.createObjectNode()
-                            .put(Extension.ARTIFACT_ID, artifact.getArtifactId())
-                            .put(Extension.GROUP_ID, artifact.getGroupId())
+                            .put(ARTIFACT_ID, artifact.getArtifactId())
+                            .put(GROUP_ID, artifact.getGroupId())
                             .put("version", artifact.getVersion())
                             .put("name", artifact.getArtifactId());
                 } else {
@@ -428,7 +434,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         try (InputStream is = Files.newInputStream(descriptor)) {
             ObjectNode object = mapper.readValue(is, ObjectNode.class);
             transformLegacyToNew(object, mapper);
-            debug("Adding Quarkus extension %s:%s", object.get(Extension.GROUP_ID), object.get(Extension.ARTIFACT_ID));
+            debug("Adding Quarkus extension %s:%s", object.get(GROUP_ID), object.get(ARTIFACT_ID));
             return object;
         } catch (IOException io) {
             throw new IOException("Failed to parse " + descriptor, io);
@@ -452,15 +458,15 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     }
 
     private String extensionId(JsonObject extObject) {
-        String artId = extObject.getString(Extension.ARTIFACT_ID, "");
+        String artId = extObject.getString(ARTIFACT_ID, "");
         if (artId.isEmpty()) {
             getLog().warn("Missing artifactId in extension overrides in " + extObject.toString());
         }
-        String groupId = extObject.getString(Extension.GROUP_ID, "");
+        String groupId = extObject.getString(GROUP_ID, "");
         if (groupId.isEmpty()) {
             return artId;
         } else {
-            return extObject.getString(Extension.GROUP_ID, "") + ":" + artId;
+            return extObject.getString(GROUP_ID, "") + ":" + artId;
         }
     }
 
@@ -513,12 +519,12 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         // just putting it
         // here for completenes
         if (extObject.get("groupId") != null) {
-            extObject.set(Extension.GROUP_ID, extObject.get("groupId"));
+            extObject.set(GROUP_ID, extObject.get("groupId"));
             extObject.remove("groupId");
         }
 
         if (extObject.get("artifactId") != null) {
-            extObject.set(Extension.ARTIFACT_ID, extObject.get("artifactId"));
+            extObject.set(ARTIFACT_ID, extObject.get("artifactId"));
             extObject.remove("artifactId");
         }
 
@@ -550,31 +556,31 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
 
     public OverrideInfo getOverrideInfo(File overridesFile) throws MojoExecutionException {
         // Read the overrides file for the extensions (if it exists)
-        HashMap extOverrides = new HashMap<>();
+        HashMap<String, JsonObject> extOverrides = new HashMap<>();
         JsonObject theRest = null;
         if (overridesFile.isFile()) {
             info("Found overrides file %s", overridesFile);
-            try (JsonReader jsonReader = Json.createReader(new FileInputStream(overridesFile))) {
-                JsonObject overridesObject = jsonReader.readObject();
-                JsonArray extOverrideObjects = overridesObject.getJsonArray("extensions");
-                if (extOverrideObjects != null) {
-                    // Put the extension overrides into a map keyed to their GAV
-                    for (JsonValue val : extOverrideObjects) {
-                        JsonObject extOverrideObject = val.asJsonObject();
-                        String key = extensionId(extOverrideObject);
-                        extOverrides.put(key, extOverrideObject);
+            try (FileInputStream fileInputStream = new FileInputStream(overridesFile)) {
+                try (JsonReader jsonReader = Json.createReader(fileInputStream)) {
+                    JsonObject overridesObject = jsonReader.readObject();
+                    JsonArray extOverrideObjects = overridesObject.getJsonArray("extensions");
+                    if (extOverrideObjects != null) {
+                        // Put the extension overrides into a map keyed to their GAV
+                        for (JsonValue val : extOverrideObjects) {
+                            JsonObject extOverrideObject = val.asJsonObject();
+                            String key = extensionId(extOverrideObject);
+                            extOverrides.put(key, extOverrideObject);
+                        }
                     }
-                }
 
-                theRest = overridesObject;
+                    theRest = overridesObject;
+                }
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to read " + overridesFile, e);
             }
             return new OverrideInfo(extOverrides, theRest);
-
-        } else {
-            throw new MojoExecutionException(overridesFile + " not found.");
         }
+        return null;
     }
 
     private static class OverrideInfo {

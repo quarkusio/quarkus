@@ -26,7 +26,9 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
@@ -94,7 +96,6 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
             boolean resteasy = false;
             boolean panache = false;
             boolean hibernateValidator = false;
-            boolean checkGuideInLineAfter = false;
             for (String line : output.split("\r?\n")) {
                 if (line.contains("agroal")) {
                     assertTrue(line.startsWith("default"), "Agroal should list as being default: " + line);
@@ -102,26 +103,23 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
                 } else if (line.contains("quarkus-resteasy ")) {
                     assertTrue(line.startsWith("custom*"), "RESTEasy should list as being custom*: " + line);
                     assertTrue(
-                            line.endsWith(
+                            line.contains(
                                     String.format("%-15s", getMavenPluginVersion())),
                             "RESTEasy should list as being custom*: " + line);
                     resteasy = true;
-                    checkGuideInLineAfter = true;
+                    assertTrue(
+                            line.endsWith(
+                                    String.format("%s", "https://quarkus.io/guides/rest-json")),
+                            "RESTEasy should list as having an guide: " + line);
                 } else if (line.contains("quarkus-hibernate-orm-panache ")) {
                     assertTrue(line.startsWith("custom"), "Panache should list as being custom: " + line);
                     assertTrue(
-                            line.endsWith(String.format("%-25s", getMavenPluginVersion())),
+                            line.contains(String.format("%-25s", getMavenPluginVersion())),
                             "Panache should list as being custom*: " + line);
                     panache = true;
                 } else if (line.contains("hibernate-validator")) {
                     assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
                     hibernateValidator = true;
-                } else if (checkGuideInLineAfter) {
-                    checkGuideInLineAfter = false;
-                    assertTrue(
-                            line.endsWith(
-                                    String.format("%s", "https://quarkus.io/guides/rest-json")),
-                            "RESTEasy should list as having an guide: " + line);
                 }
             }
 
@@ -156,7 +154,6 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final QuarkusProject quarkusProject = createNewProject(new File("target/list-extensions-test", "pom.xml"));
         addExtensions(quarkusProject, "commons-io:commons-io:2.5", "Agroal");
 
-        final PrintStream out = System.out;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             new ListExtensions(quarkusProject, MessageWriter.info(printStream))
@@ -172,10 +169,10 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     @Test
     void testListExtensionsWithoutAPomFile() throws Exception {
         final Path tempDirectory = Files.createTempDirectory("proj");
-        final QuarkusProject project = QuarkusProject.maven(tempDirectory, getPlatformDescriptor());
+        final QuarkusProject project = QuarkusProjectHelper.getProject(tempDirectory, BuildTool.MAVEN);
         final Map<AppArtifactKey, AppArtifactCoords> installed = readByKey(project);
         assertTrue(installed.isEmpty());
-        assertFalse(project.getPlatformDescriptor().getExtensions().isEmpty());
+        assertFalse(project.getExtensionsCatalog().getExtensions().isEmpty());
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
@@ -194,12 +191,13 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     private QuarkusProject createNewProject(final File pom) throws IOException, QuarkusCommandException {
         SnapshotTesting.deleteTestDirectory(pom.getParentFile());
         final Path projectDirPath = pom.getParentFile().toPath();
-        new CreateProject(projectDirPath, getPlatformDescriptor())
+        final QuarkusProject project = QuarkusProjectHelper.getProject(projectDirPath, BuildTool.MAVEN);
+        new CreateProject(project)
                 .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .execute();
-        return QuarkusProject.maven(projectDirPath, getPlatformDescriptor());
+        return project;
     }
 
     private static Map<AppArtifactKey, AppArtifactCoords> readByKey(QuarkusProject project) throws IOException {

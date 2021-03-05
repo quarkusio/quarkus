@@ -23,7 +23,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.buildfile.BuildFile;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class MavenProjectBuildFile extends BuildFile {
 
@@ -37,11 +37,11 @@ public class MavenProjectBuildFile extends BuildFile {
     protected List<AppArtifactCoords> managedDependencies;
     protected Model model;
 
-    public MavenProjectBuildFile(Path projectDirPath, QuarkusPlatformDescriptor platformDescriptor, Supplier<Model> model,
+    public MavenProjectBuildFile(Path projectDirPath, ExtensionCatalog extensionsCatalog, Supplier<Model> model,
             Supplier<List<org.eclipse.aether.graph.Dependency>> projectDeps,
             Supplier<List<org.eclipse.aether.graph.Dependency>> projectManagedDeps,
             Properties projectProps) {
-        super(projectDirPath, platformDescriptor);
+        super(projectDirPath, extensionsCatalog);
         this.modelSupplier = model;
         this.projectDepsSupplier = projectDeps;
         this.projectManagedDepsSupplier = projectManagedDeps;

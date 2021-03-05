@@ -4,7 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,8 +40,7 @@ public final class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvoc
         return log;
     }
 
-    public QuarkusPlatformDescriptor getPlatformDescriptor() {
-        return quarkusProject.getPlatformDescriptor();
+    public ExtensionCatalog getExtensionsCatalog() {
+        return quarkusProject.getExtensionsCatalog();
     }
-
 }

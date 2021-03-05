@@ -2,8 +2,8 @@ package io.quarkus.devtools.project.extensions;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.dependencies.Extension;
-import java.util.List;
+import io.quarkus.registry.catalog.Extension;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.maven.model.Dependency;
@@ -13,7 +13,10 @@ public final class Extensions {
     }
 
     public static AppArtifactKey toKey(final Extension extension) {
-        return toKey(extension.toDependency(false));
+        return new AppArtifactKey(extension.getArtifact().getGroupId(),
+                extension.getArtifact().getArtifactId(),
+                extension.getArtifact().getClassifier(),
+                extension.getArtifact().getType());
     }
 
     public static AppArtifactKey toKey(final Dependency dependency) {
@@ -21,7 +24,7 @@ public final class Extensions {
                 dependency.getType());
     }
 
-    public static Optional<Extension> findInList(List<Extension> list, final AppArtifactKey key) {
+    public static Optional<Extension> findInList(Collection<Extension> list, final AppArtifactKey key) {
         return list.stream().filter(e -> Objects.equals(toCoords(e).getKey(), key)).findFirst();
     }
 
@@ -30,7 +33,11 @@ public final class Extensions {
     }
 
     public static AppArtifactCoords toCoords(final Extension e) {
-        return toCoords(e.toDependency(false));
+        return new AppArtifactCoords(e.getArtifact().getGroupId(),
+                e.getArtifact().getArtifactId(),
+                e.getArtifact().getClassifier(),
+                e.getArtifact().getType(),
+                e.getArtifact().getVersion());
     }
 
     public static AppArtifactCoords toCoords(final Dependency d, final String overrideVersion) {
@@ -53,7 +60,7 @@ public final class Extensions {
     }
 
     public static String toGA(Extension e) {
-        return e.getGroupId() + ":" + e.getArtifactId();
+        return e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId();
     }
 
     public static AppArtifactCoords stripVersion(final AppArtifactCoords coords) {

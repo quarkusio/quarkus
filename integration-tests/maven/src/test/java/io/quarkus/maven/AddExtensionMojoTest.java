@@ -21,12 +21,15 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.devtools.test.RegistryClientTestHelper;
 
 class AddExtensionMojoTest {
 
@@ -34,6 +37,16 @@ class AddExtensionMojoTest {
     private static final File OUTPUT_POM = new File("target/test-classes/add-extension/pom.xml");
     private static final String DEP_GAV = "org.apache.commons:commons-lang3:3.8.1";
     private AddExtensionMojo mojo;
+
+    @BeforeAll
+    static void globalInit() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    static void globalCleanUp() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
 
     @BeforeEach
     void init() throws Exception {

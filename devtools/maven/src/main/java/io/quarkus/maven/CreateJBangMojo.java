@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -22,7 +23,12 @@ import org.eclipse.aether.repository.RemoteRepository;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.commands.CreateJBangProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.platform.tools.maven.MojoMessageWriter;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 @Mojo(name = "create-jbang", requiresProject = false)
 public class CreateJBangMojo extends AbstractMojo {
@@ -89,12 +95,17 @@ public class CreateJBangMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
 
-        final QuarkusPlatformDescriptor platform = CreateUtils.resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion,
-                mvn, getLog());
+        final MessageWriter log = new MojoMessageWriter(getLog());
+        final ExtensionCatalog catalog = CreateProjectMojo.resolveExtensionsCatalog(
+                StringUtils.defaultIfBlank(bomGroupId, null),
+                StringUtils.defaultIfBlank(bomArtifactId, null),
+                StringUtils.defaultIfBlank(bomVersion, null),
+                QuarkusProjectHelper.getCatalogResolver(mvn, log), mvn, log);
 
-        final CreateJBangProject createJBangProject = new CreateJBangProject(projectDirPath, platform)
-                .extensions(extensions)
-                .setValue("noJBangWrapper", noJBangWrapper);
+        final CreateJBangProject createJBangProject = new CreateJBangProject(QuarkusProject.of(projectDirPath, catalog,
+                QuarkusProjectHelper.getResourceLoader(catalog, mvn), log, BuildTool.MAVEN))
+                        .extensions(extensions)
+                        .setValue("noJBangWrapper", noJBangWrapper);
 
         boolean success;
 

@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,9 +22,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.Invoker;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
+import io.quarkus.devtools.test.RegistryClientTestHelper;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class MojoTestBase {
@@ -49,6 +52,7 @@ public class MojoTestBase {
             }
         }
         boolean mkdirs = tc.mkdirs();
+
         Logger.getLogger(MojoTestBase.class.getName())
                 .log(Level.FINE, "test-classes created? %s", mkdirs);
         return tc;
@@ -140,4 +144,20 @@ public class MojoTestBase {
         return files != null ? Arrays.asList(files) : Collections.emptyList();
     }
 
+    public static void enableDevToolsTestConfig(InvocationRequest request) {
+        Properties properties = request.getProperties();
+        if (properties == null) {
+            properties = new Properties();
+            request.setProperties(properties);
+        }
+        enableDevToolsTestConfig(properties);
+    }
+
+    public static void enableDevToolsTestConfig(Properties properties) {
+        RegistryClientTestHelper.enableRegistryClientTestConfig(properties);
+    }
+
+    public static void disableDevToolsTestConfig(Properties properties) {
+        RegistryClientTestHelper.disableRegistryClientTestConfig(properties);
+    }
 }

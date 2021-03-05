@@ -1,21 +1,21 @@
 package io.quarkus.devtools.codestarts;
 
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import java.io.IOException;
 
 public final class QuarkusPlatformCodestartResourceLoader implements CodestartPathLoader {
-    private QuarkusPlatformDescriptor platformDescr;
+    private ResourceLoader resourceLoader;
 
-    private QuarkusPlatformCodestartResourceLoader(QuarkusPlatformDescriptor platformDescr) {
-        this.platformDescr = platformDescr;
+    private QuarkusPlatformCodestartResourceLoader(ResourceLoader resourceLoader) {
+        this.resourceLoader = resourceLoader;
     }
 
-    public static CodestartPathLoader platformPathLoader(QuarkusPlatformDescriptor platformDescr) {
-        return new QuarkusPlatformCodestartResourceLoader(platformDescr);
+    public static CodestartPathLoader platformPathLoader(ResourceLoader resourceLoader) {
+        return new QuarkusPlatformCodestartResourceLoader(resourceLoader);
     }
 
     @Override
     public <T> T loadResourceAsPath(String name, PathConsumer<T> consumer) throws IOException {
-        return platformDescr.loadResourceAsPath(name, consumer::consume);
+        return resourceLoader.loadResourceAsPath(name, consumer::consume);
     }
 }

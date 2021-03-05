@@ -2,6 +2,8 @@ package io.quarkus.it.jackson.model;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.Arc;
@@ -11,6 +13,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  * Simple POJO model class.
  */
 @RegisterForReflection
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class RegisteredPojoModel {
 
     // -------------------------------------------------------------------------
@@ -20,6 +23,9 @@ public class RegisteredPojoModel {
     private int version = 1;
     private String id = null;
     private String value = null;
+
+    private RegisteredPojoModel parent;
+    private RegisteredPojoModel child;
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -70,6 +76,22 @@ public class RegisteredPojoModel {
 
     public void setValue(String value) {
         this.value = value;
+    }
+
+    public RegisteredPojoModel getParent() {
+        return parent;
+    }
+
+    public void setParent(RegisteredPojoModel parent) {
+        this.parent = parent;
+    }
+
+    public RegisteredPojoModel getChild() {
+        return child;
+    }
+
+    public void setChild(RegisteredPojoModel child) {
+        this.child = child;
     }
 
     // -------------------------------------------------------------------------

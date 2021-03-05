@@ -507,6 +507,19 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <5> Enable the `native` package type. The build will therefore produce a native executable.
 <6> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
 
+=== Using fast-jar
+
+`fast-jar` is now the default quarkus package type. The result of `./mvnw package` command is a new directory under `target` named `quarkus-app`.
+
+You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
+
+WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
+might not function correctly.
+
+TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
+because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
+on the classpath that the legacy jar necessitates, when loading a class or resource.
+
 [[uber-jar-maven]]
 === Uber-Jar Creation
 
@@ -521,19 +534,6 @@ option, this takes a comma separated list of entries to ignore.
 Uber-Jar creation by default excludes link:https://docs.oracle.com/javase/tutorial/deployment/jar/intro.html[signature files] that might be present in the dependencies of the application.
 
 Uber-Jar's final name is configurable via a Maven's build settings `finalName` option.
-
-=== Using fast-jar
-
-When configuring `quarkus.package.type=fast-jar` (which will become the default soon), then the result of executing `./mvnw package` is a new directory under `target` named `quarkus-app`.
-
-You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
-
-WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
-might not function correctly.
-
-TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
-because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
-on the classpath that the legacy jar necessitates, when loading a class or resource.
 
 [[multi-module-maven]]
 === Working with multi-module projects

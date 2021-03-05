@@ -412,6 +412,19 @@ quarkus {
 
 ====
 
+== Using fast-jar
+
+`fast-jar` is now the default quarkus package type. The result of `./gradlew build` command is a new directory under `build` named `quarkus-app`.
+
+You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
+
+WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
+might not function correctly.
+
+TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
+because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
+on the classpath that the legacy jar necessitates, when loading a class or resource.
+
 == Building Uber-Jars
 
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type` argument as follows:
@@ -429,19 +442,6 @@ When building an Uber-Jar you can specify entries that you want to exclude from 
 ----
 
 The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
-
-== Using fast-jar
-
-When configuring `quarkus.package.type=fast-jar` (which will become the default soon) in `application.properties` (or any of the other supporting configuration sources), then the result of executing `./gradlew build` is a new directory under `build` named `quarkus-app`.
-
-You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
-
-WARNING: In order to successfully run the produced jar, you need to have the entire contents of the `quarkus-app` directory. If any of the files are missing, the application will not start or
-might not function correctly.
-
-TIP: The `fast-jar` packaging results in creating an artifact that starts a little faster and consumes slightly less memory than a legacy Quarkus jar
-because it has indexed information about which dependency jar contains classes and resources. It can thus avoid the lookup into potentially every jar
-on the classpath that the legacy jar necessitates, when loading a class or resource.
 
 [[multi-module-gradle]]
 === Working with multi-module projects

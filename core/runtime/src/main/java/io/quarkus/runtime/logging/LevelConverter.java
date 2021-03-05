@@ -3,6 +3,7 @@ package io.quarkus.runtime.logging;
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
 import java.io.Serializable;
+import java.util.Locale;
 import java.util.logging.Level;
 
 import javax.annotation.Priority;
@@ -22,6 +23,6 @@ public final class LevelConverter implements Converter<Level>, Serializable {
         if (value == null || value.isEmpty()) {
             return null;
         }
-        return LogContext.getLogContext().getLevelForName(value);
+        return LogContext.getLogContext().getLevelForName(value.toUpperCase(Locale.ROOT));
     }
 }

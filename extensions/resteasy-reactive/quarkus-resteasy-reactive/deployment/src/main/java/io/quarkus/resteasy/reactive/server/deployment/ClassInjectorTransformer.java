@@ -28,6 +28,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.deployment.util.AsmUtil;
+import io.quarkus.gizmo.Gizmo;
 
 public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
@@ -67,7 +68,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
     @Override
     public ClassVisitor apply(String classname, ClassVisitor visitor) {
-        return new ClassInjectorVisitor(Opcodes.ASM8, visitor, fieldExtractors, superTypeIsInjectable);
+        return new ClassInjectorVisitor(Gizmo.ASM_API_VERSION, visitor, fieldExtractors, superTypeIsInjectable);
     }
 
     static class ClassInjectorVisitor extends ClassVisitor {

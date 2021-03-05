@@ -9,6 +9,8 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.gizmo.Gizmo;
+
 class MultipartTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     private static final String INJECTION_TARGET_BINARY_NAME = ResteasyReactiveInjectionTarget.class.getName()
@@ -28,7 +30,7 @@ class MultipartTransformer implements BiFunction<String, ClassVisitor, ClassVisi
 
     @Override
     public ClassVisitor apply(String s, ClassVisitor visitor) {
-        return new MultipartClassVisitor(Opcodes.ASM8, visitor, populatorName);
+        return new MultipartClassVisitor(Gizmo.ASM_API_VERSION, visitor, populatorName);
     }
 
     static class MultipartClassVisitor extends ClassVisitor {

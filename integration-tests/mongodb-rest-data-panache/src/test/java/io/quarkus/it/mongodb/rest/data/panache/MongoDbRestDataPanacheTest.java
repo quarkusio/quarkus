@@ -12,7 +12,6 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.core.MediaType;
 
-import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -150,8 +149,10 @@ class MongoDbRestDataPanacheTest {
 
     @Test
     void shouldCreateAndDeleteBook() {
+        String title = "The Brothers Karamazov";
         JsonObject book = Json.createObjectBuilder()
-                .add("title", "The Brothers Karamazov")
+                .add("id", titleToId(title))
+                .add("title", title)
                 .add("author", Json.createObjectBuilder()
                         .add("id", dostoevsky.id.toString())
                         .add("name", dostoevsky.name)
@@ -174,6 +175,24 @@ class MongoDbRestDataPanacheTest {
     }
 
     @Test
+    void shouldNotCreateDuplicateBook() {
+        JsonObject book = Json.createObjectBuilder()
+                .add("id", titleToId(idiot.getId()))
+                .add("title", idiot.getTitle())
+                .add("author", Json.createObjectBuilder()
+                        .add("id", dostoevsky.id.toString())
+                        .add("name", dostoevsky.name)
+                        .add("dob", dostoevsky.dob.toString())
+                        .build())
+                .build();
+        given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body(book.toString())
+                .when().post("/books")
+                .then().statusCode(409);
+    }
+
+    @Test
     void shouldNotUpdateAuthor() {
         JsonObject author = Json.createObjectBuilder()
                 .add("id", dostoevsky.id.toString())
@@ -193,18 +212,22 @@ class MongoDbRestDataPanacheTest {
                 .add("name", dostoevsky.name)
                 .add("dob", dostoevsky.dob.toString())
                 .build();
+        String title = "The Brothers Karamazov";
+        String id = titleToId(title);
         JsonObject book = Json.createObjectBuilder()
-                .add("title", "The Brothers Karamazov")
+                .add("id", id)
+                .add("title", title)
                 .add("author", dostoevskyJson)
                 .build();
         Response response = given().accept("application/json")
                 .and().contentType("application/json")
                 .and().body(book.toString())
-                .when().put("/books/" + new ObjectId())
+                .when().put("/books/" + id)
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isNotEmpty();
-        assertThat(response.body().jsonPath().getString("title")).isEqualTo("The Brothers Karamazov");
+        assertThat(response.body().jsonPath().getString("id")).isEqualTo(id);
+        assertThat(response.body().jsonPath().getString("title")).isEqualTo(title);
 
         String location = response.header("Location");
         JsonObject updateBook = Json.createObjectBuilder()
@@ -245,6 +268,7 @@ class MongoDbRestDataPanacheTest {
         return given().contentType(MediaType.APPLICATION_JSON)
                 .and().accept(MediaType.APPLICATION_JSON)
                 .and().body(Json.createObjectBuilder()
+                        .add("id", titleToId(title))
                         .add("title", title)
                         .add("author", Json.createObjectBuilder()
                                 .add("id", author.id.toString())
@@ -256,6 +280,10 @@ class MongoDbRestDataPanacheTest {
                 .post("/test/books")
                 .thenReturn()
                 .as(Book.class);
+    }
+
+    private String titleToId(String title) {
+        return title.toLowerCase().replaceAll(" ", "-");
     }
 
     private void deleteTestBooks() {

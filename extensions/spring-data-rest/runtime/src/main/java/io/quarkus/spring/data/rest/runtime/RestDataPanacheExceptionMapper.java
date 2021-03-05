@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.rest.data.panache.runtime;
+package io.quarkus.spring.data.rest.runtime;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.rest.data.panache.RestDataPanacheException;
 
 public class RestDataPanacheExceptionMapper implements ExceptionMapper<RestDataPanacheException> {
+
     private static final Logger LOGGER = Logger.getLogger(RestDataPanacheExceptionMapper.class);
 
     @Override
@@ -17,10 +18,6 @@ public class RestDataPanacheExceptionMapper implements ExceptionMapper<RestDataP
     }
 
     private Response throwableToResponse(Throwable throwable, String message) {
-        if (throwable instanceof org.hibernate.exception.ConstraintViolationException) {
-            return Response.status(Response.Status.CONFLICT.getStatusCode(), message).build();
-        }
-
         if (throwable instanceof javax.validation.ConstraintViolationException) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), message).build();
         }

@@ -164,6 +164,24 @@ class HibernateOrmRestDataPanacheTest {
     }
 
     @Test
+    void shouldNotCreateBookWithBlankTitle() {
+        JsonObject author = Json.createObjectBuilder()
+                .add("id", DOSTOEVSKY_ID)
+                .add("name", DOSTOEVSKY_NAME)
+                .add("dob", DOSTOEVSKY_DOB)
+                .build();
+        JsonObject book = Json.createObjectBuilder()
+                .add("title", "")
+                .add("author", author)
+                .build();
+        given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body(book.toString())
+                .when().post("/books")
+                .then().statusCode(400);
+    }
+
+    @Test
     void shouldNotUpdateAuthor() {
         JsonObject author = Json.createObjectBuilder()
                 .add("id", DOSTOEVSKY_ID)

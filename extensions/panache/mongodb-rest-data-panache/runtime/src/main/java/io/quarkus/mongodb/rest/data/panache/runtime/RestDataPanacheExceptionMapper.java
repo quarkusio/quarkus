@@ -1,13 +1,18 @@
-package io.quarkus.hibernate.orm.rest.data.panache.runtime;
+package io.quarkus.mongodb.rest.data.panache.runtime;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
 
+import com.mongodb.MongoWriteException;
+
 import io.quarkus.rest.data.panache.RestDataPanacheException;
 
 public class RestDataPanacheExceptionMapper implements ExceptionMapper<RestDataPanacheException> {
+
+    private static final String DUPLICATE_KEY_ERROR_CODE = "E11000";
+
     private static final Logger LOGGER = Logger.getLogger(RestDataPanacheExceptionMapper.class);
 
     @Override
@@ -17,12 +22,8 @@ public class RestDataPanacheExceptionMapper implements ExceptionMapper<RestDataP
     }
 
     private Response throwableToResponse(Throwable throwable, String message) {
-        if (throwable instanceof org.hibernate.exception.ConstraintViolationException) {
+        if (throwable instanceof MongoWriteException && throwable.getMessage().contains(DUPLICATE_KEY_ERROR_CODE)) {
             return Response.status(Response.Status.CONFLICT.getStatusCode(), message).build();
-        }
-
-        if (throwable instanceof javax.validation.ConstraintViolationException) {
-            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), message).build();
         }
 
         if (throwable.getCause() != null) {

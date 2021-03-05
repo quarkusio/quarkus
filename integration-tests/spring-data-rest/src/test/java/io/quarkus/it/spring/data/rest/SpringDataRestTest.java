@@ -205,4 +205,22 @@ class SpringDataRestTest {
         when().delete(location)
                 .then().statusCode(204);
     }
+
+    @Test
+    void shouldNotCreateBookWithBlankTitle() {
+        JsonObject author = Json.createObjectBuilder()
+                .add("id", DOSTOEVSKY_ID)
+                .add("name", DOSTOEVSKY_NAME)
+                .add("dob", DOSTOEVSKY_DOB)
+                .build();
+        JsonObject book = Json.createObjectBuilder()
+                .add("title", "")
+                .add("author", author)
+                .build();
+        given().accept("application/json")
+                .and().contentType("application/json")
+                .and().body(book.toString())
+                .when().put("/books/100")
+                .then().statusCode(400);
+    }
 }

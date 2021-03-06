@@ -18,6 +18,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import com.fasterxml.jackson.annotation.SimpleObjectIdResolver;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
@@ -59,6 +60,7 @@ public class JacksonProcessor {
     private static final DotName JSON_SERIALIZE = DotName.createSimple(JsonSerialize.class.getName());
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
     private static final DotName JSON_NAMING = DotName.createSimple("com.fasterxml.jackson.databind.annotation.JsonNaming");
+    private static final DotName JSON_IDENTITY_INFO = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIdentityInfo");
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());
 
     private static final String TIME_MODULE = "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule";
@@ -140,6 +142,21 @@ public class JacksonProcessor {
             AnnotationValue strategyValue = jsonNamingInstance.value("value");
             if (strategyValue != null) {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, strategyValue.asClass().name().toString()));
+            }
+        }
+
+        // register @JsonIdentityInfo strategy implementations for reflection
+        for (AnnotationInstance jsonIdentityInfoInstance : index.getAnnotations(JSON_IDENTITY_INFO)) {
+            AnnotationValue generatorValue = jsonIdentityInfoInstance.value("generator");
+            AnnotationValue resolverValue = jsonIdentityInfoInstance.value("resolver");
+            if (generatorValue != null) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, generatorValue.asClass().name().toString()));
+            }
+            if (resolverValue != null) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, resolverValue.asClass().name().toString()));
+            } else {
+                // Registering since SimpleObjectIdResolver is the default value of @JsonIdentityInfo.resolver
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, SimpleObjectIdResolver.class));
             }
         }
 

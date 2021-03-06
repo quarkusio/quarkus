@@ -225,15 +225,31 @@ This allows you to develop in the same environment you will actually run your ap
 
 WARNING: Do not use this in production. This should only be used in a development environment. You should not run production applications in dev mode.
 
-You must have the following config properties set:
+To do this you must build a mutable application, using the `mutable-jar` format. Set the following properties in `application.properties`:
 
-- `quarkus.live-reload.password`
-- `quarkus.live-reload.url`
+[source,properties]
+----
+quarkus.package.type=mutable-jar <1>
+quarkus.live-reload.password=changeit <2>
+quarkus.live-reload.url=http://my.cluster.host.com:8080 <3>
+----
+<1> This tells Quarkus to use the mutable-jar format. Mutable applications also include the deployment time parts of Quarkus,
+so they take up a bit more disk space. If run normally they start just as fast and use the same memory as an immutable application,
+however they can also be started in dev mode.
+<2> The password that is used to secure communication between the remote side and the local side.
+<3> The URL that your app is going to be running in dev mode at. This is only needed on the local side, so you
+may want to leave it out of the properties file and specify it as a system property on the command line.
 
-These can be set via `application.properties`, or any other way (e.g. system properties, environment vars etc). The
-password must be set on both the local and remote processes, while the url only needs to be set on the local host.
+Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
+on bare metal you can just set this via the `export QUARKUS_LAUNCH_DEVMODE=true` command, if you are running using
+docker start the image with `-e QUARKUS_LAUNCH_DEVMODE=true`. When the application starts you should now see the following
+line in the logs: `Profile dev activated. Live Coding activated`.
 
-Start Quarkus in dev mode on the remote host. Now you need to connect your local agent to the remote host:
+NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
+that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner
+jar, do not attempt to run normal devmode.
+
+Now you need to connect your local agent to the remote host, using the `remote-dev` command:
 
 [source,bash]
 ----

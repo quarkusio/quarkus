@@ -11,7 +11,7 @@ import io.quarkus.devtools.test.RegistryClientTestHelper;
 
 public class QuarkusGradleDevToolsTestBase extends QuarkusGradleWrapperTestBase {
 
-    private static Properties devToolsProps = new Properties(2);
+    private static Properties devToolsProps = new Properties();
 
     @BeforeAll
     static void enableDevToolsTestConfig() {

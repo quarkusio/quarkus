@@ -1100,7 +1100,7 @@ public class QuteProcessor {
     @BuildStep
     void excludeTypeChecks(QuteConfig config, BuildProducer<TypeCheckExcludeBuildItem> excludes) {
         // Exclude all checks that involve built-in value resolvers
-        List<String> skipOperators = Arrays.asList("?:", "or", ":", "?", "&&", "||");
+        List<String> skipOperators = Arrays.asList("?:", "or", ":", "?", "ifTruthy", "&&", "||");
         excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<TypeCheck>() {
             @Override
             public boolean test(TypeCheck check) {

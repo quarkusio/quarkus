@@ -348,7 +348,7 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 
 |Elvis Operator
 |Outputs the default value if the previous part cannot be resolved or resolves to `null`.
-|`{person.name ?: 'John'}`, `{person.name or 'John'}`
+|`{person.name ?: 'John'}`, `{person.name or 'John'}`, `{person.name.or('John')}`
 
 |orEmpty
 |Outputs an empty list if the previous part cannot be resolved or resolves to `null`.
@@ -370,7 +370,7 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 
 TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the <<if_section>>.
 
-NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation, i.e. `{person.name or 'John'}` is translated to `{person.name.or('John')}`.
+NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation. For example `{person.name or 'John'}` is translated to `{person.name.or('John')}` and `{item.isActive ? item.name : 'Inactive item'}` is translated to `{item.isActive.ifTruthy(item.name).or('Inactive item')}`
 
 ==== Arrays
 
@@ -780,10 +780,13 @@ This section might also come in handy when we'd like to avoid multiple expensive
 This section allows you to define named local variables:
 [source,html]
 ----
-{#let myParent=order.item.parent}
+{#let myParent=order.item.parent isActive=false age=10} <1>
   <h1>{myParent.name}</h1>
+  Is active: {isActive}
+  Age: {age}
 {/let}
 ----
+<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
 
 The section tag is also registered under the `set` alias:
 

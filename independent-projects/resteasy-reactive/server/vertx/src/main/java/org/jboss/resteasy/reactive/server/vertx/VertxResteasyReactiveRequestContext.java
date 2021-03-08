@@ -217,6 +217,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setReadListener(ReadCallback callback) {
+        request.pause();
         if (continueState == ContinueState.REQUIRED) {
             continueState = ContinueState.SENT;
             response.writeContinue();
@@ -233,6 +234,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
                 callback.done();
             }
         });
+        request.resume();
         return this;
     }
 

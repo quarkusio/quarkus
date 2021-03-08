@@ -6,5 +6,5 @@ metadata:
   - "coverage"
   guide: "https://quarkus.io/guides/tests-with-coverage"
   categories:
-  - "testing"
+  - "miscellaneous"
   status: "experimental"

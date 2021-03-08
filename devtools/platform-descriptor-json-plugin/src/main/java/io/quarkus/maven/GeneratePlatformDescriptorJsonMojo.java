@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -113,11 +114,23 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
     @Parameter
     private Set<String> ignoredGroupIds = new HashSet<>(0);
 
+    /**
+     * Skips the check for the descriptor's artifactId naming convention
+     */
     @Parameter
     private boolean skipArtifactIdCheck;
 
+    /**
+     * Skips the check for the BOM to contain the generated platform JSON descriptor
+     */
     @Parameter(property = "skipBomCheck")
     private boolean skipBomCheck;
+
+    /**
+     * Skips the check for categories referenced from the extensions to be listed in the generated descriptor
+     */
+    @Parameter(property = "skipCategoryCheck")
+    boolean skipCategoryCheck;
 
     @Parameter(property = "resolveDependencyManagement")
     boolean resolveDependencyManagement;
@@ -211,6 +224,7 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
                 throw new MojoExecutionException("Failed to resolver inherited platform descriptor", e);
             }
             platformJson.setDerivedFrom(baseCatalog.getDerivedFrom());
+            platformJson.setCategories(baseCatalog.getCategories());
 
             final List<Extension> extensions = baseCatalog.getExtensions();
             if (!extensions.isEmpty()) {
@@ -224,6 +238,7 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
         }
 
         // Create a JSON array of extension descriptors
+        final Set<String> referencedCategories = new HashSet<>();
         final List<io.quarkus.registry.catalog.Extension> extListJson = new ArrayList<>();
         platformJson.setExtensions(extListJson);
         String quarkusCoreVersion = null;
@@ -252,35 +267,52 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
                 quarkusCoreVersion = artifact.getVersion();
             }
             ArtifactResult resolved = null;
+            JsonExtension extension = null;
             try {
                 resolved = repoSystem.resolveArtifact(repoSession,
                         new ArtifactRequest().setRepositories(repos).setArtifact(artifact));
-                JsonExtension extension = processDependency(resolved.getArtifact());
-                if (extension != null) {
-                    Extension inherited = inheritedExtensions.get(extension.getArtifact().getKey());
-                    final List<ExtensionOrigin> origins;
-                    if (inherited != null) {
-                        origins = new ArrayList<>(inherited.getOrigins().size() + 1);
-                        origins.addAll(inherited.getOrigins());
-                        origins.add(platformJson);
-                    } else {
-                        origins = Arrays.asList(platformJson);
-                    }
-                    extension.setOrigins(origins);
-                    String key = extensionId(extension);
-                    for (OverrideInfo info : allOverrides) {
-                        io.quarkus.registry.catalog.Extension extOverride = info.getExtOverrides().get(key);
-                        if (extOverride != null) {
-                            extension = mergeObject(extension, extOverride);
-                        }
-                    }
-                    extListJson.add(extension);
-                }
+                extension = processDependency(resolved.getArtifact());
             } catch (ArtifactResolutionException e) {
                 // there are some parent poms that appear as jars for some reason
                 debug("Failed to resolve dependency %s defined in %s", artifact, bomArtifact);
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to process dependency " + artifact, e);
+            }
+
+            if (extension == null) {
+                continue;
+            }
+
+            Extension inherited = inheritedExtensions.get(extension.getArtifact().getKey());
+            final List<ExtensionOrigin> origins;
+            if (inherited != null) {
+                origins = new ArrayList<>(inherited.getOrigins().size() + 1);
+                origins.addAll(inherited.getOrigins());
+                origins.add(platformJson);
+            } else {
+                origins = Arrays.asList(platformJson);
+            }
+            extension.setOrigins(origins);
+            String key = extensionId(extension);
+            for (OverrideInfo info : allOverrides) {
+                io.quarkus.registry.catalog.Extension extOverride = info.getExtOverrides().get(key);
+                if (extOverride != null) {
+                    extension = mergeObject(extension, extOverride);
+                }
+            }
+            extListJson.add(extension);
+
+            if (!skipCategoryCheck) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    final Collection<String> extCategories = (Collection<String>) extension.getMetadata()
+                            .get("categories");
+                    if (extCategories != null) {
+                        referencedCategories.addAll(extCategories);
+                    }
+                } catch (ClassCastException e) {
+                    getLog().warn("Failed to cast the extension categories list to java.util.Collection<String>", e);
+                }
             }
         }
 
@@ -336,6 +368,26 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
                 }
             }
         }
+
+        // make sure all the categories referenced by extensions are actually present in
+        // the platform descriptor
+        if (!skipCategoryCheck) {
+            final Set<String> catalogCategories = platformJson.getCategories().stream().map(c -> c.getId())
+                    .collect(Collectors.toSet());
+            if (!catalogCategories.containsAll(referencedCategories)) {
+                final List<String> missing = referencedCategories.stream().filter(c -> !catalogCategories.contains(c))
+                        .collect(Collectors.toList());
+                final StringBuilder buf = new StringBuilder();
+                buf.append(
+                        "The following categories referenced from extensions are missing from the generated catalog: ");
+                buf.append(missing.get(0));
+                for (int i = 1; i < missing.size(); ++i) {
+                    buf.append(", ").append(missing.get(i));
+                }
+                throw new MojoExecutionException(buf.toString());
+            }
+        }
+
         // Write the JSON to the output file
         final File outputDir = outputFile.getParentFile();
         if (outputFile.exists()) {

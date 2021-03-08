@@ -13,10 +13,10 @@ final public class NotFoundPageDisplayableEndpointBuildItem extends MultiBuildIt
         this(endpoint, description, false);
     }
 
-    public NotFoundPageDisplayableEndpointBuildItem(String endpoint, String description, boolean absolutePath) {
+    public NotFoundPageDisplayableEndpointBuildItem(String endpoint, String description, boolean isAbsolutePath) {
         this.endpoint = endpoint;
         this.description = description;
-        this.absolutePath = absolutePath;
+        this.absolutePath = isAbsolutePath;
     }
 
     public NotFoundPageDisplayableEndpointBuildItem(String endpoint) {

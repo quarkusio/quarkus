@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 This guide covers the Quarkus Dev UI for link:building-my-first-extension[extension authors].
 
 Quarkus now ships with a new experimental Dev UI, which is available in dev mode (when you start
-quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] and will show you something like
+quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] by default. It will show you something like
 this:
 
 image::dev-ui-overview.png[alt=Dev UI overview,role="center"]
@@ -46,15 +46,55 @@ two links with some styling and icons:
 
 [source,html]
 ----
-<a href="/q/openapi" class="badge badge-light">
-  <i class="fa ..."></i>
+<a href="{config:http-path('quarkus.smallrye-openapi.path')}" class="badge badge-light">
+  <i class="fa fa-map-signs fa-fw"></i>
   OpenAPI</a>
-<a href="/q/swagger-ui/" class="badge badge-light">
-  <i class="fa ..."></i>
+<br>
+<a href="{config:http-path('quarkus.swagger-ui.path')}/" class="badge badge-light">
+  <i class="fa fa-map-signs fa-fw"></i>
   Swagger UI</a>
 ----
 
 TIP: We use the Font Awesome Free icon set.
+
+Note how the paths are specified: `{config:http-path('quarkus.smallrye-openapi.path')}`. This is a special
+directive that the quarkus dev console understands: it will replace that value with the resolved route
+named 'quarkus.smallrye-openapi.path'.
+
+The corresponding non-application endpoint is declared using `.routeConfigKey` to associate the route with a name:
+
+[source,java]
+----
+    nonApplicationRootPathBuildItem.routeBuilder()
+            .route(openApiConfig.path) // <1>
+            .routeConfigKey("quarkus.smallrye-openapi.path") // <2>
+            ...
+            .build();
+----
+<1> The configured path is resolved into a valid route.
+<2> The resolved route path is then associated with the key `quarkus.smallrye-openapi.path`.
+
+== Path considerations
+
+Paths are tricky business. Keep the following in mind:
+
+* Assume your UI will be nested under the dev endpoint. Do not provide a way to customize this without a strong reason.
+* Never construct your own absolute paths. Adding a suffix to a known, normalized and resolved path is fine.
+
+Configured paths, like the `dev` endpoint used by the console or the SmallRye OpenAPI path shown in the example above,
+need to be properly resolved against both `quarkus.http.root-path` and `quarkus.http.non-application-root-path`.
+Use `NonApplicationRootPathBuildItem` or `HttpRootPathBuildItem` to construct endpoint routes and identify resolved
+path values that can then be used in templates.
+
+The `{devRootAppend}` variable can also be used in templates to construct URLs for static dev console resources, for example:
+
+[source,html]
+----
+<img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
+----
+
+Refer to the link:all-config#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
+for details on how the non-application root path is configured.
 
 == Template and styling support
 
@@ -74,6 +114,9 @@ The main template also includes https://jquery.com/[jQuery 3.5.1], but here agai
 A `config:property(name)` expression can be used to output the config value for the given property name.
 The property name can be either a string literal or obtained dynamically by another expression.
 For example `{config:property('quarkus.lambda.handler')}` and `{config:property(foo.propertyName)}`.
+
+Reminder: do not use this to retrieve raw configured path values. As shown above, use `{config:http-path(...)}` with
+a known route configuration key when working with resource paths.
 
 == Adding full pages
 
@@ -137,17 +180,19 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`
 
 == Linking to your full-page templates
 
-Every full-page template lives under the `/q/dev/{groupId}.{artifactId}/` URI (for example 
-`/q/dev/io.quarkus.quarkus-cache/`), so if you want to link
-to them from your `embedded.html` file you can use the `urlbase` template parameter to point to them:
+Full-page templates for extensions live under a pre-defined `{devRootAppend}/{groupId}.{artifactId}/` directory
+that is referenced using the `urlbase` template parameter. Using configuration defaults, that would resolve to
+`/q/dev/io.quarkus.quarkus-cache/`, as an example.
 
-[source,java]
+Use the `{urlbase}` template parameter to reference this folder in `embedded.html`:
+
+[source,html]
 ----
 <a href="{urlbase}/caches" class="badge badge-light">// <1>
   <i class="fa ..."></i>
   Caches <span class="badge badge-light">{info:cacheInfos.size()}</span></a>
 ----
-<1> Use the `urlbase` template parameter to point to where your full-page templates are located
+<1> Use the `urlbase` template parameter to reference full-page templates for your extension
 
 == Passing information to your templates
 
@@ -266,6 +311,7 @@ This can be done by adding another link:building-my-first-extension#deploying-th
 declare the action in your extension's
 link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module:
 
+
 [source,java]
 ----
 package io.quarkus.cache.deployment.devconsole;
@@ -290,10 +336,12 @@ public class DevConsoleProcessor {
 <1> Mark the recorder as optional, so it will only be invoked when in dev mode
 <2> Declare a `POST {urlbase}/caches` route handled by the given handler
 
+
 Note: you can see <<action-example,how to invoke this action from your full page>>.
 
 Now all you have to do is implement the recorder in your extension's 
 link:building-my-first-extension#description-of-a-quarkus-extension[`runtime module`]:
+
 
 [source,java]
 ----
@@ -337,6 +385,7 @@ public class CacheDevConsoleRecorder {
 <2> You can get the Vert.x `RoutingContext` as well as the `form` contents
 <3> Don't forget to add a message for the user to let them know everything went fine
 <4> You can also add error messages
+
 
 NOTE: Flash messages are handled by the `main` DEV template and will result in nice notifications for your
 users:

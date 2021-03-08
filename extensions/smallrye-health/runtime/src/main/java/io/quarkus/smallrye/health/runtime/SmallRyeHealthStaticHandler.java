@@ -44,7 +44,6 @@ public class SmallRyeHealthStaticHandler implements Handler<RoutingContext> {
                 .setDefaultContentEncoding("UTF-8");
 
         if (event.normalisedPath().length() == healthUiPath.length()) {
-
             event.response().setStatusCode(302);
             event.response().headers().set(HttpHeaders.LOCATION, healthUiPath + "/");
             event.response().end();

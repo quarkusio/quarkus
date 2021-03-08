@@ -248,22 +248,48 @@ public class DevConsoleProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public void setupActions(List<DevConsoleRouteBuildItem> routes,
+    public ServiceStartBuildItem setupDeploymentSideHandling(List<DevTemplatePathBuildItem> devTemplatePaths,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<RouteBuildItem> allRoutes,
+            List<DevConsoleRouteBuildItem> routes,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return null;
+        }
+
+        initializeVirtual();
+        Engine quteEngine = buildEngine(devTemplatePaths,
+                allRoutes,
+                nonApplicationRootPathBuildItem);
+        newRouter(quteEngine, nonApplicationRootPathBuildItem);
+
+        for (DevConsoleRouteBuildItem i : routes) {
+            Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
+            // deployment side handling
+            if (!(i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy)) {
+                router.route(HttpMethod.valueOf(i.getMethod()),
+                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath())
+                        .handler(i.getHandler());
+            }
+        }
+
+        return null;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void setupDevConsoleRoutes(List<DevConsoleRouteBuildItem> routes,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
-            List<DevTemplatePathBuildItem> devTemplatePaths,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem) {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return;
         }
-        initializeVirtual();
-
-        newRouter(buildEngine(devTemplatePaths), nonApplicationRootPathBuildItem);
 
         for (DevConsoleRouteBuildItem i : routes) {
             Entry<String, String> groupAndArtifact = i.groupIdAndArtifactId(curateOutcomeBuildItem);
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
+            // otherwise this is handled in the setupDeploymentSideHandling method
             if (i.getHandler() instanceof BytecodeRecorderImpl.ReturnedProxy) {
                 routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
@@ -271,10 +297,6 @@ public class DevConsoleProcessor {
                                 new RuntimeDevConsoleRoute(i.getMethod()))
                         .handler(i.getHandler())
                         .build());
-            } else {
-                router.route(HttpMethod.valueOf(i.getMethod()),
-                        "/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath())
-                        .handler(i.getHandler());
             }
         }
 
@@ -314,7 +336,9 @@ public class DevConsoleProcessor {
                 .build());
     }
 
-    private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths) {
+    private Engine buildEngine(List<DevTemplatePathBuildItem> devTemplatePaths,
+            List<RouteBuildItem> allRoutes,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         EngineBuilder builder = Engine.builder().addDefaults();
 
         // Escape some characters for HTML templates
@@ -336,16 +360,35 @@ public class DevConsoleProcessor {
                     return result == null ? Results.Result.NOT_FOUND : result;
                 }).build());
 
+        // Create map of resolved paths
+        Map<String, String> resolvedPaths = new HashMap<>();
+        for (RouteBuildItem item : allRoutes) {
+            ConfiguredPathInfo resolvedPathBuildItem = item.getDevConsoleResolvedPath();
+            if (resolvedPathBuildItem != null) {
+                resolvedPaths.put(resolvedPathBuildItem.getName(),
+                        resolvedPathBuildItem.getEndpointPath(nonApplicationRootPathBuildItem));
+            }
+        }
+
         // {config:property('quarkus.lambda.handler')}
+        // {config:http-path('quarkus.smallrye-graphql.ui.root-path')}
+        // Note that the output value is always string!
         builder.addNamespaceResolver(NamespaceResolver.builder("config").resolveAsync(ctx -> {
             List<Expression> params = ctx.getParams();
-            if (params.size() != 1 || !ctx.getName().equals("property")) {
+            if (params.size() != 1 || (!ctx.getName().equals("property") && !ctx.getName().equals("http-path"))) {
                 return Results.NOT_FOUND;
             }
-            return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
-                Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
-                return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Result.NOT_FOUND);
-            });
+            if (ctx.getName().equals("http-path")) {
+                return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
+                    String value = resolvedPaths.get(propertyName.toString());
+                    return CompletableFuture.completedFuture(value != null ? value : Result.NOT_FOUND);
+                });
+            } else {
+                return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
+                    Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
+                    return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Result.NOT_FOUND);
+                });
+            }
         }).build());
 
         // JavaDoc formatting

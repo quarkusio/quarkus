@@ -11,9 +11,10 @@ import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 public class SmallRyeGraphQLConfig {
 
     /**
-     * The rootPath under which queries will be served. Default to /graphql
+     * The rootPath under which queries will be served. Default to graphql
+     * By default, this value will be resolved as a path relative to `${quarkus.http.root-path}`.
      */
-    @ConfigItem(defaultValue = "/graphql")
+    @ConfigItem(defaultValue = "graphql")
     String rootPath;
 
     /**

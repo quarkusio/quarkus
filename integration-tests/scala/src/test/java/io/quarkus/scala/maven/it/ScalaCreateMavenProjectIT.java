@@ -84,14 +84,12 @@ public class ScalaCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase 
         }
         params.setProperty("platformArtifactId", getBomArtifactId());
         params.setProperty("platformVersion", getQuarkusCoreVersion());
-        enableDevToolsTestConfig(params);
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setProperties(params);
-        getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
         final PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.INFO);

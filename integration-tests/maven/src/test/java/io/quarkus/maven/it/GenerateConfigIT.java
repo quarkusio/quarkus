@@ -67,7 +67,7 @@ class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
         Properties properties = new Properties();
         properties.setProperty("file", filename);
         request.setProperties(properties);
-        getEnv().forEach(request::addShellEnvironment);
+
         File log = new File(testDir, "build-generate-config-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

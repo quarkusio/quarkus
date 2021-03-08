@@ -139,10 +139,8 @@ class AddExtensionIT extends QuarkusPlatformAwareMojoTestBase {
         } else {
             properties.setProperty("extension", ext);
         }
-        enableDevToolsTestConfig(properties);
         request.setProperties(properties);
 
-        getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-add-extension-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

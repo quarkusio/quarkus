@@ -439,9 +439,8 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
         request.setShowErrors(true);
-        enableDevToolsTestConfig(params);
         request.setProperties(params);
-        getEnv().forEach(request::addShellEnvironment);
+
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

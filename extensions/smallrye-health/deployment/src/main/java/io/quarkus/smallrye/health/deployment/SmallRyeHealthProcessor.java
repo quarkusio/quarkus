@@ -461,13 +461,8 @@ class SmallRyeHealthProcessor {
             Handler<RoutingContext> handler = recorder.uiHandler(smallRyeHealthBuildItem.getHealthUiFinalDestination(),
                     smallRyeHealthBuildItem.getHealthUiPath(), runtimeConfig);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route(healthConfig.ui.rootPath)
+                    .route(healthConfig.ui.rootPath + "*")
                     .displayOnNotFoundPage("Health UI")
-                    .requiresLegacyRedirect()
-                    .handler(handler)
-                    .build());
-            routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route(healthConfig.ui.rootPath + "/*")
                     .requiresLegacyRedirect()
                     .handler(handler)
                     .build());

@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.smallrye.mutiny.Multi;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiFunction;
 import javax.ws.rs.core.MediaType;
@@ -10,10 +9,11 @@ import org.jboss.resteasy.reactive.server.core.SseUtil;
 import org.jboss.resteasy.reactive.server.core.StreamingUtil;
 import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class MultiResponseHandler implements ServerRestHandler {
+public class PublisherResponseHandler implements ServerRestHandler {
 
     private static class SseMultiSubscriber extends AbstractMultiSubscriber {
 
@@ -160,7 +160,7 @@ public class MultiResponseHandler implements ServerRestHandler {
         }
     }
 
-    private static final Logger log = Logger.getLogger(MultiResponseHandler.class);
+    private static final Logger log = Logger.getLogger(PublisherResponseHandler.class);
 
     private static final ServerRestHandler[] AWOL = new ServerRestHandler[] {
             new ServerRestHandler() {
@@ -176,8 +176,8 @@ public class MultiResponseHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         // FIXME: handle Response with entity being a Multi
-        if (requestContext.getResult() instanceof Multi) {
-            Multi<?> result = (Multi<?>) requestContext.getResult();
+        if (requestContext.getResult() instanceof Publisher) {
+            Publisher<?> result = (Publisher<?>) requestContext.getResult();
             // FIXME: if we make a pretend Response and go through the normal route, we will get
             // media type negotiation and fixed entity writer set up, perhaps it's better than
             // cancelling the normal route?
@@ -200,11 +200,11 @@ public class MultiResponseHandler implements ServerRestHandler {
         }
     }
 
-    private void handleStreaming(ResteasyReactiveRequestContext requestContext, Multi<?> result, boolean json) {
-        result.subscribe().withSubscriber(new StreamingMultiSubscriber(requestContext, json));
+    private void handleStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
+        result.subscribe(new StreamingMultiSubscriber(requestContext, json));
     }
 
-    private void handleSse(ResteasyReactiveRequestContext requestContext, Multi<?> result) {
-        result.subscribe().withSubscriber(new SseMultiSubscriber(requestContext));
+    private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {
+        result.subscribe(new SseMultiSubscriber(requestContext));
     }
 }

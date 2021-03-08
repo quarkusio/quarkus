@@ -29,7 +29,7 @@ import io.vertx.ext.web.RoutingContext;
  * This is a Handler running in the Dev Vert.x instance (which is loaded by the Augmentation ClassLoader)
  * and has access to build time stuff
  */
-public class DevConsole implements Handler<RoutingContext> {
+public class DevUI implements Handler<RoutingContext> {
 
     static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
     private static final Comparator<Map<String, Object>> EXTENSION_COMPARATOR = Comparator
@@ -42,7 +42,7 @@ public class DevConsole implements Handler<RoutingContext> {
 
     final Config config = ConfigProvider.getConfig();
 
-    DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
+    DevUI(Engine engine, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
         this.globalData.put("httpRootPath", httpRootPath);
         this.globalData.put("frameworkRootPath", frameworkRootPath);

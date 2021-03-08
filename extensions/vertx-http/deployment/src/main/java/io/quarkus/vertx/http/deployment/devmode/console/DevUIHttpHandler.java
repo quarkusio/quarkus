@@ -38,8 +38,8 @@ import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
  * is a parent first dependency thus also loaded by the System ClassLoader).
  */
 @SuppressWarnings("unused")
-public class DevConsoleHttpHandler implements Consumer<DevConsoleRequest> {
-    private static final Logger log = Logger.getLogger(DevConsoleHttpHandler.class);
+public class DevUIHttpHandler implements Consumer<DevConsoleRequest> {
+    private static final Logger log = Logger.getLogger(DevUIHttpHandler.class);
     public static VirtualAddress QUARKUS_DEV_CONSOLE = new VirtualAddress("quarkus-dev-console");
 
     private static final int BUFFER_SIZE = 8096;

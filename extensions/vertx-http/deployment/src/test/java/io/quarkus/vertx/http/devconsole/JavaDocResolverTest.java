@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.qute.Engine;
-import io.quarkus.vertx.http.deployment.devmode.console.DevConsoleProcessor.JavaDocResolver;
+import io.quarkus.vertx.http.deployment.devmode.console.DevUIProcessor.JavaDocResolver;
 
 public class JavaDocResolverTest {
 

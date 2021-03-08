@@ -1,10 +1,11 @@
 package io.quarkus.vertx.http.runtime.logstream;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
 
@@ -12,11 +13,15 @@ import org.jboss.logmanager.ExtLogRecord;
  * Log handler for Logger Manager
  */
 public class HistoryHandler extends ExtHandler {
-
-    private final int size = 50;
-    private final List<ExtLogRecord> history = new LinkedList<>();
+    private static final Logger LOG = Logger.getLogger(HistoryHandler.class);
+    private final LinkedBlockingQueue<ExtLogRecord> history;
 
     public HistoryHandler() {
+        this(50);
+    }
+
+    public HistoryHandler(int size) {
+        this.history = new LinkedBlockingQueue<>(size);
         setLevel(Level.INFO);
         setFormatter(new JsonFormatter());
     }
@@ -29,13 +34,17 @@ public class HistoryHandler extends ExtHandler {
         }
 
         if (isLoggable(record)) {
-            history.add(record);
-
-            while (history.size() > size) {
-                history.remove(0);
+            synchronized (history) {
+                try {
+                    if (history.remainingCapacity() == 0) {
+                        history.take();
+                    }
+                    history.add(record);
+                } catch (InterruptedException ex) {
+                    LOG.error(ex);
+                }
             }
         }
-
     }
 
     public boolean hasHistory() {

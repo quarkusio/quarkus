@@ -102,9 +102,9 @@ import io.vertx.core.net.impl.VertxHandler;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
-public class DevConsoleProcessor {
+public class DevUIProcessor {
 
-    private static final Logger log = Logger.getLogger(DevConsoleProcessor.class);
+    private static final Logger log = Logger.getLogger(DevUIProcessor.class);
 
     private static final String STATIC_RESOURCES_PATH = "dev-static/";
 
@@ -122,7 +122,7 @@ public class DevConsoleProcessor {
         }
         devConsoleVertx = Vertx.vertx();
         VertxInternal vertx = (VertxInternal) devConsoleVertx;
-        QuarkusClassLoader ccl = (QuarkusClassLoader) DevConsoleProcessor.class.getClassLoader();
+        QuarkusClassLoader ccl = (QuarkusClassLoader) DevUIProcessor.class.getClassLoader();
         ccl.addCloseTask(new Runnable() {
             @Override
             public void run() {
@@ -178,7 +178,7 @@ public class DevConsoleProcessor {
 
         // Start the server.
         try {
-            ChannelFuture future = virtualBootstrap.bind(DevConsoleHttpHandler.QUARKUS_DEV_CONSOLE);
+            ChannelFuture future = virtualBootstrap.bind(DevUIHttpHandler.QUARKUS_DEV_CONSOLE);
             future.sync();
             channel = future.channel();
         } catch (InterruptedException e) {
@@ -212,7 +212,7 @@ public class DevConsoleProcessor {
                 .handler(new FlashScopeHandler());
         router.route().method(HttpMethod.GET)
                 .order(Integer.MIN_VALUE + 1)
-                .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
+                .handler(new DevUI(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
         mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev/*")).subRouter(router);
@@ -262,11 +262,13 @@ public class DevConsoleProcessor {
         }
     }
 
-    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep(onlyIf = IsDevelopment.class)
     public HistoryHandlerBuildItem hander(BuildProducer<LogHandlerBuildItem> logHandlerBuildItemBuildProducer,
-            LogStreamRecorder recorder) {
-        RuntimeValue<Optional<HistoryHandler>> handler = recorder.handler();
+            LogStreamRecorder recorder, DevUIConfig devUIConfig) {
+
+        int size = devUIConfig.historySize;
+        RuntimeValue<Optional<HistoryHandler>> handler = recorder.handler(size);
         logHandlerBuildItemBuildProducer.produce(new LogHandlerBuildItem((RuntimeValue) handler));
         return new HistoryHandlerBuildItem(handler);
     }
@@ -308,7 +310,7 @@ public class DevConsoleProcessor {
             }
         }
 
-        DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
+        DevConsoleManager.registerHandler(new DevUIHttpHandler());
         //must be last so the above routes have precedence
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route("dev/*")
@@ -350,7 +352,7 @@ public class DevConsoleProcessor {
                 .addValueResolver(new MultiMapValueResolver())
                 .addValueResolver(ValueResolvers.rawResolver())
                 .addNamespaceResolver(NamespaceResolver.builder("info").resolve(ctx -> {
-                    String ext = DevConsole.currentExtension.get();
+                    String ext = DevUI.currentExtension.get();
                     if (ext == null) {
                         return Results.Result.NOT_FOUND;
                     }
@@ -475,7 +477,7 @@ public class DevConsoleProcessor {
     @BuildStep
     void collectTemplates(BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
         try {
-            ClassLoader classLoader = DevConsoleProcessor.class.getClassLoader();
+            ClassLoader classLoader = DevUIProcessor.class.getClassLoader();
             Enumeration<URL> devTemplateURLs = classLoader.getResources("/dev-templates");
             while (devTemplateURLs.hasMoreElements()) {
                 String devTemplatesURL = devTemplateURLs.nextElement().toExternalForm();

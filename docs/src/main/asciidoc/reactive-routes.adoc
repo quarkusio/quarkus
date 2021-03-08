@@ -46,7 +46,7 @@ Then in a _bean_, you can use the `@Route` annotation as follows:
 package org.acme.reactive.routes;
 
 import io.quarkus.vertx.web.Route;
-import io.vertx.core.http.HttpMethod;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.ext.web.RoutingContext;
 

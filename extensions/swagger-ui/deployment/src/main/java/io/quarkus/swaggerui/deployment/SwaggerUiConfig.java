@@ -18,6 +18,7 @@ public class SwaggerUiConfig {
      * The path where Swagger UI is available.
      * <p>
      * The value `/` is not allowed as it blocks the application from serving anything else.
+     * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
      */
     @ConfigItem(defaultValue = "swagger-ui")
     String path;

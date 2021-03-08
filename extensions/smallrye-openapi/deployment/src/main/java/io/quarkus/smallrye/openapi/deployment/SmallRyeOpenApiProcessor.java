@@ -172,6 +172,7 @@ public class SmallRyeOpenApiProcessor {
         Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
         return nonApplicationRootPathBuildItem.routeBuilder()
                 .route(openApiConfig.path)
+                .routeConfigKey("quarkus.smallrye-openapi.path")
                 .handler(handler)
                 .displayOnNotFoundPage("Open API Schema document")
                 .requiresLegacyRedirect()

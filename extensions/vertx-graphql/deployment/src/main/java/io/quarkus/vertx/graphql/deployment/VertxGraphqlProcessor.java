@@ -68,12 +68,17 @@ class VertxGraphqlProcessor {
         }
 
         Handler<RoutingContext> handler = recorder.handler();
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder().route(path).handler(handler)
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(path)
+                .handler(handler)
                 .requiresLegacyRedirect()
-                .displayOnNotFoundPage("GraphQL UI", path + "/")
+                .displayOnNotFoundPage("GraphQL UI")
                 .build());
         routes.produce(
-                nonApplicationRootPathBuildItem.routeBuilder().route(path + "/*").handler(handler).requiresLegacyRedirect()
+                nonApplicationRootPathBuildItem.routeBuilder()
+                        .route(path + "/*")
+                        .handler(handler)
+                        .requiresLegacyRedirect()
                         .build());
         nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
     }

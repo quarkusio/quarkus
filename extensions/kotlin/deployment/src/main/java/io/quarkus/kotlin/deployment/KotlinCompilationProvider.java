@@ -46,7 +46,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
             compilerArguments.setPluginClasspaths(context.getCompilePluginArtifacts().toArray(new String[0]));
         }
         if (context.getCompilerPluginOptions() != null && !context.getCompilerPluginOptions().isEmpty()) {
-            List<String> sanitizedOptions = new ArrayList<>(context.getCompilerOptions().size());
+            List<String> sanitizedOptions = new ArrayList<>(context.getCompilerPluginOptions().size());
             for (String rawOption : context.getCompilerPluginOptions()) {
                 Matcher matcher = OPTION_PATTERN.matcher(rawOption);
                 if (!matcher.matches()) {
@@ -70,9 +70,15 @@ public class KotlinCompilationProvider implements CompilationProvider {
                 context.getClasspath().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
         compilerArguments.setDestination(context.getOutputDirectory().getAbsolutePath());
         compilerArguments.setFreeArgs(filesToCompile.stream().map(File::getAbsolutePath).collect(Collectors.toList()));
+
         compilerArguments.setSuppressWarnings(true);
         SimpleKotlinCompilerMessageCollector messageCollector = new SimpleKotlinCompilerMessageCollector();
-        ExitCode exitCode = new K2JVMCompiler().exec(
+        K2JVMCompiler compiler = new K2JVMCompiler();
+        if (context.getCompilerOptions() != null && !context.getCompilerOptions().isEmpty()) {
+            compiler.parseArguments(context.getCompilerOptions().toArray(new String[0]), compilerArguments);
+        }
+
+        ExitCode exitCode = compiler.exec(
                 messageCollector,
                 new Services.Builder().build(),
                 compilerArguments);

@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -39,7 +38,6 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.impl.ServerCookie;
@@ -511,51 +509,41 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .transformToUni(new BiFunction<AuthorizationCodeTokens, Throwable, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable t) {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
-                            @Override
-                            public void accept(UniEmitter<? super SecurityIdentity> emitter) {
-                                if (t != null) {
-                                    LOG.debugf("ID token refresh has failed: %s", t.getMessage());
-
-                                    if (autoRefresh) {
-                                        LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
-                                        emitter.complete(((TokenAutoRefreshException) t).getSecurityIdentity());
-                                    } else {
-                                        emitter.fail(new AuthenticationFailedException(t));
-                                    }
-                                } else {
-                                    context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
-                                    context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
-
-                                    //TODO: Right now the new ID token is also verified twice - when it is decoded by Vert.x and later
-                                    // in OidcIdentityProvider
-
-                                    authenticate(identityProviderManager,
-                                            new IdTokenCredential(tokens.getIdToken(), context))
-                                                    .subscribe().with(new Consumer<SecurityIdentity>() {
-                                                        @Override
-                                                        public void accept(SecurityIdentity identity) {
-                                                            // after a successful refresh, rebuild the identity and update the cookie
-                                                            processSuccessfulAuthentication(context, configContext,
-                                                                    tokens, identity);
-                                                            SecurityIdentity newSecurityIdentity = augmentIdentity(identity,
-                                                                    tokens.getAccessToken(), tokens.getRefreshToken(), context);
-
-                                                            fireEvent(autoRefresh ? SecurityEvent.Type.OIDC_SESSION_REFRESHED
-                                                                    : SecurityEvent.Type.OIDC_SESSION_EXPIRED_AND_REFRESHED,
-                                                                    newSecurityIdentity);
-
-                                                            emitter.complete(newSecurityIdentity);
-                                                        }
-                                                    }, new Consumer<Throwable>() {
-                                                        @Override
-                                                        public void accept(Throwable throwable) {
-                                                            emitter.fail(new AuthenticationFailedException(throwable));
-                                                        }
-                                                    });
-                                }
+                        if (t != null) {
+                            LOG.debugf("ID token refresh has failed: %s", t.getMessage());
+                            if (autoRefresh) {
+                                LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
+                                return Uni.createFrom().item(((TokenAutoRefreshException) t).getSecurityIdentity());
+                            } else {
+                                return Uni.createFrom().failure(new AuthenticationFailedException(t));
                             }
-                        });
+                        } else {
+                            context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
+                            context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
+
+                            return authenticate(identityProviderManager, new IdTokenCredential(tokens.getIdToken(), context))
+                                    .map(new Function<SecurityIdentity, SecurityIdentity>() {
+                                        @Override
+                                        public SecurityIdentity apply(SecurityIdentity identity) {
+                                            // after a successful refresh, rebuild the identity and update the cookie
+                                            processSuccessfulAuthentication(context, configContext,
+                                                    tokens, identity);
+                                            SecurityIdentity newSecurityIdentity = augmentIdentity(identity,
+                                                    tokens.getAccessToken(), tokens.getRefreshToken(), context);
+
+                                            fireEvent(autoRefresh ? SecurityEvent.Type.OIDC_SESSION_REFRESHED
+                                                    : SecurityEvent.Type.OIDC_SESSION_EXPIRED_AND_REFRESHED,
+                                                    newSecurityIdentity);
+
+                                            return newSecurityIdentity;
+                                        }
+                                    }).onFailure().transform(new Function<Throwable, Throwable>() {
+                                        @Override
+                                        public Throwable apply(Throwable tInner) {
+                                            return new AuthenticationFailedException(tInner);
+                                        }
+                                    });
+                        }
                     }
                 });
     }

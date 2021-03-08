@@ -11,6 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.util.MultiCollectors;
+import org.reactivestreams.Publisher;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -33,6 +34,13 @@ public class StreamResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Multi<String> getStreamedText() {
+        return Multi.createFrom().items("foo", "bar");
+    }
+
+    @Path("text/stream/publisher")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Publisher<String> getStreamedTextPublisher() {
         return Multi.createFrom().items("foo", "bar");
     }
 
@@ -61,6 +69,13 @@ public class StreamResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Multi<char[]> getStreamedCharArrays() {
+        return Multi.createFrom().items("foo".toCharArray(), "bar".toCharArray());
+    }
+
+    @Path("char-arrays/stream/publisher")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Publisher<char[]> getStreamedCharArraysPublisher() {
         return Multi.createFrom().items("foo".toCharArray(), "bar".toCharArray());
     }
 

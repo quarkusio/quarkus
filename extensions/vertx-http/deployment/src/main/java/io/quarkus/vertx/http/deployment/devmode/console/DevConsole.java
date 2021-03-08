@@ -44,8 +44,13 @@ public class DevConsole implements Handler<RoutingContext> {
 
     DevConsole(Engine engine, String httpRootPath, String frameworkRootPath) {
         this.engine = engine;
+        // Both of these paths will end in slash
         this.globalData.put("httpRootPath", httpRootPath);
-        this.globalData.put("frameworkRootPath", cleanFrameworkRootPath(frameworkRootPath));
+        this.globalData.put("frameworkRootPath", frameworkRootPath);
+
+        // This includes the dev segment, but does not include a trailing slash (for append)
+        this.globalData.put("devRootAppend", frameworkRootPath + "dev");
+
         this.globalData.put("quarkusVersion", Version.getVersion());
         this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         this.globalData.put("applicationVersion",
@@ -92,19 +97,6 @@ public class DevConsole implements Handler<RoutingContext> {
                 event.next();
             }
         }
-    }
-
-    /**
-     * This removes the last / from the path
-     * 
-     * @param p the path
-     * @return the path without the last /
-     */
-    private String cleanFrameworkRootPath(String p) {
-        if (p != null && !p.isEmpty() && p.endsWith("/")) {
-            return p.substring(0, p.length() - 1);
-        }
-        return p;
     }
 
     private String getExtensionName(String namespace) {

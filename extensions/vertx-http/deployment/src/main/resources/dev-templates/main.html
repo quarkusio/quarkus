@@ -6,12 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
   <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/bootstrap.min.css">
-  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/fontawesome/css/all.min.css">
-  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/dev-console.css">
-  <link rel="stylesheet" href="{frameworkRootPath}/dev/resources/css/logstream.css">
-  
-  <link rel="shortcut icon" type="image/png" href="{frameworkRootPath}/dev/resources/images/favicon.ico" >
+  <link rel="stylesheet" href="{devRootAppend}/resources/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{devRootAppend}/resources/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="{devRootAppend}/resources/css/dev-console.css?2">
+  <link rel="stylesheet" href="{devRootAppend}/resources/css/logstream.css">
+
+  <link rel="shortcut icon" type="image/png" href="{devRootAppend}/resources/images/favicon.ico" >
   
   <style>
   {#insert style/}
@@ -28,8 +28,8 @@
  <body>
   
   <nav class="navbar sticky-top navbar-dark bg-dark">
-    <a class="navbar-brand" href="{frameworkRootPath}/dev/">
-      <img src="{frameworkRootPath}/dev/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
+    <a class="navbar-brand" href="{devRootAppend}/">
+      <img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
       <span id="navbar_title" class="align-middle">Dev UI</span>
     </a>
     <span class="navbar-text">
@@ -74,9 +74,9 @@
   </div>
   {#include logmanagerModals}{/include}
 
-  <script src="{frameworkRootPath}/dev/resources/js/jquery.min.js"></script>
-  <script src="{frameworkRootPath}/dev/resources/js/bootstrap.bundle.min.js"></script>
-  <script src="{frameworkRootPath}/dev/resources/js/logstream.js"></script>
+  <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
+  <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
+  <script src="{devRootAppend}/resources/js/logstream.js"></script>
   {|
   <script>
     if (jQuery(".alert").length) {

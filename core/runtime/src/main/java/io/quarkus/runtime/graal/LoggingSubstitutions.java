@@ -1,5 +1,6 @@
 package io.quarkus.runtime.graal;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Handler;
 
 import org.jboss.logmanager.LogContext;
@@ -20,8 +21,8 @@ import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 final class Target_org_jboss_logmanager_LoggerNode {
 
     @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    volatile Handler[] handlers;
+    @RecomputeFieldValue(declClass = AtomicReference.class, kind = RecomputeFieldValue.Kind.NewInstance)
+    AtomicReference<Handler[]> handlersRef;
 }
 
 @TargetClass(className = "org.slf4j.LoggerFactory")

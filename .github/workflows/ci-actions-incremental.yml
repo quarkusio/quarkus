@@ -117,7 +117,7 @@ jobs:
       - name: Get GIB arguments
         id: get-gib-args
         env:
-          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.ref }}
         run: |
           # See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration (GIB)
           # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
@@ -126,12 +126,12 @@ jobs:
           GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
           if [ -n "$PULL_REQUEST_BASE" ]
           then
-              # The PR defines a clear merge target so just use that branch for reference, *unless*
+              # The PR defines a clear merge target so just use that branch for reference, *unless*:
               # - the current branch is a backport branch
-              GIB_ARGS+=" -Dgib.referenceBranch=$PULL_REQUEST_BASE -Dgib.disableIfBranchRegex='.*backport.*'"
+              GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfBranchRegex='.*backport.*'"
           else
               # No PR means the merge target is uncertain so fetch & use master of quarkusio/quarkus, *unless*:
-              # - the current branch is master or some released branch like 1.10 (TODO: introduce tags to use as reference)
+              # - the current branch is master or some released branch like 1.10
               # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not master)
               GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/master -Dgib.fetchReferenceBranch -Dgib.disableIfBranchRegex='master|\d+\.\d+|.*backport.*'"
           fi

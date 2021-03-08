@@ -35,4 +35,12 @@ public class LiveReloadConfig {
      */
     @ConfigItem(defaultValue = "30s")
     public Duration connectTimeout;
+
+    /**
+     * Filter (regular expression format) that allows to exclude files from being deleted by remote dev mode. Usually used
+     * when there are additional files kept within application that are not synchronized but are required for application
+     * to function properly
+     */
+    @ConfigItem
+    public Optional<String> excludeDeleteFilter;
 }

@@ -280,6 +280,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
     }
 
+    private String excludeDeleteFilter() {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+            return ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.live-reload.exclude-delete-filter", String.class).orElse("");
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+    }
+
     @Override
     public void addPreScanStep(Runnable runnable) {
         preScanSteps.add(runnable);
@@ -307,7 +318,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             for (Map.Entry<String, String> remaining : ourHashes.entrySet()) {
                 String file = remaining.getKey();
                 if (file.endsWith("META-INF/MANIFEST.MF") || file.contains("META-INF/maven")
-                        || !file.contains("/")) {
+                        || !file.contains("/") || file.matches(excludeDeleteFilter())) {
                     //we have some filters, for files that we don't want to delete
                     continue;
                 }

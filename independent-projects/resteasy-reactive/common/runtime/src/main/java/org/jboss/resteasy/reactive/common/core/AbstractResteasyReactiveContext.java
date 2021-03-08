@@ -62,13 +62,18 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         } else {
             suspended = false;
             if (executor == null) {
-                Executor ctxtExecutor = getContextExecutor();
-                if (ctxtExecutor == null) {
-                    // Won't use the TCCL.
-                    getEventLoop().execute(this);
+                if (lastExecutor == null) {
+                    // TODO CES - Ugly Ugly hack!
+                    Executor ctxtExecutor = getContextExecutor();
+                    if (ctxtExecutor == null) {
+                        // Won't use the TCCL.
+                        getEventLoop().execute(this);
+                    } else {
+                        // Use the TCCL.
+                        ctxtExecutor.execute(this);
+                    }
                 } else {
-                    // Use the TCCL.
-                    ctxtExecutor.execute(this);
+                    lastExecutor.execute(this);
                 }
             } else {
                 executor.execute(this);

@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +52,7 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 public class VertxCoreRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(VertxCoreRecorder.class.getName());
+    public static final String VERTX_CACHE = "vertx-cache";
 
     static volatile VertxSupplier vertx;
 
@@ -227,8 +229,24 @@ public class VertxCoreRecorder {
             initializeClusterOptions(conf, options);
         }
 
-        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME,
-                System.getProperty("java.io.tmpdir", ".") + File.separator + "vertx-cache");
+        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
+        if (fileCacheDir == null) {
+            File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
+            if (!tmp.isDirectory()) {
+                if (!tmp.mkdirs()) {
+                    LOGGER.warnf("Unable to create Vert.x cache directory : %s", tmp.getAbsolutePath());
+                }
+                if (!(tmp.setReadable(true, false) && tmp.setWritable(true, false))) {
+                    LOGGER.warnf("Unable to make the Vert.x cache directory (%s) world readable and writable",
+                            tmp.getAbsolutePath());
+                }
+            }
+
+            long random = UUID.randomUUID().getMostSignificantBits();
+            File cache = new File(tmp, Long.toString(random));
+            LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
+            fileCacheDir = cache.getAbsolutePath();
+        }
 
         options.setFileSystemOptions(new FileSystemOptions()
                 .setFileCachingEnabled(conf.caching)

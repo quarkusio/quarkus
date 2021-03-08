@@ -262,6 +262,7 @@ kafka.bootstrap.servers=localhost:9092
 # Configure the Kafka sink (we write to it)
 mp.messaging.outgoing.generated-price.connector=smallrye-kafka
 mp.messaging.outgoing.generated-price.topic=prices
+mp.messaging.incoming.prices.health-readiness-enabled=false
 mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer
 
 # Configure the Kafka source (we read from it)
@@ -272,6 +273,18 @@ mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serializ
 More details about this configuration is available on the https://kafka.apache.org/documentation/#producerconfigs[Producer configuration] and https://kafka.apache.org/documentation/#consumerconfigs[Consumer configuration] section from the Kafka documentation. These properties are configured with the prefix `kafka`.
 
 NOTE: What about `my-data-stream`? This is an in-memory stream, not connected to a message broker.
+
+[TIP]
+.What is "mp.messaging.incoming.prices.health-readiness-enabled=false"?
+====
+The `health-readiness-enabled` disables the readiness health check.
+By default, it verifies that there is an active connection with the broker.
+In our case, the connection only happens when we get the first consumer.
+This is because the stream is consumed as an SSE, waiting lazily for the first connection to trigger the whole stream.
+So, if you are running in an environment only routing traffic to containers that are _ready_ (such as Kubernetes), it would not send traffic to your application, which, as a consequence, will never connect to Kafka and pass the readiness check.
+
+More details about health reporting is given in <<kafka-health-check>>.
+====
 
 == The HTML page
 
@@ -384,6 +397,7 @@ The `io.smallrye.reactive.messaging.annotations.Emitter`, `io.smallrye.reactive.
 The new `Emitter.send` method returns a `CompletionStage` completed when the produced message is acknowledged.
 ====
 
+[[kafka-health-check]]
 == Kafka Health Checks
 
 Quarkus provides several health checks for Kafka.

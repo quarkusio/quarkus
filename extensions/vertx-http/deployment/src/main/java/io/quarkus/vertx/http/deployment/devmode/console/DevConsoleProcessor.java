@@ -254,11 +254,11 @@ public class DevConsoleProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     public HistoryHandlerBuildItem handler(BuildProducer<LogHandlerBuildItem> logHandlerBuildItemBuildProducer,
-            LogStreamRecorder recorder) {
-        RuntimeValue<Optional<HistoryHandler>> handler = recorder.handler();
+            LogStreamRecorder recorder, DevUIConfig devUiConfig) {
+        RuntimeValue<Optional<HistoryHandler>> handler = recorder.handler(devUiConfig.historySize);
         logHandlerBuildItemBuildProducer.produce(new LogHandlerBuildItem((RuntimeValue) handler));
         return new HistoryHandlerBuildItem(handler);
     }

@@ -32,6 +32,7 @@ import io.dekorate.utils.Maps;
 import io.dekorate.utils.Strings;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -75,7 +76,7 @@ class KubernetesProcessor {
         return new EnabledKubernetesDeploymentTargetsBuildItem(entries);
     }
 
-    @BuildStep
+    @BuildStep(onlyIfNot = IsTest.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig,
@@ -92,9 +93,6 @@ class KubernetesProcessor {
 
         List<ConfiguratorBuildItem> allConfigurators = new ArrayList<>(configurators);
         List<DecoratorBuildItem> allDecorators = new ArrayList<>(decorators);
-        if (launchMode.getLaunchMode() == LaunchMode.TEST) {
-            return;
-        }
 
         if (kubernetesPorts.isEmpty()) {
             log.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");

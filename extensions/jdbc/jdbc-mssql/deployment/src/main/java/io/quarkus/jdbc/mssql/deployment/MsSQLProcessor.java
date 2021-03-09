@@ -5,6 +5,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -31,6 +32,11 @@ public class MsSQLProcessor {
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
         jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.MSSQL, "com.microsoft.sqlserver.jdbc.SQLServerDriver",
                 "com.microsoft.sqlserver.jdbc.SQLServerXADataSource"));
+    }
+
+    @BuildStep
+    DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.MSSQL);
     }
 
     @BuildStep

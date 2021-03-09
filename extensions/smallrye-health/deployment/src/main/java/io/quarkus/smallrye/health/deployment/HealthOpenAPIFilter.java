@@ -125,14 +125,15 @@ public class HealthOpenAPIFilter implements OASFilter {
 
     private APIResponses createAPIResponses() {
         APIResponses responses = new APIResponsesImpl();
-        responses.addAPIResponse("200", createAPIResponse());
-        responses.addAPIResponse("503", createAPIResponse());
-        responses.addAPIResponse("500", createAPIResponse());
+        responses.addAPIResponse("200", createAPIResponse("OK"));
+        responses.addAPIResponse("503", createAPIResponse("Service Unavailable"));
+        responses.addAPIResponse("500", createAPIResponse("Internal Server Error"));
         return responses;
     }
 
-    private APIResponse createAPIResponse() {
+    private APIResponse createAPIResponse(String description) {
         APIResponse response = new APIResponseImpl();
+        response.setDescription(description);
         response.setContent(createContent());
         return response;
     }

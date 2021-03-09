@@ -62,6 +62,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
@@ -117,6 +118,7 @@ public class KafkaProcessor {
     public void build(
             KafkaBuildTimeConfig config,
             CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ServiceProviderBuildItem> serviceProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
             Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> beans,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
@@ -172,7 +174,7 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.nio.DirectByteBuffer"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "sun.misc.Cleaner"));
 
-        handleAvro(reflectiveClass, proxies);
+        handleAvro(reflectiveClass, proxies, serviceProviders);
         handleOpenTracing(reflectiveClass, capabilities);
         handleStrimziOAuth(reflectiveClass);
         if (config.snappyEnabled) {
@@ -253,7 +255,8 @@ public class KafkaProcessor {
     }
 
     private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageProxyDefinitionBuildItem> proxies) {
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
+            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         // Avro - for both Confluent and Apicurio
         try {
             Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer", false,
@@ -292,6 +295,18 @@ public class KafkaProcessor {
             //ignore, Confluent Avro is not in the classpath
         }
 
+        try {
+            Class.forName("io.confluent.kafka.schemaregistry.client.security.basicauth.BasicAuthCredentialProvider", false,
+                    Thread.currentThread().getContextClassLoader());
+            serviceProviders
+                    .produce(new ServiceProviderBuildItem(
+                            "io.confluent.kafka.schemaregistry.client.security.basicauth.BasicAuthCredentialProvider",
+                            "io.confluent.kafka.schemaregistry.client.security.basicauth.SaslBasicAuthCredentialProvider",
+                            "io.confluent.kafka.schemaregistry.client.security.basicauth.UrlBasicAuthCredentialProvider",
+                            "io.confluent.kafka.schemaregistry.client.security.basicauth.UserInfoCredentialProvider"));
+        } catch (ClassNotFoundException e) {
+            // ignore, Confluent schema registry client not in the classpath
+        }
         try {
             Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer", false,
                     Thread.currentThread().getContextClassLoader());

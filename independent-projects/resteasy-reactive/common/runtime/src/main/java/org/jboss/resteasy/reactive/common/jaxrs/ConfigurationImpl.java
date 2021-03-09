@@ -221,7 +221,10 @@ public class ConfigurationImpl implements Configuration {
             return;
         }
         boolean added = false;
+        List<Class<?>> contractableClasses = new ArrayList<>();
         if (component instanceof Feature) {
+            contractableClasses.add(Feature.class);
+
             Feature thisFeature = (Feature) component;
             added = true;
             if (thisFeature.configure(new ConfigFeatureContext())) {
@@ -229,26 +232,36 @@ public class ConfigurationImpl implements Configuration {
             }
         }
         if (component instanceof ClientRequestFilter) {
+            contractableClasses.add(ClientRequestFilter.class);
+
             added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             requestFilters.add(effectivePriority, (ClientRequestFilter) component);
         }
         if (component instanceof ClientResponseFilter) {
+            contractableClasses.add(ClientRequestFilter.class);
+
             added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             responseFilters.add(effectivePriority, (ClientResponseFilter) component);
         }
         if (component instanceof WriterInterceptor) {
+            contractableClasses.add(WriterInterceptor.class);
+
             added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             writerInterceptors.add(effectivePriority, (WriterInterceptor) component);
         }
         if (component instanceof ReaderInterceptor) {
+            contractableClasses.add(ReaderInterceptor.class);
+
             added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             readerInterceptors.add(effectivePriority, (ReaderInterceptor) component);
         }
         if (component instanceof MessageBodyReader) {
+            contractableClasses.add(MessageBodyReader.class);
+
             added = true;
             Class<?> componentClass = component.getClass();
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
@@ -265,6 +278,8 @@ public class ConfigurationImpl implements Configuration {
             }
         }
         if (component instanceof MessageBodyWriter) {
+            contractableClasses.add(MessageBodyWriter.class);
+
             added = true;
             Class<?> componentClass = component.getClass();
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
@@ -289,6 +304,12 @@ public class ConfigurationImpl implements Configuration {
         }
         if (added) {
             allInstances.put(component.getClass(), component);
+
+            Map<Class<?>, Integer> contracts = new HashMap<>();
+            for (Class<?> contractableClass : contractableClasses) {
+                contracts.put(contractableClass, priority);
+            }
+            this.contracts.put(component.getClass(), contracts);
         }
     }
 

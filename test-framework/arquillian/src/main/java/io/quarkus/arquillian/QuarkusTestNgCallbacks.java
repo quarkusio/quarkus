@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.testng.annotations.AfterClass;
@@ -93,12 +92,30 @@ public class QuarkusTestNgCallbacks {
     }
 
     private static void collectCallbacks(Class<?> testClass, List<Method> callbacks, Class<? extends Annotation> annotation) {
-        Arrays.stream(testClass.getDeclaredMethods()).filter(m -> m.isAnnotationPresent(annotation)).forEach(callbacks::add);
+        for (Method m : testClass.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(annotation)) {
+                addIfNotPresent(callbacks, m);
+            }
+        }
         Class<?> superClass = testClass.getSuperclass();
         if (superClass != null && !superClass.equals(Object.class) &&
         // TestNG Arq. superclass uses lifecycle methods as well, we don't want to pick up those
                 !superClass.toString().contains(ARQ_TESTNG_SUPERCLASS)) {
             collectCallbacks(superClass, callbacks, annotation);
         }
+    }
+
+    private static boolean addIfNotPresent(List<Method> callbacks, Method candidateMethod) {
+        if (callbacks.isEmpty()) {
+            return callbacks.add(candidateMethod);
+        }
+        for (Method m : callbacks) {
+            // NOTE - this only checks method name and param count, not actual param values
+            if (m.getName().equals(candidateMethod.getName())
+                    && m.getParameterCount() == candidateMethod.getParameterCount()) {
+                return false;
+            }
+        }
+        return callbacks.add(candidateMethod);
     }
 }

@@ -376,7 +376,7 @@ public class WebTargetImpl implements WebTarget {
         return restClient.getClientContext().getClientProxies().get(clazz, this);
     }
 
-    ClientImpl getRestClient() {
+    public ClientImpl getRestClient() {
         return restClient;
     }
 

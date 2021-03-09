@@ -32,7 +32,7 @@ public class ResteasyReactiveClientRecorder extends ResteasyReactiveCommonRecord
     private static volatile Serialisers serialisers;
     private static volatile GenericTypeMapping genericTypeMapping;
 
-    private static volatile ClientProxies clientProxies = new ClientProxies(Collections.emptyMap());
+    private static volatile ClientProxies clientProxies = new ClientProxies(Collections.emptyMap(), Collections.emptyMap());
 
     public static ClientProxies getClientProxies() {
         return clientProxies;
@@ -46,8 +46,9 @@ public class ResteasyReactiveClientRecorder extends ResteasyReactiveCommonRecord
         return genericTypeMapping;
     }
 
-    public void setupClientProxies(Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {
-        clientProxies = createClientImpls(clientImplementations);
+    public void setupClientProxies(Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations,
+            Map<String, String> failures) {
+        clientProxies = createClientImpls(clientImplementations, failures);
     }
 
     public Serialisers createSerializers() {
@@ -57,12 +58,18 @@ public class ResteasyReactiveClientRecorder extends ResteasyReactiveCommonRecord
         return s;
     }
 
-    private ClientProxies createClientImpls(Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {
+    private ClientProxies createClientImpls(Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations,
+            Map<String, String> failureMessages) {
         Map<Class<?>, Function<WebTarget, ?>> map = new HashMap<>();
         for (Map.Entry<String, RuntimeValue<Function<WebTarget, ?>>> entry : clientImplementations.entrySet()) {
             map.put(loadClass(entry.getKey()), entry.getValue().getValue());
         }
-        return new ClientProxies(map);
+        Map<Class<?>, String> failures = new HashMap<>();
+        for (Map.Entry<String, String> entry : failureMessages.entrySet()) {
+            failures.put(loadClass(entry.getKey()), entry.getValue());
+        }
+
+        return new ClientProxies(map, failures);
     }
 
     public void setGenericTypeMapping(GenericTypeMapping typeMapping) {

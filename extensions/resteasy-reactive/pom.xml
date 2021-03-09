@@ -14,6 +14,7 @@
     <name>Quarkus - RESTEasy Reactive - Parent - Aggregator</name>
     <packaging>pom</packaging>
     <modules>
+        <module>rest-client-microprofile</module>
         <module>quarkus-resteasy-reactive-common</module>
         <module>quarkus-resteasy-reactive</module>
         <module>quarkus-jaxrs-client</module>

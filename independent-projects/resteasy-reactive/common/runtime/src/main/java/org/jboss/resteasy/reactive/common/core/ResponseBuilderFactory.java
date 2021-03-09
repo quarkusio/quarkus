@@ -6,4 +6,6 @@ public interface ResponseBuilderFactory {
 
     Response.ResponseBuilder create();
 
+    int priority();
+
 }

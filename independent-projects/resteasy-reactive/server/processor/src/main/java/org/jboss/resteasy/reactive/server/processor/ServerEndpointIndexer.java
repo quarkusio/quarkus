@@ -133,6 +133,15 @@ public class ServerEndpointIndexer
     }
 
     @Override
+    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i) {
+        ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
+        InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
+                actualEndpointInfo,
+                existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
+        return injectableBean.isFormParamRequired();
+    }
+
+    @Override
     protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
         method.setInvoker(endpointInvokerFactory.create(method, currentClassInfo, info));
         Set<String> methodAnnotationNames = new HashSet<>();

@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.READ_TIMEOUT;
+
 import io.vertx.core.http.HttpClient;
 import java.net.URI;
 import java.util.HashMap;
@@ -7,6 +9,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.CompletionStageRxInvoker;
@@ -26,6 +30,8 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public class InvocationBuilderImpl implements Invocation.Builder {
 
+    private static final long DEFAULT_READ_TIMEOUT = 30_000L;
+
     final URI uri;
     final HttpClient httpClient;
     final WebTargetImpl target;
@@ -35,6 +41,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     final ClientRestHandler[] handlerChain;
     final ClientRestHandler[] abortHandlerChain;
     final ThreadSetupAction requestContext;
+    final long readTimeoutMs;
 
     public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient,
             WebTargetImpl target,
@@ -48,6 +55,12 @@ public class InvocationBuilderImpl implements Invocation.Builder {
         this.handlerChain = handlerChain;
         this.abortHandlerChain = abortHandlerChain;
         this.requestContext = requestContext;
+        Object readTimeoutMs = configuration.getProperty(READ_TIMEOUT);
+        if (readTimeoutMs == null) {
+            this.readTimeoutMs = DEFAULT_READ_TIMEOUT;
+        } else {
+            this.readTimeoutMs = (long) readTimeoutMs;
+        }
     }
 
     @Override
@@ -181,9 +194,9 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     private <T> T unwrap(CompletableFuture<T> c) {
         try {
-            return c.get();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            return c.get(readTimeoutMs, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | TimeoutException e) {
+            throw new ProcessingException(e);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ProcessingException) {
                 throw (ProcessingException) e.getCause();
@@ -191,7 +204,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
             if (e.getCause() instanceof WebApplicationException) {
                 throw (WebApplicationException) e.getCause();
             }
-            throw new RuntimeException(e.getCause());
+            throw new ProcessingException(e.getCause().getMessage(), e.getCause());
         }
     }
 

@@ -143,6 +143,8 @@
         <module>reactive-messaging-kafka</module>
         <module>reactive-messaging-http</module>
         <module>rest-client</module>
+        <module>resteasy-reactive-rest-client</module>
+        <module>resteasy-reactive-rest-client-standalone</module>
         <module>packaging</module>
         <module>simple with space</module>
         <module>consul-config</module>

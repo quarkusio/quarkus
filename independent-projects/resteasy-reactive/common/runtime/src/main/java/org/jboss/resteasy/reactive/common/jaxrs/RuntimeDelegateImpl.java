@@ -30,18 +30,25 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
     static final ResponseBuilderFactory factory;
 
     static {
-        ResponseBuilderFactory resp = new ResponseBuilderFactory() {
+        ResponseBuilderFactory result = new ResponseBuilderFactory() {
             @Override
             public Response.ResponseBuilder create() {
                 throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+            }
+
+            @Override
+            public int priority() {
+                return 0;
             }
         };
         ServiceLoader<ResponseBuilderFactory> sl = ServiceLoader.load(ResponseBuilderFactory.class,
                 RuntimeDelegateImpl.class.getClassLoader());
         for (ResponseBuilderFactory i : sl) {
-            resp = i;
+            if (result.priority() < i.priority()) {
+                result = i;
+            }
         }
-        factory = resp;
+        factory = result;
     }
 
     @Override

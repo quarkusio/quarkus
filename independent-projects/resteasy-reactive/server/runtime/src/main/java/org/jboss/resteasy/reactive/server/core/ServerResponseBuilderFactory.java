@@ -9,4 +9,9 @@ public class ServerResponseBuilderFactory implements ResponseBuilderFactory {
     public Response.ResponseBuilder create() {
         return new ResponseBuilderImpl();
     }
+
+    @Override
+    public int priority() {
+        return 100;
+    }
 }

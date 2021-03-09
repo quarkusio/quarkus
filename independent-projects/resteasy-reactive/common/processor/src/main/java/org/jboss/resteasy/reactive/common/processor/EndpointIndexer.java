@@ -115,6 +115,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
+    public static final String CDI_WRAPPER_SUFFIX = "$$CDIWrapper";
 
     static {
         Map<String, String> prims = new HashMap<>();
@@ -155,14 +156,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected final IndexView index;
-    private final Map<String, String> existingConverters;
+    protected final Map<String, String> existingConverters;
+    protected final Map<String, InjectableBean> injectableBeans;
+    protected final boolean hasRuntimeConverters;
+
     private final Map<DotName, String> scannedResourcePaths;
     protected final ResteasyReactiveConfig config;
-    private final AdditionalReaders additionalReaders;
+    protected final AdditionalReaders additionalReaders;
     private final Map<DotName, String> httpAnnotationToMethod;
-    private final Map<String, InjectableBean> injectableBeans;
     private final AdditionalWriters additionalWriters;
-    private final boolean hasRuntimeConverters;
     private final boolean defaultBlocking;
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
@@ -241,6 +243,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
             Set<String> pathParameters) {
+
+        // $$CDIWrapper suffix is used to generate CDI beans from interfaces, we don't want to create endpoints for them:
+        if (currentClassInfo.name().toString().endsWith(CDI_WRAPPER_SUFFIX)) {
+            return Collections.emptyList();
+        }
+
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
@@ -271,7 +279,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             methodPath = "/" + methodPath;
                         }
                     } else {
-                        methodPath = "/";
+                        methodPath = "";
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, pathParameters,
@@ -299,6 +307,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (methodPath != null) {
                         if (!methodPath.startsWith("/")) {
                             methodPath = "/" + methodPath;
+                        }
+                        if (methodPath.endsWith("/")) {
+                            methodPath = methodPath.substring(0, methodPath.length() - 1);
                         }
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
@@ -418,14 +429,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
                 if (type == ParameterType.BEAN) {
                     // transform the bean param
-                    ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
-                    InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
-                            actualEndpointInfo,
-                            existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
-                    if (injectableBean.isFormParamRequired()) {
-                        formParamRequired = true;
-                    }
-                } else if ((type == ParameterType.FORM)) {
+                    formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i);
+                } else if (type == ParameterType.FORM) {
                     formParamRequired = true;
                 } else if (type == ParameterType.MULTI_PART_FORM) {
                     multipart = true;
@@ -520,6 +525,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return AsmUtil.getSignature(type, typeArgMapper);
     }
 
+    protected abstract boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,
+            int i);
+
     protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info) {
 
     }
@@ -538,13 +546,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
         if (produces != null && produces.length != 0)
             return produces;
-        // FIXME: primitives
-        if (STRING.equals(nonAsyncReturnType.name()))
-            return config.isSingleDefaultProduces() ? PRODUCES_PLAIN_TEXT : PRODUCES_PLAIN_TEXT_NEGOTIATED;
         return applyAdditionalDefaults(nonAsyncReturnType);
     }
 
     protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
+        // FIXME: primitives
+        if (STRING.equals(nonAsyncReturnType.name()))
+            return config.isSingleDefaultProduces() ? PRODUCES_PLAIN_TEXT : PRODUCES_PLAIN_TEXT_NEGOTIATED;
         return EMPTY_STRING_ARRAY;
     }
 

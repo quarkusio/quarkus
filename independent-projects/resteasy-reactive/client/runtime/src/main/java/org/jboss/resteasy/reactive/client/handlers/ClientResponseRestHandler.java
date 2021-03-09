@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 import javax.ws.rs.ProcessingException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
@@ -17,6 +18,7 @@ import org.jboss.resteasy.reactive.client.impl.ClientResponseContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 
 public class ClientResponseRestHandler implements ClientRestHandler {
     @Override
@@ -40,11 +42,19 @@ public class ClientResponseRestHandler implements ClientRestHandler {
             for (ClientResponseFilter filter : filters) {
                 try {
                     filter.filter(requestContext, responseContext);
+                } catch (WebApplicationException | ProcessingException x) {
+                    throw x;
                 } catch (Exception x) {
                     throw new ProcessingException(x);
                 }
             }
         }
+        ResponseImpl build = mapToResponse(context, responseContext);
+        context.getResult().complete(build);
+    }
+
+    public static ResponseImpl mapToResponse(RestClientRequestContext context, ClientResponseContextImpl responseContext)
+            throws IOException {
         ClientResponseBuilderImpl builder = new ClientResponseBuilderImpl();
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
@@ -64,7 +74,7 @@ public class ClientResponseRestHandler implements ClientRestHandler {
             // the users of the response are meant to use readEntity
             builder.entityStream(responseContext.getEntityStream());
         }
-        context.getResult().complete(builder.build());
+        return builder.build();
     }
 
     private void setExistingEntity(Response abortedWith, ClientResponseContextImpl responseContext,

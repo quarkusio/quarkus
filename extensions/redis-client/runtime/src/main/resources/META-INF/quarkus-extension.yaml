@@ -10,6 +10,6 @@ metadata:
     - "reactive"
   guide: "https://quarkus.io/guides/redis"
   categories:
-    - "persistence"
+    - "data"
     - "reactive"
   status: "preview"

@@ -28,7 +28,7 @@ public class ProjectPlatformDescriptorJsonUtil {
             throws AppModelResolverException {
         final List<JsonExtensionCatalog> platforms = new ArrayList<>(2);
         final Set<AppArtifactKey> processedPlatforms = new HashSet<>();
-        for (int i = depConstraints.size() - 1; i >= 0; --i) {
+        for (int i = 0; i < depConstraints.size(); ++i) {
             final AppArtifact artifact = depConstraints.get(i);
             if (!artifact.getArtifactId().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)
                     && !artifact.getType().equals("json")) {
@@ -69,7 +69,7 @@ public class ProjectPlatformDescriptorJsonUtil {
         catalog.setQuarkusCoreVersion(dominatingPlatform.getQuarkusCoreVersion());
         catalog.setUpstreamQuarkusCoreVersion(dominatingPlatform.getUpstreamQuarkusCoreVersion());
 
-        for (int i = platforms.size() - 1; i >= 0; --i) {
+        for (int i = 0; i < platforms.size(); ++i) {
             final JsonExtensionCatalog platform = platforms.get(i);
             if (platform.getBom() != null) {
                 catalog.setBom(platform.getBom());
@@ -86,19 +86,15 @@ public class ProjectPlatformDescriptorJsonUtil {
                 }
             }
 
-            if (platform.getCategories().isEmpty()) {
-                for (Category c : platform.getCategories()) {
-                    if (categoryIds.add(c.getId())) {
-                        categories.add(c);
-                    }
+            for (Category c : platform.getCategories()) {
+                if (categoryIds.add(c.getId())) {
+                    categories.add(c);
                 }
             }
 
-            if (!platform.getMetadata().isEmpty()) {
-                for (Map.Entry<String, Object> entry : platform.getMetadata().entrySet()) {
-                    if (!metadata.containsKey(entry.getKey())) {
-                        metadata.put(entry.getKey(), entry.getValue());
-                    }
+            for (Map.Entry<String, Object> entry : platform.getMetadata().entrySet()) {
+                if (!metadata.containsKey(entry.getKey())) {
+                    metadata.put(entry.getKey(), entry.getValue());
                 }
             }
         }

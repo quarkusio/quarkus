@@ -200,13 +200,13 @@ public class CounterBean {
 * Interceptors
 ** Business method interceptors: `@AroundInvoke`
 ** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
+* Decorators
 * Events and observer methods, including asynchronous events and transactional observer methods
 
 [[limitations]]
 == Limitations
 
 * `@ConversationScoped` is not supported
-* Decorators are not supported
 * Portable Extensions are not supported
 * `BeanManager` - only the following methods are implemented: `getBeans()`, `createCreationalContext()`, `getReference()`, `getInjectableReference()` , `resolve()`, `getContext()`, `fireEvent()`, `getEvent()` and `createInstance()`
 * Specialization is not supported

@@ -1,7 +1,7 @@
 package io.quarkus.arc;
 
 /**
- * A marker interface that represents an intercepted subclass.
+ * A marker interface that represents an intercepted/decorated subclass.
  *
  * @author Martin Kouba
  */

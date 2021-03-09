@@ -211,6 +211,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 beanAdder.addComponent(interceptor);
             }
         }
+        for (BeanInfo decorator : beanDeployment.getDecorators()) {
+            if (!processed.contains(decorator)) {
+                beanAdder.addComponent(decorator);
+            }
+        }
 
         // Make sure the last addBeans() method is closed properly
         beanAdder.close();
@@ -259,14 +264,27 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
                 beanToInjections.computeIfAbsent(interceptor, d -> new ArrayList<>()).add(bean);
             }
+            for (DecoratorInfo decorator : bean.getBoundDecorators()) {
+                beanToInjections.computeIfAbsent(decorator, d -> new ArrayList<>()).add(bean);
+            }
         }
-        // Also process interceptors injection points
+        // Also process interceptor and decorator injection points
         for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {
             for (Injection injection : interceptor.getInjections()) {
                 for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
                     if (!BuiltinBean.resolvesTo(injectionPoint)) {
                         beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), d -> new ArrayList<>())
                                 .add(interceptor);
+                    }
+                }
+            }
+        }
+        for (DecoratorInfo decorator : beanDeployment.getDecorators()) {
+            for (Injection injection : decorator.getInjections()) {
+                for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
+                    if (!injectionPoint.isDelegate() && !BuiltinBean.resolvesTo(injectionPoint)) {
+                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), d -> new ArrayList<>())
+                                .add(decorator);
                     }
                 }
             }
@@ -515,7 +533,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             }
 
             List<InjectionPointInfo> injectionPoints = bean.getInjections().stream().flatMap(i -> i.injectionPoints.stream())
-                    .filter(ip -> !BuiltinBean.resolvesTo(ip)).collect(toList());
+                    .filter(ip -> !ip.isDelegate() && !BuiltinBean.resolvesTo(ip)).collect(toList());
             List<ResultHandle> params = new ArrayList<>();
             List<String> paramTypes = new ArrayList<>();
 
@@ -561,6 +579,18 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     params.add(addMethod.newInstance(
                             MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
                             beanIdToBeanHandle, addMethod.load(interceptor.getIdentifier())));
+                }
+                paramTypes.add(Type.getDescriptor(Supplier.class));
+            }
+            for (DecoratorInfo decorator : bean.getBoundDecorators()) {
+                if (processedBeans.contains(decorator)) {
+                    params.add(addMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                            beanIdToBeanHandle, addMethod.load(decorator.getIdentifier())));
+                } else {
+                    // Bound decorator was not processed yet - use MapValueSupplier
+                    params.add(addMethod.newInstance(
+                            MethodDescriptors.MAP_VALUE_SUPPLIER_CONSTRUCTOR,
+                            beanIdToBeanHandle, addMethod.load(decorator.getIdentifier())));
                 }
                 paramTypes.add(Type.getDescriptor(Supplier.class));
             }

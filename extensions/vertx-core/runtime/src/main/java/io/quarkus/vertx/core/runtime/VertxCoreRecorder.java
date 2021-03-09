@@ -67,7 +67,7 @@ public class VertxCoreRecorder {
     public Supplier<Vertx> configureVertx(VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers) {
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            vertx = new VertxSupplier(config, customizers);
+            vertx = new VertxSupplier(config, customizers, shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
             shutdown.addLastShutdownTask(new Runnable() {
@@ -78,7 +78,7 @@ public class VertxCoreRecorder {
             });
         } else {
             if (vertx == null) {
-                vertx = new VertxSupplier(config, customizers);
+                vertx = new VertxSupplier(config, customizers, shutdown);
             } else if (vertx.v != null) {
                 tryCleanTccl(vertx.v);
             }
@@ -174,12 +174,12 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer) {
+    public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer, ShutdownContext shutdown) {
 
         VertxOptions options = new VertxOptions();
 
         if (conf != null) {
-            convertToVertxOptions(conf, options, true);
+            convertToVertxOptions(conf, options, true, shutdown);
         }
 
         // Allow extension customizers to do their thing
@@ -190,11 +190,14 @@ public class VertxCoreRecorder {
         Vertx vertx;
         if (options.getEventBusOptions().isClustered()) {
             CompletableFuture<Vertx> latch = new CompletableFuture<>();
-            Vertx.clusteredVertx(options, ar -> {
-                if (ar.failed()) {
-                    latch.completeExceptionally(ar.cause());
-                } else {
-                    latch.complete(ar.result());
+            Vertx.clusteredVertx(options, new Handler<AsyncResult<Vertx>>() {
+                @Override
+                public void handle(AsyncResult<Vertx> ar) {
+                    if (ar.failed()) {
+                        latch.completeExceptionally(ar.cause());
+                    } else {
+                        latch.complete(ar.result());
+                    }
                 }
             });
             vertx = latch.join();
@@ -215,7 +218,8 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options, boolean allowClustering) {
+    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options, boolean allowClustering,
+            ShutdownContext shutdown) {
 
         if (!conf.useAsyncDNS) {
             System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
@@ -246,6 +250,17 @@ public class VertxCoreRecorder {
             File cache = new File(tmp, Long.toString(random));
             LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
             fileCacheDir = cache.getAbsolutePath();
+            if (shutdown != null) {
+                shutdown.addLastShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Recursively delete the created directory and all the files
+                        deleteDirectory(cache);
+                        // We do not delete the vertx-cache directory on purpose, as it could be used concurrently by
+                        // another application. In the worse case, it's just an empty directory.
+                    }
+                });
+            }
         }
 
         options.setFileSystemOptions(new FileSystemOptions()
@@ -295,11 +310,14 @@ public class VertxCoreRecorder {
             FastThreadLocal.destroy();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
-            vertx.v.close(ar -> {
-                if (ar.failed()) {
-                    problem.set(ar.cause());
+            vertx.v.close(new Handler<AsyncResult<Void>>() {
+                @Override
+                public void handle(AsyncResult<Void> ar) {
+                    if (ar.failed()) {
+                        problem.set(ar.cause());
+                    }
+                    latch.countDown();
                 }
-                latch.countDown();
             });
             try {
                 latch.await();
@@ -411,24 +429,27 @@ public class VertxCoreRecorder {
     }
 
     public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config) {
-        return vertx = new VertxSupplier(config, Collections.emptyList());
+        return vertx = new VertxSupplier(config, Collections.emptyList(), null);
 
     }
 
     static class VertxSupplier implements Supplier<Vertx> {
         final VertxConfiguration config;
         final VertxOptionsCustomizer customizer;
+        final ShutdownContext shutdown;
         Vertx v;
 
-        VertxSupplier(VertxConfiguration config, List<Consumer<VertxOptions>> customizers) {
+        VertxSupplier(VertxConfiguration config, List<Consumer<VertxOptions>> customizers,
+                ShutdownContext shutdown) {
             this.config = config;
             this.customizer = new VertxOptionsCustomizer(customizers);
+            this.shutdown = shutdown;
         }
 
         @Override
         public synchronized Vertx get() {
             if (v == null) {
-                v = initialize(config, customizer);
+                v = initialize(config, customizer, shutdown);
             }
             return v;
         }
@@ -451,5 +472,15 @@ public class VertxCoreRecorder {
 
     public static void setWebDeploymentId(String webDeploymentId) {
         VertxCoreRecorder.webDeploymentId = webDeploymentId;
+    }
+
+    private static void deleteDirectory(File directory) {
+        File[] children = directory.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                deleteDirectory(child);
+            }
+        }
+        directory.delete();
     }
 }

@@ -2,6 +2,7 @@ package io.quarkus.it.smallrye.graphql;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -36,6 +37,13 @@ public class GreetingResource {
     public List<Greeting> buildInOptions(@Source Greeting greeting) {
         List<Greeting> options = new ArrayList<>();
         options.add(new Hello());
+        return options;
+    }
+
+    @Name("options2")
+    // make sure that returning Collection.class does not break native mode
+    public Collection<Greeting> buildInOptionsCollection(@Source Greeting greeting) {
+        List<Greeting> options = new ArrayList<>();
         options.add(new Morning());
         return options;
     }

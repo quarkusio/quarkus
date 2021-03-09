@@ -67,7 +67,8 @@ import io.vertx.ext.web.RoutingContext;
  *  </code>
  * </pre>
  * 
- * If the annotated method returns {@code void} then it has to accept at least one argument.
+ * If the annotated method returns {@code void} then it has to accept at least one argument that makes it possible to end the
+ * response, for example {@link RoutingContext}.
  * If the annotated method does not return {@code void} then the arguments are optional.
  * <p>
  * If both {@link #path()} and {@link #regex()} are set the regular expression is used for matching.

@@ -477,6 +477,7 @@ class VertxWebProcessor {
                                 "Route business method returning a Uni/Multi must have a generic parameter [method: %s, bean: %s]",
                                 method, bean));
             }
+            boolean canEndResponse = false;
             int idx = 0;
             int failureParams = 0;
             for (Type paramType : params) {
@@ -507,10 +508,20 @@ class VertxWebProcessor {
                 // A param injector may validate the parameter annotations
                 injector.validate(bean, method, routeAnnotation, paramType, paramAnnotations);
 
+                if (injector.canEndResponse) {
+                    canEndResponse = true;
+                }
+
                 if (Route.HandlerType.FAILURE == handlerType && isThrowable(paramType, index)) {
                     failureParams++;
                 }
                 idx++;
+            }
+
+            if (method.returnType().kind() == Kind.VOID && !canEndResponse) {
+                throw new IllegalStateException(String.format(
+                        "Route method that returns void must accept at least one parameter that can end the response [method: %s, bean: %s]",
+                        method, bean));
             }
 
             if (failureParams > 1) {
@@ -1131,17 +1142,18 @@ class VertxWebProcessor {
     static List<ParameterInjector> initParamInjectors() {
         List<ParameterInjector> injectors = new ArrayList<>();
 
-        injectors.add(ParameterInjector.builder().matchType(io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT)
-                .resultHandleProvider(new ResultHandleProvider() {
-                    @Override
-                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext, MethodCreator invoke, int position,
-                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                        return routingContext;
-                    }
-                }).build());
+        injectors.add(
+                ParameterInjector.builder().canEndResponse().matchType(io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT)
+                        .resultHandleProvider(new ResultHandleProvider() {
+                            @Override
+                            public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                                    ResultHandle routingContext, MethodCreator invoke, int position,
+                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                                return routingContext;
+                            }
+                        }).build());
 
-        injectors.add(ParameterInjector.builder().matchType(DotNames.ROUTING_EXCHANGE)
+        injectors.add(ParameterInjector.builder().canEndResponse().matchType(DotNames.ROUTING_EXCHANGE)
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
@@ -1154,7 +1166,7 @@ class VertxWebProcessor {
                     }
                 }).build());
 
-        injectors.add(ParameterInjector.builder().matchType(DotNames.HTTP_SERVER_REQUEST)
+        injectors.add(ParameterInjector.builder().canEndResponse().matchType(DotNames.HTTP_SERVER_REQUEST)
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
@@ -1166,7 +1178,7 @@ class VertxWebProcessor {
                     }
                 }).build());
 
-        injectors.add(ParameterInjector.builder().matchType(DotNames.HTTP_SERVER_RESPONSE)
+        injectors.add(ParameterInjector.builder().canEndResponse().matchType(DotNames.HTTP_SERVER_RESPONSE)
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
@@ -1178,7 +1190,7 @@ class VertxWebProcessor {
                     }
                 }).build());
 
-        injectors.add(ParameterInjector.builder().matchType(DotNames.MUTINY_HTTP_SERVER_REQUEST)
+        injectors.add(ParameterInjector.builder().canEndResponse().matchType(DotNames.MUTINY_HTTP_SERVER_REQUEST)
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
@@ -1195,7 +1207,7 @@ class VertxWebProcessor {
                 }).build());
 
         injectors
-                .add(ParameterInjector.builder().matchType(DotNames.MUTINY_HTTP_SERVER_RESPONSE)
+                .add(ParameterInjector.builder().canEndResponse().matchType(DotNames.MUTINY_HTTP_SERVER_RESPONSE)
                         .resultHandleProvider(new ResultHandleProvider() {
                             @Override
                             public ResultHandle get(MethodInfo method, Type paramType,
@@ -1429,6 +1441,7 @@ class VertxWebProcessor {
         final ResultHandleProvider provider;
         final Route.HandlerType targetHandlerType;
         final ParamValidator validator;
+        final boolean canEndResponse;
 
         ParameterInjector(ParameterInjector.Builder builder) {
             if (builder.predicate != null) {
@@ -1494,6 +1507,7 @@ class VertxWebProcessor {
             this.provider = builder.provider;
             this.targetHandlerType = builder.targetHandlerType;
             this.validator = builder.validator;
+            this.canEndResponse = builder.canEndResponse;
         }
 
         boolean matches(Type paramType, Set<AnnotationInstance> paramAnnotations, IndexView index) {
@@ -1527,6 +1541,7 @@ class VertxWebProcessor {
             ResultHandleProvider provider;
             Route.HandlerType targetHandlerType;
             ParamValidator validator;
+            boolean canEndResponse;
 
             Builder matchType(DotName className) {
                 return matchType(Type.create(className, Kind.CLASS));
@@ -1606,6 +1621,11 @@ class VertxWebProcessor {
 
             Builder validate(ParamValidator validator) {
                 this.validator = validator;
+                return this;
+            }
+
+            Builder canEndResponse() {
+                this.canEndResponse = true;
                 return this;
             }
 

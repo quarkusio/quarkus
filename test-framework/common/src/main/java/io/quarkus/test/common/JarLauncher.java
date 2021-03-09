@@ -1,10 +1,11 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.installAndGetSomeConfig;
+import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
+import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,10 +27,12 @@ public class JarLauncher implements ArtifactLauncher {
     private final Path jarPath;
     private final String profile;
     private Process quarkusProcess;
-    private int port;
+    private final int httpPort;
     private final int httpsPort;
     private final long jarWaitTime;
     private final Map<String, String> systemProps = new HashMap<>();
+
+    private boolean isSsl;
 
     private JarLauncher(Path jarPath, Config config) {
         this(jarPath,
@@ -44,9 +47,9 @@ public class JarLauncher implements ArtifactLauncher {
         this(jarPath, installAndGetSomeConfig());
     }
 
-    public JarLauncher(Path jarPath, int port, int httpsPort, long jarWaitTime, String profile) {
+    public JarLauncher(Path jarPath, int httpPort, int httpsPort, long jarWaitTime, String profile) {
         this.jarPath = jarPath;
-        this.port = port;
+        this.httpPort = httpPort;
         this.httpsPort = httpsPort;
         this.jarWaitTime = jarWaitTime;
         this.profile = profile;
@@ -58,12 +61,14 @@ public class JarLauncher implements ArtifactLauncher {
 
         List<String> args = new ArrayList<>();
         args.add("java");
-        args.add("-Dquarkus.http.port=" + port);
+        args.add("-Dquarkus.http.port=" + httpPort);
         args.add("-Dquarkus.http.ssl-port=" + httpsPort);
         // this won't be correct when using the random port but it's really only used by us for the rest client tests
         // in the main module, since those tests hit the application itself
         args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
-        args.add("-Dquarkus.log.file.path=" + PropertyTestUtil.getLogFileLocation());
+        Path logFile = PropertyTestUtil.getLogFilePath();
+        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
+        args.add("-Dquarkus.log.file.enable=true");
         if (profile != null) {
             args.add("-Dquarkus.profile=" + profile);
         }
@@ -75,17 +80,15 @@ public class JarLauncher implements ArtifactLauncher {
 
         System.out.println("Executing " + args);
 
-        quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[0]));
-        port = LauncherUtil.doStart(quarkusProcess, port, httpsPort, jarWaitTime, null);
+        Files.deleteIfExists(logFile);
+        quarkusProcess = LauncherUtil.launchProcess(args);
+        ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, jarWaitTime);
+        updateConfigForPort(result.getPort());
+        isSsl = result.isSsl();
     }
 
-    public boolean isDefaultSsl() {
-        try (Socket s = new Socket()) {
-            s.connect(new InetSocketAddress("localhost", port));
-            return false;
-        } catch (IOException e) {
-            return true;
-        }
+    public boolean listensOnSsl() {
+        return isSsl;
     }
 
     public void addSystemProperties(Map<String, String> systemProps) {

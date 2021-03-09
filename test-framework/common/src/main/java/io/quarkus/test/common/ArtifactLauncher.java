@@ -10,5 +10,5 @@ public interface ArtifactLauncher extends Closeable {
 
     void addSystemProperties(Map<String, String> systemProps);
 
-    boolean isDefaultSsl();
+    boolean listensOnSsl();
 }

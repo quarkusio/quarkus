@@ -1,8 +1,19 @@
 package io.quarkus.test.common;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.util.function.Supplier;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -31,75 +42,167 @@ final class LauncherUtil {
         return config;
     }
 
-    static int doStart(Process quarkusProcess, int httpPort, int httpsPort, long waitTime, Supplier<Boolean> startedSupplier) {
-        PortCapturingProcessReader portCapturingProcessReader = null;
-        if (httpPort == 0) {
-            // when the port is 0, then the application starts on a random port and the only way for us to figure it out
-            // is to capture the output
-            portCapturingProcessReader = new PortCapturingProcessReader(quarkusProcess.getInputStream());
-        }
-        new Thread(portCapturingProcessReader != null ? portCapturingProcessReader
-                : new ProcessReader(quarkusProcess.getInputStream())).start();
-        new Thread(new ProcessReader(quarkusProcess.getErrorStream())).start();
+    /**
+     * Launches a process using the supplied arguments and makes sure the process's output is drained to standard out
+     */
+    static Process launchProcess(List<String> args) throws IOException {
+        Process process = Runtime.getRuntime().exec(args.toArray(new String[0]));
+        new Thread(new ProcessReader(process.getInputStream())).start();
+        new Thread(new ProcessReader(process.getErrorStream())).start();
+        return process;
+    }
 
-        if (portCapturingProcessReader != null) {
-            try {
-                portCapturingProcessReader.awaitForPort();
-            } catch (InterruptedException ignored) {
-
+    /**
+     * Waits (for a maximum of {@param waitTimeSeconds} seconds) until the launched process indicates the address it is
+     * listening on.
+     * If the wait time is exceeded an {@code IllegalStateException} is thrown.
+     */
+    static ListeningAddress waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
+        CountDownLatch signal = new CountDownLatch(1);
+        AtomicReference<ListeningAddress> resultReference = new AtomicReference<>();
+        CaptureListeningDataReader captureListeningDataReader = new CaptureListeningDataReader(logFile,
+                Duration.ofSeconds(waitTimeSeconds), signal, resultReference);
+        new Thread(captureListeningDataReader, "capture-listening-data").start();
+        try {
+            signal.await(10, TimeUnit.SECONDS);
+            ListeningAddress result = resultReference.get();
+            if (result != null) {
+                return result;
             }
-            if (portCapturingProcessReader.getPort() == null) {
-                quarkusProcess.destroy();
-                throw new RuntimeException("Unable to determine actual running port as dynamic port was used");
-            }
-
-            waitForQuarkus(quarkusProcess, portCapturingProcessReader.getPort(), httpsPort, waitTime, startedSupplier);
-
-            System.setProperty("quarkus.http.port", portCapturingProcessReader.getPort().toString()); //set the port as a system property in order to have it applied to Config
-            System.setProperty("quarkus.http.test-port", portCapturingProcessReader.getPort().toString()); // needed for RestAssuredManager
-            int capturedPort = portCapturingProcessReader.getPort();
-            installAndGetSomeConfig(); // reinitialize the configuration to make sure the actual port is used
-            System.setProperty("test.url", TestHTTPResourceManager.getUri());
-            return capturedPort;
-        } else {
-            waitForQuarkus(quarkusProcess, httpPort, httpsPort, waitTime, startedSupplier);
-            return httpPort;
+            quarkusProcess.destroyForcibly();
+            throw new IllegalStateException(
+                    "Unable to determine the status of the running process. See the above logs for details");
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while waiting to capture listening process port and protocol");
         }
     }
 
-    private static void waitForQuarkus(Process quarkusProcess, int httpPort, int httpsPort, long waitTime,
-            Supplier<Boolean> startedSupplier) {
-        long bailout = System.currentTimeMillis() + waitTime * 1000;
+    /**
+     * Updates the configuration necessary to make all test systems knowledgeable about the port on which the launched
+     * process is listening
+     */
+    static void updateConfigForPort(Integer effectivePort) {
+        System.setProperty("quarkus.http.port", effectivePort.toString()); //set the port as a system property in order to have it applied to Config
+        System.setProperty("quarkus.http.test-port", effectivePort.toString()); // needed for RestAssuredManager
+        installAndGetSomeConfig(); // reinitialize the configuration to make sure the actual port is used
+        System.setProperty("test.url", TestHTTPResourceManager.getUri());
+    }
 
-        while (System.currentTimeMillis() < bailout) {
-            if (!quarkusProcess.isAlive()) {
-                throw new RuntimeException("Failed to start target quarkus application, process has exited");
+    /**
+     * Thread that reads a process output file looking for the line that indicates the address the application
+     * is listening on.
+     */
+    private static class CaptureListeningDataReader implements Runnable {
+
+        private final Path processOutput;
+        private final Duration waitTime;
+        private final CountDownLatch signal;
+        private final AtomicReference<ListeningAddress> resultReference;
+        private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://\\S*:(\\d+)");
+
+        public CaptureListeningDataReader(Path processOutput, Duration waitTime, CountDownLatch signal,
+                AtomicReference<ListeningAddress> resultReference) {
+            this.processOutput = processOutput;
+            this.waitTime = waitTime;
+            this.signal = signal;
+            this.resultReference = resultReference;
+        }
+
+        @Override
+        public void run() {
+            if (!ensureProcessOutputFileExists()) {
+                return;
             }
-            try {
-                Thread.sleep(100);
-                if (startedSupplier != null) {
-                    if (startedSupplier.get()) {
-                        return;
+
+            long bailoutTime = System.currentTimeMillis() + waitTime.toMillis();
+            try (BufferedReader reader = new BufferedReader(new FileReader(processOutput.toFile()))) {
+                while (true) {
+                    if (reader.ready()) { // avoid blocking as the input is a file which continually gets more data added
+                        String line = reader.readLine();
+                        Matcher regexMatcher = listeningRegex.matcher(line);
+                        if (regexMatcher.find()) {
+                            dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)));
+                            return;
+                        } else {
+                            if (line.contains("Failed to start application (with profile")) {
+                                unableToDetermineData("Application was not started: " + line);
+                                return;
+                            }
+                        }
+                    } else {
+                        //wait until there is more of the file for us to read
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            unableToDetermineData(
+                                    "Thread interrupted while waiting for more data to become available in proccess output file: "
+                                            + processOutput.toAbsolutePath().toString());
+                            return;
+                        }
+                        if (System.currentTimeMillis() > bailoutTime) {
+                            unableToDetermineData("Waited " + waitTime.getSeconds() + "seconds for " + processOutput
+                                    + " to contain info about the listening port and protocol but no such info was found");
+                            return;
+                        }
                     }
                 }
-                try {
-                    try (Socket s = new Socket()) {
-                        s.connect(new InetSocketAddress("localhost", httpPort));
-                        //SSL is bound after https
-                        //we add a small delay to make sure SSL is available if installed
-                        Thread.sleep(100);
-                        return;
-                    }
-                } catch (Exception expected) {
-                }
-                try (Socket s = new Socket()) {
-                    s.connect(new InetSocketAddress("localhost", httpsPort));
-                    return;
-                }
-            } catch (Exception expected) {
+            } catch (Exception e) {
+                unableToDetermineData("Exception occurred while reading process output from file " + processOutput);
+                e.printStackTrace();
             }
         }
-        quarkusProcess.destroyForcibly();
-        throw new RuntimeException("Unable to start target quarkus application " + waitTime + "s");
+
+        private boolean ensureProcessOutputFileExists() {
+            int i = 0;
+            while (i++ < 25) {
+                if (Files.exists(processOutput)) {
+                    return true;
+                } else {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        unableToDetermineData("Thread interrupted while waiting for process output file to be created");
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private void dataDetermined(String protocolValue, Integer portValue) {
+            this.resultReference.set(new ListeningAddress(portValue, protocolValue));
+            signal.countDown();
+        }
+
+        private void unableToDetermineData(String errorMessage) {
+            System.err.println(errorMessage);
+            this.resultReference.set(null);
+            signal.countDown();
+        }
+    }
+
+    /**
+     * Used to drain the input of a launched process
+     */
+    private static class ProcessReader implements Runnable {
+
+        private final InputStream inputStream;
+
+        private ProcessReader(InputStream inputStream) {
+            this.inputStream = inputStream;
+        }
+
+        @Override
+        public void run() {
+            byte[] b = new byte[100];
+            int i;
+            try {
+                while ((i = inputStream.read(b)) > 0) {
+                    System.out.print(new String(b, 0, i, StandardCharsets.UTF_8));
+                }
+            } catch (IOException e) {
+                //ignore
+            }
+        }
     }
 }

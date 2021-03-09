@@ -32,7 +32,6 @@ import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DockerContainerLauncher;
 import io.quarkus.test.common.JarLauncher;
 import io.quarkus.test.common.NativeImageLauncher;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
@@ -98,7 +97,6 @@ public class QuarkusIntegrationTestExtension
                     }
                 }
             }
-            PropertyTestUtil.setLogFileProperty();
             try {
                 state = doProcessStart(quarkusArtifactProperties, selectedProfile, extensionContext);
                 store.put(IntegrationTestExtensionState.class.getName(), state);

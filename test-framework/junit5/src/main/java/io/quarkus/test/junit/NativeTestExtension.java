@@ -23,7 +23,6 @@ import org.opentest4j.TestAbortedException;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.NativeImageLauncher;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
@@ -89,7 +88,6 @@ public class NativeTestExtension
                     }
                 }
             }
-            PropertyTestUtil.setLogFileProperty();
             try {
                 state = doNativeStart(extensionContext, selectedProfile);
                 store.put(IntegrationTestExtensionState.class.getName(), state);

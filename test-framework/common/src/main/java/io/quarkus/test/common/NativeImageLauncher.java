@@ -1,13 +1,15 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.installAndGetSomeConfig;
+import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
+import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,11 +36,13 @@ public class NativeImageLauncher implements ArtifactLauncher {
     private final Class<?> testClass;
     private final String profile;
     private Process quarkusProcess;
-    private int port;
+    private final int httpPort;
     private final int httpsPort;
-    private final long imageWaitTime;
+    private final long waitTimeSeconds;
     private final Map<String, String> systemProps = new HashMap<>();
-    private final Supplier<Boolean> startedSupplier;
+    private Supplier<Boolean> startedSupplier = null;
+
+    private boolean isSsl;
 
     private NativeImageLauncher(Class<?> testClass, Config config) {
         this(testClass,
@@ -54,24 +58,27 @@ public class NativeImageLauncher implements ArtifactLauncher {
         this(testClass, installAndGetSomeConfig());
     }
 
-    public NativeImageLauncher(Class<?> testClass, int port, int httpsPort, long imageWaitTime, String profile) {
+    public NativeImageLauncher(Class<?> testClass, int httpPort, int httpsPort, long waitTimeSeconds, String profile) {
         this.testClass = testClass;
-        this.port = port;
+        this.httpPort = httpPort;
         this.httpsPort = httpsPort;
-        this.imageWaitTime = imageWaitTime;
+        this.waitTimeSeconds = waitTimeSeconds;
         List<NativeImageStartedNotifier> startedNotifiers = new ArrayList<>();
         for (NativeImageStartedNotifier i : ServiceLoader.load(NativeImageStartedNotifier.class)) {
             startedNotifiers.add(i);
         }
         this.profile = profile;
-        this.startedSupplier = () -> {
-            for (NativeImageStartedNotifier i : startedNotifiers) {
-                if (i.isNativeImageStarted()) {
-                    return true;
+        if (!startedNotifiers.isEmpty()) {
+            this.startedSupplier = () -> {
+                for (NativeImageStartedNotifier i : startedNotifiers) {
+                    if (i.isNativeImageStarted()) {
+                        return true;
+                    }
                 }
-            }
-            return false;
-        };
+                return false;
+            };
+        }
+
     }
 
     public void start() throws IOException {
@@ -83,12 +90,14 @@ public class NativeImageLauncher implements ArtifactLauncher {
         }
         List<String> args = new ArrayList<>();
         args.add(path);
-        args.add("-Dquarkus.http.port=" + port);
+        args.add("-Dquarkus.http.port=" + httpPort);
         args.add("-Dquarkus.http.ssl-port=" + httpsPort);
         // this won't be correct when using the random port but it's really only used by us for the rest client tests
         // in the main module, since those tests hit the application itself
         args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
-        args.add("-Dquarkus.log.file.path=" + PropertyTestUtil.getLogFileLocation());
+        Path logFile = PropertyTestUtil.getLogFilePath();
+        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
+        args.add("-Dquarkus.log.file.enable=true");
         if (profile != null) {
             args.add("-Dquarkus.profile=" + profile);
         }
@@ -98,8 +107,40 @@ public class NativeImageLauncher implements ArtifactLauncher {
 
         System.out.println("Executing " + args);
 
-        quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[0]));
-        port = LauncherUtil.doStart(quarkusProcess, port, httpsPort, imageWaitTime, startedSupplier);
+        Files.deleteIfExists(logFile);
+        quarkusProcess = LauncherUtil.launchProcess(args);
+
+        if (startedSupplier != null) {
+            waitForStartedSupplier(quarkusProcess, startedSupplier, waitTimeSeconds);
+        } else {
+            ListeningAddress result = waitForCapturedListeningData(quarkusProcess, logFile, waitTimeSeconds);
+            updateConfigForPort(result.getPort());
+            isSsl = result.isSsl();
+        }
+    }
+
+    private void waitForStartedSupplier(Process quarkusProcess, Supplier<Boolean> startedSupplier, long waitTime) {
+        long bailout = System.currentTimeMillis() + waitTime * 1000;
+        boolean started = false;
+        while (System.currentTimeMillis() < bailout) {
+            if (!quarkusProcess.isAlive()) {
+                throw new RuntimeException("Failed to start target quarkus application, process has exited");
+            }
+            try {
+                Thread.sleep(100);
+                if (startedSupplier.get()) {
+                    isSsl = false;
+                    started = true;
+                    break;
+                }
+            } catch (Exception ignored) {
+
+            }
+        }
+        if (!started) {
+            quarkusProcess.destroyForcibly();
+            throw new RuntimeException("Unable to start target quarkus application " + this.waitTimeSeconds + "s");
+        }
     }
 
     private static String guessPath(Class<?> testClass) {
@@ -185,13 +226,8 @@ public class NativeImageLauncher implements ArtifactLauncher {
         System.err.println("======================================================================================");
     }
 
-    public boolean isDefaultSsl() {
-        try (Socket s = new Socket()) {
-            s.connect(new InetSocketAddress("localhost", port));
-            return false;
-        } catch (IOException e) {
-            return true;
-        }
+    public boolean listensOnSsl() {
+        return isSsl;
     }
 
     public void addSystemProperties(Map<String, String> systemProps) {

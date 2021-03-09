@@ -55,7 +55,7 @@ Please note that no additional task/goal is required for the Gradle plugin.
 With this configuration, you can put your service and message definitions in the `src/main/proto` directory.
 `quarkus-maven-plugin` will generate Java files from your `proto` files.
 
-`quarkus-maven-plugin` retrieves a version of `protoc` (the protobuf compiler) from Maven repositories. The retrieved version matches your operating system and CPU architecture.```
+`quarkus-maven-plugin` retrieves a version of `protoc` (the protobuf compiler) from Maven repositories. The retrieved version matches your operating system and CPU architecture.
 If this retrieved version does not work in your context, you can download the suitable binary and specify the location via
 `-Dquarkus.grpc.protoc-path=/path/to/protoc`.
 
@@ -64,7 +64,7 @@ Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, y
 Let's start with a simple _Hello_ service.
 Create the `src/main/proto/helloworld.proto` file with the following content:
 
-[source]
+[source,javascript]
 ----
 syntax = "proto3";
 
@@ -278,7 +278,7 @@ public class ExampleResource {
 We need to configure the application to indicate where the `hello` service is found.
 In the `src/main/resources/application.properties` file, add the following property:
 
-[source,text]
+[source,properties]
 ----
 quarkus.grpc.clients.hello.host=localhost
 ----

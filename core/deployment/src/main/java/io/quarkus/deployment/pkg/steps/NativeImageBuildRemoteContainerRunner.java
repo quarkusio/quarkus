@@ -14,12 +14,12 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
 
     private static final Logger log = Logger.getLogger(NativeImageBuildRemoteContainerRunner.class);
 
-    private final String nativeImageName;
+    private final String resultingExecutableName;
     private String containerId;
 
-    public NativeImageBuildRemoteContainerRunner(NativeConfig nativeConfig, Path outputDir, String nativeImageName) {
+    public NativeImageBuildRemoteContainerRunner(NativeConfig nativeConfig, Path outputDir, String resultingExecutableName) {
         super(nativeConfig, outputDir);
-        this.nativeImageName = nativeImageName;
+        this.resultingExecutableName = resultingExecutableName;
     }
 
     @Override
@@ -47,7 +47,7 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
 
     @Override
     protected void postBuild() throws InterruptedException, IOException {
-        copyFromBuilder(nativeImageName, "Failed to copy native image from container back to the host.");
+        copyFromBuilder(resultingExecutableName, "Failed to copy native executable from container back to the host.");
         if (nativeConfig.debug.enabled) {
             copyFromBuilder("sources", "Failed to copy sources from container back to the host.");
         }

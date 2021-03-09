@@ -89,7 +89,7 @@ public class NativeImageBuildStep {
 
         Path runnerJar = outputDir.resolve(nativeImageSourceJarBuildItem.getPath().getFileName());
 
-        String nativeImageName = getResultingBinaryName(outputTargetBuildItem, packageConfig, isContainerBuild(nativeConfig));
+        String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
 
         NativeImageInvokerInfo nativeImageArgs = new NativeImageInvokerInfo.Builder()
                 .setNativeConfig(nativeConfig)
@@ -98,7 +98,7 @@ public class NativeImageBuildStep {
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
-                .setResultingBinaryName(nativeImageName)
+                .setNativeImageName(nativeImageName)
                 .setContainerBuild(nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
@@ -144,9 +144,10 @@ public class NativeImageBuildStep {
             noPIE = detectNoPIE();
         }
 
-        String nativeImageName = getResultingBinaryName(outputTargetBuildItem, packageConfig, isContainerBuild);
+        String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
+        String resultingExecutableName = getResultingExecutableName(nativeImageName, isContainerBuild);
 
-        NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir, nativeImageName);
+        NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir, resultingExecutableName);
         buildRunner.setup(processInheritIODisabled.isPresent());
         final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
 
@@ -167,7 +168,7 @@ public class NativeImageBuildStep {
                     .setNativeImageProperties(nativeImageProperties)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
-                    .setResultingBinaryName(nativeImageName)
+                    .setNativeImageName(nativeImageName)
                     .setNoPIE(noPIE)
                     .setContainerBuild(isContainerBuild)
                     .setGraalVMVersion(graalVMVersion)
@@ -179,10 +180,10 @@ public class NativeImageBuildStep {
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, nativeImageArgs);
             }
-            Path generatedImage = outputDir.resolve(nativeImageName);
-            Path finalPath = outputTargetBuildItem.getOutputDirectory().resolve(nativeImageName);
-            IoUtils.copy(generatedImage, finalPath);
-            Files.delete(generatedImage);
+            Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
+            Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
+            IoUtils.copy(generatedExecutablePath, finalExecutablePath);
+            Files.delete(generatedExecutablePath);
             if (nativeConfig.debug.enabled) {
                 final String sources = "sources";
                 final Path generatedSources = outputDir.resolve(sources);
@@ -190,20 +191,20 @@ public class NativeImageBuildStep {
                 IoUtils.copy(generatedSources, finalSources);
                 IoUtils.recursiveDelete(generatedSources);
             }
-            System.setProperty("native.image.path", finalPath.toAbsolutePath().toString());
+            System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 
             if (objcopyExists()) {
                 if (nativeConfig.debug.enabled) {
-                    splitDebugSymbols(finalPath);
+                    splitDebugSymbols(finalExecutablePath);
                 }
                 // Strip debug symbols regardless, because the underlying JDK might contain them
-                objcopy("--strip-debug", finalPath.toString());
+                objcopy("--strip-debug", finalExecutablePath.toString());
             } else {
                 log.warn("objcopy executable not found in PATH. Debug symbols will not be separated from executable.");
                 log.warn("That will result in a larger native image with debug symbols embedded in it.");
             }
 
-            return new NativeImageBuildItem(finalPath);
+            return new NativeImageBuildItem(finalExecutablePath);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
         } finally {
@@ -214,14 +215,17 @@ public class NativeImageBuildStep {
         }
     }
 
-    private String getResultingBinaryName(OutputTargetBuildItem outputTargetBuildItem, PackageConfig packageConfig,
-            boolean isContainerBuild) {
-        String nativeImageName = outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix;
+    private String getNativeImageName(OutputTargetBuildItem outputTargetBuildItem, PackageConfig packageConfig) {
+        return outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix;
+    }
+
+    private String getResultingExecutableName(String nativeImageName, boolean isContainerBuild) {
+        String resultingExecutableName = nativeImageName;
         if (SystemUtils.IS_OS_WINDOWS && !isContainerBuild) {
             //once image is generated it gets added .exe on Windows
-            nativeImageName = nativeImageName + ".exe";
+            resultingExecutableName = resultingExecutableName + ".exe";
         }
-        return nativeImageName;
+        return resultingExecutableName;
     }
 
     public static boolean isContainerBuild(NativeConfig nativeConfig) {
@@ -229,7 +233,7 @@ public class NativeImageBuildStep {
     }
 
     private static NativeImageBuildRunner getNativeImageBuildRunner(NativeConfig nativeConfig, Path outputDir,
-            String nativeImageName) {
+            String resultingExecutableName) {
         if (!isContainerBuild(nativeConfig)) {
             NativeImageBuildLocalRunner localRunner = getNativeImageBuildLocalRunner(nativeConfig);
             if (localRunner != null) {
@@ -244,7 +248,7 @@ public class NativeImageBuildStep {
             log.warn(errorMessage + " Attempting to fall back to container build.");
         }
         if (nativeConfig.remoteContainerBuild) {
-            return new NativeImageBuildRemoteContainerRunner(nativeConfig, outputDir, nativeImageName);
+            return new NativeImageBuildRemoteContainerRunner(nativeConfig, outputDir, resultingExecutableName);
         }
         return new NativeImageBuildLocalContainerRunner(nativeConfig, outputDir);
     }
@@ -611,7 +615,7 @@ public class NativeImageBuildStep {
             private String noPIE = "";
             private boolean isContainerBuild = false;
             private GraalVM.Version graalVMVersion = GraalVM.Version.UNVERSIONED;
-            private String resultingBinaryName;
+            private String nativeImageName;
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
@@ -653,8 +657,8 @@ public class NativeImageBuildStep {
                 return this;
             }
 
-            public Builder setResultingBinaryName(String resultingBinaryName) {
-                this.resultingBinaryName = resultingBinaryName;
+            public Builder setNativeImageName(String nativeImageName) {
+                this.nativeImageName = nativeImageName;
                 return this;
             }
 
@@ -797,7 +801,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:+DashboardAll");
                 }
 
-                nativeImageArgs.add(resultingBinaryName);
+                nativeImageArgs.add(nativeImageName);
 
                 return new NativeImageInvokerInfo(nativeImageArgs);
             }

@@ -2,14 +2,15 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.2
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3
     environment:
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - "discovery.type=single-node"
     networks:
       - elk
 
   logstash:
-    image: docker.elastic.co/logstash/logstash-oss:6.8.2
+    image: docker.elastic.co/logstash/logstash-oss:7.9.3
     volumes:
       - source: $HOME/pipelines
         target: /usr/share/logstash/pipeline
@@ -24,7 +25,7 @@ services:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:6.8.2
+    image: docker.elastic.co/kibana/kibana-oss:7.9.3
     ports:
       - "5601:5601"
     networks:

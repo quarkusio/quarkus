@@ -16,7 +16,6 @@ import org.junit.jupiter.api.TestInfo;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
 
@@ -29,25 +28,24 @@ class QuarkusJBangCodestartGenerationTest extends PlatformAwareTestBase {
 
     @Test
     void generateDefaultProject(TestInfo testInfo) throws Throwable {
-        final QuarkusPlatformDescriptor platformDescriptor = getPlatformDescriptor();
         final QuarkusJBangCodestartProjectInput input = QuarkusJBangCodestartProjectInput.builder()
-                .putData(QUARKUS_BOM_GROUP_ID, platformDescriptor.getBomGroupId())
-                .putData(QUARKUS_BOM_ARTIFACT_ID, platformDescriptor.getBomArtifactId())
-                .putData(QUARKUS_BOM_VERSION, platformDescriptor.getBomVersion())
+                .putData(QUARKUS_BOM_GROUP_ID, "io.quarkus")
+                .putData(QUARKUS_BOM_ARTIFACT_ID, "quarkus-bom")
+                .putData(QUARKUS_BOM_VERSION, "999-MOCK")
                 .build();
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
         assertThatDirectoryTreeMatchSnapshots(testInfo, projectDir);
+        assertThatMatchSnapshot(testInfo, projectDir, "src/GreetingResource.java");
     }
 
     @Test
     void generatePicocliProject(TestInfo testInfo) throws Throwable {
-        final QuarkusPlatformDescriptor platformDescriptor = getPlatformDescriptor();
         final QuarkusJBangCodestartProjectInput input = QuarkusJBangCodestartProjectInput.builder()
                 .addCodestart("jbang-picocli-code")
-                .putData(QUARKUS_BOM_GROUP_ID, platformDescriptor.getBomGroupId())
-                .putData(QUARKUS_BOM_ARTIFACT_ID, platformDescriptor.getBomArtifactId())
-                .putData(QUARKUS_BOM_VERSION, platformDescriptor.getBomVersion())
+                .putData(QUARKUS_BOM_GROUP_ID, "io.quarkus")
+                .putData(QUARKUS_BOM_ARTIFACT_ID, "quarkus-bom")
+                .putData(QUARKUS_BOM_VERSION, "999-MOCK")
                 .build();
         final Path projectDir = testDirPath.resolve("picocli");
         getCatalog().createProject(input).generate(projectDir);

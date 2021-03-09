@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.inject.Qualifier;
 
@@ -25,15 +26,17 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
                 InjectMock injectMockAnnotation = field.getAnnotation(InjectMock.class);
                 if (injectMockAnnotation != null) {
                     Object beanInstance = getBeanInstance(testInstance, field, InjectMock.class);
-                    Object mock = createMockAndSetTestField(testInstance, field, beanInstance);
-                    MockitoMocksTracker.track(testInstance, mock, beanInstance);
+                    Optional<Object> result = createMockAndSetTestField(testInstance, field, beanInstance);
+                    if (result.isPresent()) {
+                        MockitoMocksTracker.track(testInstance, result.get(), beanInstance);
+                    }
                 }
             }
             current = current.getSuperclass();
         }
     }
 
-    private Object createMockAndSetTestField(Object testInstance, Field field, Object beanInstance) {
+    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, Object beanInstance) {
         Class<?> beanClass = beanInstance.getClass();
         // make sure we don't mock proxy classes, especially given that they don't have generics info
         if (ClientProxy.class.isAssignableFrom(beanClass)) {
@@ -41,14 +44,27 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
             if (beanClass.getSuperclass() != Object.class)
                 beanClass = beanClass.getSuperclass();
         }
-        Object mock = Mockito.mock(beanClass);
+        Object mock;
+        boolean isNew;
+        Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, beanInstance);
+        if (currentMock.isPresent()) {
+            mock = currentMock.get();
+            isNew = false;
+        } else {
+            mock = Mockito.mock(beanClass);
+            isNew = true;
+        }
         field.setAccessible(true);
         try {
             field.set(testInstance, mock);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-        return mock;
+        if (isNew) {
+            return Optional.of(mock);
+        } else {
+            return Optional.empty();
+        }
     }
 
     static Object getBeanInstance(Object testInstance, Field field, Class<? extends Annotation> annotationType) {

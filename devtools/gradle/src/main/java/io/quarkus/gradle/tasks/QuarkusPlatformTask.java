@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -107,70 +108,75 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
         final Configuration boms = project.getConfigurations()
                 .detachedConfiguration(bomDeps.toArray(new org.gradle.api.artifacts.Dependency[0]));
         final Set<AppArtifactKey> processedKeys = new HashSet<>(1);
-        final List<ResolvedArtifact> descriptorDeps = new ArrayList<>(2);
+
+        final List<Dependency> descriptorDeps = new ArrayList<>();
+        final AtomicInteger quarkusBomIndex = new AtomicInteger(-1);
+        final AtomicInteger quarkusUniverseBomIndex = new AtomicInteger(-1);
         boms.getResolutionStrategy().eachDependency(d -> {
-            if (!d.getTarget().getName().endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)
-                    || !processedKeys.add(new AppArtifactKey(d.getTarget().getGroup(), d.getTarget().getName()))) {
+            final String name = d.getTarget().getName();
+            if (!name.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)
+                    || !processedKeys.add(new AppArtifactKey(d.getTarget().getGroup(), name))) {
                 return;
+            }
+
+            if (name.startsWith("quarkus-bom")) {
+                if (quarkusBomIndex.get() < 0) {
+                    quarkusBomIndex.set(descriptorDeps.size());
+                } else {
+                    // the first one wins
+                    return;
+                }
+            } else if (name.startsWith("quarkus-universe-bom")) {
+                if (quarkusUniverseBomIndex.get() < 0) {
+                    quarkusUniverseBomIndex.set(descriptorDeps.size());
+                } else {
+                    // the first one wins
+                    return;
+                }
             }
 
             final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
             dep.setExtension("json");
             dep.setType("json");
             dep.setClassifier(d.getTarget().getVersion());
-            dep.setName(d.getTarget().getName());
+            dep.setName(name);
 
             final DefaultExternalModuleDependency gradleDep = new DefaultExternalModuleDependency(
-                    d.getTarget().getGroup(), d.getTarget().getName(), d.getTarget().getVersion(), null);
+                    d.getTarget().getGroup(), name, d.getTarget().getVersion(), null);
             gradleDep.addArtifact(dep);
-
-            try {
-                for (ResolvedArtifact a : project.getConfigurations().detachedConfiguration(gradleDep)
-                        .getResolvedConfiguration().getResolvedArtifacts()) {
-                    if (a.getName().equals(d.getTarget().getName())) {
-                        descriptorDeps.add(a);
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                // ignore for now
-            }
+            descriptorDeps.add(gradleDep);
         });
         boms.getResolvedConfiguration();
 
         if (descriptorDeps.isEmpty()) {
             return null;
         }
-        if (descriptorDeps.size() == 1) {
-            return descriptorResolver.resolveFromJson(descriptorDeps.get(0).getFile().toPath());
+
+        final List<ResolvedArtifact> resolvedDescriptors = new ArrayList<>(descriptorDeps.size());
+        for (int i = 0; i < descriptorDeps.size(); ++i) {
+            if (quarkusBomIndex.get() == i && quarkusUniverseBomIndex.get() >= 0) {
+                continue;
+            }
+            final Dependency descriptor = descriptorDeps.get(i);
+            try {
+                for (ResolvedArtifact a : project.getConfigurations().detachedConfiguration(descriptor)
+                        .getResolvedConfiguration().getResolvedArtifacts()) {
+                    if (a.getName().equals(descriptor.getName())) {
+                        resolvedDescriptors.add(a);
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                // ignore for now
+            }
         }
 
-        // Typically, quarkus-bom platform will appear first.
-        // The descriptors that are generated today are not fragmented and include everything
-        // a platform offers. Which means if the quarkus-bom platform appears first and its version
-        // matches the Quarkus core version of the platform built on top of the quarkus-bom
-        // (e.g. quarkus-universe-bom) the quarkus-bom platform can be skipped,
-        // since it will already be included in the platform that's built on top of it
-        int i = 0;
-        ResolvedArtifact platformArtifact = descriptorDeps.get(0);
-        final String quarkusBomPlatformArtifactId = "quarkus-bom-"
-                + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX;
-        ResolvedArtifact quarkusBomPlatformArtifact = null;
-        if (quarkusBomPlatformArtifactId.equals(platformArtifact.getName())) {
-            quarkusBomPlatformArtifact = platformArtifact;
+        if (resolvedDescriptors.size() == 1) {
+            return descriptorResolver.resolveFromJson(resolvedDescriptors.get(0).getFile().toPath());
         }
+
         final CombinedQuarkusPlatformDescriptor.Builder builder = CombinedQuarkusPlatformDescriptor.builder();
-        while (++i < descriptorDeps.size()) {
-            platformArtifact = descriptorDeps.get(i);
-            final QuarkusPlatformDescriptor descriptor = descriptorResolver
-                    .resolveFromJson(platformArtifact.getFile().toPath());
-            if (quarkusBomPlatformArtifact != null) {
-                if (!quarkusBomPlatformArtifact.getModuleVersion().getId().getVersion()
-                        .equals(descriptor.getQuarkusVersion())) {
-                    builder.addPlatform(descriptorResolver.resolveFromJson(quarkusBomPlatformArtifact.getFile().toPath()));
-                }
-                quarkusBomPlatformArtifact = null;
-            }
+        for (ResolvedArtifact platformArtifact : resolvedDescriptors) {
             builder.addPlatform(descriptorResolver.resolveFromJson(platformArtifact.getFile().toPath()));
         }
         return builder.build();

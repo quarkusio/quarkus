@@ -25,7 +25,8 @@ public class SimpleJsonTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class, SuperClass.class);
+                            .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class, SuperClass.class,
+                                    NoopReaderInterceptor.class);
                 }
             });
 

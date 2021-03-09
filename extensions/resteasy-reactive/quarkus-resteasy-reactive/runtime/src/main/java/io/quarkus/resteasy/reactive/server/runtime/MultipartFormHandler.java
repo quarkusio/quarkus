@@ -132,9 +132,6 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                     uploadCount.incrementAndGet();
                     String uploadedFileName = new File(MultipartFormVertxHandler.this.uploadsDirectory,
                             UUID.randomUUID().toString()).getPath();
-                    upload.streamToFileSystem(uploadedFileName);
-                    FileUploadImpl fileUpload = new FileUploadImpl(uploadedFileName, upload);
-                    fileUploads.add(fileUpload);
                     upload.exceptionHandler(new Handler<Throwable>() {
                         @Override
                         public void handle(Throwable t) {
@@ -142,12 +139,20 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                             rrContext.resume(new WebApplicationException(t, Response.Status.INTERNAL_SERVER_ERROR));
                         }
                     });
-                    upload.endHandler(new Handler<Void>() {
-                        @Override
-                        public void handle(Void event) {
-                            uploadEnded();
-                        }
-                    });
+
+                    upload.streamToFileSystem(uploadedFileName)
+                            .onSuccess(new Handler<Void>() {
+                                @Override
+                                public void handle(Void x) {
+                                    uploadEnded();
+                                }
+                            })
+                            .onFailure(t -> {
+                                MultipartFormVertxHandler.this.deleteFileUploads();
+                                rrContext.resume(new WebApplicationException(t, Response.Status.INTERNAL_SERVER_ERROR));
+                            });
+                    FileUploadImpl fileUpload = new FileUploadImpl(uploadedFileName, upload);
+                    fileUploads.add(fileUpload);
                 }
             });
         }

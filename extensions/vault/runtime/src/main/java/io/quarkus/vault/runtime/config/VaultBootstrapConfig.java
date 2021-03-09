@@ -62,6 +62,13 @@ public class VaultBootstrapConfig {
     public Optional<URL> url;
 
     /**
+     * Vault Enterprise
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public VaultEnterpriseConfig enterprise;
+
+    /**
      * Authentication
      */
     @ConfigItem

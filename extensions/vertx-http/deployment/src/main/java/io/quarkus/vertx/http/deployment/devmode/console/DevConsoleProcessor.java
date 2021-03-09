@@ -51,6 +51,7 @@ import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
@@ -251,7 +252,11 @@ public class DevConsoleProcessor {
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
             List<DevTemplatePathBuildItem> devTemplatePaths,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return;
+        }
         initializeVirtual();
 
         newRouter(buildEngine(devTemplatePaths), nonApplicationRootPathBuildItem);
@@ -291,7 +296,12 @@ public class DevConsoleProcessor {
     public void deployStaticResources(DevConsoleRecorder recorder, CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdownContext,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) throws IOException {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            LaunchModeBuildItem launchModeBuildItem) throws IOException {
+
+        if (launchModeBuildItem.getDevModeType().orElse(DevModeType.LOCAL) != DevModeType.LOCAL) {
+            return;
+        }
         AppArtifact devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
                 "quarkus-vertx-http-deployment");
 

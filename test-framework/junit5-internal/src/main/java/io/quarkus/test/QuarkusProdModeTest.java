@@ -74,6 +74,8 @@ public class QuarkusProdModeTest
     private static final int DEFAULT_HTTP_PORT_INT = 8081;
     private static final String DEFAULT_HTTP_PORT = "" + DEFAULT_HTTP_PORT_INT;
     private static final String QUARKUS_HTTP_PORT_PROPERTY = "quarkus.http.port";
+    private static final String QUARKUS_PACKAGE_TYPE_PROPERTY = "quarkus.package.type";
+    private static final String NATIVE = "native";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
@@ -308,6 +310,7 @@ public class QuarkusProdModeTest
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
+        updateBuildNativeFlagIfAnnotationIsUsed(extensionContext.getRequiredTestClass());
 
         originalHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
@@ -348,6 +351,7 @@ public class QuarkusProdModeTest
             outputDir = Files.createTempDirectory("quarkus-prod-mode-test");
             Path deploymentDir = outputDir.resolve("deployment-result");
             buildDir = outputDir.resolve("build-result");
+            Properties buildProperties = new Properties();
 
             if (applicationName != null) {
                 overrideConfigKey("quarkus.application.name", applicationName);
@@ -356,7 +360,8 @@ public class QuarkusProdModeTest
                 overrideConfigKey("quarkus.application.version", applicationVersion);
             }
             if (buildNative) {
-                overrideConfigKey("quarkus.package.type", "native");
+                overrideConfigKey(QUARKUS_PACKAGE_TYPE_PROPERTY, NATIVE);
+                buildProperties.put(QUARKUS_PACKAGE_TYPE_PROPERTY, NATIVE);
             }
             exportArchive(deploymentDir, testClass);
 
@@ -378,6 +383,7 @@ public class QuarkusProdModeTest
                     .addExcludedPath(testLocation)
                     .setProjectRoot(testLocation)
                     .setTargetDirectory(buildDir)
+                    .setBuildSystemProperties(buildProperties)
                     .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
                             .collect(Collectors.toList()));
             if (applicationName != null) {
@@ -438,6 +444,12 @@ public class QuarkusProdModeTest
             current = current.getSuperclass();
         }
 
+    }
+
+    private void updateBuildNativeFlagIfAnnotationIsUsed(Class<?> testClass) {
+        if (testClass.isAnnotationPresent(EnableNativeBuildOnQuarkusProdMode.class)) {
+            setBuildNative(true);
+        }
     }
 
     private void logOutputPathForPostMortem() {

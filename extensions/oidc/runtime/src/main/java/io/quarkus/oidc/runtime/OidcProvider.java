@@ -34,9 +34,9 @@ public class OidcProvider {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
 
-    private final OidcProviderClient client;
-    private final RefreshableVerificationKeyResolver keyResolver;
-    private final OidcTenantConfig oidcConfig;
+    final OidcProviderClient client;
+    final RefreshableVerificationKeyResolver keyResolver;
+    final OidcTenantConfig oidcConfig;
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeyCache jwks) {
         this.client = client;

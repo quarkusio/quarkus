@@ -114,7 +114,7 @@ public class OidcRecorder {
             return Uni.createFrom().item(createTenantContextFromPublicKey(oidcConfig));
         }
 
-        OidcCommonUtils.verifyCommonConfiguration(oidcConfig);
+        OidcCommonUtils.verifyCommonConfiguration(oidcConfig, true);
 
         if (!oidcConfig.discoveryEnabled) {
             if (oidcConfig.applicationType != ApplicationType.SERVICE) {
@@ -212,8 +212,6 @@ public class OidcRecorder {
 
     protected static Uni<OidcProviderClient> createOidcClientUni(OidcTenantConfig oidcConfig,
             TlsConfig tlsConfig, Vertx vertx) {
-
-        OidcCommonUtils.verifyCommonConfiguration(oidcConfig);
 
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
 

@@ -28,6 +28,9 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public final class OidcUtils {
+    static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
+    static final String USER_INFO_ATTRIBUTE = "userinfo";
+    static final String TENANT_ID_ATTRIBUTE = "tenant-id";
     /**
      * This pattern uses a positive lookahead to split an expression around the forward slashes
      * ignoring those which are located inside a pair of the double quotes.
@@ -133,8 +136,9 @@ public final class OidcUtils {
 
     static QuarkusSecurityIdentity validateAndCreateIdentity(
             RoutingContext vertxContext, TokenCredential credential,
-            OidcTenantConfig config, JsonObject tokenJson, JsonObject rolesJson, JsonObject userInfo) {
+            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, JsonObject userInfo) {
 
+        OidcTenantConfig config = resolvedContext.oidcConfig;
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);
 
@@ -150,6 +154,7 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
+        setSecurityIdentityConfigMetadata(builder, resolvedContext);
         setBlockinApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
         return builder.build();
@@ -175,12 +180,19 @@ public final class OidcUtils {
     }
 
     public static void setTenantIdAttribute(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config) {
-        builder.addAttribute("tenant-id", config.tenantId.orElse("Default"));
+        builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId.orElse("Default"));
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, JsonObject userInfo) {
         if (userInfo != null) {
-            builder.addAttribute("userinfo", new UserInfo(userInfo.encode()));
+            builder.addAttribute(USER_INFO_ATTRIBUTE, new UserInfo(userInfo.encode()));
+        }
+    }
+
+    public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,
+            TenantConfigContext resolvedContext) {
+        if (resolvedContext.provider.client != null) {
+            builder.addAttribute(CONFIG_METADATA_ATTRIBUTE, resolvedContext.provider.client.getMetadata());
         }
     }
 

@@ -1,5 +1,8 @@
 package io.quarkus.oidc;
 
+import java.util.Collections;
+import java.util.Set;
+
 import io.vertx.core.json.JsonObject;
 
 public class OidcConfigurationMetadata {
@@ -18,6 +21,7 @@ public class OidcConfigurationMetadata {
     private final String userInfoUri;
     private final String endSessionUri;
     private final String issuer;
+    private JsonObject json;
 
     public OidcConfigurationMetadata(String tokenUri,
             String introspectionUri,
@@ -43,6 +47,7 @@ public class OidcConfigurationMetadata {
         this.userInfoUri = wellKnownConfig.getString(USERINFO_ENDPOINT);
         this.endSessionUri = wellKnownConfig.getString(END_SESSION_ENDPOINT);
         this.issuer = wellKnownConfig.getString(ISSUER);
+        this.json = wellKnownConfig;
     }
 
     public String getTokenUri() {
@@ -71,5 +76,17 @@ public class OidcConfigurationMetadata {
 
     public String getIssuer() {
         return issuer;
+    }
+
+    public String get(String propertyName) {
+        return json != null ? null : json.getString(propertyName);
+    }
+
+    public boolean contains(String propertyName) {
+        return json.containsKey(propertyName);
+    }
+
+    public Set<String> getPropertyNames() {
+        return Collections.unmodifiableSet(json.fieldNames());
     }
 }

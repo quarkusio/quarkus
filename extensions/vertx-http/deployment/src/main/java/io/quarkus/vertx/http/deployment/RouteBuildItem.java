@@ -151,13 +151,13 @@ public final class RouteBuildItem extends MultiBuildItem {
         /**
          * Use HttpRootPathBuildItem and NonApplicationRootPathBuildItem to
          * ensure paths are constructed/normalized correctly
-         * 
+         *
          * @deprecated
          * @see HttpRootPathBuildItem#routeBuilder()
          * @see NonApplicationRootPathBuildItem#routeBuilder()
          */
         @Deprecated
-        Builder() {
+        public Builder() {
         }
 
         /**

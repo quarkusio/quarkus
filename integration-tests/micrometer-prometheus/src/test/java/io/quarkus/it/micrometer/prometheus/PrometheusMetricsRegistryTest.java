@@ -134,7 +134,7 @@ class PrometheusMetricsRegistryTest {
 
                 .body(containsString("status=\"200\""))
                 .body(containsString("uri=\"/message\""))
-                //                .body(containsString("uri=\"/message/item/{id}\"")) // https://github.com/quarkusio/quarkus/issues/15593
+                .body(containsString("uri=\"/message/item/{id}\""))
                 .body(containsString("outcome=\"SUCCESS\""))
                 .body(containsString("uri=\"/message/match/{id}/{sub}\""))
                 .body(containsString("uri=\"/message/match/{other}\""))

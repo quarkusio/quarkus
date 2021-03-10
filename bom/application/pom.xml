@@ -4163,6 +4163,11 @@
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
+                <artifactId>mockito-inline</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito.version}</version>
             </dependency>

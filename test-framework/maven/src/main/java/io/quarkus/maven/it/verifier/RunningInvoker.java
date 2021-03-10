@@ -20,6 +20,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamHandler;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
 
+import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 /**
@@ -37,7 +38,7 @@ public class RunningInvoker extends MavenProcessInvoker {
     public RunningInvoker(File basedir, boolean debug) {
         this.debug = debug;
         setWorkingDirectory(basedir);
-        String repo = System.getProperty("maven.repo");
+        String repo = System.getProperty("maven.repo.local");
         if (repo == null) {
             repo = new File(System.getProperty("user.home"), ".m2/repository").getAbsolutePath();
         }
@@ -130,6 +131,7 @@ public class RunningInvoker extends MavenProcessInvoker {
 
     @Override
     public InvocationResult execute(InvocationRequest request) throws MavenInvocationException {
+        MojoTestBase.passUserSettings(request);
         return super.execute(request);
     }
 

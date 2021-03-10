@@ -64,8 +64,6 @@ class ListExtensionsIT extends QuarkusPlatformAwareMojoTestBase {
         request.setGoals(Collections.singletonList(
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion()
                         + ":list-extensions"));
-        getEnv().forEach(request::addShellEnvironment);
-        enableDevToolsTestConfig(request);
 
         File outputLog = new File(testDir, "output.log");
         InvocationOutputHandler outputHandler = new PrintStreamHandler(

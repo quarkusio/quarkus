@@ -23,7 +23,9 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import io.quarkus.devtools.test.RegistryClientTestHelper;
@@ -31,15 +33,34 @@ import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class MojoTestBase {
 
-    public static Invoker initInvoker(File root) {
-        Invoker invoker = new DefaultInvoker();
+    public Invoker initInvoker(File root) {
+        Invoker invoker = new DefaultInvoker() {
+            @Override
+            public InvocationResult execute(InvocationRequest request)
+                    throws MavenInvocationException {
+                passUserSettings(request);
+                getEnv().forEach(request::addShellEnvironment);
+                enableDevToolsTestConfig(request);
+                return super.execute(request);
+            }
+        };
         invoker.setWorkingDirectory(root);
-        String repo = System.getProperty("maven.repo");
+        String repo = System.getProperty("maven.repo.local");
         if (repo == null) {
             repo = new File(System.getProperty("user.home"), ".m2/repository").getAbsolutePath();
         }
         invoker.setLocalRepositoryDirectory(new File(repo));
         return invoker;
+    }
+
+    public static void passUserSettings(InvocationRequest request) {
+        final String mvnSettings = System.getProperty("maven.settings");
+        if (mvnSettings != null) {
+            final File settingsFile = new File(mvnSettings);
+            if (settingsFile.exists()) {
+                request.setUserSettingsFile(settingsFile);
+            }
+        }
     }
 
     public static File initEmptyProject(String name) {

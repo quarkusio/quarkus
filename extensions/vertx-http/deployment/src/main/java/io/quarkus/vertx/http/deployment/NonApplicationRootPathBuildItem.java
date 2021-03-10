@@ -7,6 +7,7 @@ import java.util.function.Function;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
@@ -69,18 +70,10 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      */
     String getVertxRouterPath() {
         if (attachedToMainRouter) {
-            return "/" + relativize(httpRootPath.getPath(), nonApplicationRootPath.getPath());
+            return "/" + UriNormalizationUtil.relativize(httpRootPath.getPath(), nonApplicationRootPath.getPath());
         } else {
             return getNonApplicationRootPath();
         }
-    }
-
-    String relativize(String rootPath, String leafPath) {
-        if (leafPath.startsWith(rootPath)) {
-            return leafPath.substring(rootPath.length());
-        }
-
-        return null;
     }
 
     public String getNormalizedHttpRootPath() {
@@ -189,7 +182,6 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         private boolean requiresLegacyRedirect = false;
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
         private String path;
-        private String absolute;
 
         Builder(NonApplicationRootPathBuildItem buildItem) {
             this.buildItem = buildItem;
@@ -197,23 +189,23 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
         @Override
         public Builder routeFunction(Function<Router, Route> routeFunction) {
-            throw new RuntimeException("This method is not supported for non-application routes");
+            throw new RuntimeException(
+                    "This method is not supported using this builder. Use #routeFunction(String, Consumer<Route>)");
         }
 
         public Builder routeFunction(String route, Consumer<Route> routeFunction) {
-            String temp = route;
-            route = absolute = buildItem.resolvePath(route);
+            route = super.absolutePath = buildItem.resolvePath(route);
 
             boolean isFrameworkRoute = buildItem.dedicatedRouterRequired
                     && route.startsWith(buildItem.getNonApplicationRootPath());
 
             if (isFrameworkRoute) {
-                // relative non-application root
-                this.path = "/" + buildItem.relativize(buildItem.getNonApplicationRootPath(), route);
+                // relative non-application root (leading slash for vert.x)
+                this.path = "/" + UriNormalizationUtil.relativize(buildItem.getNonApplicationRootPath(), route);
                 this.routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
             } else if (route.startsWith(buildItem.httpRootPath.getPath())) {
-                // relative to http root
-                this.path = "/" + buildItem.relativize(buildItem.httpRootPath.getPath(), route);
+                // relative to http root (leading slash for vert.x route)
+                this.path = "/" + UriNormalizationUtil.relativize(buildItem.httpRootPath.getPath(), route);
                 this.routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
             } else if (route.startsWith("/")) {
                 // absolute path
@@ -277,43 +269,45 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
         @Override
         public Builder displayOnNotFoundPage() {
-            this.displayOnNotFoundPage = true;
+            super.displayOnNotFoundPage();
             return this;
         }
 
         @Override
         public Builder displayOnNotFoundPage(String notFoundPageTitle) {
-            this.displayOnNotFoundPage = true;
-            this.notFoundPageTitle = notFoundPageTitle;
+            super.displayOnNotFoundPage(notFoundPageTitle);
             return this;
         }
 
         @Override
         public Builder displayOnNotFoundPage(String notFoundPageTitle, String notFoundPagePath) {
-            this.displayOnNotFoundPage = true;
-            this.notFoundPageTitle = notFoundPageTitle;
-            this.notFoundPagePath = notFoundPagePath;
+            super.displayOnNotFoundPage(notFoundPageTitle, notFoundPagePath);
             return this;
         }
 
+        @Override
+        public Builder routeConfigKey(String attributeName) {
+            super.routeConfigKey(attributeName);
+            return this;
+        }
+
+        @Override
         public RouteBuildItem build() {
             // If path is same as absolute, we don't enable legacy redirect
-            if (requiresLegacyRedirect && path.equals(absolute)) {
+            if (requiresLegacyRedirect && path.equals(super.absolutePath)) {
                 requiresLegacyRedirect = false;
             }
             return new RouteBuildItem(this, routeType, requiresLegacyRedirect);
         }
 
         @Override
+        protected ConfiguredPathInfo getRouteConfigInfo() {
+            return super.getRouteConfigInfo();
+        }
+
+        @Override
         protected NotFoundPageDisplayableEndpointBuildItem getNotFoundEndpoint() {
-            if (!displayOnNotFoundPage) {
-                return null;
-            }
-            if (notFoundPagePath == null) {
-                throw new RuntimeException("Cannot display " + routeFunction
-                        + " on not found page as no explicit path was specified and a route function is in use");
-            }
-            return new NotFoundPageDisplayableEndpointBuildItem(absolute, notFoundPageTitle, true);
+            return super.getNotFoundEndpoint();
         }
     }
 }

@@ -1,9 +1,18 @@
 package io.quarkus.vertx.http.deployment;
 
 import java.net.URI;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
+import io.quarkus.vertx.http.runtime.HandlerType;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 
 public final class HttpRootPathBuildItem extends SimpleBuildItem {
 
@@ -64,5 +73,122 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
      */
     public String resolvePath(String path) {
         return UriNormalizationUtil.normalizeWithBase(rootPath, path, false).getPath();
+    }
+
+    public HttpRootPathBuildItem.Builder routeBuilder() {
+        return new HttpRootPathBuildItem.Builder(this);
+    }
+
+    public static class Builder extends RouteBuildItem.Builder {
+        private final HttpRootPathBuildItem buildItem;
+        private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
+        private String path;
+
+        Builder(HttpRootPathBuildItem buildItem) {
+            this.buildItem = buildItem;
+        }
+
+        @Override
+        public Builder routeFunction(Function<Router, Route> routeFunction) {
+            throw new RuntimeException(
+                    "This method is not supported using this builder. Use #routeFunction(String, Consumer<Route>)");
+        }
+
+        public Builder routeFunction(String route, Consumer<Route> routeFunction) {
+            route = super.absolutePath = buildItem.resolvePath(route);
+
+            if (route.startsWith(buildItem.getRootPath())) {
+                // relative to http root (leading slash for vert.x route)
+                this.path = "/" + UriNormalizationUtil.relativize(buildItem.getRootPath(), route);
+                this.routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
+            } else if (route.startsWith("/")) {
+                // absolute path
+                this.path = route;
+                this.routeType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
+            }
+
+            super.routeFunction(this.path, routeFunction);
+            return this;
+        }
+
+        @Override
+        public Builder route(String route) {
+            routeFunction(route, null);
+            return this;
+        }
+
+        public Builder nestedRoute(String baseRoute, String subRoute) {
+            if (subRoute.startsWith("/")) {
+                routeFunction(subRoute, null);
+                return this;
+            }
+
+            baseRoute = baseRoute.endsWith("/") ? baseRoute : baseRoute + "/";
+            routeFunction(baseRoute + subRoute, null);
+            return this;
+        }
+
+        @Override
+        public Builder handler(Handler<RoutingContext> handler) {
+            super.handler(handler);
+            return this;
+        }
+
+        @Override
+        public Builder handlerType(HandlerType handlerType) {
+            super.handlerType(handlerType);
+            return this;
+        }
+
+        @Override
+        public Builder blockingRoute() {
+            super.blockingRoute();
+            return this;
+        }
+
+        @Override
+        public Builder failureRoute() {
+            super.failureRoute();
+            return this;
+        }
+
+        @Override
+        public Builder displayOnNotFoundPage() {
+            super.displayOnNotFoundPage();
+            return this;
+        }
+
+        @Override
+        public Builder displayOnNotFoundPage(String notFoundPageTitle) {
+            super.displayOnNotFoundPage(notFoundPageTitle);
+            return this;
+        }
+
+        @Override
+        public Builder displayOnNotFoundPage(String notFoundPageTitle, String notFoundPagePath) {
+            super.displayOnNotFoundPage(notFoundPageTitle, notFoundPagePath);
+            return this;
+        }
+
+        @Override
+        public Builder routeConfigKey(String attributeName) {
+            super.routeConfigKey(attributeName);
+            return this;
+        }
+
+        @Override
+        public RouteBuildItem build() {
+            return new RouteBuildItem(this, routeType, false);
+        }
+
+        @Override
+        protected ConfiguredPathInfo getRouteConfigInfo() {
+            return super.getRouteConfigInfo();
+        }
+
+        @Override
+        protected NotFoundPageDisplayableEndpointBuildItem getNotFoundEndpoint() {
+            return super.getNotFoundEndpoint();
+        }
     }
 }

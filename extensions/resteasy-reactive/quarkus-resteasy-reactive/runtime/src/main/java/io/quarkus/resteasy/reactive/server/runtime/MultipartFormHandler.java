@@ -132,22 +132,16 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                     uploadCount.incrementAndGet();
                     String uploadedFileName = new File(MultipartFormVertxHandler.this.uploadsDirectory,
                             UUID.randomUUID().toString()).getPath();
-                    upload.streamToFileSystem(uploadedFileName);
+                    upload.exceptionHandler(new UploadExceptionHandler(rrContext));
+                    upload.streamToFileSystem(uploadedFileName).exceptionHandler(new UploadExceptionHandler(rrContext))
+                            .endHandler(new Handler<Void>() {
+                                @Override
+                                public void handle(Void event) {
+                                    uploadEnded();
+                                }
+                            });
                     FileUploadImpl fileUpload = new FileUploadImpl(uploadedFileName, upload);
                     fileUploads.add(fileUpload);
-                    upload.exceptionHandler(new Handler<Throwable>() {
-                        @Override
-                        public void handle(Throwable t) {
-                            MultipartFormVertxHandler.this.deleteFileUploads();
-                            rrContext.resume(new WebApplicationException(t, Response.Status.INTERNAL_SERVER_ERROR));
-                        }
-                    });
-                    upload.endHandler(new Handler<Void>() {
-                        @Override
-                        public void handle(Void event) {
-                            uploadEnded();
-                        }
-                    });
                 }
             });
         }
@@ -219,6 +213,20 @@ public class MultipartFormHandler implements RuntimeConfigurableServerRestHandle
                         }
                     });
                 }
+            }
+        }
+
+        private class UploadExceptionHandler implements Handler<Throwable> {
+            private final ResteasyReactiveRequestContext rrContext;
+
+            public UploadExceptionHandler(ResteasyReactiveRequestContext rrContext) {
+                this.rrContext = rrContext;
+            }
+
+            @Override
+            public void handle(Throwable t) {
+                MultipartFormVertxHandler.this.deleteFileUploads();
+                rrContext.resume(new WebApplicationException(t, Response.Status.INTERNAL_SERVER_ERROR));
             }
         }
     }

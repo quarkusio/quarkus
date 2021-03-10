@@ -65,7 +65,7 @@ public class PrometheusRegistryProcessor {
                 .routeFunction(pConfig.path, recorder.route())
                 .handler(recorder.getHandler())
                 .requiresLegacyRedirect()
-                .displayOnNotFoundPage("Metrics", pConfig.path)
+                .displayOnNotFoundPage("Metrics")
                 .build());
 
         // Match paths that begin with the deployment path

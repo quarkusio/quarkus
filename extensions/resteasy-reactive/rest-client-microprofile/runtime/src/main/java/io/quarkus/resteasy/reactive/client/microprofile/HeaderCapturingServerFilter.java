@@ -7,11 +7,15 @@ import io.quarkus.arc.Arc;
 
 @SuppressWarnings("unused")
 public class HeaderCapturingServerFilter implements ContainerRequestFilter {
+    private final HeaderContainer headerContainer;
+
+    public HeaderCapturingServerFilter() {
+        headerContainer = Arc.container().instance(HeaderContainer.class).get();
+    }
 
     public void filter(ContainerRequestContext requestContext) {
-        HeaderContainer instance = Arc.container().instance(HeaderContainer.class).get();
-        if (instance != null) {
-            instance.setContainerRequestContext(requestContext);
+        if (headerContainer != null) {
+            headerContainer.setContainerRequestContext(requestContext);
         }
     }
 }

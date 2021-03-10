@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.reactive.client.microprofile;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,39 +15,22 @@ import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 
 import io.quarkus.arc.Arc;
-import io.smallrye.common.constraint.NotNull;
-import io.smallrye.common.constraint.Nullable;
 
 @Priority(Integer.MIN_VALUE)
-public class MicroProfileRestRequestClientFilter implements ClientRequestFilter {
+public class MicroProfileRestClientRequestFilter implements ClientRequestFilter {
+
     private static final MultivaluedMap<String, String> EMPTY_MAP = new MultivaluedHashMap<>();
 
-    @Nullable
-    private final HeaderFiller headerFiller;
-    @NotNull
-    private final ClientHeadersFactory headersFactory;
+    private final ClientHeadersFactory clientHeadersFactory;
 
-    @Nullable
-    private final Method method;
-
-    /**
-     *
-     * @param headerFiller fills headers as specified in @ClientHeaderParam annotations
-     * @param headersFactory MP Rest Client headersFactory
-     * @param method java method of the JAX-RS interface
-     */
-    public MicroProfileRestRequestClientFilter(@Nullable HeaderFiller headerFiller,
-            @NotNull ClientHeadersFactory headersFactory,
-            // TODO: to optimize, add an option to disable passing the method?
-            @Nullable Method method) {
-        this.headerFiller = headerFiller;
-        this.headersFactory = headersFactory;
-        this.method = method;
+    public MicroProfileRestClientRequestFilter(ClientHeadersFactory clientHeadersFactory) {
+        this.clientHeadersFactory = clientHeadersFactory;
     }
 
-    // for each method, register one such filter
     @Override
     public void filter(ClientRequestContext requestContext) {
+        HeaderFiller headerFiller = (HeaderFiller) requestContext.getProperty(HeaderFiller.class.getName());
+
         // mutable collection of headers
         MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
 
@@ -63,7 +45,7 @@ public class MicroProfileRestRequestClientFilter implements ClientRequestFilter 
             headerFiller.addHeaders(headers);
         }
 
-        MultivaluedMap<String, String> incomingHeaders = MicroProfileRestRequestClientFilter.EMPTY_MAP;
+        MultivaluedMap<String, String> incomingHeaders = MicroProfileRestClientRequestFilter.EMPTY_MAP;
         if (Arc.container().getActiveContext(RequestScoped.class) != null) {
             HeaderContainer headerContainer = Arc.container().instance(HeaderContainer.class).get();
             if (headerContainer != null) {
@@ -71,7 +53,7 @@ public class MicroProfileRestRequestClientFilter implements ClientRequestFilter 
             }
         }
 
-        if (headersFactory instanceof DefaultClientHeadersFactoryImpl) {
+        if (clientHeadersFactory instanceof DefaultClientHeadersFactoryImpl) {
             // When using the default factory, pass the proposed outgoing headers onto the request context.
             // Propagation with the default factory will then overwrite any values if required.
             for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
@@ -79,13 +61,13 @@ public class MicroProfileRestRequestClientFilter implements ClientRequestFilter 
             }
         }
 
-        MultivaluedMap<String, String> updatedHeaders = headersFactory.update(incomingHeaders, headers);
-
-        for (Map.Entry<String, List<String>> headerEntry : updatedHeaders.entrySet()) {
-            requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+        if (clientHeadersFactory != null) {
+            incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);
         }
 
-        requestContext.setProperty("org.eclipse.microprofile.rest.client.invokedMethod", method);
+        for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {
+            requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+        }
     }
 
     private static List<String> castToListOfStrings(List<Object> values) {

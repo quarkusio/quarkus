@@ -713,6 +713,77 @@ On the server side, the `info` log show what OptaPlanner did in those five secon
 
 === Test the application
 
+==== Test the constraints
+
+To test each constraint in isolation, use a `ConstraintVerifier` in unit tests. This tests each constraint's corner cases in isolation from the other tests, which lowers maintenance when adding a new constraint with proper test coverage.
+
+Add a `optaplanner-test` dependency in your `pom.xml`:
+[source,xml]
+----
+    <dependency>
+      <groupId>org.optaplanner</groupId>
+      <artifactId>optaplanner-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+----
+
+Create the `src/test/java/org/acme/optaplanner/solver/TimeTableConstraintProviderTest.java` class:
+[source,java]
+----
+package org.acme.optaplanner.solver;
+
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+
+import javax.inject.Inject;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.acme.optaplanner.domain.Lesson;
+import org.acme.optaplanner.domain.Room;
+import org.acme.optaplanner.domain.TimeTable;
+import org.acme.optaplanner.domain.Timeslot;
+import org.junit.jupiter.api.Test;
+import org.optaplanner.test.api.score.stream.ConstraintVerifier;
+
+@QuarkusTest
+class TimeTableConstraintProviderTest {
+
+    private static final Room ROOM = new Room("Room1");
+    private static final Timeslot TIMESLOT1 = new Timeslot(DayOfWeek.MONDAY, LocalTime.of(9,0), LocalTime.NOON);
+    private static final Timeslot TIMESLOT2 = new Timeslot(DayOfWeek.TUESDAY, LocalTime.of(9,0), LocalTime.NOON);
+
+    @Inject
+    ConstraintVerifier<TimeTableConstraintProvider, TimeTable> constraintVerifier;
+
+    @Test
+    void roomConflict() {
+        Lesson firstLesson = new Lesson(1, "Subject1", "Teacher1", "Group1");
+        Lesson conflictingLesson = new Lesson(2, "Subject2", "Teacher2", "Group2");
+        Lesson nonConflictingLesson = new Lesson(3, "Subject3", "Teacher3", "Group3");
+
+        firstLesson.setRoom(ROOM);
+        firstLesson.setTimeslot(TIMESLOT1);
+
+        conflictingLesson.setRoom(ROOM);
+        conflictingLesson.setTimeslot(TIMESLOT1);
+
+        nonConflictingLesson.setRoom(ROOM);
+        nonConflictingLesson.setTimeslot(TIMESLOT2);
+
+        constraintVerifier.verifyThat(TimeTableConstraintProvider::roomConflict)
+                .given(firstLesson, conflictingLesson, nonConflictingLesson)
+                .penalizesBy(1);
+    }
+
+}
+----
+
+This test verifies that the constraint `TimeTableConstraintProvider::roomConflict`, when given three lessons in the same room, where two lessons have the same timeslot, it penalizes with a  match weight of `1`. So with a constraint weight of `10hard` it would reduce the score by `-10hard`.
+
+Notice how `ConstraintVerifier` ignores the constraint weight during testing - even if those constraint weights are hard coded in the `ConstraintProvider` - because constraints weights change regularly before going into production. This way, constraint weight tweaking does not break the unit tests.
+
+==== Test the solver
+
 A good application includes test coverage.
 In a JUnit test, generate a test dataset and send it to the `TimeTableResource` to solve.
 

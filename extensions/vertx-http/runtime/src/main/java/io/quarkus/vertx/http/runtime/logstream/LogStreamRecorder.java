@@ -10,8 +10,8 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class LogStreamRecorder {
 
-    public RuntimeValue<Optional<HistoryHandler>> handler() {
-        return new RuntimeValue<>(Optional.of(new HistoryHandler()));
+    public RuntimeValue<Optional<HistoryHandler>> handler(int size) {
+        return new RuntimeValue<>(Optional.of(new HistoryHandler(size)));
     }
 
     public Handler<RoutingContext> websocketHandler(RuntimeValue<Optional<HistoryHandler>> historyHandler) {

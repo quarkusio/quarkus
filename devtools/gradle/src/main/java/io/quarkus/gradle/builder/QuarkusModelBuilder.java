@@ -349,15 +349,21 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 continue;
             }
             final DependencyImpl dep = initDependency(a);
-            if (LaunchMode.DEVELOPMENT.equals(mode) &&
+            if ((LaunchMode.DEVELOPMENT.equals(mode) || LaunchMode.TEST.equals(mode)) &&
                     a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
                 IncludedBuild includedBuild = includedBuild(project, a.getName());
-                if (includedBuild != null) {
-                    addSubstitutedProject(dep, includedBuild.getProjectDir());
+                if ("test-fixtures".equals(a.getClassifier()) || "test".equals(a.getClassifier())) {
+                    //TODO: test-fixtures are broken under the new ClassLoading model
+                    dep.addPath(a.getFile());
                 } else {
-                    Project projectDep = project.getRootProject()
-                            .findProject(((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
-                    addDevModePaths(dep, a, projectDep);
+                    if (includedBuild != null) {
+                        addSubstitutedProject(dep, includedBuild.getProjectDir());
+                    } else {
+                        Project projectDep = project.getRootProject()
+                                .findProject(
+                                        ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
+                        addDevModePaths(dep, a, projectDep);
+                    }
                 }
             } else {
                 dep.addPath(a.getFile());

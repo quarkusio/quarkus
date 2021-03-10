@@ -3,9 +3,7 @@ package io.quarkus.jaxrs.client.reactive.runtime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.WebTarget;
@@ -16,19 +14,12 @@ import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder {
 
-    public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
-        @Override
-        public Executor get() {
-            return ExecutorRecorder.getCurrent();
-        }
-    };
     private static volatile Serialisers serialisers;
     private static volatile GenericTypeMapping genericTypeMapping;
 

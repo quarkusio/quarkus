@@ -36,13 +36,15 @@ import io.smallrye.mutiny.Multi;
 public class BlockingAndNonBlockingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addPackage(TestServiceGrpc.class.getPackage())
-                    .addPackage(EmptyProtos.class.getPackage())
-                    .addClasses(BlockingMutinyHelloService.class, TestService.class, AssertHelper.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setFlatClassPath(true)
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(HealthGrpc.class.getPackage())
+                            .addPackage(GreeterGrpc.class.getPackage())
+                            .addPackage(TestServiceGrpc.class.getPackage())
+                            .addPackage(EmptyProtos.class.getPackage())
+                            .addClasses(BlockingMutinyHelloService.class, TestService.class, AssertHelper.class))
             .withConfigurationResource("blocking-config.properties");
 
     @Inject

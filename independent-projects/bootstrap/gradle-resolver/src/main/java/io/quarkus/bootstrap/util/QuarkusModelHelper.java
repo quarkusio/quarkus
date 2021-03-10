@@ -44,14 +44,15 @@ public class QuarkusModelHelper {
     public final static List<String> ENABLE_JAR_PACKAGING = Collections
             .singletonList("-Dorg.gradle.java.compile-classpath-packaging=true");
 
-    public static void exportModel(QuarkusModel model) throws AppModelResolverException, IOException {
+    public static void exportModel(QuarkusModel model, boolean test) throws AppModelResolverException, IOException {
         Path serializedModel = QuarkusModelHelper
-                .serializeAppModel(model);
-        System.setProperty(BootstrapConstants.SERIALIZED_APP_MODEL, serializedModel.toString());
+                .serializeAppModel(model, test);
+        System.setProperty(test ? BootstrapConstants.SERIALIZED_TEST_APP_MODEL : BootstrapConstants.SERIALIZED_APP_MODEL,
+                serializedModel.toString());
     }
 
-    public static Path serializeAppModel(QuarkusModel model) throws AppModelResolverException, IOException {
-        final Path serializedModel = File.createTempFile("quarkus-app-model", ".dat").toPath();
+    public static Path serializeAppModel(QuarkusModel model, boolean test) throws AppModelResolverException, IOException {
+        final Path serializedModel = File.createTempFile("quarkus-" + (test ? "test-" : "") + "app-model", ".dat").toPath();
         final ArtifactCoords artifactCoords = model.getWorkspace().getMainModule().getArtifactCoords();
         AppArtifact appArtifact = new AppArtifact(artifactCoords.getGroupId(),
                 artifactCoords.getArtifactId(),

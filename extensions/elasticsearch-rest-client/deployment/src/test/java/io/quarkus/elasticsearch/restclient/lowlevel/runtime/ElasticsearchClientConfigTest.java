@@ -20,7 +20,7 @@ public class ElasticsearchClientConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClass(TestConfigurator.class)
+                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(TestConfigurator.class, RestClientBuilderHelper.class)
                             .addAsResource(new StringAsset("quarkus.elasticsearch.hosts=elasticsearch:9200"),
                                     "application.properties"));
 

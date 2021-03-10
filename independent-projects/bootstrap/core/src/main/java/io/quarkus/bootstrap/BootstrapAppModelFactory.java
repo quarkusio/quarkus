@@ -224,7 +224,12 @@ public class BootstrapAppModelFactory {
 
     public CurationResult resolveAppModel() throws BootstrapException {
         // gradle tests and dev encode the result on the class path
-        final String serializedModel = System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
+        final String serializedModel;
+        if (test) {
+            serializedModel = System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL);
+        } else {
+            serializedModel = System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
+        }
         if (serializedModel != null) {
             final Path p = Paths.get(serializedModel);
             if (Files.exists(p)) {

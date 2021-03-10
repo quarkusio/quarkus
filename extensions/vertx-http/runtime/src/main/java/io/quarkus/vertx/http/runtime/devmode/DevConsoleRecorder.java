@@ -44,6 +44,10 @@ public class DevConsoleRecorder {
         return new DevConsoleStaticHandler(devConsoleFinalDestination);
     }
 
+    public Handler<RoutingContext> continousTestHandler() {
+        return new ContinuousTestWebSocketHandler();
+    }
+
     private static final class CleanupDevConsoleTempDirectory implements Runnable {
 
         private final Path devConsoleFinalDestination;

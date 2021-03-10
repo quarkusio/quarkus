@@ -14,7 +14,6 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -80,12 +79,11 @@ public class DevModeTask {
             public void run(AppArtifact dep, Path moduleClasses, boolean appArtifact) {
 
                 dep.setPath(moduleClasses);
-
-                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo(dep.getKey(), dep.getArtifactId(), null,
-                        Collections.emptySet(),
-                        moduleClasses.toAbsolutePath().toString(), null, moduleClasses.toAbsolutePath().toString(),
-                        // the last three params are for code generation, in remote dev it happens on the "dev" side
-                        null, null, null);
+                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo.Builder().setAppArtifactKey(dep.getKey())
+                        .setName(dep.getArtifactId())
+                        .setClassesPath(moduleClasses.toAbsolutePath().toString())
+                        .setResourcesOutputPath(moduleClasses.toAbsolutePath().toString())
+                        .build();
 
                 if (appArtifact) {
                     context.setApplicationRoot(module);

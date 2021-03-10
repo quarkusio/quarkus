@@ -26,13 +26,13 @@
             <li class="nav-item" data-toggle="tooltip" data-placement="bottom" title="Filter">
                 <a id="logstreamFilterButton" class="logstreamIcon nav-link" data-toggle="modal" data-target="#logstreamFilterModal"><i class="fas fa-filter"></i></a>
             </li>
-            <li id="logstreamCurrentFilter" class="navbar-text">
+            <li id="logstreamCurrentFilter" class="navbar-text navbar-right">
             </li>
             <li id="logstreamResizeButton" class="nav-item"><a class="nav-link"><i class="fas fa-arrows-alt-v"></i></a></li>
             <li id="logstreamHideLogButton" class="nav-item" data-toggle="tooltip" data-placement="left" title="Hide Log"><a class="logstreamIcon nav-link" onclick="hideLog();"><i class="fas fa-caret-down fa-lg"></i></a></li>
         </ul>
     </div>
-    <span id="logstreamManagerNavAppInfo" class="navbar-text">
+    <span id="logstreamManagerNavAppInfo" class="navbar-text navbar-right">
       {applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion})
     </span>
 </nav> 

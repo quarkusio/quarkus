@@ -23,6 +23,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-spi</artifactId>
         </dependency>
         <!-- Used for the dev console. Note that there is no corresponding runtime dependency -->
@@ -33,6 +37,10 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
         <!-- Webjars for the UI -->
         <dependency>
@@ -64,6 +72,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

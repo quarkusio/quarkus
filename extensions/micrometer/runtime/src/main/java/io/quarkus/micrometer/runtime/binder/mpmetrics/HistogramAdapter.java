@@ -8,7 +8,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 
-class HistogramAdapter implements Histogram, MeterHolder {
+public class HistogramAdapter implements Histogram, MeterHolder {
     DistributionSummary summary;
 
     HistogramAdapter register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {

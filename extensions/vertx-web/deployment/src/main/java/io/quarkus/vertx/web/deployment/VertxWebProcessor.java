@@ -243,7 +243,7 @@ class VertxWebProcessor {
                         return true;
                     }
                 }
-                return false;
+                return GeneratedClassGizmoAdaptor.isApplicationClass(className);
             }
         };
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, appClassPredicate);
@@ -554,13 +554,7 @@ class VertxWebProcessor {
                     "A route requires validation, but the Hibernate Validator extension is not present");
         }
 
-        String baseName;
-        if (bean.getImplClazz().enclosingClass() != null) {
-            baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
-                    + io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
-        } else {
-            baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
-        }
+        String baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
         String targetPackage = io.quarkus.arc.processor.DotNames
                 .internalPackageNameWithTrailingSlash(bean.getImplClazz().name());
 

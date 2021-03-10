@@ -85,6 +85,9 @@ public class DependenciesFilter {
             if (project == null) {
                 continue;
             }
+            if ("test".equals(a.getScope())) {
+                continue;
+            }
             if (!project.getVersion().equals(a.getVersion())) {
                 log.warn(depKey + " is excluded from live coding since the application depends on version "
                         + a.getVersion() + " while the version present in the workspace is " + project.getVersion());

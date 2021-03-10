@@ -535,6 +535,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     }
 
+    public boolean isClosed() {
+        return closed;
+    }
+
     @Override
     public String toString() {
         return "QuarkusClassLoader:" + name;

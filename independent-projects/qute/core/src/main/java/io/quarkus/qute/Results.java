@@ -18,7 +18,12 @@ public final class Results {
 
     public enum Result {
 
-        NOT_FOUND,
+        NOT_FOUND;
+
+        @Override
+        public String toString() {
+            return "NOT_FOUND";
+        }
     }
 
 }

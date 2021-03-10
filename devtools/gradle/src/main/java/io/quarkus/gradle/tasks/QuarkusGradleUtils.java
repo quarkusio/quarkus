@@ -24,8 +24,9 @@ public class QuarkusGradleUtils {
 
     private static final String ERROR_COLLECTING_PROJECT_CLASSES = "Failed to collect project's classes in a temporary dir";
 
-    public static Path serializeAppModel(final AppModel appModel, Task context) throws IOException {
-        final Path serializedModel = context.getTemporaryDir().toPath().resolve("quarkus-app-model.dat");
+    public static Path serializeAppModel(final AppModel appModel, Task context, boolean test) throws IOException {
+        final Path serializedModel = context.getTemporaryDir().toPath()
+                .resolve("quarkus-app" + (test ? "-test" : "") + "-model.dat");
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
             out.writeObject(appModel);
         }

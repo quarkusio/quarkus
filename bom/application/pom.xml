@@ -213,6 +213,7 @@
         <avro.version>1.10.2</avro.version>
         <jacoco.version>0.8.6</jacoco.version>
         <testcontainers.version>1.15.2</testcontainers.version>
+        <aesh-readline.version>2.1</aesh-readline.version>
     </properties>
 
     <dependencyManagement>
@@ -4760,7 +4761,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>apache-client</artifactId>
@@ -5158,6 +5158,11 @@
                 <type>exe</type>
                 <classifier>windows-x86_64</classifier>
                 <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.aesh</groupId>
+                <artifactId>readline</artifactId>
+                <version>${aesh-readline.version}</version>
             </dependency>
 
             <!-- Picocli -->

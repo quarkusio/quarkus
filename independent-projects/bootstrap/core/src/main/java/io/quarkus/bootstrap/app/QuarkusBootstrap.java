@@ -89,8 +89,11 @@ public class QuarkusBootstrap implements Serializable {
     private final boolean rebuild;
     private final Set<AppArtifactKey> localArtifacts;
     private final List<ClassLoaderEventListener> classLoadListeners;
+    private final boolean auxiliaryApplication;
+    private final boolean flatClassPath;
+    private final ConfiguredClassLoading classLoadingConfig;
 
-    private QuarkusBootstrap(Builder builder) {
+    private QuarkusBootstrap(Builder builder, ConfiguredClassLoading classLoadingConfig) {
         this.applicationRoot = builder.applicationRoot;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
         this.excludeFromClassPath = new ArrayList<>(builder.excludeFromClassPath);
@@ -118,6 +121,9 @@ public class QuarkusBootstrap implements Serializable {
         this.rebuild = builder.rebuild;
         this.localArtifacts = new HashSet<>(builder.localArtifacts);
         this.classLoadListeners = builder.classLoadListeners;
+        this.auxiliaryApplication = builder.auxiliaryApplication;
+        this.flatClassPath = builder.flatClassPath;
+        this.classLoadingConfig = classLoadingConfig;
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -125,7 +131,7 @@ public class QuarkusBootstrap implements Serializable {
         //once we have this it is up to augment to set up the class loader to actually use them
 
         if (existingModel != null) {
-            return new CuratedApplication(this, new CurationResult(existingModel), createClassLoadingConfig());
+            return new CuratedApplication(this, new CurationResult(existingModel), classLoadingConfig);
         }
         //first we check for updates
         if (mode != Mode.PROD) {
@@ -160,10 +166,10 @@ public class QuarkusBootstrap implements Serializable {
                 appModelFactory.setEnableClasspathCache(true);
             }
         }
-        return new CuratedApplication(this, appModelFactory.resolveAppModel(), createClassLoadingConfig());
+        return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig);
     }
 
-    private ConfiguredClassLoading createClassLoadingConfig() {
+    private static ConfiguredClassLoading createClassLoadingConfig(PathsCollection applicationRoot, Mode mode) {
         //look for an application.properties
         for (Path path : applicationRoot) {
             Path props = path.resolve("application.properties");
@@ -172,19 +178,21 @@ public class QuarkusBootstrap implements Serializable {
                     Properties p = new Properties();
                     p.load(in);
                     Set<AppArtifactKey> parentFirst = toArtifactSet(
-                            p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p)));
+                            p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, mode)));
                     Set<AppArtifactKey> liveReloadable = toArtifactSet(
-                            p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p)));
-                    return new ConfiguredClassLoading(parentFirst, liveReloadable);
+                            p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)));
+                    boolean flatClassPath = Boolean.parseBoolean(
+                            p.getProperty(selectKey("quarkus.test.flat-class-path", p, mode)));
+                    return new ConfiguredClassLoading(parentFirst, liveReloadable, flatClassPath);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to load bootstrap classloading config from application.properties", e);
                 }
             }
         }
-        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet());
+        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), false);
     }
 
-    private String selectKey(String base, Properties p) {
+    private static String selectKey(String base, Properties p, Mode mode) {
         String profile = BootstrapProfile.getActiveProfile(mode);
         String profileKey = "%" + profile + "." + base;
         if (p.containsKey(profileKey)) {
@@ -193,7 +201,7 @@ public class QuarkusBootstrap implements Serializable {
         return base;
     }
 
-    private Set<AppArtifactKey> toArtifactSet(String config) {
+    private static Set<AppArtifactKey> toArtifactSet(String config) {
         if (config == null) {
             return new HashSet<>();
         }
@@ -234,6 +242,10 @@ public class QuarkusBootstrap implements Serializable {
 
     public Mode getMode() {
         return mode;
+    }
+
+    public boolean isAuxiliaryApplication() {
+        return auxiliaryApplication;
     }
 
     public static Builder builder() {
@@ -305,8 +317,13 @@ public class QuarkusBootstrap implements Serializable {
         return builder;
     }
 
+    public boolean isFlatClassPath() {
+        return flatClassPath;
+    }
+
     public static class Builder {
         public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
+        boolean flatClassPath;
         boolean rebuild;
         PathsCollection applicationRoot;
         String baseName;
@@ -333,6 +350,7 @@ public class QuarkusBootstrap implements Serializable {
         boolean disableClasspathCache;
         AppModel existingModel;
         final Set<AppArtifactKey> localArtifacts = new HashSet<>();
+        boolean auxiliaryApplication;
 
         public Builder() {
         }
@@ -362,6 +380,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder addAdditionalDeploymentArchive(Path path) {
             additionalDeploymentArchives.add(path);
+            return this;
+        }
+
+        public Builder setFlatClassPath(boolean flatClassPath) {
+            this.flatClassPath = flatClassPath;
             return this;
         }
 
@@ -395,6 +418,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setMode(Mode mode) {
             this.mode = mode;
+            return this;
+        }
+
+        public Builder setAuxiliaryApplication(boolean auxiliaryApplication) {
+            this.auxiliaryApplication = auxiliaryApplication;
             return this;
         }
 
@@ -508,14 +536,6 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
-        public QuarkusBootstrap build() {
-            Objects.requireNonNull(applicationRoot, "Application root must not be null");
-            if (appArtifact != null) {
-                localArtifacts.add(appArtifact.getKey());
-            }
-            return new QuarkusBootstrap(this);
-        }
-
         public Builder setRebuild(boolean value) {
             this.rebuild = value;
             return this;
@@ -524,6 +544,19 @@ public class QuarkusBootstrap implements Serializable {
         public Builder addClassLoaderEventListeners(List<ClassLoaderEventListener> classLoadListeners) {
             this.classLoadListeners.addAll(classLoadListeners);
             return this;
+        }
+
+        public QuarkusBootstrap build() {
+            Objects.requireNonNull(applicationRoot, "Application root must not be null");
+            if (appArtifact != null) {
+                localArtifacts.add(appArtifact.getKey());
+            }
+
+            ConfiguredClassLoading classLoadingConfig = createClassLoadingConfig(applicationRoot, mode);
+            if (classLoadingConfig.flatTestClassPath && mode == Mode.TEST) {
+                flatClassPath = true;
+            }
+            return new QuarkusBootstrap(this, classLoadingConfig);
         }
     }
 

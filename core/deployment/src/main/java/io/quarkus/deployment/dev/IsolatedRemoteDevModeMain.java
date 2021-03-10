@@ -115,10 +115,9 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 compilationProviders.add(provider);
                 context.getAllModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
             }
-            ClassLoaderCompiler compiler;
+            QuarkusCompiler compiler;
             try {
-                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(), curatedApplication,
-                        compilationProviders, context);
+                compiler = new QuarkusCompiler(curatedApplication, compilationProviders, context);
             } catch (Exception e) {
                 log.error("Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;
@@ -136,7 +135,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         public byte[] apply(String s, byte[] bytes) {
                             return ClassTransformingBuildStep.transform(s, bytes);
                         }
-                    });
+                    }, null);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
                     curatedApplication.getBaseRuntimeClassLoader())) {
@@ -200,7 +199,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
             if (RuntimeUpdatesProcessor.INSTANCE != null) {
                 RuntimeUpdatesProcessor.INSTANCE.checkForFileChange();
-                RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses();
+                RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses(true);
             }
 
             JarResult result = generateApplication();

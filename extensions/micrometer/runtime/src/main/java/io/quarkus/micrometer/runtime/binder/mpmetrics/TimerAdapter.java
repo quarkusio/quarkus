@@ -12,7 +12,7 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
-class TimerAdapter
+public class TimerAdapter
         implements org.eclipse.microprofile.metrics.Timer, org.eclipse.microprofile.metrics.SimpleTimer, MeterHolder {
     final MeterRegistry registry;
     Timer timer;

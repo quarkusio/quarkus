@@ -227,11 +227,11 @@ public final class PathTestHelper {
     }
 
     public static boolean isTestClass(String className, ClassLoader classLoader, Path testLocation) {
-        String classFileName = className.replace('.', File.separatorChar) + ".class";
-        URL resource = classLoader.getResource(classFileName);
+        URL resource = classLoader.getResource(className.replace('.', '/') + ".class");
         if (resource == null) {
             return false;
         }
+        String classFileName = className.replace('.', File.separatorChar) + ".class";
         if (Files.isDirectory(testLocation)) {
             return resource.getProtocol().startsWith("file") && isInTestDir(resource);
         }

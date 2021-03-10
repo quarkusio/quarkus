@@ -64,7 +64,6 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.QualifierRegistrar;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -930,9 +929,9 @@ public class QuteProcessor {
             List<PanacheEntityClassesBuildItem> panacheEntityClasses) {
 
         IndexView index = beanArchiveIndex.getIndex();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Predicate<String>() {
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
             @Override
-            public boolean test(String name) {
+            public String apply(String name) {
                 int idx = name.lastIndexOf(ExtensionMethodGenerator.NAMESPACE_SUFFIX);
                 if (idx == -1) {
                     idx = name.lastIndexOf(ExtensionMethodGenerator.SUFFIX);
@@ -944,9 +943,7 @@ public class QuteProcessor {
                 if (className.contains(ValueResolverGenerator.NESTED_SEPARATOR)) {
                     className = className.replace(ValueResolverGenerator.NESTED_SEPARATOR, "$");
                 }
-                //if the class is (directly) in the TCCL (and not its parent) then it is an application class
-                QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-                return !cl.getElementsWithResource(className + ".class", true).isEmpty();
+                return className;
             }
         });
 

@@ -34,11 +34,13 @@ import io.smallrye.mutiny.Multi;
 public class BlockingServiceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addClasses(BlockingMutinyHelloService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setFlatClassPath(true)
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(HealthGrpc.class.getPackage())
+                            .addPackage(GreeterGrpc.class.getPackage())
+                            .addClasses(BlockingMutinyHelloService.class))
             .withConfigurationResource("reflection-config.properties");
 
     protected ManagedChannel channel;

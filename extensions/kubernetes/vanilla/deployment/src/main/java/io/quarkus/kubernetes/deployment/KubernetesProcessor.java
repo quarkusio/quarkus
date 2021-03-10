@@ -106,8 +106,6 @@ class KubernetesProcessor {
             throw new RuntimeException("Unable to setup environment for generating Kubernetes resources", e);
         }
 
-        log.warn("exposition openshift=" + openshiftConfig.route.host);
-
         Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
         Set<String> deploymentTargets = kubernetesDeploymentTargets.getEntriesSortedByPriority().stream()
                 .map(DeploymentTargetEntry::getName)

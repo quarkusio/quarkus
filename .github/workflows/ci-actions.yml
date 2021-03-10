@@ -467,7 +467,7 @@ jobs:
     # Skip master in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 200
 
     steps:
       - uses: actions/checkout@v2

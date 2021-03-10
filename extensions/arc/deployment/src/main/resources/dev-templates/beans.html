@@ -7,7 +7,33 @@
    span.larger-badge {
      font-size: 0.9em;
    }
+   span.app-class {
+     cursor:pointer;
+     color:blue;
+     text-decoration:underline;
+   }
+
   {/style}
+
+  {#script}
+    $(document).ready(function(){
+      if (!ideKnown()) {
+        return;
+      }
+      $(".class-candidate").each(function() {
+        var className = $(this).text();
+        if (appClassLang(className)) {
+          $(this).addClass("app-class");
+        }
+      });
+
+      $(".app-class").on("click", function() {
+        openInIDE($(this).text());
+      });
+    });
+
+  {/script}
+
   {#title}Beans{/title}
   {#body}
   <table class="table table-striped">

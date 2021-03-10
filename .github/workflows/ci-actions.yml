@@ -34,6 +34,7 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dtest-containers -Dstart-containers -Dnative-image.xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
+  WINDOWS_NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dtest-containers -Dstart-containers -Dnative-image.xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
   JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
@@ -570,4 +571,77 @@ jobs:
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
+          path: 'test-reports.tgz'
+  native-tests-windows:
+    name: Native Tests - Windows - ${{matrix.category}}
+    needs: [build-jdk11, native-tests-read-json-matrix]
+    runs-on: windows-latest
+    # Skip master in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Ignore the following YAML Schema error
+    timeout-minutes: ${{matrix.timeout}}
+    strategy:
+      max-parallel: 8
+      fail-fast: false
+      # we only run a native build on Windows for Hibernate Validator just to be sure
+      # that we can build native executables on Windows
+      # matrix: ${{ fromJson(needs.native-tests-read-json-matrix.outputs.matrix) }}
+      matrix:
+        category: [hibernate-validator]
+        include:
+          - category: hibernate-validator
+            timeout: 20
+            test-modules: hibernate-validator
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        with:
+          java-version: 11
+      - name: Install cl.exe
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup GraalVM
+        id: setup-graalvm
+        uses: DeLaGuardo/setup-graalvm@master
+        with:
+          graalvm-version: '21.0.0.java11'
+      - name: Install native-image component
+        run: |
+          gu.cmd install native-image
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      # We do this so we can get better analytics for the downloaded version of the build images
+      - name: Update Docker Client User Agent
+        shell: bash
+        run: |
+          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Build with Maven
+        shell: bash
+        env:
+          TEST_MODULES: ${{matrix.test-modules}}
+          CATEGORY: ${{matrix.category}}
+        run: |
+          for i in $TEST_MODULES
+          do modules+="integration-tests/$i,"; done
+          mvn -pl "${modules}" $WINDOWS_NATIVE_TEST_MAVEN_OPTS
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-native-windows-${{matrix.category}}
           path: 'test-reports.tgz'

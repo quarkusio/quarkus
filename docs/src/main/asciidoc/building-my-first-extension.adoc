@@ -216,8 +216,8 @@ Your extension is a multi-module project. So let's start by checking out the par
 </project>
 ----
 
-<1> Quarkus requires a recent version of the Maven compiler plugin supporting the annotationProcessorPaths configuration.
-<2> Your extension declares 2 sub-modules `deployment` and `runtime`.
+<1> Your extension declares 2 sub-modules `deployment` and `runtime`.
+<2> Quarkus requires a recent version of the Maven compiler plugin supporting the annotationProcessorPaths configuration.
 <3> The `quarkus-bom` aligns your dependencies with those used by Quarkus during the augmentation phase.
 <4> Quarkus requires these configs to run tests properly
 

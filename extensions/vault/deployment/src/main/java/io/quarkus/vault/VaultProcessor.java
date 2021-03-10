@@ -29,7 +29,17 @@ import io.quarkus.vault.runtime.VaultSystemBackendManager;
 import io.quarkus.vault.runtime.VaultTOTPManager;
 import io.quarkus.vault.runtime.VaultTransitManager;
 import io.quarkus.vault.runtime.client.VertxVaultClient;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalAppRoleAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalKubernetesAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalTokenAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalUserpassAuthMethod;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.VaultModel;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV1SecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV2SecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalTOPTSecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalTransitSecretEngine;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
 import io.quarkus.vault.runtime.health.VaultHealthCheck;
@@ -77,6 +87,16 @@ public class VaultProcessor {
                 .addBeanClass(VaultDbManager.class)
                 .addBeanClass(VertxVaultClient.class)
                 .addBeanClass(VaultConfigHolder.class)
+                .addBeanClass(VaultInternalKvV1SecretEngine.class)
+                .addBeanClass(VaultInternalKvV2SecretEngine.class)
+                .addBeanClass(VaultInternalTransitSecretEngine.class)
+                .addBeanClass(VaultInternalTOPTSecretEngine.class)
+                .addBeanClass(VaultInternalSystemBackend.class)
+                .addBeanClass(VaultInternalAppRoleAuthMethod.class)
+                .addBeanClass(VaultInternalKubernetesAuthMethod.class)
+                .addBeanClass(VaultInternalTokenAuthMethod.class)
+                .addBeanClass(VaultInternalUserpassAuthMethod.class)
+                .addBeanClass(VaultInternalDatabaseSecretEngine.class)
                 .build();
     }
 

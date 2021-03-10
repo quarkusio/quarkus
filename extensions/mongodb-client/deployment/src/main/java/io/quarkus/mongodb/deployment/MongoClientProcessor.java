@@ -29,6 +29,7 @@ import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -41,7 +42,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -116,10 +116,10 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    public void mongoClientNames(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    public void mongoClientNames(BeanArchiveIndexBuildItem indexBuildItem,
             BuildProducer<MongoClientNameBuildItem> mongoClientName) {
         Set<String> values = new HashSet<>();
-        IndexView indexView = applicationArchivesBuildItem.getRootArchive().getIndex();
+        IndexView indexView = indexBuildItem.getIndex();
         addMongoClientNameValues(LEGACY_MONGO_CLIENT_ANNOTATION, indexView, values);
         addMongoClientNameValues(MONGO_CLIENT_ANNOTATION, indexView, values);
         for (String value : values) {
@@ -163,6 +163,16 @@ public class MongoClientProcessor {
         return null;
     }
 
+    @BuildStep
+    void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        // add the @MongoClientName class otherwise it won't registered as a qualifier
+        additionalBeans.produce(
+                AdditionalBeanBuildItem.builder().addBeanClass(io.quarkus.mongodb.runtime.MongoClientName.class).build());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
+        // make MongoClients an unremoveable bean
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());
+    }
+
     @Record(STATIC_INIT)
     @BuildStep
     void build(
@@ -175,21 +185,12 @@ public class MongoClientProcessor {
             CommandListenerBuildItem commandListener,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
             BuildProducer<MongoConnectionNameBuildItem> mongoConnections,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-
-        // add the @MongoClientName class otherwise it won't registered as a qualifier
-        additionalBeans.produce(
-                AdditionalBeanBuildItem.builder().addBeanClass(io.quarkus.mongodb.runtime.MongoClientName.class).build());
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         List<Supplier<ConnectionPoolListener>> poolListenerList = new ArrayList<>(connectionPoolListenerProvider.size());
         for (MongoConnectionPoolListenerBuildItem item : connectionPoolListenerProvider) {
             poolListenerList.add(item.getConnectionPoolListener());
         }
-
-        // make MongoClients an unremoveable bean
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());
 
         // create MongoClientSupport as a synthetic bean as it's used in AbstractMongoClientProducer
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(MongoClientSupport.class)

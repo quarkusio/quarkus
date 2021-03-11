@@ -223,10 +223,9 @@ public class InterceptorGenerator extends BeanGenerator {
             Class<?> retType = null;
             if (InterceptionType.AROUND_INVOKE.equals(interceptionType)) {
                 retType = Object.class;
-            } else if (InterceptionType.AROUND_CONSTRUCT.equals(interceptionType)) {
-                retType = interceptorMethod.returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
             } else {
-                retType = void.class;
+                // @PostConstruct, @PreDestroy, @AroundConstruct
+                retType = interceptorMethod.returnType().kind().equals(Type.Kind.VOID) ? void.class : Object.class;
             }
             ResultHandle ret;
             if (Modifier.isPrivate(interceptorMethod.flags())) {

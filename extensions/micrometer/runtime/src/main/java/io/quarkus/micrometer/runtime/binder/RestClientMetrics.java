@@ -62,7 +62,7 @@ public class RestClientMetrics implements RestClientListener {
 
         @Override
         public void filter(ClientRequestContext requestContext) throws IOException {
-            HttpRequestMetric requestMetric = new HttpRequestMetric(
+            RequestMetricInfo requestMetric = new RequestMetricInfo(
                     binderConfiguration.getClientMatchPatterns(),
                     binderConfiguration.getClientIgnorePatterns(),
                     requestContext.getUri().getPath());
@@ -77,25 +77,25 @@ public class RestClientMetrics implements RestClientListener {
     class MetricsClientResponseFilter implements ClientResponseFilter {
         @Override
         public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
-            HttpRequestMetric requestMetric = getRequestMetric(requestContext);
+            RequestMetricInfo requestMetric = getRequestMetric(requestContext);
             if (requestMetric != null) {
                 Timer.Sample sample = requestMetric.sample;
                 String requestPath = requestMetric.getHttpRequestPath();
                 int statusCode = responseContext.getStatus();
                 Timer.Builder builder = Timer.builder(HTTP_CLIENT_METRIC_NAME)
                         .tags(Tags.of(
-                                HttpMetricsCommon.method(requestContext.getMethod()),
-                                HttpMetricsCommon.uri(requestPath, statusCode),
-                                HttpMetricsCommon.outcome(statusCode),
-                                HttpMetricsCommon.status(statusCode),
+                                HttpCommonTags.method(requestContext.getMethod()),
+                                HttpCommonTags.uri(requestPath, statusCode),
+                                HttpCommonTags.outcome(statusCode),
+                                HttpCommonTags.status(statusCode),
                                 clientName(requestContext)));
 
                 sample.stop(builder.register(registry));
             }
         }
 
-        private HttpRequestMetric getRequestMetric(ClientRequestContext requestContext) {
-            return (HttpRequestMetric) requestContext.getProperty(REQUEST_METRIC_PROPERTY);
+        private RequestMetricInfo getRequestMetric(ClientRequestContext requestContext) {
+            return (RequestMetricInfo) requestContext.getProperty(REQUEST_METRIC_PROPERTY);
         }
 
         private Tag clientName(ClientRequestContext requestContext) {

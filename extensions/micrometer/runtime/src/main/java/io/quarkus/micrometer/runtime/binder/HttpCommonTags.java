@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.http.Outcome;
 
-public class HttpMetricsCommon {
+public class HttpCommonTags {
     public static final Tag URI_NOT_FOUND = Tag.of("uri", "NOT_FOUND");
     public static final Tag URI_REDIRECTION = Tag.of("uri", "REDIRECTION");
     public static final Tag URI_ROOT = Tag.of("uri", "root");

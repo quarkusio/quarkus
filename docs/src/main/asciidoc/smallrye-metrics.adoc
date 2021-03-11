@@ -3,14 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - MicroProfile Metrics
+= Quarkus - SmallRye Metrics
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize the MicroProfile
-Metrics specification through the SmallRye Metrics extension.
+This guide demonstrates how your Quarkus application can use https://github.com/smallrye/smallrye-metrics/[SmallRye Metrics],
+an implementation of the https://github.com/eclipse/microprofile-metrics/[MicroProfile Metrics] specification.
 
-MicroProfile Metrics allows applications to gather various metrics and statistics that provide
+SmallRye Metrics allows applications to gather various metrics and statistics that provide
 insights into what is happening inside the application.
 
 The metrics can be read remotely using JSON format or the OpenMetrics format, so that
@@ -22,7 +22,7 @@ exposed by various Quarkus extensions. These are described in the guide for each
 built-in metrics.
 
 IMPORTANT: link:micrometer[Micrometer] is the recommended approach to metrics for Quarkus.
-Use the MicroProfile Metrics extension when it's required to retain MicroProfile specification compatibility.
+Use the SmallRye Metrics extension when it's required to retain MicroProfile specification compatibility.
 
 == Prerequisites
 
@@ -62,7 +62,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd microprofile-metrics-quickstart
 ----
 
-This command generates a Maven project, importing the `smallrye-metrics` extension which is an implementation of the MicroProfile Metrics specification used in Quarkus.
+This command generates a Maven project, importing the `smallrye-metrics`.
 
 If you already have your Quarkus project configured, you can add the `smallrye-metrics` extension
 to your project by running the following command in your project base directory:

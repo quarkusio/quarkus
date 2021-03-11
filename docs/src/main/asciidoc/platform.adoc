@@ -90,7 +90,7 @@ The platform descriptor will normally be generated using a Maven plugin, e.g.
 
 A Quarkus platform may provide its own default values for some of the configuration options.
 
-Quarkus is using https://github.com/eclipse/microprofile-config[Eclipse MicroProfile Config] for wiring application configuration. A Quarkus platform may be used as another source of configuration in the hierarchy of the configuration sources dominated by the application's `application.properties`.
+Quarkus is using https://github.com/smallrye/smallrye-config[SmallRye Config] for wiring application configuration. A Quarkus platform may be used as another source of configuration in the hierarchy of the configuration sources dominated by the application's `application.properties`.
 
 To provide platform-specific defaults, the platform needs to include a dependency version constraint in its BOM for a properties artifact whose coordinates follow the following naming convention:
 

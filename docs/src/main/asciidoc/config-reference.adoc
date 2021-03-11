@@ -13,10 +13,10 @@ include::./attributes.adoc[]
 :toc:
 
 In this reference guide we're going to describe various aspects of Quarkus configuration.
-A Quarkus application and Quarkus itself (core and extensions) are both configured via the same mechanism that leverages the https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] API.
-Quarkus configuration is based on https://github.com/smallrye/smallrye-config[SmallRye Config], an implementation of the MicroProfile Config specification.
-All of the standard features are supported.
-Moreover, there are several additional features which are made available by the SmallRye Config project as well as by Quarkus itself.
+A Quarkus application and Quarkus itself (core and extensions) are both configured via the same mechanism that leverages
+the https://github.com/smallrye/smallrye-config[SmallRye Config] API an implementation of the
+https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] specification. Moreover, there are
+several additional features which are made available by Quarkus itself.
 
 TIP: If you're looking for information how to make a Quarkus extension configurable then see the <<writing-extensions.adoc#configuration,Writing Your Own Extension>> guide.
 
@@ -794,7 +794,7 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
 
 === Configuration key conflicts
 
-The MicroProfile Configuration specification defines configuration keys as an arbitrary `.`-delimited string.
+The MicroProfile Config specification defines configuration keys as an arbitrary `.`-delimited string.
 However, structured formats like YAML naively only support a subset of the possible configuration namespace.
 For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
 One property is the prefix of another, so it may not be immediately evident how to specify both keys in your YAML configuration.

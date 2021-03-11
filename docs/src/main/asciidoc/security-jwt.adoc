@@ -9,7 +9,9 @@ include::./attributes.adoc[]
 :extension-name: SmallRye JWT
 :mp-jwt: MicroProfile JWT RBAC
 
-This guide explains how your Quarkus application can utilize MicroProfile JWT (MP JWT) to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MP JWT `org.eclipse.microprofile.jwt.JsonWebToken` and provide secured access to the Quarkus HTTP endpoints using Bearer Token Authorization and https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
+This guide explains how your Quarkus application can utilize https://github.com/smallrye/smallrye-jwt/[SmallRye JWT]
+to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`
+and provide secured access to the Quarkus HTTP endpoints using Bearer Token Authorization and https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
 NOTE: Quarkus OpenId Connect extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information.
 OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide for more information.

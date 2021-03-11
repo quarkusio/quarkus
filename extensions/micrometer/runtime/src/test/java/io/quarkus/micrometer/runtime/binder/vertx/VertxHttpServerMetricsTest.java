@@ -1,53 +1,74 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
+import org.mockito.Mockito;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
-import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
-import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.ext.web.RoutingContext;
 
+/**
+ * Disabled on Java 8 because of Mocks
+ */
+@DisabledOnJre(JRE.JAVA_8)
 public class VertxHttpServerMetricsTest {
+    final List<Pattern> NO_IGNORE_PATTERNS = Collections.emptyList();
+    final List<Pattern> ignorePatterns = Arrays.asList(Pattern.compile("/ignore.*"));
 
-    @Test
-    public void testHttpServerMetricsIgnorePatterns() {
-        HttpServerConfig serverConfig = new HttpServerConfig();
-        serverConfig.ignorePatterns = Optional.of(new ArrayList<>(Arrays.asList("/item/.*")));
+    final Map<Pattern, String> NO_MATCH_PATTERNS = Collections.emptyMap();
 
-        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
-                true, false,
-                serverConfig, new HttpClientConfig(), new VertxConfig());
+    RoutingContext routingContext;
+    HttpRequestMetric requestMetric;
+    HttpServerRequestInternal request;
 
-        VertxHttpServerMetrics metrics = new VertxHttpServerMetrics(new SimpleMeterRegistry(), binderConfig);
-        Assertions.assertFalse(metrics.ignorePatterns.isEmpty());
-        Pattern p = metrics.ignorePatterns.get(0);
-        Assertions.assertEquals("/item/.*", p.pattern());
-        Assertions.assertTrue(p.matcher("/item/123").matches());
+    @BeforeEach
+    public void init() {
+        requestMetric = new HttpRequestMetric("/irrelevant");
+
+        routingContext = Mockito.mock(RoutingContext.class);
+        request = Mockito.mock(HttpServerRequestInternal.class);
+
+        Mockito.when(routingContext.request()).thenReturn(request);
+        Mockito.when(request.metric()).thenReturn(requestMetric);
     }
 
     @Test
-    public void testHttpServerMetricsMatchPatterns() {
-        HttpServerConfig serverConfig = new HttpServerConfig();
-        serverConfig.matchPatterns = Optional.of(new ArrayList<>(Arrays.asList("/item/\\d+=/item/{id}")));
+    public void testReturnPathFromHttpRequestPath() {
+        HttpRequestMetric fetchedMetric = HttpRequestMetric.getRequestMetric(routingContext);
+        Assertions.assertSame(requestMetric, fetchedMetric);
 
-        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
-                true, false,
-                serverConfig, new HttpClientConfig(), new VertxConfig());
-
-        VertxHttpServerMetrics metrics = new VertxHttpServerMetrics(new SimpleMeterRegistry(), binderConfig);
-
-        Assertions.assertFalse(metrics.matchPatterns.isEmpty());
-        Map.Entry<Pattern, String> entry = metrics.matchPatterns.entrySet().iterator().next();
-        Assertions.assertEquals("/item/\\d+", entry.getKey().pattern());
-        Assertions.assertEquals("/item/{id}", entry.getValue());
-        Assertions.assertTrue(entry.getKey().matcher("/item/123").matches());
+        // Emulate a JAX-RS or Servlet filter pre-determining the template path
+        requestMetric.setTemplatePath("/item/{id}");
+        Assertions.assertEquals("/item/{id}", requestMetric.applyTemplateMatching("/"));
     }
+
+    @Test
+    public void testReturnRoutedPath() {
+        // Vertx route information collection, no web template, will use normalized initial value
+        requestMetric.appendCurrentRoutePath("/notused");
+
+        // Return the value passed in as parameter (no templates)
+        Assertions.assertEquals("/item/abc", requestMetric.applyTemplateMatching("/item/abc"));
+    }
+
+    @Test
+    public void testReturnTemplatedPathFromRoutingContext() {
+        // Emulate a Vert.x Route containing templated values
+        requestMetric.appendCurrentRoutePath("/item/:id");
+
+        // Should return the templated version of the path (based on the route definition)
+        Assertions.assertEquals("/item/{id}", requestMetric.applyTemplateMatching("/"));
+        // Make sure conversion is cached
+        Assertions.assertEquals("/item/{id}", HttpRequestMetric.vertxWebToUriTemplate.get("/item/:id"));
+    }
+
 }

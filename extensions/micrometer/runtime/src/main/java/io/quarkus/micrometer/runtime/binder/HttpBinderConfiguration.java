@@ -114,4 +114,20 @@ public class HttpBinderConfiguration {
         }
         return Collections.emptyMap();
     }
+
+    public String getHttpServerRequestsName() {
+        return "http.server.requests";
+    }
+
+    public String getHttpServerPushName() {
+        return "http.server.push";
+    }
+
+    public String getHttpServerWebSocketConnectionsName() {
+        return "http.server.websocket.connections";
+    }
+
+    public String getHttpClientRequestsName() {
+        return "http.client.requests";
+    }
 }

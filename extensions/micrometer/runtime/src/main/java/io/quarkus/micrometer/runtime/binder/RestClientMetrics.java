@@ -21,10 +21,11 @@ import io.quarkus.arc.Arc;
  * This is initialized via ServiceFactory (static/non-CDI initialization)
  */
 public class RestClientMetrics implements RestClientListener {
-    private static final String HTTP_CLIENT_METRIC_NAME = "http.client.requests";
+
     private final static String REQUEST_METRIC_PROPERTY = "restClientMetrics";
 
     final MeterRegistry registry = Metrics.globalRegistry;
+    HttpBinderConfiguration httpMetricsConfig;
     MetricsClientRequestFilter clientRequestFilter;
     MetricsClientResponseFilter clientResponseFilter;
 
@@ -38,7 +39,7 @@ public class RestClientMetrics implements RestClientListener {
     MetricsClientRequestFilter getClientRequestFilter() {
         MetricsClientRequestFilter clientFilter = this.clientRequestFilter;
         if (clientFilter == null) {
-            HttpBinderConfiguration httpMetricsConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
+            this.httpMetricsConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
             clientFilter = this.clientRequestFilter = new MetricsClientRequestFilter(httpMetricsConfig);
         }
         return clientFilter;
@@ -82,7 +83,7 @@ public class RestClientMetrics implements RestClientListener {
                 Timer.Sample sample = requestMetric.sample;
                 String requestPath = requestMetric.getHttpRequestPath();
                 int statusCode = responseContext.getStatus();
-                Timer.Builder builder = Timer.builder(HTTP_CLIENT_METRIC_NAME)
+                Timer.Builder builder = Timer.builder(httpMetricsConfig.getHttpClientRequestsName())
                         .tags(Tags.of(
                                 HttpCommonTags.method(requestContext.getMethod()),
                                 HttpCommonTags.uri(requestPath, statusCode),

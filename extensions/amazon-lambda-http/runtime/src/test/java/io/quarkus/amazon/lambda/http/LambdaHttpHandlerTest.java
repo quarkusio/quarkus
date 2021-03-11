@@ -36,7 +36,7 @@ public class LambdaHttpHandlerTest {
 
     private static final long PROCESSING_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
 
-    private static final String PATH = "test/path";
+    private static final String PATH = "/test/path";
     private static final String QUERY = "testParam1=testValue1&testParam2=testValue2";
     private static final String HOST_HEADER = "Host";
     private static final String HOST = "localhost";

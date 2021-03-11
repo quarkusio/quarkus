@@ -2,8 +2,6 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static io.restassured.RestAssured.when;
 
-import java.net.URL;
-
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
@@ -18,7 +16,6 @@ import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
 import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.SocketAddress;
 
@@ -32,9 +29,6 @@ public class VertxWithHttpDisabledTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
 
-    @TestHTTPResource
-    URL url;
-
     @Inject
     Instance<VertxMeterBinderAdapter> vertxMeterBinderAdapterInstance;
 
@@ -45,7 +39,7 @@ public class VertxWithHttpDisabledTest {
     MeterRegistry registry;
 
     @Test
-    public void testVertxMetricsWithoutHttp() throws Exception {
+    public void testVertxMetricsWithoutHttp() {
         Assertions.assertFalse(httpBinderConfiguration.isClientEnabled());
         Assertions.assertFalse(httpBinderConfiguration.isServerEnabled());
 

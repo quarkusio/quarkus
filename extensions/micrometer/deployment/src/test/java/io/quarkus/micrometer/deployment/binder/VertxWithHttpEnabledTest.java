@@ -2,7 +2,6 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static io.restassured.RestAssured.when;
 
-import java.net.URL;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -20,7 +19,6 @@ import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter;
 import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
@@ -39,9 +37,6 @@ public class VertxWithHttpEnabledTest {
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
-
-    @TestHTTPResource
-    URL url;
 
     @Inject
     Instance<VertxMeterBinderAdapter> vertxMeterBinderAdapterInstance;

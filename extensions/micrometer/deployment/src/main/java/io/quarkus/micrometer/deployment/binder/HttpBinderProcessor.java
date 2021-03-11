@@ -17,14 +17,12 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
-import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterFilter;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
-import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
 /**
  * Avoid directly referencing optional dependencies
@@ -63,7 +61,7 @@ public class HttpBinderProcessor {
         }
     }
 
-    @BuildStep(onlyIf = { MicrometerProcessor.MicrometerEnabled.class })
+    @BuildStep(onlyIf = MicrometerProcessor.MicrometerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem enableHttpBinders(MicrometerRecorder recorder,
             MicrometerConfig buildTimeConfig,
@@ -91,12 +89,7 @@ public class HttpBinderProcessor {
                 .done();
     }
 
-    @BuildStep(onlyIf = { VertxBinderProcessor.VertxBinderEnabled.class, HttpServerBinderEnabled.class })
-    FilterBuildItem addVertxMeterFilter() {
-        return new FilterBuildItem(new VertxMeterFilter(), Integer.MAX_VALUE);
-    }
-
-    @BuildStep(onlyIf = { VertxBinderProcessor.VertxBinderEnabled.class, HttpServerBinderEnabled.class })
+    @BuildStep(onlyIf = HttpServerBinderEnabled.class)
     void enableHttpServerSupport(Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviders,
             BuildProducer<CustomContainerRequestFilterBuildItem> customContainerRequestFilter,
@@ -112,7 +105,7 @@ public class HttpBinderProcessor {
         }
     }
 
-    @BuildStep(onlyIf = { HttpClientBinderEnabled.class })
+    @BuildStep(onlyIf = HttpClientBinderEnabled.class)
     void registerRestClientListener(BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         resource.produce(new NativeImageResourceBuildItem(

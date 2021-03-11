@@ -30,6 +30,7 @@
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>adal4j</artifactId>
+            <optional>true</optional>
             <version>1.6.6</version>
             <exclusions>
                 <exclusion>

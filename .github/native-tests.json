@@ -75,7 +75,7 @@
         {
             "category": "Security2",
             "timeout": 70,
-            "test-modules": "oidc oidc-code-flow oidc-tenancy keycloak-authorization oidc-client oidc-token-propagation oidc-wiremock oidc-client-wiremock"
+            "test-modules": "oidc oidc-code-flow oidc-tenancy keycloak-authorization oidc-client oidc-token-propagation smallrye-jwt-token-propagation oidc-wiremock oidc-client-wiremock"
         },
         {
             "category": "Security3",

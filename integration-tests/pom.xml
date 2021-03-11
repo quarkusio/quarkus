@@ -83,6 +83,7 @@
         <module>oidc-client</module>
         <module>oidc-client-wiremock</module>
         <module>oidc-token-propagation</module>
+        <module>smallrye-jwt-token-propagation</module>
         <module>oidc-code-flow</module>
         <module>oidc-tenancy</module>
         <module>oidc-wiremock</module>

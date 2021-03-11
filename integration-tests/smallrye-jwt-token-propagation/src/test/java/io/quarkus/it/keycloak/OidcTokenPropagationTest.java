@@ -29,12 +29,4 @@ public class OidcTokenPropagationTest {
                 .statusCode(200)
                 .body(equalTo("alice"));
     }
-
-    @Test
-    public void testGetUserNameFromServiceAccount() {
-        RestAssured.when().get("/frontend/service-account")
-                .then()
-                .statusCode(200)
-                .body(equalTo("bob"));
-    }
 }

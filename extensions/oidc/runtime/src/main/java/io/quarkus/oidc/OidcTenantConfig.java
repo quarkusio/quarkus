@@ -390,7 +390,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * For example, if the current request URI is 'https://localhost:8080/service' then a 'redirect_uri' parameter
          * will be set to 'https://localhost:8080/' if this property is set to '/' and be the same as the request URI
          * if this property has not been configured.
-         * Note the original request URI will be restored after the user has authenticated.
+         * Note the original request URI will be restored after the user has authenticated if 'restorePathAfterRedirect' is set
+         * to 'true'.
          */
         @ConfigItem
         public Optional<String> redirectPath = Optional.empty();
@@ -398,9 +399,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * If this property is set to 'true' then the original request URI which was used before
          * the authentication will be restored after the user has been redirected back to the application.
+         * 
+         * Note if `redirectPath` property is not set the the original request URI will be restored even if this property is
+         * disabled.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean restorePathAfterRedirect = true;
+        @ConfigItem(defaultValue = "false")
+        public boolean restorePathAfterRedirect;
 
         /**
          * Remove the query parameters such as 'code' and 'state' set by the OIDC server on the redirect URI
@@ -457,8 +461,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * logout cookies.
          * The `cookie-path-header` property, if set, will be checked first.
          */
-        @ConfigItem
-        public Optional<String> cookiePath = Optional.empty();
+        @ConfigItem(defaultValue = "/")
+        public String cookiePath = "/";
 
         /**
          * Cookie path header parameter value which, if set, identifies the incoming HTTP header
@@ -559,12 +563,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.cookieForceSecure = cookieForceSecure;
         }
 
-        public Optional<String> getCookiePath() {
+        public String getCookiePath() {
             return cookiePath;
         }
 
         public void setCookiePath(String cookiePath) {
-            this.cookiePath = Optional.of(cookiePath);
+            this.cookiePath = cookiePath;
         }
 
         public Optional<String> getCookieDomain() {

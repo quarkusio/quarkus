@@ -67,7 +67,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     UserInfo currentUserInfo() {
-        UserInfo userInfo = (UserInfo) identity.getAttribute("userinfo");
+        UserInfo userInfo = (UserInfo) identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE);
         if (userInfo == null) {
             throw new OIDCException("UserInfo can not be injected");
         }

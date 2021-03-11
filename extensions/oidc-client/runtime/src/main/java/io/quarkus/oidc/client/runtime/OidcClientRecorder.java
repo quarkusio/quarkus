@@ -97,7 +97,7 @@ public class OidcClientRecorder {
             oidcConfig.setId(oidcClientId);
         }
 
-        OidcCommonUtils.verifyCommonConfiguration(oidcConfig);
+        OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false);
 
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
 

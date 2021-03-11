@@ -66,6 +66,13 @@ public class CodeFlowTest {
 
             assertEquals("Welcome to Test App", page.getTitleText(),
                     "A second request should not redirect and just re-authenticate the user");
+
+            page = webClient.getPage("http://localhost:8081/web-app/configMetadataIssuer");
+
+            assertEquals(
+                    KeycloakRealmResourceManager.KEYCLOAK_SERVER_URL + "/realms/" + KeycloakRealmResourceManager.KEYCLOAK_REALM,
+                    page.asText());
+
             webClient.getCookieManager().clearCookies();
         }
     }

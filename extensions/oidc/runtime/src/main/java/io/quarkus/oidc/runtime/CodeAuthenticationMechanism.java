@@ -394,7 +394,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         String cookieValue = uuid;
 
         Authentication auth = configContext.oidcConfig.getAuthentication();
-        if (auth.isRestorePathAfterRedirect()) {
+        boolean restorePath = auth.isRestorePathAfterRedirect() || !auth.redirectPath.isPresent();
+        if (restorePath) {
             String requestQuery = context.request().query();
             String requestPath = !redirectPath.equals(context.request().path()) || requestQuery != null
                     ? context.request().path()
@@ -436,8 +437,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static void setCookiePath(RoutingContext context, Authentication auth, ServerCookie cookie) {
         if (auth.cookiePathHeader.isPresent() && context.request().headers().contains(auth.cookiePathHeader.get())) {
             cookie.setPath(context.request().getHeader(auth.cookiePathHeader.get()));
-        } else if (auth.cookiePath.isPresent()) {
-            cookie.setPath(auth.getCookiePath().get());
+        } else {
+            cookie.setPath(auth.getCookiePath());
         }
     }
 

@@ -28,19 +28,24 @@ public class OidcCommonUtils {
 
     }
 
-    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig) {
+    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean isServerConfig) {
+        final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
         if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
-            throw new ConfigurationException("Both 'auth-server-url' and 'client-id' properties must be configured");
+            throw new ConfigurationException(
+                    String.format("Both '%sauth-server-url' and '%sclient-id' properties must be configured", configPrefix));
         }
 
         Credentials creds = oidcConfig.getCredentials();
         if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
             throw new ConfigurationException(
-                    "'credentials.secret' and 'credentials.client-secret' properties are mutually exclusive");
+                    String.format("'%scredentials.secret' and '%scredentials.client-secret' properties are mutually exclusive",
+                            configPrefix));
         }
         if ((creds.secret.isPresent() || creds.clientSecret.value.isPresent()) && creds.jwt.secret.isPresent()) {
             throw new ConfigurationException(
-                    "Use only 'credentials.secret' or 'credentials.client-secret' or 'credentials.jwt.secret' property");
+                    String.format(
+                            "Use only '%scredentials.secret' or '%scredentials.client-secret' or '%scredentials.jwt.secret' property",
+                            configPrefix));
         }
     }
 

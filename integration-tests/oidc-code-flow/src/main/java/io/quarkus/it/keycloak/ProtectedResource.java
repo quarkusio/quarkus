@@ -14,6 +14,7 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -25,6 +26,9 @@ public class ProtectedResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    OidcConfigurationMetadata configMetadata;
 
     @Inject
     @IdToken
@@ -49,6 +53,12 @@ public class ProtectedResource {
     @Path("sec")
     public String hello() {
         return securityContext.getUserPrincipal().getName();
+    }
+
+    @GET
+    @Path("configMetadataIssuer")
+    public String configMetadataIssuer() {
+        return configMetadata.getIssuer();
     }
 
     @GET

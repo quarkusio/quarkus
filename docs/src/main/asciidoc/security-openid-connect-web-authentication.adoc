@@ -273,15 +273,13 @@ If `quarkus.oidc.authentication.redirect-path` is set but the original request U
 
 The OIDC adapter uses cookies to keep the session, code flow and post logout state.
 
-If you access the protected resources with overlapping or different roots, for example: 
+`quarkus.oidc.authentication.cookie-path` property is used to ensure the cookies are visible especially when you access the protected resources with overlapping or different roots, for example: 
 
 * `/index.html` and `/web-app/service`
 * `/web-app/service1` and `/web-app/service2`
 * `/web-app1/service` and `/web-app2/service` 
 
-then most likely you also need to set a `quarkus.oidc.authentication.cookie-path` property to a path value that is common to all of them, such as `/` or `/web-app`, etc.
-
-Otherwise the browser cache manager may keep request path specific cookies which in turn may lead to some difficult to diagnoze errors. For example, an authorization code flow may fail due to a missing state cookie if a user has initially accessed `/index.html` but configured a callback URI to `/web-app/callback`.
+`quarkus.oidc.authentication.cookie-path` is set to `/` by default but can be narrowed to the more specific root path such as `/web-app`.
 
 You can also set a `quarkus.oidc.authentication.cookie-path-header` property if the cookie path needs to be set dynamically.
 For example, setting `quarkus.oidc.authentication.cookie-path-header=X-Forwarded-Prefix` means that the value of HTTP `X-Forwarded-Prefix` header will be used to set a cookie path.

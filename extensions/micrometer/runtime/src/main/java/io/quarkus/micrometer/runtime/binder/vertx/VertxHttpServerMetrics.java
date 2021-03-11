@@ -12,8 +12,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
-import io.quarkus.micrometer.runtime.binder.HttpMetricsCommon;
-import io.quarkus.micrometer.runtime.binder.HttpRequestMetric;
+import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -96,10 +95,10 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         HttpRequestMetric requestMetric = new HttpRequestMetric(matchPatterns, ignorePatterns, uri);
         if (requestMetric.isMeasure()) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    HttpMetricsCommon.uri(requestMetric.getPath(), response.getStatusCode()),
+                    HttpCommonTags.uri(requestMetric.getPath(), response.getStatusCode()),
                     VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
-                    HttpMetricsCommon.status(response.getStatusCode())))
+                    HttpCommonTags.status(response.getStatusCode())))
                     .increment();
         }
         log.debugf("responsePushed %s: %s, %s", uri, socketMetric, requestMetric);
@@ -147,9 +146,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
                     .tags(requestMetric.getTags())
                     .tags(Tags.of(
-                            HttpMetricsCommon.uri(requestPath, 0),
+                            HttpCommonTags.uri(requestPath, 0),
                             Outcome.CLIENT_ERROR.asTag(),
-                            HttpMetricsCommon.STATUS_RESET));
+                            HttpCommonTags.STATUS_RESET));
             sample.stop(builder.register(registry));
         }
     }
@@ -170,9 +169,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
                     .tags(requestMetric.getTags())
                     .tags(Tags.of(
-                            HttpMetricsCommon.uri(requestPath, response.getStatusCode()),
+                            HttpCommonTags.uri(requestPath, response.getStatusCode()),
                             VertxMetricsTags.outcome(response),
-                            HttpMetricsCommon.status(response.getStatusCode())));
+                            HttpCommonTags.status(response.getStatusCode())));
 
             sample.stop(builder.register(registry));
         }
@@ -193,7 +192,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         String path = getServerRequestPath(requestMetric);
         if (path != null) {
             return LongTaskTimer.builder(nameWebsocketConnections)
-                    .tags(Tags.of(HttpMetricsCommon.uri(path, 0)))
+                    .tags(Tags.of(HttpCommonTags.uri(path, 0)))
                     .register(registry)
                     .start();
         }

@@ -1,8 +1,6 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
@@ -32,8 +30,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     static final Logger log = Logger.getLogger(VertxHttpServerMetrics.class);
     static final String METRICS_CONTEXT = "HTTP_REQUEST_METRICS_CONTEXT";
 
-    final List<Pattern> ignorePatterns;
-    final Map<Pattern, String> matchPatterns;
+    HttpBinderConfiguration config;
 
     final String nameWebsocketConnections;
     final String nameHttpServerPush;
@@ -41,12 +38,12 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
 
     VertxHttpServerMetrics(MeterRegistry registry, HttpBinderConfiguration config) {
         super(registry, "http.server");
+        this.config = config;
+
+        // not dev-mode changeable
         nameWebsocketConnections = config.getHttpServerWebSocketConnectionsName();
         nameHttpServerPush = config.getHttpServerPushName();
         nameHttpServerRequests = config.getHttpServerRequestsName();
-
-        ignorePatterns = config.getServerIgnorePatterns();
-        matchPatterns = config.getServerMatchPatterns();
     }
 
     /**
@@ -62,11 +59,13 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     public HttpRequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
             HttpResponse response) {
         HttpRequestMetric requestMetric = new HttpRequestMetric(uri);
-        String path = requestMetric.getNormalizedUriPath(matchPatterns, ignorePatterns);
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
         if (path != null) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    VertxMetricsTags.method(method),
                     HttpCommonTags.uri(path, response.statusCode()),
+                    VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode())))
                     .increment();
@@ -109,7 +108,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     public void requestReset(HttpRequestMetric requestMetric) {
         log.debugf("requestReset %s", requestMetric);
 
-        String path = requestMetric.getNormalizedUriPath(matchPatterns, ignorePatterns);
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
@@ -134,7 +135,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     public void responseEnd(HttpRequestMetric requestMetric, HttpResponse response, long bytesWritten) {
         log.debugf("responseEnd %s, %s", response, requestMetric);
 
-        String path = requestMetric.getNormalizedUriPath(matchPatterns, ignorePatterns);
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
@@ -161,7 +164,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
             ServerWebSocket serverWebSocket) {
         log.debugf("websocket connected %s, %s, %s", socketMetric, serverWebSocket, requestMetric);
 
-        String path = requestMetric.getNormalizedUriPath(matchPatterns, ignorePatterns);
+        String path = requestMetric.getNormalizedUriPath(
+                config.getServerMatchPatterns(),
+                config.getServerIgnorePatterns());
         if (path != null) {
             return LongTaskTimer.builder(nameWebsocketConnections)
                     .tags(Tags.of(HttpCommonTags.uri(path, 0)))

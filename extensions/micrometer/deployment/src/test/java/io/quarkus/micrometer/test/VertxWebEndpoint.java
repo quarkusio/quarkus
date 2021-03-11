@@ -2,8 +2,8 @@ package io.quarkus.micrometer.test;
 
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RouteBase;
-import io.vertx.core.http.HttpMethod;
 
 @RouteBase(path = "/vertx")
 public class VertxWebEndpoint {

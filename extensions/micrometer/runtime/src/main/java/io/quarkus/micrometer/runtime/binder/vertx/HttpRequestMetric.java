@@ -60,7 +60,9 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     public void setTemplatePath(String path) {
-        this.templatePath = path;
+        if (this.templatePath == null) {
+            this.templatePath = path;
+        }
     }
 
     public void appendCurrentRoutePath(String path) {

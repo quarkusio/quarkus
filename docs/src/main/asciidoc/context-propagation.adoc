@@ -18,6 +18,7 @@ If you write reactive/async code, you have to cut your work into a pipeline of c
 as well as `ThreadLocal` variables stop working, because your reactive code gets executed in another thread,
 after the caller ran its `finally` block.
 
+link:https://github.com/smallrye/smallrye-context-propagation[SmallRye Context Propagation] an implementation of
 link:https://github.com/eclipse/microprofile-context-propagation[MicroProfile Context Propagation] was made to
 make those Quarkus extensions work properly in reactive/async settings. It works by capturing those contextual
 values that used to be in thread-locals, and restoring them when your code is called.

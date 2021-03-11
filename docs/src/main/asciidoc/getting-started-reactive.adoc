@@ -163,7 +163,7 @@ Uni<JsonObject> uni =
         });
 ----
 
-Last but not least, Mutiny has built-in integration with MicroProfile Context Propagation so you can propagate transactions, traceability data, and so on in your reactive pipeline.
+Last but not least, Mutiny has built-in integration with SmallRye Context Propagation so you can propagate transactions, traceability data, and so on in your reactive pipeline.
 
 But enough talking, let's get our hands dirty!
 

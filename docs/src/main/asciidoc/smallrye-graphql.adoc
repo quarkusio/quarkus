@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - GraphQL
+= Quarkus - SmallRye GraphQL
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize the **Eclipse MicroProfile
-GraphQL** specification through the SmallRye GraphQL extension.
+This guide demonstrates how your Quarkus application can use https://github.com/smallrye/smallrye-graphql/[SmallRye GraphQL],
+an implementation of the https://github.com/eclipse/microprofile-graphql/[MicroProfile GraphQL] specification.
 
 As the https://www.graphql.org/[GraphQL] specification website states:
 
@@ -75,7 +75,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd microprofile-graphql-quickstart
 ----
 
-This command generates a Maven project, importing the `smallrye-graphql` extension which is an implementation of the MicroProfile GraphQL specification used in Quarkus.
+This command generates a Maven project, importing the `smallrye-graphql` extension.
 
 If you already have your Quarkus project configured, you can add the `smallrye-graphql` extension
 to your project by running the following command in your project base directory:
@@ -850,7 +850,7 @@ When `SomeBusinessException` occurs, the error output will contain the Error cod
 
 == Conclusion
 
-MicroProfile GraphQL enables clients to retrieve the exact data that is
+SmallRye GraphQL enables clients to retrieve the exact data that is
 required preventing `Over-fetching` and `Under-fetching`.
 
 The GraphQL API can be expanded without breaking previous queries enabling easy

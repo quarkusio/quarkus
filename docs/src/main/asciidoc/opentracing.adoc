@@ -100,7 +100,9 @@ public class TracedResource {
 ----
 
 Notice that there is no tracing specific code included in the application. By default, requests sent to this
-endpoint will be traced without any code changes being required. It is also possible to enhance the tracing information. For more information on this, please see the https://github.com/eclipse/microprofile-opentracing/blob/master/spec/src/main/asciidoc/microprofile-opentracing.asciidoc[MicroProfile OpenTracing specification].
+endpoint will be traced without any code changes being required. It is also possible to enhance the tracing information.
+This can be achieved by https://github.com/smallrye/smallrye-opentracing/[SmallRye OpenTracing] an implementation of
+https://github.com/eclipse/microprofile-opentracing/[MicroProfile OpenTracing].
 
 === Create the configuration
 

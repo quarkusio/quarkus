@@ -3,14 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - MicroProfile Health
+= Quarkus - SmallRye Health
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize the MicroProfile 
-Health specification through the SmallRye Health extension.
+This guide demonstrates how your Quarkus application can use https://github.com/smallrye/smallrye-health/[SmallRye Health]
+an implementation of the https://github.com/eclipse/microprofile-health/[MicroProfile Health] specification.
 
-MicroProfile Health allows applications to provide information about their state 
+SmallRye Health allows applications to provide information about their state
 to external viewers which is typically useful in cloud environments where automated 
 processes must be able to determine whether the application should be discarded 
 or restarted.
@@ -54,8 +54,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd microprofile-health-quickstart
 ----
 
-This command generates a Maven project, importing the `smallrye-health` extension 
-which is an implementation of the MicroProfile Health specification used in Quarkus.
+This command generates a Maven project, importing the `smallrye-health` extension.
 
 If you already have your Quarkus project configured, you can add the `smallrye-health` extension
 to your project by running the following command in your project base directory:
@@ -143,7 +142,7 @@ to be a liveness procedure (with `@Liveness` qualifier) the new health check pro
 is now present in the `checks` array.
 
 Congratulations! You've created your first Quarkus health check procedure. Let's 
-continue by exploring what else can be done with the MicroProfile Health specification.
+continue by exploring what else can be done with SmallRye Health.
 
 == Adding a readiness health check procedure
 
@@ -268,7 +267,7 @@ because we are running Quarkus in dev mode you can add `database.up=true` in
 
 In previous sections, we saw how to create simple health checks with only the minimal 
 attributes, namely, the health check name and its status (UP or DOWN). However, the 
-MicroProfile specification also provides a way for the applications to supply 
+MicroProfile Health specification also provides a way for the applications to supply
 arbitrary data in the form of key-value pairs sent to the consuming end. This can be 
 done by using the `withData(key, value)` method of the health check response 
 builder API.
@@ -344,12 +343,12 @@ image:health-ui-screenshot01.png[alt=Health UI]
 
 == Conclusion
 
-MicroProfile Health provides a way for your application to distribute information 
+SmallRye Health provides a way for your application to distribute information
 about its healthiness state to state whether or not it is able to function properly. 
 Liveness checks are utilized to tell whether the application should be restarted and 
 readiness checks are used to tell whether the application is able to process requests. 
 
-All that is needed to enable the MicroProfile Health features in Quarkus is:
+All that is needed to enable the SmallRye Health features in Quarkus is:
 
 * adding the `smallrye-health` Quarkus extension to your project using the 
 `quarkus-maven-plugin`: +

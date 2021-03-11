@@ -36,6 +36,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchBackendRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.graal.GraalVM20OrEarlier;
 
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
@@ -138,9 +139,7 @@ public class HibernateSearchElasticsearchRecorder {
         @Override
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
                 BiConsumer<String, Object> propertyCollector) {
-            Version graalVMVersion = Version.getCurrent();
-            boolean isGraalVM20OrBelow = !graalVMVersion.isSnapshot() // isSnapshot() will be true on OpenJDK
-                    && graalVMVersion.compareTo(GRAAL_VM_VERSION_21) < 0;
+            boolean isGraalVM20OrBelow = new GraalVM20OrEarlier().getAsBoolean();
             HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
                     .valueReadHandleFactory(
                             // GraalVM 20 or below doesn't support method handles

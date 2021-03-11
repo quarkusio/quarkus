@@ -5,19 +5,19 @@ import static org.apache.kafka.common.record.CompressionType.NONE;
 
 import java.lang.invoke.MethodHandle;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 
 import org.apache.kafka.common.metrics.JmxReporter;
 import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.utils.AppInfoParser;
-import org.graalvm.home.Version;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import io.quarkus.runtime.graal.GraalVM20OrEarlier;
 
 /**
  * Here is where surgery happens
@@ -36,14 +36,6 @@ final class SubstituteSnappy {
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     static MethodHandle OUTPUT = null;
 
-}
-
-final class GraalVM20OrEarlier implements BooleanSupplier {
-
-    @Override
-    public boolean getAsBoolean() {
-        return Version.getCurrent().compareTo(21) < 0;
-    }
 }
 
 @TargetClass(value = CompressionType.class, onlyWith = GraalVM20OrEarlier.class)

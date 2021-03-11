@@ -43,9 +43,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
 
     VertxHttpServerMetrics(MeterRegistry registry, HttpBinderConfiguration config) {
         super(registry, "http.server");
-        nameWebsocketConnections = "http.server.websocket.connections";
-        nameHttpServerPush = "http.server.push";
-        nameHttpServerRequests = "http.server.requests";
+        nameWebsocketConnections = config.getHttpServerWebSocketConnectionsName();
+        nameHttpServerPush = config.getHttpServerPushName();
+        nameHttpServerRequests = config.getHttpServerRequestsName();
 
         ignorePatterns = config.getServerIgnorePatterns();
         matchPatterns = config.getServerMatchPatterns();

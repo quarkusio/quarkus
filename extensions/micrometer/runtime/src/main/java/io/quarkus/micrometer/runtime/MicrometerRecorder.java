@@ -66,24 +66,28 @@ public class MicrometerRecorder {
         Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(registryClasses.size());
 
         // Find global/common registry configuration
-        Instance<MeterFilter> globalFilters = beanManager.createInstance()
+        List<MeterFilter> globalFilters = new ArrayList<>();
+        Instance<MeterFilter> globalFilterInstance = beanManager.createInstance()
                 .select(MeterFilter.class, Default.Literal.INSTANCE);
+        populateListWithMeterFilters(globalFilterInstance, globalFilters);
 
         // Find MeterFilters for specific registry classes, i.e.:
         // @MeterFilterConstraint(applyTo = DatadogMeterRegistry.class) Instance<MeterFilter> filters
         log.debugf("Configuring Micrometer registries : %s", registryClasses);
         for (Class<? extends MeterRegistry> typeClass : registryClasses) {
-            Instance<MeterFilter> classFilters = beanManager.createInstance()
+            Instance<MeterFilter> classFilterInstance = beanManager.createInstance()
                     .select(MeterFilter.class, new MeterFilterConstraint.Literal(typeClass));
-            if (!classFilters.isUnsatisfied()) {
-                log.debugf("MeterFilter discovered for %s", typeClass);
-                classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>()).add(classFilters.get());
-            }
+            List<MeterFilter> classFilters = classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>());
+
+            populateListWithMeterFilters(classFilterInstance, classFilters);
         }
 
         // Find and configure MeterRegistry beans (includes runtime config)
         Set<Bean<?>> beans = new HashSet<>(beanManager.getBeans(MeterRegistry.class, Any.Literal.INSTANCE));
         beans.removeIf(bean -> bean.getBeanClass().equals(CompositeRegistryCreator.class));
+
+        // Apply global filters to the global registry
+        applyMeterFilters(Metrics.globalRegistry, globalFilters);
 
         for (Bean<?> i : beans) {
             MeterRegistry registry = (MeterRegistry) beanManager
@@ -91,7 +95,8 @@ public class MicrometerRecorder {
 
             // Add & configure non-root registries
             if (registry != Metrics.globalRegistry) {
-                applyMeterFilters(registry, globalFilters, classMeterFilters.get(registry.getClass()));
+                applyMeterFilters(registry, globalFilters);
+                applyMeterFilters(registry, classMeterFilters.get(registry.getClass()));
                 log.debugf("Adding configured registry %s", registry.getClass(), registry);
                 Metrics.globalRegistry.add(registry);
                 allRegistries.add(registry);
@@ -136,17 +141,20 @@ public class MicrometerRecorder {
         });
     }
 
-    void applyMeterFilters(MeterRegistry registry, Instance<MeterFilter> globalFilters, List<MeterFilter> classFilters) {
-        // Apply global filters to the registry
-        if (!globalFilters.isUnsatisfied()) {
-            for (MeterFilter generalFilter : globalFilters) {
-                registry.config().meterFilter(generalFilter);
+    void populateListWithMeterFilters(Instance<MeterFilter> filterInstance, List<MeterFilter> meterFilters) {
+        if (!filterInstance.isUnsatisfied()) {
+            for (MeterFilter filter : filterInstance) {
+                // @Produces methods can return null, and those will turn up here.
+                if (filter != null) {
+                    meterFilters.add(filter);
+                }
             }
         }
+    }
 
-        // Apply type/class-specific MeterFilters, if any
-        if (classFilters != null) {
-            for (MeterFilter meterFilter : classFilters) {
+    void applyMeterFilters(MeterRegistry registry, List<MeterFilter> filters) {
+        if (filters != null) {
+            for (MeterFilter meterFilter : filters) {
                 registry.config().meterFilter(meterFilter);
             }
         }

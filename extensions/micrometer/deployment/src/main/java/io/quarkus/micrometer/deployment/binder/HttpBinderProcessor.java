@@ -30,6 +30,8 @@ import io.quarkus.vertx.http.deployment.FilterBuildItem;
  * Avoid directly referencing optional dependencies
  */
 public class HttpBinderProcessor {
+    // Common MeterFilter (uri variation limiter)
+    static final String HTTP_METER_FILTER_CONFIGURATION = "io.quarkus.micrometer.runtime.binder.HttpMeterFilterProvider";
 
     // avoid imports due to related deps not being there
     static final String RESTEASY_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRestEasyContainerFilter";
@@ -72,6 +74,11 @@ public class HttpBinderProcessor {
 
         boolean clientEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder.httpClient);
         boolean serverEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder.httpServer);
+
+        if (clientEnabled || serverEnabled) {
+            // Protect from uri tag flood
+            createAdditionalBean(additionalBeans, HTTP_METER_FILTER_CONFIGURATION);
+        }
 
         // Other things use this bean to test whether or not http server/client metrics are enabled
         return SyntheticBeanBuildItem

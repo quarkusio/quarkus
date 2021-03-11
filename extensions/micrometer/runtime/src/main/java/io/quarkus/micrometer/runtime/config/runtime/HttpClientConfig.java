@@ -24,7 +24,7 @@ public class HttpClientConfig {
      * `/item/[0-9]+=/item/custom` is specified in this list,
      * a request to a matching path (`/item/123`) will use the specified
      * replacement value (`/item/custom`) as the value for the uri label.
-     * Note that backslashes must be double escaped as {@code \\\\}.
+     * Note that backslashes must be double escaped as `\\\\`.
      *
      * @asciidoclet
      */
@@ -37,4 +37,12 @@ public class HttpClientConfig {
      */
     @ConfigItem
     public Optional<List<String>> ignorePatterns = Optional.empty();
+
+    /**
+     * Maximum number of unique URI tag values allowed. After the max number of
+     * tag values is reached, metrics with additional tag values are denied by
+     * filter.
+     */
+    @ConfigItem(defaultValue = "100")
+    public int maxUriTags;
 }

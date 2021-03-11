@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Configurable;
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -53,7 +54,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.resteasy.reactive.client.deployment.JaxrsClientEnricher;
 import io.quarkus.resteasy.reactive.client.microprofile.HeaderFiller;
-import io.quarkus.resteasy.reactive.client.microprofile.MicroProfileRestRequestClientFilter;
+import io.quarkus.resteasy.reactive.client.microprofile.MicroProfileRestClientRequestFilter;
 import io.quarkus.resteasy.reactive.client.microprofile.NoOpHeaderFiller;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -69,36 +70,100 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
     public static final String DEFAULT_HEADERS_FACTORY = DefaultClientHeadersFactoryImpl.class.getName();
 
     private static final AnnotationInstance[] EMPTY_ANNOTATION_INSTANCES = new AnnotationInstance[0];
+
+    private static final MethodDescriptor INVOCATION_BUILDER_PROPERTY_METHOD = MethodDescriptor.ofMethod(
+            Invocation.Builder.class,
+            "property", Invocation.Builder.class, String.class, Object.class);
     private static final MethodDescriptor LIST_ADD_METHOD = MethodDescriptor.ofMethod(List.class, "add", boolean.class,
             Object.class);
     private static final MethodDescriptor MAP_PUT_METHOD = MethodDescriptor.ofMethod(Map.class, "put", Object.class,
             Object.class, Object.class);
     private static final MethodDescriptor MAP_CONTAINS_KEY_METHOD = MethodDescriptor.ofMethod(Map.class, "containsKey",
             boolean.class, Object.class);
+    public static final String INVOKED_METHOD = "org.eclipse.microprofile.rest.client.invokedMethod";
 
     private final Map<ClassInfo, String> interfaceMocks = new HashMap<>();
 
     @Override
-    public void forClass(MethodCreator proxyConstructor, AssignableResultHandle res,
+    public void forClass(MethodCreator constructor, AssignableResultHandle webTargetBase,
             ClassInfo interfaceClass, IndexView index) {
 
         AnnotationInstance annotation = interfaceClass.classAnnotation(REGISTER_PROVIDER);
         AnnotationInstance groupAnnotation = interfaceClass.classAnnotation(REGISTER_PROVIDERS);
 
         if (annotation != null) {
-            addProvider(proxyConstructor, res, index, annotation);
+            addProvider(constructor, webTargetBase, index, annotation);
         }
         for (AnnotationInstance annotationInstance : extractAnnotations(groupAnnotation)) {
-            addProvider(proxyConstructor, res, index, annotationInstance);
+            addProvider(constructor, webTargetBase, index, annotationInstance);
         }
+
+        ResultHandle clientHeadersFactory = null;
+
+        AnnotationInstance registerClientHeaders = interfaceClass.classAnnotation(REGISTER_CLIENT_HEADERS);
+
+        boolean useDefaultHeaders = true;
+        if (registerClientHeaders != null) {
+            String headersFactoryClass = registerClientHeaders.valueWithDefault(index)
+                    .asClass().name().toString();
+
+            if (!headersFactoryClass.equals(DEFAULT_HEADERS_FACTORY)) {
+                // Arc.container().instance(...).get():
+                ResultHandle containerHandle = constructor
+                        .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+                ResultHandle instanceHandle = constructor.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
+                                Annotation[].class),
+                        containerHandle, constructor.loadClass(headersFactoryClass),
+                        constructor.newArray(Annotation.class, 0));
+                clientHeadersFactory = constructor
+                        .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                                instanceHandle);
+                useDefaultHeaders = false;
+            }
+        }
+        if (useDefaultHeaders) {
+            clientHeadersFactory = constructor
+                    .newInstance(MethodDescriptor.ofConstructor(DEFAULT_HEADERS_FACTORY));
+        }
+
+        ResultHandle restClientFilter = constructor.newInstance(
+                MethodDescriptor.ofConstructor(MicroProfileRestClientRequestFilter.class, ClientHeadersFactory.class),
+                clientHeadersFactory);
+
+        constructor.assign(webTargetBase, constructor.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class),
+                webTargetBase, restClientFilter));
     }
 
     @Override
-    public void forMethod(MethodCreator methodCreator, ClassInfo interfaceClass,
-            MethodInfo method, AssignableResultHandle methodWebTarget,
+    public void forMethod(ClassCreator classCreator, MethodCreator constructor,
+            MethodCreator methodCreator,
+            ClassInfo interfaceClass,
+            MethodInfo method, AssignableResultHandle invocationBuilder,
             IndexView index, BuildProducer<GeneratedClassBuildItem> generatedClasses,
             int methodIndex) {
 
+        // create a field in the stub class to contain (interface) java.lang.reflect.Method corresponding to this method
+        // MP Rest Client spec says it has to be in the request context, keeping it in a field we don't have to
+        // initialize it on each call
+        ResultHandle interfaceClassHandle = constructor.loadClass(interfaceClass.toString());
+
+        ResultHandle parameterArray = constructor.newArray(Class.class, method.parameters().size());
+        for (int i = 0; i < method.parameters().size(); i++) {
+            String parameterClass = method.parameters().get(i).name().toString();
+            constructor.writeArrayValue(parameterArray, i, constructor.loadClass(parameterClass));
+        }
+
+        ResultHandle javaMethodHandle = constructor.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Class.class, "getMethod", Method.class, String.class, Class[].class),
+                interfaceClassHandle, constructor.load(method.name()), parameterArray);
+        FieldDescriptor javaMethodField = FieldDescriptor.of(classCreator.getClassName(), "javaMethod" + methodIndex,
+                Method.class);
+        classCreator.getFieldCreator(javaMethodField).setModifiers(Modifier.PRIVATE | Modifier.FINAL);
+        constructor.writeInstanceField(javaMethodField, constructor.getThis(), javaMethodHandle);
+
+        // header filler
         Map<String, AnnotationInstance> headerFillersByName = new HashMap<>();
 
         AnnotationInstance classLevelHeader = interfaceClass.classAnnotation(CLIENT_HEADER_PARAM);
@@ -117,18 +182,23 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
 
         headerFillersByName.putAll(methodLevelHeadersByName);
 
+        FieldDescriptor headerFillerField = FieldDescriptor.of(classCreator.getClassName(),
+                "headerFiller" + methodIndex, HeaderFiller.class);
+        classCreator.getFieldCreator(headerFillerField).setModifiers(Modifier.PRIVATE | Modifier.FINAL);
         ResultHandle headerFiller;
+        // create header filler for this method if headerFillersByName is not empty
         if (!headerFillersByName.isEmpty()) {
             String fillerClassName = interfaceClass.toString() + "$$" + method.name() + "$$" + methodIndex;
 
             GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
-            try (ClassCreator classCreator = ClassCreator.builder().className(fillerClassName).interfaces(HeaderFiller.class)
+            try (ClassCreator headerFillerClass = ClassCreator.builder().className(fillerClassName)
+                    .interfaces(HeaderFiller.class)
                     .classOutput(classOutput)
                     .build()) {
-                FieldCreator logField = classCreator.getFieldCreator("log", Logger.class);
+                FieldCreator logField = headerFillerClass.getFieldCreator("log", Logger.class);
                 logField.setModifiers(Modifier.FINAL | Modifier.STATIC | Modifier.PRIVATE);
 
-                MethodCreator staticConstructor = classCreator.getMethodCreator("<clinit>", void.class);
+                MethodCreator staticConstructor = headerFillerClass.getMethodCreator("<clinit>", void.class);
                 staticConstructor.setModifiers(ACC_STATIC);
                 ResultHandle log = staticConstructor.invokeStaticMethod(
                         MethodDescriptor.ofMethod(Logger.class, "getLogger", Logger.class, String.class),
@@ -136,72 +206,34 @@ class MicroProfileRestClientEnricher implements JaxrsClientEnricher {
                 staticConstructor.writeStaticField(logField.getFieldDescriptor(), log);
                 staticConstructor.returnValue(null);
 
-                MethodCreator fillHeaders = classCreator
+                MethodCreator fillHeaders = headerFillerClass
                         .getMethodCreator(
                                 MethodDescriptor.ofMethod(HeaderFiller.class, "addHeaders", void.class, MultivaluedMap.class));
 
-                // create header filler for this method if headerFillersByName is not empty
                 for (Map.Entry<String, AnnotationInstance> headerEntry : headerFillersByName.entrySet()) {
                     addHeaderParam(interfaceClass, method, fillHeaders, headerEntry.getValue(), generatedClasses,
                             fillerClassName, index);
                 }
                 fillHeaders.returnValue(null);
 
-                headerFiller = methodCreator.newInstance(MethodDescriptor.ofConstructor(fillerClassName));
+                headerFiller = constructor.newInstance(MethodDescriptor.ofConstructor(fillerClassName));
             }
         } else {
-            headerFiller = methodCreator
+            headerFiller = constructor
                     .readStaticField(FieldDescriptor.of(NoOpHeaderFiller.class, "INSTANCE", NoOpHeaderFiller.class));
         }
+        constructor.writeInstanceField(headerFillerField, constructor.getThis(), headerFiller);
 
-        ResultHandle clientHeadersFactory = null;
-
-        AnnotationInstance registerClientHeaders = interfaceClass.classAnnotation(REGISTER_CLIENT_HEADERS);
-
-        boolean useDefaultHeaders = true;
-        if (registerClientHeaders != null) {
-            String headersFactoryClass = registerClientHeaders.valueWithDefault(index)
-                    .asClass().name().toString();
-
-            if (!headersFactoryClass.equals(DEFAULT_HEADERS_FACTORY)) {
-                // Arc.container().instance(...).get():
-                ResultHandle containerHandle = methodCreator
-                        .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-                ResultHandle instanceHandle = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
-                                Annotation[].class),
-                        containerHandle, methodCreator.loadClass(headersFactoryClass),
-                        methodCreator.newArray(Annotation.class, 0));
-                clientHeadersFactory = methodCreator
-                        .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
-                                instanceHandle);
-                useDefaultHeaders = false;
-            }
-        }
-        if (useDefaultHeaders) {
-            clientHeadersFactory = methodCreator
-                    .newInstance(MethodDescriptor.ofConstructor(DEFAULT_HEADERS_FACTORY));
-        }
-        ResultHandle interfaceClassHandle = methodCreator.loadClass(interfaceClass.toString());
-
-        ResultHandle parameterArray = methodCreator.newArray(Class.class, method.parameters().size());
-        for (int i = 0; i < method.parameters().size(); i++) {
-            String parameterClass = method.parameters().get(i).name().toString();
-            methodCreator.writeArrayValue(parameterArray, i, methodCreator.loadClass(parameterClass));
-        }
-
-        ResultHandle javaMethodHandle = methodCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Class.class, "getMethod", Method.class, String.class, Class[].class),
-                interfaceClassHandle, methodCreator.load(method.name()), parameterArray);
-
-        ResultHandle restClientFilter = methodCreator.newInstance(
-                MethodDescriptor.ofConstructor(MicroProfileRestRequestClientFilter.class, HeaderFiller.class,
-                        ClientHeadersFactory.class, Method.class),
-                headerFiller, clientHeadersFactory, javaMethodHandle);
-
-        methodCreator.assign(methodWebTarget, methodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Configurable.class, "register", Configurable.class, Object.class),
-                methodWebTarget, restClientFilter));
+        ResultHandle javaMethod = methodCreator.readInstanceField(javaMethodField, methodCreator.getThis());
+        ResultHandle javaMethodAsObject = methodCreator.checkCast(javaMethod, Object.class);
+        methodCreator.assign(invocationBuilder,
+                methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
+                        methodCreator.load(INVOKED_METHOD), javaMethodAsObject));
+        ResultHandle headerFillerAsObject = methodCreator.checkCast(
+                methodCreator.readInstanceField(headerFillerField, methodCreator.getThis()), Object.class);
+        methodCreator.assign(invocationBuilder,
+                methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
+                        methodCreator.load(HeaderFiller.class.getName()), headerFillerAsObject));
     }
 
     private void putAllHeaderAnnotations(Map<String, AnnotationInstance> headerMap, AnnotationInstance[] annotations) {

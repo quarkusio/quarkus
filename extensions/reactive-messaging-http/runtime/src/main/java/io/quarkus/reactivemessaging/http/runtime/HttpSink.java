@@ -17,6 +17,7 @@ import io.quarkus.reactivemessaging.http.runtime.serializers.SerializerFactoryBa
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniRetry;
 import io.vertx.core.Vertx;
+import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -39,13 +40,22 @@ class HttpSink {
             int maxRetries,
             double jitter,
             Optional<Duration> delay,
+            Optional<Integer> maxPoolSize,
+            Optional<Integer> maxWaitQueueSize,
             SerializerFactoryBase serializerFactory) {
         this.method = method;
         this.url = url;
         this.serializerFactory = serializerFactory;
         this.serializerName = serializerName;
 
-        client = WebClient.create(io.vertx.mutiny.core.Vertx.newInstance(vertx));
+        WebClientOptions options = new WebClientOptions();
+        if (maxPoolSize.isPresent()) {
+            options.setMaxPoolSize(maxPoolSize.get());
+        }
+        if (maxWaitQueueSize.isPresent()) {
+            options.setMaxWaitQueueSize(maxWaitQueueSize.get());
+        }
+        client = WebClient.create(io.vertx.mutiny.core.Vertx.newInstance(vertx), options);
 
         if (Arrays.stream(SUPPORTED_SCHEMES).noneMatch(url.toLowerCase()::startsWith)) {
             throw new IllegalArgumentException("Unsupported scheme for the http connector in URL: " + url);

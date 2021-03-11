@@ -434,20 +434,39 @@ public class OpenshiftProcessor {
             }
         }
 
-        final String buildName = build.getMetadata().getName();
-        try (LogWatch w = client.builds().withName(build.getMetadata().getName()).withPrettyOutput().watchLog();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(w.getOutput()))) {
-            waitForBuildComplete(client, openshiftConfig, buildName, w);
-            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                LOG.info(line);
+        while (isNew(build) || isPending(build) || isRunning(build)) {
+            Build updated = client.builds().withName(build.getMetadata().getName()).get();
+            if (updated == null) {
+                throw new IllegalStateException("Build:" + build.getMetadata().getName() + " is no longer present!");
+            } else if (updated.getStatus() == null) {
+                throw new IllegalStateException("Build:" + build.getMetadata().getName() + " has no status!");
+            } else if (isNew(updated) || isPending(updated) || isRunning(updated)) {
+                build = updated;
+                final String buildName = build.getMetadata().getName();
+                try (LogWatch w = client.builds().withName(build.getMetadata().getName()).withPrettyOutput().watchLog();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(w.getOutput()))) {
+                    watchBuild(client, openshiftConfig, buildName, w);
+                    for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                        LOG.info(line);
+                    }
+                } catch (IOException e) {
+                    throw openshiftException(e);
+                }
+            } else if (isComplete(updated)) {
+                return;
+            } else if (isCancelled(updated)) {
+                throw new IllegalStateException("Build:" + build.getMetadata().getName() + " cancelled!");
+            } else if (isFailed(updated)) {
+                throw new IllegalStateException(
+                        "Build:" + build.getMetadata().getName() + " failed! " + updated.getStatus().getMessage());
+            } else if (isError(updated)) {
+                throw new IllegalStateException(
+                        "Build:" + build.getMetadata().getName() + " encountered error! " + updated.getStatus().getMessage());
             }
-        } catch (IOException e) {
-            throw openshiftException(e);
         }
     }
 
-    private static void waitForBuildComplete(OpenShiftClient client, OpenshiftConfig openshiftConfig, String buildName,
-            Closeable watch) {
+    private static void watchBuild(OpenShiftClient client, OpenshiftConfig openshiftConfig, String buildName, Closeable watch) {
         Executor executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {
@@ -507,4 +526,40 @@ public class OpenshiftProcessor {
         }
         return result.toString();
     }
+
+    static boolean isNew(Build build) {
+        return build != null && build.getStatus() != null
+                && BuildStatus.New.name().equalsIgnoreCase(build.getStatus().getPhase());
+    }
+
+    static boolean isPending(Build build) {
+        return build != null && build.getStatus() != null
+                && BuildStatus.Pending.name().equalsIgnoreCase(build.getStatus().getPhase());
+    }
+
+    static boolean isRunning(Build build) {
+        return build != null && build.getStatus() != null
+                && BuildStatus.Running.name().equalsIgnoreCase(build.getStatus().getPhase());
+    }
+
+    static boolean isComplete(Build build) {
+        return build != null && build.getStatus() != null
+                && BuildStatus.Complete.name().equalsIgnoreCase(build.getStatus().getPhase());
+    }
+
+    static boolean isFailed(Build build) {
+        return build != null && build.getStatus() != null
+                && BuildStatus.Failed.name().equalsIgnoreCase(build.getStatus().getPhase());
+    }
+
+    static boolean isError(Build build) {
+        return build != null && build.getStatus() != null
+                && BuildStatus.Error.name().equalsIgnoreCase(build.getStatus().getPhase());
+    }
+
+    static boolean isCancelled(Build build) {
+        return build != null && build.getStatus() != null
+                && BuildStatus.Cancelled.name().equalsIgnoreCase(build.getStatus().getPhase());
+    }
+
 }

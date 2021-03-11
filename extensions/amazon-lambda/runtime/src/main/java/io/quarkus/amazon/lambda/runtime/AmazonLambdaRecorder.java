@@ -84,8 +84,11 @@ public class AmazonLambdaRecorder {
                 }
             }
         }
-        if (method == null) {
+        if (method == null && methods.length > 0) {
             method = methods[0];
+        }
+        if (method == null) {
+            throw new RuntimeException("Unable to find a method which handles request on handler class " + handlerClass);
         }
         return method;
     }

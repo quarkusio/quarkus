@@ -2,6 +2,7 @@ package io.quarkus.rest.data.panache.deployment.methods.hal;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import javax.validation.Valid;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.gizmo.ClassCreator;
@@ -19,6 +20,12 @@ public final class AddHalMethodImplementor extends HalMethodImplementor {
     private static final String METHOD_NAME = "addHal";
 
     private static final String RESOURCE_METHOD_NAME = "add";
+
+    private final boolean withValidation;
+
+    public AddHalMethodImplementor(boolean withValidation) {
+        this.withValidation = withValidation;
+    }
 
     /**
      * Expose {@link RestDataResource#add(Object)} via HAL JAX-RS method.
@@ -61,6 +68,10 @@ public final class AddHalMethodImplementor extends HalMethodImplementor {
         addPostAnnotation(methodCreator);
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        // Add parameter annotations
+        if (withValidation) {
+            methodCreator.getParameterAnnotations(0).addAnnotation(Valid.class);
+        }
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle entityToSave = methodCreator.getMethodParam(0);

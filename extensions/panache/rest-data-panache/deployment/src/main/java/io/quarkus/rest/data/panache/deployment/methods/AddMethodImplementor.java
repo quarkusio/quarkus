@@ -2,6 +2,7 @@ package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import javax.validation.Valid;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.gizmo.ClassCreator;
@@ -21,6 +22,12 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
     private static final String RESOURCE_METHOD_NAME = "add";
 
     private static final String REL = "add";
+
+    private final boolean withValidation;
+
+    public AddMethodImplementor(boolean withValidation) {
+        this.withValidation = withValidation;
+    }
 
     /**
      * Generate JAX-RS POST method that exposes {@link RestDataResource#add(Object)}.
@@ -67,6 +74,10 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        // Add parameter annotations
+        if (withValidation) {
+            methodCreator.getParameterAnnotations(0).addAnnotation(Valid.class);
+        }
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle entityToSave = methodCreator.getMethodParam(0);

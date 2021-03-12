@@ -166,7 +166,6 @@
                                 <quarkus.kubernetes-service-binding.root>
                                     ${project.basedir}/src/test/resources/k8s-sb
                                 </quarkus.kubernetes-service-binding.root>
-                                <quarkus.kubernetes-service-binding.enabled>true</quarkus.kubernetes-service-binding.enabled>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

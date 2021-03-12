@@ -12,7 +12,7 @@ public class KubernetesServiceBindingConfig {
     /**
      * If enabled, Service Bindings will be looked in the file system
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "true")
     public boolean enabled;
 
     /**

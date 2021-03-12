@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Kubernetes Client
 
@@ -47,7 +47,7 @@ quarkus.kubernetes-client.trust-certs=false
 quarkus.kubernetes-client.namespace=default
 ----
 
-Note that the full list of properties is available in the https://github.com/quarkusio/quarkus/blob/master/extensions/kubernetes-client/runtime-internal/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
+Note that the full list of properties is available in the https://github.com/quarkusio/quarkus/blob/main/extensions/kubernetes-client/runtime-internal/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
 
 === Overriding
 

@@ -13,7 +13,7 @@ public class PrometheusConfig {
     // Removal of prometheus.io from example:
     // https://github.com/prometheus/prometheus/commit/03a9e7f72e072c6d29f422425d8acd91a957836b
     // Current example of relabeling using non-prometheus.io-based strings:
-    // https://github.com/prometheus/prometheus/blob/master/documentation/examples/prometheus-kubernetes.yml#L139
+    // https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus-kubernetes.yml#L139
 
     /**
      * When true (the default), emit a set of annotations to identify
@@ -32,7 +32,7 @@ public class PrometheusConfig {
      * knock-on effects. The default value is {@code prometheus.io}
      *
      * See Prometheus example:
-     * https://github.com/prometheus/prometheus/blob/master/documentation/examples/prometheus-kubernetes.yml
+     * https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus-kubernetes.yml
      */
     @ConfigItem(defaultValue = "prometheus.io")
     String prefix;

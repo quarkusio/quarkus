@@ -2562,12 +2562,12 @@
                         <quarkus-base-url>${quarkus-base-url}</quarkus-base-url>
                         <!-- Quarkus repository URL to clone -->
                         <quarkus-clone-url>${quarkus-base-url}.git</quarkus-clone-url>
-                        <!-- Quarkus URL to master source archive -->
-                        <quarkus-archive-url>${quarkus-base-url}/archive/master.zip</quarkus-archive-url>
-                        <!-- Quarkus URL to master blob source tree; used for referencing source files -->
-                        <quarkus-blob-url>${quarkus-base-url}/blob/master</quarkus-blob-url>
-                        <!-- Quarkus URL to master source tree root; used for referencing directories -->
-                        <quarkus-tree-url>${quarkus-base-url}/tree/master</quarkus-tree-url>
+                        <!-- Quarkus URL to main source archive -->
+                        <quarkus-archive-url>${quarkus-base-url}/archive/main.zip</quarkus-archive-url>
+                        <!-- Quarkus URL to main blob source tree; used for referencing source files -->
+                        <quarkus-blob-url>${quarkus-base-url}/blob/main</quarkus-blob-url>
+                        <!-- Quarkus URL to main source tree root; used for referencing directories -->
+                        <quarkus-tree-url>${quarkus-base-url}/tree/main</quarkus-tree-url>
                         <!-- Quarkus URL to issues -->
                         <quarkus-issues-url>${quarkus-base-url}/issues</quarkus-issues-url>
                         <quarkus-images-url>https://github.com/quarkusio/quarkus-images/tree</quarkus-images-url>
@@ -2577,12 +2577,12 @@
                         <quickstarts-base-url>${quickstarts-base-url}</quickstarts-base-url>
                         <!-- Quickstart repository URL to clone -->
                         <quickstarts-clone-url>${quickstarts-base-url}.git</quickstarts-clone-url>
-                        <!-- Quickstart URL to master source archive -->
-                        <quickstarts-archive-url>${quickstarts-base-url}/archive/master.zip</quickstarts-archive-url>
-                        <!-- Quickstart URL to master blob source tree; used for referencing source files -->
-                        <quickstarts-blob-url>${quickstarts-base-url}/blob/master</quickstarts-blob-url>
-                        <!-- Quickstart URL to master source tree root; used for referencing directories -->
-                        <quickstarts-tree-url>${quickstarts-base-url}/tree/master</quickstarts-tree-url>
+                        <!-- Quickstart URL to main source archive -->
+                        <quickstarts-archive-url>${quickstarts-base-url}/archive/main.zip</quickstarts-archive-url>
+                        <!-- Quickstart URL to main blob source tree; used for referencing source files -->
+                        <quickstarts-blob-url>${quickstarts-base-url}/blob/main</quickstarts-blob-url>
+                        <!-- Quickstart URL to main source tree root; used for referencing directories -->
+                        <quickstarts-tree-url>${quickstarts-base-url}/tree/main</quickstarts-tree-url>
                     </attributes>
                 </configuration>
                 <executions>

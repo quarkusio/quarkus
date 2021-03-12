@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Writing Your Own Extension
 
@@ -2067,7 +2067,7 @@ Indicates that all charsets should be enabled in native image.
 
 `io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem`::
 A convenient way to tell Quarkus that the extension requires SSL and it should be enabled during native image build.
-When using this feature, remember to add your extension to the list of extensions that offer SSL support automatically on the https://github.com/quarkusio/quarkus/blob/master/docs/src/main/asciidoc/native-and-ssl.adoc[native and ssl guide].
+When using this feature, remember to add your extension to the list of extensions that offer SSL support automatically on the https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/native-and-ssl.adoc[native and ssl guide].
 
 === IDE support tips
 

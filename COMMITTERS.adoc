@@ -45,7 +45,7 @@ While not absolute, here is some advice:
 * Make sure the commit comments are meaningful.
 * As a new committer, you can start by giving your approval and not merging and see how things evolve.
   This should give you some hints of important things to check in the future.
-* Only merge pull requests that target master.
+* Only merge pull requests that target main.
   **Dealing with old branches is a separate process.**
 * If you are sure a PR should go in and is just waiting for CI,
   just use the `triage/waiting-for-ci` label.
@@ -90,13 +90,13 @@ In short, posting a large PR the day before the release won't work.
 
 Quarkus depends on a lot of third party dependencies that we try to keep up to date.
 
-We partially rely on Dependabot for https://github.com/quarkusio/quarkus/blob/master/.github/dependabot.yml[a curated list of dependencies].
+We partially rely on Dependabot for https://github.com/quarkusio/quarkus/blob/main/.github/dependabot.yml[a curated list of dependencies].
 
 Some dependencies are critical for Quarkus and quite complex.
 Good examples would be Vert.x or Hibernate ORM.
 
 It is good practice to update these core dependencies at the beginning of a given
-release cycle to let them time to bake in the master branch before being released.
+release cycle to let them time to bake in the main branch before being released.
 
 == Backward Compatibility
 
@@ -198,7 +198,7 @@ release a couple of weeks after.
 Every time we do a major release (e.g. `1.7.0.Final`), we create a release branch (e.g. `1.7`) to host
 the commits for these bugfix releases.
 
-All the pull requests are merged in the `master` branch so they are applied to the new feature 
+All the pull requests are merged in the `main` branch so they are applied to the new feature 
 release of Quarkus.
 They won't be integrated in the previous version branch.
 

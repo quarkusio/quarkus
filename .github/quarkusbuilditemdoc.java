@@ -176,7 +176,7 @@ class quarkusbuilditemdoc implements Callable<Integer> {
     private void printTableRow(Pair<Path, JavaClassSource> pair) {
         //TODO: Use tagged version?
         Path root = Paths.get(".").toAbsolutePath().normalize();
-        String link = "https://github.com/quarkusio/quarkus/blob/master/" + root.relativize(pair.getOne().normalize());
+        String link = "https://github.com/quarkusio/quarkus/blob/main/" + root.relativize(pair.getOne().normalize());
         JavaClassSource source = pair.getTwo();
         String className = source.getQualifiedName();
         String attributes = buildAttributes(source);

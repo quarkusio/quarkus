@@ -23,6 +23,8 @@
         <module>mariadb</module>
         <module>h2</module>
         <module>derby</module>
+        <module>mssql</module>
+        <module>db2</module>
     </modules>
 
 </project>

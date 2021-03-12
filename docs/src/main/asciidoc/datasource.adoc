@@ -51,10 +51,27 @@ is supported for the following open source databases:
 * MariaDB (container)
 * H2 (in-process)
 * Apache Derby (in-process)
+* DB2 (container) (requires license acceptance)
+* MSSQL (container) (requires license acceptance)
+
 
 If you want to use DevServices then all you need to do is include the relevant extension for the type of database you want (either reactive or
 JDBC, or both), and don't configure a database URL, username and password, Quarkus will provide the database and you can just start
 coding without worrying about config.
+
+If you are using a proprietary database such as DB2 or MSSQL you will need to accept the license agreement. To do this
+create a `src/main/resources/container-license-acceptance.txt` files in your project and add a line with the image
+name and tag of the database. By default Quarkus uses the default image for the current version of Testcontainers, if
+you attempt to start Quarkus the resulting failure will tell you the exact image name in use for you to add to the
+file.
+
+An example file is shown below:
+
+.src/main/resources/container-license-acceptance.txt
+----
+ibmcom/db2:11.5.0.0a
+mcr.microsoft.com/mssql/server:2017-CU12
+----
 
 === JDBC datasource
 

@@ -1185,3 +1185,67 @@ The provided replicas <1>, labels <2> and environment variables <3>  were retain
 If the resource name does not match the application name (or the overridden name) instead of reusing the resource a new one will be added. Same goes for the container.
 If the name of the container does not match the application name (or the overridden name), container specific configuration will be ignored.
 ====
+
+== Service Binding
+
+Quarkus supports binding services to applications via the link:https://github.com/k8s-service-bindings/spec[Service Binding Specification for Kubernetes].
+Specifically Quarkus implements the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the specification, thus allowing
+applications running in appropriately configured Kubernetes clusters to consume services (such as a Database or a Broker) without the need for user configuration.
+
+Currently, the following Quarkus extensions support this feature:
+
+* quarkus-jdbc-mariadb
+* quarkus-jdbc-mssql
+* quarkus-jdbc-mysql
+* quarkus-jdbc-postgresql
+
+This list of extensions will grow as more services with supported bindings become available on Kubernetes.
+
+To enable Service Binding support, in addition to one of the currently supported extensions, the `quarkus-kubernetes-service-binding` extension needs to be added to the application dependencies as well as
+having the `quarkus.kubernetes-service-binding.enabled` configuration property set to `true`.
+
+=== Example using PostgreSQL
+
+If the Kubernetes cluster in which your Quarkus application runs supports provisioning a PostgreSQL database, one could use the following dependencies to take advantage of the Service Binding feature:
+
+[source,xml]
+----
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-service-binding</artifactId>
+        </dependency>
+
+       <!-- Hibernate isn't necessary for Service Binding, but most relational database access will benefit from using it -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+        </dependency>
+----
+
+The configuration of the application could be as simple as:
+
+[source,properties]
+----
+quarkus.kubernetes-service-binding.enabled=true
+quarkus.hibernate-orm.database.generation=validate
+----
+
+You'll notice that all the configuration for the datasource is absent, as it will be auto-discovered by Quarkus when the application is deployed to Kubernetes.
+
+=== How does it work?
+
+When the application is deployed to an appropriately configured Kubernetes cluster, Kubernetes will create on the filesystem a set of files containing the runtime configuration (for example a file containing the URL of the database, another for the username).
+Quarkus knows where in the file system to look for these files (as it consults the `SERVICE_BINDING_ROOT` environment variable which is set by Kubernetes) and if they exist, Quarkus knows how to map the values of these files to the appropriate extension configuration properties.
+
+An example of what the file system looks like can be seen link:https://github.com/quarkusio/quarkus/tree/e7efe6b3efba91b9c4ae26f9318f8397e23e7505/integration-tests/kubernetes-service-binding-jdbc/src/test/resources/k8s-sb[here].
+In that example, the `k8s-sb` directory is meant to be the root of all service bindings. Only one binding which exists in that case and it is named `fruit-db`. This binding has a `type` file indicating that it is a `postgresql` database
+while the other files provide the necessary connection information.
+
+[TIP]
+====
+For more details on how the discovery of the available properties works, please read the link:https://github.com/k8s-service-bindings/spec#application-projection[Application Projection] part of the Service Binding specification.
+====

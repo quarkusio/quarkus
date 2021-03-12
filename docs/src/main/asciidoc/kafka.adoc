@@ -915,7 +915,12 @@ Type: _string_ | true |
 
 Type: _int_ | false | `1`
 
-| *group.id* | A unique string that identifies the consumer group the application belongs to. If not set, a unique, generated id is used
+| *group.id* | A unique string that identifies the consumer group the application belongs to.
+
+If not set, defaults to the application name as set by the `quarkus.application.name` configuration property.
+
+If that is not set either, a unique, generated id is used.
+It is recommended to always define a `group.id`, the automatic generation is only a convenient feature for development.
 
 Type: _string_ | false |
 

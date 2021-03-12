@@ -193,7 +193,7 @@ public final class RunnerClassLoader extends ClassLoader {
         }
         ClassLoadingResource[] resources = getClassLoadingResources(name);
         if (resources == null)
-            return null;
+            return Collections.emptyEnumeration();
         List<URL> urls = new ArrayList<>();
         for (ClassLoadingResource resource : resources) {
             accessingResource(resource);

@@ -24,6 +24,7 @@
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
                         <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
+                        <quarkus.rest-client.scope>javax.enterprise.context.Dependent</quarkus.rest-client.scope>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->

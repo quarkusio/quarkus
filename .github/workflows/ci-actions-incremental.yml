@@ -551,6 +551,7 @@ jobs:
         with:
           repository: quarkusio/resteasy-reactive-testsuite
           path: resteasy-reactive-testsuite
+          branch: vertx4
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
         working-directory: ./tcks

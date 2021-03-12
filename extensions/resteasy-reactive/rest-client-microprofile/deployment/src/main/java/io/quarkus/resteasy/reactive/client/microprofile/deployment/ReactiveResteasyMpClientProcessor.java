@@ -53,6 +53,7 @@ import io.quarkus.resteasy.reactive.client.deployment.RestClientDefaultConsumesB
 import io.quarkus.resteasy.reactive.client.deployment.RestClientDefaultProducesBuildItem;
 import io.quarkus.resteasy.reactive.client.microprofile.HeaderCapturingServerFilter;
 import io.quarkus.resteasy.reactive.client.microprofile.HeaderContainer;
+import io.quarkus.resteasy.reactive.client.microprofile.ReactiveResteasyMpClientConfig;
 import io.quarkus.resteasy.reactive.client.microprofile.RestClientCDIDelegateBuilder;
 import io.quarkus.resteasy.reactive.client.microprofile.recorder.RestClientRecorder;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -128,7 +129,8 @@ class ReactiveResteasyMpClientProcessor {
     @BuildStep
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            ReactiveResteasyMpClientConfig clientConfig) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
         Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
@@ -154,7 +156,7 @@ class ReactiveResteasyMpClientProcessor {
                     // CLASS LEVEL
                     final String configPrefix = computeConfigPrefix(jaxrsInterface.name(), registerRestClient);
                     final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
-                            configPrefix);
+                            configPrefix, clientConfig);
                     // add a scope annotation, e.g. @Singleton
                     classCreator.addAnnotation(scope.getDotName().toString());
                     classCreator.addAnnotation(RestClient.class);
@@ -261,10 +263,18 @@ class ReactiveResteasyMpClientProcessor {
 
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,
             ClassInfo restClientInterface,
-            String configPrefix) {
+            String configPrefix,
+            ReactiveResteasyMpClientConfig mpClientConfig) {
         ScopeInfo scopeToUse = null;
         final Optional<String> scopeConfig = config
                 .getOptionalValue(String.format(RestClientCDIDelegateBuilder.REST_SCOPE_FORMAT, configPrefix), String.class);
+
+        BuiltinScope globalDefaultScope = BuiltinScope.from(DotName.createSimple(mpClientConfig.scope));
+        if (globalDefaultScope == null) {
+            log.warnv("Unable to map the global rest client scope: '{}' to a scope. Using @ApplicationScoped",
+                    mpClientConfig.scope);
+            globalDefaultScope = BuiltinScope.APPLICATION;
+        }
 
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
@@ -278,9 +288,8 @@ class ReactiveResteasyMpClientProcessor {
             }
 
             if (scopeToUse == null) {
-                log.warn(String.format(
-                        "Unsupported default scope %s provided for rest client %s. Defaulting to @Dependent.",
-                        scope, restClientInterface.name()));
+                log.warnf("Unsupported default scope {} provided for rest client {}. Defaulting to {}",
+                        scope, restClientInterface.name(), globalDefaultScope.getName());
                 scopeToUse = BuiltinScope.DEPENDENT.getInfo();
             }
         } else {
@@ -299,6 +308,6 @@ class ReactiveResteasyMpClientProcessor {
         }
 
         // Initialize a default @Dependent scope as per the spec
-        return scopeToUse != null ? scopeToUse : BuiltinScope.DEPENDENT.getInfo();
+        return scopeToUse != null ? scopeToUse : globalDefaultScope.getInfo();
     }
 }

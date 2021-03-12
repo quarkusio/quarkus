@@ -1,7 +1,6 @@
 package io.quarkus.registry.catalog.json;
 
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.quarkus.maven.ArtifactCoords;
@@ -89,43 +88,14 @@ public class JsonExtension implements Extension {
         this.metadata = metadata;
     }
 
-    @JsonIgnore
-    public Extension setKeywords(List<String> keywords) {
-        getMetadata().put(MD_KEYWORDS, keywords);
-        return this;
-    }
-
-    @JsonIgnore
-    public Extension setGuide(String guide) {
-        getMetadata().put(MD_GUIDE, guide);
-        return this;
-    }
-
-    @JsonIgnore
-    public Extension setShortName(String shortName) {
-        getMetadata().put(MD_SHORT_NAME, shortName);
-        return this;
-    }
-
-    @JsonIgnore
-    public Extension setCodestart(String codestart) {
-        getMetadata().put(MD_CODESTART, codestart);
-        return this;
-    }
-
-    @JsonIgnore
-    public void setUnlisted(boolean unlisted) {
-        getMetadata().put(MD_UNLISTED, unlisted);
-    }
-
     public Extension addMetadata(String key, Object value) {
-        getMetadata().put(key, value);
+        this.getMetadata().put(key, value);
         return this;
 
     }
 
     public Extension removeMetadata(String key) {
-        getMetadata().remove(key);
+        this.getMetadata().remove(key);
         return this;
     }
 

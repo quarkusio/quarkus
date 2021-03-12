@@ -9,4 +9,10 @@ metadata:
   categories:
   - "web"
   status: "experimental"
-  codestart: "resteasy-qute"
+  codestart:
+    name: "resteasy-qute"
+    kind: "example"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-descriptor-json"

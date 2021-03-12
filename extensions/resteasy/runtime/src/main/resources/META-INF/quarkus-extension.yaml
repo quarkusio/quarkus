@@ -1,4 +1,3 @@
----
 name: "RESTEasy JAX-RS"
 metadata:
   short-name: "jax-rs"
@@ -11,4 +10,11 @@ metadata:
   categories:
   - "web"
   status: "stable"
-  codestart: "resteasy"
+  codestart:
+    name: "resteasy"
+    kind: "example"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-descriptor-json"

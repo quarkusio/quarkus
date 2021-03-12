@@ -1,6 +1,7 @@
 package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.project.extensions.Extensions.toKey;
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 import static java.util.stream.Collectors.toMap;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
@@ -12,6 +13,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionOrigin;
 import java.io.IOException;
@@ -85,7 +87,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
             throw new QuarkusCommandException("Failed to determine the list of installed extensions", e);
         }
         extensions.stream()
-                .filter(e -> !e.isUnlisted())
+                .filter(e -> !ExtensionProcessor.of(e).isUnlisted())
                 .forEach(e -> display(log, e, installedByKey.get(toKey(e)), all, installedOnly, currentFormatter));
         final BuildTool buildTool = invocation.getQuarkusProject().getBuildTool();
         boolean isGradle = BuildTool.GRADLE.equals(buildTool) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildTool);
@@ -119,8 +121,9 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
 
     private void fullFormatter(MessageWriter writer, Object[] cols) {
         Extension e = (Extension) cols[1];
+        final String guide = getGuide(e);
         writer.info(String.format(FULL_FORMAT, cols[0], e.getName(), e.getArtifact().getArtifactId(), cols[2],
-                e.getGuide() == null ? "" : e.getGuide()));
+                guide == null ? "" : guide));
     }
 
     private void nameFormatter(MessageWriter writer, Object[] cols) {

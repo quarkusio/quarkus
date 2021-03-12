@@ -4,6 +4,8 @@ import java.util.Map;
 
 public interface Category {
 
+    String MD_PINNED = "pinned";
+
     String getId();
 
     String getName();

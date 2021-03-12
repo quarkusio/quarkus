@@ -1,4 +1,3 @@
----
 name: "Picocli"
 metadata:
   keywords:
@@ -8,4 +7,10 @@ metadata:
   categories:
   - "miscellaneous"
   status: "experimental"
-  codestart: picocli
+  codestart:
+    name: "picocli"
+    kind: "example"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-descriptor-json"

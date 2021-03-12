@@ -1,4 +1,3 @@
----
 name: "Funqy Google Cloud Functions"
 metadata:
   keywords:
@@ -12,4 +11,8 @@ metadata:
     - "cloud"
   guide: "https://quarkus.io/guides/funqy-gcp-functions"
   status: "experimental"
-  codestart: funqy-google-cloud-functions-example
+  codestart:
+    name: "funqy-google-cloud-functions-example"
+    kind: "singleton-example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-descriptor-json"

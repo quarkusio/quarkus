@@ -1,4 +1,3 @@
----
 name: "WebSockets"
 metadata:
   short-name: "websockets"
@@ -12,4 +11,8 @@ metadata:
   categories:
   - "web"
   status: "stable"
-  codestart: "undertow-websockets"
+  codestart:
+    name: "undertow-websockets"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-descriptor-json"

@@ -27,6 +27,7 @@ public class JsonCatalogMapperHelper {
         mapper.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
         mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+        mapper.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
         mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper;

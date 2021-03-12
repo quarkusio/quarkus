@@ -1,4 +1,3 @@
----
 name: "Funqy HTTP Binding"
 metadata:
   keywords:
@@ -9,4 +8,8 @@ metadata:
   categories:
   - "cloud"
   status: "experimental"
-  codestart: "funqy-http"
+  codestart:
+    name: "funqy-http"
+    kind: "example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-descriptor-json"

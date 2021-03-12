@@ -1,4 +1,3 @@
----
 name: "RESTEasy Jackson"
 metadata:
   keywords:
@@ -13,4 +12,10 @@ metadata:
   - "web"
   - "serialization"
   status: "stable"
-  codestart: "resteasy-jackson"
+  codestart:
+    name: "resteasy-jackson"
+    kind: "example"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-descriptor-json"

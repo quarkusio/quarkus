@@ -19,10 +19,16 @@ import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.VertxVaultClient;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalAppRoleAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalKubernetesAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalTokenAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalUserpassAuthMethod;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentialsData;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
 import io.quarkus.vault.runtime.config.VaultAppRoleAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
@@ -40,8 +46,14 @@ public class VaultDbManagerTest {
     VaultRenewLease vaultRenewLease = new VaultRenewLease();
     VaultConfigHolder vaultConfigHolder = new VaultConfigHolder().setVaultBootstrapConfig(config);
     VaultClient vaultClient = createVaultClient();
-    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder, vaultClient);
-    VaultDbManager vaultDbManager = new VaultDbManager(vaultConfigHolder, vaultAuthManager, vaultClient);
+    VaultInternalSystemBackend vaultInternalSystemBackend = createSystemBackend();
+    VaultInternalDatabaseSecretEngine vaultInternalDatabaseSecretEngine = createVaultInternalDatabaseSecretEngine();
+    VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultConfigHolder, vaultInternalSystemBackend,
+            new VaultInternalAppRoleAuthMethod(),
+            new VaultInternalKubernetesAuthMethod(),
+            new VaultInternalUserpassAuthMethod(), new VaultInternalTokenAuthMethod());
+    VaultDbManager vaultDbManager = new VaultDbManager(vaultConfigHolder, vaultAuthManager,
+            vaultInternalSystemBackend, vaultInternalDatabaseSecretEngine);
     String mydbrole = "mydbrole";
     String mylease = "mylease";
 
@@ -133,12 +145,22 @@ public class VaultDbManagerTest {
     }
 
     private VaultClient createVaultClient() {
-        VertxVaultClient vaultClient = new VertxVaultClient(vaultConfigHolder, tlsConfig) {
+        VertxVaultClient vaultClient = new VertxVaultClient(vaultConfigHolder, tlsConfig);
+        vaultClient.init();
+        return vaultClient;
+    }
+
+    private VaultInternalDatabaseSecretEngine createVaultInternalDatabaseSecretEngine() {
+        return new VaultInternalDatabaseSecretEngine() {
             @Override
-            public VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole) {
+            public VaultDatabaseCredentials generateCredentials(String token, String databaseCredentialsRole) {
                 return credentials;
             }
+        };
+    }
 
+    private VaultInternalSystemBackend createSystemBackend() {
+        return new VaultInternalSystemBackend() {
             @Override
             public VaultLeasesLookup lookupLease(String token, String leaseId) {
                 if (lookupLeaseShouldReturn400.get()) {
@@ -152,7 +174,5 @@ public class VaultDbManagerTest {
                 return vaultRenewLease;
             }
         };
-        vaultClient.init();
-        return vaultClient;
     }
 }

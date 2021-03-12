@@ -11,10 +11,11 @@ import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
 import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 
 @Singleton
@@ -23,14 +24,18 @@ public class VaultDbManager {
     private static final Logger log = Logger.getLogger(VaultDbManager.class.getName());
 
     ConcurrentHashMap<String, VaultDynamicDatabaseCredentials> credentialsCache = new ConcurrentHashMap<>();
-    private VaultClient vaultClient;
     private VaultAuthManager vaultAuthManager;
     private VaultConfigHolder vaultConfigHolder;
+    private VaultInternalSystemBackend vaultInternalSystemBackend;
+    private VaultInternalDatabaseSecretEngine vaultInternalDatabaseSecretEngine;
 
-    public VaultDbManager(VaultConfigHolder vaultConfigHolder, VaultAuthManager vaultAuthManager, VaultClient vaultClient) {
+    public VaultDbManager(VaultConfigHolder vaultConfigHolder, VaultAuthManager vaultAuthManager,
+            VaultInternalSystemBackend vaultInternalSystemBackend,
+            VaultInternalDatabaseSecretEngine vaultInternalDatabaseSecretEngine) {
         this.vaultConfigHolder = vaultConfigHolder;
         this.vaultAuthManager = vaultAuthManager;
-        this.vaultClient = vaultClient;
+        this.vaultInternalSystemBackend = vaultInternalSystemBackend;
+        this.vaultInternalDatabaseSecretEngine = vaultInternalDatabaseSecretEngine;
     }
 
     private VaultBootstrapConfig getConfig() {
@@ -75,7 +80,7 @@ public class VaultDbManager {
 
     private VaultDynamicDatabaseCredentials validate(VaultDynamicDatabaseCredentials credentials, String clientToken) {
         try {
-            vaultClient.lookupLease(clientToken, credentials.leaseId);
+            vaultInternalSystemBackend.lookupLease(clientToken, credentials.leaseId);
             return credentials;
         } catch (VaultClientException e) {
             if (e.getStatus() == 400) { // bad request
@@ -89,7 +94,7 @@ public class VaultDbManager {
 
     private VaultDynamicDatabaseCredentials extend(VaultDynamicDatabaseCredentials currentCredentials, String clientToken,
             String databaseCredentialsRole) {
-        VaultRenewLease vaultRenewLease = vaultClient.renewLease(clientToken, currentCredentials.leaseId);
+        VaultRenewLease vaultRenewLease = vaultInternalSystemBackend.renewLease(clientToken, currentCredentials.leaseId);
         LeaseBase lease = new LeaseBase(vaultRenewLease.leaseId, vaultRenewLease.renewable, vaultRenewLease.leaseDurationSecs);
         VaultDynamicDatabaseCredentials credentials = new VaultDynamicDatabaseCredentials(lease, currentCredentials.username,
                 currentCredentials.password);
@@ -100,7 +105,7 @@ public class VaultDbManager {
     }
 
     private VaultDynamicDatabaseCredentials create(String clientToken, String databaseCredentialsRole) {
-        VaultDatabaseCredentials vaultDatabaseCredentials = vaultClient.generateDatabaseCredentials(clientToken,
+        VaultDatabaseCredentials vaultDatabaseCredentials = vaultInternalDatabaseSecretEngine.generateCredentials(clientToken,
                 databaseCredentialsRole);
         LeaseBase lease = new LeaseBase(vaultDatabaseCredentials.leaseId, vaultDatabaseCredentials.renewable,
                 vaultDatabaseCredentials.leaseDurationSecs);

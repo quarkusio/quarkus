@@ -22,8 +22,12 @@ import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkus.vault.VaultException;
-import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalAppRoleAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalKubernetesAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalTokenAuthMethod;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalUserpassAuthMethod;
+import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.auth.AbstractVaultAuthAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleGenerateNewSecretID;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthAuth;
@@ -41,17 +45,30 @@ import io.quarkus.vault.runtime.config.VaultBootstrapConfig;
 public class VaultAuthManager {
 
     private static final Logger log = Logger.getLogger(VaultAuthManager.class.getName());
+
     public static final String USERPASS_WRAPPING_TOKEN_PASSWORD_KEY = "password";
 
-    private VaultClient vaultClient;
     private AtomicReference<VaultToken> loginCache = new AtomicReference<>(null);
     private Map<String, String> wrappedCache = new ConcurrentHashMap<>();
     private Semaphore unwrapSem = new Semaphore(1);
     private VaultConfigHolder vaultConfigHolder;
+    private VaultInternalSystemBackend vaultInternalSystemBackend;
+    private VaultInternalAppRoleAuthMethod vaultInternalAppRoleAuthMethod;
+    private VaultInternalKubernetesAuthMethod vaultInternalKubernetesAuthMethod;
+    private VaultInternalUserpassAuthMethod vaultInternalUserpassAuthMethod;
+    private VaultInternalTokenAuthMethod vaultInternalTokenAuthMethod;
 
-    VaultAuthManager(VaultConfigHolder vaultConfigHolder, VaultClient vaultClient) {
+    VaultAuthManager(VaultConfigHolder vaultConfigHolder, VaultInternalSystemBackend vaultInternalSystemBackend,
+            VaultInternalAppRoleAuthMethod vaultInternalAppRoleAuthMethod,
+            VaultInternalKubernetesAuthMethod vaultInternalKubernetesAuthMethod,
+            VaultInternalUserpassAuthMethod vaultInternalUserpassAuthMethod,
+            VaultInternalTokenAuthMethod vaultInternalTokenAuthMethod) {
         this.vaultConfigHolder = vaultConfigHolder;
-        this.vaultClient = vaultClient;
+        this.vaultInternalSystemBackend = vaultInternalSystemBackend;
+        this.vaultInternalAppRoleAuthMethod = vaultInternalAppRoleAuthMethod;
+        this.vaultInternalKubernetesAuthMethod = vaultInternalKubernetesAuthMethod;
+        this.vaultInternalUserpassAuthMethod = vaultInternalUserpassAuthMethod;
+        this.vaultInternalTokenAuthMethod = vaultInternalTokenAuthMethod;
     }
 
     private VaultBootstrapConfig getConfig() {
@@ -104,7 +121,7 @@ public class VaultAuthManager {
 
     private VaultToken validate(VaultToken vaultToken) {
         try {
-            vaultClient.lookupSelf(vaultToken.clientToken);
+            vaultInternalTokenAuthMethod.lookupSelf(vaultToken.clientToken);
             return vaultToken;
         } catch (VaultClientException e) {
             if (e.getStatus() == 403) { // forbidden
@@ -117,7 +134,7 @@ public class VaultAuthManager {
     }
 
     private VaultToken extend(String clientToken) {
-        VaultRenewSelfAuth auth = vaultClient.renewSelf(clientToken, null).auth;
+        VaultRenewSelfAuth auth = vaultInternalTokenAuthMethod.renewSelf(clientToken, null).auth;
         VaultToken vaultToken = new VaultToken(auth.clientToken, auth.renewable, auth.leaseDurationSecs);
         sanityCheck(vaultToken);
         log.debug("extended login token: " + vaultToken.getConfidentialInfo(getConfig().logConfidentialityLevel));
@@ -139,11 +156,11 @@ public class VaultAuthManager {
         } else if (type == USERPASS) {
             String username = getConfig().authentication.userpass.username.get();
             String password = getPassword();
-            auth = vaultClient.loginUserPass(username, password).auth;
+            auth = vaultInternalUserpassAuthMethod.login(username, password).auth;
         } else if (type == APPROLE) {
             String roleId = getConfig().authentication.appRole.roleId.get();
             String secretId = getSecretId();
-            auth = vaultClient.loginAppRole(roleId, secretId).auth;
+            auth = vaultInternalAppRoleAuthMethod.login(roleId, secretId).auth;
         } else {
             throw new UnsupportedOperationException("unknown authType " + getConfig().getAuthenticationType());
         }
@@ -204,7 +221,7 @@ public class VaultAuthManager {
                 T unwrap;
 
                 try {
-                    unwrap = vaultClient.unwrap(wrappingToken, clazz);
+                    unwrap = vaultInternalSystemBackend.unwrap(wrappingToken, clazz);
                 } catch (VaultClientException e) {
                     if (e.getStatus() == 400) {
                         String message = "wrapping token is not valid or does not exist; " +
@@ -236,7 +253,7 @@ public class VaultAuthManager {
         String jwt = new String(read(getConfig().authentication.kubernetes.jwtTokenPath), StandardCharsets.UTF_8);
         log.debug("authenticate with jwt at: " + getConfig().authentication.kubernetes.jwtTokenPath + " => "
                 + getConfig().logConfidentialityLevel.maskWithTolerance(jwt, LOW));
-        return vaultClient.loginKubernetes(getConfig().authentication.kubernetes.role.get(), jwt).auth;
+        return vaultInternalKubernetesAuthMethod.login(getConfig().authentication.kubernetes.role.get(), jwt).auth;
     }
 
     private byte[] read(String path) {

@@ -9,8 +9,8 @@ import javax.inject.Inject;
 import io.quarkus.vault.VaultKubernetesAuthService;
 import io.quarkus.vault.auth.VaultKubernetesAuthConfig;
 import io.quarkus.vault.auth.VaultKubernetesAuthRole;
-import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.authmethod.VaultInternalKubernetesAuthMethod;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthConfigData;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthRoleData;
 
@@ -18,14 +18,14 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthRoleData;
 public class VaultKubernetesAuthManager implements VaultKubernetesAuthService {
 
     @Inject
-    VaultAuthManager vaultAuthManager;
+    private VaultAuthManager vaultAuthManager;
     @Inject
-    VaultClient vaultClient;
+    private VaultInternalKubernetesAuthMethod vaultInternalKubernetesAuthMethod;
 
     @Override
     public void configure(VaultKubernetesAuthConfig config) {
         String token = vaultAuthManager.getClientToken();
-        vaultClient.configureKubernetesAuth(token, new VaultKubernetesAuthConfigData()
+        vaultInternalKubernetesAuthMethod.configureAuth(token, new VaultKubernetesAuthConfigData()
                 .setIssuer(config.issuer)
                 .setKubernetesCaCert(config.kubernetesCaCert)
                 .setKubernetesHost(config.kubernetesHost)
@@ -36,7 +36,7 @@ public class VaultKubernetesAuthManager implements VaultKubernetesAuthService {
     @Override
     public VaultKubernetesAuthConfig getConfig() {
         String token = vaultAuthManager.getClientToken();
-        VaultKubernetesAuthConfigData data = vaultClient.readKubernetesAuthConfig(token).data;
+        VaultKubernetesAuthConfigData data = vaultInternalKubernetesAuthMethod.readAuthConfig(token).data;
         return new VaultKubernetesAuthConfig()
                 .setKubernetesCaCert(data.kubernetesCaCert)
                 .setKubernetesHost(data.kubernetesHost)
@@ -47,7 +47,7 @@ public class VaultKubernetesAuthManager implements VaultKubernetesAuthService {
 
     public VaultKubernetesAuthRole getRole(String name) {
         String token = vaultAuthManager.getClientToken();
-        VaultKubernetesAuthRoleData role = vaultClient.getVaultKubernetesAuthRole(token, name).data;
+        VaultKubernetesAuthRoleData role = vaultInternalKubernetesAuthMethod.getVaultAuthRole(token, name).data;
         return new VaultKubernetesAuthRole()
                 .setBoundServiceAccountNames(role.boundServiceAccountNames)
                 .setBoundServiceAccountNamespaces(role.boundServiceAccountNamespaces)
@@ -78,14 +78,14 @@ public class VaultKubernetesAuthManager implements VaultKubernetesAuthService {
                 .setTokenNumUses(role.tokenNumUses)
                 .setTokenPeriod(role.tokenPeriod)
                 .setTokenType(role.tokenType);
-        vaultClient.createKubernetesAuthRole(token, name, body);
+        vaultInternalKubernetesAuthMethod.createAuthRole(token, name, body);
     }
 
     @Override
     public List<String> getRoles() {
         try {
             String token = vaultAuthManager.getClientToken();
-            return vaultClient.listKubernetesAuthRoles(token).data.keys;
+            return vaultInternalKubernetesAuthMethod.listAuthRoles(token).data.keys;
         } catch (VaultClientException e) {
             if (e.getStatus() == 404) {
                 return Collections.emptyList();
@@ -98,7 +98,6 @@ public class VaultKubernetesAuthManager implements VaultKubernetesAuthService {
     @Override
     public void deleteRole(String name) {
         String token = vaultAuthManager.getClientToken();
-        vaultClient.deleteKubernetesAuthRoles(token, name);
+        vaultInternalKubernetesAuthMethod.deleteAuthRoles(token, name);
     }
-
 }

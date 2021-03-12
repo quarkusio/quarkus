@@ -51,11 +51,7 @@ We recommend that you follow the instructions in the next sections and create th
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone https://github.com/amqphub/quarkus-qpid-jms-quickstart.git`,
-or download an https://github.com/amqphub/quarkus-qpid-jms-quickstart/archive/master.zip[archive].
-
-The solution is located in the `jms-quickstart` {quickstarts-tree-url}/jms-quickstart[directory].
-
-
+or download an https://github.com/amqphub/quarkus-qpid-jms-quickstart/archive/main.zip[archive].
 
 === Creating the Maven Project
 

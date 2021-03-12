@@ -117,8 +117,7 @@ public class FunctionTest {
         mockHttpFunction(null, status);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
         ArgumentCaptor<HttpStatus> statusCaptor = ArgumentCaptor.forClass(HttpStatus.class);
-        verify(request).createResponseBuilder(statusCaptor.capture());
+        verify(request, timeout(PROCESSING_TIMEOUT)).createResponseBuilder(statusCaptor.capture());
         assertEquals(status.code(), statusCaptor.getValue().value());
     }
-
 }

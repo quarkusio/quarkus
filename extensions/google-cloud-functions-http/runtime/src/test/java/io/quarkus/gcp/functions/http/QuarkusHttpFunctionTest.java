@@ -104,6 +104,6 @@ public class QuarkusHttpFunctionTest {
     public void verifyResponseStatusBypass(final HttpResponseStatus status) {
         mockHttpFunction(Optional.empty(), status);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
-        verify(response).setStatusCode(eq(status.code()), eq(status.reasonPhrase()));
+        verify(response, timeout(PROCESSING_TIMEOUT)).setStatusCode(eq(status.code()), eq(status.reasonPhrase()));
     }
 }

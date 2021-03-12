@@ -168,7 +168,7 @@ If you need to access `JsonWebToken` claims, you may simply inject the token its
 package org.acme.security.openid.connect;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-
+import javax.inject.Inject;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

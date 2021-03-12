@@ -410,7 +410,7 @@ The reason for this is that the local build driver invoked through `-Dquarkus.na
 [TIP]
 ====
 Building with Mandrel requires a custom builder image parameter to be passed additionally:
-[source,bash]
+[source,bash,subs=attributes+]
 ----
 ./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
 ----

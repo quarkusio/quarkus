@@ -20,38 +20,39 @@ import io.quarkus.arc.Arc;
 /**
  * This is initialized via ServiceFactory (static/non-CDI initialization)
  */
-public class RestClientMetrics implements RestClientListener {
+public class RestClientMetricsListener implements RestClientListener {
 
     private final static String REQUEST_METRIC_PROPERTY = "restClientMetrics";
 
     final MeterRegistry registry = Metrics.globalRegistry;
+    boolean initialized = false;
+    boolean clientMetricsEnabled = false;
+
     HttpBinderConfiguration httpMetricsConfig;
     MetricsClientRequestFilter clientRequestFilter;
     MetricsClientResponseFilter clientResponseFilter;
 
     @Override
     public void onNewClient(Class<?> serviceInterface, RestClientBuilder builder) {
-        builder.register(getClientRequestFilter());
-        builder.register(getClientResponseFilter());
+        if (prepClientMetrics()) {
+            builder.register(this.clientRequestFilter);
+            builder.register(this.clientResponseFilter);
+        }
     }
 
-    // Lazy init: multiple instances aren't harmful, synchronization not necessary
-    MetricsClientRequestFilter getClientRequestFilter() {
-        MetricsClientRequestFilter clientFilter = this.clientRequestFilter;
-        if (clientFilter == null) {
+    boolean prepClientMetrics() {
+        boolean clientMetricsEnabled = this.clientMetricsEnabled;
+        if (!this.initialized) {
             this.httpMetricsConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
-            clientFilter = this.clientRequestFilter = new MetricsClientRequestFilter(httpMetricsConfig);
+            clientMetricsEnabled = httpMetricsConfig.isClientEnabled();
+            if (clientMetricsEnabled) {
+                this.clientRequestFilter = new MetricsClientRequestFilter(httpMetricsConfig);
+                this.clientResponseFilter = new MetricsClientResponseFilter();
+            }
+            this.clientMetricsEnabled = clientMetricsEnabled;
+            this.initialized = true;
         }
-        return clientFilter;
-    }
-
-    // Lazy init: multiple instances aren't harmful, synchronization not necessary
-    MetricsClientResponseFilter getClientResponseFilter() {
-        MetricsClientResponseFilter clientFilter = this.clientResponseFilter;
-        if (clientFilter == null) {
-            clientFilter = this.clientResponseFilter = new MetricsClientResponseFilter();
-        }
-        return clientFilter;
+        return clientMetricsEnabled;
     }
 
     class MetricsClientRequestFilter implements ClientRequestFilter {

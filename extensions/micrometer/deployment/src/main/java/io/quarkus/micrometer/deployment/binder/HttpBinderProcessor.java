@@ -43,7 +43,7 @@ public class HttpBinderProcessor {
             .getClassForName(REST_CLIENT_LISTENER_CLASS_NAME);
 
     // Rest Client listener
-    private static final String REST_CLIENT_METRICS_LISTENER = "io.quarkus.micrometer.runtime.binder.RestClientMetrics";
+    private static final String REST_CLIENT_METRICS_LISTENER = "io.quarkus.micrometer.runtime.binder.RestClientMetricsListener";
 
     static class HttpServerBinderEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;

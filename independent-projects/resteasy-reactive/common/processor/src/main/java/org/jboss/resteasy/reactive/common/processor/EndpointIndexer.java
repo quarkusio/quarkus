@@ -627,7 +627,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (annotation == null) {
             return null;
         }
-        String[] originalStrings = annotation.value().asStringArray();
+
+        String[] originalStrings;
+        AnnotationValue value = annotation.value();
+        if (value == null) {
+            originalStrings = new String[] { MediaType.WILDCARD };
+        } else {
+            originalStrings = value.asStringArray();
+        }
+
         if (originalStrings.length > 0) {
             List<String> result = new ArrayList<>(originalStrings.length);
             for (String s : originalStrings) {

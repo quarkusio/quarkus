@@ -7,8 +7,8 @@ assignees: ''
 
 ---
 
-**Description**
+## Description
 (Describe the task here.)
 
-**Implementation ideas**
+## Implementation ideas
 (If you have any implementation ideas, they can go here.)

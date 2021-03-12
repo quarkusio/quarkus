@@ -7,16 +7,16 @@ assignees: ''
 
 ---
 
-**Describe the extension**
+## Describe the extension
 (Describe the extension clearly and concisely.)
 
 Interested in this extension, please +1 via the emoji/reaction feature of GitHub (top right).
 
-**Configuration suggestion**
+## Configuration suggestion
 ```properties
 # Add your application.properties here, if applicable.
 
 ```
 
-**Additional context**
+## Additional context
 (Add any other context about the proposal here.)

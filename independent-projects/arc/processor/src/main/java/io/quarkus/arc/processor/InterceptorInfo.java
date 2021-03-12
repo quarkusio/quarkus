@@ -64,28 +64,16 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                     continue;
                 }
                 if (method.hasAnnotation(DotNames.AROUND_INVOKE)) {
-                    aroundInvokes.add(method);
-                } else if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
-                    // validate compliance with rules for AroundConstruct methods
-                    if (!method.parameters().equals(Collections.singletonList(
-                            Type.create(DotName.createSimple("javax.interceptor.InvocationContext"), Type.Kind.CLASS)))) {
-                        throw new IllegalStateException(
-                                "@AroundConstruct must have exactly one argument of type javax.interceptor.InvocationContext, but method "
-                                        + method.asMethod() + " declared by " + method.declaringClass()
-                                        + " violates this.");
-                    }
-                    if (!method.returnType().kind().equals(Type.Kind.VOID) &&
-                            !method.returnType().name().equals(DotNames.OBJECT)) {
-                        throw new IllegalStateException(
-                                "Return type of @AroundConstruct method must be Object or void, but method "
-                                        + method.asMethod() + " declared by " + method.declaringClass()
-                                        + " violates this.");
-                    }
-                    aroundConstructs.add(method);
-                } else if (method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
-                    postConstructs.add(method);
-                } else if (method.hasAnnotation(DotNames.PRE_DESTROY)) {
-                    preDestroys.add(method);
+                    aroundInvokes.add(validateSignature(method));
+                }
+                if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
+                    aroundConstructs.add(validateSignature(method));
+                }
+                if (method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
+                    postConstructs.add(validateSignature(method));
+                }
+                if (method.hasAnnotation(DotNames.PRE_DESTROY)) {
+                    preDestroys.add(validateSignature(method));
                 }
             }
 
@@ -101,6 +89,22 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         if (aroundConstruct == null && aroundInvoke == null && preDestroy == null && postConstruct == null) {
             LOGGER.warnf("%s declares no around-invoke method nor a lifecycle callback!", this);
         }
+    }
+
+    private MethodInfo validateSignature(MethodInfo method) {
+        List<Type> parameters = method.parameters();
+        if (parameters.size() != 1 || !parameters.get(0).name().equals(DotNames.INVOCATION_CONTEXT)) {
+            throw new IllegalStateException(
+                    "An interceptor method must accept exactly one parameter of type javax.interceptor.InvocationContext: "
+                            + method + " declared on " + method.declaringClass());
+        }
+        if (!method.returnType().kind().equals(Type.Kind.VOID) &&
+                !method.returnType().name().equals(DotNames.OBJECT)) {
+            throw new IllegalStateException(
+                    "The return type of an interceptor method must be java.lang.Object or void: "
+                            + method + " declared on " + method.declaringClass());
+        }
+        return method;
     }
 
     public Set<AnnotationInstance> getBindings() {

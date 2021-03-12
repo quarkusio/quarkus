@@ -46,6 +46,7 @@ import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
+import javax.interceptor.InvocationContext;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
@@ -101,6 +102,7 @@ public final class DotNames {
     public static final DotName TRANSACTION_PHASE = create(TransactionPhase.class);
     public static final DotName INITIALIZED = create(Initialized.class);
     public static final DotName TRANSIENT_REFERENCE = create(TransientReference.class);
+    public static final DotName INVOCATION_CONTEXT = create(InvocationContext.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

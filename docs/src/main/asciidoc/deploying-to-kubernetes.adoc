@@ -1201,8 +1201,7 @@ Currently, the following Quarkus extensions support this feature:
 
 This list of extensions will grow as more services with supported bindings become available on Kubernetes.
 
-To enable Service Binding support, in addition to one of the currently supported extensions, the `quarkus-kubernetes-service-binding` extension needs to be added to the application dependencies as well as
-having the `quarkus.kubernetes-service-binding.enabled` configuration property set to `true`.
+To enable Service Binding support, in addition to one of the currently supported extensions, the `quarkus-kubernetes-service-binding` extension needs to be added to the application dependencies.
 
 === Example using PostgreSQL
 
@@ -1230,7 +1229,6 @@ The configuration of the application could be as simple as:
 
 [source,properties]
 ----
-quarkus.kubernetes-service-binding.enabled=true
 quarkus.hibernate-orm.database.generation=validate
 ----
 

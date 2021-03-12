@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.agroal.api.exceptionsorter.MySQLExceptionSorter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DevServicesMariaDBDatasourceTestCase {
@@ -51,6 +52,7 @@ public class DevServicesMariaDBDatasourceTestCase {
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:mariadb:"));
         assertEquals("quarkus", configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(20, configuration.maxSize());
+        assertThat(configuration.exceptionSorter()).isInstanceOf(MySQLExceptionSorter.class);
 
         try (Connection connection = dataSource.getConnection()) {
         }

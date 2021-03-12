@@ -172,6 +172,8 @@ public class DataSources {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
         }
 
+        agroalConnectionConfigurer.setExceptionSorter(resolvedDbKind, dataSourceConfiguration);
+
         // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
         AgroalDataSourceConfiguration agroalConfiguration = dataSourceConfiguration.get();
         AgroalDataSource dataSource = new io.agroal.pool.DataSource(agroalConfiguration,

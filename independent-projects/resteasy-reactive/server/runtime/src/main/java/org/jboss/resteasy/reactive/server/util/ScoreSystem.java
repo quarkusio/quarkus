@@ -54,6 +54,12 @@ public class ScoreSystem {
         public final String name;
         public final boolean preMatch;
 
+        public String getName() {
+            String removeSubClass = name.replace("_Subclass", "");
+            String finalFilterName = removeSubClass.replaceAll("\\$.*?\\$", "::");
+            return finalFilterName;
+        }
+
         public RequestFilterEntry(String name, boolean preMatch) {
             this.name = name;
             this.preMatch = preMatch;

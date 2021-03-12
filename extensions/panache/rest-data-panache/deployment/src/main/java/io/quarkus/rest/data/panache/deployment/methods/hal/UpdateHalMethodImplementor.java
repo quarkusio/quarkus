@@ -2,6 +2,7 @@ package io.quarkus.rest.data.panache.deployment.methods.hal;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import javax.validation.Valid;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.gizmo.BranchResult;
@@ -23,6 +24,12 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
     private static final String RESOURCE_UPDATE_METHOD_NAME = "update";
 
     private static final String RESOURCE_GET_METHOD_NAME = "get";
+
+    private final boolean withValidation;
+
+    public UpdateHalMethodImplementor(boolean withValidation) {
+        this.withValidation = withValidation;
+    }
 
     /**
      * Expose {@link RestDataResource#update(Object, Object)} via HAL JAX-RS method.
@@ -72,6 +79,10 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
+        // Add parameter annotations
+        if (withValidation) {
+            methodCreator.getParameterAnnotations(1).addAnnotation(Valid.class);
+        }
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle id = methodCreator.getMethodParam(0);

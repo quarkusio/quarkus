@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ExceptionSorter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DevServicesDerbyDatasourceTestCase {
@@ -50,6 +51,7 @@ public class DevServicesDerbyDatasourceTestCase {
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:derby:"));
         assertEquals(20, configuration.maxSize());
+        assertThat(configuration.exceptionSorter()).isInstanceOf(ExceptionSorter.emptyExceptionSorter().getClass());
 
         try (Connection connection = dataSource.getConnection()) {
         }

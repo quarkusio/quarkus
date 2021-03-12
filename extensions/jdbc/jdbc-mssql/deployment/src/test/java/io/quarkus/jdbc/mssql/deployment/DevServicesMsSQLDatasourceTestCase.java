@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.agroal.api.exceptionsorter.MSSQLExceptionSorter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DevServicesMsSQLDatasourceTestCase {
@@ -44,6 +45,7 @@ public class DevServicesMsSQLDatasourceTestCase {
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:sqlserver:"));
         assertEquals("SA", configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(20, configuration.maxSize());
+        assertThat(configuration.exceptionSorter()).isInstanceOf(MSSQLExceptionSorter.class);
 
         try (Connection connection = dataSource.getConnection()) {
         }

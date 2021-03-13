@@ -1,6 +1,6 @@
 ---
 # The format of this file is documented here:
-# https://github.com/quarkusio/quarkus-bot-java#triage-issues
+# https://github.com/quarkusio/quarkus-bot#triage-issues
 triage:
   rules:
     - labels: [area/amazon-lambda]

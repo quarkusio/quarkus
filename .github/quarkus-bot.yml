@@ -1,6 +1,6 @@
 ---
 # The format of this file is documented here:
-# https://github.com/quarkusio/quarkus-bot/#triage-issues
+# https://github.com/quarkusio/quarkus-bot#triage-issues
 triage:
   rules:
     - labels: [area/amazon-lambda]
@@ -52,16 +52,16 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/codestarts/
         - devtools/platform-descriptor-json/src/main/resources/templates/
     - labels: [area/hibernate-reactive, area/persistence]
-      title: "hibernate reactive"
+      title: "hibernate.reactive"
       notify: [DavideD, gavinking, Sanne]
       directories:
         - extensions/hibernate-reactive
     - labels: [area/hibernate-orm, area/persistence]
       expression: |
-              title.match(/hibernate/i)
-              && !title.match(/hibernate.validator/i)
-              && !title.match(/hibernate.search/i)
-              && !title.match(/hibernate.reactive/i)
+              matches("hibernate", title)
+              && !matches("hibernate.validator", title)
+              && !matches("hibernate.search", title)
+              && !matches("hibernate.reactive", title)
       notify: [gsmet, Sanne, yrodiere]
       directories:
         - extensions/hibernate-orm/
@@ -76,7 +76,7 @@ triage:
         - integration-tests/jpa/
         - integration-tests/infinispan-cache-jpa/
     - labels: [area/hibernate-search]
-      title: hibernate search
+      title: "hibernate.search"
       notify: [gsmet, yrodiere]
       directories:
         - extensions/hibernate-search-orm-elasticsearch/
@@ -84,19 +84,19 @@ triage:
         - extensions/elasticsearch-rest-client/
         - extensions/elasticsearch-rest-client-common/
     - labels: [area/elasticsearch]
-      title: elasticsearch
+      title: "elasticsearch"
       notify: [gsmet, yrodiere, loicmathieu]
       directories:
         - extensions/elasticsearch
         - integration-tests/elasticsearch
     - labels: [area/hibernate-validator]
-      title: hibernate validator
+      title: "hibernate.validator"
       notify: [gsmet, yrodiere]
       directories:
         - extensions/hibernate-validator/
         - integration-tests/hibernate-validator/
     - labels: [area/jaeger]
-      title: jaeger
+      title: "jaeger"
       notify: [kenfinnigan]
       directories:
         - extensions/jaeger/
@@ -107,7 +107,7 @@ triage:
         - extensions/kotlin/
         - integration-tests/kotlin/
     - labels: [area/mongodb]
-      title: mongo
+      title: "mongo"
       notify: [loicmathieu, evanchooly]
       directories:
         - extensions/mongodb-client/
@@ -115,12 +115,12 @@ triage:
         - integration-tests/mongodb-panache/
         - extensions/panache/mongodb-panache/
     - labels: [area/openapi, area/smallrye]
-      title: openapi
+      title: "openapi"
       notify: [EricWittmann, MikeEdgar, phillip-kruger]
       directories:
         - extensions/smallrye-openapi
     - labels: [area/graphql, area/smallrye]
-      title: graphql
+      title: "graphql"
       notify: [phillip-kruger, jmartisk]
       directories:
         - extensions/smallrye-graphql/
@@ -222,6 +222,7 @@ triage:
       notify: [geoand]
     - labels: [area/kafka]
       notify: [cescoffier]
+      title: "kafka"
       directories:
         - extensions/kafka-client/
         - integration-tests/kafka/
@@ -256,7 +257,7 @@ triage:
         - extensions/quartz/
         - integration-tests/quartz/
     - labels: [area/redis]
-      title: redis
+      title: "redis"
       notify: [machi1990, gsmet, cescoffier]
       directories:
         - extensions/redis-client/
@@ -274,7 +275,7 @@ triage:
         - extensions/google-cloud-functions
         - integration-tests/google-cloud-functions
     - labels: [area/mandrel]
-      titleBody: mandrel
+      titleBody: "mandrel"
       notify: [galderz, zakkak]
     - labels: [area/artemis]
       directories:
@@ -283,7 +284,7 @@ triage:
         - integration-tests/artemis-core/
         - integration-tests/artemis-jms/
     - labels: [area/cache]
-      title: cache
+      title: "cache"
       notify: [gwenneg]
       directories:
         - extensions/cache/
@@ -316,7 +317,7 @@ triage:
       directories:
         - .github/
     - labels: [area/jaxb]
-      title: jaxb
+      title: "jaxb"
       notify: [gsmet]
       directories:
         - extensions/jaxb/
@@ -335,13 +336,13 @@ triage:
         - integration-tests/narayana-jta/
         - integration-tests/narayana-stm/
     - labels: [area/neo4j]
-      title: neo4j
+      title: "neo4j"
       notify: [michael-simons]
       directories:
         - extensions/neo4j/
         - integration-tests/neo4j/
     - labels: [area/oidc]
-      title: oidc
+      title: "oidc"
       notify: [sberyozkin, pedroigor]
       directories:
         - extensions/oidc/
@@ -405,7 +406,7 @@ triage:
       directories:
         - extensions/websockets/
     - labels: [area/swagger-ui]
-      title: swagger
+      title: "swagger"
       notify: [phillip-kruger]
       directories:
         - extensions/swagger-ui/
@@ -416,13 +417,13 @@ triage:
         - extensions/vertx-keycloak/
         - integration-tests/elytron
     - labels: [area/flyway]
-      title: flyway
+      title: "flyway"
       notify: [cristhiank, geoand, gastaldi, gsmet]
       directories:
         - extensions/flyway/
         - integration-tests/flyway/
     - labels: [area/liquibase]
-      title: liquibase
+      title: "liquibase"
       notify: [andrejpetras, geoand, gsmet]
       directories:
         - extensions/liquibase/

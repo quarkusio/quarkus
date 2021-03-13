@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Purpose: Updates pom.xml files with symbolic dependencies to extensions to enforce a consistent build order.
+# Purpose: Updates pom.xml files with minimal dependencies to extensions to enforce a consistent build order.
 
 set -e -u -o pipefail
 shopt -s failglob
@@ -8,7 +8,7 @@ shopt -s failglob
 echo ''
 echo 'Building bom-descriptor-json...'
 echo ''
-mvn -e clean package -f devtools/bom-descriptor-json -Denforcer.skip $*
+mvn -q -e clean package -f devtools/bom-descriptor-json -Denforcer.skip $*
 
 # note: OFFSET is replaced later on with an individual amount of spaces
 DEP_TEMPLATE='OFFSET<dependency>
@@ -68,3 +68,9 @@ echo 'Updating docs/pom.xml...'
 echo ''
 sed -i "${SED_EXPR_DEPS_DEPLOYMENT}" docs/pom.xml
 sed -i 's/OFFSET/        /' docs/pom.xml
+
+echo ''
+echo 'Sanity check...'
+echo ''
+# sanity check; make sure nothing stupid was added like non-existing deps
+mvn dependency:resolve validate -Dsilent -q -pl devtools/bom-descriptor-json,docs $*

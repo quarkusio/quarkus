@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import javax.persistence.Entity;
 
@@ -15,9 +15,9 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
  */
 public final class JpaEntitiesBuildItem extends SimpleBuildItem {
 
-    private final Set<String> allModelPackageNames = new HashSet<String>();
-    private final Set<String> entityClassNames = new HashSet<String>();
-    private final Set<String> allModelClassNames = new HashSet<String>();
+    private final Set<String> allModelPackageNames = new TreeSet<>();
+    private final Set<String> entityClassNames = new TreeSet<>();
+    private final Set<String> allModelClassNames = new TreeSet<>();
 
     public void addModelPackage(String packageName) {
         allModelPackageNames.add(packageName);

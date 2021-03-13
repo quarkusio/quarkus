@@ -1221,7 +1221,7 @@ public final class HibernateOrmProcessor {
         }
         scanner.setPackageDescriptors(packageDescriptors);
         Set<ClassDescriptor> classDescriptors = new HashSet<>();
-        for (String className : domainObjects.getAllModelClassNames()) {
+        for (String className : domainObjects.getEntityClassNames()) {
             QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(className,
                     ClassDescriptor.Categorization.MODEL);
             classDescriptors.add(desc);

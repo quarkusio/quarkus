@@ -3,6 +3,7 @@ package io.quarkus.gradle.extension;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -65,7 +66,7 @@ public class QuarkusPluginExtension {
             props.put(BootstrapConstants.SERIALIZED_APP_MODEL, serializedModel.toString());
 
             StringJoiner outputSourcesDir = new StringJoiner(",");
-            for (File outputSourceDir : outputSourcesDir()) {
+            for (File outputSourceDir : combinedOutputSourceDirs()) {
                 outputSourcesDir.add(outputSourceDir.getAbsolutePath());
             }
             props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
@@ -193,8 +194,11 @@ public class QuarkusPluginExtension {
         return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
     }
 
-    public Set<File> outputSourcesDir() {
-        return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles();
+    public Set<File> combinedOutputSourceDirs() {
+        Set<File> sourcesDirs = new LinkedHashSet<>();
+        sourcesDirs.addAll(getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
+        sourcesDirs.addAll(getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
+        return sourcesDirs;
     }
 
     public AppArtifact getAppArtifact() {

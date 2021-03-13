@@ -1,5 +1,6 @@
 package io.quarkus.gradle.builder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -70,8 +71,8 @@ class QuarkusModelBuilderTest {
         final SourceSet sourceSet = workspaceModule.getSourceSet();
         assertNotNull(sourceSet);
         assertNull(sourceSet.getResourceDirectory());
-        assertEquals(1, sourceSet.getSourceDirectories().size());
-        assertEquals(new File(projectDir, "build/classes/java/main"), sourceSet.getSourceDirectories().iterator().next());
+        assertThat(sourceSet.getSourceDirectories()).containsAnyOf(new File(projectDir, "build/classes/java/main"),
+                new File(projectDir, "build/classes/java/test"));
         final SourceSet sourceSourceSet = workspaceModule.getSourceSourceSet();
         assertEquals(new File(projectDir, "src/main/resources"), sourceSourceSet.getResourceDirectory());
         assertEquals(1, sourceSourceSet.getSourceDirectories().size());

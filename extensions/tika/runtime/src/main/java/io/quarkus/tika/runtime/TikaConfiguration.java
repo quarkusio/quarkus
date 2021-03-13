@@ -67,7 +67,7 @@ public class TikaConfiguration {
 
     /**
      * Controls how the content of the embedded documents is parsed.
-     * By default it is appended to the master document content.
+     * By default it is appended to the main document content.
      * Setting this property to false makes the content of each of the embedded documents
      * available separately.
      */

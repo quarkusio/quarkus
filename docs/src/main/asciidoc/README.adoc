@@ -28,9 +28,9 @@ complete list of externalized variables for use is given in the following table:
 |\{quarkus-org-url}|{quarkus-org-url}| The location of the project github organization.
 |\{quarkus-base-url}|{quarkus-base-url}| Quarkus GitHub URL common base prefix.
 |\{quarkus-clone-url}|{quarkus-clone-url}| Quarkus URL for git clone referenced by the documentation.
-|\{quarkus-archive-url}|{quarkus-archive-url}| Quarkus URL to master source archive.
-|\{quarkus-blob-url}|{quarkus-blob-url}| Quarkus URL to master blob source tree; used for referencing source files.
-|\{quarkus-tree-url}|{quarkus-tree-url}| Quarkus URL to master source tree root; used for referencing directories.
+|\{quarkus-archive-url}|{quarkus-archive-url}| Quarkus URL to main source archive.
+|\{quarkus-blob-url}|{quarkus-blob-url}| Quarkus URL to main blob source tree; used for referencing source files.
+|\{quarkus-tree-url}|{quarkus-tree-url}| Quarkus URL to main source tree root; used for referencing directories.
 |\{quarkus-issues-url}|{quarkus-issues-url}| Quarkus URL to the issues page.
 |\{quarkus-images-url}|{quarkus-images-url}| Quarkus URL to set of container images delivered for Quarkus.
 
@@ -40,9 +40,9 @@ complete list of externalized variables for use is given in the following table:
 
 |\{quickstarts-base-url}|{quickstarts-base-url}| Quickstarts URL common base prefix.
 |\{quickstarts-clone-url}|{quickstarts-clone-url}| Quickstarts URL for git clone referenced by the documentation.
-|\{quickstarts-archive-url}|{quickstarts-archive-url}| Quickstarts URL to master source archive.
-|\{quickstarts-blob-url}|{quickstarts-blob-url}| Quickstarts URL to master blob source tree; used for referencing source files.
-|\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to master source tree root; used for referencing directories.
+|\{quickstarts-archive-url}|{quickstarts-archive-url}| Quickstarts URL to main source archive.
+|\{quickstarts-blob-url}|{quickstarts-blob-url}| Quickstarts URL to main blob source tree; used for referencing source files.
+|\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to main source tree root; used for referencing directories.
 
 |\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
 |\{graalvm-flavor}|{graalvm-flavor}| The full flavor of GraaVM to use e.g. `19.3.1-java11`. Make sure to use a `java11` version.

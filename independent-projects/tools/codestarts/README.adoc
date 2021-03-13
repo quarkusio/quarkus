@@ -59,8 +59,8 @@ Each codestart consists of:
 
 == Where are the Quarkus Extension Codestarts located
 
-* Quarkus core codestarts dir: https://github.com/quarkusio/quarkus/tree/master/devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/core
-* Extension codestarts directory: https://github.com/quarkusio/quarkus/tree/master/devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/examples
+* Quarkus core codestarts dir: https://github.com/quarkusio/quarkus/tree/main/devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/core
+* Extension codestarts directory: https://github.com/quarkusio/quarkus/tree/main/devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/examples
 
 == Writing an Extension Codestart
 
@@ -89,7 +89,7 @@ jbang qcd@quarkusio -l java,kotlin -c ./examples/quarkus my-example
 . put the working extension codestart in `devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/examples` and submit a PR.
 . Add the `ref` value of the codestart to the extension metadata. This is how it is activated when the extension is selected (e.g )
 
-    Example: https://github.com/quarkusio/quarkus/blob/master/extensions/resteasy/runtime/src/main/resources/META-INF/quarkus-extension.yaml#L14
+    Example: https://github.com/quarkusio/quarkus/blob/main/extensions/resteasy/runtime/src/main/resources/META-INF/quarkus-extension.yaml#L14
 
 *NOTE* This is temporary, extension codestarts will soon live alongside the extension.
 
@@ -97,10 +97,10 @@ jbang qcd@quarkusio -l java,kotlin -c ./examples/quarkus my-example
 
 * We already have tests making sure we can create and build apps with all extension codestarts together with each build tools and languages:
 +
-https://github.com/quarkusio/quarkus/blob/master/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus/QuarkusCodestartRunIT.java#L74-L90
+https://github.com/quarkusio/quarkus/blob/main/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus/QuarkusCodestartRunIT.java#L74-L90
 * We have specific tests making sure the generation is working as expected (we will split it soon, you may create another class for your codestart):
 +
-https://github.com/quarkusio/quarkus/blob/master/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus/QuarkusCodestartGenerationTest.java
+https://github.com/quarkusio/quarkus/blob/main/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus/QuarkusCodestartGenerationTest.java
 
 === Writing tips
 
@@ -213,7 +213,7 @@ This is a big constraint and should be done as a last resort:
 
 To make it a singleton:
 
-* Put it in this directory: https://github.com/quarkusio/quarkus/tree/master/devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/singleton-examples
+* Put it in this directory: https://github.com/quarkusio/quarkus/tree/main/devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/singleton-examples
 * Add `singleton-example` in the tags:
 +
 codestart.yml
@@ -228,8 +228,8 @@ tags:
 
 == The generator sources
 
-* Codestart generator: https://github.com/quarkusio/quarkus/tree/master/independent-projects/tools/codestarts
-* Quarkus implementation of the Codestart generator: https://github.com/quarkusio/quarkus/tree/master/independent-projects/tools/devtools-common/src/main/java/io/quarkus/devtools/codestarts/quarkus
+* Codestart generator: https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/codestarts
+* Quarkus implementation of the Codestart generator: https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/devtools-common/src/main/java/io/quarkus/devtools/codestarts/quarkus
 
 == Issues and Feature requests
 

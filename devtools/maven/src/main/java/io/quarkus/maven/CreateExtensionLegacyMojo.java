@@ -412,7 +412,7 @@ public class CreateExtensionLegacyMojo extends AbstractMojo {
      * Note that you do not need to provide all of them. Files not available in your custom {@link #templatesUriBase}
      * will be looked up in the default URI base {@value #DEFAULT_TEMPLATES_URI_BASE}. The default templates are
      * maintained <a href=
-     * "https://github.com/quarkusio/quarkus/tree/master/devtools/maven/src/main/resources/create-extension-templates">here</a>.
+     * "https://github.com/quarkusio/quarkus/tree/main/devtools/maven/src/main/resources/create-extension-templates">here</a>.
      *
      * @since 0.20.0
      */

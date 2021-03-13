@@ -7,6 +7,6 @@ assignees: ''
 
 ---
 
-This issue will be open and closed dependent on the state of <particpant repo url> building against Quarkus master snapshot.
+This issue will be open and closed dependent on the state of <participant repo url> building against Quarkus main snapshot.
 
 If you have interest in being notified of this subscribe to the issue.

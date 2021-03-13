@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Extension for Spring Data API
 
@@ -596,7 +596,7 @@ quarkus.hibernate-orm.implicit-naming-strategy=org.springframework.boot.orm.jpa.
 
 ==== More examples
 
-An extensive list of examples can be seen in the https://github.com/quarkusio/quarkus/tree/master/integration-tests/spring-data-jpa[integration tests] directory which is located inside the Quarkus source code.
+An extensive list of examples can be seen in the https://github.com/quarkusio/quarkus/tree/main/integration-tests/spring-data-jpa[integration tests] directory which is located inside the Quarkus source code.
 
 === What is currently unsupported
 

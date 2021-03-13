@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Using Apache Kafka Streams
 
@@ -52,7 +52,7 @@ Together, these settings will ensure that the application can very quickly recon
 
 In this guide, we are going to generate (random) temperature values in one component (named `generator`).
 These values are associated to given weather stations and are written in a Kafka topic (`temperature-values`).
-Another topic (`weather-stations`) contains just the master data about the weather stations themselves (id and name).
+Another topic (`weather-stations`) contains just the main data about the weather stations themselves (id and name).
 
 A second component (`aggregator`) reads from the two Kafka topics and processes them in a streaming pipeline:
 

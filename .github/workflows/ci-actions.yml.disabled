@@ -42,17 +42,17 @@ jobs:
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     steps:
       - name: Build
         run: sleep 30
   build-jdk11:
     name: "Initial JDK 11 Build"
     runs-on: ubuntu-latest
-    # Skip master in forks
+    # Skip main in forks
     # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
-    if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')) && ( \
+    if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && ( \
            github.event_name != 'pull_request' || ( \
              github.event.pull_request.draft == false && \
              github.event.pull_request.state != 'closed' && \
@@ -116,8 +116,8 @@ jobs:
   linux-jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
     timeout-minutes: 240
     env:
@@ -188,8 +188,8 @@ jobs:
   windows-jdk11-jvm-tests:
     name: JVM Tests - JDK 11 Windows
     runs-on: windows-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
     timeout-minutes: 180
     env:
@@ -229,8 +229,8 @@ jobs:
   linux-jvm-maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -272,8 +272,8 @@ jobs:
   windows-jdk11-jvm-maven-tests:
     name: Maven Tests - JDK 11 Windows
     runs-on: windows-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -310,8 +310,8 @@ jobs:
   linux-jvm-gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -350,8 +350,8 @@ jobs:
   windows-jdk11-jvm-gradle-tests:
     name: Gradle Tests - JDK 11 Windows
     needs: build-jdk11
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     runs-on: windows-latest
     timeout-minutes: 80
     steps:
@@ -383,8 +383,8 @@ jobs:
   linux-jvm-devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -426,8 +426,8 @@ jobs:
   windows-jdk11-jvm-devtools-tests:
     name: Devtools Tests - JDK 11 Windows
     runs-on: windows-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
     timeout-minutes: 60
     strategy:
@@ -464,8 +464,8 @@ jobs:
   tcks-test:
     name: MicroProfile TCKs Tests
     needs: build-jdk11
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     runs-on: ubuntu-latest
     timeout-minutes: 150
 
@@ -514,8 +514,8 @@ jobs:
   native-tests-read-json-matrix:
     name: Native Tests - Read JSON matrix
     runs-on: ubuntu-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     outputs:
       matrix: ${{ steps.read.outputs.matrix }}
     steps:
@@ -530,8 +530,8 @@ jobs:
     name: Native Tests - ${{matrix.category}}
     needs: [build-jdk11, native-tests-read-json-matrix]
     runs-on: ubuntu-latest
-    # Skip master in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/master')"
+    # Skip main in forks
+    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:

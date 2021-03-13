@@ -7,9 +7,9 @@ But first, read this page (including the small print at the end).
 
 * [Legal](#legal)
 * [Reporting an issue](#reporting-an-issue)
-* [Checking an issue is fixed in master](#checking-an-issue-is-fixed-in-master)
+* [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
   + [Using snapshots](#using-snapshots)
-  + [Building master](#building-master)
+  + [Building main](#building-main)
   + [Updating the version](#updating-the-version)
 * [Before you contribute](#before-you-contribute)
   + [Code reviews](#code-reviews)
@@ -58,15 +58,15 @@ This project uses GitHub issues to manage the issues. Open an issue directly in 
 If you believe you found a bug, and it's likely possible, please indicate a way to reproduce it, what you are seeing and what you would expect to see.
 Don't forget to indicate your Quarkus, Java, Maven/Gradle and GraalVM version. 
 
-## Checking an issue is fixed in master
+## Checking an issue is fixed in main
 
-Sometimes a bug has been fixed in the `master` branch of Quarkus and you want to confirm it is fixed for your own application.
-Testing the `master` branch is easy and you have two options:
+Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own application.
+Testing the `main` branch is easy and you have two options:
 
 * either use the snapshots we publish daily on https://oss.sonatype.org/content/repositories/snapshots/
 * or build Quarkus all by yourself
 
-This is a quick summary to get you to quickly test master.
+This is a quick summary to get you to quickly test main.
 If you are interested in having more details, refer to the [Build section](#build) and the [Usage section](#usage).
 
 ### Using snapshots
@@ -77,7 +77,7 @@ Then just add https://oss.sonatype.org/content/repositories/snapshots/ as a Mave
 
 You can check the last publication date here: https://oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
 
-### Building master
+### Building main
 
 Just do the following:
 
@@ -92,7 +92,7 @@ Wait for a bit and you're done.
 
 ### Updating the version
 
-Be careful, when using the `master` branch, you need to use the `quarkus-bom` instead of the `quarkus-universe-bom`.
+Be careful, when using the `main` branch, you need to use the `quarkus-bom` instead of the `quarkus-universe-bom`.
 
 Update both the versions of the `quarkus-bom` and the Quarkus Maven plugin to `999-SNAPSHOT`.
 
@@ -129,7 +129,7 @@ Because we are all humans, and to ensure Quarkus is stable for everyone, all cha
 
 The process requires only one additional step to enable Actions on your fork (clicking the green button in the actions tab). [See the full video walkthrough](https://youtu.be/egqbx-Q-Cbg) for more details on how to do this.
 
-To keep the caching of non-Quarkus artifacts efficient (speeding up CI), you should occasionally sync the `master` branch of your fork with `master` of this repo (e.g. monthly).
+To keep the caching of non-Quarkus artifacts efficient (speeding up CI), you should occasionally sync the `main` branch of your fork with `main` of this repo (e.g. monthly).
 
 ### Tests and documentation are not optional
 
@@ -282,7 +282,7 @@ In this command we use the groupId and artifactId of the module to identify it.
 
 #### Running a single test
 
-Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson)).
+Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/main/integration-tests/resteasy-jackson)).
 One way to accomplish this is by executing the following command:
 
 ```
@@ -298,7 +298,7 @@ E.g.:
 ```
 ./mvnw install -Dincremental
 ```
-This will build all modules (and their downstream modules) that have been changed compared to your _local_ `master`, including untracked and uncommitted changes.
+This will build all modules (and their downstream modules) that have been changed compared to your _local_ `main`, including untracked and uncommitted changes.
 
 If you just want to build the changes since the last commit on the current branch, you can switch off the branch comparison via `-Dgib.disableBranchComparison` (or short: `-Dgib.dbc`).
 
@@ -322,7 +322,7 @@ CI is using a slighty different GIB config than locally:
 * [Special handling of "Explicitly selected projects"](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#explicitly-selected-projects) is deactivated
 * Untracked/uncommitted changes are not considered
 * Branch comparison is more complex due to distributed GitHub forks
-* Certain "critical" branches like `master` are not built incrementally
+* Certain "critical" branches like `main` are not built incrementally
 
 For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
 

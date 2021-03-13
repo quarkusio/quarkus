@@ -3211,7 +3211,7 @@
                 <version>${jakarta.interceptor-api.version}</version>
                 <exclusions>
                     <!-- There is a bug in 1.2.5 -->
-                    <!-- The dependency is removed in master: https://github.com/eclipse-ee4j/interceptor-api/commit/017aeb56849bbb448319aaf36df45a07ec54f451 -->
+                    <!-- The dependency is removed in main: https://github.com/eclipse-ee4j/interceptor-api/commit/017aeb56849bbb448319aaf36df45a07ec54f451 -->
                     <exclusion>
                         <groupId>jakarta.ejb</groupId>
                         <artifactId>jakarta.ejb-api</artifactId>

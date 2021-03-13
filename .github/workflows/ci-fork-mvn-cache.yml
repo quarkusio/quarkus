@@ -3,7 +3,7 @@ name: Quarkus CI Fork Maven Cache
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
     # paths-ignore should match ci-actions.yml
     paths-ignore:
       - '.gitignore'

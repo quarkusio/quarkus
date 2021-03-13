@@ -1,7 +1,7 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus - Building a Native Executable
 
@@ -45,7 +45,7 @@ If you are building native executables for macOS or Windows target platforms,
 you should consider using Oracle GraalVM instead,
 because Mandrel does not currently target these platforms.
 Building native executables directly on bare metal Linux is possible,
-with details available in the https://github.com/graalvm/mandrel/blob/master/README-Mandrel.md[Mandrel README]
+with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
 and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
 The prerequisites vary slightly depending on whether you are using Oracle GraalVM CE/EE or Mandrel.

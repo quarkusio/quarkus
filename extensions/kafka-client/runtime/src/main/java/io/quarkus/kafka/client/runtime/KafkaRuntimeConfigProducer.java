@@ -2,20 +2,17 @@ package io.quarkus.kafka.client.runtime;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.ApplicationConfig;
 
-@Dependent
+@Singleton
 public class KafkaRuntimeConfigProducer {
 
     // not "kafka.", because we also inspect env vars, which start with "KAFKA_"
@@ -25,29 +22,27 @@ public class KafkaRuntimeConfigProducer {
 
     @Produces
     @DefaultBean
-    @ApplicationScoped
+    @Singleton
     @Named("default-kafka-broker")
-    public Map<String, Object> createKafkaRuntimeConfig(ApplicationConfig app) {
-        Map<String, Object> properties = new HashMap<>();
-        final Config config = ConfigProvider.getConfig();
+    public Map<String, Object> createKafkaRuntimeConfig(Config config, ApplicationConfig app) {
+        Map<String, Object> result = new HashMap<>();
 
-        StreamSupport
-                .stream(config.getPropertyNames().spliterator(), false)
-                .map(String::toLowerCase)
-                .filter(name -> name.startsWith(CONFIG_PREFIX))
-                .distinct()
-                .sorted()
-                .forEach(name -> {
-                    final String key = name.substring(CONFIG_PREFIX.length() + 1).toLowerCase().replaceAll("[^a-z0-9.]", ".");
-                    final String value = config.getOptionalValue(name, String.class).orElse("");
-                    properties.put(key, value);
-                });
-
-        if (!properties.containsKey(GROUP_ID) && app.name.isPresent()) {
-            properties.put(GROUP_ID, app.name.get());
+        for (String propertyName : config.getPropertyNames()) {
+            String propertyNameLowerCase = propertyName.toLowerCase();
+            if (!propertyNameLowerCase.startsWith(CONFIG_PREFIX)) {
+                continue;
+            }
+            String effectivePropertyName = propertyNameLowerCase.substring(CONFIG_PREFIX.length() + 1).toLowerCase()
+                    .replaceAll("[^a-z0-9.]", ".");
+            String value = config.getOptionalValue(propertyName, String.class).orElse("");
+            result.put(effectivePropertyName, value);
         }
 
-        return properties;
+        if (!result.containsKey(GROUP_ID) && app.name.isPresent()) {
+            result.put(GROUP_ID, app.name.get());
+        }
+
+        return result;
     }
 
 }

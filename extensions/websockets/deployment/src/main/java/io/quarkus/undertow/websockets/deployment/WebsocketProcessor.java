@@ -37,12 +37,12 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.undertow.websockets.runtime.UndertowWebsocketRecorder;
+import io.quarkus.undertow.websockets.runtime.WebsocketRecorder;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.undertow.websockets.DefaultContainerConfigurator;
 import io.undertow.websockets.UndertowContainerProvider;
 
-public class UndertowWebsocketProcessor {
+public class WebsocketProcessor {
 
     private static final DotName SERVER_ENDPOINT = DotName.createSimple(ServerEndpoint.class.getName());
     private static final DotName CLIENT_ENDPOINT = DotName.createSimple(ClientEndpoint.class.getName());
@@ -91,7 +91,7 @@ public class UndertowWebsocketProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public FilterBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
-            UndertowWebsocketRecorder recorder,
+            WebsocketRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             EventLoopSupplierBuildItem eventLoopSupplierBuildItem,
             List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints,
@@ -165,7 +165,7 @@ public class UndertowWebsocketProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem setupWorker(UndertowWebsocketRecorder recorder, ExecutorBuildItem exec) {
+    ServiceStartBuildItem setupWorker(WebsocketRecorder recorder, ExecutorBuildItem exec) {
         recorder.setupWorker(exec.getExecutorProxy());
         return new ServiceStartBuildItem("Websockets");
     }

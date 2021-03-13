@@ -30,9 +30,9 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
-public class UndertowWebsocketRecorder {
+public class WebsocketRecorder {
 
-    private static final Logger log = Logger.getLogger(UndertowWebsocketRecorder.class);
+    private static final Logger log = Logger.getLogger(WebsocketRecorder.class);
 
     public void setupWorker(Executor executor) {
         ExecutorSupplier.executor = executor;
@@ -62,7 +62,7 @@ public class UndertowWebsocketRecorder {
                 log.error("Could not initialize websocket class " + i, e);
             }
         }
-        Set<Class<?>> newAnnotatatedEndpoints = new HashSet<>();
+        Set<Class<?>> newAnnotatedEndpoints = new HashSet<>();
         Set<ServerEndpointConfig> serverEndpointConfigurations = new HashSet<>();
 
         final Set<ServerApplicationConfig> configInstances = new HashSet<>();
@@ -79,7 +79,7 @@ public class UndertowWebsocketRecorder {
             for (ServerApplicationConfig config : configInstances) {
                 Set<Class<?>> returnedEndpoints = config.getAnnotatedEndpointClasses(allScannedAnnotatedEndpoints);
                 if (returnedEndpoints != null) {
-                    newAnnotatatedEndpoints.addAll(returnedEndpoints);
+                    newAnnotatedEndpoints.addAll(returnedEndpoints);
                 }
                 Set<ServerEndpointConfig> endpointConfigs = config.getEndpointConfigs(allScannedEndpointImplementations);
                 if (endpointConfigs != null) {
@@ -87,11 +87,11 @@ public class UndertowWebsocketRecorder {
                 }
             }
         } else {
-            newAnnotatatedEndpoints.addAll(allScannedAnnotatedEndpoints);
+            newAnnotatedEndpoints.addAll(allScannedAnnotatedEndpoints);
         }
 
         //annotated endpoints first
-        for (Class<?> endpoint : newAnnotatatedEndpoints) {
+        for (Class<?> endpoint : newAnnotatedEndpoints) {
             if (endpoint != null) {
                 container.addEndpoint(endpoint);
             }

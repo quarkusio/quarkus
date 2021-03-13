@@ -1,6 +1,7 @@
 package io.quarkus.it.kubernetes.client;
 
 import java.util.List;
+import java.util.UUID;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -65,7 +66,8 @@ public class Pods {
     public Response createNew(@PathParam("namespace") String namespace) {
         return Response
                 .ok(kubernetesClient.pods().inNamespace(namespace)
-                        .create(new PodBuilder().withNewMetadata().withResourceVersion("12345")
+                        .create(new PodBuilder().withNewMetadata()
+                                .withName(UUID.randomUUID().toString()).withResourceVersion("12345")
                                 .endMetadata().build()))
                 .build();
     }

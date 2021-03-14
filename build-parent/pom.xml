@@ -20,14 +20,15 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <!-- Maven plugin versions -->
-        <scala-maven-plugin.version>4.1.1</scala-maven-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <kotlin.version>1.4.31</kotlin.version>
-        <scala.version>2.12.8</scala.version>
-        <scala-plugin.version>4.1.1</scala-plugin.version>
+        <scala.version>2.12.13</scala.version>
+        <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
+        <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
+        <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
         <!-- version.* properties are defined in jboss-parent and are overridden/updated here: -->
         <version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>

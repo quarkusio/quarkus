@@ -102,6 +102,7 @@ Then, we'll add the following dependency to support `multipart/form-data` reques
     <artifactId>quarkus-resteasy-multipart</artifactId>
 </dependency>
 ----
+**Note**: The default setting for `quarkus.http.limits.max-body-size` is 10240K. This may limit your ability to upload multipart files larger than the default. If you want to upload larger files, you will need to set this limit explicitly. 
 
 == Setting up the model
 

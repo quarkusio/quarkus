@@ -129,12 +129,12 @@ jobs:
           then
               # The PR defines a clear merge target so just use that branch for reference, *unless*:
               # - the current branch is a backport branch
-              GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfBranchRegex='.*backport.*'"
+              GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfBranchMatches='.*backport.*'"
           else
               # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
               # - the current branch is main or some released branch like 1.10
               # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
-              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchRegex='main|\d+\.\d+|.*backport.*'"
+              GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
           fi
           echo "GIB_ARGS: $GIB_ARGS"
           echo "::set-output name=gib_args::${GIB_ARGS}"

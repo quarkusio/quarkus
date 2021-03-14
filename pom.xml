@@ -35,7 +35,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <gitflow-incremental-builder.version>3.12.2</gitflow-incremental-builder.version>
+        <gitflow-incremental-builder.version>3.13.0</gitflow-incremental-builder.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -253,8 +253,7 @@
                         <configuration>
                             <!-- pointless to attempt incremental build if something like mvnw was changed
                                  (and also potentially wrong, given that independent-projects might not be built) -->
-                            <!-- BOM part is a temporary workaround for: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/320 -->
-                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*|bom[/\\].*</skipIfPathMatches>
+                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
                             <!-- Note: *Upstream* is only relevant in case of:
                                  -am or
                                  -Dgib.buildUpstream=always|true or

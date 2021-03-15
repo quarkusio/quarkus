@@ -5,11 +5,12 @@ import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 import java.io.InputStream;
@@ -49,16 +50,21 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         this.context = context;
         this.request = context.request();
         this.response = context.response();
+        Context vertxContext = ((HttpServerRequestInternal) this.context.request()).context();
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
-        ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
         if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
             continueState = ContinueState.REQUIRED;
         }
         this.contextExecutor = new Executor() {
             @Override
             public void execute(Runnable command) {
-                internal.execute(command);
+                vertxContext.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void x) {
+                        command.run();
+                    }
+                });
             }
         };
     }

@@ -705,7 +705,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
             org.eclipse.aether.artifact.Artifact artifact = dep.getArtifact();
             if (artifact != null && artifact.getArtifactId().equals("quarkus-core")) {
-                coreVersion = artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
+                coreVersion = artifact.getVersion();
                 if ("io.quarkus".equals(artifact.getGroupId())) {
                     skipTheRest = true;
                 }

@@ -104,7 +104,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-microprofile-deployment</artifactId>
+            <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
         </dependency>
         <!-- TCKs are adding SessionScope to some beans, so we need this capability to support it -->
         <dependency>

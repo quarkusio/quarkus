@@ -1752,7 +1752,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-rest-client-microprofile</artifactId>
+                    <artifactId>quarkus-rest-client-mutiny</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -1765,7 +1765,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-rest-client-mutiny</artifactId>
+                    <artifactId>quarkus-rest-client-reactive</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

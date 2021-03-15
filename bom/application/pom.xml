@@ -1904,12 +1904,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-microprofile</artifactId>
+                <artifactId>quarkus-rest-client-reactive</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-microprofile-deployment</artifactId>
+                <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

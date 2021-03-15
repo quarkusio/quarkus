@@ -1817,7 +1817,7 @@ Please note that if a JAX-RS Application has been detected and the method `getCl
 == RESTEasy Reactive client
 In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile Rest Client implementation that is non-blocking at its core.
 
-To use it, add the `quarkus-rest-client-microprofile` extension to your project.
+To use it, add the `quarkus-rest-client-reactive` extension to your project.
 The client can be used as described in https://quarkus.io/guides/rest-client[Using the REST Client guide] and specified in the https://download.eclipse.org/microprofile/microprofile-rest-client-1.4.1/microprofile-rest-client-1.4.1.html[MicroProfile Rest Client specification], with a few exceptions:
 
 - the extension name

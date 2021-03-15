@@ -101,7 +101,8 @@ jobs:
           ./update-extension-dependencies.sh -B --settings .github/mvn-settings.xml
           if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
           then
-            echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated! Run ./update-extension-dependencies.sh and add the modified pom.xml files to your commit.' 1>&2
+            echo -e '\033[0;31mError:\033[0m Dependencies to extension artifacts are outdated!' 1>&2
+            echo -e '\033[0;31mError:\033[0m Run ./update-extension-dependencies.sh and add the modified pom.xml files to your commit.' 1>&2
             exit 1
           fi
       - name: Tar Maven Repo
@@ -357,23 +358,32 @@ jobs:
           name: test-reports-windows-maven-java11
           path: 'test-reports.tgz'
 
-  linux-jvm-gradle-tests:
-    name: Gradle Tests - JDK ${{matrix.java.name}}
-    runs-on: ubuntu-latest
+  gradle-tests-jdk11-jvm:
+    name: Gradle Tests - JDK 11 ${{matrix.os.family}}
+    runs-on: ${{matrix.os.name}}
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     needs: build-jdk11
-    timeout-minutes: 60
+    timeout-minutes: 80
     strategy:
       fail-fast: false
       matrix:
-        java:
+        os:
           - {
-            name: "11",
-            java-version: 11
+            name: "ubuntu-latest",
+            family: "Linux"
+          }
+          - {
+            name: "windows-latest",
+            family: "Windows"
           }
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -382,53 +392,27 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK ${{ matrix.java.name }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: ${{ matrix.java.java-version }}
-      - name: Build with Gradle
-        uses: eskatos/gradle-command-action@v1
-        env:
-          GRADLE_OPTS: -Xmx1408m
-        with:
-          gradle-version: wrapper
-          wrapper-directory: integration-tests/gradle
-          build-root-directory: integration-tests/gradle
-          arguments: clean test -i -S --stacktrace --no-daemon
-
-  windows-jdk11-jvm-gradle-tests:
-    name: Gradle Tests - JDK 11 Windows
-    needs: build-jdk11
-    # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
-    runs-on: windows-latest
-    timeout-minutes: 80
-    steps:
-      - uses: actions/checkout@v2
       - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
         with:
           java-version: 11
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
+      - name: Verify dependencies
+        # runs on Windows as well but would require newline conversion, not worth it
+        if: matrix.os.family == 'Linux'
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Gradle
-        uses: eskatos/gradle-command-action@v1
-        timeout-minutes: 60
-        env:
-          GRADLE_OPTS: -Xmx1408m
-        with:
-          gradle-version: wrapper
-          wrapper-directory: integration-tests/gradle
-          build-root-directory: integration-tests/gradle
-          arguments: clean test -i -S --stacktrace --no-daemon
+        run: |
+          ./update-dependencies.sh -B --settings ../../.github/mvn-settings.xml
+          if [ `git status -s -u no '*pom.xml' | wc -l` -ne 0 ]
+          then
+            echo -e '\033[0;31mError:\033[0m Dependencies in integration-tests/gradle/pom.xml are outdated!' 1>&2
+            echo -e '\033[0;31mError:\033[0m Run update-dependencies.sh in integration-tests/gradle and add the modified pom.xml file to your commit.' 1>&2
+            exit 1
+          fi
+        working-directory: integration-tests/gradle
+      - name: Build with Gradle via Maven
+        shell: bash
+        run: mvn $JVM_TEST_MAVEN_OPTS install -pl integration-tests/gradle ${{ needs.build-jdk11.outputs.gib_args }}
 
   linux-jvm-devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}

@@ -10,7 +10,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.builder.BuildException;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -25,7 +24,6 @@ public class KubernetesWithConflictingEnvTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .assertBuildException(e -> assertThat(e)
                     .isInstanceOf(RuntimeException.class)
-                    .hasCauseInstanceOf(BuildException.class)
                     .hasMessageContaining(
                             "- 'envvar': first defined as 'envvar' env var with value 'value' redefined as 'envvar' env var with value from field 'field'"))
             .withConfigurationResource("kubernetes-with-" + APPLICATION_NAME + "-env.properties");

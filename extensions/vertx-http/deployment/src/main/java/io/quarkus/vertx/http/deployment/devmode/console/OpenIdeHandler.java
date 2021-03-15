@@ -44,10 +44,8 @@ public class OpenIdeHandler extends DevConsolePostHandler {
             routingContext.fail(400);
         }
 
-        if (ide == Ide.IDEA) {
-            typicalProcessLaunch(routingContext, className, lang, srcMainPath, line, "idea");
-        } else if (ide == Ide.ECLIPSE) {
-            typicalProcessLaunch(routingContext, className, lang, srcMainPath, line, "eclipse");
+        if (ide != null) {
+            typicalProcessLaunch(routingContext, className, lang, srcMainPath, line, ide.getExecutable());
         } else {
             log.debug("Unhandled IDE : " + ide);
             routingContext.fail(500);

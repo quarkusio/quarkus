@@ -5,11 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
 
 import javax.mail.BodyPart;
 import javax.mail.MessagingException;
@@ -82,17 +78,17 @@ class MailerImplTest {
     }
 
     @Test
-    void testHTMLMail() throws MessagingException, IOException {
+    void testHTMLMail() throws MessagingException {
         String content = UUID.randomUUID().toString();
         mailer.send(Mail.withHtml(TO, "Test", "<h1>" + content + "</h1>")).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("<h1>" + content + "</h1>");
-        List<String> types = getContentTypesFromMimeMultipart((MimeMultipart) actual.getMimeMessage().getContent());
+        List<String> types = Collections.singletonList(actual.getMimeMessage().getContentType());
         assertThat(types).containsExactly("text/html");
         MimeMessage msg = actual.getMimeMessage();
         assertThat(msg.getSubject()).isEqualTo("Test");
-        assertThat(msg.getContentType()).startsWith("multipart/");
+        assertThat(msg.getContentType()).startsWith("text/html");
         assertThat(msg.getFrom()[0].toString()).isEqualTo(FROM);
         assertThat(msg.getAllRecipients()).hasSize(1).contains(new InternetAddress(TO));
     }
@@ -296,6 +292,11 @@ class MailerImplTest {
             }
         }
         return types;
+    }
+
+    private List<String> getContentTypesFromMimeMultipart(
+            String content) throws MessagingException, IOException {
+        return Collections.singletonList(content);
     }
 
 }

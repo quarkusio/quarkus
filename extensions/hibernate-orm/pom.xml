@@ -72,6 +72,9 @@
                                     <bundledSignature>jdk-internal-14</bundledSignature>
                                     <bundledSignature>jdk-internal-15</bundledSignature>
                                 </bundledSignatures>
+                                <signaturesFiles>
+                                    <signaturesFile>./banned-signatures.txt</signaturesFile>
+                                </signaturesFiles>
                                 <failOnMissingClasses>false</failOnMissingClasses>
                                 <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
                             </configuration>

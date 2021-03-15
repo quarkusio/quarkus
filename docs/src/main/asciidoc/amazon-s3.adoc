@@ -43,7 +43,8 @@ docker run -it --publish 8008:4566 -e SERVICES=s3 -e START_WEB=0 localstack/loca
 ----
 This starts a S3 instance that is accessible on port `8008`.
 
-**Note**: Versions of localstack newer than v0.11.5 require port `4566` instead of port `4572`. See this https://github.com/localstack/localstack/issues/2983[GitHub issue] for details on this change
+
+NOTE: Versions of localstack newer than v0.11.5 require port `4566` instead of port `4572`. See this https://github.com/localstack/localstack/issues/2983[GitHub issue] for details on this change.
 
 Create an AWS profile for your local instance using AWS CLI:
 [source,shell,subs="verbatim,attributes"]
@@ -102,7 +103,8 @@ Then, we'll add the following dependency to support `multipart/form-data` reques
     <artifactId>quarkus-resteasy-multipart</artifactId>
 </dependency>
 ----
-**Note**: The default setting for `quarkus.http.limits.max-body-size` is 10240K. This may limit your ability to upload multipart files larger than the default. If you want to upload larger files, you will need to set this limit explicitly. 
+
+NOTE: The default setting for `quarkus.http.limits.max-body-size` is 10240K. This may limit your ability to upload multipart files larger than the default. If you want to upload larger files, you will need to set this limit explicitly.
 
 == Setting up the model
 

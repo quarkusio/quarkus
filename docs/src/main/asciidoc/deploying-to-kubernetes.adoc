@@ -1198,6 +1198,8 @@ Currently, the following Quarkus extensions support this feature:
 * quarkus-jdbc-mssql
 * quarkus-jdbc-mysql
 * quarkus-jdbc-postgresql
+* quarkus-kafka-client
+* quarkus-smallrye-reactive-messaging-kafka
 
 This list of extensions will grow as more services with supported bindings become available on Kubernetes.
 

@@ -63,6 +63,7 @@ public final class ServiceBinding {
 
     private static Map<String, String> getFilenameToContentMap(Path directory) {
         if (!Files.exists(directory) || !Files.isDirectory(directory)) {
+            log.warn("File '" + directory + "' is not a proper service binding directory so it will skipped");
             return Collections.emptyMap();
         }
 

@@ -18,11 +18,10 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 
 @QuarkusMain
-@CommandLine.Command(name = "quarkus", aliases = {
-        "qs" }, versionProvider = QuarkusCliVersion.class, usageHelpAutoWidth = true, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
-                Build.class,
-                Clean.class, Create.class, CreateJBang.class, List.class, Platforms.class, Add.class, Remove.class, Dev.class,
-                CreateExtension.class })
+@CommandLine.Command(name = "qs", versionProvider = QuarkusCliVersion.class, usageHelpAutoWidth = true, subcommandsRepeatable = true, mixinStandardHelpOptions = true, subcommands = {
+        Build.class,
+        Clean.class, Create.class, CreateJBang.class, List.class, Platforms.class, Add.class, Remove.class, Dev.class,
+        CreateExtension.class })
 public class QuarkusCli implements QuarkusApplication {
 
     public void usage() {

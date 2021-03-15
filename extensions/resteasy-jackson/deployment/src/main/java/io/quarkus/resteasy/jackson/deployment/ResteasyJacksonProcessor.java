@@ -18,5 +18,6 @@ public class ResteasyJacksonProcessor {
     void capabilities(BuildProducer<CapabilityBuildItem> capability) {
         capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSON));
         capability.produce(new CapabilityBuildItem(Capability.REST_JACKSON));
+        capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JACKSON));
     }
 }

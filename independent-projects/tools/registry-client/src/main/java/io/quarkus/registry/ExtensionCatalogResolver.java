@@ -29,6 +29,12 @@ import java.util.function.Function;
 
 public class ExtensionCatalogResolver {
 
+    public static ExtensionCatalogResolver empty() {
+        final ExtensionCatalogResolver resolver = new ExtensionCatalogResolver();
+        resolver.registries = Collections.emptyList();
+        return resolver;
+    }
+
     public static Builder builder() {
         return new ExtensionCatalogResolver().new Builder();
     }
@@ -98,7 +104,8 @@ public class ExtensionCatalogResolver {
                 try {
                     registries.add(new RegistryExtensionResolver(defaultClientFactory.buildRegistryClient(config), log));
                 } catch (RegistryResolutionException e) {
-                    log.warn(e.getMessage());
+                    // TODO this should be enabled once the registry comes to life
+                    log.debug(e.getMessage());
                     continue;
                 }
             }

@@ -17,6 +17,7 @@ public class IdeConfig {
         auto,
         idea,
         vscode,
-        eclipse
+        eclipse,
+        netbeans
     }
 }

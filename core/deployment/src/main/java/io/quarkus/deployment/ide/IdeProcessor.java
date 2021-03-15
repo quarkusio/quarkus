@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -24,15 +25,37 @@ public class IdeProcessor {
 
     private static Map<String, List<Ide>> IDE_MARKER_FILES = new HashMap<>();
     private static Map<Predicate<ProcessInfo>, Ide> IDE_PROCESSES = new HashMap<>();
+    private static Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
 
     static {
         IDE_MARKER_FILES.put(".idea", Collections.singletonList(Ide.IDEA));
         IDE_MARKER_FILES.put(".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE));
+        IDE_MARKER_FILES.put("nbactions.xml", Collections.singletonList(Ide.NETBEANS));
+        IDE_MARKER_FILES.put("nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
+
         IDE_MARKER_FILES = Collections.unmodifiableMap(IDE_MARKER_FILES);
 
-        IDE_PROCESSES.put((processInfo -> processInfo.getCommand().contains("idea")), Ide.IDEA);
-        IDE_PROCESSES.put((processInfo -> processInfo.getCommand().contains("code")), Ide.VSCODE);
-        IDE_PROCESSES.put((processInfo -> processInfo.getCommand().contains("eclipse")), Ide.ECLIPSE); // TODO: I have no idea if this is correct
+        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("idea")), Ide.IDEA);
+        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
+        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
+        IDE_PROCESSES.put(
+                (processInfo -> processInfo.containInCommandWithArgument("java", "netbeans")),
+                Ide.NETBEANS);
+
+        IDE_ARGUMENTS_EXEC_INDICATOR.put(Ide.NETBEANS, (ProcessInfo processInfo) -> {
+            String platform = processInfo.getArgumentValue("-Dnetbeans.home");
+            if (platform != null && !platform.isEmpty()) {
+                String os = System.getProperty("os.name");
+                if (os.startsWith("Windows") || os.startsWith("windows")) {
+                    platform = platform.replace("platform", "bin/netbeans.exe");
+                } else {
+                    platform = platform.replace("platform", "bin/netbeans");
+                }
+                return platform;
+            }
+            return null;
+        });
+
         IDE_PROCESSES = Collections.unmodifiableMap(IDE_PROCESSES);
     }
 
@@ -72,6 +95,8 @@ public class IdeProcessor {
                 result = Ide.ECLIPSE;
             } else if (ideConfig.target == IdeConfig.Target.vscode) {
                 result = Ide.VSCODE;
+            } else if (ideConfig.target == IdeConfig.Target.netbeans) {
+                result = Ide.NETBEANS;
             }
         }
 
@@ -96,12 +121,21 @@ public class IdeProcessor {
 
     @BuildStep
     public IdeRunningProcessBuildItem detectRunningIdeProcesses() {
-        Set<Ide> result = new HashSet<>(2);
+        Set<Ide> result = new HashSet<>(4);
         List<ProcessInfo> processInfos = ProcessUtil.runningProcesses();
         for (ProcessInfo processInfo : processInfos) {
             for (Map.Entry<Predicate<ProcessInfo>, Ide> entry : IDE_PROCESSES.entrySet()) {
                 if (entry.getKey().test(processInfo)) {
-                    result.add(entry.getValue());
+                    Ide ide = entry.getValue();
+
+                    if (IDE_ARGUMENTS_EXEC_INDICATOR.containsKey(ide)) {
+                        Function<ProcessInfo, String> execIndicator = IDE_ARGUMENTS_EXEC_INDICATOR.get(ide);
+                        String executeLine = execIndicator.apply(processInfo);
+                        if (executeLine != null) {
+                            ide.setExecutable(executeLine);
+                        }
+                    }
+                    result.add(ide);
                     break;
                 }
             }
@@ -128,6 +162,7 @@ public class IdeProcessor {
                 Method processHandleInfoMethod = processHandlerClass.getMethod("info");
                 Class processHandleInfoClass = Class.forName("java.lang.ProcessHandle$Info");
                 Method processHandleInfoCommandMethod = processHandleInfoClass.getMethod("command");
+                Method processHandleInfoArgumentsMethod = processHandleInfoClass.getMethod("arguments");
                 Stream<Object> allProcessesResult = (Stream<Object>) allProcessesMethod.invoke(null);
                 List<ProcessInfo> result = new ArrayList<>();
                 allProcessesResult.forEach(o -> {
@@ -135,7 +170,9 @@ public class IdeProcessor {
                         Object processHandleInfo = processHandleInfoMethod.invoke(o);
                         Optional<String> command = (Optional<String>) processHandleInfoCommandMethod.invoke(processHandleInfo);
                         if (command.isPresent()) {
-                            result.add(new ProcessInfo(command.get()));
+                            Optional<String[]> arguments = (Optional<String[]>) processHandleInfoArgumentsMethod
+                                    .invoke(processHandleInfo);
+                            result.add(new ProcessInfo(command.get(), arguments.orElse(null)));
                         }
                     } catch (IllegalAccessException | InvocationTargetException e) {
                         throw new RuntimeException(e);
@@ -151,13 +188,49 @@ public class IdeProcessor {
     private static class ProcessInfo {
         // the executable pathname of the process.
         private final String command;
+        private final String[] arguments;
 
-        public ProcessInfo(String command) {
+        public ProcessInfo(String command, String[] arguments) {
             this.command = command;
+            this.arguments = arguments;
         }
 
         public String getCommand() {
             return command;
+        }
+
+        public String[] getArguments() {
+            return arguments;
+        }
+
+        public boolean containInCommandWithArgument(String command, String argument) {
+            return containInCommand(command) && containInArguments(argument);
+        }
+
+        public boolean containInCommand(String value) {
+            return this.command.contains(value);
+        }
+
+        public boolean containInArguments(String value) {
+            if (arguments != null) {
+                for (String argument : arguments) {
+                    if (argument.contains(value)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public String getArgumentValue(String argumentKey) {
+            if (arguments != null) {
+                for (String argument : arguments) {
+                    if (argument.startsWith(argumentKey) && argument.contains("=")) {
+                        return argument.substring(argument.indexOf("=") + 1);
+                    }
+                }
+            }
+            return null;
         }
     }
 }

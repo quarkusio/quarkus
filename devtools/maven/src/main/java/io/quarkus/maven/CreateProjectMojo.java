@@ -185,6 +185,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Component
     RemoteRepositoryManager remoteRepoManager;
 
+    @Parameter(property = "enableRegistryClient")
+    private boolean enableRegistryClient;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -209,7 +212,9 @@ public class CreateProjectMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
         final MojoMessageWriter log = new MojoMessageWriter(getLog());
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvn, log);
+        final ExtensionCatalogResolver catalogResolver = enableRegistryClient
+                ? QuarkusProjectHelper.getCatalogResolver(mvn, log)
+                : ExtensionCatalogResolver.empty();
 
         final ExtensionCatalog catalog = resolveExtensionsCatalog(
                 StringUtils.defaultIfBlank(bomGroupId, null),

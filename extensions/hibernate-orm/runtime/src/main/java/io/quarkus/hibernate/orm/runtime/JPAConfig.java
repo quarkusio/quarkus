@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,7 +55,7 @@ public class JPAConfig {
 
         if (lazyPersistenceUnit == null) {
             throw new IllegalArgumentException(
-                    String.format("Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
+                    String.format(Locale.ROOT, "Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
         }
 
         return lazyPersistenceUnit.get();

@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.tenant;
 
+import java.util.Locale;
+
 import javax.enterprise.inject.Default;
 
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
@@ -60,8 +62,9 @@ public final class HibernateCurrentTenantIdentifierResolver implements CurrentTe
                     new PersistenceUnitLiteral(persistenceUnitName));
         }
         if (!resolverInstance.isAvailable()) {
-            throw new IllegalStateException(String.format("No instance of %1$s was found for persistence unit %2$s. "
-                    + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
+            throw new IllegalStateException(String.format(Locale.ROOT,
+                    "No instance of %1$s was found for persistence unit %2$s. "
+                            + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
                     TenantResolver.class.getSimpleName(), persistenceUnitName));
         }
         return resolverInstance.get();

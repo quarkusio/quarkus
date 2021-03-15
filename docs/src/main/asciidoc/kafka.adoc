@@ -267,6 +267,7 @@ mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.s
 
 # Configure the Kafka source (we read from it)
 mp.messaging.incoming.prices.connector=smallrye-kafka
+mp.messaging.incoming.prices.topic=prices
 mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
 ----
 

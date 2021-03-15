@@ -116,7 +116,7 @@ public class ExpressionTest {
     }
 
     private Part virtualMethod(String name, Expression... params) {
-        return new ExpressionImpl.VirtualMethodPartImpl(name, Arrays.asList(params));
+        return new ExpressionImpl.VirtualMethodPartImpl(name, Arrays.asList(params), null);
     }
 
 }

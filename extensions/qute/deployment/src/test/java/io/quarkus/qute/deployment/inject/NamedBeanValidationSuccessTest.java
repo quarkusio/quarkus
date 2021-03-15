@@ -24,19 +24,30 @@ public class NamedBeanValidationSuccessTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(NamedFoo.class)
-                    .addAsResource(new StringAsset("{#each inject:foo.list}{it.length}{/each}"), "templates/fooping.html"));
+                    .addAsResource(
+                            new StringAsset(
+                                    "{inject:foo.getList(true).size}::{#each inject:foo.getList('foo')}{it.length}{/each}"),
+                            "templates/fooping.html"));
 
     @Inject
     Template fooping;
 
     @Test
     public void testResult() {
-        assertEquals("3", fooping.render());
+        assertEquals("0::3", fooping.render());
     }
 
     @ApplicationScoped
     @Named("foo")
     public static class NamedFoo {
+
+        public List<String> getList(String param) {
+            return Collections.singletonList(param);
+        }
+
+        public List<String> getList(boolean param) {
+            return Collections.emptyList();
+        }
 
         public List<String> getList() {
             return Collections.singletonList("one");

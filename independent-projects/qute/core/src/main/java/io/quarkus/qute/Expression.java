@@ -91,7 +91,7 @@ public interface Expression {
          * for example {@code |org.acme.Foo|},
          * {@code |java.util.List<org.acme.Label>|} and {@code |org.acme.Foo|<when#123>}</li>
          * <li>property; for example {@code foo} and {@code foo<loop#123>}</li>
-         * <li>virtual method; for example {@code foo.call(|org.acme.Bar|)}</li>
+         * <li>virtual method; for example {@code foo.call(bar)} and {@code foo.getNames(10)<loop-element>}</li>
          * </ul>
          * 
          * @return the type check info

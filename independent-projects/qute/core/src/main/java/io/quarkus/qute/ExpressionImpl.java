@@ -152,8 +152,8 @@ final class ExpressionImpl implements Expression {
 
         private final List<Expression> parameters;
 
-        VirtualMethodPartImpl(String name, List<Expression> parameters) {
-            super(name, null);
+        VirtualMethodPartImpl(String name, List<Expression> parameters, String lastPartHint) {
+            super(name, buildTypeInfo(name, parameters, lastPartHint));
             this.parameters = parameters;
         }
 
@@ -169,11 +169,6 @@ final class ExpressionImpl implements Expression {
         @Override
         public VirtualMethodPart asVirtualMethod() {
             return this;
-        }
-
-        @Override
-        public String getTypeInfo() {
-            return toString();
         }
 
         @Override
@@ -201,6 +196,10 @@ final class ExpressionImpl implements Expression {
 
         @Override
         public String toString() {
+            return buildTypeInfo(name, parameters, null);
+        }
+
+        private static String buildTypeInfo(String name, List<Expression> parameters, String lastPartHint) {
             StringBuilder builder = new StringBuilder();
             builder.append(name).append("(");
             for (Iterator<Expression> iterator = parameters.iterator(); iterator.hasNext();) {
@@ -211,6 +210,9 @@ final class ExpressionImpl implements Expression {
                 }
             }
             builder.append(")");
+            if (lastPartHint != null) {
+                builder.append(lastPartHint);
+            }
             return builder.toString();
         }
 

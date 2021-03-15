@@ -583,15 +583,15 @@ public class QuteProcessor {
             if (root.isTypeInfo()) {
                 // E.g. |org.acme.Item|
                 match.setValues(root.asTypeInfo().rawClass, root.asTypeInfo().resolvedType);
-                if (root.asTypeInfo().hasHints()) {
+                if (root.hasHints()) {
                     processHints(templateAnalysis, root.asTypeInfo().hints, match, index, expression, generatedIdsToMatches,
                             incorrectExpressions);
                 }
             } else {
-                if (root.isProperty() && root.asProperty().hasHints()) {
+                if (root.hasHints()) {
                     // Root is not a type info but a property with hint
                     // E.g. 'it<loop#123>' and 'STATUS<when#123>'
-                    if (processHints(templateAnalysis, root.asProperty().hints, match, index, expression,
+                    if (processHints(templateAnalysis, root.asHintInfo().hints, match, index, expression,
                             generatedIdsToMatches, incorrectExpressions)) {
                         // In some cases it's necessary to reset the iterator
                         iterator = parts.iterator();
@@ -713,9 +713,9 @@ public class QuteProcessor {
                         clazz = index.getClassByName(type.name());
                     }
                     match.setValues(clazz, type);
-                    if (info.isProperty() && info.asProperty().hasHints()) {
+                    if (info.hasHints()) {
                         // For example a loop section needs to validate the type of an element
-                        processHints(templateAnalysis, info.asProperty().hints, match, index, expression, generatedIdsToMatches,
+                        processHints(templateAnalysis, info.asHintInfo().hints, match, index, expression, generatedIdsToMatches,
                                 incorrectExpressions);
                     }
                 }
@@ -1677,7 +1677,9 @@ public class QuteProcessor {
                         }
                         idx++;
                     }
-                    return matches ? method : null;
+                    if (matches) {
+                        return method;
+                    }
                 }
             }
             DotName superName = clazz.superName();

@@ -19,6 +19,7 @@ import static org.hibernate.jpa.AvailableSettings.CLASS_CACHE_PREFIX;
 import static org.hibernate.jpa.AvailableSettings.COLLECTION_CACHE_PREFIX;
 import static org.hibernate.jpa.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -603,8 +604,8 @@ public class FastBootMetadataBuilder {
 
         if (metadataBuilderContributorImplClass != null) {
             try {
-                metadataBuilderContributor = metadataBuilderContributorImplClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
+                metadataBuilderContributor = metadataBuilderContributorImplClass.getDeclaredConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException("The MetadataBuilderContributor class ["
                         + metadataBuilderContributorImplClass + "] could not be instantiated!", e);
             }

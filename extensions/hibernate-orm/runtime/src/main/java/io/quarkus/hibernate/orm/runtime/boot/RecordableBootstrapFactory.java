@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.boot;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
@@ -51,9 +53,10 @@ final class RecordableBootstrapFactory {
             //Use reflection as we don't want the Hibernate ORM extension to depend on the Hibernate Reactive extension:
             final Class<?> forName = Class
                     .forName("io.quarkus.hibernate.reactive.runtime.boot.registry.ReactiveHibernateInitiatorListProvider");
-            final Object o = forName.newInstance();
+            final Object o = forName.getDeclaredConstructor().newInstance();
             return (InitialInitiatorListProvider) o;
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
             //Be silent as this is a static initializer: most likely the Hibernate Reactive extension is
             //not on the classpath, which implies we won't need this.
             return null;

@@ -2,13 +2,21 @@ package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
+import java.lang.annotation.Annotation;
+import java.util.function.Supplier;
+
 import javax.validation.Valid;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
@@ -16,6 +24,7 @@ import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.runtime.jta.TransactionalExecutor;
 
 public final class UpdateMethodImplementor extends StandardMethodImplementor {
 
@@ -50,23 +59,30 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
      *     )
      *     public Response update(@PathParam("id") ID id, Entity entityToSave) {
      *         try {
-     *             if (resource.get(id) != null) {
-     *                 resource.update(id, entityToSave);
+     *             Object newEntity = transactionalExecutor.execute(() -> {
+     *                 if (resource.get(id) == null) {
+     *                     return resource.update(id, entityToSave);
+     *                 } else {
+     *                     resource.update(id, entityToSave);
+     *                     return null;
+     *                 }
+     *             });
+     *
+     *             if (newEntity == null) {
      *                 return Response.status(204).build();
      *             } else {
-     *                 Entity entity = resource.update(id, entityToSave);
-     *                 String location = new ResourceLinksProvider().getSelfLink(entity);
+     *                 String location = new ResourceLinksProvider().getSelfLink(newEntity);
      *                 if (location != null) {
      *                     ResponseBuilder responseBuilder = Response.status(201);
-     *                     responseBuilder.entity(entity);
+     *                     responseBuilder.entity(newEntity);
      *                     responseBuilder.location(URI.create(location));
      *                     return responseBuilder.build();
      *                 } else {
      *                     throw new RuntimeException("Could not extract a new entity URL")
      *                 }
-     *             } catch (Throwable t) {
-     *                 throw new RestDataPanacheException(t);
      *             }
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
      *         }
      *     }
      * }
@@ -79,8 +95,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
                 resourceMetadata.getIdType(), resourceMetadata.getEntityType());
 
         // Add method annotations
-        addPathAnnotation(methodCreator,
-                appendToPath(resourceProperties.getPath(RESOURCE_UPDATE_METHOD_NAME), "{id}"));
+        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_UPDATE_METHOD_NAME), "{id}"));
         addPutAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
@@ -95,13 +110,21 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         ResultHandle id = methodCreator.getMethodParam(0);
         ResultHandle entityToSave = methodCreator.getMethodParam(1);
 
-        // Invoke resource methods
+        // Invoke resource methods inside a supplier function which will be given to a transactional executor to make
+        // sure that all database operations are executed in a single transaction.
         TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to update an entity");
-        BranchResult entityExists = doesEntityExist(tryBlock, resourceMetadata.getResourceClass(), resource, id);
-        updateAndReturn(entityExists.trueBranch(), resourceMetadata.getResourceClass(), resource, id, entityToSave);
-        createAndReturn(entityExists.falseBranch(), resourceMetadata.getResourceClass(), resource, id, entityToSave);
+        ResultHandle transactionalExecutor = getTransactionalExecutor(tryBlock);
+        ResultHandle updateFunction = getUpdateFunction(tryBlock, resourceMetadata.getResourceClass(), resource, id,
+                entityToSave);
+        ResultHandle newEntity = tryBlock.invokeVirtualMethod(
+                ofMethod(TransactionalExecutor.class, "execute", Object.class, Supplier.class),
+                transactionalExecutor, updateFunction);
 
-        tryBlock.close();
+        BranchResult createdNewEntity = tryBlock.ifNotNull(newEntity);
+        createdNewEntity.trueBranch()
+                .returnValue(ResponseImplementor.created(createdNewEntity.trueBranch(), newEntity));
+        createdNewEntity.falseBranch().returnValue(ResponseImplementor.noContent(createdNewEntity.falseBranch()));
+
         methodCreator.close();
     }
 
@@ -110,26 +133,58 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         return RESOURCE_UPDATE_METHOD_NAME;
     }
 
-    private BranchResult doesEntityExist(BytecodeCreator creator, String resourceClass, ResultHandle resource,
-            ResultHandle id) {
-        ResultHandle entity = creator.invokeVirtualMethod(
-                ofMethod(resourceClass, RESOURCE_GET_METHOD_NAME, Object.class, Object.class), resource, id);
-        return creator.ifNotNull(entity);
+    private ResultHandle getUpdateFunction(BytecodeCreator creator, String resourceClass, ResultHandle resource,
+            ResultHandle id, ResultHandle entity) {
+        FunctionCreator functionCreator = creator.createFunction(Supplier.class);
+        BytecodeCreator functionBytecodeCreator = functionCreator.getBytecode();
+
+        AssignableResultHandle entityToSave = functionBytecodeCreator.createVariable(Object.class);
+        functionBytecodeCreator.assign(entityToSave, entity);
+
+        BranchResult shouldUpdate = entityExists(functionBytecodeCreator, resourceClass, resource, id);
+        // Update and return null
+        updateAndReturn(shouldUpdate.trueBranch(), resourceClass, resource, id, entityToSave);
+        // Update and return new entity
+        createAndReturn(shouldUpdate.falseBranch(), resourceClass, resource, id, entityToSave);
+
+        return functionCreator.getInstance();
     }
 
-    private void createAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource, ResultHandle id,
-            ResultHandle entityToSave) {
-        ResultHandle entity = creator.invokeVirtualMethod(
+    private BranchResult entityExists(BytecodeCreator creator, String resourceClass, ResultHandle resource,
+            ResultHandle id) {
+        return creator.ifNotNull(creator.invokeVirtualMethod(
+                ofMethod(resourceClass, RESOURCE_GET_METHOD_NAME, Object.class, Object.class), resource, id));
+    }
+
+    private void createAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource,
+            ResultHandle id, ResultHandle entityToSave) {
+        ResultHandle newEntity = creator.invokeVirtualMethod(
                 ofMethod(resourceClass, RESOURCE_UPDATE_METHOD_NAME, Object.class, Object.class, Object.class),
                 resource, id, entityToSave);
-        creator.returnValue(ResponseImplementor.created(creator, entity));
+        creator.returnValue(newEntity);
     }
 
-    private void updateAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource, ResultHandle id,
-            ResultHandle entityToSave) {
+    private void updateAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource,
+            ResultHandle id, ResultHandle entityToSave) {
         creator.invokeVirtualMethod(
                 ofMethod(resourceClass, RESOURCE_UPDATE_METHOD_NAME, Object.class, Object.class, Object.class),
                 resource, id, entityToSave);
-        creator.returnValue(ResponseImplementor.noContent(creator));
+        creator.returnValue(creator.loadNull());
+    }
+
+    private ResultHandle getTransactionalExecutor(BytecodeCreator creator) {
+        ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
+        ResultHandle instanceHandle = creator.invokeInterfaceMethod(
+                ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
+                arcContainer, creator.loadClass(TransactionalExecutor.class), creator.newArray(Annotation.class, 0));
+        ResultHandle instance = creator.invokeInterfaceMethod(
+                ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+
+        creator.ifNull(instance)
+                .trueBranch()
+                .throwException(RuntimeException.class,
+                        TransactionalExecutor.class.getSimpleName() + " instance was not found");
+
+        return instance;
     }
 }

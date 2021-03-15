@@ -133,6 +133,9 @@
         <!-- By default don't check dependencies -->
         <revapi.checkdeps>false</revapi.checkdeps>
 
+        <!-- Forbidden API checks -->
+        <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
+
         <!-- platform properties -->
         <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.0.0-java11</platform.quarkus.native.builder-image>
 

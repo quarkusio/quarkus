@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.tenant;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -68,8 +69,9 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
         }
         if (!instance.isAvailable()) {
             throw new IllegalStateException(
-                    String.format("No instance of %1$s was found for persistence unit %2$s. "
-                            + "You need to create an implementation for this interface to allow resolving the current tenant connection.",
+                    String.format(
+                            Locale.ROOT, "No instance of %1$s was found for persistence unit %2$s. "
+                                    + "You need to create an implementation for this interface to allow resolving the current tenant connection.",
                             TenantConnectionResolver.class.getSimpleName(), persistenceUnitName));
         }
         TenantConnectionResolver resolver = instance.get();
@@ -95,8 +97,9 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
                     new PersistenceUnitLiteral(persistenceUnitName));
         }
         if (!resolverInstance.isAvailable()) {
-            throw new IllegalStateException(String.format("No instance of %1$s was found for persistence unit %2$s. "
-                    + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
+            throw new IllegalStateException(String.format(Locale.ROOT,
+                    "No instance of %1$s was found for persistence unit %2$s. "
+                            + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
                     TenantResolver.class.getSimpleName(), persistenceUnitName));
         }
         return resolverInstance.get();

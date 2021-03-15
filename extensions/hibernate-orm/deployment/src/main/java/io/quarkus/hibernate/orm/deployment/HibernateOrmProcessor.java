@@ -748,25 +748,28 @@ public final class HibernateOrmProcessor {
                     .filter(i -> persistenceUnitConfig.datasource.get().equals(i.getName()))
                     .findFirst()
                     .orElseThrow(() -> new ConfigurationException(
-                            String.format("The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it."
-                                    + " To solve this, configure datasource '%1$s'."
-                                    + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                            String.format(Locale.ROOT,
+                                    "The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it."
+                                            + " To solve this, configure datasource '%1$s'."
+                                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
                                     persistenceUnitConfig.datasource.get(), persistenceUnitName)));
             dataSource = persistenceUnitConfig.datasource.get();
         } else {
             if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
                 // if it's not the default persistence unit, we mandate a datasource to prevent common errors
                 throw new ConfigurationException(
-                        String.format("Datasource must be defined for persistence unit '%s'.", persistenceUnitName));
+                        String.format(Locale.ROOT, "Datasource must be defined for persistence unit '%s'.",
+                                persistenceUnitName));
             }
 
             jdbcDataSource = jdbcDataSources.stream()
                     .filter(i -> i.isDefault())
                     .findFirst()
                     .orElseThrow(() -> new ConfigurationException(
-                            String.format("The default datasource is not configured but the persistence unit '%s' uses it."
-                                    + " To solve this, configure the default datasource."
-                                    + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                            String.format(Locale.ROOT,
+                                    "The default datasource is not configured but the persistence unit '%s' uses it."
+                                            + " To solve this, configure the default datasource."
+                                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
                                     persistenceUnitName)));
             dataSource = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
         }
@@ -850,7 +853,7 @@ public final class HibernateOrmProcessor {
                 persistenceUnitConfig.query.queryPlanCacheMaxSize));
 
         descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
-                persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase());
+                persistenceUnitConfig.query.defaultNullOrdering.name().toLowerCase(Locale.ROOT));
 
         // JDBC
         persistenceUnitConfig.jdbc.timezone.ifPresent(
@@ -1040,7 +1043,7 @@ public final class HibernateOrmProcessor {
                 String candidatePersistenceUnitName = candidatePersistenceUnitEntry.getKey();
 
                 Set<String> candidatePersistenceUnitPackages = candidatePersistenceUnitEntry.getValue().packages
-                        .orElseThrow(() -> new ConfigurationException(String.format(
+                        .orElseThrow(() -> new ConfigurationException(String.format(Locale.ROOT,
                                 "Packages must be configured for persistence unit '%s'.", candidatePersistenceUnitName)));
 
                 for (String packageName : candidatePersistenceUnitPackages) {
@@ -1099,7 +1102,7 @@ public final class HibernateOrmProcessor {
         }
 
         if (!modelClassesWithPersistenceUnitAnnotations.isEmpty()) {
-            throw new IllegalStateException(String.format(
+            throw new IllegalStateException(String.format(Locale.ROOT,
                     "@PersistenceUnit annotations are not supported at the class level on model classes:\n\t- %s\nUse the `.packages` configuration property or package-level annotations instead.",
                     String.join("\n\t- ", modelClassesWithPersistenceUnitAnnotations)));
         }

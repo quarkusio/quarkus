@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.runtime.tenant;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Locale;
 
 import javax.enterprise.inject.Default;
 
@@ -55,7 +56,7 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
                 multiTenancySchemaDataSourceName);
         if (dataSource == null) {
             throw new IllegalStateException(
-                    String.format("No instance of datasource found for persistence unit '%1$s' and tenant '%2$s'",
+                    String.format(Locale.ROOT, "No instance of datasource found for persistence unit '%1$s' and tenant '%2$s'",
                             persistenceUnitName, tenantId));
         }
         if (multiTenancyStrategy == MultiTenancyStrategy.SCHEMA) {

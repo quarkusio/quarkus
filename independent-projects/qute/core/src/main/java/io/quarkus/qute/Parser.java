@@ -777,7 +777,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
             for (String strParam : strParams) {
                 params.add(parseExpression(idGenerator, strParam.trim(), scope, origin));
             }
-            return new ExpressionImpl.VirtualMethodPartImpl(name, params);
+            // Note that an expression may never start with a virtual method
+            String lastPartHint = strPartsIterator.hasNext() ? null : scope.getLastPartHint();
+            return new ExpressionImpl.VirtualMethodPartImpl(name, params, lastPartHint);
         }
         // Try to parse the literal for bracket notation
         if (Expressions.isBracketNotation(value)) {
@@ -798,15 +800,19 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         String typeInfo = null;
         if (namespace != null) {
+            // If a namespace is used and it's the first part then prepend the value with the namespace
+            // For example foo -> inject:foo
             typeInfo = first != null ? value : namespace + NAMESPACE_SEPARATOR + value;
         } else if (first == null) {
+            // No namespace used and it's the first part
             // Try to find the binding type for the first part of the expression
             typeInfo = scope.getBinding(value);
         } else if (first.getTypeInfo() != null) {
+            // No namespace and not the first part
             typeInfo = value;
         }
         if (typeInfo != null && !strPartsIterator.hasNext() && scope.getLastPartHint() != null) {
-            // If type info present then append hint to the last part
+            // If the type info present then append hint to the last part
             typeInfo += scope.getLastPartHint();
         }
         return new ExpressionImpl.PartImpl(value, typeInfo);

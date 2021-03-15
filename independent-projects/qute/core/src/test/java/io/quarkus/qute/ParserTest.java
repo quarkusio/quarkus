@@ -77,11 +77,12 @@ public class ParserTest {
                 + "{it.name}"
                 + "{/each}"
                 + "{inject:bean.name}"
-                + "{#each inject:bean.labels}"
+                + "{#each inject:bean.labels('foo')}"
                 + "{it.value}"
                 + "{/each}"
                 + "{#set baz=foo.bar}"
                 + "{baz.name}"
+                + "{baz.getName(baz.age)}"
                 + "{/set}"
                 + "{#for foo in foos}"
                 + "{foo.baz}"
@@ -103,12 +104,13 @@ public class ParserTest {
 
         assertExpr(expressions, "inject:bean.name", 2, "inject:bean.name");
 
-        Expression beanLabels = find(expressions, "inject:bean.labels");
-        assertExpr(expressions, "inject:bean.labels", 2, "inject:bean.labels<loop-element>");
+        Expression beanLabels = find(expressions, "inject:bean.labels('foo')");
+        assertExpr(expressions, "inject:bean.labels('foo')", 2, "inject:bean.labels('foo')<loop-element>");
         assertExpr(expressions, "it.value", 2, "it<loop#" + beanLabels.getGeneratedId() + ">.value");
 
+        Expression fooBar = find(expressions, "foo.bar");
         assertExpr(expressions, "foo.bar", 2, "|org.acme.Foo|.bar");
-        assertExpr(expressions, "baz.name", 2, "baz<set#10>.name");
+        assertExpr(expressions, "baz.name", 2, "baz<set#" + fooBar.getGeneratedId() + ">.name");
         assertExpr(expressions, "foo.baz", 2, null);
         assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(labels,bar)");
 

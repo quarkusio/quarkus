@@ -101,4 +101,10 @@ public class BasicKubernetesTest {
             });
         });
     }
+
+    @Test
+    public void assertDependencies() {
+        Path mainDepsPath = prodModeTestResults.getBuildDir().resolve("quarkus-app").resolve("lib").resolve("main");
+        assertThat(mainDepsPath).isDirectoryNotContaining(p -> p.getFileName().toString().contains("kubernetes-client"));
+    }
 }

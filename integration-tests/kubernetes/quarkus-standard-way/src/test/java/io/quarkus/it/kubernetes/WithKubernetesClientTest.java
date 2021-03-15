@@ -70,4 +70,10 @@ public class WithKubernetesClientTest {
             assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client-view");
         });
     }
+
+    @Test
+    public void assertDependencies() {
+        Path mainDepsPath = prodModeTestResults.getBuildDir().resolve("quarkus-app").resolve("lib").resolve("main");
+        assertThat(mainDepsPath).isDirectoryContaining(p -> p.getFileName().toString().contains("kubernetes-client"));
+    }
 }

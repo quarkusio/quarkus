@@ -10,8 +10,5 @@ dependencies {
     implementation(project(":common"))
     implementation("io.quarkus:quarkus-resteasy")
 
-    testImplementation("io.quarkus:quarkus-junit5")
-    testImplementation("io.rest-assured:rest-assured")
-
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
 }

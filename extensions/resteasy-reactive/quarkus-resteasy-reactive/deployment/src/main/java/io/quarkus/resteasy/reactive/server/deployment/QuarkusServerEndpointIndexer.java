@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import javax.ws.rs.core.MediaType;
 
@@ -53,6 +54,7 @@ public class QuarkusServerEndpointIndexer
     private final DefaultProducesHandler defaultProducesHandler;
 
     private final Map<String, String> multipartGeneratedPopulators = new HashMap<>();
+    private final Predicate<String> applicationClassPredicate;
 
     private static final Set<DotName> CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             DotName.createSimple(HttpServerRequest.class.getName()),
@@ -66,6 +68,7 @@ public class QuarkusServerEndpointIndexer
         this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
         this.reflectiveClassProducer = builder.reflectiveClassProducer;
         this.defaultProducesHandler = builder.defaultProducesHandler;
+        this.applicationClassPredicate = builder.applicationClassPredicate;
     }
 
     protected boolean isContextType(ClassType klass) {
@@ -166,7 +169,9 @@ public class QuarkusServerEndpointIndexer
             }
             baseName = effectivePrefix + "$quarkusrestparamConverter$";
             try (ClassCreator classCreator = new ClassCreator(
-                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
+                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
+                            applicationClassPredicate.test(elementType)),
+                    baseName, null,
                     Object.class.getName(), ParameterConverter.class.getName())) {
                 MethodCreator mc = classCreator.getMethodCreator("convert", Object.class, Object.class);
                 if (stringCtor != null) {
@@ -245,6 +250,7 @@ public class QuarkusServerEndpointIndexer
         private BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
         private MethodCreator initConverters;
         private DefaultProducesHandler defaultProducesHandler = DefaultProducesHandler.Noop.INSTANCE;
+        public Predicate<String> applicationClassPredicate;
 
         @Override
         public QuarkusServerEndpointIndexer build() {
@@ -270,6 +276,11 @@ public class QuarkusServerEndpointIndexer
         public Builder setReflectiveClassProducer(
                 BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
             this.reflectiveClassProducer = reflectiveClassProducer;
+            return this;
+        }
+
+        public Builder setApplicationClassPredicate(Predicate<String> applicationClassPredicate) {
+            this.applicationClassPredicate = applicationClassPredicate;
             return this;
         }
 

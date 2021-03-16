@@ -1,7 +1,8 @@
 package io.quarkus.it.kafka;
 
 import java.io.File;
-import java.util.Collections;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -29,7 +30,11 @@ public class KafkaTestResource implements QuarkusTestResourceLifecycleManager {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return Collections.emptyMap();
+        Map<String, String> result = new HashMap<>();
+        // make the service binding root known
+        result.put("quarkus.kubernetes-service-binding.root", Paths.get("").resolve("src").resolve("test").resolve("resources")
+                .resolve("k8s-sb").toAbsolutePath().toString());
+        return result;
     }
 
     @Override

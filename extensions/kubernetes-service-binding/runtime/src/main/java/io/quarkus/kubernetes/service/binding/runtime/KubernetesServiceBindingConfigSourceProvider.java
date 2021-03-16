@@ -15,8 +15,11 @@ import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
+import org.jboss.logging.Logger;
 
 public class KubernetesServiceBindingConfigSourceProvider implements ConfigSourceProvider {
+
+    private static final Logger log = Logger.getLogger(KubernetesServiceBindingConfigSourceProvider.class);
 
     private final List<ServiceBinding> serviceBindings;
     private final List<ServiceBindingConverter> serviceBindingConverters;
@@ -30,6 +33,7 @@ public class KubernetesServiceBindingConfigSourceProvider implements ConfigSourc
         this.serviceBindingConverters = serviceBindingConverters;
         Path p = Paths.get(bindingRoot);
         if (!Files.exists(p)) {
+            log.warn("Service Binding root '" + p.toAbsolutePath().toString() + "' does not exist");
             serviceBindings = Collections.emptyList();
             return;
         }
@@ -39,11 +43,19 @@ public class KubernetesServiceBindingConfigSourceProvider implements ConfigSourc
 
         File[] files = p.toFile().listFiles();
         if (files == null) {
+            log.warn("Service Binding root '" + p.toAbsolutePath().toString() + "' does not contain any sub-directories");
             serviceBindings = Collections.emptyList();
         } else {
+            log.debug("Found " + files.length + " potential Service Binding directories");
             serviceBindings = new ArrayList<>(files.length);
             for (File f : files) {
-                serviceBindings.add(new ServiceBinding(f.toPath()));
+                ServiceBinding sb = new ServiceBinding(f.toPath());
+                serviceBindings.add(sb);
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("Directory '%s' contains %d %s and will be used as Service Binding %s",
+                            f.toPath().toAbsolutePath(), sb.getProperties().size(),
+                            sb.getProperties().size() == 1 ? "property" : "properties", sb.toString()));
+                }
             }
             serviceBindings.sort(new Comparator<ServiceBinding>() {
                 @Override

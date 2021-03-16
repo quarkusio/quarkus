@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.core.CodestartData;
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
@@ -82,8 +84,7 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
     }
 
     private static String getConfigType(Map<String, Object> data) {
-        final Optional<String> config = NestedMaps.getValue(data, "codestart-project.config.name");
+        final Optional<String> config = CodestartData.getInputCodestartForType(data, CodestartType.CONFIG);
         return config.orElseThrow(() -> new CodestartException("Config type is required"));
     }
-
 }

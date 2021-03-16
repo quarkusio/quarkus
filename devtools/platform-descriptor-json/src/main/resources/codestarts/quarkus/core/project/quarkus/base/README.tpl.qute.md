@@ -45,17 +45,17 @@ You can then execute your native executable with: `./{buildtool.build-dir}/{proj
 
 If you want to learn more about building native executables, please consult {buildtool.guide}.
 
-{#if selected-extensions}
+{#if input.selected-extensions}
 ## Related guides
 
-{#for ext in selected-extensions}
+{#for ext in input.selected-extensions}
 {#if ext.guide}
 - {ext.name} ([guide]({ext.guide})): {ext.description}
 {/if}
 {/for}
 
 {/if}
-{#if selected-examples}
+{#if input.selected-examples}
 ## Provided examples
 {/if}
 

@@ -1612,22 +1612,24 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected void implementEquals(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator equals = beanCreator.getMethodCreator("equals", boolean.class, Object.class).setModifiers(ACC_PUBLIC);
+        final ResultHandle obj = equals.getMethodParam(0);
         // if (this == obj) {
         //    return true;
         // }
-        equals.ifTrue(equals.invokeStaticMethod(MethodDescriptors.OBJECTS_REFERENCE_EQUALS, equals.getThis(),
-                equals.getMethodParam(0))).trueBranch().returnValue(equals.load(true));
+        equals.ifReferencesEqual(equals.getThis(), obj)
+                .trueBranch().returnValue(equals.load(true));
+
         // if (obj == null) {
         //    return false;
         // }
-        equals.ifNull(equals.getMethodParam(0)).trueBranch().returnValue(equals.load(false));
+        equals.ifNull(obj).trueBranch().returnValue(equals.load(false));
         // if (!(obj instanceof InjectableBean)) {
         //    return false;
         // }
-        equals.ifFalse(equals.instanceOf(equals.getMethodParam(0), InjectableBean.class)).trueBranch()
+        equals.ifFalse(equals.instanceOf(obj, InjectableBean.class)).trueBranch()
                 .returnValue(equals.load(false));
         // return identifier.equals(((InjectableBean) obj).getIdentifier());
-        ResultHandle injectableBean = equals.checkCast(equals.getMethodParam(0), InjectableBean.class);
+        ResultHandle injectableBean = equals.checkCast(obj, InjectableBean.class);
         ResultHandle otherIdentifier = equals.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER, injectableBean);
         equals.returnValue(equals.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, equals.load(bean.getIdentifier()),
                 otherIdentifier));

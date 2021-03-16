@@ -61,6 +61,7 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
+import io.quarkus.smallrye.openapi.deployment.security.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
@@ -178,6 +179,14 @@ public class SmallRyeOpenApiProcessor {
                 .requiresLegacyRedirect()
                 .blockingRoute()
                 .build();
+    }
+
+    @BuildStep
+    void addSecurityFilter(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
+            SmallRyeOpenApiConfig config) {
+
+        addToOpenAPIDefinitionProducer
+                .produce(new AddToOpenAPIDefinitionBuildItem(new SecurityConfigFilter(config)));
     }
 
     @BuildStep

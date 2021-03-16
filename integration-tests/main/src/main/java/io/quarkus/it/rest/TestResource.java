@@ -423,6 +423,12 @@ public class TestResource {
         return payload;
     }
 
+    @GET
+    @Path("/failure")
+    public Response alwaysFail() {
+        return Response.serverError().build();
+    }
+
     @XmlRootElement
     public static class XmlObject {
 

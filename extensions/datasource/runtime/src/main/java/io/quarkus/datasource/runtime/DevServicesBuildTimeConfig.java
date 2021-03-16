@@ -28,10 +28,8 @@ public class DevServicesBuildTimeConfig {
     public Optional<String> imageName;
 
     /**
-     * Generic properties that are passed into the DevServices database provider. These properties are provider
-     * specific.
+     * Generic properties that are added to the database connection URL.
      */
     @ConfigItem
     public Map<String, String> properties;
-
 }

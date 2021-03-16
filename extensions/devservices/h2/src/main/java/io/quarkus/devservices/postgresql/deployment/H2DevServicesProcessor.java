@@ -27,11 +27,19 @@ public class H2DevServicesProcessor {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort", "0");
                     tcpServer.start();
+
+                    StringBuilder additionalArgs = new StringBuilder();
+                    for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
+                        additionalArgs.append(";");
+                        additionalArgs.append(i.getKey());
+                        additionalArgs.append("=");
+                        additionalArgs.append(i.getValue());
+                    }
                     System.out
                             .println("[INFO] H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
                     String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
                             + datasourceName.orElse("default")
-                            + ";DB_CLOSE_DELAY=-1";
+                            + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
                     return new RunningDevServicesDatasource(
                             connectionUrl,
                             "sa",

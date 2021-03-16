@@ -44,8 +44,17 @@ public class DerbyDevServicesProcessor {
                             }
                         }
                     }
+                    StringBuilder additionalArgs = new StringBuilder();
+                    for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
+                        additionalArgs.append(";");
+                        additionalArgs.append(i.getKey());
+                        additionalArgs.append("=");
+                        additionalArgs.append(i.getValue());
+                    }
                     return new RunningDevServicesDatasource(
-                            "jdbc:derby://localhost:1527/memory:" + datasourceName.orElse("quarkus") + ";create=true", null,
+                            "jdbc:derby://localhost:1527/memory:" + datasourceName.orElse("quarkus") + ";create=true"
+                                    + additionalArgs.toString(),
+                            null,
                             null,
                             new Closeable() {
                                 @Override

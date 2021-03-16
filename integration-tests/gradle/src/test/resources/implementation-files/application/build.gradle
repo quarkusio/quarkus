@@ -4,7 +4,4 @@ plugins {
 
 dependencies {
     implementation files("../common/build/libs/common.jar")
-    
-    testImplementation 'io.quarkus:quarkus-junit5'
-    testImplementation 'io.rest-assured:rest-assured'
 }

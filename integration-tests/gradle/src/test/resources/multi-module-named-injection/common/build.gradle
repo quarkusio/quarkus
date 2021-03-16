@@ -17,9 +17,6 @@ repositories {
 dependencies {
     api enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     api 'io.quarkus:quarkus-smallrye-health'
-
-    testImplementation 'io.quarkus:quarkus-junit5'
-    testImplementation 'io.rest-assured:rest-assured'
 }
 
 group 'org.acme'

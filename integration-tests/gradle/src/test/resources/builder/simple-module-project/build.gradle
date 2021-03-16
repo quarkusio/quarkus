@@ -16,7 +16,6 @@ repositories {
 
 dependencies {
     implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusPlatformVersion}")
-    implementation 'io.quarkus:quarkus-resteasy'
 }
 
 group 'org.acme'

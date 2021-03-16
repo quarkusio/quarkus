@@ -19,7 +19,6 @@ repositories {
 
 dependencies {
     implementation 'io.quarkus:quarkus-kotlin'
-    implementation 'io.quarkus:quarkus-grpc'
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-resteasy'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'

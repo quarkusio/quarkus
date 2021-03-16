@@ -21,9 +21,6 @@ dependencies {
 
     implementation 'io.quarkus:quarkus-hibernate-orm-panache'
     quarkusDev 'io.quarkus:quarkus-jdbc-h2'
-
-    testImplementation 'io.quarkus:quarkus-junit5'
-    testImplementation 'io.rest-assured:rest-assured'
 }
 
 compileJava {

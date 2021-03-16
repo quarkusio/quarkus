@@ -90,7 +90,7 @@ public class ReflectiveHierarchyStep {
             log.warnf(
                     "Unable to properly register the hierarchy of the following classes for reflection as they are not in the Jandex index:%n%s"
                             + "%nConsider adding them to the index either by creating a Jandex index "
-                            + "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.\");.",
+                            + "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.",
                     unindexedClassesWarn.toString());
         }
     }

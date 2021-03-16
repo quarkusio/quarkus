@@ -109,7 +109,7 @@
         <protoc.version>3.12.3</protoc.version> <!--keep in sync with the BOM-->
         <grpc.version>1.30.2</grpc.version> <!--keep in sync with the BOM -->
 
-        <boring-ssl.version>2.0.30.Final</boring-ssl.version>
+        <boring-ssl.version>2.0.36.Final</boring-ssl.version>
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>

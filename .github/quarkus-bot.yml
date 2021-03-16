@@ -428,6 +428,12 @@ triage:
       directories:
         - extensions/liquibase/
         - integration-tests/liquibase/
+    - labels: [area/kogito]
+      title: "kogito"
+      notify: [evacchi, mariofusco]
+    - labels: [area/optaplanner]
+      title: "optaplanner"
+      notify: [ge0ffrey, rsynek, Christopher-Chianelli]
     - labels: [kind/extension-proposal]
       title: quarkiverse
       notify: [gastaldi, gsmet, aloubyansky]

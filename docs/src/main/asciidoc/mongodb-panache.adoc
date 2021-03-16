@@ -656,7 +656,11 @@ quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
 
 == Transactions
 
-WARNING: MongoDB offers ACID transactions since version 4.0. MongoDB with Panache doesn't provide support for them.
+MongoDB offers ACID transactions since version 4.0.
+
+To use them with MongoDB with Panache you need to annotate the method that starts the transaction with the `@Transactional` annotation.
+
+WARNING: Transaction support inside MongoDB with Panache is still experimental.
 
 == Custom IDs
 
@@ -889,6 +893,8 @@ public Multi<ReactivePerson> streamPersons() {
 ----
 
 TIP: `@SseElementType(MediaType.APPLICATION_JSON)` tells RESTEasy to serialize the object in JSON.
+
+WARNING: Transactions are not supported for Reactive Entities and Repositories.
 
 == Mocking
 

@@ -6,6 +6,7 @@ import java.util.function.Function;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -17,7 +18,9 @@ public class ServerCalls {
     private ServerCalls() {
     }
 
-    public static <I, O> void oneToOne(I request, StreamObserver<O> response, Function<I, Uni<O>> implementation) {
+    public static <I, O> void oneToOne(I request, StreamObserver<O> response, String compression,
+            Function<I, Uni<O>> implementation) {
+        trySetCompression(response, compression);
         try {
             Uni<O> uni = implementation.apply(request);
             uni.subscribe().with(
@@ -39,7 +42,8 @@ public class ServerCalls {
         }
     }
 
-    public static <I, O> void oneToMany(I request, StreamObserver<O> response, Function<I, Multi<O>> implementation) {
+    public static <I, O> void oneToMany(I request, StreamObserver<O> response, String compression,
+            Function<I, Multi<O>> implementation) {
         try {
             streamCollector.add(response);
             implementation.apply(request)
@@ -178,6 +182,13 @@ public class ServerCalls {
             return Status.fromThrowable(throwable)
                     .withDescription(desc)
                     .asException();
+        }
+    }
+
+    private static void trySetCompression(StreamObserver<?> response, String compression) {
+        if (compression != null && response instanceof ServerCallStreamObserver<?>) {
+            ServerCallStreamObserver<?> serverResponse = (ServerCallStreamObserver<?>) response;
+            serverResponse.setCompression(compression);
         }
     }
 

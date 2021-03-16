@@ -87,6 +87,7 @@ public class MailClientProducer {
         if (config.startTLS.isPresent()) {
             cfg.setStarttls(StartTLSOptions.valueOf(config.startTLS.get().toUpperCase()));
         }
+        cfg.setMultiPartOnly(config.multiPartOnly);
         boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : tlsConfig.trustAll;
         cfg.setTrustAll(trustAll);
         return cfg;

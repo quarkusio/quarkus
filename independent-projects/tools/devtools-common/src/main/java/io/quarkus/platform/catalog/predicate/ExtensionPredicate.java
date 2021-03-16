@@ -1,5 +1,9 @@
-package io.quarkus.registry.catalog;
+package io.quarkus.platform.catalog.predicate;
 
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
+
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.registry.catalog.Extension;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -45,12 +49,13 @@ public class ExtensionPredicate implements Predicate<Extension> {
 
     @Override
     public boolean test(Extension extension) {
-        if (extension.isUnlisted()) {
+        final ExtensionProcessor extensionMetadata = ExtensionProcessor.of(extension);
+        if (extensionMetadata.isUnlisted()) {
             return false;
         }
 
         String extensionName = Objects.toString(extension.getName(), "");
-        String shortName = Objects.toString(extension.getShortName(), "");
+        String shortName = Objects.toString(extensionMetadata.getShortName(), "");
 
         // Try exact matches
         if (isExactMatch(extension)) {
@@ -66,8 +71,8 @@ public class ExtensionPredicate implements Predicate<Extension> {
                 || shortName.toLowerCase().contains(q)) {
             return true;
         }
-        // find by labels
-        if (extension.labelsForMatching().contains(q)) {
+        // find by keyword
+        if (extensionMetadata.getExtendedKeywords().contains(q)) {
             return true;
         }
         // find by pattern
@@ -75,7 +80,7 @@ public class ExtensionPredicate implements Predicate<Extension> {
         return pattern != null && (pattern.matcher(extensionName.toLowerCase()).matches()
                 || pattern.matcher(extension.getArtifact().getArtifactId().toLowerCase()).matches()
                 || pattern.matcher(shortName.toLowerCase()).matches()
-                || matchLabels(pattern, extension.getKeywords()));
+                || matchLabels(pattern, extensionMetadata.getKeywords()));
     }
 
     public boolean isExactMatch(Extension extension) {
@@ -89,7 +94,7 @@ public class ExtensionPredicate implements Predicate<Extension> {
     }
 
     private static boolean matchesShortName(Extension extension, String q) {
-        return q.equalsIgnoreCase(extension.getShortName());
+        return q.equalsIgnoreCase(getShortName(extension));
     }
 
     private static boolean matchesArtifactId(String artifactId, String q) {

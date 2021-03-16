@@ -2,6 +2,8 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static io.quarkus.devtools.codestarts.QuarkusPlatformCodestartResourceLoader.platformPathLoader;
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getCodestartName;
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
@@ -14,6 +16,7 @@ import io.quarkus.devtools.codestarts.QuarkusPlatformCodestartResourceLoader;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -147,7 +150,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     private Set<String> getExtensionCodestarts(QuarkusCodestartProjectInput projectInput) {
         return getSelectedExtensionsAsStream(projectInput)
-                .map(Extension::getCodestart)
+                .map(ExtensionProcessor::getCodestartName)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
@@ -201,7 +204,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             Map<String, Object> eData = new HashMap<>();
             eData.put("name", e.getName());
             eData.put("description", e.getDescription());
-            eData.put("guide", e.getGuide());
+            eData.put("guide", getGuide(e));
             return eData;
         }).collect(Collectors.toList()));
         return data;
@@ -209,13 +212,13 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     public static boolean isExample(Codestart codestart) {
         return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.key());
-    };
+    }
 
     private static Map<String, Extension> buildExtensionsMapping(
             Collection<Extension> extensions) {
         final Map<String, Extension> map = new HashMap<>(extensions.size());
         extensions.forEach(e -> {
-            if (e.getCodestart() != null) {
+            if (getCodestartName(e) != null) {
                 map.put(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId(), e);
             }
         });

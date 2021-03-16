@@ -87,11 +87,27 @@ jbang qcd@quarkusio -l java,kotlin -c ./examples/quarkus my-example
 === When done (to bind the extension codestart to the actual extension):
 
 . put the working extension codestart in `devtools/platform-descriptor-json/src/main/resources/codestarts/quarkus/examples` and submit a PR.
-. Add the `ref` value of the codestart to the extension metadata. This is how it is activated when the extension is selected (e.g )
+. Add the `codestart` property to the extension to the extension metadata (located in the extension `src/main/resources/META-INF/quarkus-extension.yaml).
+This is how it gets activated when the extension is selected.
 
-    Example: https://github.com/quarkusio/quarkus/blob/main/extensions/resteasy/runtime/src/main/resources/META-INF/quarkus-extension.yaml#L14
+e.g:
+[source,yaml]
+----
+name: "RESTEasy JAX-RS"
+metadata:
+  short-name: "jax-rs"
+...
+  codestart:
+    name: "resteasy" # The codestart name or ref
+    kind: "example" # Either "example" or "singleton-example"
+    languages: # The list of implemented languages
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-descriptor-json" # The artifact in which the codestart is located
+----
 
-*NOTE* This is temporary, extension codestarts will soon live alongside the extension.
+*NOTE* Using "io.quarkus:quarkus-descriptor-json" as artifact is temporary, extension codestarts will soon live alongside the extension.
 
 === Tests
 

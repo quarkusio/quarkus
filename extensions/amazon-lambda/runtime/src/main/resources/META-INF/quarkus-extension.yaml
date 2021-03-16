@@ -1,12 +1,15 @@
----
 name: "AWS Lambda"
 metadata:
   keywords:
-  - "lambda"
-  - "aws"
-  - "amazon"
+    - "lambda"
+    - "aws"
+    - "amazon"
   categories:
-  - "cloud"
+    - "cloud"
   guide: "https://quarkus.io/guides/amazon-lambda"
   status: "preview"
-  codestart: "amazon-lambda"
+  codestart:
+    name: "amazon-lambda"
+    kind: "singleton-example"
+    languages: "java"
+    artifact: "io.quarkus:quarkus-descriptor-json"

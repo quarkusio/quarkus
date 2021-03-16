@@ -2,6 +2,9 @@ package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
 import static io.quarkus.devtools.project.extensions.Extensions.toCoords;
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getExtendedKeywords;
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -106,7 +109,7 @@ final class QuarkusCommandHandlers {
             listedExtensions.stream()
                     .filter(extension -> extension.getName().toLowerCase().contains(q)
                             || extension.getArtifact().getArtifactId().toLowerCase().contains(q)
-                            || extension.getShortName().toLowerCase().contains(q))
+                            || getShortName(extension).toLowerCase().contains(q))
                     .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
             // Even if we have a single partial match, if the name, artifactId and short names are ambiguous, so not
             // consider it as a match.
@@ -117,7 +120,7 @@ final class QuarkusCommandHandlers {
             // find by labels
             if (labelLookup) {
                 listedExtensions.stream()
-                        .filter(extension -> extension.labelsForMatching().contains(q))
+                        .filter(extension -> getExtendedKeywords(extension).contains(q))
                         .forEach(e -> matches.put(e.getArtifact().getKey(), e));
             }
             return new SelectionResult(matches.values(), false);
@@ -129,8 +132,8 @@ final class QuarkusCommandHandlers {
             listedExtensions.stream()
                     .filter(extension -> pattern.matcher(extension.getName().toLowerCase()).matches()
                             || pattern.matcher(extension.getArtifact().getArtifactId().toLowerCase()).matches()
-                            || pattern.matcher(extension.getShortName().toLowerCase()).matches()
-                            || matchLabels(pattern, extension.getKeywords()))
+                            || pattern.matcher(getShortName(extension).toLowerCase()).matches()
+                            || matchLabels(pattern, getExtendedKeywords(extension)))
                     .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
         }
         return new SelectionResult(matches.values(), !matches.isEmpty());
@@ -138,7 +141,7 @@ final class QuarkusCommandHandlers {
 
     private static List<Extension> getListedExtensions(final Collection<Extension> allExtensions) {
         return allExtensions.stream()
-                .filter(e -> !e.isUnlisted()).collect(Collectors.toList());
+                .filter(e -> !isUnlisted(e)).collect(Collectors.toList());
     }
 
     private static boolean matchLabels(Pattern pattern, List<String> labels) {
@@ -209,7 +212,7 @@ final class QuarkusCommandHandlers {
     }
 
     private static boolean matchesShortName(Extension extension, String q) {
-        return q.equalsIgnoreCase(extension.getShortName());
+        return q.equalsIgnoreCase(getShortName(extension));
     }
 
     private static boolean matchesArtifactId(String artifactId, String q) {

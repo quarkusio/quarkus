@@ -1,4 +1,3 @@
----
 name: "Scala"
 metadata:
   keywords:
@@ -6,4 +5,7 @@ metadata:
   categories:
   - "alt-languages"
   status: "preview"
-  codestart: "scala"
+  codestart:
+    name: "scala"
+    kind: "core"
+    artifact: "io.quarkus:quarkus-descriptor-json"

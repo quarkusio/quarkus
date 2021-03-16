@@ -573,18 +573,6 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
         if (extOverride.getArtifact() != null) {
             extObject.setArtifact(extOverride.getArtifact());
         }
-        if (extOverride.getCodestart() != null) {
-            extObject.setCodestart(extOverride.getCodestart());
-        }
-        if (extOverride.getDescription() != null) {
-            extObject.setDescription(extOverride.getDescription());
-        }
-        if (extOverride.getGuide() != null) {
-            extObject.setGuide(extOverride.getGuide());
-        }
-        if (!extOverride.getKeywords().isEmpty()) {
-            extObject.setKeywords(extOverride.getKeywords());
-        }
         if (!extOverride.getMetadata().isEmpty()) {
             if (extObject.getMetadata().isEmpty()) {
                 extObject.setMetadata(extOverride.getMetadata());
@@ -597,9 +585,6 @@ public class GeneratePlatformDescriptorJsonMojo extends AbstractMojo {
         }
         if (!extOverride.getOrigins().isEmpty()) {
             extObject.setOrigins(extOverride.getOrigins());
-        }
-        if (extOverride.getShortName() != null) {
-            extObject.setShortName(extOverride.getShortName());
         }
         return extObject;
     }

@@ -22,15 +22,15 @@ class QuarkusCommandHandlersTest {
         JsonExtension e1 = new JsonExtension();
         e1.setArtifact(new ArtifactCoords("org.acme", "e1", "1.0"));
         e1.setName("some extension 1");
-        e1.setKeywords(Arrays.asList("foo", "bar"));
+        e1.getMetadata().put(Extension.MD_KEYWORDS, Arrays.asList("foo", "bar"));
         JsonExtension e2 = new JsonExtension();
         e2.setArtifact(new ArtifactCoords("org.acme", "e2", "1.0"));
         e2.setName("some extension 2");
-        e2.setKeywords(Arrays.asList("foo", "bar", "baz"));
+        e2.getMetadata().put(Extension.MD_KEYWORDS, Arrays.asList("foo", "bar", "baz"));
         JsonExtension e3 = new JsonExtension();
         e3.setArtifact(new ArtifactCoords("org.acme", "e3", "1.0"));
         e3.setName("unrelated");
-        e3.setKeywords(Arrays.asList("bar"));
+        e3.getMetadata().put(Extension.MD_KEYWORDS, Arrays.asList("bar"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -48,11 +48,11 @@ class QuarkusCommandHandlersTest {
         JsonExtension e1 = new JsonExtension();
         e1.setArtifact(new ArtifactCoords("org.acme", "e1", "1.0"));
         e1.setName("e1");
-        e1.setKeywords(Arrays.asList("foo", "bar"));
+        e1.getMetadata().put(Extension.MD_KEYWORDS, Arrays.asList("foo", "bar"));
         JsonExtension e2 = new JsonExtension();
         e2.setArtifact(new ArtifactCoords("org.acme", "e2", "1.0"));
         e2.setName("e2");
-        e2.setKeywords(Arrays.asList("bar", "baz"));
+        e2.getMetadata().put(Extension.MD_KEYWORDS, Arrays.asList("bar", "baz"));
 
         List<Extension> extensions = asList(e1, e2);
         Collections.shuffle(extensions);
@@ -66,15 +66,15 @@ class QuarkusCommandHandlersTest {
         JsonExtension e1 = new JsonExtension();
         e1.setArtifact(new ArtifactCoords("org.acme", "e1", "1.0"));
         e1.setName("foo");
-        e1.setKeywords(asList("foo", "bar"));
+        e1.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar"));
         JsonExtension e2 = new JsonExtension();
         e2.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo", "1.0"));
         e2.setName("some foo bar");
-        e2.setKeywords(asList("foo", "bar", "baz"));
+        e2.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar", "baz"));
         JsonExtension e3 = new JsonExtension();
         e3.setArtifact(new ArtifactCoords("org.acme", "e3", "1.0"));
         e3.setName("unrelated");
-        e3.setKeywords(asList("foo"));
+        e3.getMetadata().put(Extension.MD_KEYWORDS, asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -93,16 +93,16 @@ class QuarkusCommandHandlersTest {
         JsonExtension e1 = new JsonExtension();
         e1.setArtifact(new ArtifactCoords("org.acme", "some-complex-seo-unaware-artifactid", "1.0"));
         e1.setName("some complex seo unaware name");
-        e1.setShortName("foo");
-        e1.setKeywords(asList("foo", "bar"));
+        e1.getMetadata().put(Extension.MD_SHORT_NAME, "foo");
+        e1.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar"));
         JsonExtension e2 = new JsonExtension();
         e2.setArtifact(new ArtifactCoords("org.acme", "some-foo-bar", "1.0"));
         e2.setName("some foo bar");
-        e2.setKeywords(asList("foo", "bar", "baz"));
+        e2.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar", "baz"));
         JsonExtension e3 = new JsonExtension();
         e3.setArtifact(new ArtifactCoords("org.acme", "unrelated", "1.0"));
         e3.setName("unrelated");
-        e3.setKeywords(asList("foo"));
+        e3.getMetadata().put(Extension.MD_KEYWORDS, asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -120,16 +120,16 @@ class QuarkusCommandHandlersTest {
         JsonExtension e1 = new JsonExtension();
         e1.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo", "1.0"));
         e1.setName("some complex seo unaware name");
-        e1.setShortName("foo");
-        e1.setKeywords(asList("foo", "bar"));
+        e1.getMetadata().put(Extension.MD_SHORT_NAME, "foo");
+        e1.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar"));
         JsonExtension e2 = new JsonExtension();
         e2.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-bar", "1.0"));
         e2.setName("some foo bar");
-        e2.setKeywords(asList("foo", "bar", "baz"));
+        e2.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar", "baz"));
         JsonExtension e3 = new JsonExtension();
         e3.setArtifact(new ArtifactCoords("org.acme", "quarkus-unrelated", "1.0"));
         e3.setName("unrelated");
-        e3.setKeywords(asList("foo"));
+        e3.getMetadata().put(Extension.MD_KEYWORDS, asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
@@ -144,19 +144,19 @@ class QuarkusCommandHandlersTest {
         JsonExtension e1 = new JsonExtension();
         e1.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-unlisted", "1.0"));
         e1.setName("some complex seo unaware name");
-        e1.setShortName("foo");
-        e1.setKeywords(asList("foo", "bar"));
+        e1.getMetadata().put(Extension.MD_SHORT_NAME, "foo");
+        e1.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar"));
         e1.addMetadata("unlisted", "true");
 
         JsonExtension e2 = new JsonExtension();
         e2.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-bar", "1.0"));
         e2.setName("some foo bar");
-        e2.setKeywords(asList("foo", "bar", "baz"));
+        e2.getMetadata().put(Extension.MD_KEYWORDS, asList("foo", "bar", "baz"));
         e2.addMetadata("unlisted", "false");
         JsonExtension e3 = new JsonExtension();
         e3.setArtifact(new ArtifactCoords("org.acme", "quarkus-foo-baz", "1.0"));
         e3.setName("unrelated");
-        e3.setKeywords(asList("foo"));
+        e3.getMetadata().put(Extension.MD_KEYWORDS, asList("foo"));
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);

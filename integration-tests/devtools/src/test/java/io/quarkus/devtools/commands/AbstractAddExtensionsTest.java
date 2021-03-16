@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands;
 
+import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 import static io.quarkus.platform.tools.ToolsConstants.IO_QUARKUS;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -211,7 +212,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
 
     private Stream<Extension> getExtensionsWithArtifactContaining(String contains) {
         return getExtensionsCatalog().getExtensions().stream()
-                .filter(e -> e.getArtifact().getArtifactId().contains(contains) && !e.isUnlisted());
+                .filter(e -> e.getArtifact().getArtifactId().contains(contains) && !isUnlisted(e));
     }
 
     private void hasDependency(T project, String artifactId) {

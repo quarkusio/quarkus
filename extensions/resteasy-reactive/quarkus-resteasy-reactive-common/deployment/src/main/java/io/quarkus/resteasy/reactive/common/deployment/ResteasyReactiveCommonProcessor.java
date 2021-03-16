@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.ext.RuntimeDelegate;
 
@@ -249,8 +250,13 @@ public class ResteasyReactiveCommonProcessor {
                 if (constrainedToInstance != null) {
                     runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
                 }
+                int priority = Priorities.USER;
+                AnnotationInstance priorityInstance = writerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    priority = priorityInstance.value().asInt();
+                }
                 messageBodyWriterBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(writerClassName,
-                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false));
+                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
             }
         }
 
@@ -274,8 +280,13 @@ public class ResteasyReactiveCommonProcessor {
                 if (constrainedToInstance != null) {
                     runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
                 }
+                int priority = Priorities.USER;
+                AnnotationInstance priorityInstance = readerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    priority = priorityInstance.value().asInt();
+                }
                 messageBodyReaderBuildItemBuildProducer.produce(new MessageBodyReaderBuildItem(readerClassName,
-                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false));
+                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClassName));
             }
         }
